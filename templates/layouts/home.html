@@ -1,0 +1,63 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block page %}
+    <!-- Navbar -->
+    <div class="sticky-top">
+        {% block navbar %}
+            {% include 'includes/home/navbar.html' %}
+        {% endblock navbar %}
+    </div>
+    <div class="page-wrapper">
+        <!-- Page header -->
+        <div class="page-header d-print-none mx-3">
+            <div class="container-xl">
+                {% block page_header %}
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <!-- Page pre-title -->
+                            <div class="page-pretitle">
+                                {{ parent }}
+                            </div>
+                            <h2 class="page-title">
+                                {{ title }}
+                            </h2>
+                        </div>
+                        <!-- Page title actions -->
+
+                    </div>
+                {% endblock page_header %}
+            </div>
+        </div>
+        <!-- Page body -->
+        <div class="page-body min-vh-100 mx-3">
+            {% if messages %} 
+                <div class="container mt-3"> 
+                    {% for message in messages %} 
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert"> 
+                        {{ message }} 
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> 
+                    </div> 
+                    {% endfor %} 
+                </div> 
+            {% endif %}
+            <div class="container-xl">
+                {% block content %}
+                <div class="row justify-content-center">
+                    <div class="col-lg-10 col-xl-9">
+                        <div class="empty">
+                            <img src="{% static 'dist/img/webp/building.webp' %}" class="img-fluid w-50" alt="building">
+                            <p class="empty-title">Página en construcción</p>
+                            <p class="empty-subtitle text-secondary">
+                                Estamos trabajando para ponerla en marcha lo antes posible.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endblock content %}
+            </div>
+        </div>
+        <!-- Footer -->
+        {% include 'includes/home/footer.html' %}
+    </div>
+
+{% endblock page %}

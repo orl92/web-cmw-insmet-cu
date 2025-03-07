@@ -1,0 +1,303 @@
+{% extends 'layouts/list.html' %}
+{% load static %}
+{% block title-actions %}
+{% if not has_data %}
+<div class="col-auto ms-auto d-print-none">
+  <div class="d-flex">
+    <a href="{{ url_create }}" class="btn btn-primary">
+      {{ btn }}
+    </a>
+  </div>
+</div>
+{% else %}
+{% for forecast in forecasts %}
+<div class="col-auto ms-auto d-print-none">
+  <div class="d-flex">
+    <a href="{% url 'actualizar_pronostico' forecast.uuid %}" type="button" class="btn btn-pill btn-outline-warning btn-sm me-2" data-bs-toggle="tooltip"
+        data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+        <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+        <path d="M16 5l3 3" />
+        </svg>
+    </a>
+    <a href="{% url 'eliminar_pronostico' forecast.uuid %}" type="button" class="btn btn-pill btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M4 7l16 0" />
+          <path d="M10 11l0 6" />
+          <path d="M14 11l0 6" />
+          <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+          <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+        </svg>
+      </a>    
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock title-actions %}
+
+{% block content %}
+    <div class="card ">
+        <div class="card-body p-4 table-responsive" style="border-radius: 10px;">
+            <div class="row">
+                <div class="col-lg-6">
+                    <form method="get" action="."><!-- Cambiado de 'post' a 'get' para filtrar -->
+                        {% csrf_token %}
+                        <label class="form-label me-2">Fecha:</label>
+                        <div class="mb-3 d-flex align-items-center">
+                            <div class="input-group input-group-flat mb-2">
+                                <span class="input-group-text">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                        <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                        <path d="M16 3v4"></path>
+                                        <path d="M8 3v4"></path>
+                                        <path d="M4 11h16"></path>
+                                        <path d="M11 15h1"></path>
+                                        <path d="M12 15v3"></path>
+                                    </svg>
+                                </span>
+                                <input name="date" class="form-control " placeholder="Select a date"
+                                       id="datepicker-icon" value="{{ date }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                         stroke-linejoin="round"
+                                         class="icon icon-tabler icons-tabler-outline icon-tabler-refresh">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
+                                        <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                                    </svg>
+                                    Actualizar
+                                </button>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-lg-12">
+                    <label class="form-label">Pronostico:</label>
+                    <table id="" class=" display table table-hover table-striped" style="width:100%">
+                        <thead>
+                        <tr>
+                            <th rowspan="2">Zona</th>
+                            <th colspan="3">Temperatura</th>
+                            <th colspan="3">Tiempo</th>
+                            <th colspan="3">Viento (dd)</th>
+                            <th colspan="3">Viento (ff)</th>
+                            <th colspan="3">Mar</th>
+                        </tr>
+                        <tr>
+                            <th>Mañana</th>
+                            <th>Tarde (Máx)</th>
+                            <th>Noche</th>
+                            <th>Mañana</th>
+                            <th>Tarde (Máx)</th>
+                            <th>Noche</th>
+                            <th>Mañana</th>
+                            <th>Tarde (Máx)</th>
+                            <th>Noche</th>
+                            <th>Mañana</th>
+                            <th>Tarde (Máx)</th>
+                            <th>Noche</th>
+                            <th>Mañana</th>
+                            <th>Tarde (Máx)</th>
+                            <th>Noche</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for forecast in forecasts %}
+                            <tr>
+                                <td>Costa Norte</td>
+                                <td>{{ forecast.ntm }}</td>
+                                <td>{{ forecast.nta }}</td>
+                                <td>{{ forecast.ntn }}</td>
+                                <td>{{ forecast.nwm }}</td>
+                                <td>{{ forecast.nwa }}</td>
+                                <td>{{ forecast.nwn }}</td>
+                                <td>{{ forecast.nwddm }}</td>
+                                <td>{{ forecast.nwdda }}</td>
+                                <td>{{ forecast.nwddn }}</td>
+                                <td>{{ forecast.nwdfm }}</td>
+                                <td>{{ forecast.nwdfa }}</td>
+                                <td>{{ forecast.nwdfn }}</td>
+                                <td>{{ forecast.nsm }}</td>
+                                <td>{{ forecast.nsa }}</td>
+                                <td>{{ forecast.nsn }}</td>
+                            </tr>
+                        {% endfor %}
+                        {% for forecast in forecasts %}
+                            <tr>
+                                <td>Interior</td>
+                                <td>{{ forecast.itm }}</td>
+                                <td>{{ forecast.ita }}</td>
+                                <td>{{ forecast.itn }}</td>
+                                <td>{{ forecast.iwm }}</td>
+                                <td>{{ forecast.iwa }}</td>
+                                <td>{{ forecast.iwn }}</td>
+                                <td>{{ forecast.iwddm }}</td>
+                                <td>{{ forecast.iwdda }}</td>
+                                <td>{{ forecast.iwddn }}</td>
+                                <td>{{ forecast.iwdfm }}</td>
+                                <td>{{ forecast.iwdfa }}</td>
+                                <td>{{ forecast.iwdfn }}</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                        {% endfor %}
+                        {% for forecast in forecasts %}
+                            <tr>
+                                <td>Costa Sur</td>
+                                <td>{{ forecast.stm }}</td>
+                                <td>{{ forecast.sta }}</td>
+                                <td>{{ forecast.stn }}</td>
+                                <td>{{ forecast.swm }}</td>
+                                <td>{{ forecast.swa }}</td>
+                                <td>{{ forecast.swn }}</td>
+                                <td>{{ forecast.swddm }}</td>
+                                <td>{{ forecast.swdda }}</td>
+                                <td>{{ forecast.swddn }}</td>
+                                <td>{{ forecast.swdfm }}</td>
+                                <td>{{ forecast.swdfa }}</td>
+                                <td>{{ forecast.swdfn }}</td>
+                                <td>{{ forecast.ssm }}</td>
+                                <td>{{ forecast.ssa }}</td>
+                                <td>{{ forecast.ssn }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <label class="form-label">Pronostico Extendido:</label>
+                    <table id="" class=" display table table-hover table-striped">
+                        <thead>
+                        <tr>
+                            <th>Dia</th>
+                            <th>Minima</th>
+                            <th>Máxima</th>
+                            <th>Tiempo</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for forecast in forecasts %}
+                        <tr>
+                            <td>{{ forecast.day1_date }}</td>
+                            <td>{{ forecast.day1_min_temp }}</td>
+                            <td>{{ forecast.day1_max_temp }}</td>
+                            <td>{{ forecast.day1_weather }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ forecast.day2_date }}</td>
+                            <td>{{ forecast.day2_min_temp }}</td>
+                            <td>{{ forecast.day2_max_temp }}</td>
+                            <td>{{ forecast.day2_weather }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ forecast.day3_date }}</td>
+                            <td>{{ forecast.day3_min_temp }}</td>
+                            <td>{{ forecast.day3_max_temp }}</td>
+                            <td>{{ forecast.day3_weather }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ forecast.day4_date }}</td>
+                            <td>{{ forecast.day4_min_temp }}</td>
+                            <td>{{ forecast.day4_max_temp }}</td>
+                            <td>{{ forecast.day4_weather }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ forecast.day5_date }}</td>
+                            <td>{{ forecast.day5_min_temp }}</td>
+                            <td>{{ forecast.day5_max_temp }}</td>
+                            <td>{{ forecast.day5_weather }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-lg-6">
+                    <label class="form-label">Datos Astronómicos:</label>
+                    <table id="" class=" display table table-hover table-striped">
+                        <thead>
+                        <tr>
+                            <th>&nbsp;</th>
+                            <th>Actual</th>
+                            <th>Próxima</th>
+                            <th>Fecha</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for forecast in forecasts %}
+                            <tr>
+                                <td>Fase Lunar</td>
+                                <td>{{ forecast.lp }}</td>
+                                <td>{{ forecast.nlp }}</td>
+                                <td>{{ forecast.nlpd }}</td>
+                            </tr>
+                            <tr>
+                                <td>Salida Sol</td>
+                                <td>{{ forecast.sunrise }}</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td>Puesta Sol</td>
+                                <td>{{ forecast.sunset }}</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td>Indice UV</td>
+                                <td>{{ forecast.uv_index }}</td>
+                                <td>&nbsp;</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block extrajs %}
+    <!-- Libs JS -->
+    <script src="{% static '' %}dist/libs/datatables/datatables.min.js"></script>
+    <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062" defer></script>
+    <script>
+        new DataTable('table.display', {
+            info: false,
+            searching: false,
+            paging: false,
+            ordering: false,
+            language: {
+                url: "{% static 'dist/libs/datatables/Spanish.json' %}"
+            },
+        });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            window.Litepicker && (new Litepicker({
+                element: document.getElementById('datepicker-icon'),
+                buttonText: {
+                    previousMonth: `<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 6l-6 6l6 6" /></svg>`,
+                    nextMonth: `<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 6l6 6l-6 6" /></svg>`,
+                },
+                format: 'YYYY-MM-DD',
+            }));
+        });
+    </script>
+{% endblock extrajs %}
+
+
+
+

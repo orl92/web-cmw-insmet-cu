@@ -1,0 +1,43 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+{% block form %}
+  <div class="mb-3">
+    <label class="form-label required">{{ form.province.label }}</label>
+    <select class="form-select" id="{{ form.province.id_for_label }}" name="{{ form.province.name }}" autofocus required>
+      {% for province in form.province.field.choices %}
+        <option value="{{ province.0 }}">{{ province.1 }}</option>
+      {% endfor %}
+    </select>
+    {% if form.province.errors %}
+      <span class="text-danger d-block mb-3">{{ form.province.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.name.label }}</label>
+    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" placeholder="Nombre"  required>
+    {% if form.name.errors %}
+      <span class="text-danger d-block mb-3">{{ form.name.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.number.label }}</label>
+    <input type="number" class="form-control" id="{{ form.number.id_for_label }}" name="{{ form.number.name }}" placeholder="Número" required>
+    {% if form.number.errors %}
+      <span class="text-danger d-block mb-3">{{ form.number.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.latitude.label }}</label>
+    <input type="float" class="form-control" id="{{ form.latitude.id_for_label }}" name="{{ form.latitude.name }}" placeholder="Latitud" required>
+    {% if form.latitude.errors %}
+      <span class="text-danger d-block mb-3">{{ form.latitude.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.longitude.label }}</label>
+    <input type="float" class="form-control" id="{{ form.latitude.id_for_label }}" name="{{ form.longitude.name }}" placeholder="Longitud" required>
+    {% if form.longitude.errors %}
+      <span class="text-danger d-block mb-3">{{ form.longitude.errors }}</span>
+    {% endif %}
+  </div>
+{% endblock form %}

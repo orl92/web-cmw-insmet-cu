@@ -1,0 +1,19 @@
+{% extends 'layouts/form.html' %}
+{% block form %}
+  <div class="row">
+    <div class="mb-3">
+      <label class="form-label required">{{ form.subject.label }}</label>
+      <input type="text" class="form-control" id="{{ form.subject.id_for_label }}" name="{{ form.subject.name }}" placeholder="Asunto" required>
+      {% if form.subject.errors %}
+          <span class="text-danger d-block mb-3">{{ form.subject.errors }}</span>
+      {% endif %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label required">{{ form.detailed_note.label }}</label>
+      <textarea id="tinymce-default" name="{{ form.detailed_note.name }}" placeholder="Nota Detallada"></textarea>
+      {% if form.detailed_note.errors %}
+          <span class="text-danger d-block mb-3">{{ form.detailed_note.errors }}</span>
+      {% endif %}
+    </div>
+  </div>
+{% endblock form %}

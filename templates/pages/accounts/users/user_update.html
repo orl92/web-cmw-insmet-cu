@@ -1,0 +1,97 @@
+{% extends 'layouts/form.html' %}
+
+{% load static %}
+{% block extrahead %}
+  <link rel="stylesheet" href="{% static '' %}dist/libs/bootstrap-duallistbox/bootstrap-duallistbox.min.css">
+{% endblock extrahead %}
+{% block form %}
+  <div class="mb-3">
+    <label class="form-label required">{{ form.username.label }}</label>
+    <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="{{ form.username.name }}" placeholder="Usuario" value="{{ form.username.value }}" autofocus required>
+    {% if form.username.errors %}
+      <span class="text-danger d-block mb-3">{{ form.username.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.password.label }}</label>
+    <span class="form-hint mb-3">Las contraseñas no se almacenan en bruto, así que no hay manera de ver la contraseña del usuario, pero se puede cambiar la contraseña mediante <a href="{% url 'admin_password_change' object.profile.uuid %}">este formulario</a></span>
+  </div>
+  <hr>
+  <pre>Información Personal</pre>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.first_name.label }}</label>
+    <input type="text" class="form-control" id="{{ form.first_name.id_for_label }}" name="{{ form.first_name.name }}" placeholder="Nombre" value="{{ form.first_name.value }}" required>
+    {% if form.first_name.errors %}
+      <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.last_name.label }}</label>
+    <input type="text" class="form-control" id="{{ form.last_name.id_for_label }}" name="{{ form.last_name.name }}" placeholder="Apellidos" value="{{ form.last_name.value }}">
+    {% if form.last_name.errors %}
+    <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.email.label }}</label>
+    <input type="email" class="form-control" id="{{ form.email.id_for_label }}" name="{{ form.email.name }}" placeholder="Dirección de correo" value="{{ form.email.value }}" required>
+    {% if form.email.errors %}
+      <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
+    {% endif %}
+  </div>
+  <hr>
+  <pre>Permisos</pre>
+  <div class="mb-3">
+    <label class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="id_is_active" name="is_active" {% if form.is_active.value %}checked{% endif %}>
+      <span class="form-check-label">Activo</span>
+      <span class="form-check-description">
+        Indica si el usuario debe ser tratado como activo. Desmarque esta opción en lugar de borrar la cuenta.
+      </span>
+    </label>
+    {% if form.is_active.errors %}
+      <span class="text-danger form-hint">{{ form.is_active.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="id_is_staff" name="is_staff" {% if form.is_staff.value %}checked{% endif %}>
+      <span class="form-check-label">Staff</span>
+      <span class="form-check-description">
+        Indica si el usuario puede entrar en este sitio de administración.
+      </span>
+    </label>
+    {% if form.is_staff.errors %}
+      <span class="text-danger form-hint">{{ form.is_staff.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="id_is_superuser" name="is_superuser" {% if form.is_superuser.value %}checked{% endif %}>
+      <span class="form-check-label">
+        Superusuario
+      </span>
+      <span class="form-check-description">
+        Indica que este usuario tiene todos los permisos sin asignárselos explícitamente.
+      </span>
+    </label>
+    {% if form.is_superuser.errors %}
+      <span class="text-danger d-block mb-3">{{ form.is_superuser.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.groups.label }}</label>
+    {{ form.groups }}
+    {% if form.groups.errors %}
+    <span class="text-danger d-block mb-3">{{ form.groups.errors }}</span>
+    {% endif %}
+  </div>
+{% endblock form %}
+{% block extrajs %}
+  <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
+  <script src="{% static '' %}dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
+  <script> $(document).ready(function() { $('select[multiple]').bootstrapDualListbox({ nonSelectedListLabel: 'Grupos disponibles', selectedListLabel: 'Grupos seleccionados', preserveSelectionOnMove: 'moved', moveOnSelect: false, nonSelectedFilter: '', filterTextClear: 'Mostrar todos', filterPlaceHolder: 'Filtrar', moveSelectedLabel: 'Mover seleccionados', moveAllLabel: 'Mover todos', removeSelectedLabel: 'Eliminar seleccionados', removeAllLabel: 'Eliminar todos', infoText: 'Mostrando todos {0}', infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}', infoTextEmpty: 'Lista vacía' }); }); </script>
+{% endblock extrajs %}
+
+
+

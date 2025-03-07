@@ -1,0 +1,54 @@
+{% extends 'layouts/dashboard.html' %}
+{% load static %}
+{% block title-actions %}{% endblock title-actions %}
+{% block content %}
+<div class="row row-cards">
+  <div class="col-12">
+    <form action="." method="post" class="card" enctype="multipart/form-data">
+      <!-- <div class="card-header">
+        <h3 class="card-title">{{ title }}</h3>
+      </div> -->
+      <div class="card-body">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          {% for error in form.non_field_errors %}
+            <span class="text-danger d-block mb-3">{{ error }}</span>
+          {% endfor %}
+        {% endif %}
+        {% block form %}
+        {% endblock form %}
+      </div>
+      <div class="card-footer">
+        <button type="submit" class="btn btn-primary ms-auto">Aceptar</button>
+        <a href="{{ url_list }}" class="btn btn-secondary ms-auto">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock content %}
+{% block extrajs %}
+<script src="{% static '' %}dist/libs/tinymce/tinymce.min.js" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    let options = {
+      selector: '#tinymce-default',
+      height: 300,
+      menubar: false,
+      statusbar: false,
+      plugins: 'accordion advlist anchor autolink autoresize autosave charmap code codesample directionality emoticons fullscreen help image importcss insertdatetime link lists media nonbreaking pagebreak preview quickbars save searchreplace table visualblocks visualchars wordcount',
+      toolbar: 'undo redo | formatselect | ' + 
+        'bold italic backcolor | alignleft aligncenter ' +
+        'alignright alignjustify | bullist numlist outdent indent | ' +
+        'removeformat',
+      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }',
+      license_key: 'gpl'
+    }
+    if (localStorage.getItem("tablerTheme") === 'dark') {
+      options.skin = 'oxide-dark';
+      options.content_css = 'dark';
+    }
+    tinyMCE.init(options);
+  })
+</script>
+{% endblock extrajs %}
+

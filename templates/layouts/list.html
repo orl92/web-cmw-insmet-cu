@@ -1,0 +1,48 @@
+{% extends 'layouts/dashboard.html' %}
+{% load static %}
+{% block title-actions %}
+<div class="col-auto ms-auto d-print-none">
+  <div class="d-flex">
+    <a href="{{ url_create }}" class="btn btn-primary">
+      {{btn}}
+    </a>
+  </div>
+</div>
+{% endblock title-actions %}
+{% block content %}
+<div class="card ">
+  <!-- <div class="card-header">
+    <h3 class="card-title">{{ title }}</h3>
+  </div> -->
+  <div class="card-body p-4 table-responsive" style="border-radius: 10px;">
+    <table id="example" class="table" style="width:100%">
+      <thead>
+        <tr>
+          {% block columns %}{% endblock columns %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for object in objects %}
+        <tr>
+          {% block row %}{% endblock row %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock content %}
+
+{% block extrajs %}
+<!-- Libs JS -->
+<script src="{% static 'dist/libs/datatables/datatables.min.js' %}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    new DataTable('#example', {
+      language: {
+        url: "{% static 'dist/libs/datatables/Spanish.json' %}"
+      }
+    });
+  });
+</script>
+{% endblock extrajs %}

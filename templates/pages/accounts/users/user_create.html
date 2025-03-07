@@ -1,0 +1,25 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+{% block form %}
+  <div class="mb-3">
+    <label class="form-label required">{{ form.username.label }}</label>
+    <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="{{ form.username.name }}" placeholder="Usuario" required>
+    {% if form.username.errors %}
+      <span class="text-danger d-block mb-3">{{ form.username.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.password1.label }}</label>
+    <input type="password" class="form-control" id="{{ form.password1.id_for_label }}" name="{{ form.password1.name }}" placeholder="Contraseña" required>
+    {% if form.password1.errors %}
+      <span class="text-danger d-block mb-3">{{ form.password1.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.password2.label }}</label>
+    <input type="password" class="form-control" id="{{ form.password2.id_for_label }}" name="{{ form.password2.name }}"  placeholder="Contraseña (confirmación)" required>
+    {% if form.password2.errors %}
+      <span class="text-danger d-block mb-3">{{ form.password2.errors }}</span>
+    {% endif %}
+  </div>
+{% endblock form %}

@@ -1,0 +1,32 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10 col-xl-9">
+    {% if weather_note %}
+      <div class="card card-lg">
+        <div class="card-body markdown">
+          <h1 class="d-flex justify-content-center" id="weather-note">Comentario del Tiempo en la Provincia de Camagüey</h1>
+          <h3 class="d-flex justify-content-center">Departamento de Pronósticos</h3>
+          <div class="d-flex justify-content-between">
+            <p><strong>Fecha:</strong> {{ weather_note.date|date:"j \d\e F \d\e Y" }}</p>
+            <p><strong>Hora:</strong> {{ weather_note.date|time:"h:i A" }}</p>
+          </div>
+          <p class="d-flex justify-content-center">{{ weather_note.subject }}</p>
+          <p>{{ weather_note.detailed_note|safe }}</p>
+          <p><strong>Autor:</strong> {{ weather_note.user.get_full_name }}</p>
+        </div>
+      </div>
+      {% else %} 
+      <div class="text-center">
+          <img src="{% static 'dist/img/webp/boy-refresh.webp' %}" class="img-fluid w-50" alt="boy-refresh">
+          <p class="empty-title">Nada que mostrar...</p>
+          <p class="empty-subtitle text-secondary">
+            No hay Notas Meteorológicas disponibles por el momento.
+          </p>
+      </div>
+      {% endif %}
+  </div>
+</div>
+{% endblock content %}
+

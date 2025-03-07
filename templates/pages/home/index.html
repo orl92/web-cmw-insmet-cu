@@ -1,0 +1,385 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+{% block extrastyle %}
+    <link href="{% static '' %}dist/css/forecast.css" rel="stylesheet"/>
+{% endblock extrastyle %}
+{% block content %}
+    <div id="forecast-container" class="row row-cards">
+        <h4>Pronósticos para el: <span id="forecast-date"></span></h4>
+        <!-- North Forecast Cards -->
+        <div class="col-lg-4">
+            <h5>Costa Norte</h5>
+            <div class="card-tabs">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-north-morning" class="nav-link active" data-bs-toggle="tab" aria-selected="true"
+                           role="tab">Mañana</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-north-afternoon" class="nav-link" data-bs-toggle="tab" aria-selected="false"
+                           role="tab" tabindex="-1">Tarde</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-north-night" class="nav-link" data-bs-toggle="tab" aria-selected="false"
+                           role="tab" tabindex="-1">Noche</a>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div id="tab-north-morning" class="card tab-pane active show" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="north-morning-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-north-afternoon" class="card tab-pane" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="north-afternoon-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-north-night" class="card tab-pane" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="north-night-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Interior Forecast Cards -->
+        <div class="col-lg-4">
+            <h5>Interior</h5>
+            <div class="card-tabs">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-interior-morning" class="nav-link active" data-bs-toggle="tab"
+                           aria-selected="true" role="tab">Mañana</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-interior-afternoon" class="nav-link" data-bs-toggle="tab" aria-selected="false"
+                           role="tab" tabindex="-1">Tarde</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-interior-night" class="nav-link" data-bs-toggle="tab" aria-selected="false"
+                           role="tab" tabindex="-1">Noche</a>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div id="tab-interior-morning" class="card tab-pane active show" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="interior-morning-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-interior-afternoon" class="card tab-pane" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="interior-afternoon-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-interior-night" class="card tab-pane" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="interior-night-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- South Forecast Cards -->
+        <div class="col-lg-4">
+            <h5>Costa Sur</h5>
+            <div class="card-tabs">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-south-morning" class="nav-link active" data-bs-toggle="tab" aria-selected="true"
+                           role="tab">Mañana</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-south-afternoon" class="nav-link" data-bs-toggle="tab" aria-selected="false"
+                           role="tab" tabindex="-1">Tarde</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#tab-south-night" class="nav-link" data-bs-toggle="tab" aria-selected="false"
+                           role="tab" tabindex="-1">Noche</a>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div id="tab-south-morning" class="card tab-pane active show" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="south-morning-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-south-afternoon" class="card tab-pane" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="south-afternoon-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="tab-south-night" class="card tab-pane" role="tabpanel">
+                        <div class="card-body" style="height: 200px;">
+                            <div id="south-night-content" class="row day-content">
+                                <!-- Content will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <h4>Pronostico Extendido 5 dias</h4>
+        <!-- Tarjeta Pronóstico Extendido -->
+        <div id="forecastCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <!-- Primer slide -->
+                <div class="carousel-item active">
+                    <div class="row">
+                        <!-- Tarjeta 1 -->
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="day1-title"></h5>
+                                    <div class="day-content" id="day1-content">
+                                        <!-- Contenido Día 1 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tarjeta 2 -->
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="day2-title"></h5>
+                                    <div class="day-content" id="day2-content">
+                                        <!-- Contenido Día 2 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tarjeta 3 -->
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="day3-title"></h5>
+                                    <div class="day-content" id="day3-content">
+                                        <!-- Contenido Día 3 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tarjeta 4 -->
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="day4-title"></h5>
+                                    <div class="day-content" id="day4-content">
+                                        <!-- Contenido Día 4 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Segundo slide -->
+                <div class="carousel-item">
+                    <div class="row">
+                        <!-- Tarjeta 2 -->
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="day2-title-2"></h5>
+                                    <div class="day-content" id="day2-content-2">
+                                        <!-- Contenido Día 2 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tarjeta 3 -->
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="day3-title-2"></h5>
+                                    <div class="day-content" id="day3-content-2">
+                                        <!-- Contenido Día 3 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tarjeta 4 -->
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="day4-title-2"></h5>
+                                    <div class="day-content" id="day4-content-2">
+                                        <!-- Contenido Día 4 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Tarjeta 5 -->
+                        <div class="col-12 col-md-3 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title" id="day5-title"></h5>
+                                    <div class="day-content" id="day5-content">
+                                        <!-- Contenido Día 5 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Controles del carrusel -->
+            <!-- <button class="carousel-control-prev" type="button" data-bs-target="#forecastCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#forecastCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            </button> -->
+        </div>
+        <h4>Datos Astronomicos</h4>
+        <!-- Fases Lunares -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body" id="lunar-phases" style="height: 250px;">
+                    <h5 class="card-title">Fase Lunar</h5>
+                    <div id="lunar-phases-content">
+                        <!-- Fase Lunar  Aquí -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Salida y Puesta del Sol -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body" id="sunrise-sunset" style="height: 250px;">
+                    <h5 class="card-title">Salida y Puesta del Sol</h5>
+                    <div id="sunrise-sunset-content">
+                        <!-- Salida y Puesta del Sol Aquí -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Indice UV -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body" style="height: 250px;">
+                    <h5 class="card-title">Índice UV</h5>
+                    <div id="uv-index-content" class="d-flex justify-content-center align-items-center mb-3">
+                        <!-- Contenido del índice UV se generará dinámicamente -->
+                    </div>
+                    <div>
+                        <div id="uv-exposure-message"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Tarjeta de Mapa Estaciones -->
+        <div class="col-lg-8">
+            <h4>Estaciones Meteorologicas en la Provincia</h4>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Estaciones</h5>
+                    <div class="container" id="chartdiv" style="height: 450px;">
+                        <!-- Mapa Estaciones Aquí -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Tarjeta de Observaciones del Clima -->
+        <div class="col-lg-4">
+            <h4>Observaciones del Clima en las Estaciones</h4>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Observación</h5>
+                    <div class="container" id="station-details" style="height: 450px;">
+                        <!-- Observaciones Aquí -->
+                        <p id="station-date" class="h3 mb-4 text-center" data-bs-toggle="tooltip"
+                           data-bs-placement="bottom" title="Fecha de la Observación"></p>
+                        <p id="station-title" class="h3 mb-4 text-center" data-bs-toggle="tooltip"
+                           data-bs-placement="bottom" title="Nombre y Número de la estación"></p>
+                        <p id="station-weather" class="h5 mb-4 text-center" data-bs-toggle="tooltip"
+                           data-bs-placement="bottom" title="Estado del cielo"></p>
+                        <p id="station-temperature" class="display-2 text-center" data-bs-toggle="tooltip"
+                           data-bs-placement="bottom" title="Temperatura actual"></p>
+                        <div id="station-temperatures" class="text-center" data-bs-toggle="tooltip"
+                             data-bs-placement="bottom" title="Temperaturas máxima y mínima"></div>
+                        <br>
+                        <div id="station-humidity" class="text-center" data-bs-toggle="tooltip"
+                             data-bs-placement="bottom" title="Humedad relativa">
+                            <!-- Aquí va el contenido de la estación de humedad relativa -->
+                        </div>
+                        <div class="weather__status d-flex flex-row justify-content-center align-items-center mt-3">
+                            <div id="station-wind"
+                                 class="p-1 d-flex flex-column justify-content-center align-items-center"
+                                 data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 title="Velocidad y dirección del viento">
+                                <!-- Aquí va el contenido de la estación de viento -->
+                            </div>
+                            <div id="station-rain-3h"
+                                 class="p-1 d-flex flex-column justify-content-center align-items-center"
+                                 data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 title="Precipitaciones en las últimas 3h">
+                                <!-- Aquí va el contenido de la estación de lluvia en las últimas 3 horas -->
+                            </div>
+                            <div id="station-rain-24h"
+                                 class="p-1 d-flex flex-column justify-content-center align-items-center"
+                                 data-bs-toggle="tooltip" data-bs-placement="bottom"
+                                 title="Precipitaciones en las últimas 24h">
+                                <!-- Aquí va el contenido de la estación de lluvia en las últimas 24 horas -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 3 Círculos -->
+        <!-- <div class="container-xl my-4">
+            <div class="row text-center g-4">
+                <div class="col-lg-4">
+                    <div class="feature">
+                        <img src="{% static '' %}dist/img/radar.png" class="bd-placeholder-img rounded-circle"
+                             width="300" height="300">
+                        <h2 style="margin-top: 20px;">Radar Camagüey</h2>
+                        <p><a class="btn btn-primary" href="#">Ver »</a></p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="feature">
+                        <img src="{% static '' %}dist/img/satelite.jpg" class="bd-placeholder-img rounded-circle"#}
+                             width="300" height="300">
+                        <h2 style="margin-top: 20px;">Imágenes Satlitales</h2>
+                        <p><a class="btn btn-primary" href="{% url 'satelites' %}">Ver »</a></p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="feature">
+                        <img src="{% static '' %}dist/img/mapa_del_tiempo.jpg" class="bd-placeholder-img rounded-circle"
+                             width="300" height="300">
+                        <h2 style="margin-top: 20px;">Mapa del Tiempo</h2>
+                        <p><a class="btn btn-primary" href="{% url 'tiempo' %}">Ver »</a></p>
+                    </div>
+                </div>
+            </div>
+        </div> -->
+    </div>
+{% endblock content %}
+{% block extrajs %}
+    <!-- Libs JS -->
+    <script src="{% static '' %}dist/libs/amcharts/dist/index.js"></script>
+    <script src="{% static '' %}dist/libs/amcharts/dist/map.js"></script>
+    <script src="{% static '' %}dist/libs/amcharts/dist/themes/Animated.js"></script>
+    <script src="{% static '' %}dist/libs/amcharts/dist/geodata/data/countries2.js"></script>
+    <script src="{% static '' %}dist/js/map_station.js"></script>
+    <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
+    <script src="{% static '' %}dist/js/forecast.js"></script>
+{% endblock extrajs %}

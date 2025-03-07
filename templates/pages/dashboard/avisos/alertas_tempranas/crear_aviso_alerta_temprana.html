@@ -1,0 +1,59 @@
+{% extends 'layouts/form.html' %}
+{% block form %}
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <label class="form-label required">{{ form.title.label }}</label>
+      <input type="text" class="form-control" id="{{ form.title.id_for_label }}" name="{{ form.title.name }}" placeholder="Título" required>
+      {% if form.title.errors %}
+          <span class="text-danger d-block mb-3">{{ form.title.errors }}</span>
+      {% endif %}
+    </div>   
+    <div class="col-md-4 mb-3">
+      <label class="form-label required">{{ form.subject.label }}</label>
+      <input type="text" class="form-control" id="{{ form.subject.id_for_label }}" name="{{ form.subject.name }}" placeholder="Asunto" required>
+      {% if form.subject.errors %}
+          <span class="text-danger d-block mb-3">{{ form.subject.errors }}</span>
+      {% endif %}
+    </div>
+    <div class="col-md-4 mb-3">
+      <label class="form-label required">{{ form.valid_until.label }}</label>
+      <input type="datetime-local" class="form-control" id="{{ form.valid_until.id_for_label }}" name="{{ form.valid_until.name }}" required>
+      {% if form.valid_until.errors %}
+          <span class="text-danger d-block mb-3">{{ form.valid_until.errors }}</span>
+      {% endif %}
+    </div>
+    <div class="mb-3">
+      <label class="form-label required">{{ form.image.label }}</label>
+      <input type="file" class="form-control" id="{{ form.image.id_for_label }}" name="{{ form.image.name }}" required onchange="previewImage(event)">
+      {% if form.image.errors %}
+          <span class="text-danger d-block mb-3">{{ form.image.errors }}</span>
+      {% endif %}
+      <img id="image-preview" src="#" alt="Vista previa de la imagen" class="img-responsive-1x1 rounded-3 bordermt-2 mt-2 d-none">
+    </div>
+    <div class="mb-3">
+      <label class="form-label required">{{ form.description.label }}</label>
+      <textarea id="tinymce-default" name="{{ form.description.name }}" placeholder="Descripción"></textarea>
+      {% if form.description.errors %}
+          <span class="text-danger d-block mb-3">{{ form.description.errors }}</span>
+      {% endif %}
+    </div>
+    <div class="col-md-12 mb-3">
+      <label class="form-label required">{{ form.email_recipient_list.label }}</label>
+      {{ form.email_recipient_list }}
+      {% if form.email_recipient_list.errors %}
+          <span class="text-danger d-block mb-3">{{ form.email_recipient_list.errors }}</span>
+      {% endif %}
+    </div>
+  </div>
+  <script>
+    function previewImage(event) {
+      var reader = new FileReader();
+      reader.onload = function() {
+          var output = document.getElementById('image-preview');
+          output.src = reader.result;
+          output.classList.remove('d-none');
+      };
+      reader.readAsDataURL(event.target.files[0]);
+    }
+  </script>
+{% endblock form %}

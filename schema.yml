@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: DFM12 REST APIs
+  version: 1.0.0
+  description: API documentación
+paths:
+  /api/forecast/{date}/:
+    get:
+      operationId: api_forecast_retrieve
+      parameters:
+      - in: path
+        name: date
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Forecast'
+          description: ''
+  /api/station-observation-all/{hour}/:
+    get:
+      operationId: api_station_observation_all_retrieve
+      parameters:
+      - in: path
+        name: hour
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllStationObservation'
+          description: ''
+  /api/station-observation/{hour}/{station_number}/:
+    get:
+      operationId: api_station_observation_retrieve
+      parameters:
+      - in: path
+        name: hour
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: station_number
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationObservation'
+          description: ''
+  /api/stations/:
+    get:
+      operationId: api_stations_list
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Station'
+          description: ''
+    post:
+      operationId: api_stations_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Station'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Station'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Station'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Station'
+          description: ''
+  /api/stations/{id}/:
+    get:
+      operationId: api_stations_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Estación.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Station'
+          description: ''
+    put:
+      operationId: api_stations_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Estación.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Station'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Station'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Station'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Station'
+          description: ''
+    patch:
+      operationId: api_stations_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Estación.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStation'
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Station'
+          description: ''
+    delete:
+      operationId: api_stations_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Estación.
+        required: true
+      tags:
+      - api
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      responses:
+        '204':
+          description: No response body
+components:
+  schemas:
+    AllStationObservation:
+      type: object
+      properties:
+        hour:
+          type: string
+        data: {}
+      required:
+      - data
+      - hour
+    Forecast:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          title: Fecha
+        north:
+          readOnly: true
+        interior:
+          readOnly: true
+        south:
+          readOnly: true
+        extended_forecast:
+          readOnly: true
+        astronomical_data:
+          readOnly: true
+      required:
+      - astronomical_data
+      - date
+      - extended_forecast
+      - interior
+      - north
+      - south
+    PatchedStation:
+      type: object
+      properties:
+        province_code:
+          type: string
+          readOnly: true
+        province_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          title: Nombre
+          maxLength: 15
+        number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          title: Número
+        latitude:
+          type: number
+          format: double
+          title: Latitud
+        longitude:
+          type: number
+          format: double
+          title: Longitud
+    Station:
+      type: object
+      properties:
+        province_code:
+          type: string
+          readOnly: true
+        province_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          title: Nombre
+          maxLength: 15
+        number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          title: Número
+        latitude:
+          type: number
+          format: double
+          title: Latitud
+        longitude:
+          type: number
+          format: double
+          title: Longitud
+      required:
+      - latitude
+      - longitude
+      - name
+      - number
+      - province_code
+      - province_name
+    StationObservation:
+      type: object
+      properties:
+        hour:
+          type: string
+        station_number:
+          type: integer
+        data: {}
+      required:
+      - data
+      - hour
+      - station_number
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

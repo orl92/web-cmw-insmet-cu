@@ -1,0 +1,42 @@
+{% extends 'layouts/form.html' %}
+{% load my_filters %}
+{% load static %}
+{% block form %}
+  <div class="mb-3">
+    <label class="form-label">{{ form.password.label }}</label>
+    <span class="form-hint mb-3">Las contraseñas no se almacenan en bruto, así que no hay manera de ver la contraseña del usuario, pero se puede cambiar la contraseña mediante<a href="{% url 'password_change' %}"> este formulario</a></span>
+  </div>
+  <hr>
+  <pre>Información Personal</pre>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.first_name.label }}</label>
+    <input type="text" class="form-control" id="{{ form.first_name.id_for_label }}" name="{{ form.first_name.name }}" placeholder="Nombre" value="{{ form.first_name.value }}" required>
+    {% if form.first_name.errors %}
+      <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.last_name.label }}</label>
+    <input type="text" class="form-control" id="{{ form.last_name.id_for_label }}" name="{{ form.last_name.name }}" placeholder="Apellidos" value="{{ form.last_name.value }}" required>
+    {% if form.last_name.errors %}
+    <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.email.label }}</label>
+    <input type="email" class="form-control" id="{{ form.email.id_for_label }}" name="{{ form.email.name }}" placeholder="Dirección de correo" value="{{ form.email.value }}" required>
+    {% if form.email.errors %}
+      <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.avatar.label }}</label>
+    <input type="file" class="form-control" id="{{ form.avatar.id_for_label }}" name="{{ form.avatar.name }}">
+    {% if form.avatar.errors %}
+      <span class="text-danger d-block mb-3">{{ form.avatar.errors }}</span>
+    {% endif %}
+  </div>
+{% endblock form %}
+
+
+

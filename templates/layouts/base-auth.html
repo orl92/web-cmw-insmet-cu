@@ -1,0 +1,23 @@
+<!doctype html>
+{% load static %}
+<!--
+* Tabler - Premium and Open Source dashboard template with responsive and high quality UI.
+* @version 1.0.0-beta24
+* @link https://tabler.io
+* Copyright 2018-2025 The Tabler Authors
+* Copyright 2018-2025 codecalm.net Paweł Kuna
+* Licensed under MIT (https://github.com/tabler/tabler/blob/master/LICENSE)
+-->
+<html lang="en">
+  <head>
+    <title>{% block title %}{{title}}{% endblock title %} - Centro Meteorológico Provincial Camagüey.</title>
+    {% include 'includes/base/head.html' %}
+  </head>
+  <body class="{% block body %}{% endblock body %}">
+    <script src="{% static '' %}dist/js/demo-theme.min.js?1684106062"></script>
+    {% block content %}{% endblock content %}
+    <!-- Libs JS -->
+    {% include 'includes/base/scripts.html' %}
+    {% block extrajs %}{% endblock extrajs %}
+  </body>
+</html>

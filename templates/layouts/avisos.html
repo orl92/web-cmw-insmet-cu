@@ -1,0 +1,121 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+{% load my_filters %}
+{% block content %}
+<div class="col-md">
+    <div class="row row-cards">
+        <div class="space-y">
+            {% if objects %}
+            {% for warning in objects %}
+                <div class="card">
+                    <div class="row g-0">
+                        <div class="col-auto">
+                            <div class="card-body">
+                                <div class="avatar avatar-lg rounded-circle" style="background-image: url({{ warning.user.profile.get_avatar }})"></div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card-body ps-0">
+                                <div class="row">
+                                    <div class="col">
+                                        <h3 class="mb-0"><a>{{ warning.title }}</a></h3>
+                                        <h4 class="text-secondary"><a>{{ warning.subject }}</a></h4>
+                                    </div>
+                                    <p class="mb-3">{{ warning.description|remove_images_and_special_chars|safe|truncatewords:20 }}</p>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md">
+                                        <div class="mt-3 list-inline list-inline-dots mb-0 text-secondary d-sm-block d-none">
+                                            <div class="list-inline-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+                                                {{ warning.user.get_full_name }}
+                                            </div>
+                                            <div class="list-inline-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-calendar-month"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16 2c.183 0 .355 .05 .502 .135l.033 .02c.28 .177 .465 .49 .465 .845v1h1a3 3 0 0 1 2.995 2.824l.005 .176v12a3 3 0 0 1 -2.824 2.995l-.176 .005h-12a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-12a3 3 0 0 1 2.824 -2.995l.176 -.005h1v-1a1 1 0 0 1 .514 -.874l.093 -.046l.066 -.025l.1 -.029l.107 -.019l.12 -.007q .083 0 .161 .013l.122 .029l.04 .012l.06 .023c.328 .135 .568 .44 .61 .806l.007 .117v1h6v-1a1 1 0 0 1 1 -1m3 7h-14v9.625c0 .705 .386 1.286 .883 1.366l.117 .009h12c.513 0 .936 -.53 .993 -1.215l.007 -.16z" /><path d="M9.015 13a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" /><path d="M13.015 13a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" /><path d="M17.02 13a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" /><path d="M12.02 15a1 1 0 0 1 0 2a1.001 1.001 0 1 1 -.005 -2z" /><path d="M9.015 16a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" /></svg>
+                                                {{ warning.date|date:"j/n/Y" }}
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 list mb-0 text-secondary d-block d-sm-none">
+                                            <div class="list-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>
+                                                {{ warning.user.get_full_name }}</div>    
+                                            <div class="list-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-calendar-month"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16 2c.183 0 .355 .05 .502 .135l.033 .02c.28 .177 .465 .49 .465 .845v1h1a3 3 0 0 1 2.995 2.824l.005 .176v12a3 3 0 0 1 -2.824 2.995l-.176 .005h-12a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-12a3 3 0 0 1 2.824 -2.995l.176 -.005h1v-1a1 1 0 0 1 .514 -.874l.093 -.046l.066 -.025l.1 -.029l.107 -.019l.12 -.007q .083 0 .161 .013l.122 .029l.04 .012l.06 .023c.328 .135 .568 .44 .61 .806l.007 .117v1h6v-1a1 1 0 0 1 1 -1m3 7h-14v9.625c0 .705 .386 1.286 .883 1.366l.117 .009h12c.513 0 .936 -.53 .993 -1.215l.007 -.16z" /><path d="M9.015 13a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" /><path d="M13.015 13a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" /><path d="M17.02 13a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" /><path d="M12.02 15a1 1 0 0 1 0 2a1.001 1.001 0 1 1 -.005 -2z" /><path d="M9.015 16a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" /></svg>
+                                                {{ warning.date|date:"j/n/Y" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <div class="mt-3 badges">
+                                            <a href="#" class="badge badge-outline text-secondary fw-normal badge-pill" data-bs-toggle="modal" data-bs-target="#detailModal" data-id="{{ warning.id }}">
+                                                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-eye"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            {% else %} 
+            <div class="text-center">
+                <img src="{% static 'dist/img/webp/boy-refresh.webp' %}" class="img-fluid w-50" alt="boy-refresh">
+                <p class="empty-title">Nada que mostrar...</p>
+                <p class="empty-subtitle text-secondary">
+                   No hay avisos disponibles por el momento.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal modal-blur fade" id="detailModal" tabindex="-1" style="display: none;" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailModalLabel">Detalle del Aviso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Aquí se cargará el contenido del modal -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contenido de los avisos para el modal -->
+{% for warning in objects %}
+<div id="modal-content-{{ warning.id }}" class="d-none">
+    <h3 class="card-title">Título: {{ warning.title }}</h3>
+    <div class="text-secondary">Asunto: {{ warning.subject }}</div>
+    <div class="mt-3 text-secondary">
+        <div>Fecha: {{ warning.date }}</div> 
+        <div class="mt-3">Autor: {{ warning.user.get_full_name }}</div>
+    </div>
+    <div class="mt-3">
+        <img src="{{ warning.get_image }}" alt="{{ warning.title }}" class="img-fluid">
+    </div>
+    <div class="mt-3">{{ warning.description|safe }}</div>
+    <div class="mt-3 text-secondary">Válido hasta: {{ warning.valid_until }}</div>
+</div>
+{% endfor %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var detailModal = document.getElementById('detailModal');
+        detailModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Botón que activó el modal
+            var warningId = button.getAttribute('data-id'); // Extraer información de los atributos data-*
+    
+            // Obtener el contenido del aviso
+            var modalContent = document.getElementById('modal-content-' + warningId).innerHTML;
+    
+            // Insertar el contenido en el cuerpo del modal
+            detailModal.querySelector('.modal-body').innerHTML = modalContent;
+        });
+    });
+</script>
+    
+{% endblock content %}

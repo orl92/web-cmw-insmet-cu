@@ -1,0 +1,168 @@
+.day-content {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centra los elementos horizontalmente */
+}
+
+.weather-icon {
+    font-size: 2em;
+    margin-bottom: 10px;
+    margin-right: 20px; /* Espacio entre el icono y las temperaturas */
+}
+
+.temp-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Alinea las temperaturas a la izquierda */
+}
+
+.temp-min, .temp-max, .temp {
+    font-size: 1.2em;
+    margin: 5px 0;
+}
+
+.lunarPhase {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.phaseInfo {
+    padding: 0 10px;
+    line-height: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nextPhase {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.moonDetails {
+    padding: 10px;
+    flex: 1;
+}
+
+.lunarPhase img, .nextPhase img {
+    max-width: 100%;
+    height: auto;
+}
+
+.card-body {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+
+#sunrise-sunset-content {
+    display: flex;
+    flex-direction: row; /* Alinea los contenedores horizontalmente */
+    align-items: center;
+    justify-content: space-around;
+    height: 100%;
+    text-align: center;
+}
+
+.sunrise-sunset-item {
+    display: flex;
+    flex-direction: column; /* Alinea el icono y el texto verticalmente */
+    align-items: center;
+    margin: 0 10px; /* Añade un margen horizontal entre los contenedores */
+}
+
+#sunrise-sunset-content img {
+    max-width: 100%;
+    height: auto;
+}
+
+.temp-single {
+    display: flex;
+    flex-direction: row; /* Alinea en fila */
+    align-items: center; /* Centra verticalmente */
+    text-align: center; /* Asegura que el texto esté centrado */
+    font-size: 3em; /* Aumenta el tamaño de la fuente */
+    margin-left: 10px; /* Espacio entre el icono y la temperatura */
+}
+
+.weather-details {
+    margin-top: 20px; /* Separación del contenido de arriba */
+    display: flex;
+    justify-content: center; /* Centra los íconos horizontalmente */
+    gap: 20px; /* Espacio entre los íconos */
+}
+
+.weather-detail {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra los íconos y el texto */
+    text-align: center; /* Alinea el texto al centro */
+}
+
+.weather-detail svg {
+    margin-bottom: 5px; /* Espacio entre el ícono y el texto */
+}
+
+.total-duration {
+    margin-left: 10px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.time-details {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px;
+    flex-shrink: 0;
+}
+
+.time-item {
+    text-align: center;
+    overflow: hidden;
+}
+
+.time-value {
+    display: block;
+    font-size: 18px;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.time-label {
+    display: block;
+    font-size: 14px;
+    color: #6c757d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.uvContentTitle {
+    font-size: 35px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    line-height: 1;
+}
+
+.uvLabelContainer {
+    position: relative;
+    width: 130px;
+    height: 130px;
+}
+

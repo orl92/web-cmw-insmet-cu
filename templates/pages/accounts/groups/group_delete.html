@@ -1,0 +1,19 @@
+{% extends 'layouts/dashboard.html' %}
+{% load static %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+      <div class="empty">
+        <img src="{% static 'dist/img/webp/boy-girl.webp' %}" class="img-fluid w-50" alt="boy-girl">
+        <h3>Esta acción no tiene vuelta atrás</h3>
+        <div class="text-secondary">
+          ¿Estás seguro de que deseas eliminar al grupo {{ object.name }}?
+        </div>
+      </div>
+      <form method="post" class="text-center">{% csrf_token %}
+        <button type="submit" class="btn btn-danger mr-2">Aceptar</button>
+        <a href="{{ url_list }}" class="btn btn-secondary ml-2">Cancelar</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+{% block extrahead %}
+  <link rel="stylesheet" href="{% static '' %}dist/libs/bootstrap-duallistbox/bootstrap-duallistbox.min.css">
+{% endblock extrahead %}
+{% block form %}
+  <div class="mb-3">
+    <label class="form-label required">{{ form.name.label }}</label>
+    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" placeholder="Nombre del Grupo" required>
+    {% if form.name.errors %}
+      <span class="text-danger d-block mb-3">{{ form.name.errors }}</span>
+    {% endif %}
+  </div>
+
+
+  <div class="mb-3">
+    <label class="form-label required">{{ form.permissions.label }}</label>
+    {{ form.permissions }}
+    {% if form.permissions.errors %}
+    <span class="text-danger d-block mb-3">{{ form.permissions.errors }}</span>
+    {% endif %}
+  </div>
+  
+{% endblock form %}
+{% block extrajs %}
+  <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
+  <script src="{% static '' %}dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
+  <script> $(document).ready(function() { $('select[multiple]').bootstrapDualListbox({ nonSelectedListLabel: 'Permisos disponibles', selectedListLabel: 'Permisos seleccionados', preserveSelectionOnMove: 'moved', moveOnSelect: false, nonSelectedFilter: '', filterTextClear: 'Mostrar todos', filterPlaceHolder: 'Filtrar', moveSelectedLabel: 'Mover seleccionados', moveAllLabel: 'Mover todos', removeSelectedLabel: 'Eliminar seleccionados', removeAllLabel: 'Eliminar todos', infoText: 'Mostrando todos {0}', infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}', infoTextEmpty: 'Lista vacía' }); }); </script>
+{% endblock extrajs %}

@@ -1,0 +1,65 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+{% block form %}
+<div class="mb-3">
+  <label class="form-label required">{{ form.title.label }}</label>
+  <input type="text" class="form-control" id="{{ form.title.id_for_label }}" name="{{ form.title.name }}" placeholder="Título" required>
+  {% if form.title.errors %}
+    <span class="text-danger d-block mb-3">{{ form.title.errors }}</span>
+  {% endif %}
+</div>
+<div class="mb-3">
+  <label class="form-label required">{{ form.summary.label }}</label>
+  <input type="text" class="form-control" id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}" placeholder="Resumen" required>
+  {% if form.summary.errors %}
+    <span class="text-danger d-block mb-3">{{ form.summary.errors }}</span>
+  {% endif %}
+</div>
+<div class="mb-3">
+  <label class="form-label required">{{ form.service_type.label }}</label>
+  <select class="form-control" id="{{ form.service_type.id_for_label }}" name="{{ form.service_type.name }}" required onchange="toggleTargetCustomerField()">
+    {% for choice in form.service_type.field.choices %}
+      <option value="{{ choice.0 }}" {% if choice.0 == form.service_type.value %}selected{% endif %}>{{ choice.1 }}</option>
+    {% endfor %}
+  </select>
+  {% if form.service_type.errors %}
+    <span class="text-danger d-block mb-3">{{ form.service_type.errors }}</span>
+  {% endif %}
+</div>
+<div class="mb-3" id="target-customer-field" style="display: none;">
+  <label class="form-label">{{ form.target_customer.label }}</label>
+  <select class="form-control" id="{{ form.target_customer.id_for_label }}" name="{{ form.target_customer.name }}">
+    <option value="">Seleccione un cliente</option>
+    {% for customer in form.target_customer.field.queryset %}
+      <option value="{{ customer.id }}" {% if customer.id == form.target_customer.value %}selected{% endif %}>{{ customer.company_name }}</option>
+    {% endfor %}
+  </select>
+  {% if form.target_customer.errors %}
+    <span class="text-danger d-block mb-3">{{ form.target_customer.errors }}</span>
+  {% endif %}
+</div>
+<div class="mb-3">
+  <label class="form-label required">{{ form.file.label }}</label>
+  <input type="file" class="form-control" id="{{ form.file.id_for_label }}" name="{{ form.file.name }}" accept=".pdf" required>
+  {% if form.file.errors %}
+    <span class="text-danger d-block mb-3">{{ form.file.errors }}</span>
+  {% endif %}
+</div>
+
+<script>
+  function toggleTargetCustomerField() {
+    var serviceType = document.getElementById('{{ form.service_type.id_for_label }}').value;
+    var targetCustomerField = document.getElementById('target-customer-field');
+    if (serviceType === 'commercial') {
+      targetCustomerField.style.display = 'block';
+    } else {
+      targetCustomerField.style.display = 'none';
+    }
+  }
+
+  // Llamar a la función al cargar la página para establecer el estado inicial
+  document.addEventListener('DOMContentLoaded', function() {
+    toggleTargetCustomerField();
+  });
+</script>
+{% endblock form %}

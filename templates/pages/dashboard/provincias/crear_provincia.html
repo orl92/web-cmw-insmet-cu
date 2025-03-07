@@ -1,0 +1,18 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+{% block form %}
+  <div class="mb-3">
+    <label class="form-label required">{{ form.name.label }}</label>
+    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" placeholder="Nombre" autofocus required>
+    {% if form.name.errors %}
+      <span class="text-danger d-block mb-3">{{ form.name.errors }}</span>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.code.label }}</label>
+    <input type="text" class="form-control" id="{{ form.code.id_for_label }}" name="{{ form.code.name }}" placeholder="Código" required>
+    {% if form.code.errors %}
+      <span class="text-danger d-block mb-3">{{ form.code.errors }}</span>
+    {% endif %}
+  </div>
+{% endblock form %}
