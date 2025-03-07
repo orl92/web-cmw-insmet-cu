@@ -72,7 +72,7 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
             # Enviar correo
             subject = f'Nueva Alerta de Ciclón Tropical: {self.object.title}'
             html_message = render_to_string(
-                'pages/dashboard/emails/tropical_cyclone_notification.html',
+                'pages/dashboard/emails/notification.html',
                 {
                     'alert': self.object,
                     'listado_url': listado_url
@@ -159,7 +159,7 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
                 # Renderizar el correo electrónico
                 subject = f'Alerta de Ciclón Tropical Actualizada: {self.object.title}'
                 html_message = render_to_string(
-                    'pages/dashboard/emails/tropical_cyclone_update_notification.html',
+                    'pages/dashboard/emails/notification.html',
                     {'alert': self.object, 'listado_url': listado_url}
                 )
 

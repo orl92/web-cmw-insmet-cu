@@ -60,8 +60,10 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         # Mensaje de éxito
         messages.success(self.request, 'El aviso de alerta temprana ha sido creado con éxito.', extra_tags='success')
 
-        # Construir la URL dinámica para "Ver todas las alertas"
-        listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))  # Revisa que 'alerta_temprana' sea correcto
+        # Construir la URL dinámica"
+        listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))
+        index_url = self.request.build_absolute_uri(reverse('index'))
+        image_url = self.request.build_absolute_uri(self.object.image.url)
 
         # Obtener la lista seleccionada en el formulario
         recipient_list = self.object.email_recipient_list
@@ -71,10 +73,12 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             # Enviar correo
             subject = f'Nueva Alerta Temprana: {self.object.title}'
             html_message = render_to_string(
-                'pages/dashboard/emails/early_warning_notification.html',
+                'pages/dashboard/emails/notification.html',
                 {
                     'alert': self.object,
-                    'listado_url': listado_url  # Pasa la URL al contexto del correo
+                    'listado_url': listado_url,  # Pasa la URL al contexto del correo
+                    'index_url': index_url,     # URL al índice de la página
+                    'image_url': image_url
                 }
             )
             # Limpia las etiquetas HTML de la descripción, si existe
@@ -144,7 +148,7 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
                 # Renderizar el correo electrónico
                 subject = f'Alerta Temprana Actualizada: {self.object.title}'
                 html_message = render_to_string(
-                    'pages/dashboard/emails/early_warning_update_notification.html',
+                    'pages/dashboard/emails/notification.html',
                     {'alert': self.object, 'listado_url': listado_url}
                 )
 
