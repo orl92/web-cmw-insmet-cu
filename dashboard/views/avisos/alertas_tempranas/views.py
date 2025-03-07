@@ -121,6 +121,14 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         has_changes = any(form.cleaned_data[field] != getattr(self.object, field) for field in relevant_fields)
 
         response = super().form_valid(form)
+        
+        # Registro de acción
+        log_action(
+            user=self.request.user,
+            obj=self.object,
+            action_flag=CHANGE,
+            message=f"Se actualizó el aviso alerta temprana del: {self.object.date.strftime('%d-%m-%Y')}."
+        )
 
         if has_changes:
             # Construir la URL dinámica para el listado de alertas
