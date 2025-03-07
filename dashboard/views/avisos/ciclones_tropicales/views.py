@@ -57,12 +57,12 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
             obj=self.object,
             action_flag=ADDITION,
             message=f"Se creó un nuevo aviso de ciclón tropical para el: {self.object.date.strftime('%d-%m-%Y')}."
-        ) 
+        )
         
         messages.success(self.request, 'El aviso de ciclón tropical ha sido creado con éxito.', extra_tags='success')
         
         # Construir la URL dinámica para "Ver todas las alertas"
-        listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))  # Asegúrate de que 'ciclon_tropical' sea el nombre correcto de tu URL
+        listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
 
         # Obtener la lista seleccionada en el formulario
         recipient_list = self.object.email_recipient_list
@@ -75,7 +75,7 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
                 'pages/dashboard/emails/tropical_cyclone_notification.html',
                 {
                     'alert': self.object,
-                    'listado_url': listado_url  # Pasa la URL al contexto del correo
+                    'listado_url': listado_url
                 }
             )
             plain_message = strip_tags(html_message)
@@ -126,11 +126,17 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
         return kwargs
 
     def form_valid(self, form):
-        # Verifica si ciertos campos han cambiado
+        # Almacenar los valores originales del objeto antes de cualquier actualización
+        original_object = self.get_object(queryset=None)
         relevant_fields = ['title', 'description', 'valid_until']
-        has_changes = any(form.cleaned_data[field] != getattr(self.object, field) for field in relevant_fields)
+        
+        # Detectar si hay cambios en los campos relevantes
+        has_changes = any(
+            form.cleaned_data[field] != getattr(original_object, field)
+            for field in relevant_fields
+        )
 
-        response = super().form_valid(form)
+        response = super().form_valid(form)  # Guarda los cambios del formulario
 
         # Registro de acción
         log_action(
@@ -139,23 +145,28 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
             action_flag=CHANGE,
             message=f"Se actualizó el aviso de ciclón tropical del: {self.object.date.strftime('%d-%m-%Y')}."
         )
-        
-        if has_changes:
-            # Construir la URL dinámica para el listado de alertas
-            listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))  # Genera la URL completa
 
-            # Obtener la lista de destinatarios seleccionada
+        # Enviar correo solo si hay cambios
+        if has_changes:
+            listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
             recipient_list = self.object.email_recipient_list
+
             if recipient_list:
                 recipients = recipient_list.recipients.values_list('email', flat=True)
 
-                # Renderizar el correo
+                from django.utils.html import strip_tags
+
+                # Renderizar el correo electrónico
                 subject = f'Alerta de Ciclón Tropical Actualizada: {self.object.title}'
                 html_message = render_to_string(
                     'pages/dashboard/emails/tropical_cyclone_update_notification.html',
-                    {'alert': self.object, 'listado_url': listado_url}  # Pasa la URL al contexto
+                    {'alert': self.object, 'listado_url': listado_url}
                 )
-                plain_message = strip_tags(html_message)
+
+                # Limpia la descripción de etiquetas HTML
+                plain_description = strip_tags(self.object.description)
+
+                plain_message = strip_tags(html_message).replace(self.object.description, plain_description)
 
                 try:
                     email = EmailMessage(
@@ -167,15 +178,16 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
                     email.content_subtype = 'html'
                     email.send()
 
-                    # Mostrar un mensaje de éxito si el correo se envía correctamente
+                    # Mensaje de éxito del envío de correos
                     messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
                 except Exception as e:
-                    # Manejar errores y mostrar un mensaje al usuario
+                    # Manejo de errores en el envío de correos
                     messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
             else:
+                # Notificación si no hay destinatarios seleccionados
                 messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
 
-        # Mensaje de éxito en la actualización
+        # Mensaje de éxito en la actualización del aviso
         messages.success(self.request, 'El aviso de ciclón tropical ha sido actualizado con éxito.', extra_tags='success')
         return response
 
@@ -186,7 +198,7 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
         context['segment'] = 'ciclon-tropical'
         context['url_list'] = reverse_lazy('ciclones_tropicales')
         return context
-    
+
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 

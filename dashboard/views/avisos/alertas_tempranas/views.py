@@ -61,7 +61,7 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         messages.success(self.request, 'El aviso de alerta temprana ha sido creado con éxito.', extra_tags='success')
 
         # Construir la URL dinámica para "Ver todas las alertas"
-        listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))  # Asegúrate de que 'alerta_temprana' sea el nombre correcto de tu URL
+        listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))  # Revisa que 'alerta_temprana' sea correcto
 
         # Obtener la lista seleccionada en el formulario
         recipient_list = self.object.email_recipient_list
@@ -77,6 +77,7 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                     'listado_url': listado_url  # Pasa la URL al contexto del correo
                 }
             )
+            # Limpia las etiquetas HTML de la descripción, si existe
             plain_message = strip_tags(html_message)
 
             try:
@@ -86,7 +87,7 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     to=list(recipients),
                 )
-                email.content_subtype = 'html'
+                email.content_subtype = 'html'  # Asegura que el correo se envíe como HTML
                 email.send()
 
                 # Mensaje de éxito para el envío del correo
@@ -95,6 +96,7 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                 # Manejar errores de envío
                 messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
         else:
+            # Mensaje en caso de que no haya destinatarios
             messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
 
         return response
@@ -138,14 +140,18 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
             recipient_list = self.object.email_recipient_list
             if recipient_list:
                 recipients = recipient_list.recipients.values_list('email', flat=True)
-
-                # Renderizar el correo
+                
+                # Renderizar el correo electrónico
                 subject = f'Alerta Temprana Actualizada: {self.object.title}'
                 html_message = render_to_string(
                     'pages/dashboard/emails/early_warning_update_notification.html',
-                    {'alert': self.object, 'listado_url': listado_url}  # Pasa la URL al contexto
+                    {'alert': self.object, 'listado_url': listado_url}
                 )
-                plain_message = strip_tags(html_message)
+
+                # Limpia la descripción de etiquetas HTML
+                plain_description = strip_tags(self.object.description)
+
+                plain_message = strip_tags(html_message).replace(self.object.description, plain_description)
 
                 try:
                     email = EmailMessage(

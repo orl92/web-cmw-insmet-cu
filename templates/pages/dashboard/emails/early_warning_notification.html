@@ -62,7 +62,7 @@
         </div>
         <div class="content">
             <p><strong>Título:</strong> {{ alert.title }}</p>
-            <p><strong>Descripción:</strong> {{ alert.description }}</p>
+            <p><strong>Descripción:</strong> {{ alert.description|safe }}</p>
             <p><strong>Válido Hasta:</strong> {{ alert.valid_until }}</p>
             <p>
                 <a href="{{ listado_url }}" style="padding: 10px 20px; background-color: #467fcf; color: white; text-decoration: none; border-radius: 5px;">
