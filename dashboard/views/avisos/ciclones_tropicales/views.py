@@ -1,14 +1,18 @@
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from django.contrib import messages
 from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         PermissionRequiredMixin,
                                         UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic import *
 
+from core import settings
 from dashboard.forms.avisos.ciclones_tropicales.forms import \
     TropicalCycloneForm
-from dashboard.models import TropicalCyclone
+from dashboard.models import TropicalCyclone, EmailRecipientList
 
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
@@ -56,6 +60,44 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
         ) 
         
         messages.success(self.request, 'El aviso de ciclón tropical ha sido creado con éxito.', extra_tags='success')
+        
+        # Construir la URL dinámica para "Ver todas las alertas"
+        listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))  # Asegúrate de que 'ciclon_tropical' sea el nombre correcto de tu URL
+
+        # Obtener la lista seleccionada en el formulario
+        recipient_list = self.object.email_recipient_list
+        if recipient_list:
+            recipients = recipient_list.recipients.values_list('email', flat=True)
+
+            # Enviar correo
+            subject = f'Nueva Alerta de Ciclón Tropical: {self.object.title}'
+            html_message = render_to_string(
+                'pages/dashboard/emails/tropical_cyclone_notification.html',
+                {
+                    'alert': self.object,
+                    'listado_url': listado_url  # Pasa la URL al contexto del correo
+                }
+            )
+            plain_message = strip_tags(html_message)
+
+            try:
+                email = EmailMessage(
+                    subject=subject,
+                    body=html_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=list(recipients),
+                )
+                email.content_subtype = 'html'
+                email.send()
+
+                # Mensaje de éxito para el envío del correo
+                messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
+            except Exception as e:
+                # Manejar errores de envío
+                messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
+        else:
+            messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
+        
         return response
 
     def get_context_data(self, **kwargs):
@@ -84,6 +126,10 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
         return kwargs
 
     def form_valid(self, form):
+        # Verifica si ciertos campos han cambiado
+        relevant_fields = ['title', 'description', 'valid_until']
+        has_changes = any(form.cleaned_data[field] != getattr(self.object, field) for field in relevant_fields)
+
         response = super().form_valid(form)
 
         # Registro de acción
@@ -93,8 +139,44 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
             action_flag=CHANGE,
             message=f"Se actualizó el aviso de ciclón tropical del: {self.object.date.strftime('%d-%m-%Y')}."
         )
+        
+        if has_changes:
+            # Construir la URL dinámica para el listado de alertas
+            listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))  # Genera la URL completa
 
-        messages.success(self.request, 'El aviso de ciclón tropical ha sido actualizado con éxito.', extra_tags='warning')
+            # Obtener la lista de destinatarios seleccionada
+            recipient_list = self.object.email_recipient_list
+            if recipient_list:
+                recipients = recipient_list.recipients.values_list('email', flat=True)
+
+                # Renderizar el correo
+                subject = f'Alerta de Ciclón Tropical Actualizada: {self.object.title}'
+                html_message = render_to_string(
+                    'pages/dashboard/emails/tropical_cyclone_update_notification.html',
+                    {'alert': self.object, 'listado_url': listado_url}  # Pasa la URL al contexto
+                )
+                plain_message = strip_tags(html_message)
+
+                try:
+                    email = EmailMessage(
+                        subject=subject,
+                        body=html_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=list(recipients),
+                    )
+                    email.content_subtype = 'html'
+                    email.send()
+
+                    # Mostrar un mensaje de éxito si el correo se envía correctamente
+                    messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
+                except Exception as e:
+                    # Manejar errores y mostrar un mensaje al usuario
+                    messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
+            else:
+                messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
+
+        # Mensaje de éxito en la actualización
+        messages.success(self.request, 'El aviso de ciclón tropical ha sido actualizado con éxito.', extra_tags='success')
         return response
 
     def get_context_data(self, **kwargs):
