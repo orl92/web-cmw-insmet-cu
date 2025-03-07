@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -75,7 +76,8 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
                 'pages/dashboard/emails/notification.html',
                 {
                     'alert': self.object,
-                    'listado_url': listado_url
+                    'listado_url': listado_url,
+                    'current_year': datetime.now().year  # Pasa el año actual
                 }
             )
             plain_message = strip_tags(html_message)
