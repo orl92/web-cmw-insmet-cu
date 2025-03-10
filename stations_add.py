@@ -1,6 +1,8 @@
 from core.wsgi import *
 from dashboard.models import Province, Station
 
+#Crear estaciones automaticamente
+
 province = {
     'name': 'Camagüey',
     'code': '009'
