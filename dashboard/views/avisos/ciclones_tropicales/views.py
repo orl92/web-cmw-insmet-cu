@@ -13,7 +13,7 @@ from django.views.generic import *
 from core import settings
 from dashboard.forms.avisos.ciclones_tropicales.forms import \
     TropicalCycloneForm
-from dashboard.models import TropicalCyclone, EmailRecipientList
+from dashboard.models import TropicalCyclone
 
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
