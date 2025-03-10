@@ -6,7 +6,7 @@
 {% if user.is_superuser %}
   <!-- Estadisticas de Usuarios -->
     <div class="row row-deck row-cards">
-        <div class="col-md-3">
+        <div class="col-sm-6 col-lg-3">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Usuarios Totales</h5>
@@ -14,7 +14,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-sm-6 col-lg-3">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Activos Hoy</h5>
@@ -22,7 +22,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-sm-6 col-lg-3">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Staff</h5>
@@ -30,7 +30,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-sm-6 col-lg-3">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Sesiones Activas</h5>
@@ -38,10 +38,8 @@
                 </div>
             </div>
         </div>
-    </div>
-    <!-- Grupos de Permisos -->
-    <div class="row row-deck row-cards mt-3">
-        <div class="col-md-6">
+        <!-- Grupos de Permisos -->
+        <div class="col-sm-6 col-lg-6">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Grupos de Permisos</h3>
@@ -95,7 +93,7 @@
             </div>
         </div>
         <!-- Últimos Inicios de Sesión -->
-        <div class="col-md-6">
+        <div class="col-sm-6 col-lg-6">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">Últimos Inicios de Sesión (24h)</h3>
@@ -131,98 +129,92 @@
 <!-- Sección: Alertas -->
 <div class="row row-deck row-cards mt-3">
   <h3 class="card-title">Alertas Activas</h3>
-  <div class="col-md-12">
-    <div class="card-body">
-      <div class="row">
-        <!-- Alertas Tempranas -->
-        <div class="col-md-3 mb-3">
-          <div class="card h-100">
-            <div class="card-body d-flex flex-column">
-              <h5><i class="fas fa-bell me-2"></i>Tempranas</h5>
-              <ul class="list-group list-group-flush flex-grow-1">
-                {% for alert in latest_alerts.early_warnings %}
-                  <li class="list-group-item small">
-                    {{ alert.title }}<br>
-                    <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
-                  </li>
-                {% empty %}
-                  <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
-                    No hay alertas tempranas
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
+    <!-- Alertas Tempranas -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+            <h5><i class="fas fa-bell me-2"></i>Tempranas</h5>
+            <ul class="list-group list-group-flush flex-grow-1">
+            {% for alert in latest_alerts.early_warnings %}
+                <li class="list-group-item small">
+                {{ alert.title }}<br>
+                <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
+                </li>
+            {% empty %}
+                <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
+                No hay alertas tempranas
+                </li>
+            {% endfor %}
+            </ul>
         </div>
-        <!-- Ciclones Tropicales -->
-        <div class="col-md-3 mb-3">
-          <div class="card h-100">
-            <div class="card-body d-flex flex-column">
-              <h5><i class="fas fa-hurricane me-2"></i>Ciclones</h5>
-              <ul class="list-group list-group-flush flex-grow-1">
-                {% for alert in latest_alerts.tropical_cyclones %}
-                  <li class="list-group-item small">
-                    {{ alert.title }}<br>
-                    <span class="text-muted">{{ alert.valid_until|date:"d/m H:i" }}</span>
-                  </li>
-                {% empty %}
-                  <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
-                    No hay alertas de ciclones
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
         </div>
-        <!-- Avisos Especiales -->
-        <div class="col-md-3 mb-3">
-          <div class="card h-100">
-            <div class="card-body d-flex flex-column">
-              <h5><i class="fas fa-comment-exclamation me-2"></i>Especiales</h5>
-              <ul class="list-group list-group-flush flex-grow-1">
-                {% for alert in latest_alerts.special_notices %}
-                  <li class="list-group-item small">
-                    {{ alert.subject }}<br>
-                    <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
-                  </li>
-                {% empty %}
-                  <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
-                    No hay avisos especiales
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
-        </div>
-        <!-- Radar -->
-        <div class="col-md-3 mb-3">
-          <div class="card h-100">
-            <div class="card-body d-flex flex-column">
-              <h5><i class="fas fa-comments me-2"></i>Radar</h5>
-              <ul class="list-group list-group-flush flex-grow-1">
-                {% for alert in latest_alerts.radar_warnings %}
-                  <li class="list-group-item small">
-                    {{ alert.subject }}<br>
-                    <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
-                  </li>
-                {% empty %}
-                  <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
-                    No hay avisos de radar
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
+    <!-- Ciclones Tropicales -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+            <h5><i class="fas fa-hurricane me-2"></i>Ciclones</h5>
+            <ul class="list-group list-group-flush flex-grow-1">
+            {% for alert in latest_alerts.tropical_cyclones %}
+                <li class="list-group-item small">
+                {{ alert.title }}<br>
+                <span class="text-muted">{{ alert.valid_until|date:"d/m H:i" }}</span>
+                </li>
+            {% empty %}
+                <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
+                No hay alertas de ciclones
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+        </div>
+    </div>
+    <!-- Avisos Especiales -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+            <h5><i class="fas fa-comment-exclamation me-2"></i>Especiales</h5>
+            <ul class="list-group list-group-flush flex-grow-1">
+            {% for alert in latest_alerts.special_notices %}
+                <li class="list-group-item small">
+                {{ alert.subject }}<br>
+                <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
+                </li>
+            {% empty %}
+                <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
+                No hay avisos especiales
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+        </div>
+    </div>
+    <!-- Radar -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+            <h5><i class="fas fa-comments me-2"></i>Radar</h5>
+            <ul class="list-group list-group-flush flex-grow-1">
+            {% for alert in latest_alerts.radar_warnings %}
+                <li class="list-group-item small">
+                {{ alert.subject }}<br>
+                <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
+                </li>
+            {% empty %}
+                <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
+                No hay avisos de radar
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+        </div>
+    </div>
 </div>
 <!-- Sección: Pronósticos -->
 <div class="row row-deck row-cards mt-3">
   <h3 class="card-title">Ultimo Pronóstico: {{ latest_forecast.date|date:"d/m/Y" }}</h3>
     <!-- Costa Norte -->
-    <div class="col-12 col-md-4">
+    <div class="col-sm-6 col-lg-4">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -302,7 +294,7 @@
         </div>
     </div>
     <!-- Interior -->
-    <div class="col-12 col-md-4">
+    <div class="col-sm-6 col-lg-4">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -373,7 +365,7 @@
         </div>
     </div>
     <!-- Costa Sur -->
-    <div class="col-12 col-md-4">
+    <div class="col-sm-6 col-lg-4">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -453,7 +445,7 @@
         </div>
     </div>
     <!-- Gráfico de Temperaturas -->
-    <div class="col-12 mt-3">
+    <div class="col-sm-6 col-lg-12">
         <div class="card">
             <div class="card-body">
                 {% if has_forecasts %}
@@ -541,4 +533,68 @@
         temperatureChart.render();
     {% endif %}
 </script>
+<script>
+    // @formatter:off
+    document.addEventListener("DOMContentLoaded", function () {
+        window.ApexCharts && (new ApexCharts(document.getElementById('chart-active-users'), {
+            chart: {
+                type: "bar",
+                fontFamily: 'inherit',
+                height: 40.0,
+                sparkline: {
+                    enabled: true
+                },
+                animations: {
+                    enabled: false
+                },
+            },
+            plotOptions: {
+                bar: {
+                    columnWidth: '50%',
+                }
+            },
+            dataLabels: {
+                enabled: false,
+            },
+            fill: {
+                opacity: 1,
+            },
+            series: [{
+                name: "Profits",
+                data: [37, 35, 44, 28, 36, 24, 65, 31, 37, 39, 62, 51, 35, 41, 35, 27, 93, 53, 61, 27, 54, 43, 19, 46, 39, 62, 51, 35, 41, 67]
+            }],
+            tooltip: {
+                theme: 'dark'
+            },
+            grid: {
+                strokeDashArray: 4,
+            },
+            xaxis: {
+                labels: {
+                    padding: 0,
+                },
+                tooltip: {
+                    enabled: false
+                },
+                axisBorder: {
+                    show: false,
+                },
+                type: 'datetime',
+            },
+            yaxis: {
+                labels: {
+                    padding: 4
+                },
+            },
+            labels: [
+                '2020-06-20', '2020-06-21', '2020-06-22', '2020-06-23', '2020-06-24', '2020-06-25', '2020-06-26', '2020-06-27', '2020-06-28', '2020-06-29', '2020-06-30', '2020-07-01', '2020-07-02', '2020-07-03', '2020-07-04', '2020-07-05', '2020-07-06', '2020-07-07', '2020-07-08', '2020-07-09', '2020-07-10', '2020-07-11', '2020-07-12', '2020-07-13', '2020-07-14', '2020-07-15', '2020-07-16', '2020-07-17', '2020-07-18', '2020-07-19'
+            ],
+            colors: [tabler.getColor("primary")],
+            legend: {
+                show: false,
+            },
+        })).render();
+    });
+    // @formatter:on
+  </script>
 {% endblock extrajs %}

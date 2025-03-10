@@ -6,7 +6,10 @@ from dashboard.models import *
 class SpecialNoticeForm(forms.ModelForm):
     class Meta:
         model = SpecialNotice
-        fields = ['title', 'subject', 'valid_until', 'image', 'description']
+        fields = ['title', 'subject', 'valid_until', 'image', 'description', 'email_recipient_list']  # Incluye el campo de lista de correos
+        widgets = {
+            'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),  # Para mostrar un desplegable en el formulario
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
