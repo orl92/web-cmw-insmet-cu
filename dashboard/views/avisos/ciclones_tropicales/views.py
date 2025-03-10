@@ -64,6 +64,8 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
         
         # Construir la URL dinámica para "Ver todas las alertas"
         listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
+        index_url = self.request.build_absolute_uri(reverse('index'))
+        image_url = self.request.build_absolute_uri(self.object.image.url)
 
         # Obtener la lista seleccionada en el formulario
         recipient_list = self.object.email_recipient_list
@@ -77,9 +79,12 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
                 {
                     'alert': self.object,
                     'listado_url': listado_url,
+                    'index_url': index_url,     # URL al índice de la página
+                    'image_url': image_url,
                     'current_year': datetime.now().year  # Pasa el año actual
                 }
             )
+            # Limpia las etiquetas HTML de la descripción, si existe
             plain_message = strip_tags(html_message)
 
             try:
@@ -98,6 +103,7 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
                 # Manejar errores de envío
                 messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
         else:
+            # Mensaje en caso de que no haya destinatarios
             messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
         
         return response
@@ -150,7 +156,9 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
 
         # Enviar correo solo si hay cambios
         if has_changes:
+            # Construir la URL dinámica para el listado de alertas
             listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
+            # Obtener la lista de destinatarios seleccionada
             recipient_list = self.object.email_recipient_list
 
             if recipient_list:

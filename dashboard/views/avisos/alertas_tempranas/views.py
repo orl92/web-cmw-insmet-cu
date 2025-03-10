@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -78,7 +79,8 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                     'alert': self.object,
                     'listado_url': listado_url,  # Pasa la URL al contexto del correo
                     'index_url': index_url,     # URL al índice de la página
-                    'image_url': image_url
+                    'image_url': image_url,
+                    'current_year': datetime.now().year  # Pasa el año actual
                 }
             )
             # Limpia las etiquetas HTML de la descripción, si existe
@@ -104,6 +106,14 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
 
         return response
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Añadir Alerta Temprana'
+        context['parent'] = 'avisos'
+        context['segment'] = 'alerta-temprana'
+        context['url_list'] = reverse_lazy('alertas_tempranas')
+        return context
 
 class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = EarlyWarning
@@ -122,11 +132,17 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         return kwargs
 
     def form_valid(self, form):
-        # Verifica si ciertos campos han cambiado
+       # Almacenar los valores originales del objeto antes de cualquier actualización
+        original_object = self.get_object(queryset=None)
         relevant_fields = ['title', 'description', 'valid_until']
-        has_changes = any(form.cleaned_data[field] != getattr(self.object, field) for field in relevant_fields)
+        
+        # Detectar si hay cambios en los campos relevantes
+        has_changes = any(
+            form.cleaned_data[field] != getattr(original_object, field)
+            for field in relevant_fields
+        )
 
-        response = super().form_valid(form)
+        response = super().form_valid(form)  # Guarda los cambios del formulario
         
         # Registro de acción
         log_action(
@@ -136,14 +152,17 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
             message=f"Se actualizó el aviso alerta temprana del: {self.object.date.strftime('%d-%m-%Y')}."
         )
 
+        # Enviar correo solo si hay cambios
         if has_changes:
             # Construir la URL dinámica para el listado de alertas
             listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))  # Genera la URL completa
-
             # Obtener la lista de destinatarios seleccionada
             recipient_list = self.object.email_recipient_list
+            
             if recipient_list:
                 recipients = recipient_list.recipients.values_list('email', flat=True)
+                
+                from django.utils.html import strip_tags
                 
                 # Renderizar el correo electrónico
                 subject = f'Alerta Temprana Actualizada: {self.object.title}'
