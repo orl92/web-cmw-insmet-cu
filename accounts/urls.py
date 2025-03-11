@@ -5,7 +5,7 @@ from accounts.forms.password.forms import UserPasswordResetForm
 from accounts.views.group.views import (GroupCreateView, GroupDeleteView,
                                         GroupListView, GroupUpdateView)
 from accounts.views.password.views import (AdminPasswordChangeView,
-                                           PasswordChangeView)
+                                           PasswordChangeView, UserPasswordResetView)
 from accounts.views.profile.views import ProfileDetailView, ProfileUpdateView
 from accounts.views.user.views import (UserCreateView, UserDeleteView,
                                        UserListView, UserUpdateView)
@@ -27,7 +27,8 @@ urlpatterns = [
     # Password
     path('user/password_change/', PasswordChangeView.as_view(), name='password_change'),
     path('user/password_change/<uuid:uuid>/', AdminPasswordChangeView.as_view(), name='admin_password_change'),
-    path('password_reset/', auth_views.PasswordResetView.as_view(template_name='pages/accounts/password/password_reset.html', form_class=UserPasswordResetForm), name='password_reset'),
+    # path('password_reset/', auth_views.PasswordResetView.as_view(template_name='pages/accounts/password/password_reset.html', form_class=UserPasswordResetForm), name='password_reset'),
+    path('password_reset/', UserPasswordResetView.as_view(template_name='pages/accounts/password/password_reset.html', form_class=UserPasswordResetForm), name='password_reset'),
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='pages/accounts/password/password_reset_done.html'), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='pages/accounts/password/password_reset_confirm.html'), name='password_reset_confirm'),
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='pages/accounts/password/password_reset_complete.html'), name='password_reset_complete'),
