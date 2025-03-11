@@ -207,7 +207,7 @@ class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
                 messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
         
         # Mensaje de éxito en la actualización del aviso
-        messages.success(self.request, 'El aviso especial ha sido actualizado con éxito.', extra_tags='warning')
+        messages.success(self.request, 'El aviso especial ha sido actualizado con éxito.', extra_tags='success')
         return response
 
     def get_context_data(self, **kwargs):
