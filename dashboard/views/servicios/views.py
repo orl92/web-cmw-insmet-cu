@@ -53,7 +53,7 @@ class ServiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó un nuevo servicio: {self.object.name}."
+            message=f"Se creó un nuevo servicio: {self.object.date.strftime('%d-%m-%Y')}."
         )
         
         messages.success(self.request, 'El servicio ha sido creado con éxito.', extra_tags='success')
@@ -92,7 +92,7 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó el servicio: {self.object.name}."
+            message=f"Se actualizó el servicio:{self.object.date.strftime('%d-%m-%Y')}."
         )
         
         messages.success(self.request, 'El servicio ha sido actualizado con éxito.', extra_tags='warning')
@@ -128,7 +128,7 @@ class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
             user=self.request.user,
             obj=service,
             action_flag=DELETION,
-            message=f"Se eliminó el servicio: {service.name}."
+            message=f"Se eliminó el servicio: {service.date.strftime('%d-%m-%Y')}."
         )
         
         try:
