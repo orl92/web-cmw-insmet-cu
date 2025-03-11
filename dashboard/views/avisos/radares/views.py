@@ -62,7 +62,7 @@ class RadarWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         messages.success(self.request, 'El aviso de radar ha sido creado con éxito.', extra_tags='success')
         
         # Construir la URL dinámica para "Ver todas las alertas"
-        listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
+        listado_url = self.request.build_absolute_uri(reverse('radar'))
         index_url = self.request.build_absolute_uri(reverse('index'))
         image_url = self.request.build_absolute_uri(self.object.image.url)
         
@@ -72,7 +72,7 @@ class RadarWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             recipients = recipient_list.recipients.values_list('email', flat=True)
 
             # Enviar correo
-            subject = f'Nueva Alerta de Radar: {self.object.title}'
+            subject = f'Nuevo Aviso de Radar: {self.object.title}'
             html_message = render_to_string(
                 'pages/dashboard/emails/notification.html',
                 {
@@ -156,7 +156,10 @@ class RadarWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         # Enviar correo solo si hay cambios
         if has_changes:
             # Construir la URL dinámica para el listado de alertas
-            listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
+            listado_url = self.request.build_absolute_uri(reverse('radar'))
+            index_url = self.request.build_absolute_uri(reverse('index'))
+            image_url = self.request.build_absolute_uri(self.object.image.url)
+            
             # Obtener la lista de destinatarios seleccionada
             recipient_list = self.object.email_recipient_list
 
@@ -166,10 +169,16 @@ class RadarWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
                 from django.utils.html import strip_tags
 
                 # Renderizar el correo electrónico
-                subject = f'Alerta de Ciclón Tropical Actualizada: {self.object.title}'
+                subject = f'Aviso de Radar Actualizado: {self.object.title}'
                 html_message = render_to_string(
                     'pages/dashboard/emails/notification.html',
-                    {'alert': self.object, 'listado_url': listado_url}
+                    {
+                        'alert': self.object, 
+                        'listado_url': listado_url,
+                        'index_url': index_url,     # URL al índice de la página
+                        'image_url': image_url,
+                        'current_year': datetime.now().year  # Pasa el año actual
+                     }
                 )
 
                 # Limpia la descripción de etiquetas HTML

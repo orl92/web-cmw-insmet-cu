@@ -158,6 +158,9 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
         if has_changes:
             # Construir la URL dinámica para el listado de alertas
             listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
+            index_url = self.request.build_absolute_uri(reverse('index'))
+            image_url = self.request.build_absolute_uri(self.object.image.url)
+            
             # Obtener la lista de destinatarios seleccionada
             recipient_list = self.object.email_recipient_list
 
@@ -170,7 +173,13 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
                 subject = f'Alerta de Ciclón Tropical Actualizada: {self.object.title}'
                 html_message = render_to_string(
                     'pages/dashboard/emails/notification.html',
-                    {'alert': self.object, 'listado_url': listado_url}
+                    {
+                        'alert': self.object, 
+                        'listado_url': listado_url,
+                        'index_url': index_url,     # URL al índice de la página
+                        'image_url': image_url,
+                        'current_year': datetime.now().year  # Pasa el año actual
+                        }
                 )
 
                 # Limpia la descripción de etiquetas HTML

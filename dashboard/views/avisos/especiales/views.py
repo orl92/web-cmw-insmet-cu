@@ -63,7 +63,7 @@ class SpecialNoticeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
         messages.success(self.request, 'El aviso especial ha sido creado con éxito.', extra_tags='success')
         
         # Construir la URL dinámica para "Ver todas las alertas"
-        listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
+        listado_url = self.request.build_absolute_uri(reverse('especial'))
         index_url = self.request.build_absolute_uri(reverse('index'))
         image_url = self.request.build_absolute_uri(self.object.image.url)
 
@@ -157,7 +157,10 @@ class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
         # Enviar correo solo si hay cambios
         if has_changes:
             # Construir la URL dinámica para el listado de alertas
-            listado_url = self.request.build_absolute_uri(reverse('ciclon_tropical'))
+            listado_url = self.request.build_absolute_uri(reverse('especial'))
+            index_url = self.request.build_absolute_uri(reverse('index'))
+            image_url = self.request.build_absolute_uri(self.object.image.url)
+            
             # Obtener la lista de destinatarios seleccionada
             recipient_list = self.object.email_recipient_list
 
@@ -167,10 +170,16 @@ class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
                 from django.utils.html import strip_tags
 
                 # Renderizar el correo electrónico
-                subject = f'Alerta de Ciclón Tropical Actualizada: {self.object.title}'
+                subject = f'Alerta de Aviso Especial Actualizada: {self.object.title}'
                 html_message = render_to_string(
                     'pages/dashboard/emails/notification.html',
-                    {'alert': self.object, 'listado_url': listado_url}
+                    {
+                        'alert': self.object,
+                        'listado_url': listado_url,
+                        'index_url': index_url,     # URL al índice de la página
+                        'image_url': image_url,
+                        'current_year': datetime.now().year  # Pasa el año actual
+                    }
                 )
 
                 # Limpia la descripción de etiquetas HTML
