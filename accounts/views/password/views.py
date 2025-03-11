@@ -2,9 +2,10 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         PermissionRequiredMixin)
+from django.contrib.auth.views import PasswordResetView
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic.edit import FormView
 
 from accounts.forms.password.forms import (AdminPasswordChangeForm,
@@ -12,6 +13,7 @@ from accounts.forms.password.forms import (AdminPasswordChangeForm,
 
 from django.contrib.admin.models import CHANGE
 from common.utils import log_action
+
 
 # Create your views here.
 
@@ -82,3 +84,12 @@ class AdminPasswordChangeView(LoginRequiredMixin, PermissionRequiredMixin, FormV
         context['segment'] = 'password_change'
         context['url_list'] = self.success_url
         return context
+
+class UserPasswordResetView(PasswordResetView):
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request  # Pasar la solicitud al formulario
+        return kwargs
+
+
+
