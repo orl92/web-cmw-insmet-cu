@@ -1,7 +1,5 @@
 from django import forms
-
-from dashboard.models import *
-
+from dashboard.models import SpecialNotice 
 
 class SpecialNoticeForm(forms.ModelForm):
     class Meta:
