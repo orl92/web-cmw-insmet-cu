@@ -174,8 +174,10 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    X_FRAME_OPTIONS = 'DENY' # Clickjacking protection
-     
+
+# Configuración de X_FRAME_OPTIONS para todos los entornos
+X_FRAME_OPTIONS = 'SAMEORIGIN'  # Permite iframes del mismo origen en producción y desarrollo  
+ 
 # Login and Logout
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/login/'
