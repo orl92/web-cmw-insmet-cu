@@ -1,0 +1,55 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+
+{% block form %}
+  <!-- Campo para el Nombre de la Lista -->
+  <div class="mb-3">
+    <label class="form-label required">{{ form.name.label }}</label>
+    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" value="{{ form.name.value }}" placeholder="Nombre de la Lista" required>
+    {% if form.name.errors %}
+      <span class="text-danger d-block mb-3">{{ form.name.errors }}</span>
+    {% endif %}
+  </div>
+
+  <!-- Campo para la Descripción -->
+  <div class="mb-3">
+    <label class="form-label">{{ form.description.label }}</label>
+    <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.name }}" placeholder="Descripción (opcional)" rows="3">{{ form.description.value }}</textarea>
+    {% if form.description.errors %}
+      <span class="text-danger d-block mb-3">{{ form.description.errors }}</span>
+    {% endif %}
+  </div>
+
+  <!-- Sección para Destinatarios -->
+  <fieldset>
+    <legend>Destinatarios</legend>
+    {{ formset.management_form }}
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Correo Electrónico</th>
+          <th>Eliminar</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for form in formset %}
+        <tr>
+          <td>
+            <input type="email" class="form-control" id="{{ form.email.id_for_label }}" name="{{ form.email.name }}" value="{{ form.email.value }}" placeholder="Correo Electrónico">
+            {% if form.email.errors %}
+              <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if form.DELETE %}
+              <input type="checkbox" id="{{ form.DELETE.id_for_label }}" name="{{ form.DELETE.name }}">
+              <label for="{{ form.DELETE.id_for_label }}">Eliminar</label>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="button" id="add-recipient" class="btn btn-secondary btn-sm">Añadir Destinatario</button>
+  </fieldset>
+{% endblock form %}

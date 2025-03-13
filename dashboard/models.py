@@ -414,13 +414,26 @@ class WeatherNote(models.Model):
         )
 
 class EmailRecipientList(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=100, unique=True, verbose_name="Nombre de la Lista")
     description = models.TextField(blank=True, verbose_name="Descripción")
 
     def __str__(self):
         return self.name
+    
+    class Meta:
+        verbose_name = 'Lista de Correo'
+        verbose_name_plural = "Lista de Correos"
+        default_permissions = ()
+        permissions = (
+            ('view_email_recipient_list', 'Ver'),
+            ('add_email_recipient_list', 'Añadir'),
+            ('change_email_recipient_list', 'Editar'),
+            ('delete_email_recipient_list', 'Eliminar'),
+        )
 
 class EmailRecipient(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(unique=True, verbose_name="Correo Electrónico")
     recipient_list = models.ForeignKey(
         EmailRecipientList, on_delete=models.CASCADE, related_name="recipients", verbose_name="Lista de Correo"
@@ -428,3 +441,14 @@ class EmailRecipient(models.Model):
 
     def __str__(self):
         return self.email
+    
+    class Meta:
+        verbose_name = 'Destinatario de Correo'
+        verbose_name_plural = "Destinatarios de Correo"
+        default_permissions = ()
+        permissions = (
+            ('view_email_recipient', 'Ver'),
+            ('add_email_recipient', 'Añadir'),
+            ('change_email_recipient', 'Editar'),
+            ('delete_email_recipient', 'Eliminar'),
+        )

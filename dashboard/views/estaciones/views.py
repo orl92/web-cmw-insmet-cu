@@ -95,7 +95,9 @@ class StationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
         return context
     
     def test_func(self):
-        return self.request.user.is_superuser or self.get_object().user == self.request.user
+        # Verifica si el usuario es superusuario o si es el creador de la estación
+        station = self.get_object()
+        return self.request.user.is_superuser or station.user == self.request.user
 
 class StationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Station
@@ -124,33 +126,6 @@ class StationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
             messages.success(request, 'La estación ha sido eliminada con éxito.', extra_tags='danger')
         except Exception as e:
             messages.error(request, f'Error al eliminar la estación: {str(e)}', extra_tags='danger')
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Estación'
-        context['parent'] = ''
-        context['segment'] = 'estacion'
-        context['url_list'] = reverse_lazy('estaciones')
-        return context
-
-    model = Station
-    template_name = 'pages/dashboard/estaciones/eliminar_estacion.html'
-    permission_required = 'dashboard.delete_station'
-    success_url = reverse_lazy('estaciones')
-    url_redirect = success_url
-
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(Station, uuid=uuid)
-
-    def post(self, request, *args, **kwargs):
-        station = self.get_object()
-        try:
-            station.delete()
-            messages.success(request, 'La estación ha sido eliminada con éxito.', extra_tags='danger')
-        except Exception as e:
-            messages.error(request, str(e))
         return redirect(self.success_url)
 
     def get_context_data(self, **kwargs):

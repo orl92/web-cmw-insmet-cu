@@ -49,6 +49,10 @@ from dashboard.views.tiempo.manana.views import (WeatherTomorrowCreateView,
                                                  WeatherTomorrowDeleteView,
                                                  WeatherTomorrowListView,
                                                  WeatherTomorrowUpdateView)
+from dashboard.views.email_recipient.views import (EmailRecipientListCreateView, 
+                                                   EmailRecipientListDeleteView, 
+                                                   EmailRecipientListListView, 
+                                                   EmailRecipientListUpdateView)
 
 urlpatterns = [
     # Dashboard
@@ -120,4 +124,13 @@ urlpatterns = [
     path('crear/nota/meteorologica/', WeatherNoteCreateView.as_view(), name="crear_nota_meteorologica"),
     path('actualizar/nota/meteorologica/<uuid:uuid>/', WeatherNoteUpdateView.as_view(), name='actualizar_nota_meteorologica'),
     path('eliminar/nota/meteorologica/<uuid:uuid>/', WeatherNoteDeleteView.as_view(), name='eliminar_nota_meteorologica'),
+    # Listado de Correos
+    path('listado/correos/', EmailRecipientListListView.as_view(), name='listado_correos'),
+    path('crear/listado/correo/', EmailRecipientListCreateView.as_view(), name='crear_listado_correo'),
+    path('actualizar/listado/correo/<uuid:uuid>/', EmailRecipientListUpdateView.as_view(), name='actualizar_listado_correo'),
+    path('eliminar/listado/correo/<uuid:uuid>/', EmailRecipientListDeleteView.as_view(), name='eliminar_listado_correo'),
+    
 ]
+
+
+
