@@ -13,15 +13,18 @@ from django.contrib import messages
 # Vista de Inicio de Sesión
 class LoginFormView(SuccessMessageMixin, LoginView):
     template_name = 'pages/login/sign-in.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Iniciar sesión'
         return context
 
     def get_success_url(self):
-        # Redirige al usuario a una página personalizada después del inicio de sesión
-        return reverse_lazy('dashboard')
+        # Redirige al dashboard si el usuario es staff, de lo contrario al index
+        if self.request.user.is_staff:
+            return reverse_lazy('dashboard')
+        else:
+            return reverse_lazy('index')
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -35,7 +38,6 @@ class LoginFormView(SuccessMessageMixin, LoginView):
         # Mostrar un mensaje de retroalimentación al usuario
         messages.success(self.request, 'Has iniciado sesión correctamente.', extra_tags='success')
         return response
-
 
 # Vista de Cierre de Sesión con Redirección
 class LogoutRedirectView(RedirectView):
