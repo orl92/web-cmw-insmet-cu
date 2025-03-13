@@ -20,7 +20,7 @@ urlpatterns = [
     path('', IndexView.as_view(), name="index"),
     # Tiempo
     path('tiempo/hoy/', WeatherTodayDetailView.as_view(), name="tiempo_h"),
-    path('tiempo/mañana/', WeatherTomorrowDetailView.as_view(), name="tiempo_m"),
+    path('tiempo/manana/', WeatherTomorrowDetailView.as_view(), name="tiempo_m"),
     # Comentario
     path('comentario/tiempo/', WeatherCommentaryDetailView.as_view(), name="comentario_tiempo"),
     path('nota/meteorologica/', WeatherNoteDetailView.as_view(), name="nota_meteorologica"),

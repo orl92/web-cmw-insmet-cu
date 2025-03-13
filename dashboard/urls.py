@@ -45,7 +45,7 @@ from dashboard.views.tiempo.hoy.views import (WeatherTodayCreateView,
                                               WeatherTodayDeleteView,
                                               WeatherTodayListView,
                                               WeatherTodayUpdateView)
-from dashboard.views.tiempo.mañana.views import (WeatherTomorrowCreateView,
+from dashboard.views.tiempo.manana.views import (WeatherTomorrowCreateView,
                                                  WeatherTomorrowDeleteView,
                                                  WeatherTomorrowListView,
                                                  WeatherTomorrowUpdateView)
@@ -106,10 +106,10 @@ urlpatterns = [
     path('actualizar/tiempo/hoy/<uuid:uuid>/', WeatherTodayUpdateView.as_view(), name='actualizar_tiempo_h'),
     path('eliminar/tiempo/hoy/<uuid:uuid>/', WeatherTodayDeleteView.as_view(), name='eliminar_tiempo_h'),
     # Tiempo Mañana
-    path('tiempo/mañana/', WeatherTomorrowListView.as_view(), name='listado_tiempo_m'), 
-    path('crear/tiempo/mañana/', WeatherTomorrowCreateView.as_view(), name="crear_tiempo_m"),
-    path('actualizar/tiempo/mañana/<uuid:uuid>/', WeatherTomorrowUpdateView.as_view(), name='actualizar_tiempo_m'),
-    path('eliminar/tiempo/mañana/<uuid:uuid>/', WeatherTomorrowDeleteView.as_view(), name='eliminar_tiempo_m'),
+    path('tiempo/manana/', WeatherTomorrowListView.as_view(), name='listado_tiempo_m'),
+    path('crear/tiempo/manana/', WeatherTomorrowCreateView.as_view(), name="crear_tiempo_m"),
+    path('actualizar/tiempo/manana/<uuid:uuid>/', WeatherTomorrowUpdateView.as_view(), name='actualizar_tiempo_m'),
+    path('eliminar/tiempo/manana/<uuid:uuid>/', WeatherTomorrowDeleteView.as_view(), name='eliminar_tiempo_m'),
     # Comentario Tiempo
     path('comentario/tiempo/', WeatherCommentaryListView.as_view(), name='listado_comentarios_tiempo'), 
     path('crear/comentario/tiempo/', WeatherCommentaryCreateView.as_view(), name="crear_comentario_tiempo"),
