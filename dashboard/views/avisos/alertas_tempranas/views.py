@@ -12,7 +12,7 @@ from django.views.generic import *
 
 from core import settings
 from dashboard.forms.avisos.alertas_tempranas.forms import EarlyWarningForm
-from dashboard.models import EarlyWarning, EmailRecipientList
+from dashboard.models import EarlyWarning
 
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
