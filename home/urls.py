@@ -13,7 +13,7 @@ from home.views.satelites.views import ProxyImageView, SateliteView
 from home.views.servicios.comerciales.views import CommercialServicesListView
 from home.views.servicios.publicos.views import PublicServicesListView
 from home.views.tiempo.hoy.views import WeatherTodayDetailView
-from home.views.tiempo.mañana.views import WeatherTomorrowDetailView
+from home.views.tiempo.manana.views import WeatherTomorrowDetailView
 
 urlpatterns = [
     # Inicio
