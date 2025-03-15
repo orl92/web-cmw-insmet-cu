@@ -5,7 +5,7 @@
   <!-- Campo para el Nombre de la Lista -->
   <div class="mb-3">
     <label class="form-label required">{{ form.name.label }}</label>
-    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" value="{{ form.name.value }}" placeholder="Nombre de la Lista" required>
+    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" placeholder="Nombre de la Lista" value="{{ form.name.value }}" required>
     {% if form.name.errors %}
       <span class="text-danger d-block mb-3">{{ form.name.errors }}</span>
     {% endif %}
@@ -31,25 +31,77 @@
           <th>Eliminar</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="recipient-table-body">
         {% for form in formset %}
         <tr>
           <td>
-            <input type="email" class="form-control" id="{{ form.email.id_for_label }}" name="{{ form.email.name }}" value="{{ form.email.value }}" placeholder="Correo Electrónico">
+            <input type="email" class="form-control" name="{{ form.email.name }}" placeholder="Correo Electrónico" value="{{ form.email.value }}" required>
             {% if form.email.errors %}
               <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
             {% endif %}
           </td>
           <td>
-            {% if form.DELETE %}
-              <input type="checkbox" id="{{ form.DELETE.id_for_label }}" name="{{ form.DELETE.name }}">
-              <label for="{{ form.DELETE.id_for_label }}">Eliminar</label>
-            {% endif %}
+            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4 7l16 0" />
+                <path d="M10 11l0 6" />
+                <path d="M14 11l0 6" />
+                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+              </svg>
+            </button>
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-    <button type="button" id="add-recipient" class="btn btn-secondary btn-sm">Añadir Destinatario</button>
+    <button type="button" id="add-recipient" class="btn btn-pill btn-outline-success btn-sm">Añadir Destinatario</button>
   </fieldset>
+
 {% endblock form %}
+
+{% block extrajs %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    // Añadir destinatarios
+    $('#add-recipient').click(function () {
+      const formsetTableBody = $('table tbody');
+      const totalFormsInput = $('#id_form-TOTAL_FORMS');
+      const formIndex = parseInt(totalFormsInput.val());
+
+      const newRow = `
+        <tr>
+          <td>
+            <input type="email" class="form-control" name="form-${formIndex}-email" placeholder="Correo Electrónico" required>
+          </td>
+          <td>
+            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4 7l16 0" />
+                <path d="M10 11l0 6" />
+                <path d="M14 11l0 6" />
+                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      `;
+
+      formsetTableBody.append(newRow);
+      totalFormsInput.val(formIndex + 1);
+    });
+
+    // Eliminar destinatarios
+    $('table').on('click', '.delete-recipient', function () {
+      $(this).closest('tr').remove();
+      const totalFormsInput = $('#id_form-TOTAL_FORMS');
+      const remainingRows = $('table tbody tr').length;
+      totalFormsInput.val(remainingRows);
+    });
+  });
+</script>
+{% endblock extrajs %}

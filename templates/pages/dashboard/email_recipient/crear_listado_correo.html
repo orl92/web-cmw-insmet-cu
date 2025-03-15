@@ -41,14 +41,77 @@
             {% endif %}
           </td>
           <td>
-            {% if form.DELETE %}
-              <input type="checkbox" name="{{ form.DELETE.name }}" id="{{ form.DELETE.id_for_label }}">
-            {% endif %}
+            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4 7l16 0" />
+                <path d="M10 11l0 6" />
+                <path d="M14 11l0 6" />
+                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+              </svg>
+            </button>
           </td>
         </tr>
         {% endfor %}
+        
       </tbody>
     </table>
-    <button type="button" id="add-recipient" class="btn btn-secondary btn-sm">Añadir Destinatario</button>
+    <button type="button" id="add-recipient" class="btn btn-pill btn-outline-success btn-sm">Añadir Destinatario</button>
   </fieldset>
 {% endblock form %}
+
+
+{% block extrajs %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    // Evento para añadir destinatarios
+    $('#add-recipient').click(function () {
+      const formsetTableBody = $('table tbody'); // Selecciona el cuerpo de la tabla
+      const totalFormsInput = $('#id_form-TOTAL_FORMS'); // Campo que lleva la cuenta total de formularios
+
+      // Obtiene el número actual de formularios
+      const formIndex = parseInt(totalFormsInput.val());
+
+      // Crea una nueva fila con un botón para eliminar
+      const newRow = `
+        <tr>
+          <td>
+            <input type="email" class="form-control" name="form-${formIndex}-email" placeholder="Correo Electrónico" required>
+          </td>
+          <td>
+            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4 7l16 0" />
+                <path d="M10 11l0 6" />
+                <path d="M14 11l0 6" />
+                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      `;
+
+      // Añade la nueva fila al cuerpo de la tabla
+      formsetTableBody.append(newRow);
+
+      // Actualiza el campo que lleva la cuenta total de formularios
+      totalFormsInput.val(formIndex + 1);
+    });
+
+    // Evento para eliminar destinatarios
+    $('table').on('click', '.delete-recipient', function () {
+      // Elimina la fila donde se hizo clic
+      $(this).closest('tr').remove();
+
+      // Opcional: Actualiza el campo que lleva la cuenta total de formularios
+      const totalFormsInput = $('#id_form-TOTAL_FORMS');
+      const remainingRows = $('table tbody tr').length;
+      totalFormsInput.val(remainingRows); // Ajusta el conteo al número actual de filas restantes
+    });
+  });
+</script>
+{% endblock extrajs %}

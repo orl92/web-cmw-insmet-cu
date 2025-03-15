@@ -1,11 +1,14 @@
 from django.urls import path
 
-from dashboard.views.avisos.alertas_tempranas.views import (
-    EarlyWarningCreateView, EarlyWarningDeleteView, EarlyWarningListView,
-    EarlyWarningUpdateView)
-from dashboard.views.avisos.ciclones_tropicales.views import (
-    TropicalCycloneCreateView, TropicalCycloneDeleteView,
-    TropicalCycloneListView, TropicalCycloneUpdateView)
+from dashboard.views.dashboard.views import DashboardView, ExcelJSONView
+from dashboard.views.avisos.alertas_tempranas.views import (EarlyWarningCreateView, 
+                                                            EarlyWarningDeleteView, 
+                                                            EarlyWarningListView,
+                                                            EarlyWarningUpdateView)
+from dashboard.views.avisos.ciclones_tropicales.views import (TropicalCycloneCreateView, 
+                                                              TropicalCycloneDeleteView,
+                                                              TropicalCycloneListView, 
+                                                              TropicalCycloneUpdateView)
 from dashboard.views.avisos.especiales.views import (SpecialNoticeCreateView,
                                                      SpecialNoticeDeleteView,
                                                      SpecialNoticeListView,
@@ -18,13 +21,14 @@ from dashboard.views.clientes.views import (CustomerCreateView,
                                             CustomerDeleteView,
                                             CustomerListView,
                                             CustomerUpdateView)
-from dashboard.views.comentarios.nota_meteorologica.views import (
-    WeatherNoteCreateView, WeatherNoteDeleteView, WeatherNoteListView,
-    WeatherNoteUpdateView)
-from dashboard.views.comentarios.tiempo.views import (
-    WeatherCommentaryCreateView, WeatherCommentaryDeleteView,
-    WeatherCommentaryListView, WeatherCommentaryUpdateView)
-from dashboard.views.dashboard.views import DashboardView, ExcelJSONView
+from dashboard.views.comentarios.nota_meteorologica.views import (WeatherNoteCreateView, 
+                                                                  WeatherNoteDeleteView, 
+                                                                  WeatherNoteListView,
+                                                                  WeatherNoteUpdateView)
+from dashboard.views.comentarios.tiempo.views import (WeatherCommentaryCreateView, 
+                                                      WeatherCommentaryDeleteView,
+                                                      WeatherCommentaryListView, 
+                                                      WeatherCommentaryUpdateView)
 from dashboard.views.estaciones.views import (StationCreateView,
                                               StationDeleteView,
                                               StationListView,

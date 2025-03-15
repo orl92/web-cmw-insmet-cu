@@ -109,7 +109,9 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
         if 'formset' not in kwargs:
             context['formset'] = EmailRecipientFormSet(instance=self.object)
         context['title'] = 'Actualizar Listado de Correos'
-        context['segment'] = 'listado_correos'
+        context['parent'] = ''
+        context['segment'] = 'email'
+        context['url_list'] = reverse_lazy('listado_correos')
         return context
     
     def test_func(self):
