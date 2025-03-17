@@ -29,7 +29,7 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
         context['objects'] = User.objects.all()
         
         # Obtener los últimos 10 registros de LogEntry para el usuario actual
-        log_entries = LogEntry.objects.filter(user=self.request.user).order_by('-action_time')[:10]
+        log_entries = LogEntry.objects.filter(user=self.request.user).order_by('-action_time')[:5]
         context['log_entries'] = log_entries
         return context
 
