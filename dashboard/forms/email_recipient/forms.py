@@ -40,6 +40,6 @@ EmailRecipientFormSet = inlineformset_factory(
     EmailRecipientList,
     EmailRecipient,
     form=EmailRecipientForm,
-    extra=1,                  # Un formulario adicional vacío
+    extra=0,                  # formulario adicional vacío (0 = a ninguno)
     can_delete=True           # Permitir eliminación
 )
