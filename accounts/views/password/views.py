@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import (LoginRequiredMixin,
 from django.contrib.auth.views import PasswordResetView
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
 
 from accounts.forms.password.forms import (AdminPasswordChangeForm,
