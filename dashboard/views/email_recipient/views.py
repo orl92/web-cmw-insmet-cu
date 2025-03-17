@@ -33,16 +33,15 @@ class EmailRecipientListCreateView(LoginRequiredMixin, PermissionRequiredMixin, 
     form_class = EmailRecipientListForm
     template_name = 'pages/dashboard/email_recipient/crear_listado_correo.html'
     permission_required = 'dashboard.add_email_recipient_list'
-    success_url = reverse_lazy('listado_correos')  # Redirige al listado de correos
+    success_url = reverse_lazy('listado_correos')
 
     def form_valid(self, form):
-        # Guardar la lista principal
+        print("Datos enviados (POST):", self.request.POST)  # Verifica los datos enviados
         response = super().form_valid(form)
-        formset = EmailRecipientFormSet(self.request.POST, instance=self.object)
+        formset = EmailRecipientFormSet(self.request.POST, instance=self.object, prefix='recipients')
 
         if formset.is_valid():
             formset.save()
-
             # Registrar la acción
             log_action(
                 user=self.request.user,
@@ -50,19 +49,21 @@ class EmailRecipientListCreateView(LoginRequiredMixin, PermissionRequiredMixin, 
                 action_flag=ADDITION,
                 message=f"Se creó un nuevo listado de correos: {self.object.name}."
             )
-
             messages.success(self.request, 'La lista de correos y los destinatarios se han creado con éxito.')
         else:
-            # Si el formset es inválido, renderizamos de nuevo con errores
+            print("Errores del formset:", formset.errors)  # Inspecciona los errores
             messages.error(self.request, 'Hubo un error con los destinatarios. Verifica los campos.')
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
+        
+        if not formset.is_valid():
+            print("Errores:", formset.errors)
 
         return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if 'formset' not in kwargs:
-            context['formset'] = EmailRecipientFormSet()
+        context['formset'] = kwargs.get('formset', EmailRecipientFormSet())
+        context['formset'] = kwargs.get('formset', EmailRecipientFormSet(instance=self.object, prefix='recipients'))
         context['title'] = 'Crear Listado de Correos'
         context['parent'] = ''
         context['segment'] = 'email'
@@ -81,9 +82,9 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
         return get_object_or_404(EmailRecipientList, uuid=uuid)
 
     def form_valid(self, form):
-        # Guarda cambios en la lista principal
+        # Guardar cambios en la lista principal
         response = super().form_valid(form)
-        formset = EmailRecipientFormSet(self.request.POST, instance=self.object)
+        formset = EmailRecipientFormSet(self.request.POST, instance=self.object, prefix='recipients')
 
         if formset.is_valid():
             formset.save()
@@ -99,6 +100,7 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
             messages.success(self.request, 'La lista de correos y los destinatarios han sido actualizados con éxito.')
         else:
             # Renderizar nuevamente si hay errores
+            print(formset.errors)  # Depuración
             messages.error(self.request, 'Hubo un error con los destinatarios. Verifica los campos.')
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
@@ -106,14 +108,20 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if 'formset' not in kwargs:
-            context['formset'] = EmailRecipientFormSet(instance=self.object)
+        formset = kwargs.get('formset', EmailRecipientFormSet(instance=self.object, prefix='recipients'))
+
+        # Limpia los campos `None` en los formularios existentes y nuevos
+        for form in formset:
+            if not form.instance.email:  # Si el email es None o vacío
+                form.initial['email'] = ''  # Asigna un valor inicial vacío
+
+        context['formset'] = formset
         context['title'] = 'Actualizar Listado de Correos'
         context['parent'] = ''
         context['segment'] = 'email'
         context['url_list'] = reverse_lazy('listado_correos')
         return context
-    
+
     def test_func(self):
         # Verifica si el usuario es superusuario o si es el creador del listado
         listado = self.get_object()

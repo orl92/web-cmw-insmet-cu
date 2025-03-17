@@ -35,7 +35,7 @@
         {% for form in formset %}
         <tr>
           <td>
-            <input type="email" class="form-control" name="{{ form.email.name }}" placeholder="Correo Electrónico">
+            <input type="email" name="recipients-0-email" class="form-control" placeholder="Correo Electrónico">
             {% if form.email.errors %}
               <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
             {% endif %}
@@ -69,7 +69,7 @@
     // Evento para añadir destinatarios
     $('#add-recipient').click(function () {
       const formsetTableBody = $('table tbody'); // Selecciona el cuerpo de la tabla
-      const totalFormsInput = $('#id_form-TOTAL_FORMS'); // Campo que lleva la cuenta total de formularios
+      const totalFormsInput = $('#id_recipients-TOTAL_FORMS'); // Campo que lleva la cuenta total de formularios
 
       // Obtiene el número actual de formularios
       const formIndex = parseInt(totalFormsInput.val());
@@ -78,10 +78,10 @@
       const newRow = `
         <tr>
           <td>
-            <input type="email" class="form-control" name="form-${formIndex}-email" placeholder="Correo Electrónico" required>
+            <input type="email" class="form-control" name="recipients-${formIndex}-email" placeholder="Correo Electrónico" required>
           </td>
           <td>
-            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
+            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="recipients-${formIndex}-DELETE">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M4 7l16 0" />
@@ -108,7 +108,7 @@
       $(this).closest('tr').remove();
 
       // Opcional: Actualiza el campo que lleva la cuenta total de formularios
-      const totalFormsInput = $('#id_form-TOTAL_FORMS');
+      const totalFormsInput = $('#id_recipients-TOTAL_FORMS');
       const remainingRows = $('table tbody tr').length;
       totalFormsInput.val(remainingRows); // Ajusta el conteo al número actual de filas restantes
     });

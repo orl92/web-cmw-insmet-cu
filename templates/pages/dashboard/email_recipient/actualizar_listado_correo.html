@@ -35,13 +35,15 @@
         {% for form in formset %}
         <tr>
           <td>
-            <input type="email" class="form-control" name="{{ form.email.name }}" placeholder="Correo Electrónico" value="{{ form.email.value }}" required>
+            <input type="email" class="form-control" name="recipients-{{ forloop.counter0 }}-email" value="{{ form.email.value|default:'' }}" placeholder="Correo Electrónico">
             {% if form.email.errors %}
               <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
             {% endif %}
           </td>
           <td>
-            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
+            <input type="hidden" name="recipients-{{ forloop.counter0 }}-id" value="{{ form.instance.pk }}">
+            <input type="checkbox" name="recipients-{{ forloop.counter0 }}-DELETE" style="display:none;">
+            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M4 7l16 0" />
@@ -58,6 +60,7 @@
     </table>
     <button type="button" id="add-recipient" class="btn btn-pill btn-outline-success btn-sm">Añadir Destinatario</button>
   </fieldset>
+  
 
 {% endblock form %}
 
@@ -65,43 +68,37 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(document).ready(function () {
-    // Añadir destinatarios
     $('#add-recipient').click(function () {
-      const formsetTableBody = $('table tbody');
-      const totalFormsInput = $('#id_form-TOTAL_FORMS');
+      const formsetTableBody = $('#recipient-table-body');
+      const totalFormsInput = $('#id_recipients-TOTAL_FORMS');
+  
       const formIndex = parseInt(totalFormsInput.val());
-
+  
       const newRow = `
-        <tr>
-          <td>
-            <input type="email" class="form-control" name="form-${formIndex}-email" placeholder="Correo Electrónico" required>
-          </td>
-          <td>
-            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M4 7l16 0" />
-                <path d="M10 11l0 6" />
-                <path d="M14 11l0 6" />
-                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
-              </svg>
-            </button>
-          </td>
-        </tr>
+      <tr>
+        <td>
+          <input type="email" class="form-control" name="recipients-${formIndex}-email" value="" placeholder="Correo Electrónico">
+        </td>
+        <td>
+          <input type="hidden" name="recipients-${formIndex}-id" value="">
+          <input type="checkbox" name="recipients-${formIndex}-DELETE" style="display:none;">
+          <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient">
+            <svg xmlns="http://www.w3.org/2000/svg" ...></svg>
+          </button>
+        </td>
+      </tr>
       `;
-
+  
       formsetTableBody.append(newRow);
       totalFormsInput.val(formIndex + 1);
     });
-
-    // Eliminar destinatarios
+  
     $('table').on('click', '.delete-recipient', function () {
-      $(this).closest('tr').remove();
-      const totalFormsInput = $('#id_form-TOTAL_FORMS');
-      const remainingRows = $('table tbody tr').length;
-      totalFormsInput.val(remainingRows);
+      const row = $(this).closest('tr');
+      row.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
+      row.hide();
     });
   });
+  
 </script>
 {% endblock extrajs %}
