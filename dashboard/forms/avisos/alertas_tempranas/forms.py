@@ -5,6 +5,9 @@ class EarlyWarningForm(forms.ModelForm):
     class Meta:
         model = EarlyWarning
         fields = ['title', 'subject', 'valid_until', 'image', 'description', 'email_recipient_list']
+        widgets = {
+            'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
