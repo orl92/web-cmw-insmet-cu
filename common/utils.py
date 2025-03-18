@@ -7,6 +7,8 @@ from django.db import models
 from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 
+from django.views import View
+
 def generic_image_path(instance, filename):
     # Generar nombre aleatorio usando libreria uuid
     random_filename = str(uuid.uuid4())
@@ -102,3 +104,38 @@ def log_action(user, obj, action_flag, message=""):
         action_flag=action_flag,
         change_message=message,
     )
+    
+class My400View(View):
+    def get(self, request, *args, **kwargs):
+        return render(request, 'layouts/400.html', status=400)
+
+class My403View(View):
+    def get(self, request, *args, **kwargs):
+        return render(request, 'layouts/403.html', status=403)
+
+class My404View(View):
+    def get(self, request, *args, **kwargs):
+        return render(request, 'layouts/404.html', status=404)
+
+class My500View(View):
+    def get(self, request, *args, **kwargs):
+        return render(request, 'layouts/500.html', status=500)
+
+from django.shortcuts import render
+from django.http import HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, HttpResponseServerError
+
+def test_400(request):
+    """Forzar error 400"""
+    return HttpResponseBadRequest(render(request, 'layouts/400.html'))
+
+def test_403(request):
+    """Forzar error 403"""
+    return HttpResponseForbidden(render(request, 'layouts/403.html'))
+
+def test_404(request):
+    """Forzar error 404"""
+    return HttpResponseNotFound(render(request, 'layouts/404.html'))
+
+def test_500(request):
+    """Forzar error 500"""
+    return HttpResponseServerError(render(request, 'layouts/500.html'))

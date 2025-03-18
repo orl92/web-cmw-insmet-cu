@@ -1,12 +1,24 @@
 import uuid
-
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from common.utils import ImageModel, generic_pdf_path
 
+
 # Create your models here.
+
+class SiteConfiguration(models.Model):
+    id = models.AutoField(primary_key=True)  # ID predeterminado de Django
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)  # Identificador único adicional
+    maintenance_mode = models.BooleanField(default=True)  # Modo de mantenimiento activado por defecto
+
+    class Meta:
+        verbose_name = "Configuración del Sitio"
+        verbose_name_plural = "Configuraciones del Sitio"
+
+    def __str__(self):
+        return f"Modo Mantenimiento: {'Activado' if self.maintenance_mode else 'Desactivado'}"
 
 TIEMPO_CHOICES = [
     ('PN', 'PN'),  # Poco Nublado

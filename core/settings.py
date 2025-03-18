@@ -87,6 +87,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'accounts.middleware.check_user_profile.CheckUserProfileMiddleware',
+    'dashboard.middleware.maintenance_mode.MaintenanceModeMiddleware',  # Middleware de mantenimiento
 ]
 
 # Root URL configuration

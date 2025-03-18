@@ -1,6 +1,6 @@
 from django.urls import path
 
-from dashboard.views.dashboard.views import DashboardView, ExcelJSONView
+from dashboard.views.dashboard.views import DashboardView, ExcelJSONView, MaintenanceModeToggleView
 from dashboard.views.avisos.alertas_tempranas.views import (EarlyWarningCreateView, 
                                                             EarlyWarningDeleteView, 
                                                             EarlyWarningListView,
@@ -133,7 +133,8 @@ urlpatterns = [
     path('crear/listado/correo/', EmailRecipientListCreateView.as_view(), name='crear_listado_correo'),
     path('actualizar/listado/correo/<uuid:uuid>/', EmailRecipientListUpdateView.as_view(), name='actualizar_listado_correo'),
     path('eliminar/listado/correo/<uuid:uuid>/', EmailRecipientListDeleteView.as_view(), name='eliminar_listado_correo'),
-    
+    # Modo Mantenimiento
+    path('toggle-maintenance/', MaintenanceModeToggleView.as_view(), name='toggle_maintenance_mode'),
 ]
 
 

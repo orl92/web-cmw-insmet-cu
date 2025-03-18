@@ -21,7 +21,8 @@ class EmailRecipientListListView(LoginRequiredMixin, PermissionRequiredMixin, Li
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Listados de Correos'
-        context['segment'] = 'listado_correos'
+        context['parent'] = ''
+        context['segment'] = 'email'
         context['btn'] = 'Añadir Listado'
         context['url_create'] = reverse_lazy('crear_listado_correo')
         context['url_list'] = reverse_lazy('listado_correos')

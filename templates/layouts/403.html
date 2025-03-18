@@ -1,0 +1,31 @@
+{% extends 'layouts/base-auth.html' %}
+{% load static %}
+
+{% block title %}Acceso Prohibido{% endblock title %}
+
+{% block body %}border-top-wide border-primary d-flex flex-column{% endblock body %}
+
+{% block content %}
+  <div class="page page-center">
+    <div class="container-tight py-4">
+      <div class="empty">
+        <div class="empty-img"><img src="{% static 'dist/img/webp/boy-with-key.webp' %}" height="128" alt="">
+        </div>
+        <div class="empty-header">403</div>
+        <p class="empty-title">Oops… No puedes acceder aquí</p>
+        <p class="empty-subtitle text-muted">
+          Lo sentimos, no tienes permisos para ver esta página. Por favor, contacta con el administrador si necesitas ayuda.
+        </p>
+        <div class="empty-action">
+          <a href="{% url 'index' %}" class="btn btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" />
+              </svg>
+              Volver al inicio
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+

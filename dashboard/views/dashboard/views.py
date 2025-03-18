@@ -1,7 +1,9 @@
 import datetime as dt
 import pandas as pd
+from django.contrib import messages
 from django.http import JsonResponse
 from django.views import View
+from django.shortcuts import redirect, render
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.contrib.auth.models import User, Group
@@ -11,7 +13,8 @@ from django.db.models import Count
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist
 
-from dashboard.models import EarlyWarning, Forecasts, RadarWarning, SpecialNotice, TropicalCyclone, WeatherCommentary
+from common.utils import log_action
+from dashboard.models import EarlyWarning, Forecasts, RadarWarning, SiteConfiguration, SpecialNotice, TropicalCyclone, WeatherCommentary
 
 # Create your views here.
    
@@ -160,4 +163,43 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             ).count()
 
         return context
+
+class MaintenanceModeToggleView(UserPassesTestMixin, TemplateView):
+    template_name = 'pages/dashboard/maintenance_mode/toggle_maintenance.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        config, created = SiteConfiguration.objects.get_or_create()
+        context['config'] = config
+        context['title'] = 'Modo de Mantenimiento'
+        context['parent'] = ''
+        context['segment'] = 'maintenance'
+        return context
+
+    def post(self, request, *args, **kwargs):
+        config, created = SiteConfiguration.objects.get_or_create()
+        if config:
+            # Actualizar el estado del modo de mantenimiento
+            maintenance_mode = 'maintenance_mode' in request.POST
+            previous_state = config.maintenance_mode
+            config.maintenance_mode = maintenance_mode
+            config.save()
+
+            # Registrar la acción en los logs
+            log_action(
+                user=request.user,
+                obj=request.user,  # El objeto aquí es el usuario que realiza la acción
+                action_flag=6,  # Código para activación/desactivación del mantenimiento
+                message=f"El usuario {request.user.username} {'activó' if maintenance_mode else 'desactivó'} el modo de mantenimiento."
+            )
+
+            # Mensaje flash para el usuario
+            state = "activado" if config.maintenance_mode else "desactivado"
+            messages.success(request, f"El modo de mantenimiento ha sido {state}.")
+        
+        return redirect('toggle_maintenance_mode')
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
 

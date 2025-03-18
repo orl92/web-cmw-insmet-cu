@@ -1,0 +1,33 @@
+{% extends 'layouts/dashboard.html' %}
+
+{% block content %}
+<div class="card">
+  {% comment %} <div class="card-header">
+    <h3 class="card-title">Gestión del Modo de Mantenimiento</h3>
+  </div> {% endcomment %}
+  <div class="card-body">
+    <p class="mb-4">El modo de mantenimiento está actualmente: 
+      <strong class="text-primary">{{ config.maintenance_mode|yesno:"Activado,Desactivado" }}</strong>
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-check form-switch form-switch-lg">
+        <input 
+          class="form-check-input" 
+          type="checkbox" 
+          name="maintenance_mode" 
+          id="maintenanceSwitch" 
+          {% if config.maintenance_mode %}checked{% endif %} 
+          onchange="this.form.submit()">
+        <label class="form-check-label" for="maintenanceSwitch">
+          {% if config.maintenance_mode %}
+            <span class="form-check-label-on">Modo activado</span>
+          {% else %}
+            <span class="form-check-label-off">Modo desactivado</span>
+          {% endif %}
+        </label>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock content %}

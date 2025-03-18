@@ -1,0 +1,45 @@
+{% extends 'layouts/base-auth.html' %}
+{% load static %}
+
+{% block title %}Modo de mantenimiento{% endblock title %}
+
+{% block body %}border-top-wide border-primary d-flex flex-column{% endblock body %}
+
+{% block content %}
+<div class="page page-center">
+  <div class="container-tight py-4">
+    <div class="empty">
+      <div class="empty-img">
+        <img src="{% static 'dist/img/webp/computer-fix.webp' %}" height="128" alt="Modo de mantenimiento">
+      </div>
+      <p class="empty-title">Temporalmente en mantenimiento</p>
+      <p class="empty-subtitle text-muted">
+        Lo sentimos por las molestias, pero estamos realizando tareas de mantenimiento en este momento. ¡Volveremos a estar en línea pronto!
+      </p>
+      <div class="empty-action">
+        <a href="{% url 'index' %}" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l14 0" /><path d="M5 12l6 6" /><path d="M5 12l6 -6" />
+            </svg>
+            Volver al inicio
+        </a>
+      </div>
+
+      <!-- Mostrar enlace y texto adicional solo para usuarios no autenticados -->
+      {% if not user.is_authenticated %}
+      <div class="empty-action mt-3">
+        <p class="text-muted">
+          Si eres administrador, por favor inicia sesión para gestionar el estado del sitio:
+        </p>
+        <a href="{% url 'login' %}" class="btn btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 7l-6 10m6 0l-6 -10" /><circle cx="12" cy="12" r="9" />
+            </svg>
+            Iniciar sesión
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock content %}
