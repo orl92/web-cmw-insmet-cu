@@ -351,6 +351,13 @@ class WeatherToday(models.Model):
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
     summary = models.TextField(max_length=300, verbose_name='Resumen') 
     detailed_forecast = models.TextField(verbose_name='Pronóstico Detallado')
+    email_recipient_list = models.ForeignKey(
+        'EmailRecipientList',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Lista de Correos"
+    )
 
     def __str__(self): 
         return f"Pronóstico del tiempo detallado para {self.date}"
@@ -371,6 +378,13 @@ class WeatherTomorrow(models.Model):
     date = models.DateTimeField(verbose_name='Fecha y Hora de Creación')
     summary = models.CharField(max_length=300, verbose_name='Resumen') 
     detailed_forecast = models.TextField(verbose_name='Pronóstico Detallado')
+    email_recipient_list = models.ForeignKey(
+        'EmailRecipientList',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Lista de Correos"
+    )
 
     def __str__(self): 
         return f"Pronóstico del tiempo detallado para {self.date}"
@@ -391,6 +405,13 @@ class WeatherCommentary(models.Model):
     date = models.DateTimeField(verbose_name='Fecha y Hora de Creación')
     subject = models.CharField(max_length=300, verbose_name='Asunto') 
     detailed_commentary = models.TextField(verbose_name='Comentario Detallado')
+    email_recipient_list = models.ForeignKey(
+        'EmailRecipientList',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Lista de Correos"
+    )
 
     def __str__(self): 
         return f"Comentario del tiempo detallado para {self.date}"
@@ -411,6 +432,13 @@ class WeatherNote(models.Model):
     date = models.DateTimeField(verbose_name='Fecha y Hora de Creación')
     subject = models.CharField(max_length=300, verbose_name='Asunto') 
     detailed_note = models.TextField(verbose_name='Nota Detallada')
+    email_recipient_list = models.ForeignKey(
+        'EmailRecipientList',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Lista de Correos"
+    )
 
     def __str__(self): 
         return f"Nota Meteorológica detallada para {self.date}"
