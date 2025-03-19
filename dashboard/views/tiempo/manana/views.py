@@ -80,9 +80,7 @@ class WeatherTomorrowCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
             if recipients:
                 # Enviar el correo
                 try:
-                    # Formatea el campo `date` del modelo antes de incluirlo en el asunto
-                    fecha_formateada = self.object.date.strftime("%d-%m-%Y")
-                    subject = f"El Tiempo para Mañana: {fecha_formateada}"
+                    subject = f"El Tiempo para Mañana"
                     html_message = render_to_string(
                         'pages/dashboard/emails/weather_tomorrow.html',
                         {
@@ -141,8 +139,19 @@ class WeatherTomorrowUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
         return kwargs
 
     def form_valid(self, form):
+        # Obtener el objeto original antes de los cambios
+        original_object = self.get_object(queryset=None)
+        relevant_fields = ['summary', 'detailed_forecast', 'email_recipient_list']
+        
+        # Detectar cambios en los campos relevantes
+        has_changes = any(
+            form.cleaned_data[field] != getattr(original_object, field)
+            for field in relevant_fields
+        )
+        
+        # Guardar el formulario actualizado
         instance = form.save(commit=False)
-        instance.date = timezone.now() + timedelta(days=1)
+        instance.date = timezone.now()
         instance.save()
         response = super().form_valid(form)
         
@@ -154,6 +163,53 @@ class WeatherTomorrowUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
             message=f"Se actualizó el pronóstico del tiempo para mañana: {self.object.date}."
         )
         
+        # Enviar correos solo si hay cambios
+        if has_changes:
+            # Construir la URL dinámica"
+            listado_url = self.request.build_absolute_uri(reverse('tiempo_m'))
+            index_url = self.request.build_absolute_uri(reverse('index'))
+            
+            # Obtener la lista de correos seleccionada
+            recipient_list = self.object.email_recipient_list
+        
+            if recipient_list:
+                recipients = recipient_list.recipients.values_list('email', flat=True)
+                
+                if recipients:
+                    # Enviar el correo
+                    try:
+                        subject = f"El Tiempo para Mañana Actualizado"
+                        html_message = render_to_string(
+                            'pages/dashboard/emails/weather_tomorrow.html',
+                            {
+                                'tiempo_m': self.object,
+                                'listado_url': listado_url,  # Pasa la URL al contexto del correo
+                                'index_url': index_url,     # URL al índice de la página
+                                'current_year': datetime.now().year  # Pasa el año actual
+                            }
+                        )
+                        plain_message = strip_tags(html_message)
+                        
+                        email = EmailMessage(
+                            subject=subject,
+                            body=html_message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=list(recipients),
+                        )
+                        email.content_subtype = 'html'
+                        email.send()
+
+                        # Mostrar mensaje de éxito
+                        messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
+                    except Exception as e:
+                        # Manejar errores de envío
+                        messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
+                else:
+                    messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
+            else:
+                messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
+        
+        # Mensaje de éxito tras la actualización
         messages.success(self.request, 'El pronóstico del tiempo para mañana ha sido actualizado con éxito.', extra_tags='success')
         return response
 

@@ -78,9 +78,7 @@ class WeatherTodayCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             if recipients:
                 # Enviar el correo
                 try:
-                    # Formatea el campo `date` del modelo antes de incluirlo en el asunto
-                    fecha_formateada = self.object.date.strftime("%d-%m-%Y")
-                    subject = f"El Tiempo para Hoy: {fecha_formateada}"
+                    subject = f"El Tiempo para Hoy"
                     html_message = render_to_string(
                         'pages/dashboard/emails/weather_today.html',
                         {
@@ -90,7 +88,9 @@ class WeatherTodayCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                             'current_year': datetime.now().year  # Pasa el año actual
                         }
                     )
+                    # Limpia las etiquetas HTML de la descripción, si existe
                     plain_message = strip_tags(html_message)
+                    
                     email = EmailMessage(
                         subject=subject,
                         body=html_message,
@@ -100,7 +100,7 @@ class WeatherTodayCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                     email.content_subtype = 'html'
                     email.send()
 
-                    # Mostrar mensaje de éxito
+                    # Mostrar mensaje de éxito para el envío del correo
                     messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
                 except Exception as e:
                     # Manejar errores de envío
@@ -138,18 +138,20 @@ class WeatherTodayUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         return kwargs
 
     def form_valid(self, form):
-        instance = form.save(commit=False)
-        instance.date = timezone.now()
-        instance.save()
-        # Almacenar los valores originales del objeto antes de cualquier actualización
+        # Obtener el objeto original antes de los cambios
         original_object = self.get_object(queryset=None)
-        relevant_fields = ['title', 'description', 'valid_until']
+        relevant_fields = ['summary', 'detailed_forecast', 'email_recipient_list']
         
-        # Detectar si hay cambios en los campos relevantes
+        # Detectar cambios en los campos relevantes
         has_changes = any(
             form.cleaned_data[field] != getattr(original_object, field)
             for field in relevant_fields
         )
+        
+        # Guardar el formulario actualizado
+        instance = form.save(commit=False)
+        instance.date = timezone.now()
+        instance.save()
         response = super().form_valid(form)
         
         # Registro de acción
@@ -159,7 +161,54 @@ class WeatherTodayUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
             action_flag=CHANGE,
             message=f"Se actualizó el pronóstico del tiempo para hoy: {self.object.date}."
         )
+       
+        # Enviar correos solo si hay cambios
+        if has_changes:
+            # Construir la URL dinámica"
+            listado_url = self.request.build_absolute_uri(reverse('tiempo_h'))
+            index_url = self.request.build_absolute_uri(reverse('index'))
+            
+            # Obtener la lista de correos seleccionada
+            recipient_list = self.object.email_recipient_list
         
+            if recipient_list:
+                recipients = recipient_list.recipients.values_list('email', flat=True)
+                
+                if recipients:
+                    # Enviar el correo
+                    try:
+                        subject = f"El Tiempo para Hoy Actualizado "
+                        html_message = render_to_string(
+                            'pages/dashboard/emails/weather_today.html',
+                            {
+                                'tiempo_h': self.object,
+                                'listado_url': listado_url,  # Pasa la URL al contexto del correo
+                                'index_url': index_url,     # URL al índice de la página
+                                'current_year': datetime.now().year  # Pasa el año actual
+                            }
+                        )
+                        plain_message = strip_tags(html_message)
+                        
+                        email = EmailMessage(
+                            subject=subject,
+                            body=html_message,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=list(recipients),
+                        )
+                        email.content_subtype = 'html'
+                        email.send()
+
+                        # Mostrar mensaje de éxito
+                        messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
+                    except Exception as e:
+                        # Manejar errores de envío
+                        messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
+                else:
+                    messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
+            else:
+                messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
+
+        # Mensaje de éxito tras la actualización
         messages.success(self.request, 'El pronóstico del tiempo para hoy ha sido actualizado con éxito.', extra_tags='success')
         return response
 

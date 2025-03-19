@@ -60,6 +60,7 @@ class SpecialNoticeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
             message=f"Se creó un nuevo aviso especial para el: {self.object.date.strftime('%d-%m-%Y')}."
         )
         
+        # Mensaje de éxito
         messages.success(self.request, 'El aviso especial ha sido creado con éxito.', extra_tags='success')
         
         # Construir la URL dinámica para "Ver todas las alertas"
@@ -69,42 +70,45 @@ class SpecialNoticeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
 
         # Obtener la lista seleccionada en el formulario
         recipient_list = self.object.email_recipient_list
+        
         if recipient_list:
             recipients = recipient_list.recipients.values_list('email', flat=True)
 
-            # Enviar correo
-            subject = f'Nueva Alerta de Aviso Especial: {self.object.title}'
-            html_message = render_to_string(
-                'pages/dashboard/emails/notification.html',
-                {
-                    'alert': self.object,
-                    'listado_url': listado_url,
-                    'index_url': index_url,     # URL al índice de la página
-                    'image_url': image_url,
-                    'current_year': datetime.now().year  # Pasa el año actual
-                }
-            )
-            # Limpia las etiquetas HTML de la descripción, si existe
-            plain_message = strip_tags(html_message)
+            if recipients:
+                # Enviar correo
+                try:
+                    subject = f'Aviso Especial: {self.object.title}'
+                    html_message = render_to_string(
+                        'pages/dashboard/emails/notification.html',
+                        {
+                            'alert': self.object,
+                            'listado_url': listado_url,
+                            'index_url': index_url,     # URL al índice de la página
+                            'image_url': image_url,
+                            'current_year': datetime.now().year  # Pasa el año actual
+                        }
+                    )
+                    # Limpia las etiquetas HTML de la descripción, si existe
+                    plain_message = strip_tags(html_message)
+           
+                    email = EmailMessage(
+                        subject=subject,
+                        body=html_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=list(recipients),
+                    )
+                    email.content_subtype = 'html'
+                    email.send()
 
-            try:
-                email = EmailMessage(
-                    subject=subject,
-                    body=html_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=list(recipients),
-                )
-                email.content_subtype = 'html'
-                email.send()
-
-                # Mensaje de éxito para el envío del correo
-                messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
-            except Exception as e:
-                # Manejar errores de envío
-                messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
+                    # Mostrar mensaje de éxito para el envío del correo
+                    messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
+                except Exception as e:
+                    # Manejar errores de envío
+                    messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
+            else:
+                messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
         else:
-            # Mensaje en caso de que no haya destinatarios
-            messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
+            messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
         
         return response
 
@@ -170,7 +174,7 @@ class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
                 from django.utils.html import strip_tags
 
                 # Renderizar el correo electrónico
-                subject = f'Alerta de Aviso Especial Actualizada: {self.object.title}'
+                subject = f'Aviso Especial Actualizado: {self.object.title}'
                 html_message = render_to_string(
                     'pages/dashboard/emails/notification.html',
                     {
