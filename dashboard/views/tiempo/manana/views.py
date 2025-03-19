@@ -1,3 +1,7 @@
+from datetime import datetime
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from datetime import timedelta
 
 from django.contrib import messages
@@ -5,10 +9,11 @@ from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         PermissionRequiredMixin,
                                         UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
+from core import settings
 from dashboard.forms.tiempo.manana.forms import WeatherTomorrowForm
 from dashboard.models import WeatherTomorrow
 
@@ -61,8 +66,55 @@ class WeatherTomorrowCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
         )
         
         messages.success(self.request, 'El pronóstico del tiempo para mañana ha sido creado con éxito.', extra_tags='success')
-        return response
+        
+        # Construir la URL dinámica"
+        listado_url = self.request.build_absolute_uri(reverse('tiempo_m'))
+        index_url = self.request.build_absolute_uri(reverse('index'))
 
+        # Obtener la lista seleccionada en el formulario
+        recipient_list = self.object.email_recipient_list
+        
+        if recipient_list:
+            recipients = recipient_list.recipients.values_list('email', flat=True)
+
+            if recipients:
+                # Enviar el correo
+                try:
+                    # Formatea el campo `date` del modelo antes de incluirlo en el asunto
+                    fecha_formateada = self.object.date.strftime("%d-%m-%Y")
+                    subject = f"El Tiempo para Mañana: {fecha_formateada}"
+                    html_message = render_to_string(
+                        'pages/dashboard/emails/weather_tomorrow.html',
+                        {
+                            'tiempo_m': self.object,
+                            'listado_url': listado_url,  # Pasa la URL al contexto del correo
+                            'index_url': index_url,     # URL al índice de la página
+                            'current_year': datetime.now().year  # Pasa el año actual
+                        }
+                    )
+                    plain_message = strip_tags(html_message)
+                    
+                    email = EmailMessage(
+                        subject=subject,
+                        body=html_message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=list(recipients),
+                    )
+                    email.content_subtype = 'html'
+                    email.send()
+
+                    # Mostrar mensaje de éxito
+                    messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
+                except Exception as e:
+                    # Manejar errores de envío
+                    messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
+            else:
+                messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
+        else:
+            messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
+        
+        return response
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Añadir Tiempo para Mañana'

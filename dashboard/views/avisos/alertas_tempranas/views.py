@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
-from django.views.generic import *
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from core import settings
 from dashboard.forms.avisos.alertas_tempranas.forms import EarlyWarningForm

@@ -4,7 +4,10 @@ from dashboard.models import WeatherToday
 class WeatherTodayForm(forms.ModelForm):
     class Meta:
         model = WeatherToday
-        fields = ['summary', 'detailed_forecast']
+        fields = ['summary', 'detailed_forecast', 'email_recipient_list']
+        widgets = {
+            'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),  # Para mostrar un desplegable en el formulario
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)

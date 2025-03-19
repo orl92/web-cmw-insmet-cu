@@ -15,5 +15,12 @@
           <span class="text-danger d-block mb-3">{{ form.detailed_commentary.errors }}</span>
       {% endif %}
     </div>
+    <div class="mb-3">
+      <label class="form-label required">{{ form.email_recipient_list.label }}</label>
+      {{ form.email_recipient_list }}
+      {% if form.email_recipient_list.errors %}
+          <span class="text-danger d-block mb-3">{{ form.email_recipient_list.errors }}</span>
+      {% endif %}
+    </div>
   </div>
 {% endblock form %}

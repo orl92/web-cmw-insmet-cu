@@ -4,7 +4,10 @@ from dashboard.models import WeatherNote
 class WeatherNoteForm(forms.ModelForm):
     class Meta:
         model = WeatherNote
-        fields = ['subject', 'detailed_note']
+        fields = ['subject', 'detailed_note','email_recipient_list']
+        widgets = {
+            'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)

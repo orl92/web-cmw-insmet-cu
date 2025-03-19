@@ -402,7 +402,7 @@ class WeatherTomorrow(models.Model):
 class WeatherCommentary(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Autor')
-    date = models.DateTimeField(verbose_name='Fecha y Hora de Creación')
+    date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
     subject = models.CharField(max_length=300, verbose_name='Asunto') 
     detailed_commentary = models.TextField(verbose_name='Comentario Detallado')
     email_recipient_list = models.ForeignKey(
@@ -429,7 +429,7 @@ class WeatherCommentary(models.Model):
 class WeatherNote(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Autor')
-    date = models.DateTimeField(verbose_name='Fecha y Hora de Creación')
+    date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
     subject = models.CharField(max_length=300, verbose_name='Asunto') 
     detailed_note = models.TextField(verbose_name='Nota Detallada')
     email_recipient_list = models.ForeignKey(
