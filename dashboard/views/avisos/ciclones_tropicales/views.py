@@ -29,7 +29,7 @@ class TropicalCycloneListView(LoginRequiredMixin, PermissionRequiredMixin, ListV
         context = super().get_context_data(**kwargs)
         context['title'] = 'Ciclones Tropicales'
         context['parent'] = 'avisos'
-        context['segment'] = 'ciclon-tropical'
+        context['segment'] = 'cyclone'
         context['btn'] = ('Añadir Aviso Ciclón Tropical')
         context['url_create'] = reverse_lazy('crear_aviso_ciclon_tropical')
         context['url_list'] = reverse_lazy('ciclones_tropicales')
@@ -115,7 +115,7 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
         context = super().get_context_data(**kwargs)
         context['title'] = 'Añadir Aviso Ciclón Tropical'
         context['parent'] = 'avisos'
-        context['segment'] = 'ciclon-tropical'
+        context['segment'] = 'cyclone'
         context['url_list'] = reverse_lazy('ciclones_tropicales')
         return context
 
@@ -217,7 +217,7 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
         context = super().get_context_data(**kwargs)
         context['title'] = 'Actualizar Aviso Ciclón Tropical'
         context['parent'] = 'avisos'
-        context['segment'] = 'ciclon-tropical'
+        context['segment'] = 'cyclone'
         context['url_list'] = reverse_lazy('ciclones_tropicales')
         return context
 
@@ -257,7 +257,7 @@ class TropicalCycloneDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Del
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Aviso Ciclón Tropical'
         context['parent'] = 'avisos'
-        context['segment'] = 'ciclon-tropical'
+        context['segment'] = 'cyclone'
         context['url_list'] = reverse_lazy('ciclones_tropicales')
         return context
 
@@ -275,6 +275,6 @@ class TropicalCycloneDetailView(LoginRequiredMixin, PermissionRequiredMixin, Det
         context = super().get_context_data(**kwargs)
         context['title'] = 'Detalle del Aviso de Ciclón Tropical'
         context['parent'] = 'avisos'
-        context['segment'] = 'ciclon-tropical'
+        context['segment'] = 'cyclone'
         context['url_list'] = reverse_lazy('ciclones_tropicales')
         return context

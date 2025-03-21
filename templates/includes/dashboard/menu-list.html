@@ -146,21 +146,21 @@
         Avisos
       </span>
     </a>
-    <div class="dropdown-menu {% if 'aviso' in parent %}show{% endif %}">
+    <div class="dropdown-menu {% if 'avisos' in parent %}show{% endif %}">
       <div class="dropdown-menu-columns">
         <div class="dropdown-menu-column">
           {% if request.user|has_permission:'dashboard.view_early_warning' %}
-          <a class="dropdown-item {% if 'alerta_temprana' in segment %}active{% endif %}" href="{% url 'alertas_tempranas' %}">
+          <a class="dropdown-item {% if 'early' in segment %}active{% endif %}" href="{% url 'alertas_tempranas' %}">
             Alertas Tempranas
           </a>
           {% endif %}
           {% if request.user|has_permission:'dashboard.view_tropical_cyclone' %}
-          <a class="dropdown-item {% if 'ciclon_tropical' in segment %}active{% endif %}" href="{% url 'ciclones_tropicales' %}">
+          <a class="dropdown-item {% if 'cyclone' in segment %}active{% endif %}" href="{% url 'ciclones_tropicales' %}">
             Ciclones Tropicales
           </a>
           {% endif %}
           {% if request.user|has_permission:'dashboard.view_special_notice' %}
-          <a class="dropdown-item {% if 'especial' in segment %}active{% endif %}" href="{% url 'avisos_especiales' %}">
+          <a class="dropdown-item {% if 'special' in segment %}active{% endif %}" href="{% url 'avisos_especiales' %}">
             Especiales
           </a>
           {% endif %}

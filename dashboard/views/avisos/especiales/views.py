@@ -29,7 +29,7 @@ class SpecialNoticeListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         context = super().get_context_data(**kwargs)
         context['title'] = 'Avisos Especiales'
         context['parent'] = 'avisos'
-        context['segment'] = 'especial'
+        context['segment'] = 'special'
         context['btn'] = ('Añadir Aviso Especial')
         context['url_create'] = reverse_lazy('crear_aviso_especial')
         context['url_list'] = reverse_lazy('avisos_especiales')
@@ -116,7 +116,7 @@ class SpecialNoticeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
         context = super().get_context_data(**kwargs)
         context['title'] = 'Añadir Aviso Especial'
         context['parent'] = 'avisos'
-        context['segment'] = 'especial'
+        context['segment'] = 'special'
         context['url_list'] = reverse_lazy('avisos_especiales')
         return context
 
@@ -218,7 +218,7 @@ class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
         context = super().get_context_data(**kwargs)
         context['title'] = 'Actualizar Aviso Especial'
         context['parent'] = 'avisos'
-        context['segment'] = 'especial'
+        context['segment'] = 'special'
         context['url_list'] = reverse_lazy('avisos_especiales')
         return context
 
@@ -258,7 +258,7 @@ class SpecialNoticeDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delet
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Aviso Especial'
         context['parent'] = 'avisos'
-        context['segment'] = 'especial'
+        context['segment'] = 'special'
         context['url_list'] = reverse_lazy('avisos_especiales')
         return context
 
@@ -276,6 +276,6 @@ class SpecialNoticeDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detai
         context = super().get_context_data(**kwargs)
         context['title'] = 'Detalle del Aviso Especial'
         context['parent'] = 'avisos'
-        context['segment'] = 'especial'
+        context['segment'] = 'special'
         context['url_list'] = reverse_lazy('avisos_especiales')
         return context

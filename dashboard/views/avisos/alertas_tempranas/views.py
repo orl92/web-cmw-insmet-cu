@@ -28,7 +28,7 @@ class EarlyWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context = super().get_context_data(**kwargs)
         context['title'] = 'Alertas Tempranas'
         context['parent'] = 'avisos'
-        context['segment'] = 'alerta-temprana'
+        context['segment'] = 'early'
         context['btn'] = ('Añadir Alerta Temprana')
         context['url_create'] = reverse_lazy('crear_aviso_alerta_temprana')
         context['url_list'] = reverse_lazy('alertas_tempranas')
@@ -114,7 +114,7 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         context = super().get_context_data(**kwargs)
         context['title'] = 'Añadir Alerta Temprana'
         context['parent'] = 'avisos'
-        context['segment'] = 'alerta-temprana'
+        context['segment'] = 'early'
         context['url_list'] = reverse_lazy('alertas_tempranas')
         return context
 
@@ -214,7 +214,7 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         context = super().get_context_data(**kwargs)
         context['title'] = 'Actualizar Aviso Alerta Temprana'
         context['parent'] = 'avisos'
-        context['segment'] = 'alerta-temprana'
+        context['segment'] = 'early'
         context['url_list'] = reverse_lazy('alertas_tempranas')
         return context
 
@@ -254,7 +254,7 @@ class EarlyWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delete
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Aviso Alerta Temprana'
         context['parent'] = 'avisos'
-        context['segment'] = 'alerta-temprana'
+        context['segment'] = 'early'
         context['url_list'] = reverse_lazy('alertas_tempranas')
         return context
 
@@ -272,6 +272,6 @@ class EarlyWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detail
         context = super().get_context_data(**kwargs)
         context['title'] = 'Detalle del Aviso Alerta Temprana'
         context['parent'] = 'avisos'
-        context['segment'] = 'alerta-temprana'
+        context['segment'] = 'early'
         context['url_list'] = reverse_lazy('alertas_tempranas')
         return context
