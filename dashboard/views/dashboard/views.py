@@ -99,7 +99,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if not request.user.is_staff:
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
-    
+
     def test_func(self):
         # Solo usuarios con is_staff = True pueden acceder
         return self.request.user.is_staff
@@ -107,6 +107,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+
         # Datos base para todos los usuarios
         context.update({
             'title': 'Dashboard',
@@ -114,23 +115,26 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'segment': 'dashboard',
             'is_superuser': user.is_superuser,
         })
+
         # Datos meteorológicos comunes
         try:
             context['latest_forecast'] = Forecasts.objects.latest('date')
         except ObjectDoesNotExist:
             context['latest_forecast'] = None
+        
         # Últimos 7 pronósticos para el gráfico (si existen)
         forecasts = Forecasts.objects.order_by('-date')[:7]
         context['has_forecasts'] = forecasts.exists()
-        # Datos para el gráfico de temperaturas
+
         if context['has_forecasts']:
             context['temperature_labels'] = [f.date.strftime('%d/%m') for f in forecasts]
-            context['max_temperatures_north'] = [f.nta for f in forecasts]  # Temperatura tarde (max) costa norte
-            context['min_temperatures_north'] = [f.ntn for f in forecasts]  # Temperatura noche (min) costa norte
-            context['max_temperatures_south'] = [f.sta for f in forecasts]  # Temperatura tarde (max) costa sur
-            context['min_temperatures_south'] = [f.stn for f in forecasts]  # Temperatura noche (min) costa sur
-            context['max_temperatures_inland'] = [f.ita for f in forecasts]  # Temperatura tarde (max) interior
-            context['min_temperatures_inland'] = [f.itn for f in forecasts]  # Temperatura noche (min) interior
+            context['max_temperatures_north'] = [f.nta for f in forecasts]
+            context['min_temperatures_north'] = [f.ntn for f in forecasts]
+            context['max_temperatures_south'] = [f.sta for f in forecasts]
+            context['min_temperatures_south'] = [f.stn for f in forecasts]
+            context['max_temperatures_inland'] = [f.ita for f in forecasts]
+            context['min_temperatures_inland'] = [f.itn for f in forecasts]
+
         # Últimas alertas activas (hasta 5)
         context['latest_alerts'] = {
             'early_warnings': EarlyWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
@@ -138,6 +142,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'special_notices': SpecialNotice.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
             'radar_warnings': RadarWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
         }
+
         # Datos exclusivos para superusuarios
         if user.is_superuser:
             # Estadísticas de usuarios
@@ -146,17 +151,23 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 'active_today': User.objects.filter(last_login__date=timezone.now().date()).count(),
                 'staff_users': User.objects.filter(is_staff=True).count(),
             }
+
             # Grupos y permisos (con paginación)
             permission_groups = Group.objects.annotate(
                 user_count=Count('user')
             ).prefetch_related('permissions').order_by('-user_count')
-            paginator = Paginator(permission_groups, 10)  # 10 grupos por página
-            page_number = self.request.GET.get('page')
-            context['permission_groups_page'] = paginator.get_page(page_number)
-            # Últimos inicios de sesión (últimas 24 horas)
-            context['recent_logins'] = User.objects.filter(
+            paginator_groups = Paginator(permission_groups, 5)  # 10 grupos por página
+            page_number_groups = self.request.GET.get('page')
+            context['permission_groups_page'] = paginator_groups.get_page(page_number_groups)
+
+            # Últimos inicios de sesión (con paginación)
+            recent_logins = User.objects.filter(
                 last_login__gte=timezone.now() - timezone.timedelta(hours=24)
-            ).order_by('-last_login')[:10]
+            ).order_by('-last_login')
+            paginator_logins = Paginator(recent_logins, 5)  # Mostramos 5 usuarios por página
+            page_number_logins = self.request.GET.get('page_logins')  # Evita conflictos entre paginadores
+            context['recent_logins_page'] = paginator_logins.get_page(page_number_logins)
+
             # Sesiones activas
             context['active_sessions'] = Session.objects.filter(
                 expire_date__gt=timezone.now()

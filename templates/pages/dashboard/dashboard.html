@@ -100,7 +100,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row row-cols-1 g-0">
-                        {% for login_user in recent_logins %}
+                        {% for login_user in recent_logins_page %}
                         <div class="col pb-3">
                             <div class="row g-0 align-items-center">
                                 <div class="col-auto">
@@ -123,7 +123,7 @@
                             </div>
                         </div>
                         {% if not forloop.last %}
-                        <hr class="my-1 text-muted">
+                            <hr class="my-2 text-muted">
                         {% endif %}
                         {% empty %}
                         <div class="text-center text-muted py-3">
@@ -131,7 +131,25 @@
                         </div>
                         {% endfor %}
                     </div>
-                </div>
+                    <!-- Paginación -->
+                    <div class="pagination mt-3">
+                        <span class="step-links">
+                            {% if recent_logins_page.has_previous %}
+                                <a href="?page_logins=1" class="btn btn-sm btn-outline-primary">&laquo; Primera</a>
+                                <a href="?page_logins={{ recent_logins_page.previous_page_number }}" class="btn btn-sm btn-outline-primary">Anterior</a>
+                            {% endif %}
+                
+                            <span class="current">
+                                Página {{ recent_logins_page.number }} de {{ recent_logins_page.paginator.num_pages }}.
+                            </span>
+                
+                            {% if recent_logins_page.has_next %}
+                                <a href="?page_logins={{ recent_logins_page.next_page_number }}" class="btn btn-sm btn-outline-primary">Siguiente</a>
+                                <a href="?page_logins={{ recent_logins_page.paginator.num_pages }}" class="btn btn-sm btn-outline-primary">Última &raquo;</a>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>  
             </div>
         </div>
     </div>
