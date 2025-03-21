@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.contrib.admin.models import LogEntry
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -27,10 +28,15 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
         context['segment'] = 'profile'
         context['btn'] = 'Editar Perfil'
         context['objects'] = User.objects.all()
-        
-        # Obtener los últimos 10 registros de LogEntry para el usuario actual
-        log_entries = LogEntry.objects.filter(user=self.request.user).order_by('-action_time')[:5]
-        context['log_entries'] = log_entries
+
+        # Obtener todos los registros de LogEntry para el usuario actual
+        log_entries = LogEntry.objects.filter(user=self.request.user).order_by('-action_time')
+
+        # Configurar paginación
+        paginator = Paginator(log_entries, 4)  # Mostrar 4 registros por página
+        page_number = self.request.GET.get('page')  # Obtener el número de página de la solicitud
+        context['log_entries_page'] = paginator.get_page(page_number)  # Pasar la página actual al contexto
+
         return context
 
 class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
