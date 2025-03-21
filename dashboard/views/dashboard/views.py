@@ -156,16 +156,16 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             permission_groups = Group.objects.annotate(
                 user_count=Count('user')
             ).prefetch_related('permissions').order_by('-user_count')
-            paginator_groups = Paginator(permission_groups, 5)  # 10 grupos por página
-            page_number_groups = self.request.GET.get('page')
+            paginator_groups = Paginator(permission_groups, 2)  # 10 grupos por página
+            page_number_groups = self.request.GET.get('page_groups')  # Nombre único para evitar conflictos
             context['permission_groups_page'] = paginator_groups.get_page(page_number_groups)
 
             # Últimos inicios de sesión (con paginación)
             recent_logins = User.objects.filter(
                 last_login__gte=timezone.now() - timezone.timedelta(hours=24)
             ).order_by('-last_login')
-            paginator_logins = Paginator(recent_logins, 5)  # Mostramos 5 usuarios por página
-            page_number_logins = self.request.GET.get('page_logins')  # Evita conflictos entre paginadores
+            paginator_logins = Paginator(recent_logins, 2)  # 5 usuarios por página
+            page_number_logins = self.request.GET.get('page_logins')  # Nombre único
             context['recent_logins_page'] = paginator_logins.get_page(page_number_logins)
 
             # Sesiones activas
