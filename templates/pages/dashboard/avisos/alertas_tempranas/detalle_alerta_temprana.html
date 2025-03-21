@@ -1,0 +1,13 @@
+<div>
+    <h3 class="card-title">Título: {{ early.title }}</h3>
+    <div class="text-secondary">Asunto: {{ early.subject }}</div>
+    <div class="mt-3 text-secondary">
+      <div>Fecha: {{ early.date }}</div> 
+      <div class="mt-3">Autor: {{ early.user.get_full_name }}</div>
+    </div>
+    <div class="mt-3">
+      <img src="{{ early.get_image }}" alt="{{ early.title }}" class="img-fluid">
+    </div>
+    <div class="mt-3">{{ early.description|safe }}</div>
+    <div class="mt-3 text-secondary"><strong>Válido hasta:</strong> {{ early.valid_until }}</div>
+  </div>

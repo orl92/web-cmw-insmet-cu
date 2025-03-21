@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
 from core import settings
 from dashboard.forms.avisos.alertas_tempranas.forms import EarlyWarningForm
@@ -253,6 +253,24 @@ class EarlyWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delete
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Aviso Alerta Temprana'
+        context['parent'] = 'avisos'
+        context['segment'] = 'alerta-temprana'
+        context['url_list'] = reverse_lazy('alertas_tempranas')
+        return context
+
+class EarlyWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = EarlyWarning
+    template_name = 'pages/dashboard/avisos/alertas_tempranas/detalle_alerta_temprana.html'
+    permission_required = 'dashboard.view_early_warning'
+    context_object_name = 'early'  # Nombre del objeto en el contexto
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(EarlyWarning, uuid=uuid)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Detalle del Aviso Alerta Temprana'
         context['parent'] = 'avisos'
         context['segment'] = 'alerta-temprana'
         context['url_list'] = reverse_lazy('alertas_tempranas')

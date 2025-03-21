@@ -14,8 +14,12 @@
     <a href="{% url 'actualizar_aviso_alerta_temprana' object.uuid %}" type="button" class="btn btn-pill btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" /><path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" /><path d="M16 5l3 3" /></svg>
     </a>
-    <a href="#" type="button" class="btn btn-pill btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle">
-      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
+    <a href="#" type="button" class="btn btn-pill btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle" data-bs-toggle="modal" data-bs-target="#earlyDetailModal" data-url="{% url 'detalle_aviso_alerta_temprana' object.uuid %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+      </svg>
     </a>
     <a href="{% url 'eliminar_aviso_alerta_temprana' object.uuid %}" type="button" class="btn btn-pill btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
@@ -28,4 +32,36 @@
       </svg>
     </a>
   </td>
+
+  <!-- Modal para el detalle del ciclón tropical -->
+  <div class="modal modal-blur fade" id="earlyDetailModal" tabindex="-1" style="display: none;" aria-labelledby="earlyDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="earlyDetailModalLabel">Detalle del Aviso de Alerta Temprana</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+        <!-- Aquí se cargará el contenido del detalle -->
+      </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      // Cuando se haga clic en el botón "Detalle"
+      $('a[data-bs-target="#earlyDetailModal"]').on('click', function() {
+        // Obtener la URL del detalle desde el atributo data-url
+        var detailUrl = $(this).data('url');
+  
+        // Cargar el contenido del detalle en el modal
+        $('#earlyDetailModal .modal-body').load(detailUrl, function() {
+          // Mostrar el modal
+          $('#earlyDetailModal').modal('show');
+        });
+      });
+    });
+  </script>
 {% endblock row %}

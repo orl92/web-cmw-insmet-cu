@@ -3,18 +3,22 @@ from django.urls import path
 from dashboard.views.dashboard.views import DashboardView, ExcelJSONView, MaintenanceModeToggleView
 from dashboard.views.avisos.alertas_tempranas.views import (EarlyWarningCreateView, 
                                                             EarlyWarningDeleteView, 
+                                                            EarlyWarningDetailView, 
                                                             EarlyWarningListView,
                                                             EarlyWarningUpdateView)
 from dashboard.views.avisos.ciclones_tropicales.views import (TropicalCycloneCreateView, 
-                                                              TropicalCycloneDeleteView,
+                                                              TropicalCycloneDeleteView, 
+                                                              TropicalCycloneDetailView,
                                                               TropicalCycloneListView, 
                                                               TropicalCycloneUpdateView)
 from dashboard.views.avisos.especiales.views import (SpecialNoticeCreateView,
                                                      SpecialNoticeDeleteView,
+                                                     SpecialNoticeDetailView,
                                                      SpecialNoticeListView,
                                                      SpecialNoticeUpdateView)
 from dashboard.views.avisos.radares.views import (RadarWarningCreateView,
                                                   RadarWarningDeleteView,
+                                                  RadarWarningDetailView,
                                                   RadarWarningListView,
                                                   RadarWarningUpdateView)
 from dashboard.views.clientes.views import (CustomerCreateView,
@@ -83,21 +87,25 @@ urlpatterns = [
     path('crear/aviso/alerta_temprana/', EarlyWarningCreateView.as_view(), name="crear_aviso_alerta_temprana"),
     path('actualizar/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningUpdateView.as_view(), name='actualizar_aviso_alerta_temprana'),
     path('eliminar/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningDeleteView.as_view(), name='eliminar_aviso_alerta_temprana'),
+    path('detalle/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningDetailView.as_view(), name='detalle_aviso_alerta_temprana'),
     # Aviso Ciclón Tropical
     path('avisos/ciclones_tropicales/', TropicalCycloneListView.as_view(), name='ciclones_tropicales'),
     path('crear/aviso/ciclon_tropical/', TropicalCycloneCreateView.as_view(), name="crear_aviso_ciclon_tropical"),
     path('actualizar/aviso/ciclon_tropical/<uuid:uuid>/',TropicalCycloneUpdateView.as_view(), name='actualizar_aviso_ciclon_tropical'),
     path('eliminar/aviso/ciclon_tropical/<uuid:uuid>/',TropicalCycloneDeleteView.as_view(), name='eliminar_aviso_ciclon_tropical'),
+    path('detalle/aviso/ciclone-tropical/<uuid:uuid>/', TropicalCycloneDetailView.as_view(), name='detalle_aviso_ciclon_tropical'),
     # Aviso Especial
     path('avisos/especiales/', SpecialNoticeListView.as_view(), name='avisos_especiales'),
     path('crear/aviso/especial/', SpecialNoticeCreateView.as_view(), name="crear_aviso_especial"),
     path('actualizar/aviso/especial/<uuid:uuid>/', SpecialNoticeUpdateView.as_view(), name='actualizar_aviso_especial'),
     path('eliminar/aviso/especial/<uuid:uuid>/',SpecialNoticeDeleteView.as_view(), name='eliminar_aviso_especial'),
+    path('detalle/aviso/especial/<uuid:uuid>/', SpecialNoticeDetailView.as_view(), name='detalle_aviso_especial'),
     # Avisos Radar
     path('avisos/radares/', RadarWarningListView.as_view(), name='avisos_radares'),
     path('crear/aviso/radar/', RadarWarningCreateView.as_view(), name="crear_aviso_radar"),
     path('actualizar/aviso/radar/<uuid:uuid>/', RadarWarningUpdateView.as_view(), name='actualizar_aviso_radar'),
     path('eliminar/aviso/radar/<uuid:uuid>/', RadarWarningDeleteView.as_view(), name='eliminar_aviso_radar'),
+    path('detalle/aviso/radar/<uuid:uuid>/', RadarWarningDetailView.as_view(), name='detalle_aviso_radar'),
     # Clientes
     path('clientes/', CustomerListView.as_view(), name='listado_clientes'), 
     path('crear/cliente/', CustomerCreateView.as_view(), name='crear_cliente'),
@@ -136,6 +144,3 @@ urlpatterns = [
     # Modo Mantenimiento
     path('toggle-maintenance/', MaintenanceModeToggleView.as_view(), name='toggle_maintenance_mode'),
 ]
-
-
-

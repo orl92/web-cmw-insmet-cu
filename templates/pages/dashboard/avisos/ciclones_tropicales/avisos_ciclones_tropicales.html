@@ -22,8 +22,12 @@
         <path d="M16 5l3 3" />
       </svg>
     </a>
-    <a href="#" type="button" class="btn btn-pill btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle">
-      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
+    <a href="#" type="button" class="btn btn-pill btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle" data-bs-toggle="modal" data-bs-target="#cycloneDetailModal" data-url="{% url 'detalle_aviso_ciclon_tropical' object.uuid %}">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+      </svg>
     </a>
     <a href="{% url 'eliminar_aviso_ciclon_tropical' object.uuid %}" type="button" class="btn btn-pill btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
@@ -36,4 +40,36 @@
       </svg>
     </a>
   </td>
+
+  <!-- Modal para el detalle del ciclón tropical -->
+  <div class="modal modal-blur fade" id="cycloneDetailModal" tabindex="-1" style="display: none;" aria-labelledby="cycloneDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cycloneDetailModalLabel">Detalle del Aviso de Ciclón Tropical</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Aquí se cargará el contenido del detalle -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
+  <script>
+  $(document).ready(function() {
+    // Cuando se haga clic en el botón "Detalle"
+    $('a[data-bs-target="#cycloneDetailModal"]').on('click', function() {
+      // Obtener la URL del detalle desde el atributo data-url
+      var detailUrl = $(this).data('url');
+
+      // Cargar el contenido del detalle en el modal
+      $('#cycloneDetailModal .modal-body').load(detailUrl, function() {
+        // Mostrar el modal
+        $('#cycloneDetailModal').modal('show');
+      });
+    });
+  });
+  </script>
 {% endblock row %}

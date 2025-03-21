@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 
 from core import settings
 from dashboard.forms.avisos.radares.forms import RadarWarningForm
@@ -254,6 +254,24 @@ class RadarWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delete
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Aviso Radar'
+        context['parent'] = 'avisos'
+        context['segment'] = 'radar'
+        context['url_list'] = reverse_lazy('avisos_radares')
+        return context
+
+class RadarWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = RadarWarning
+    template_name = 'pages/dashboard/avisos/radares/detalle_aviso_radar.html'
+    permission_required = 'dashboard.view_radar_warning'
+    context_object_name = 'radar'  # Nombre del objeto en el contexto
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(RadarWarning, uuid=uuid)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Detalle del Aviso de Radar'
         context['parent'] = 'avisos'
         context['segment'] = 'radar'
         context['url_list'] = reverse_lazy('avisos_radares')

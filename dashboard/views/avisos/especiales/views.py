@@ -261,3 +261,21 @@ class SpecialNoticeDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delet
         context['segment'] = 'especial'
         context['url_list'] = reverse_lazy('avisos_especiales')
         return context
+
+class SpecialNoticeDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = SpecialNotice
+    template_name = 'pages/dashboard/avisos/especiales/detalle_aviso_especial.html'
+    permission_required = 'dashboard.view_special_notice'
+    context_object_name = 'special'  # Nombre del objeto en el contexto
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(SpecialNotice, uuid=uuid)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Detalle del Aviso Especial'
+        context['parent'] = 'avisos'
+        context['segment'] = 'especial'
+        context['url_list'] = reverse_lazy('avisos_especiales')
+        return context

@@ -1,0 +1,13 @@
+<div>
+  <h3 class="card-title">Título: {{ cyclone.title }}</h3>
+  <div class="text-secondary">Asunto: {{ cyclone.subject }}</div>
+  <div class="mt-3 text-secondary">
+    <div>Fecha: {{ cyclone.date }}</div> 
+    <div class="mt-3">Autor: {{ cyclone.user.get_full_name }}</div>
+  </div>
+  <div class="mt-3">
+    <img src="{{ cyclone.get_image }}" alt="{{ cyclone.title }}" class="img-fluid">
+  </div>
+  <div class="mt-3">{{ cyclone.description|safe }}</div>
+  <div class="mt-3 text-secondary"><strong>Válido hasta:</strong> {{ cyclone.valid_until }}</div>
+</div>

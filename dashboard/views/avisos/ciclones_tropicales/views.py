@@ -260,3 +260,21 @@ class TropicalCycloneDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Del
         context['segment'] = 'ciclon-tropical'
         context['url_list'] = reverse_lazy('ciclones_tropicales')
         return context
+
+class TropicalCycloneDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = TropicalCyclone
+    template_name = 'pages/dashboard/avisos/ciclones_tropicales/detalle_aviso_ciclon_tropical.html'
+    permission_required = 'dashboard.view_tropical_cyclone'
+    context_object_name = 'cyclone'  # Nombre del objeto en el contexto
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(TropicalCyclone, uuid=uuid)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Detalle del Aviso de Ciclón Tropical'
+        context['parent'] = 'avisos'
+        context['segment'] = 'ciclon-tropical'
+        context['url_list'] = reverse_lazy('ciclones_tropicales')
+        return context
