@@ -99,26 +99,36 @@
                     <h3 class="card-title">Últimos Inicios de Sesión (24h)</h3>
                 </div>
                 <div class="card-body">
-                    <div class="list-group">
+                    <div class="row row-cols-1 g-0">
                         {% for login_user in recent_logins %}
-                            <a href="#" class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ login_user.username }}</h6>
-                                    <small>{{ login_user.last_login|time_since }}</small>
+                        <div class="col pb-3">
+                            <div class="row g-0 align-items-center">
+                                <div class="col-auto">
+                                    <span class="avatar avatar-lg rounded-circle" style="background-image: url({{ login_user.profile.get_avatar }})"></span>
                                 </div>
-                                <small class="text-muted">
-                                    {% if login_user.is_superuser %}
-                                        <span class="badge bg-green-lt">Superusuario</span>
-                                    {% endif %}
-                                    {% if login_user.is_staff %}
-                                        <span class="badge bg-azure-lt">Staff</span>
-                                    {% endif %}
-                                </small>
-                            </a>
-                        {% empty %}
-                            <div class="text-center text-muted py-3">
-                                No hay inicios de sesión recientes
+                                <div class="col ms-3">
+                                    <div class="text-truncate d-flex w-100 justify-content-between">
+                                        <strong>{{ login_user.get_full_name }}</strong>
+                                        <small>{{ login_user.last_login|time_since }}</small>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">
+                                        {% if login_user.is_superuser %}
+                                            <span class="badge bg-green-lt me-2">Superusuario</span>
+                                        {% endif %}
+                                        {% if login_user.is_staff %}
+                                            <span class="badge bg-azure-lt">Staff</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
                             </div>
+                        </div>
+                        {% if not forloop.last %}
+                        <hr class="my-1 text-muted">
+                        {% endif %}
+                        {% empty %}
+                        <div class="text-center text-muted py-3">
+                            No hay inicios de sesión recientes
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
