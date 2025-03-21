@@ -73,22 +73,36 @@
                     </div>
                     <!-- Paginación -->
                     <div class="pagination mt-3">
-                        <span class="step-links">
-                            {% if permission_groups_page.has_previous %}
-                                <a href="?page=1" class="btn btn-sm btn-outline-primary">&laquo; Primera</a>
-                                <a href="?page={{ permission_groups_page.previous_page_number }}" class="btn btn-sm btn-outline-primary">Anterior</a>
-                            {% endif %}
-
-                            <span class="current">
-                                Página {{ permission_groups_page.number }} de {{ permission_groups_page.paginator.num_pages }}.
-                            </span>
-
-                            {% if permission_groups_page.has_next %}
-                                <a href="?page={{ permission_groups_page.next_page_number }}" class="btn btn-sm btn-outline-primary">Siguiente</a>
-                                <a href="?page={{ permission_groups_page.paginator.num_pages }}" class="btn btn-sm btn-outline-primary">Última &raquo;</a>
-                            {% endif %}
-                        </span>
-                    </div>
+                        <ul class="pagination justify-content-center">
+                          {% if permission_groups_page.has_previous %}
+                            <li class="page-item">
+                              <a href="?page_groups=1" class="page-link" aria-label="Primera">
+                                <span aria-hidden="true">&laquo;</span>
+                                <span class="sr-only">Primera</span>
+                              </a>
+                            </li>
+                            <li class="page-item">
+                              <a href="?page_groups={{ permission_groups_page.previous_page_number }}" class="page-link">Anterior</a>
+                            </li>
+                          {% endif %}
+                      
+                          <li class="page-item disabled">
+                            <span class="page-link">Página {{ permission_groups_page.number }} de {{ permission_groups_page.paginator.num_pages }}</span>
+                          </li>
+                      
+                          {% if permission_groups_page.has_next %}
+                            <li class="page-item">
+                              <a href="?page_groups={{ permission_groups_page.next_page_number }}" class="page-link">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                              <a href="?page_groups={{ permission_groups_page.paginator.num_pages }}" class="page-link" aria-label="Última">
+                                <span aria-hidden="true">&raquo;</span>
+                                <span class="sr-only">Última</span>
+                              </a>
+                            </li>
+                          {% endif %}
+                        </ul>
+                    </div>                      
                 </div>
             </div>
         </div>
@@ -133,22 +147,36 @@
                     </div>
                     <!-- Paginación -->
                     <div class="pagination mt-3">
-                        <span class="step-links">
-                            {% if recent_logins_page.has_previous %}
-                                <a href="?page_logins=1" class="btn btn-sm btn-outline-primary">&laquo; Primera</a>
-                                <a href="?page_logins={{ recent_logins_page.previous_page_number }}" class="btn btn-sm btn-outline-primary">Anterior</a>
-                            {% endif %}
-                
-                            <span class="current">
-                                Página {{ recent_logins_page.number }} de {{ recent_logins_page.paginator.num_pages }}.
-                            </span>
-                
-                            {% if recent_logins_page.has_next %}
-                                <a href="?page_logins={{ recent_logins_page.next_page_number }}" class="btn btn-sm btn-outline-primary">Siguiente</a>
-                                <a href="?page_logins={{ recent_logins_page.paginator.num_pages }}" class="btn btn-sm btn-outline-primary">Última &raquo;</a>
-                            {% endif %}
-                        </span>
-                    </div>
+                        <ul class="pagination justify-content-center">
+                          {% if recent_logins_page.has_previous %}
+                            <li class="page-item">
+                              <a href="?page_logins=1" class="page-link" aria-label="Primera">
+                                <span aria-hidden="true">&laquo;</span>
+                                <span class="sr-only">Primera</span>
+                              </a>
+                            </li>
+                            <li class="page-item">
+                              <a href="?page_logins={{ recent_logins_page.previous_page_number }}" class="page-link">Anterior</a>
+                            </li>
+                          {% endif %}
+                      
+                          <li class="page-item disabled">
+                            <span class="page-link">Página {{ recent_logins_page.number }} de {{ recent_logins_page.paginator.num_pages }}</span>
+                          </li>
+                      
+                          {% if recent_logins_page.has_next %}
+                            <li class="page-item">
+                              <a href="?page_logins={{ recent_logins_page.next_page_number }}" class="page-link">Siguiente</a>
+                            </li>
+                            <li class="page-item">
+                              <a href="?page_logins={{ recent_logins_page.paginator.num_pages }}" class="page-link" aria-label="Última">
+                                <span aria-hidden="true">&raquo;</span>
+                                <span class="sr-only">Última</span>
+                              </a>
+                            </li>
+                          {% endif %}
+                        </ul>
+                    </div>                      
                 </div>  
             </div>
         </div>
