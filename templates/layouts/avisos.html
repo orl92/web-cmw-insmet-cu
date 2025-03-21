@@ -46,8 +46,12 @@
                                     </div>
                                     <div class="col-md-auto">
                                         <div class="mt-3 badges">
-                                            <a href="#" class="badge badge-outline text-secondary fw-normal badge-pill" data-bs-toggle="modal" data-bs-target="#detailModal" data-id="{{ warning.id }}">
-                                                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-eye"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" /></svg>
+                                            <a href="#" class="btn btn-pill btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#detailModal" data-id="{{ warning.id }}" data-bs-toggle="tooltip" title="Ver Detalle">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                    <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                                                    <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+                                                </svg>
                                             </a>
                                         </div>
                                     </div>
@@ -103,19 +107,36 @@
 {% endfor %}
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
+        // Manejar el evento del modal
         var detailModal = document.getElementById('detailModal');
+      
         detailModal.addEventListener('show.bs.modal', function (event) {
-            var button = event.relatedTarget; // Botón que activó el modal
-            var warningId = button.getAttribute('data-id'); // Extraer información de los atributos data-*
-    
-            // Obtener el contenido del aviso
-            var modalContent = document.getElementById('modal-content-' + warningId).innerHTML;
-    
-            // Insertar el contenido en el cuerpo del modal
-            detailModal.querySelector('.modal-body').innerHTML = modalContent;
+          var button = event.relatedTarget; // Botón que activó el modal
+          if (!button) return; // Salir si no hay botón relacionado
+      
+          var warningId = button.getAttribute('data-id'); // Extraer el ID
+          var modalContent = document.getElementById('modal-content-' + warningId);
+      
+          if (modalContent) {
+            detailModal.querySelector('.modal-body').innerHTML = modalContent.innerHTML;
+          }
         });
-    });
+      
+        // Reinicializar los tooltips dentro del modal cuando se muestre
+        detailModal.addEventListener('shown.bs.modal', function () {
+          var newTooltipTriggerList = [].slice.call(detailModal.querySelectorAll('[data-bs-toggle="tooltip"]'));
+          newTooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+          });
+        });
+      
+        // Inicializar los tooltips al cargar la página
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });           
 </script>
     
 {% endblock content %}
