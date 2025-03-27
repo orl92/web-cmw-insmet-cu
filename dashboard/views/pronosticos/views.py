@@ -25,7 +25,7 @@ class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Listado de Pronósticos'
-        context['parent'] = 'pronosticos'
+        context['parent'] = ''
         context['segment'] = 'pronostico'
         context['btn'] = 'Añadir Pronóstico'
         context['url_create'] = reverse_lazy('crear_pronostico')
@@ -77,7 +77,7 @@ class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Añadir Pronostico'
-        context['parent'] = 'pronosticos'
+        context['parent'] = ''
         context['segment'] = 'pronostico'
         context['url_list'] = self.success_url
 
@@ -124,7 +124,7 @@ class ForecastUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Actualizar Pronóstico'
-        context['parent'] = 'datos'
+        context['parent'] = ''
         context['segment'] = 'pronostico'
         context['url_list'] = self.success_url
         return context
