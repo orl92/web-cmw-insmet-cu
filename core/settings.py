@@ -227,15 +227,15 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Utilizar EMAIL_BACKEND persolalizado para STARTTLS
-EMAIL_BACKEND = 'core.custom_email_backend.CustomSTARTTLSBackend'
-EMAIL_USE_SSL = False
+# EMAIL_BACKEND = 'core.custom_email_backend.CustomSTARTTLSBackend'
+# EMAIL_USE_SSL = False
 
 # Utilizar EMAIL_BACKEND persolalizado para STARTTLS
-#CUSTOM_EMAIL_BACKEND = os.getenv('CUSTOM_EMAIL_BACKEND', None)
-#DISABLE_EMAIL_USE_SSL = os.getenv('DISABLE_EMAIL_USE_SSL', None)
-#if CUSTOM_EMAIL_BACKEND and DISABLE_EMAIL_USE_SSL:
-#    EMAIL_BACKEND = CUSTOM_EMAIL_BACKEND
-#    EMAIL_USE_SSL = DISABLE_EMAIL_USE_SSL
+# CUSTOM_EMAIL_BACKEND = os.getenv('CUSTOM_EMAIL_BACKEND', None)
+# DISABLE_EMAIL_USE_SSL = os.getenv('DISABLE_EMAIL_USE_SSL', None)
+# if CUSTOM_EMAIL_BACKEND and DISABLE_EMAIL_USE_SSL:
+#     EMAIL_BACKEND = CUSTOM_EMAIL_BACKEND
+#     EMAIL_USE_SSL = DISABLE_EMAIL_USE_SSL
 
 # Validation of required settings
 required_settings = ['SECRET_KEY', 'ALLOWED_HOSTS', 'EMAIL_HOST']
