@@ -88,6 +88,14 @@ $ python manage.py migrate
 
 <br />
 
+> Cargar las estaciones en la base de datos
+
+```bash
+$ python stations_add.py
+```
+
+<br />
+
 > Inicie la aplicación
 
 ```bash
