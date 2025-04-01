@@ -39,8 +39,8 @@ $ cd web-cmw-insmet-cu
 > Instale módulos a través de `VENV`  
 
 ```bash
-$ virtualenv venv
-$ source venv/bin/activate
+$ virtualenv .venv
+$ source .venv/bin/activate
 $ pip3 install -r requirements.txt
 ```
 
@@ -72,8 +72,8 @@ En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`.
 > Instale módulos a través de `VENV` (windows) 
 
 ```bash
-$ python -m venv env
-$ env\Scripts\activate
+$ python -m venv .venv
+$ .venv\Scripts\activate
 $ pip install -r requirements.txt
 ```
 
