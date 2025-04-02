@@ -2,8 +2,8 @@
 {#{% load my_filters %}#}
 {% load static %}
 {% block title-actions %}
-    <div class="col-auto ms-auto d-print-none">
-        <div class="d-flex">
+    <div class="col-12 col-md-auto order-md-last">
+        <div class="d-flex justify-content-center">
             <form id="uploadForm" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="page-pretitle">
