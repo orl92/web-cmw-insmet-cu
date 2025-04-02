@@ -217,25 +217,21 @@ SPECTACULAR_SETTINGS = {
     'REDOC_DIST': 'SIDECAR',
 }
 
-# Email configuration
+# Configuración base de email
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', default=True)
 EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-# Utilizar EMAIL_BACKEND persolalizado para STARTTLS
-# EMAIL_BACKEND = 'core.custom_email_backend.CustomSTARTTLSBackend'
-# EMAIL_USE_SSL = False
-
-# Utilizar EMAIL_BACKEND persolalizado para STARTTLS
-# CUSTOM_EMAIL_BACKEND = os.getenv('CUSTOM_EMAIL_BACKEND', None)
-# DISABLE_EMAIL_USE_SSL = os.getenv('DISABLE_EMAIL_USE_SSL', None)
-# if CUSTOM_EMAIL_BACKEND and DISABLE_EMAIL_USE_SSL:
-#     EMAIL_BACKEND = CUSTOM_EMAIL_BACKEND
-#     EMAIL_USE_SSL = DISABLE_EMAIL_USE_SSL
+# Lógica de backends (prioridad: Consola > Personalizado > SMTP estándar)
+if 'EMAIL_BACKEND' in os.environ:  # Opción 1: Backend explícito (ej: consola)
+    EMAIL_BACKEND = os.environ['EMAIL_BACKEND']
+elif 'CUSTOM_EMAIL_BACKEND' in os.environ:  # Opción 2: Backend personalizado
+    EMAIL_BACKEND = os.environ['CUSTOM_EMAIL_BACKEND']
+    EMAIL_USE_SSL = False
+# Opción 3: Por defecto Django usará SMTP (no necesitas declararlo)
 
 # Validation of required settings
 required_settings = ['SECRET_KEY', 'ALLOWED_HOSTS', 'EMAIL_HOST']
