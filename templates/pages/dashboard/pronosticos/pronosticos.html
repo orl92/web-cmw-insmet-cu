@@ -45,7 +45,7 @@
         <div class="card-body p-4 table-responsive" style="border-radius: 10px;">
             <div class="row">
                 <div class="col-lg-6">
-                    <form method="get" action="."><!-- Cambiado de 'post' a 'get' para filtrar -->
+                    <form method="get" action=".">
                         {% csrf_token %}
                         <label class="form-label me-2">Fecha:</label>
                         <div class="mb-3 d-flex align-items-center">
@@ -76,7 +76,6 @@
                                 </button>
                             </div>
                         </div>
-
                     </form>
                 </div>
             </div>
