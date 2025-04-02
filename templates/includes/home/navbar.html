@@ -256,7 +256,7 @@
                     </a>
                     <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                         {% if request.user.is_staff %}
-                            <a href="{% url 'dashboard' %}" class="dropdown-item">Configuración</a>
+                            <a href="{% url 'dashboard' %}" class="dropdown-item">Administración</a>
                         {% else %}
                             <a href="{% url 'profile' %}" class="dropdown-item">Perfil</a>
                         {% endif %}
