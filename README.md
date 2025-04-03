@@ -56,6 +56,14 @@ $ python manage.py collectstatic --link --no-input
 
 <br />
 
+> Cargar las estaciones en la base de datos
+
+```bash
+$ python stations_add.py
+```
+
+<br />
+
 > Inicie la aplicación
 
 ```bash
