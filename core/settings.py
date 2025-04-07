@@ -19,42 +19,82 @@ from django.contrib.messages import constants as messages
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 def create_default_env(production=False):
-    """Crea un archivo .env con valores por defecto usando UTF-8"""
+    """Crea un archivo .env con valores por defecto y guías para el usuario"""
     env_path = BASE_DIR / '.env'
     if env_path.exists():
         return
     
-    print("\n🔧 Creando archivo .env automáticamente...")
+    print("\n🔧 Creando archivo .env automáticamente con valores iniciales...")
     
     secret_key = get_random_secret_key()
     
     try:
         with open(env_path, 'w', encoding='utf-8') as f:
-            f.write(f"# Configuración {'producción' if production else 'desarrollo'}\n")
+            # Configuración básica
+            f.write("# =====================\n")
+            f.write("# CONFIGURACIÓN BÁSICA (REQUERIDA)\n")
+            f.write("# =====================\n")
             f.write(f"DEBUG={'False' if production else 'True'}\n")
-            f.write(f"SECRET_KEY={secret_key}\n")
+            f.write(f"SECRET_KEY={secret_key}\n\n")
+            
+            # Configuración de dominio
+            f.write("# =====================\n")
+            f.write("# CONFIGURACIÓN DE DOMINIO (MODIFICAR!)\n")
+            f.write("# =====================\n")
+            f.write("# ⚠️ DEBE CONFIGURAR ESTO PARA PRODUCCIÓN ⚠️\n")
+            f.write("# Ejemplo: web.cmw.insmet.cu (sin http://)\n")
+            f.write("EXTERNAL_HOSTNAME=tu-dominio-real.com\n\n")
+            
+            # Configuración de hosts
+            f.write("# =====================\n")
+            f.write("# CONFIGURACIÓN DE HOSTS\n")
+            f.write("# =====================\n")
             f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
-            f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000\n")
+            f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000\n\n")
+            
+            # Configuración de email
+            f.write("# =====================\n")
+            f.write("# CONFIGURACIÓN DE EMAIL (MODIFICAR!)\n")
+            f.write("# =====================\n")
+            f.write("# ⚠️ DEBE CONFIGURAR LOS VALORES REALES ⚠️\n")
+            f.write("EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # EmailBackend Consola\n\n")
             
             if production:
-                f.write("\n# Configuración de producción\n")
-                f.write("# EXTERNAL_HOSTNAME=tu-dominio-real.com\n")
-                f.write("DB_ENGINE=postgresql\n")
-                f.write("DB_NAME=meteorologia\n")
-                f.write("DB_USER=usuario_bd\n")
-                f.write("DB_PASS=contraseña_segura\n")
-                f.write("DB_HOST=localhost\n")
-                f.write("DB_PORT=5432\n")
-                f.write("EMAIL_HOST=smtp.office365.com\n")
-                f.write("EMAIL_PORT=587\n")
-                f.write("EMAIL_HOST_USER=tu@cmw.insmet.cu\n")
-                f.write("EMAIL_HOST_PASSWORD=tu_contraseña\n")
-                f.write("DEFAULT_FROM_EMAIL=no-reply@cmw.insmet.cu\n")
+                # Configuración de email
+                f.write("# =====================\n")
+                f.write("# CONFIGURACIÓN DE EMAIL (MODIFICAR!)\n")
+                f.write("# =====================\n")
+                f.write("# ⚠️ DEBE CONFIGURAR ESTOS VALORES REALES ⚠️\n")
+                f.write("EMAIL_USE_TLS=True  # Recomendado\n")
+                f.write("EMAIL_HOST=smtp.example.cu  # Servidor SMTP\n")
+                f.write("EMAIL_PORT=587                 # Puerto SMTP\n")
+                f.write("EMAIL_HOST_USER=user@example.cu       # Email completo\n")
+                f.write("EMAIL_HOST_PASSWORD=tu_contraseña      # Contraseña del email\n")
+                f.write("DEFAULT_FROM_EMAIL=Centro Meteorológico Camagüey<user@example.cu>  # Email de envío\n\n")
+                
+                # Configuración de base de datos
+                f.write("# =====================\n")
+                f.write("# BASE DE DATOS (MODIFICAR!)\n")
+                f.write("# =====================\n")
+                f.write("DB_ENGINE=postgresql           # postgresql o mysql\n")
+                f.write("DB_NAME=meteorologia_prod      # Nombre de la BD\n")
+                f.write("DB_USER=usuario_db             # Usuario de la BD\n")
+                f.write("DB_PASS=contraseña_segura      # Contraseña de la BD\n")
+                f.write("DB_HOST=localhost              # Host de la BD\n")
+                f.write("DB_PORT=5432                   # Puerto de la BD\n")
         
-        print(f"✅ Archivo .env creado con valores para {'producción' if production else 'desarrollo'}")
-        print(f"🔑 SECRET_KEY generada: {secret_key[:15]}... (Guárdala en un lugar seguro)")
+        print("\n✅ Archivo .env creado exitosamente")
+        print("🔑 SECRET_KEY generada automáticamente")
+        print("\n⚠️ ATENCIÓN: Debe editar manualmente estos valores en .env:")
+        print("  - EXTERNAL_HOSTNAME (para producción)")
+        print("  - Configuración de EMAIL (para producción)")
+        if production:
+            print("  - Configuración de EMAIL")
+            print("  - Configuración de BASE DE DATOS")
+        print("\n✏️ Puede editarlo con cualquier editor de texto (VS Code, Notepad++, etc.)")
+        
     except Exception as e:
-        print(f"❌ Error al crear .env: {str(e)}")
+        print(f"\n❌ Error al crear .env: {str(e)}")
         sys.exit(1)
 
 # Detectar entorno
@@ -63,13 +103,12 @@ IS_PRODUCTION = 'PRODUCTION' in os.environ or '--production' in sys.argv
 # Crear .env si no existe
 create_default_env(production=IS_PRODUCTION)
 
-# Cargar variables de entorno con UTF-8
+# Cargar variables de entorno
 try:
     load_dotenv(encoding='utf-8')
-except UnicodeDecodeError:
-    print("❌ Error: El archivo .env tiene problemas de codificación. Por favor:")
-    print("1. Elimina el archivo .env existente")
-    print("2. Vuelve a ejecutar para generar uno nuevo")
+except Exception as e:
+    print(f"\n❌ Error al cargar .env: {str(e)}")
+    print("ℹ️ Posible solución: Elimine el archivo .env y vuelva a ejecutar")
     sys.exit(1)
 
 # =====================
@@ -307,14 +346,33 @@ elif 'CUSTOM_EMAIL_BACKEND' in os.environ:
 # =====================
 # 14. FINAL VALIDATION
 # =====================
-if not DEBUG:
-    required = {
-        'SECRET_KEY': SECRET_KEY,
-        'ALLOWED_HOSTS': ALLOWED_HOSTS,
-        'EMAIL_HOST': os.getenv('EMAIL_HOST')
-    }
-    if not all(required.values()):
-        missing = [k for k, v in required.items() if not v]
-        raise ImproperlyConfigured(f"Falta configuración de producción: {', '.join(missing)}")
+# Variables necesarias en producción
+required_production = [
+    'EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_HOST_USER',
+    'EMAIL_HOST_PASSWORD', 'DEFAULT_FROM_EMAIL'
+]
+
+# Variables necesarias en desarrollo si EMAIL_BACKEND no está presente
+required_development = [
+    'EMAIL_USE_TLS', 'EMAIL_HOST', 'EMAIL_PORT',
+    'EMAIL_HOST_USER', 'EMAIL_HOST_PASSWORD', 'DEFAULT_FROM_EMAIL'
+]
+
+# Verificar entorno
+email_backend = os.getenv('EMAIL_BACKEND')
+if DEBUG:
+    if not email_backend:
+        missing = [var for var in ['EMAIL_USE_TLS', 'EMAIL_HOST', 'EMAIL_PORT',
+                                   'EMAIL_HOST_USER', 'EMAIL_HOST_PASSWORD', 'DEFAULT_FROM_EMAIL']
+                   if not os.getenv(var)]
+        if missing:
+            print(f"Advertencia: Faltan configuraciones necesarias en desarrollo: {', '.join(missing)}")
+else:
+    missing = [var for var in ['EMAIL_HOST', 'EMAIL_PORT', 'EMAIL_HOST_USER',
+                               'EMAIL_HOST_PASSWORD', 'DEFAULT_FROM_EMAIL']
+               if not os.getenv(var)]
+    if missing:
+        raise ImproperlyConfigured(f"Faltan configuraciones necesarias en producción: {', '.join(missing)}")
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

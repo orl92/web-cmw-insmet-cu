@@ -12,9 +12,10 @@
     {% include 'includes/base/head.html' %}
   </head>
   <body class="{% block body %}{% endblock body %}">
-    <script src="{% static '' %}dist/js/demo-theme.min.js?1684106062"></script>
+    <script src="{% static '' %}dist/js/tabler-theme.min.js"></script>
     {% block content %}{% endblock content %}
-    <!-- Libs JS -->
+    {% include 'includes/base/settings.html' %}
+    <!-- Tabler Core -->
     {% include 'includes/base/scripts.html' %}
     {% block extrajs %}{% endblock extrajs %}
   </body>
