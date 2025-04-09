@@ -10,7 +10,7 @@
     </div>
     <div class="mb-3">
       <label class="form-label required">{{ form.detailed_note.label }}</label>
-      <textarea id="tinymce-default" name="{{ form.detailed_note.name }}" placeholder="Nota Detallada"></textarea>
+      <textarea id="hugerte-textarea" name="{{ form.detailed_note.name }}" placeholder="Nota Detallada"></textarea>
       {% if form.detailed_note.errors %}
           <span class="text-danger d-block mb-3">{{ form.detailed_note.errors }}</span>
       {% endif %}

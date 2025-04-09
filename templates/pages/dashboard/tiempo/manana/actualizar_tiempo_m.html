@@ -11,7 +11,7 @@
     </div>
     <div class="mb-3">
       <label class="form-label required">{{ form.detailed_forecast.label }}</label>
-      <textarea id="tinymce-default" name="{{ form.detailed_forecast.name }}" placeholder="Pronóstico Detallado">{{ form.detailed_forecast.value }}</textarea>
+      <textarea id="hugerte-textarea" name="{{ form.detailed_forecast.name }}" placeholder="Pronóstico Detallado">{{ form.detailed_forecast.value }}</textarea>
       {% if form.detailed_forecast.errors %}
           <span class="text-danger d-block mb-3">{{ form.detailed_forecast.errors }}</span>
       {% endif %}

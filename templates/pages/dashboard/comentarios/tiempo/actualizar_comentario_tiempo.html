@@ -11,7 +11,7 @@
     </div>
     <div class="mb-3">
       <label class="form-label required">{{ form.detailed_commentary.label }}</label>
-      <textarea id="tinymce-default" name="{{ form.detailed_commentary.name }}" placeholder="Comentario Detallado">{{ form.detailed_commentary.value }}</textarea>
+      <textarea id="hugerte-textarea" name="{{ form.detailed_commentary.name }}" placeholder="Comentario Detallado">{{ form.detailed_commentary.value }}</textarea>
       {% if form.detailed_commentary.errors %}
           <span class="text-danger d-block mb-3">{{ form.detailed_commentary.errors }}</span>
       {% endif %}

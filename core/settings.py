@@ -54,7 +54,7 @@ def create_default_env(production=False):
             
             # Configuración de email
             f.write("# =====================\n")
-            f.write("# CONFIGURACIÓN DE EMAIL (MODIFICAR!)\n")
+            f.write("# CONFIGURACIÓN DE EMAIL (⚠️ MODIFICAR! ⚠️)\n")
             f.write("# =====================\n")
             f.write("# ⚠️ DEBE CONFIGURAR LOS VALORES REALES ⚠️\n")
             f.write("EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # EmailBackend Consola\n\n")
@@ -62,19 +62,21 @@ def create_default_env(production=False):
             if production:
                 # Configuración de email
                 f.write("# =====================\n")
-                f.write("# CONFIGURACIÓN DE EMAIL (MODIFICAR!)\n")
+                f.write("# CONFIGURACIÓN DE EMAIL (⚠️ MODIFICAR! ⚠️)\n")
                 f.write("# =====================\n")
-                f.write("# ⚠️ DEBE CONFIGURAR ESTOS VALORES REALES ⚠️\n")
+                f.write("# ⚠️ DEBE CONFIGURAR LOS VALORES REALES ⚠️\n")
                 f.write("EMAIL_USE_TLS=True  # Recomendado\n")
                 f.write("EMAIL_HOST=smtp.example.cu  # Servidor SMTP\n")
                 f.write("EMAIL_PORT=587                 # Puerto SMTP\n")
                 f.write("EMAIL_HOST_USER=user@example.cu       # Email completo\n")
                 f.write("EMAIL_HOST_PASSWORD=tu_contraseña      # Contraseña del email\n")
                 f.write("DEFAULT_FROM_EMAIL=Centro Meteorológico Camagüey<user@example.cu>  # Email de envío\n\n")
+                f.write("CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend  # Backend Personalizado\n")
+                f.write("EMAIL_USE_SSL = False  # False si usas Backend Personalizado\n")
                 
                 # Configuración de base de datos
                 f.write("# =====================\n")
-                f.write("# BASE DE DATOS (MODIFICAR!)\n")
+                f.write("# BASE DE DATOS (⚠️ MODIFICAR! ⚠️)\n")
                 f.write("# =====================\n")
                 f.write("DB_ENGINE=postgresql           # postgresql o mysql\n")
                 f.write("DB_NAME=meteorologia_prod      # Nombre de la BD\n")
@@ -337,9 +339,7 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-if 'EMAIL_BACKEND' in os.environ:
-    EMAIL_BACKEND = os.environ['EMAIL_BACKEND']
-elif 'CUSTOM_EMAIL_BACKEND' in os.environ:
+if 'CUSTOM_EMAIL_BACKEND' in os.environ:
     EMAIL_BACKEND = os.environ['CUSTOM_EMAIL_BACKEND']
     EMAIL_USE_SSL = False
 

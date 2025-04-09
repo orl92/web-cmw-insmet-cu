@@ -15,8 +15,9 @@
     <script src="{% static '' %}dist/js/tabler-theme.min.js"></script>
     {% block content %}{% endblock content %}
     {% include 'includes/base/settings.html' %}
+    <!-- Tabler JS -->
+    {% block extrajs %}{% endblock extrajs %}
     <!-- Tabler Core -->
     {% include 'includes/base/scripts.html' %}
-    {% block extrajs %}{% endblock extrajs %}
   </body>
 </html>
