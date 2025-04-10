@@ -68,7 +68,8 @@ $ python stations_add.py
 
 ```bash
 $ python manage.py createsuperuser # Crear el administrador
-$ python manage.py runserver       # Iniciar el proyecto
+$ python manage.py runserver       # Iniciar el proyecto desarrollo
+$ python manage.py runserver --production # Iniciar el proyecto produccion
 ```
 
 En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`. 
@@ -108,7 +109,8 @@ $ python stations_add.py
 
 ```bash
 $ python manage.py createsuperuser # Crear el administrador
-$ python manage.py runserver       # Iniciar el proyecto
+$ python manage.py runserver       # Iniciar el proyecto desarrollo
+$ python manage.py runserver --production # Iniciar el proyecto produccion
 ```
 
 En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`. 
