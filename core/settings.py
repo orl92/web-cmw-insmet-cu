@@ -39,7 +39,7 @@ def create_default_env(production=False):
             
             # Configuración de dominio
             f.write("# =====================\n")
-            f.write("# CONFIGURACIÓN DE DOMINIO (MODIFICAR!)\n")
+            f.write("# CONFIGURACIÓN DE DOMINIO (⚠️ MODIFICAR! ⚠️)\n")
             f.write("# =====================\n")
             f.write("# ⚠️ DEBE CONFIGURAR ESTO PARA PRODUCCIÓN ⚠️\n")
             f.write("# Ejemplo: web.cmw.insmet.cu (sin http://)\n")
@@ -52,12 +52,12 @@ def create_default_env(production=False):
             f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
             f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000\n\n")
             
-            # Configuración de email
-            f.write("# =====================\n")
-            f.write("# CONFIGURACIÓN DE EMAIL (⚠️ MODIFICAR! ⚠️)\n")
-            f.write("# =====================\n")
-            f.write("# ⚠️ DEBE CONFIGURAR LOS VALORES REALES ⚠️\n")
-            f.write("EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # EmailBackend Consola\n\n")
+            # Solo incluir el EmailBackend de consola si NO es producción
+            if not production:
+                f.write("# =====================\n")
+                f.write("# CONFIGURACIÓN DE EMAIL PARA DESARROLLO\n")
+                f.write("# =====================\n")
+                f.write("EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend  # EmailBackend Consola\n\n")
             
             if production:
                 # Configuración de email
@@ -89,7 +89,6 @@ def create_default_env(production=False):
         print("🔑 SECRET_KEY generada automáticamente")
         print("\n⚠️ ATENCIÓN: Debe editar manualmente estos valores en .env:")
         print("  - EXTERNAL_HOSTNAME (para producción)")
-        print("  - Configuración de EMAIL (para producción)")
         if production:
             print("  - Configuración de EMAIL")
             print("  - Configuración de BASE DE DATOS")
