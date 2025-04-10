@@ -40,22 +40,7 @@ def create_default_env(production=False):
             f.write(f"DEBUG={'False' if production else 'True'}\n")
             f.write(f"SECRET_KEY={secret_key}\n\n")
             
-            # 2. Configuración de dominio
-            f.write("# =====================\n")
-            f.write("# CONFIGURACIÓN DE DOMINIO (⚠️ MODIFICAR! ⚠️)\n")
-            f.write("# =====================\n")
-            f.write("# ⚠️ DEBE CONFIGURAR ESTO PARA PRODUCCIÓN ⚠️\n")
-            f.write("# Ejemplo: web.cmw.insmet.cu (sin http://)\n")
-            f.write("EXTERNAL_HOSTNAME=tu-dominio-real.com\n\n")
-            
-            # 3. Configuración de hosts
-            f.write("# =====================\n")
-            f.write("# CONFIGURACIÓN DE HOSTS\n")
-            f.write("# =====================\n")
-            f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
-            f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000\n\n")
-            
-            # 4. Configuración de email (solo desarrollo)
+            # 2. Configuración de email (solo desarrollo)
             if not production:
                 f.write("# =====================\n")
                 f.write("# CONFIGURACIÓN DE EMAIL PARA DESARROLLO\n")
@@ -63,9 +48,17 @@ def create_default_env(production=False):
                 f.write("EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend\n")
                 f.write("# EmailBackend que muestra los correos en la consola\n\n")
             
-            # 5. Configuración para producción
+            # 3. Configuración para producción
             if production:
-                # 5.1 Email
+                # 3.1. Configuración de dominio
+                f.write("# =====================\n")
+                f.write("# CONFIGURACIÓN DE DOMINIO (⚠️ MODIFICAR! ⚠️)\n")
+                f.write("# =====================\n")
+                f.write("# ⚠️ DEBE CONFIGURAR ESTO PARA PRODUCCIÓN ⚠️\n")
+                f.write("# Ejemplo: web.cmw.insmet.cu (sin http://)\n")
+                f.write("EXTERNAL_HOSTNAME=tu-dominio-real.com\n\n")
+                
+                # 3.2 Email
                 f.write("# =====================\n")
                 f.write("# CONFIGURACIÓN DE EMAIL (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
                 f.write("# =====================\n")
@@ -79,7 +72,7 @@ def create_default_env(production=False):
                 f.write("CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend\n")
                 f.write("EMAIL_USE_SSL=False\n\n")
                 
-                # 5.2 Base de datos
+                # 3.3 Base de datos
                 f.write("# =====================\n")
                 f.write("# BASE DE DATOS (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
                 f.write("# =====================\n")
@@ -142,7 +135,7 @@ def validate_environment():
     
     if not DEBUG and not os.getenv('EXTERNAL_HOSTNAME'):
         errors.append("🚨 ERROR: Para producción debe configurar EXTERNAL_HOSTNAME en .env")
-        errors.append("💡 Ejemplo: EXTERNAL_HOSTNAME=ace3.aceitecmg.alinet.cu")
+        errors.append("💡 Ejemplo: EXTERNAL_HOSTNAME=web.cmw.insmet.cu")
     
     if errors:
         print("\n".join(errors))
@@ -214,7 +207,7 @@ ALLOWED_HOSTS = [
 
 CSRF_TRUSTED_ORIGINS = [
     o.strip() 
-    for o in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000').split(',') 
+    for o in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',') 
     if o.strip()
 ]
 
@@ -351,13 +344,28 @@ USE_TZ = True
 # 10. STATIC FILES
 # =====================
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' if not DEBUG else None
 
+# Configuración diferente para desarrollo/producción
+if IS_PRODUCTION:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    # Crear directorio si no existe
+    if not os.path.exists(STATIC_ROOT):
+        os.makedirs(STATIC_ROOT)
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+else:
+    STATIC_ROOT = None  # No usar staticfiles en desarrollo
+    STATICFILES_STORAGE = None
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# Configuración de medios
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
-    
+if not os.path.exists(MEDIA_ROOT):
+    os.makedirs(MEDIA_ROOT)
+
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # =====================
@@ -389,6 +397,9 @@ REST_FRAMEWORK = {
     }
 }
 
+# =====================
+# 13. SPECTACULAR SETTINGS (OpenAPI)
+# =====================
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Centro Meteorológico Camagüey',
     'DESCRIPTION': 'Documentación de la API',
@@ -400,7 +411,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 # =====================
-# 13. EMAIL CONFIGURATION
+# 14. EMAIL CONFIGURATION
 # =====================
 EMAIL_USE_TLS = str2bool(os.getenv('EMAIL_USE_TLS', 'True'))
 EMAIL_HOST = os.getenv('EMAIL_HOST')
@@ -417,7 +428,20 @@ elif 'CUSTOM_EMAIL_BACKEND' in os.environ:
     EMAIL_USE_SSL = False
 
 # =====================
-# 14. FINAL VALIDATION
+# 15. WHITENOISE CONFIGURATION
+# =====================
+# Solo usar WhiteNoise en producción
+if IS_PRODUCTION:
+    # Verificar que WhiteNoise esté correctamente configurado
+    if 'whitenoise.middleware.WhiteNoiseMiddleware' not in MIDDLEWARE:
+        MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    print("\n🛡️ WhiteNoise habilitado para servir archivos estáticos en producción")
+elif 'whitenoise.middleware.WhiteNoiseMiddleware' in MIDDLEWARE:
+    # Remover WhiteNoise en desarrollo para evitar advertencias
+    MIDDLEWARE.remove('whitenoise.middleware.WhiteNoiseMiddleware')
+
+# =====================
+# 16. FINAL VALIDATION
 # =====================
 # Variables necesarias en producción
 if not DEBUG:
