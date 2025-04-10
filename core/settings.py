@@ -55,7 +55,7 @@ def create_default_env(production=False):
                 f.write("# CONFIGURACIÓN DE DOMINIO (⚠️ MODIFICAR! ⚠️)\n")
                 f.write("# =====================\n")
                 f.write("# ⚠️ DEBE CONFIGURAR ESTO PARA PRODUCCIÓN ⚠️\n")
-                f.write("# Ejemplo: web.cmw.insmet.cu (sin http://)\n")
+                f.write("# Ejemplo: .cmw.insmet.cu (sin http://)\n")
                 f.write("EXTERNAL_HOSTNAME=tu-dominio-real.com\n\n")
                 
                 # 3.2 Email
