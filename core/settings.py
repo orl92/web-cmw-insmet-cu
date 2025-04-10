@@ -29,7 +29,11 @@ def create_default_env(production=False):
     
     print("\n🔧 Creando archivo .env automáticamente con valores iniciales...")
     
+    from cryptography.fernet import Fernet
     secret_key = get_random_secret_key()
+    encryption_key = Fernet.generate_key()
+    cipher_suite = Fernet(encryption_key)
+    encrypted_secret_key = cipher_suite.encrypt(secret_key.encode()).decode()
     
     try:
         with open(env_path, 'w', encoding='utf-8') as f:
@@ -38,7 +42,8 @@ def create_default_env(production=False):
             f.write("# CONFIGURACIÓN BÁSICA (REQUERIDA)\n")
             f.write("# =====================\n")
             f.write(f"DEBUG={'False' if production else 'True'}\n")
-            f.write(f"SECRET_KEY={secret_key}\n\n")
+            f.write(f"SECRET_KEY={encrypted_secret_key}\n")
+            f.write(f"ENCRYPTION_KEY={encryption_key.decode()}\n\n")
             
             # 2. Configuración de email (solo desarrollo)
             if not production:
@@ -109,6 +114,10 @@ def create_default_env(production=False):
         print(f"\n❌ Error al crear .env: {str(e)}")
         print("ℹ️ Posible solución: Verifique los permisos de escritura en el directorio")
         sys.exit(1)
+
+def decrypt_secret_key(encrypted_secret_key, encryption_key):
+    cipher_suite = Fernet(encryption_key.encode())
+    return cipher_suite.decrypt(encrypted_secret_key.encode()).decode()
 
 # Crear .env si no existe
 create_default_env(production=IS_PRODUCTION)
