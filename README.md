@@ -19,37 +19,32 @@ Sistema web del **Centro Meteorológico Provincial Camagüey** desarrollado con 
 
 El sistema detecta automáticamente el entorno (development/production) y configura las variables apropiadas:
 
-1. **Development**: 
-   - `DEBUG=True`
-   - Usa SQLite por defecto
-   - Configuración automática al ejecutar `runserver`
+### 🔄 Comparación de entornos
 
-2. **Production**:
-   - `DEBUG=False`
-   - Requiere configuración de base de datos en `.env`
-   - Se activa con `runserver --production`
+| Variable              | Desarrollo (`runserver`)               | Producción (`runserver --production`)    |
+|-----------------------|----------------------------------------|------------------------------------------|
+| `DEBUG`               | `True` (activado)                      | `False` (desactivado)                    |
+| `DB_ENGINE`           | `sqlite3` (automático)                 | `postgresql`/`mysql` (requiere config)   |
+| `EMAIL_BACKEND`       | Consola (emails en terminal)           | SMTP real (configuración obligatoria)    |
+| `ALLOWED_HOSTS`       | `localhost,127.0.0.1` (automático)     | Dominio real (requiere configuración)    |
+| `EXTERNAL_HOSTNAME`   | No requerido                           | **Obligatorio** (dominio de producción)  |
+| `SECRET_KEY`          | Generada automáticamente               | Generada automáticamente                 |
+| Configuración inicial | Completa automáticamente `.env`        | Genera plantilla `.env` para completar   |
+| Base de datos         | SQLite (configuración cero)            | PostgreSQL/MySQL (configuración manual)  |
+| Archivos estáticos    | Servidos por Django                    | Servidos por Nginx + Whitenoise          |
+| Panel de errores      | Detallado (con stack traces)           | Seguro (páginas de error personalizadas)|
 
-### Variables de entorno (.env)
+**Key Features por entorno:**
+- **Desarrollo**: 
+  - Configura todo automáticamente al ejecutar `runserver`
+  - No requiere configuración manual inicial
+  - Incluye herramientas de depuración
 
-El archivo `.env` se genera automáticamente con valores por defecto para desarrollo. Para producción, edítalo con tus valores reales:
+- **Producción**:
+  - Genera plantilla `.env` con valores requeridos
+  - Exige validación manual de configuraciones críticas
+  - Habilita optimizaciones de seguridad y performance
 
-```ini
-# Configuración básica
-DEBUG=False
-SECRET_KEY=tu_clave_secreta_aqui
-
-# Database (MySQL ejemplo)
-DB_ENGINE=django.db.backends.mysql
-DB_NAME=nombre_db
-DB_USER=usuario_db
-DB_PASS=contraseña_db
-DB_HOST=localhost
-DB_PORT=3306
-
-# Configuración de producción
-ALLOWED_HOSTS=.cmw.insmet.cu,localhost
-CSRF_TRUSTED_ORIGINS=https://web.cmw.insmet.cu
-```
 ## 🛠️ Instalación
 
 ### Requisitos previos
@@ -103,6 +98,7 @@ python manage.py runserver
 # Modo producción (pruebas locales)
 python manage.py runserver --production
 ```
+
 En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`. 
 
 ## 🚀 Despliegue en Producción
@@ -112,10 +108,12 @@ En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`.
 - Supervisor para gestión de procesos
 
 ### 1. Configurar Nginx
-- Instala Nginx: `sudo apt install nginx`
-- Comentar el contenido de `/etc/nginx/sites-available/default`
-- Crear `webcmp.conf`:
+```ini
+sudo apt install nginx
+sudo nano /etc/nginx/sites-available/webcmp.conf
+```
 
+#### Ejemplo de configuración:
 ```ini
 upstream webcmp_app {
     server unix:/tmp/gunicorn-webcmp.sock fail_timeout=0;
@@ -145,10 +143,19 @@ server {
     }
 }
 ```
-### 2. Configurar Gunicorn
-- Instala `Gunicorn`: `pip install gunicorn`
-- Crear `gunicorn.sh`:
 
+#### Comentar el contenido de: 
+```ini
+/etc/nginx/sites-available/default
+```
+
+### 2. Configurar Gunicorn
+```ini
+pip install gunicorn
+nano gunicorn.sh
+```
+
+#### Ejemplo de configuración:
 ```ini
 #!/bin/bash
 NAME="webcmp"
@@ -174,9 +181,13 @@ exec ${DJANGODIR}/venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
   --log-level=debug \
   --log-file=$LOGDIR
 ```
-## 3. Configurar Supervisor
-- Crear `webcmp.conf`: `/etc/supervisor/conf.d/webcmp.conf`
 
+## 3. Configurar Supervisor
+```bash
+sudo nano /etc/supervisor/conf.d/webcmp.conf
+```
+
+#### Ejemplo de configuración:
 ```ini
 [program:webcmp]
 command=/var/www/web-cmw-insmet-cu/gunicorn.sh
@@ -201,37 +212,3 @@ Este proyecto está bajo la licencia MIT. Ver LICENSE para más detalles.
 Centro Meteorológico Provincial Camagüey
 Instituto de Meteorología de Cuba
 © 2025
-
-
-
-<br />
-
-### 👉 Deploy
-
-> Instale y configure Nginx
-
-- Instala `Nginx`: `sudo apt install nginx`
-
-- Comentar el contenido del archivo `/etc/nginx/sites-available/default`
-
-
-
-<br />
-
-> Instale y configure Gunicorn
- 
-- Instala `Gunicorn`: `pip install gunicorn`
-
-> Configuración gunicorn.sh
-
-```ini
-$ nano /pon aqui la ruta del gunicorn
-```
-
-
-
-
-
-En este punto, el producto debe estar en linea.
-
-<br />
