@@ -41,7 +41,7 @@ El sistema detecta automáticamente el entorno (development/production) y config
   - Incluye herramientas de depuración
 
 - **Producción**:
-  - Genera plantilla `.env` con valores requeridos
+  - Genera plantilla `.env` al ejecutar `runserver --production` con valores requeridos
   - Exige validación manual de configuraciones críticas
   - Habilita optimizaciones de seguridad y performance
 
