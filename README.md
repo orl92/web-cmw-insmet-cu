@@ -1,155 +1,136 @@
-# [Centro Meteorológico Provincial Camagüey](https://web.cmw.insmet.cu)
+# Centro Meteorológico Provincial Camagüey
 
-Código abierto **[Centro Meteorológico Provincial Camagüey](https://web.cmw.insmet.cu)** generado con python y django. **[Tabler](https://tabler.io/)** es una plantilla de administración de código abierto creada por la agencia Codecalm. Viene con los componentes básicos y el conjunto de páginas prediseñadas necesarias para sentar las bases de cualquier aplicación - Diseño proporcionado por `Codecalm`.
+[![Django](https://img.shields.io/badge/Django-5.1+-green.svg)](https://www.djangoproject.com/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-- 👉 [Centro Meteorológico Provincial Camagüey](https://web.cmw.insmet.cu) - `Página del producto`
+Sistema web del **Centro Meteorológico Provincial Camagüey** desarrollado con Python/Django. Utiliza la plantilla **[Tabler](https://tabler.io/)** para la interfaz de administración.
 
-<br />
+🔗 **Sitio en producción**: [https://web.cmw.insmet.cu](https://web.cmw.insmet.cu)
 
-### 👉 Environment
+## 🚀 Características principales
 
-Crear un nuevo archivo `.env` usando la muestra `env.sample`. El significado de cada variable se puede encontrar a continuación: 
+- Panel administrativo moderno con Tabler
+- Configuración automática para entornos de desarrollo/producción
+- Base de datos configurable (MySQL/PostgreSQL)
+- Sistema de estaciones meteorológicas integrado
+- Despliegue optimizado con Nginx + Gunicorn
 
-- `DEBUG`: si es `True`, la aplicación se ejecuta en modo de desarrollo
-  - Para producción debe utilizarse `False`
-- Para`MySql`
-  - Instale el controlador de base de datos: `pip install mysqlclient` 
-  - Crear una base de datos y asignar un nuevo usuario (derechos completos)
-  - Edite `.env` para que coincida con la base de datos, el usuario, la contraseña .. 
-- Para `PostgreSql`
-  - Instale el controlador de base de datos: `pip install psycopg2-binary` 
-  - Crear una base de datos y asignar un nuevo usuario (derechos completos)
-  - Edite `.env` para que coincida con la base de datos, el usuario, la contraseña .. 
+## ⚙️ Configuración del entorno
 
-<br />
+El sistema detecta automáticamente el entorno (development/production) y configura las variables apropiadas:
 
-### 👉 Construcción manual
+1. **Development**: 
+   - `DEBUG=True`
+   - Usa SQLite por defecto
+   - Configuración automática al ejecutar `runserver`
 
-> Descargar el código
+2. **Production**:
+   - `DEBUG=False`
+   - Requiere configuración de base de datos en `.env`
+   - Se activa con `runserver --production`
 
+### Variables de entorno (.env)
+
+El archivo `.env` se genera automáticamente con valores por defecto para desarrollo. Para producción, edítalo con tus valores reales:
+
+```ini
+# Configuración básica
+DEBUG=False
+SECRET_KEY=tu_clave_secreta_aqui
+
+# Database (MySQL ejemplo)
+DB_ENGINE=django.db.backends.mysql
+DB_NAME=nombre_db
+DB_USER=usuario_db
+DB_PASS=contraseña_db
+DB_HOST=localhost
+DB_PORT=3306
+
+# Configuración de producción
+ALLOWED_HOSTS=.cmw.insmet.cu,localhost
+CSRF_TRUSTED_ORIGINS=https://web.cmw.insmet.cu
+```
+## 🛠️ Instalación
+
+### Requisitos previos
+- Python 3.8+
+- pip
+- virtualenv (recomendado)
+
+### 1. Clonar el repositorio
 ```bash
-$ git clone https://github.com/yoelvismr/web-cmw-insmet-cu.git
-$ cd web-cmw-insmet-cu
+git clone https://github.com/yoelvismr/web-cmw-insmet-cu.git
+cd web-cmw-insmet-cu
 ```
 
-<br />
+### 2. Configurar entorno virtual
 
-### 👉 Configurar para `Unix`, `MacOS` 
-
-> Instale módulos a través de `VENV`  
-
+# Unix/MacOS
 ```bash
-$ virtualenv .venv
-$ source .venv/bin/activate
-$ pip3 install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
 ```
-
-<br />
-
-> Configurar la base de datos
-
+# Windows
 ```bash
-$ python manage.py makemigrations
-$ python manage.py migrate
+python -m venv .venv
+.venv\Scripts\activate
+```
+### 3. Instalar dependencias
+```bash
+pip install -r requirements.txt
+```
+### 4. Configuración inicial de base de datos
+```bash
+python manage.py makemigrations
+python manage.py migrate
 $ python manage.py collectstatic --link --no-input
 ```
-
-<br />
-
-> Cargar las estaciones en la base de datos
-
+### 5. Cargar datos de estaciones
 ```bash
-$ python stations_add.py
+python stations_add.py
+```
+### 6. Crear usuario administrador
+```bash
+python manage.py createsuperuser
 ```
 
-<br />
-
-> Inicie la aplicación
-
+### 7. Iniciar la aplicación
 ```bash
-$ python manage.py createsuperuser # Crear el administrador
-$ python manage.py runserver       # Iniciar el proyecto desarrollo
-$ python manage.py runserver --production # Iniciar el proyecto produccion
+# Modo desarrollo
+python manage.py runserver
 ```
-
+```bash
+# Modo producción (pruebas locales)
+python manage.py runserver --production
+```
 En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`. 
 
-<br />
+## 🚀 Despliegue en Producción
+### Configuración recomendada
+- Nginx como proxy inverso
+- Gunicorn como servidor de aplicaciones
+- Supervisor para gestión de procesos
 
-### 👉 Configurar para `Windows` 
+### 1. Configurar Nginx
+- Instala Nginx: `sudo apt install nginx`
+- Comentar el contenido de `/etc/nginx/sites-available/default`
+- Crear `webcmp.conf`:
 
-> Instale módulos a través de `VENV` (windows) 
-
-```bash
-$ python -m venv .venv
-$ .venv\Scripts\activate
-$ pip install -r requirements.txt
-```
-
-<br />
-
-> Configurar la base de datos
-
-```bash
-$ python manage.py makemigrations
-$ python manage.py migrate
-```
-
-<br />
-
-> Cargar las estaciones en la base de datos
-
-```bash
-$ python stations_add.py
-```
-
-<br />
-
-> Inicie la aplicación
-
-```bash
-$ python manage.py createsuperuser # Crear el administrador
-$ python manage.py runserver       # Iniciar el proyecto desarrollo
-$ python manage.py runserver --production # Iniciar el proyecto produccion
-```
-
-En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`. 
-
-<br />
-
-### 👉 Deploy
-
-> Instale y configure Nginx
-
-- Instala `Nginx`: `sudo apt install nginx`
-
-- Comentar el contenido del archivo `/etc/nginx/sites-available/default`
-
-> Configuración nginx
-
-```bash
-$ nano /etc/nginx/sites-available/webcmp.conf
-```
-
-```bash
- upstream webcmpconn {
+```ini
+upstream webcmp_app {
     server unix:/tmp/gunicorn-webcmp.sock fail_timeout=0;
- }
+}
 
- server {
+server {
     listen 80;
     server_name web.cmw.insmet.cu;
 
-    access_log /var/www/web-cmw-insmet-cu/logs/nginx-access.log;
-
-    error_log /var/www/web-cmw-insmet-cu/logs/nginx-error.log;
+    location /static/ {
+        alias /var/www/web-cmw-insmet-cu/staticfiles/;
+    }
 
     location /media/  {
         alias /var/www/web-cmw-insmet-cu/media/;
-    }
-
-    location /static/ {
-        alias /var/www/web-cmw-insmet-cu/staticfiles/;
     }
 
     location /static/admin/ {
@@ -157,29 +138,18 @@ $ nano /etc/nginx/sites-available/webcmp.conf
     }
 
     location / {
-         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-         proxy_set_header Host $http_host;
-         proxy_redirect off;
-         proxy_pass http://webcmpconn;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_redirect off;
+        proxy_pass http://webcmp_app;
     }
-
-    error_page 500 502 503 504 /templates/500.html;
 }
 ```
-
-<br />
-
-> Instale y configure Gunicorn
- 
+### 2. Configurar Gunicorn
 - Instala `Gunicorn`: `pip install gunicorn`
+- Crear `gunicorn.sh`:
 
-> Configuración gunicorn.sh
-
-```bash
-$ nano /pon aqui la ruta del gunicorn
-```
-
-```bash
+```ini
 #!/bin/bash
 NAME="webcmp"
 DJANGODIR=$(cd `dirname $0` && pwd)
@@ -204,28 +174,63 @@ exec ${DJANGODIR}/venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
   --log-level=debug \
   --log-file=$LOGDIR
 ```
+## 3. Configurar Supervisor
+- Crear `webcmp.conf`: `/etc/supervisor/conf.d/webcmp.conf`
+
+```ini
+[program:webcmp]
+command=/var/www/web-cmw-insmet-cu/gunicorn.sh
+directory=/var/www/web-cmw-insmet-cu
+user=root
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/webcmp.err.log
+stdout_logfile=/var/log/webcmp.out.log
+```
+
+## 🤝 Cómo Contribuir
+- Haz un fork del proyecto
+- Crea una rama para tu feature (git checkout -b feature/nueva-funcionalidad)
+- Haz commit de tus cambios (git commit -am 'Añade nueva funcionalidad')
+- Haz push a la rama (git push origin feature/nueva-funcionalidad)
+- Abre un Pull Request
+
+## 📄 Licencia
+Este proyecto está bajo la licencia MIT. Ver LICENSE para más detalles.
+
+Centro Meteorológico Provincial Camagüey
+Instituto de Meteorología de Cuba
+© 2025
+
+
 
 <br />
 
-> Instale y configure Supervisor
+### 👉 Deploy
 
-- Instala`Supervisor`: `pon aqui el comando pa instalar esto `
+> Instale y configure Nginx
 
-> Configuración supervisor
+- Instala `Nginx`: `sudo apt install nginx`
 
-```bash
-$ nano /etc/supervisor/conf.d/webcmp.conf
+- Comentar el contenido del archivo `/etc/nginx/sites-available/default`
+
+
+
+<br />
+
+> Instale y configure Gunicorn
+ 
+- Instala `Gunicorn`: `pip install gunicorn`
+
+> Configuración gunicorn.sh
+
+```ini
+$ nano /pon aqui la ruta del gunicorn
 ```
 
-```bash
-[program:webcmp]
-command=/var/www/web-cmw-insmet-cu/gunicorn.sh
-autostart=true
-autorestart=true
-stderr_logfile=/var/www/web-cmw-insmet-cu/logs/err.log
-stdout_logfile=/var/www/web-cmw-insmet-cu/logs/out.log
-user=root
-```
+
+
+
 
 En este punto, el producto debe estar en linea.
 
