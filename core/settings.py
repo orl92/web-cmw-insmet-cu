@@ -91,7 +91,7 @@ def create_default_env(production=False):
         
         # Mensajes post-creación
         print("\n✅ Archivo .env creado exitosamente")
-        print(f"🔑 SECRET_KEY generada automáticamente: {secret_key[:15]}...")
+        print("🔑 SECRET_KEY generada automáticamente.")
         
         print("\n⚠️ ATENCIÓN: Debe editar manualmente estos valores:")
         print("  - EXTERNAL_HOSTNAME (dominio real de producción)")
