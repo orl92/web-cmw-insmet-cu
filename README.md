@@ -54,7 +54,7 @@ El sistema detecta automáticamente el entorno (development/production) y config
 
 ### 1. Clonar el repositorio
 ```bash
-git clone https://github.com/yoelvismr/web-cmw-insmet-cu.git
+git clone https://github.com/orl92/web-cmw-insmet-cu.git
 cd web-cmw-insmet-cu
 ```
 
