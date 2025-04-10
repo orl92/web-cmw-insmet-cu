@@ -20,7 +20,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from common.utils import My400View, My403View, My404View, My500View, test_400, test_403, test_404, test_500
+from common.utils import My400View, My403View, My404View, My500View
 
 
 urlpatterns = [
@@ -29,12 +29,6 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('accounts/', include('accounts.urls')),
     path('dashboard/', include('dashboard.urls')),
-    
-    
-    path('test-400/', test_400, name='test_400'),
-    path('test-403/', test_403, name='test_403'),
-    path('test-404/', test_404, name='test_404'),
-    path('test-500/', test_500, name='test_500'),
     
     path('', include('home.urls')),
 ]
