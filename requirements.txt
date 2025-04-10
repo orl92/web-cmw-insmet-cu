@@ -36,5 +36,4 @@ uritemplate>=4.1.1
 urllib3>=2.2.2
 whitenoise>=6.9.0
 xlrd>=2.0.1
-
-cryptography==44.0.2
+cryptography>=44.0.2
