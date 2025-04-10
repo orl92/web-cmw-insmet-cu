@@ -18,7 +18,7 @@ class SateliteView(TemplateView):
 import urllib.parse
 
 class ProxyImageView(View):
-    ALLOWED_DOMAINS = ['example.com', 'another-example.com']
+    ALLOWED_DOMAINS = ['tropic.ssec.wisc.edu', '']
 
     def get(self, request, *args, **kwargs):
         image_url = request.GET.get('image_url')
