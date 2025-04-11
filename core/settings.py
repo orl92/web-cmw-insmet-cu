@@ -10,8 +10,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from str2bool import str2bool
 from django.core.management.utils import get_random_secret_key
-from django.core.exceptions import ImproperlyConfigured
 from django.contrib.messages import constants as messages
+from cryptography.fernet import Fernet
 
 # =====================
 # 1. INITIAL SETUP
@@ -29,7 +29,6 @@ def create_default_env(production=False):
     
     print("\n🔧 Creando archivo .env automáticamente con valores iniciales...")
     
-    from cryptography.fernet import Fernet
     secret_key = get_random_secret_key()
     encryption_key = Fernet.generate_key()
     cipher_suite = Fernet(encryption_key)
@@ -57,23 +56,29 @@ def create_default_env(production=False):
             if production:
                 # 3.1. Configuración de dominio
                 f.write("# =====================\n")
-                f.write("# CONFIGURACIÓN DE DOMINIO (⚠️ MODIFICAR! ⚠️)\n")
+                f.write("# CONFIGURACIÓN DE DOMINIO (PRODUCCIÓN - ⚠️ MODIFICAR! ⚠️)\n")
                 f.write("# =====================\n")
-                f.write("# ⚠️ DEBE CONFIGURAR ESTO PARA PRODUCCIÓN ⚠️\n")
-                f.write("# Ejemplo: .cmw.insmet.cu (sin http://)\n")
-                f.write("EXTERNAL_HOSTNAME=tu-dominio-real.com\n\n")
+                f.write("# Ejemplo: tu-dominio.com (sin http://)\n")
+                f.write("EXTERNAL_HOSTNAME=cmw.insmet.cu\n\n")
+                f.write("# Opcional: Puede definir manualmente estos valores si necesita configuraciones especiales\n")
+                f.write("# ALLOWED_HOSTS=tu-dominio.com,www.tu-dominio.com\n")
+                f.write("# CSRF_TRUSTED_ORIGINS=https://tu-dominio.com,https://www.tu-dominio.com\n\n")
+            else:
+                f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
+                f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
+                f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000\n\n")
                 
                 # 3.2 Email
                 f.write("# =====================\n")
                 f.write("# CONFIGURACIÓN DE EMAIL (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
                 f.write("# =====================\n")
-                f.write("# ⚠️ DEBE CONFIGURAR ESTOS VALORES REALES ⚠️\n")
+                f.write("# ⚠️ DEBE CONFIGURAR LOS VALORES REALES ⚠️\n")
                 f.write("EMAIL_USE_TLS=True\n")
-                f.write("EMAIL_HOST=smtp.example.cu\n")
+                f.write("EMAIL_HOST=smtp.tu-dominio.com\n")
                 f.write("EMAIL_PORT=587\n")
-                f.write("EMAIL_HOST_USER=user@example.cu\n")
+                f.write("EMAIL_HOST_USER=user@tu-dominio.com\n")
                 f.write("EMAIL_HOST_PASSWORD=tu_contraseña_segura\n")
-                f.write("DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@example.cu>'\n")
+                f.write("DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
                 f.write("CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend\n")
                 f.write("EMAIL_USE_SSL=False\n\n")
                 
@@ -93,13 +98,18 @@ def create_default_env(production=False):
         print("\n✅ Archivo .env creado exitosamente")
         print("🔑 SECRET_KEY generada automáticamente.")
         
-        print("\n⚠️ ATENCIÓN: Debe editar manualmente estos valores:")
-        print("  - EXTERNAL_HOSTNAME (dominio real de producción)")
-        
         if production:
-            print("\n⚙️ CONFIGURACIÓN DE PRODUCCIÓN REQUERIDA:")
-            print("  - Configuración de EMAIL (servidor SMTP real)")
-            print("  - Configuración de BASE DE DATOS (credenciales reales)")
+            print("\n⚠️ ATENCIÓN: Debe editar manualmente estas variables CRÍTICAS para producción:")
+            print("  - EXTERNAL_HOSTNAME (debe ser su dominio real sin http://)")
+            print("\n💡 El sistema automáticamente generará:")
+            print("  - ALLOWED_HOSTS basado en EXTERNAL_HOSTNAME")
+            print("  - Configuración de EMAIL (Modificar por servidor SMTP real)")
+            print("  - Configuración de BASE DE DATOS (Modificar por credenciales reales)")
+            print("  - CSRF_TRUSTED_ORIGINS (con https://)")
+            print("\n⚙️ Si necesita configuraciones especiales, puede definir manualmente:")
+            print("  - ALLOWED_HOSTS para múltiples dominios/subdominios")
+            print("  - CSRF_TRUSTED_ORIGINS para protocolos/puertos específicos")
+            
             print("\n💡 RECOMENDACIONES PARA PRODUCCIÓN:")
             print("  - Use PostgreSQL o MySQL como motor de base de datos")
             print("  - Configure backups automáticos de la base de datos")
@@ -142,9 +152,15 @@ def validate_environment():
     if not os.getenv('SECRET_KEY'):
         errors.append("🚨 ERROR: Falta SECRET_KEY en .env")
     
-    if not DEBUG and not os.getenv('EXTERNAL_HOSTNAME'):
-        errors.append("🚨 ERROR: Para producción debe configurar EXTERNAL_HOSTNAME en .env")
-        errors.append("💡 Ejemplo: EXTERNAL_HOSTNAME=web.cmw.insmet.cu")
+    if not DEBUG:
+        if not os.getenv('EXTERNAL_HOSTNAME'):
+            errors.append("🚨 ERROR: Para producción debe configurar EXTERNAL_HOSTNAME en .env")
+    
+        # Validar formato del dominio
+        if (hostname := os.getenv('EXTERNAL_HOSTNAME')) and any(
+            c in hostname for c in ('http://', 'https://', '/', ':')
+        ):
+            errors.append("🚨 ERROR: EXTERNAL_HOSTNAME debe ser solo el dominio (ej: cmw.insmet.cu)")
     
     if errors:
         print("\n".join(errors))
