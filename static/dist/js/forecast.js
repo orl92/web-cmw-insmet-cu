@@ -42,6 +42,25 @@ $(document).ready(function () {
 
 // Actualiza los campos del formulario con los datos recibidos
 function updateForm(data) {
+    // Actualizar campos de fecha
+    const updateDateField = (elementId, value) => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.value = value;
+            if (element.litepicker) {
+                element.litepicker.setDate(value);
+            }
+        }
+    };
+
+    updateDateField('date', data.date);
+    updateDateField('day1', data.day1_date);
+    updateDateField('day2', data.day2_date);
+    updateDateField('day3', data.day3_date);
+    updateDateField('day4', data.day4_date);
+    updateDateField('day5', data.day5_date);
+    updateDateField('nlpd', data.nlpd);
+    
     $('#id_ntm').val(data.ntm);
     $('#id_nta').val(data.nta);
     $('#id_ntn').val(data.ntn);
