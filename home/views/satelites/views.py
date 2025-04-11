@@ -18,13 +18,13 @@ class SateliteView(TemplateView):
 import urllib.parse
 
 class ProxyImageView(View):
-    ALLOWED_DOMAINS = ['tropic.ssec.wisc.edu', '']
+    ALLOWED_DOMAINS = ['tropic.ssec.wisc.edu']
 
     def get(self, request, *args, **kwargs):
         image_url = request.GET.get('image_url')
         if image_url:
             parsed_url = urllib.parse.urlparse(image_url)
-            if parsed_url.netloc in self.ALLOWED_DOMAINS:
+            if parsed_url.scheme in ['http', 'https'] and parsed_url.netloc in self.ALLOWED_DOMAINS:
                 response = requests.get(image_url, stream=True)
                 if response.status_code == 200:
                     return HttpResponse(response.content, content_type=response.headers['Content-Type'])
