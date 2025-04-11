@@ -28,7 +28,10 @@ class StationObservationView(GenericAPIView):
     serializer_class = StationObservationSerializer
 
     def get(self, request, hour, station_number):
+        allowed_hours = {'00', '03', '06', '09', '12', '15', '18', '21'}
         hour_str = str(hour).zfill(2)  # Convertir a cadena y asegurar dos dígitos
+        if hour_str not in allowed_hours:
+            return Response({"error": "Invalid hour parameter"}, status=status.HTTP_400_BAD_REQUEST)
         data = GetData().get_station(hour_str, station_number)
         serializer = self.get_serializer(data={'hour': hour_str, 'station_number': station_number, 'data': data})
         if serializer.is_valid():
