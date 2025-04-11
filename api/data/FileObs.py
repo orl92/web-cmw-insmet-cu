@@ -2,7 +2,7 @@ import os
 import shutil
 from ftplib import FTP
 from pathlib import Path
-
+from werkzeug.utils import secure_filename
 
 class FileObs:
     def __init__(self):
@@ -25,7 +25,7 @@ class FileObs:
         path.mkdir(parents=True, exist_ok=True)
 
         base_path = Path('Salida/TRAFICO').resolve()
-        filename = base_path / self.file_name(station_number, hour)
+        filename = base_path / secure_filename(self.file_name(station_number, hour))
         filename = Path(os.path.normpath(filename))
         if not str(filename).startswith(str(base_path)):
             raise Exception("Invalid file path")
