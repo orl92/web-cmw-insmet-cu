@@ -5,7 +5,7 @@
 {% endblock extrastyle %}
 {% block content %}
     <div id="forecast-container" class="row row-cards">
-        <h4>Pronósticos para el: <span id="forecast-date"></span></h4>
+        <h4>Pronósticos para el: <span class="forecast-date"></span></h4>
         <!-- North Forecast Cards -->
         <div class="col-lg-4">
             <h5>Costa Norte</h5>
@@ -381,5 +381,5 @@
     <script src="{% static '' %}dist/libs/amcharts/dist/geodata/data/countries2.js"></script>
     <script src="{% static '' %}dist/js/map_station.js"></script>
     <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
-    <script src="{% static '' %}dist/js/forecast.js"></script>
+    <script src="{% static '' %}dist/js/home-forecast.js"></script>
 {% endblock extrajs %}
