@@ -24,10 +24,10 @@ class FileObs:
         path = Path('Salida/TRAFICO')
         path.mkdir(parents=True, exist_ok=True)
 
-        base_path = Path('Salida/TRAFICO')
+        base_path = Path('Salida/TRAFICO').resolve()
         filename = base_path / self.file_name(station_number, hour)
-        filename = filename.resolve()
-        if not str(filename).startswith(str(base_path.resolve())):
+        filename = Path(os.path.normpath(filename))
+        if not str(filename).startswith(str(base_path)):
             raise Exception("Invalid file path")
         try:
             ftp = FTP(host='10.0.100.204')
