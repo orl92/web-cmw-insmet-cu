@@ -1,7 +1,10 @@
+from urllib.parse import urlparse
 import requests
 from django.http import HttpResponse
 from django.views import View
 from django.views.generic import TemplateView
+import urllib.parse
+import socket
 
 # Create your views here.
 
@@ -15,29 +18,50 @@ class SateliteView(TemplateView):
         context['segment'] = 'satelitales'
         return context
 
-import urllib.parse
-import socket
-
 class ProxyImageView(View):
-    ALLOWED_IMAGE_PATHS = [
-        'path/to/image1.jpg',
-        'path/to/image2.jpg',
-        'path/to/image3.jpg'
+    ALLOWED_BASE_URL = "https://tropic.ssec.wisc.edu/"
+    ALLOWED_PATHS = [
+        'real-time/sal/g16split/g16split.jpg',
+        'real-time/sal/g16natcol/g16nc.jpg',
+        'real-time/sal/g16wvupper/g16wvupper.jpg',
+        'real-time/sal/g16wvmid/g16wvmid.jpg',
+        'real-time/sal/g16wvlow/g16wvlow.jpg'
     ]
 
-    def is_allowed_domain(self, netloc):
-        try:
-            ip_address = socket.gethostbyname(netloc)
-            return ip_address in self.ALLOWED_IPS
-        except socket.error:
-            return False
-
     def get(self, request, *args, **kwargs):
+        # Obtener y validar parámetro
         image_path = request.GET.get('image_path')
-        if image_path in self.ALLOWED_IMAGE_PATHS:
-            full_url = f"https://tropic.ssec.wisc.edu/{image_path}"
-            response = requests.get(full_url, stream=True)
-            if response.status_code == 200:
-                return HttpResponse(response.content, content_type=response.headers['Content-Type'])
-            return HttpResponse('Error: No se pudo obtener la imagen', status=400)
-        return HttpResponse('Error: Ruta de imagen no permitida', status=400)
+        if not image_path:
+            return HttpResponseForbidden("Parámetro requerido")
+        
+        # Normalizar y verificar ruta
+        if image_path.startswith('/'):
+            image_path = image_path[1:]
+        
+        if image_path not in self.ALLOWED_PATHS:
+            return HttpResponseForbidden("Ruta no permitida")
+        
+        # Construir URL de forma segura
+        full_url = f"{self.ALLOWED_BASE_URL}{image_path}"
+        
+        try:
+            # Configurar seguridad adicional
+            response = requests.get(
+                full_url,
+                stream=True,
+                timeout=10,
+                allow_redirects=False
+            )
+            
+            # Validar respuesta
+            if response.status_code != 200:
+                return HttpResponse("Error en recurso remoto", status=502)
+                
+            content_type = response.headers.get('Content-Type', '')
+            if not content_type.startswith('image/'):
+                return HttpResponseForbidden("Tipo de contenido no válido")
+                
+            return HttpResponse(response.content, content_type=content_type)
+            
+        except requests.exceptions.RequestException:
+            return HttpResponse("Error al conectar", status=502)
