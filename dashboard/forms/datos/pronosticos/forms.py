@@ -10,6 +10,17 @@ class ForecastsForm(forms.ModelForm):
     class Meta:
         model = Forecasts
         fields = '__all__'
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+            'day1_date': forms.DateInput(attrs={'type': 'date'}),
+            'day2_date': forms.DateInput(attrs={'type': 'date'}),
+            'day3_date': forms.DateInput(attrs={'type': 'date'}),
+            'day4_date': forms.DateInput(attrs={'type': 'date'}),
+            'day5_date': forms.DateInput(attrs={'type': 'date'}),
+            'nlpd': forms.DateInput(attrs={'type': 'date'}),
+            'sunrise': forms.TimeInput(attrs={'type': 'time'}),
+            'sunset': forms.TimeInput(attrs={'type': 'time'}),
+        }
         
     def clean_date(self):
         date = self.cleaned_data.get('date')
