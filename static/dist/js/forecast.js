@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // Inicializar todos los datepickers
-    ['date', 'day1', 'day2', 'day3', 'day4', 'day5', 'nlpd'].forEach(litepickerConfig);
+    ['id_date', 'id_day1_date', 'id_day2_date', 'id_day3_date', 'id_day4_date', 'id_day5_date', 'id_nlpd'].forEach(litepickerConfig);
 });
 
 //  Cargar Datos Excel
@@ -120,7 +120,7 @@ function updateForm(data) {
     $('#id_day5_weather').val(data.day5_weather);
     $('#id_lp').val(data.lp);
     $('#id_nlp').val(data.nlp);
-    $('#nlpd').val(data.nlpd);
+    $('#id_nlpd').val(data.nlpd);
     $('#id_sunrise').val(data.sunrise);
     $('#id_sunset').val(data.sunset);
     $('#id_uv_index').val(data.uv_index);
