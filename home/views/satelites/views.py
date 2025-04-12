@@ -1,10 +1,7 @@
-from urllib.parse import urlparse
 import requests
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.views import View
 from django.views.generic import TemplateView
-import urllib.parse
-import socket
 
 # Create your views here.
 
