@@ -31,7 +31,7 @@
                               d="M12 15v3"></path>
                       </svg>
                     </span>
-                    <input name="date" class="form-control" placeholder="aaaa-mm-dd" id="date" value="{{ date }}" required>
+                    <input name="date" class="form-control" placeholder="aaaa-mm-dd" id="{{ form.date.id_for_label }}" value="{{ date }}" required>
                     {% if form.date.errors %}
                         <span class="text-danger d-block mb-3">{{ form.date.errors }}</span>
                     {% endif %}
@@ -531,7 +531,7 @@
                               d="M12 15v3"></path>
                       </svg>
                     </span>
-                    <input name="day1_date" class="form-control " placeholder="aaaa-mm-dd" id="day1" value="{{ day1_date }}" required>
+                    <input class="form-control " placeholder="aaaa-mm-dd" id="{{ form.day1_date.id_for_label }}" name="{{ form.day1_date.name }}" value="{{ day1_date }}" required>
                     {% if form.day1_date.errors %}
                         <span class="text-danger d-block mb-3">{{ form.day1_date.errors }}</span>
                     {% endif %}
@@ -586,7 +586,7 @@
                               d="M12 15v3"></path>
                       </svg>
                     </span>
-                    <input name="day2_date" class="form-control " placeholder="aaaa-mm-dd" id="day2" value="{{ day2_date }}" required>
+                    <input class="form-control " placeholder="aaaa-mm-dd" id="{{ form.day2_date.id_for_label }}" name="{{ form.day2_date.name }}" value="{{ day2_date }}" required>
                     {% if form.day2_date.errors %}
                         <span class="text-danger d-block mb-3">{{ form.day2_date.errors }}</span>
                     {% endif %}
@@ -642,7 +642,7 @@
                               d="M12 15v3"></path>
                       </svg>
                     </span>
-                    <input name="day3_date" class="form-control " placeholder="aaaa-mm-dd" id="day3" value="{{ day3_date }}" required>
+                    <input class="form-control " placeholder="aaaa-mm-dd" id="{{ form.day3_date.id_for_label }}" name="{{ form.day3_date.name }}" value="{{ day3_date }}" required>
                     {% if form.day3_date.errors %}
                         <span class="text-danger d-block mb-3">{{ form.day3_date.errors }}</span>
                     {% endif %}
@@ -698,7 +698,7 @@
                               d="M12 15v3"></path>
                       </svg>
                     </span>
-                    <input name="day4_date" class="form-control " placeholder="aaaa-mm-dd" id="day4" value="{{ day4_date }}" required>
+                    <input class="form-control " placeholder="aaaa-mm-dd" id="{{ form.day4_date.id_for_label }}" name="{{ form.day4_date.name }}" value="{{ day4_date }}" required>
                     {% if form.day4_date.errors %}
                         <span class="text-danger d-block mb-3">{{ form.day4_date.errors }}</span>
                     {% endif %}
@@ -754,7 +754,7 @@
                               d="M12 15v3"></path>
                       </svg>
                     </span>
-                    <input name="day5_date" class="form-control " placeholder="aaaa-mm-dd" id="day5" value="{{ day5_date }}" required>
+                    <input class="form-control " placeholder="aaaa-mm-dd" id="{{ form.day5_date.id_for_label }}" name="{{ form.day5_date.name }}" value="{{ day5_date }}" required>
                     {% if form.day5_date.errors %}
                         <span class="text-danger d-block mb-3">{{ form.day5_date.errors }}</span>
                     {% endif %}
@@ -838,7 +838,7 @@
                               d="M12 15v3"></path>
                       </svg>
                     </span>
-                    <input name="nlpd" class="form-control" placeholder="aaaa-mm-dd" id="nlpd" value="{{ nlpd }}" required>
+                    <input class="form-control" placeholder="aaaa-mm-dd" id="{{ form.nlpd.id_for_label }}" name="{{ form.nlpd.name }}" value="{{ nlpd }}" required>
                     {% if form.nlpd.errors %}
                         <span class="text-danger d-block mb-3">{{ form.nlpd.errors }}</span>
                     {% endif %}
