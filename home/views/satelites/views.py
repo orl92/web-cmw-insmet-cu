@@ -19,8 +19,11 @@ import urllib.parse
 import socket
 
 class ProxyImageView(View):
-    ALLOWED_DOMAINS = ['tropic.ssec.wisc.edu']
-    ALLOWED_IPS = ['128.104.109.100']  # Example IP address for tropic.ssec.wisc.edu
+    ALLOWED_IMAGE_PATHS = [
+        'path/to/image1.jpg',
+        'path/to/image2.jpg',
+        'path/to/image3.jpg'
+    ]
 
     def is_allowed_domain(self, netloc):
         try:
@@ -30,12 +33,11 @@ class ProxyImageView(View):
             return False
 
     def get(self, request, *args, **kwargs):
-        image_url = request.GET.get('image_url')
-        if image_url:
-            parsed_url = urllib.parse.urlparse(image_url)
-            if parsed_url.scheme in ['http', 'https'] and self.is_allowed_domain(parsed_url.netloc):
-                response = requests.get(image_url, stream=True)
-                if response.status_code == 200:
-                    return HttpResponse(response.content, content_type=response.headers['Content-Type'])
-            return HttpResponse('Error: Dominio no permitido', status=400)
-        return HttpResponse('Error: No se pudo obtener la imagen', status=400)
+        image_path = request.GET.get('image_path')
+        if image_path in self.ALLOWED_IMAGE_PATHS:
+            full_url = f"https://tropic.ssec.wisc.edu/{image_path}"
+            response = requests.get(full_url, stream=True)
+            if response.status_code == 200:
+                return HttpResponse(response.content, content_type=response.headers['Content-Type'])
+            return HttpResponse('Error: No se pudo obtener la imagen', status=400)
+        return HttpResponse('Error: Ruta de imagen no permitida', status=400)
