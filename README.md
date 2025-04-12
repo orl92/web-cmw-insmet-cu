@@ -21,26 +21,28 @@ El sistema detecta automáticamente el entorno (development/production) y config
 
 ### 🔄 Comparación de entornos
 
-| Variable              | Desarrollo (`runserver`)               | Producción (`runserver --production`)    |
-|-----------------------|----------------------------------------|------------------------------------------|
-| `DEBUG`               | `True` (activado)                      | `False` (desactivado)                    |
-| `DB_ENGINE`           | `sqlite3` (automático)                 | `postgresql`/`mysql` (requiere config)   |
-| `EMAIL_BACKEND`       | Consola (emails en terminal)           | SMTP real (configuración obligatoria)    |
-| `ALLOWED_HOSTS`       | `localhost,127.0.0.1` (automático)     | Dominio real (requiere configuración)    |
-| `EXTERNAL_HOSTNAME`   | No requerido                           | **Obligatorio** (dominio de producción)  |
-| `SECRET_KEY`          | Generada automáticamente               | Generada automáticamente                 |
-| Configuración inicial | Completa automáticamente `.env`        | Genera plantilla `.env` para completar   |
-| Base de datos         | SQLite (configuración cero)            | PostgreSQL/MySQL (configuración manual)  |
-| Archivos estáticos    | Servidos por Django                    | Servidos por Nginx + Whitenoise          |
-| Panel de errores      | Detallado (con stack traces)           | Seguro (páginas de error personalizadas)|
+| Variable               | Desarrollo (`runserver`)            | Producción (`runserver --production`)       |
+| ---------------------- | ------------------------------------- | ---------------------------------------------- |
+| `DEBUG`              | `True` (activado)                   | `False` (desactivado)                        |
+| `DB_ENGINE`          | `sqlite3` (automático)             | `postgresql`/`mysql` (requiere config)     |
+| `EMAIL_BACKEND`      | Consola (emails en terminal)          | SMTP real (configuración obligatoria)         |
+| `ALLOWED_HOSTS`      | `localhost,127.0.0.1` (automático) | Dominio real (requiere configuración)         |
+| `EXTERNAL_HOSTNAME`  | No requerido                          | **Obligatorio** (dominio de producción) |
+| `SECRET_KEY`         | Generada automáticamente             | Generada automáticamente                      |
+| Configuración inicial | Completa automáticamente `.env`    | Genera plantilla `.env` para completar       |
+| Base de datos          | SQLite (configuración cero)          | PostgreSQL/MySQL (configuración manual)       |
+| Archivos estáticos    | Servidos por Django                   | Servidos por Nginx + Whitenoise                |
+| Panel de errores       | Detallado (con stack traces)          | Seguro (páginas de error personalizadas)      |
 
 **Key Features por entorno:**
-- **Desarrollo**: 
+
+- **Desarrollo**:
+
   - Configura todo automáticamente al ejecutar `runserver`
   - No requiere configuración manual inicial
   - Incluye herramientas de depuración
-
 - **Producción**:
+
   - Genera plantilla `.env` al ejecutar `runserver --production` con valores requeridos
   - Exige validación manual de configuraciones críticas
   - Habilita optimizaciones de seguridad y performance
@@ -48,11 +50,13 @@ El sistema detecta automáticamente el entorno (development/production) y config
 ## 🛠️ Instalación
 
 ### Requisitos previos
+
 - Python 3.8+
 - pip
 - virtualenv (recomendado)
 
 ### 1. Clonar el repositorio
+
 ```bash
 git clone https://github.com/orl92/web-cmw-insmet-cu.git
 cd web-cmw-insmet-cu
@@ -61,59 +65,76 @@ cd web-cmw-insmet-cu
 ### 2. Configurar entorno virtual
 
 # Unix/MacOS
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
+
 # Windows
+
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 ```
+
 ### 3. Instalar dependencias
+
 ```bash
 pip install -r requirements.txt
 ```
+
 ### 4. Configuración inicial de base de datos
+
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 $ python manage.py collectstatic --link --no-input
 ```
+
 ### 5. Cargar datos de estaciones
+
 ```bash
 python stations_add.py
 ```
+
 ### 6. Crear usuario administrador
+
 ```bash
 python manage.py createsuperuser
 ```
 
 ### 7. Iniciar la aplicación
+
 ```bash
 # Modo desarrollo
 python manage.py runserver
 ```
+
 ```bash
 # Modo producción (pruebas locales)
 python manage.py runserver --production
 ```
 
-En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`. 
+En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`.
 
 ## 🚀 Despliegue en Producción
+
 ### Configuración recomendada
+
 - Nginx como proxy inverso
 - Gunicorn como servidor de aplicaciones
 - Supervisor para gestión de procesos
 
 ### 1. Configurar Nginx
+
 ```ini
 sudo apt install nginx
 sudo nano /etc/nginx/sites-available/webcmp.conf
 ```
 
 #### Ejemplo de configuración:
+
 ```ini
 upstream webcmp_app {
     server unix:/tmp/gunicorn-webcmp.sock fail_timeout=0;
@@ -144,18 +165,21 @@ server {
 }
 ```
 
-#### Comentar el contenido de: 
+#### Comentar el contenido de:
+
 ```ini
 /etc/nginx/sites-available/default
 ```
 
 ### 2. Configurar Gunicorn
+
 ```ini
 pip install gunicorn
 nano gunicorn.sh
 ```
 
 #### Ejemplo de configuración:
+
 ```ini
 #!/bin/bash
 NAME="webcmp"
@@ -183,11 +207,13 @@ exec ${DJANGODIR}/venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
 ```
 
 ## 3. Configurar Supervisor
+
 ```bash
 sudo nano /etc/supervisor/conf.d/webcmp.conf
 ```
 
 #### Ejemplo de configuración:
+
 ```ini
 [program:webcmp]
 command=/var/www/web-cmw-insmet-cu/gunicorn.sh
@@ -200,6 +226,7 @@ stdout_logfile=/var/log/webcmp.out.log
 ```
 
 ## 🤝 Cómo Contribuir
+
 - Haz un fork del proyecto
 - Crea una rama para tu feature (git checkout -b feature/nueva-funcionalidad)
 - Haz commit de tus cambios (git commit -am 'Añade nueva funcionalidad')
@@ -207,6 +234,7 @@ stdout_logfile=/var/log/webcmp.out.log
 - Abre un Pull Request
 
 ## 📄 Licencia
+
 Este proyecto está bajo la licencia MIT. Ver LICENSE para más detalles.
 
 Centro Meteorológico Provincial Camagüey
