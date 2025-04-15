@@ -1,16 +1,12 @@
 from django.urls import path
 
-from dashboard.views.dashboard.views import DashboardView, ExcelJSONView, MaintenanceModeToggleView
-from dashboard.views.avisos.alertas_tempranas.views import (EarlyWarningCreateView, 
-                                                            EarlyWarningDeleteView, 
-                                                            EarlyWarningDetailView, 
-                                                            EarlyWarningListView,
-                                                            EarlyWarningUpdateView)
-from dashboard.views.avisos.ciclones_tropicales.views import (TropicalCycloneCreateView, 
-                                                              TropicalCycloneDeleteView, 
-                                                              TropicalCycloneDetailView,
-                                                              TropicalCycloneListView, 
-                                                              TropicalCycloneUpdateView)
+from dashboard.views.avisos.alertas_tempranas.views import (
+    EarlyWarningCreateView, EarlyWarningDeleteView, EarlyWarningDetailView,
+    EarlyWarningListView, EarlyWarningUpdateView)
+from dashboard.views.avisos.ciclones_tropicales.views import (
+    TropicalCycloneCreateView, TropicalCycloneDeleteView,
+    TropicalCycloneDetailView, TropicalCycloneListView,
+    TropicalCycloneUpdateView)
 from dashboard.views.avisos.especiales.views import (SpecialNoticeCreateView,
                                                      SpecialNoticeDeleteView,
                                                      SpecialNoticeDetailView,
@@ -25,14 +21,17 @@ from dashboard.views.clientes.views import (CustomerCreateView,
                                             CustomerDeleteView,
                                             CustomerListView,
                                             CustomerUpdateView)
-from dashboard.views.comentarios.nota_meteorologica.views import (WeatherNoteCreateView, 
-                                                                  WeatherNoteDeleteView, 
-                                                                  WeatherNoteListView,
-                                                                  WeatherNoteUpdateView)
-from dashboard.views.comentarios.tiempo.views import (WeatherCommentaryCreateView, 
-                                                      WeatherCommentaryDeleteView,
-                                                      WeatherCommentaryListView, 
-                                                      WeatherCommentaryUpdateView)
+from dashboard.views.comentarios.nota_meteorologica.views import (
+    WeatherNoteCreateView, WeatherNoteDeleteView, WeatherNoteListView,
+    WeatherNoteUpdateView)
+from dashboard.views.comentarios.tiempo.views import (
+    WeatherCommentaryCreateView, WeatherCommentaryDeleteView,
+    WeatherCommentaryListView, WeatherCommentaryUpdateView)
+from dashboard.views.dashboard.views import (DashboardView, ExcelJSONView,
+                                             MaintenanceModeToggleView)
+from dashboard.views.email_recipient.views import (
+    EmailRecipientListCreateView, EmailRecipientListDeleteView,
+    EmailRecipientListListView, EmailRecipientListUpdateView)
 from dashboard.views.estaciones.views import (StationCreateView,
                                               StationDeleteView,
                                               StationListView,
@@ -57,10 +56,6 @@ from dashboard.views.tiempo.manana.views import (WeatherTomorrowCreateView,
                                                  WeatherTomorrowDeleteView,
                                                  WeatherTomorrowListView,
                                                  WeatherTomorrowUpdateView)
-from dashboard.views.email_recipient.views import (EmailRecipientListCreateView, 
-                                                   EmailRecipientListDeleteView, 
-                                                   EmailRecipientListListView, 
-                                                   EmailRecipientListUpdateView)
 
 urlpatterns = [
     # Dashboard
