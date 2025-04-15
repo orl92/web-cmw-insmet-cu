@@ -1,12 +1,11 @@
-from django.contrib.auth.views import LoginView
+from django.contrib import messages
 from django.contrib.auth import logout
+from django.contrib.auth.views import LoginView
 from django.contrib.messages.views import SuccessMessageMixin
-from django.contrib.admin.models import ADDITION, DELETION
-from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
+
 from common.utils import log_action
-from django.contrib import messages
 
 # Create your views here.
 

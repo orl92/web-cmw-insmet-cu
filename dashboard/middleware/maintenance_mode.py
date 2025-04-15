@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from django.urls import reverse
+
 from dashboard.models import SiteConfiguration
+
 
 class MaintenanceModeMiddleware:
     def __init__(self, get_response):

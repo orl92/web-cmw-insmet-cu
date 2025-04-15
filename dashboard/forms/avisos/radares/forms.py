@@ -1,5 +1,7 @@
 from django import forms
-from dashboard.models import RadarWarning 
+
+from dashboard.models import RadarWarning
+
 
 class RadarWarningForm(forms.ModelForm):
     class Meta:

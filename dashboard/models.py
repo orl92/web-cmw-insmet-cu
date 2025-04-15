@@ -1,10 +1,10 @@
 import uuid
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from common.utils import ImageModel, generic_pdf_path
-
 
 # Create your models here.
 

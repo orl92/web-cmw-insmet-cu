@@ -1,6 +1,8 @@
 from django import forms
 from django.forms import inlineformset_factory
+
 from dashboard.models import EmailRecipient, EmailRecipientList
+
 
 class EmailRecipientListForm(forms.ModelForm):
     class Meta:

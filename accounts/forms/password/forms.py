@@ -1,9 +1,10 @@
-from django import forms
 from datetime import datetime
+
+from django import forms
 from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm
-from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 
 class UserPasswordChangeForm(PasswordChangeForm):

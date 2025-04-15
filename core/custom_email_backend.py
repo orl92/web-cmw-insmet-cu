@@ -1,6 +1,8 @@
-import ssl
 import smtplib
+import ssl
+
 from django.core.mail.backends.smtp import EmailBackend
+
 
 class CustomSTARTTLSBackend(EmailBackend):
     def open(self):

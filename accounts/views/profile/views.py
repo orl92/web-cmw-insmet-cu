@@ -1,15 +1,13 @@
 from django.contrib import messages
-from django.core.paginator import Paginator
-from django.contrib.admin.models import LogEntry
+from django.contrib.admin.models import CHANGE, LogEntry
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, UpdateView
 
 from accounts.forms.profile.form import ProfileForm
 from accounts.models import Profile
-
-from django.contrib.admin.models import CHANGE
 from common.utils import log_action
 
 # Create your views here.

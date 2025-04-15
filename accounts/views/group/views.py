@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         PermissionRequiredMixin,
                                         UserPassesTestMixin)
@@ -9,9 +10,6 @@ from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from accounts.forms.group.form import GroupForm
 from accounts.models import GroupProfile
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-
 from common.utils import log_action
 
 # Create your views here.

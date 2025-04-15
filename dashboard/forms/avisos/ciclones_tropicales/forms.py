@@ -1,5 +1,7 @@
 from django import forms
-from dashboard.models import TropicalCyclone  
+
+from dashboard.models import TropicalCyclone
+
 
 class TropicalCycloneForm(forms.ModelForm):
     class Meta:

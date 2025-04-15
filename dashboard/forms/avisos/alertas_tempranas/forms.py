@@ -1,5 +1,7 @@
 from django import forms
+
 from dashboard.models import EarlyWarning
+
 
 class EarlyWarningForm(forms.ModelForm):
     class Meta:

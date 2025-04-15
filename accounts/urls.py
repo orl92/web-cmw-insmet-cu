@@ -5,7 +5,8 @@ from accounts.forms.password.forms import UserPasswordResetForm
 from accounts.views.group.views import (GroupCreateView, GroupDeleteView,
                                         GroupListView, GroupUpdateView)
 from accounts.views.password.views import (AdminPasswordChangeView,
-                                           PasswordChangeView, UserPasswordResetView)
+                                           PasswordChangeView,
+                                           UserPasswordResetView)
 from accounts.views.profile.views import ProfileDetailView, ProfileUpdateView
 from accounts.views.user.views import (UserCreateView, UserDeleteView,
                                        UserListView, UserUpdateView)

@@ -1,6 +1,9 @@
-from django import forms
-from dashboard.models import Forecasts
 import datetime
+
+from django import forms
+
+from dashboard.models import Forecasts
+
 
 class ExcelUploadForm(forms.Form):
     excel_file = forms.FileField()

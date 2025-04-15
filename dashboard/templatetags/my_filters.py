@@ -2,9 +2,9 @@ import os
 import re
 
 from django import template
+from django.templatetags.static import static
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
-from django.templatetags.static import static
 
 register = template.Library()
 

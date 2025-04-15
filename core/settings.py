@@ -7,11 +7,12 @@ Más información: https://web.cmw.insmet.cu
 import os
 import sys
 from pathlib import Path
+
+from cryptography.fernet import Fernet
+from django.contrib.messages import constants as messages
+from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 from str2bool import str2bool
-from django.core.management.utils import get_random_secret_key
-from django.contrib.messages import constants as messages
-from cryptography.fernet import Fernet
 
 # =====================
 # 1. INITIAL SETUP

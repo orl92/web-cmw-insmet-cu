@@ -1,5 +1,7 @@
 from django import forms
+
 from dashboard.models import WeatherNote
+
 
 class WeatherNoteForm(forms.ModelForm):
     class Meta:

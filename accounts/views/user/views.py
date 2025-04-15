@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.contrib import messages
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (LoginRequiredMixin,
                                         PermissionRequiredMixin,
                                         UserPassesTestMixin)
@@ -12,9 +13,6 @@ from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from accounts.forms.user.form import UserForm, UserUpdateForm
 from accounts.models import Profile
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-
 from common.utils import log_action
 
 # Create your views here.

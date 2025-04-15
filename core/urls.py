@@ -22,7 +22,6 @@ from django.urls import include, path
 
 from common.utils import My400View, My403View, My404View, My500View
 
-
 urlpatterns = [
     path('', include('login.urls')),
     path('admin/', admin.site.urls),

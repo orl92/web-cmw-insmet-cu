@@ -2,13 +2,12 @@ import os
 import uuid
 
 from django.conf import settings
-from django.db import models
-
 from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
-
-from django.views import View
+from django.db import models
 from django.shortcuts import render
+from django.views import View
+
 
 def generic_image_path(instance, filename):
     # Generar nombre aleatorio usando libreria uuid
