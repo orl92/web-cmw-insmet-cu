@@ -52,6 +52,15 @@ def create_default_env(production=False):
                 f.write("# =====================\n")
                 f.write("EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend\n")
                 f.write("# EmailBackend que muestra los correos en la consola\n\n")
+                f.write("# Comenta EMAIL_BACKEND y Descomenta el resto para usar Configuracion de server real\n\n")
+                f.write("# EMAIL_USE_TLS=True\n")
+                f.write("# EMAIL_HOST=smtp.tu-dominio.com\n")
+                f.write("# EMAIL_PORT=587\n")
+                f.write("# EMAIL_HOST_USER=user@tu-dominio.com\n")
+                f.write("# EMAIL_HOST_PASSWORD=tu_contraseña_segura\n")
+                f.write("# DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
+                f.write("# CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend\n")
+                f.write("# EMAIL_USE_SSL=False\n\n")
             
             # 3. Configuración para producción
             if production:
@@ -64,10 +73,6 @@ def create_default_env(production=False):
                 f.write("# Opcional: Puede definir manualmente estos valores si necesita configuraciones especiales\n")
                 f.write("# ALLOWED_HOSTS=tu-dominio.com,www.tu-dominio.com\n")
                 f.write("# CSRF_TRUSTED_ORIGINS=https://tu-dominio.com,https://www.tu-dominio.com\n\n")
-            else:
-                f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
-                f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
-                f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000\n\n")
                 
                 # 3.2 Email
                 f.write("# =====================\n")
@@ -94,6 +99,11 @@ def create_default_env(production=False):
                 f.write("DB_PASS=contraseña_muy_segura\n")
                 f.write("DB_HOST=localhost\n")
                 f.write("DB_PORT=5432\n\n")
+                
+            else:
+                f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
+                f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
+                f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000\n\n")
         
         # Mensajes post-creación
         print("\n✅ Archivo .env creado exitosamente")
