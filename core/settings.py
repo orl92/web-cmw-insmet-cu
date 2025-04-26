@@ -380,16 +380,15 @@ USE_TZ = True
 # 10. STATIC FILES
 # =====================
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Configuración diferente para desarrollo/producción
 if IS_PRODUCTION:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     # Crear directorio si no existe
     if not os.path.exists(STATIC_ROOT):
         os.makedirs(STATIC_ROOT)
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 else:
-    STATIC_ROOT = None  # No usar staticfiles en desarrollo
     STATICFILES_STORAGE = None
 
 STATICFILES_DIRS = [
