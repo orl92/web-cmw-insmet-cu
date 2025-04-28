@@ -1,6 +1,6 @@
 # Centro Meteorológico Provincial Camagüey
 
-[![Django](https://img.shields.io/badge/Django-5.1+-green.svg)](https://www.djangoproject.com/)
+[![Django](https://img.shields.io/badge/Django-5.2+-green.svg)](https://www.djangoproject.com/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Sistema web del **Centro Meteorológico Provincial Camagüey** desarrollado con Python/Django. Utiliza la plantilla **[Tabler](https://tabler.io/)** para la interfaz de administración.
