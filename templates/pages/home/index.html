@@ -6,7 +6,7 @@
 {% endblock extrastyle %}
 {% block content %}
 <div class="row row-deck row-cards mt-3">
-    <h4 class="card-title">Ultimo Pronóstico: {{ latest_forecast.date|date:"d/m/Y" }}</h4>
+    <h4 class="card-title">Pronóstico del: {{ latest_forecast.date|date:"d/m/Y" }}</h4>
     <!-- Costa Norte -->
     <div class="col-sm-6 col-lg-4">
         <div class="card">
