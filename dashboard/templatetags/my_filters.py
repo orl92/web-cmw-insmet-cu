@@ -1,6 +1,5 @@
 import os
 import re
-
 from django import template
 from django.templatetags.static import static
 from django.utils.timesince import timesince
@@ -88,6 +87,30 @@ MAR_DESCRIPCIONES = {
 def get_mar_description(value):
     return MAR_DESCRIPCIONES.get(value, 'Descripción no disponible')
 
+LUNA_DESCRIPCIONES = {
+    'Luna Nueva': 'La luna no es visible desde la Tierra',
+    'Creciente': 'Fase creciente de la luna',
+    'Cuarto Creciente': 'Mitad derecha iluminada',
+    'Gibosa Creciente': 'Más de la mitad iluminada',
+    'Luna Llena': 'Disco lunar completamente visible',
+    'Gibosa Menguante': 'Más de la mitad oscurecida',
+    'Cuarto Menguante': 'Mitad izquierda iluminada',
+    'Menguante': 'Fase menguante final'
+}
+
+@register.filter
+def get_luna_description(value):
+    return LUNA_DESCRIPCIONES.get(value, 'Descripción no disponible')
+
+SOL_DESCRIPCIONES = {
+    'sunrise': 'Hora oficial de salida del sol',
+    'sunset': 'Hora oficial de puesta del sol'
+}
+
+@register.filter
+def get_sol_description(value):
+    return SOL_DESCRIPCIONES.get(value, 'Descripción no disponible')
+
 # Mapa de imágenes del tiempo
 TIEMPO_IMG_MAP = {
     'PN': 'dist/img/weather_icon/poco_nublado.png',
@@ -108,6 +131,13 @@ TIEMPO_IMG_MAP = {
     'NUM TORM_NIGHT': 'dist/img/weather_icon/numerosas_tormentas_noche.png',
 }
 
+@register.filter
+def get_weather_img(weather_code, is_night=False):
+    """Retorna la ruta de la imagen de tiempo según el código."""
+    file_key = f"{weather_code}_NIGHT" if is_night else weather_code
+    file_path = TIEMPO_IMG_MAP.get(file_key, '')
+    return static(file_path) if file_path else ''
+
 MOON_IMG_MAP = {
     'Luna Nueva': 'dist/img/moon_faces/new_moon.png',
     'Creciente': 'dist/img/moon_faces/waning_crescent_moon.png',
@@ -119,31 +149,35 @@ MOON_IMG_MAP = {
     'Menguante': 'dist/img/moon_faces/waxing_crescent_moon.png', 
 }
 
+@register.filter
+def get_moon_img(moon_phase):
+    """Retorna la ruta de la imagen de la fase lunar."""
+    return static(MOON_IMG_MAP.get(moon_phase, ''))
+
 SUN_IMG_MAP = {
     'sunrise': 'dist/img/sun/sunrise.png',
     'sunset': 'dist/img/sun/sunset.png',
 }
 
 @register.filter
-def get_weather_img(weather_code, is_night=False):
-    """Retorna la ruta de la imagen de tiempo según el código."""
-    file_key = f"{weather_code}_NIGHT" if is_night else weather_code
-    file_path = TIEMPO_IMG_MAP.get(file_key, '')
-    return static(file_path) if file_path else ''
-
-@register.filter
-def get_moon_img(moon_phase):
-    """Retorna la ruta de la imagen de la fase lunar."""
-    return static(MOON_IMG_MAP.get(moon_phase, ''))
-
-@register.filter
 def get_sun_img(sun_event):
     """Retorna la ruta de la imagen de salida o puesta del sol."""
     return static(SUN_IMG_MAP.get(sun_event, ''))
 
+@register.filter
+def get_forecast_day(obj, day_number):
+    """Obtiene los datos de un día específico del pronóstico"""
+    day_number = str(day_number)  # Asegurar conversión a string
+    return {
+        'date': getattr(obj, f'day{day_number}_date', '--'),
+        'weather': getattr(obj, f'day{day_number}_weather', '--'),
+        'max_temp': getattr(obj, f'day{day_number}_max_temp', '--'),
+        'min_temp': getattr(obj, f'day{day_number}_min_temp', '--'),
+    }
 
-
-
-
+@register.filter
+def get_dict_value(dictionary, key):
+    """Obtiene un valor de un diccionario"""
+    return dictionary.get(key, '--')
 
 
