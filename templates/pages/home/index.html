@@ -5,10 +5,11 @@
     <link href="{% static '' %}dist/css/forecast.css" rel="stylesheet"/>
 {% endblock extrastyle %}
 {% block content %}
+<!-- Pronóstico Principal -->
 <div class="row row-deck row-cards mt-3">
     <h4 class="card-title">Pronóstico del: {{ latest_forecast.date|date:"d/m/Y" }}</h4>
     <!-- Costa Norte -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -79,7 +80,7 @@
         </div>
     </div>
     <!-- Interior -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -141,7 +142,7 @@
         </div>
     </div>
     <!-- Costa Sur -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -211,85 +212,46 @@
             </div>
         </div>
     </div>
-    
-    <!-- Tarjeta Pronóstico Extendido -->
-    <h4>Pronóstico Extendido 5 días</h4>
-    <div class="carousel slide" data-bs-ride="carousel">
-        <div class="carousel-inner">
-            <!-- Primer Slide (Días 1-4) -->
-            <div class="carousel-item active">
-                <div class="row">
-                    {% with days="1234" %}
-                        {% for day in days %}
-                            <div class="col-12 col-md-3 mt-3">
-                                <div class="card">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title" id="day{{ day }}-title">
-                                            {{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:"D d/m" }}
-                                        </h5>
-                                        <div class="day-content">
-                                            <div class="weather-icon" style="height: 100px; width: 100px">
-                                                <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" 
-                                                    alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" 
-                                                    data-bs-toggle="tooltip" title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}">
-                                            </div>
-                                            <div class="temp-info mt-2">
-                                                <div class="temp-max text-danger">
-                                                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
-                                                </div>
-                                                <div class="temp-min text-primary">
-                                                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% endwith %}
-                </div>
-            </div>
+</div>
 
-            <!-- Segundo Slide (Días 2-5) -->
-            <div class="carousel-item">
-                <div class="row">
-                    {% with days="2345" %}
-                        {% for day in days %}
-                            <div class="col-12 col-md-3 mt-3">
-                                <div class="card">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title">
-                                            {{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:"D d/m" }}
-                                        </h5>
-                                        <div class="day-content" id="day{{ day }}-content-2">
-                                            <div class="weather-icon" style="height: 100px; width: 100px">
-                                                <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" 
-                                                    alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" 
-                                                    data-bs-toggle="tooltip" title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}">
-                                            </div>
-                                            <div class="temp-info mt-2">
-                                                <div class="temp-max text-danger">
-                                                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
-                                                </div>
-                                                <div class="temp-min text-primary">
-                                                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+<!-- Pronóstico Extendido -->
+<h4 class="card-title mt-3">Pronóstico Extendido 5 días</h4>
+<div class="row row-deck row-cards mt-3 row-cols-1 row-cols-sm-2 row-cols-lg-5 ">
+    {% for day in "12345" %}
+        <div class="col mb-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h5 class="card-title fw-bold">
+                        {{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:"D d/m" }}
+                    </h5>
+                    <div class="day-content">
+                        <div class="weather-icon mx-auto" style="height: 100px; width: 100px">
+                            <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" 
+                                alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" 
+                                class="img-fluid"
+                                data-bs-toggle="tooltip" 
+                                title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}">
+                        </div>
+                        <div class="temp-info mt-3">
+                            <div class="temp-max text-danger fs-5 fw-bold">
+                                {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
                             </div>
-                        {% endfor %}
-                    {% endwith %}
+                            <div class="temp-min fs-5">
+                                {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Tarjeta Datos Astronómicos -->
-    <h4>Datos Astronómicos</h4>
+    {% endfor %}
+</div>
+
+<!-- Datos Astronómicos -->
+<div class="row row-deck row-cards mt-3">
+    <h4 class="card-title">Datos Astronómicos</h4>
     <!-- Fases Lunares -->
-    <div class="col-lg-4 mt-3">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body" id="lunar-phases" style="height: 250px;">
                 <h5 class="card-title">Fase Lunar</h5>
@@ -321,7 +283,7 @@
     </div>
 
     <!-- Salida y Puesta del Sol -->
-    <div class="col-lg-4 mt-3">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body" id="sunrise-sunset" style="height: 250px;">
                 <h5 class="card-title">Salida y Puesta del Sol</h5>
@@ -360,7 +322,7 @@
     </div>
     
     <!-- Índice UV -->
-    <div class="col-lg-4 mt-3">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body" style="height: 250px;">
                 <h5 class="card-title">Índice UV</h5>
@@ -442,24 +404,14 @@
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Sección de Mapa y Observaciones -->
-    <div class="row mt-4">
-        <!-- Títulos externos -->
-        <div class="col-12">
-            <div class="row mb-3">
-                <div class="col-lg-8 align-lg-middle">
-                    <h4 class="mb-0">Estaciones Meteorológicas en la Provincia</h4>
-                </div>
-                <div class="col-lg-4 align-lg-middle">
-                    <h4 class="mb-0">Observaciones del Clima</h4>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Contenido -->
-    <div class="col-lg-8">
-        <div class="card h-100">
+<!-- Mapa y Observaciones -->
+<div class="row row-cards mt-3">
+    <!-- Estaciones -->
+    <div class="col-lg-8 mb-3">
+        <h4>Estaciones Meteorologicas en la Provincia</h4>
+        <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Estaciones</h5>
                 <div class="container" id="chartdiv" style="height: 450px;">
@@ -469,11 +421,14 @@
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card h-100">
+    <!-- Observaciones del Clima -->
+    <div class="col-lg-4 mb-3">
+        <h4>Observaciones del Clima en las Estaciones</h4>
+        <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Observación</h5>
                 <div class="container" id="station-details" style="height: 450px;">
+                    <!-- Observaciones Aquí -->
                     <p id="station-date" class="h3 mb-4 text-center" data-bs-toggle="tooltip"
                     data-bs-placement="bottom" title="Fecha de la Observación"></p>
                     <p id="station-title" class="h3 mb-4 text-center" data-bs-toggle="tooltip"
@@ -487,16 +442,35 @@
                     <br>
                     <div id="station-humidity" class="text-center" data-bs-toggle="tooltip"
                         data-bs-placement="bottom" title="Humedad relativa">
-                        <!-- Contenido humedad relativa -->
+                        <!-- Aquí va el contenido de la estación de humedad relativa -->
                     </div>
                     <div class="weather__status d-flex flex-row justify-content-center align-items-center mt-3">
-                        <!-- Contenido adicional... -->
+                        <div id="station-wind"
+                            class="p-1 d-flex flex-column justify-content-center align-items-center"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom"
+                            title="Velocidad y dirección del viento">
+                            <!-- Aquí va el contenido de la estación de viento -->
+                        </div>
+                        <div id="station-rain-3h"
+                            class="p-1 d-flex flex-column justify-content-center align-items-center"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom"
+                            title="Precipitaciones en las últimas 3h">
+                            <!-- Aquí va el contenido de la estación de lluvia en las últimas 3 horas -->
+                        </div>
+                        <div id="station-rain-24h"
+                            class="p-1 d-flex flex-column justify-content-center align-items-center"
+                            data-bs-toggle="tooltip" data-bs-placement="bottom"
+                            title="Precipitaciones en las últimas 24h">
+                            <!-- Aquí va el contenido de la estación de lluvia en las últimas 24 horas -->
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+
 {% endblock content %}
 {% block extrajs %}
     <!-- Libs JS -->
