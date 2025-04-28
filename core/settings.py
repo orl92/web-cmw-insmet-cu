@@ -104,6 +104,7 @@ def create_default_env(production=False):
                 f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
                 f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
                 f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000\n\n")
+                f.write("# EXTERNAL_HOSTNAME=cmw.insmet.cu\n\n")
         
         # Mensajes post-creación
         print("\n✅ Archivo .env creado exitosamente")
