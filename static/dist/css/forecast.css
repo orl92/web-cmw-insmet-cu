@@ -1,26 +1,53 @@
+/* ---------------------------------- */
+/* Estilos Generales y Efectos Hover */
+/* ---------------------------------- */
+.weather-icon img,
+.lunarPhase img,
+.nextPhase img,
+.sunrise-sunset-item img,
+.uvLabelContainer img,
+.weather-detail img,
+.time-details img {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    cursor: pointer;
+}
+
+.weather-icon:hover img,
+.lunarPhase:hover img,
+.nextPhase:hover img,
+.sunrise-sunset-item:hover img,
+.uvLabelContainer:hover img,
+.weather-detail:hover img,
+.time-details:hover img {
+    transform: scale(1.1);
+    opacity: 0.9;
+}
+
+/* ------------------------- */
+/* Estructura Principal */
+/* ------------------------- */
 .day-content {
     display: flex;
     align-items: center;
-    justify-content: center; /* Centra los elementos horizontalmente */
+    justify-content: center;
 }
 
 .weather-icon {
     font-size: 2em;
     margin-bottom: 10px;
-    margin-right: 20px; /* Espacio entre el icono y las temperaturas */
+    margin-right: 20px;
+    position: relative;
 }
 
 .temp-info {
     display: flex;
     flex-direction: column;
-    align-items: flex-start; /* Alinea las temperaturas a la izquierda */
+    align-items: flex-start;
 }
 
-.temp-min, .temp-max, .temp {
-    font-size: 1.2em;
-    margin: 5px 0;
-}
-
+/* ------------------------- */
+/* Componentes Específicos */
+/* ------------------------- */
 .lunarPhase {
     display: flex;
     align-items: center;
@@ -50,24 +77,53 @@
     flex: 1;
 }
 
-.lunarPhase img, .nextPhase img {
-    max-width: 100%;
-    height: auto;
+/* ------------------------- */
+/* Tarjetas y Contenedores */
+/* ------------------------- */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
 .card-body {
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 10px;
+    padding: 15px;
     box-sizing: border-box;
 }
 
+/* ------------------------- */
+/* Elementos de Temperatura */
+/* ------------------------- */
+.temp-min, .temp-max, .temp {
+    font-size: 1.2em;
+    margin: 5px 0;
+}
 
+.temp-max {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.temp-min {
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+/* ------------------------- */
+/* Amanecer/Atardecer */
+/* ------------------------- */
 #sunrise-sunset-content {
     display: flex;
-    flex-direction: row; /* Alinea los contenedores horizontalmente */
+    flex-direction: row;
     align-items: center;
     justify-content: space-around;
     height: 100%;
@@ -76,93 +132,116 @@
 
 .sunrise-sunset-item {
     display: flex;
-    flex-direction: column; /* Alinea el icono y el texto verticalmente */
+    flex-direction: column;
     align-items: center;
-    margin: 0 10px; /* Añade un margen horizontal entre los contenedores */
+    margin: 0 10px;
 }
 
-#sunrise-sunset-content img {
-    max-width: 100%;
-    height: auto;
-}
-
-.temp-single {
-    display: flex;
-    flex-direction: row; /* Alinea en fila */
-    align-items: center; /* Centra verticalmente */
-    text-align: center; /* Asegura que el texto esté centrado */
-    font-size: 3em; /* Aumenta el tamaño de la fuente */
-    margin-left: 10px; /* Espacio entre el icono y la temperatura */
-}
-
+/* ------------------------- */
+/* Detalles del Tiempo */
+/* ------------------------- */
 .weather-details {
-    margin-top: 20px; /* Separación del contenido de arriba */
+    margin-top: 20px;
     display: flex;
-    justify-content: center; /* Centra los íconos horizontalmente */
-    gap: 20px; /* Espacio entre los íconos */
+    justify-content: center;
+    gap: 20px;
 }
 
 .weather-detail {
     display: flex;
     flex-direction: column;
-    align-items: center; /* Centra los íconos y el texto */
-    text-align: center; /* Alinea el texto al centro */
+    align-items: center;
+    text-align: center;
 }
 
 .weather-detail svg {
-    margin-bottom: 5px; /* Espacio entre el ícono y el texto */
+    margin-bottom: 5px;
 }
 
-.total-duration {
-    margin-left: 10px;
-    font-weight: bold;
-    font-size: 16px;
-}
-
+/* ------------------------- */
+/* Tiempo y Duración */
+/* ------------------------- */
 .time-details {
     display: flex;
     justify-content: space-between;
     width: 100%;
     padding: 10px;
-    flex-shrink: 0;
 }
 
 .time-item {
     text-align: center;
-    overflow: hidden;
+    flex: 1;
+    min-width: 80px;
 }
 
 .time-value {
     display: block;
-    font-size: 18px;
-    font-weight: bold;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
 }
 
 .time-label {
     display: block;
-    font-size: 14px;
-    color: #6c757d;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+/* ------------------------- */
+/* Índice UV */
+/* ------------------------- */
+.uvLabelContainer {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin: 0 auto;
 }
 
 .uvContentTitle {
-    font-size: 35px;
+    font-size: 2.2rem;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
     line-height: 1;
+    font-weight: 700;
+    color: #34495e;
 }
 
-.uvLabelContainer {
-    position: relative;
-    width: 130px;
-    height: 130px;
+/* ------------------------- */
+/* Scrollbar Personalizado */
+/* ------------------------- */
+::-webkit-scrollbar {
+    height: 8px;
+    width: 6px;
 }
 
+::-webkit-scrollbar-thumb {
+    background: #bdc3c7;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #ecf0f1;
+}
+
+/* ------------------------- */
+/* Efectos Adicionales */
+/* ------------------------- */
+.hover-scale {
+    transition: transform 0.3s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.08);
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
