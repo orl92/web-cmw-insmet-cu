@@ -136,20 +136,44 @@ sudo nano /etc/nginx/sites-available/webcmp.conf
 #### Ejemplo de configuración:
 
 ```ini
-upstream webcmp_app {
+proxy_cache_path /cache/nginx/tmpfs levels=1:2 keys_zone=webcmp:100m max_size=100m inactive=3h use_temp_path=off;
+
+upstream web.cmw.insmet.cu {
     server unix:/tmp/gunicorn-webcmp.sock fail_timeout=0;
 }
 
 server {
-    listen 80;
-    server_name web.cmw.insmet.cu;
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        server_name _;
+        return 301 https://$host$request_uri;
+}
 
-    location /static/ {
-        alias /var/www/web-cmw-insmet-cu/staticfiles/;
-    }
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    ssl_certificate /etc/nginx/certificate/web.cmw.insmet.cu.crt;
+    ssl_certificate_key /etc/nginx/certificate/web.cmw.insmet.cu.key;
+    server_name web.cmw.insmet.cu;
+    access_log /var/www/web-cmw-insmet-cu/logs/nginx-access.log;
+    error_log /var/www/web-cmw-insmet-cu/logs/nginx-error.log;
+
+    # Agrega estos headers esenciales
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+
+    # Configuraci  n de timeout
+    proxy_read_timeout 300s;
+    proxy_connect_timeout 75s;
 
     location /media/  {
         alias /var/www/web-cmw-insmet-cu/media/;
+    }
+
+    location /static/ {
+        alias /var/www/web-cmw-insmet-cu/staticfiles/;
     }
 
     location /static/admin/ {
@@ -157,11 +181,14 @@ server {
     }
 
     location / {
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header Host $http_host;
-        proxy_redirect off;
-        proxy_pass http://webcmp_app;
+         proxy_pass http://web.cmw.insmet.cu;
+
+         # Espec  ficamente para Django
+         proxy_set_header Upgrade $http_upgrade;
+         proxy_set_header Connection "upgrade";
     }
+
+    error_page 500 502 503 504 /templates/500.html;
 }
 ```
 
