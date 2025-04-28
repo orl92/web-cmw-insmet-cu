@@ -1,5 +1,8 @@
 from django.views.generic import TemplateView
 
+from dashboard.models import Forecasts
+from django.core.exceptions import ObjectDoesNotExist
+
 # Create your views here.
 
 class IndexView(TemplateView):
@@ -10,4 +13,11 @@ class IndexView(TemplateView):
         context['title'] = 'Inicio'
         context['parent'] = ''
         context['segment'] = 'index'
+        
+        # Datos meteorológicos comunes
+        try:
+            context['latest_forecast'] = Forecasts.objects.latest('date')
+        except ObjectDoesNotExist:
+            context['latest_forecast'] = None
+            
         return context
