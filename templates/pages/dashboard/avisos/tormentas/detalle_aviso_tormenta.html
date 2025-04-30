@@ -1,0 +1,13 @@
+<div>
+  <h3 class="card-title">Título: {{ storm.title }}</h3>
+  <div class="text-secondary">Asunto: {{ storm.subject }}</div>
+  <div class="mt-3 text-secondary">
+    <div>Fecha: {{ storm.date }}</div> 
+    <div class="mt-3">Autor: {{ storm.user.get_full_name }}</div>
+  </div>
+  <div class="mt-3">
+    <img src="{{ storm.get_image }}" alt="{{ storm.title }}" class="img-fluid">
+  </div>
+  <div class="mt-3">{{ storm.description|safe }}</div>
+  <div class="mt-3 text-secondary"><strong>Válido hasta:</strong> {{ storm.valid_until }}</div>
+</div>

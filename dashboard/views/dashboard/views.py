@@ -3,7 +3,7 @@ import pandas as pd
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views import View
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from django.contrib.auth.models import User, Group
@@ -14,7 +14,7 @@ from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist
 
 from common.utils import log_action
-from dashboard.models import EarlyWarning, Forecasts, RadarWarning, SiteConfiguration, SpecialNotice, TropicalCyclone, WeatherCommentary
+from dashboard.models import EarlyWarning, Forecasts, RadarWarning, SiteConfiguration, StormWarning, TropicalCyclone
 
 # Create your views here.
    
@@ -139,7 +139,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['latest_alerts'] = {
             'early_warnings': EarlyWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
             'tropical_cyclones': TropicalCyclone.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
-            'special_notices': SpecialNotice.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
+            'storm_warnings': StormWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
             'radar_warnings': RadarWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
         }
 

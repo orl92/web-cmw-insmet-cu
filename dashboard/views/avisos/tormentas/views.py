@@ -12,36 +12,36 @@ from django.urls import reverse_lazy, reverse
 from django.views.generic import *
 
 from core import settings
-from dashboard.forms.avisos.especiales.forms import SpecialNoticeForm
-from dashboard.models import SpecialNotice
+from dashboard.forms.avisos.tormentas.forms import StormWarningForm
+from dashboard.models import StormWarning
 
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
 
 # Create your views here.    
 
-class SpecialNoticeListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
-    template_name = 'pages/dashboard/avisos/especiales/avisos_especiales.html'
-    model = SpecialNotice
-    permission_required = 'dashboard.view_special_notice'
+class StormWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    template_name = 'pages/dashboard/avisos/tormentas/avisos_tormentas.html'
+    model = StormWarning
+    permission_required = 'dashboard.view_storm_warning'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Avisos Especiales'
+        context['title'] = 'Avisos de Tormentas'
         context['parent'] = 'avisos'
-        context['segment'] = 'special'
-        context['btn'] = ('Añadir Aviso Especial')
-        context['url_create'] = reverse_lazy('crear_aviso_especial')
-        context['url_list'] = reverse_lazy('avisos_especiales')
-        context['objects'] = SpecialNotice.objects.all()
+        context['segment'] = 'storm'
+        context['btn'] = ('Añadir Aviso de Tormenta')
+        context['url_create'] = reverse_lazy('crear_aviso_tormenta')
+        context['url_list'] = reverse_lazy('avisos_tormentas')
+        context['objects'] = StormWarning.objects.all()
         return context
 
-class SpecialNoticeCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
-    model = SpecialNotice
-    form_class = SpecialNoticeForm
-    template_name = 'pages/dashboard/avisos/especiales/crear_aviso_especial.html'
-    permission_required = 'dashboard.add_special_notice'
-    success_url = reverse_lazy('avisos_especiales')
+class StormWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = StormWarning
+    form_class = StormWarningForm
+    template_name = 'pages/dashboard/avisos/tormentas/crear_aviso_tormenta.html'
+    permission_required = 'dashboard.add_storm_warning'
+    success_url = reverse_lazy('avisos_tormentas')
     url_redirect = success_url
 
     def get_form_kwargs(self):
@@ -57,14 +57,14 @@ class SpecialNoticeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó un nuevo aviso especial para el: {self.object.date.strftime('%d-%m-%Y')}."
+            message=f"Se creó un nuevo aviso de tormenta para el: {self.object.date.strftime('%d-%m-%Y')}."
         )
         
         # Mensaje de éxito
-        messages.success(self.request, 'El aviso especial ha sido creado con éxito.', extra_tags='success')
+        messages.success(self.request, 'El aviso de tormenta ha sido creado con éxito.', extra_tags='success')
         
         # Construir la URL dinámica para "Ver todas las alertas"
-        listado_url = self.request.build_absolute_uri(reverse('especial'))
+        listado_url = self.request.build_absolute_uri(reverse('tormenta'))
         index_url = self.request.build_absolute_uri(reverse('index'))
         image_url = self.request.build_absolute_uri(self.object.image.url)
 
@@ -77,7 +77,7 @@ class SpecialNoticeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
             if recipients:
                 # Enviar correo
                 try:
-                    subject = f'Aviso Especial: {self.object.title}'
+                    subject = f'Aviso de Tormenta: {self.object.title}'
                     html_message = render_to_string(
                         'pages/dashboard/emails/notification.html',
                         {
@@ -114,23 +114,23 @@ class SpecialNoticeCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Añadir Aviso Especial'
+        context['title'] = 'Añadir Aviso de Tormenta'
         context['parent'] = 'avisos'
-        context['segment'] = 'special'
-        context['url_list'] = reverse_lazy('avisos_especiales')
+        context['segment'] = 'storm'
+        context['url_list'] = reverse_lazy('avisos_tormentas')
         return context
 
-class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = SpecialNotice
-    form_class = SpecialNoticeForm
-    template_name = 'pages/dashboard/avisos/especiales/actualizar_aviso_especial.html'
-    permission_required = 'dashboard.change_special_notice'
-    success_url = reverse_lazy('avisos_especiales')
+class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = StormWarning
+    form_class = StormWarningForm
+    template_name = 'pages/dashboard/avisos/tormentas/actualizar_aviso_tormenta.html'
+    permission_required = 'dashboard.change_storm_warning'
+    success_url = reverse_lazy('avisos_tormentas')
     url_redirect = success_url
 
     def get_object(self, queryset=None):
         uuid = self.kwargs.get('uuid')
-        return get_object_or_404(SpecialNotice, uuid=uuid)
+        return get_object_or_404(StormWarning, uuid=uuid)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -155,13 +155,13 @@ class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó el aviso especial del: {self.object.date.strftime('%d-%m-%Y')}."
+            message=f"Se actualizó el aviso de tormenta del: {self.object.date.strftime('%d-%m-%Y')}."
         )
         
         # Enviar correo solo si hay cambios
         if has_changes:
             # Construir la URL dinámica para el listado de alertas
-            listado_url = self.request.build_absolute_uri(reverse('especial'))
+            listado_url = self.request.build_absolute_uri(reverse('tormenta'))
             index_url = self.request.build_absolute_uri(reverse('index'))
             image_url = self.request.build_absolute_uri(self.object.image.url)
             
@@ -174,7 +174,7 @@ class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
                 from django.utils.html import strip_tags
 
                 # Renderizar el correo electrónico
-                subject = f'Aviso Especial Actualizado: {self.object.title}'
+                subject = f'Aviso de Tormenta Actualizado: {self.object.title}'
                 html_message = render_to_string(
                     'pages/dashboard/emails/notification.html',
                     {
@@ -211,30 +211,30 @@ class SpecialNoticeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
                 messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
         
         # Mensaje de éxito en la actualización del aviso
-        messages.success(self.request, 'El aviso especial ha sido actualizado con éxito.', extra_tags='success')
+        messages.success(self.request, 'El aviso de tormenta ha sido actualizado con éxito.', extra_tags='success')
         return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Actualizar Aviso Especial'
+        context['title'] = 'Actualizar Aviso de Tormenta'
         context['parent'] = 'avisos'
-        context['segment'] = 'special'
-        context['url_list'] = reverse_lazy('avisos_especiales')
+        context['segment'] = 'storm'
+        context['url_list'] = reverse_lazy('avisos_tormentas')
         return context
 
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
-class SpecialNoticeDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = SpecialNotice
-    template_name = 'pages/dashboard/avisos/especiales/eliminar_aviso_especial.html'
-    permission_required = 'dashboard.delete_special_notice'
-    success_url = reverse_lazy('avisos_especiales')
+class StormWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    model = StormWarning
+    template_name = 'pages/dashboard/avisos/tormentas/eliminar_aviso_tormenta.html'
+    permission_required = 'dashboard.delete_storm_warning'
+    success_url = reverse_lazy('avisos_tormentas')
     url_redirect = success_url
 
     def get_object(self, queryset=None):
         uuid = self.kwargs.get('uuid')
-        return get_object_or_404(SpecialNotice, uuid=uuid)
+        return get_object_or_404(StormWarning, uuid=uuid)
 
     def post(self, request, *args, **kwargs):
         special_notice = self.get_object()
@@ -244,38 +244,38 @@ class SpecialNoticeDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delet
             user=self.request.user,
             obj=special_notice,
             action_flag=DELETION,
-            message=f"Se eliminó el aviso especial del: {special_notice.date.strftime('%d-%m-%Y')}."
+            message=f"Se eliminó el aviso de tormenta del: {special_notice.date.strftime('%d-%m-%Y')}."
         )
 
         try:
             special_notice.delete()
-            messages.success(request, 'El aviso especial ha sido eliminada con éxito.', extra_tags='danger')
+            messages.success(request, 'El aviso de tormenta ha sido eliminada con éxito.', extra_tags='danger')
         except Exception as e:
             messages.error(request, str(e))
         return redirect(self.success_url)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Aviso Especial'
+        context['title'] = 'Eliminar Aviso de Tormenta'
         context['parent'] = 'avisos'
-        context['segment'] = 'special'
-        context['url_list'] = reverse_lazy('avisos_especiales')
+        context['segment'] = 'storm'
+        context['url_list'] = reverse_lazy('avisos_tormentas')
         return context
 
-class SpecialNoticeDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    model = SpecialNotice
-    template_name = 'pages/dashboard/avisos/especiales/detalle_aviso_especial.html'
-    permission_required = 'dashboard.view_special_notice'
-    context_object_name = 'special'  # Nombre del objeto en el contexto
+class StormWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = StormWarning
+    template_name = 'pages/dashboard/avisos/tormentas/detalle_aviso_tormenta.html'
+    permission_required = 'dashboard.view_storm_warning'
+    context_object_name = 'storm'  # Nombre del objeto en el contexto
 
     def get_object(self, queryset=None):
         uuid = self.kwargs.get('uuid')
-        return get_object_or_404(SpecialNotice, uuid=uuid)
+        return get_object_or_404(StormWarning, uuid=uuid)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Detalle del Aviso Especial'
+        context['title'] = 'Detalle del Aviso de Tormenta'
         context['parent'] = 'avisos'
-        context['segment'] = 'special'
-        context['url_list'] = reverse_lazy('avisos_especiales')
+        context['segment'] = 'storm'
+        context['url_list'] = reverse_lazy('avisos_tormentas')
         return context

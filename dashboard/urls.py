@@ -7,11 +7,11 @@ from dashboard.views.avisos.ciclones_tropicales.views import (
     TropicalCycloneCreateView, TropicalCycloneDeleteView,
     TropicalCycloneDetailView, TropicalCycloneListView,
     TropicalCycloneUpdateView)
-from dashboard.views.avisos.especiales.views import (SpecialNoticeCreateView,
-                                                     SpecialNoticeDeleteView,
-                                                     SpecialNoticeDetailView,
-                                                     SpecialNoticeListView,
-                                                     SpecialNoticeUpdateView)
+from dashboard.views.avisos.tormentas.views import (StormWarningCreateView,
+                                                     StormWarningDeleteView,
+                                                     StormWarningDetailView,
+                                                     StormWarningListView,
+                                                     StormWarningUpdateView)
 from dashboard.views.avisos.radares.views import (RadarWarningCreateView,
                                                   RadarWarningDeleteView,
                                                   RadarWarningDetailView,
@@ -89,12 +89,12 @@ urlpatterns = [
     path('actualizar/aviso/ciclon_tropical/<uuid:uuid>/',TropicalCycloneUpdateView.as_view(), name='actualizar_aviso_ciclon_tropical'),
     path('eliminar/aviso/ciclon_tropical/<uuid:uuid>/',TropicalCycloneDeleteView.as_view(), name='eliminar_aviso_ciclon_tropical'),
     path('detalle/aviso/ciclone-tropical/<uuid:uuid>/', TropicalCycloneDetailView.as_view(), name='detalle_aviso_ciclon_tropical'),
-    # Aviso Especial
-    path('avisos/especiales/', SpecialNoticeListView.as_view(), name='avisos_especiales'),
-    path('crear/aviso/especial/', SpecialNoticeCreateView.as_view(), name="crear_aviso_especial"),
-    path('actualizar/aviso/especial/<uuid:uuid>/', SpecialNoticeUpdateView.as_view(), name='actualizar_aviso_especial'),
-    path('eliminar/aviso/especial/<uuid:uuid>/',SpecialNoticeDeleteView.as_view(), name='eliminar_aviso_especial'),
-    path('detalle/aviso/especial/<uuid:uuid>/', SpecialNoticeDetailView.as_view(), name='detalle_aviso_especial'),
+    # Aviso Tormenta
+    path('avisos/tormentas/', StormWarningListView.as_view(), name='avisos_tormentas'),
+    path('crear/aviso/tormenta/', StormWarningCreateView.as_view(), name="crear_aviso_tormenta"),
+    path('actualizar/aviso/tormenta/<uuid:uuid>/', StormWarningUpdateView.as_view(), name='actualizar_aviso_tormenta'),
+    path('eliminar/aviso/tormenta/<uuid:uuid>/',StormWarningDeleteView.as_view(), name='eliminar_aviso_tormenta'),
+    path('detalle/aviso/tormenta/<uuid:uuid>/', StormWarningDetailView.as_view(), name='detalle_aviso_tormenta'),
     # Avisos Radar
     path('avisos/radares/', RadarWarningListView.as_view(), name='avisos_radares'),
     path('crear/aviso/radar/', RadarWarningCreateView.as_view(), name="crear_aviso_radar"),

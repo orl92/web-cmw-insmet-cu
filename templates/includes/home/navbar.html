@@ -358,11 +358,11 @@
                                     <span class="badge bg-red-lt ms-2">{{ tropical_cyclone_count }}</span>
                                 {% endif %}
                             </a>
-                            <a class="dropdown-item {% if 'especial' in segment %}active{% endif %}"
-                            href="{% url 'especial' %}" rel="noopener">
-                                Especial
-                                {% if special_notice_count > 0 %}
-                                    <span class="badge bg-red-lt ms-2">{{ special_notice_count }}</span>
+                            <a class="dropdown-item {% if 'tormenta' in segment %}active{% endif %}"
+                            href="{% url 'tormenta' %}" rel="noopener">
+                                Tormenta
+                                {% if storm_warning_count > 0 %}
+                                    <span class="badge bg-red-lt ms-2">{{ storm_warning_count }}</span>
                                 {% endif %}
                             </a>
                             <a class="dropdown-item {% if 'radar' in segment %}active{% endif %}"

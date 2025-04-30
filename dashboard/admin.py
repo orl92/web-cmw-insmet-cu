@@ -27,8 +27,8 @@ class EarlyWarningAdmin(admin.ModelAdmin):
 class TropicalCycloneAdmin(admin.ModelAdmin):
     list_display = ('title', 'date', 'user')
 
-@admin.register(SpecialNotice)
-class SpecialNoticeAdmin(admin.ModelAdmin):
+@admin.register(StormWarning)
+class StormWarningAdmin(admin.ModelAdmin):
     list_display = ('title', 'date', 'user')
 
 @admin.register(RadarWarning)

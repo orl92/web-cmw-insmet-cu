@@ -11,7 +11,7 @@
   <td>{{object.date}}</td>
   <td>{{object.user}}</td>
   <td class="text-end">
-    <a href="{% url 'actualizar_aviso_especial' object.uuid %}" type="button" class="btn btn-pill btn-outline-warning btn-sm" data-bs-toggle="tooltip"
+    <a href="{% url 'actualizar_aviso_tormenta' object.uuid %}" type="button" class="btn btn-pill btn-outline-warning btn-sm" data-bs-toggle="tooltip"
       data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -22,14 +22,14 @@
         <path d="M16 5l3 3" />
       </svg>
     </a>
-    <a href="#" type="button" class="btn btn-pill btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle" data-bs-toggle="modal" data-bs-target="#specialDetailModal" data-url="{% url 'detalle_aviso_especial' object.uuid %}">
+    <a href="#" type="button" class="btn btn-pill btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle" data-bs-toggle="modal" data-bs-target="#stormDetailModal" data-url="{% url 'detalle_aviso_tormenta' object.uuid %}">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
         <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
       </svg>
     </a>
-    <a href="{% url 'eliminar_aviso_especial' object.uuid %}" type="button" class="btn btn-pill btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
+    <a href="{% url 'eliminar_aviso_tormenta' object.uuid %}" type="button" class="btn btn-pill btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
         <path d="M4 7l16 0" />
@@ -41,12 +41,12 @@
     </a>
   </td>
 
-  <!-- Modal para el detalle del aviso especial -->
-  <div class="modal modal-blur fade" id="specialDetailModal" tabindex="-1" style="display: none;" aria-labelledby="specialDetailModalLabel" aria-hidden="true">
+  <!-- Modal para el detalle del aviso tormenta -->
+  <div class="modal modal-blur fade" id="stormDetailModal" tabindex="-1" style="display: none;" aria-labelledby="stormDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="specialDetailModalLabel">Detalle del Aviso Especial</h5>
+          <h5 class="modal-title" id="stormDetailModalLabel">Detalle del Aviso de Tormenta</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -60,14 +60,14 @@
   <script>
     $(document).ready(function() {
       // Cuando se haga clic en el botón "Detalle"
-      $('a[data-bs-target="#specialDetailModal"]').on('click', function() {
+      $('a[data-bs-target="#stormDetailModal"]').on('click', function() {
         // Obtener la URL del detalle desde el atributo data-url
         var detailUrl = $(this).data('url');
   
         // Cargar el contenido del detalle en el modal
-        $('#specialDetailModal .modal-body').load(detailUrl, function() {
+        $('#stormDetailModal .modal-body').load(detailUrl, function() {
           // Mostrar el modal
-          $('#specialDetailModal').modal('show');
+          $('#stormDetailModal').modal('show');
         });
       });
     });

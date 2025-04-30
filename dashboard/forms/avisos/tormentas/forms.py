@@ -1,11 +1,11 @@
 from django import forms
 
-from dashboard.models import SpecialNotice
+from dashboard.models import StormWarning
 
 
-class SpecialNoticeForm(forms.ModelForm):
+class StormWarningForm(forms.ModelForm):
     class Meta:
-        model = SpecialNotice
+        model = StormWarning
         fields = ['title', 'subject', 'valid_until', 'image', 'description', 'email_recipient_list']
         widgets = {
             'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),

@@ -255,17 +255,17 @@ class TropicalCyclone(BaseWarning):
             ('delete_tropical_cyclone', 'Eliminar'),
         )
 
-class SpecialNotice(BaseWarning):
+class StormWarning(BaseWarning):
 
     class Meta:
         verbose_name = 'Aviso Especial'
         verbose_name_plural = "Avisos Especiales"
         default_permissions = ()
         permissions = (
-            ('view_special_notice', 'Ver'),
-            ('add_special_notice', 'Añadir'),
-            ('change_special_notice', 'Editar'),
-            ('delete_special_notice', 'Eliminar'),
+            ('view_storm_warning', 'Ver'),
+            ('add_storm_warning', 'Añadir'),
+            ('change_storm_warning', 'Editar'),
+            ('delete_storm_warning', 'Eliminar'),
         )
 
 class RadarWarning(BaseWarning):

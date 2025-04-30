@@ -225,20 +225,20 @@
         </div>
         </div>
     </div>
-    <!-- Avisos Especiales -->
+    <!-- Tormentas -->
     <div class="col-sm-6 col-lg-3">
         <div class="card h-100">
         <div class="card-body d-flex flex-column">
-            <h5><i class="fas fa-comment-exclamation me-2"></i>Especiales</h5>
+            <h5><i class="fas fa-comment-exclamation me-2"></i>Tormentas</h5>
             <ul class="list-group list-group-flush flex-grow-1">
-            {% for alert in latest_alerts.special_notices %}
+            {% for alert in latest_alerts.storm_warnings %}
                 <li class="list-group-item small">
                 {{ alert.subject }}<br>
                 <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
                 </li>
             {% empty %}
                 <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
-                No hay avisos especiales
+                No hay avisos de tormentas
                 </li>
             {% endfor %}
             </ul>

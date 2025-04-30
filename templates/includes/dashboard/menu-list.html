@@ -162,9 +162,9 @@
             Ciclones Tropicales
           </a>
           {% endif %}
-          {% if request.user|has_permission:'dashboard.view_special_notice' %}
-          <a class="dropdown-item {% if 'special' in segment %}active{% endif %}" href="{% url 'avisos_especiales' %}">
-            Especiales
+          {% if request.user|has_permission:'dashboard.view_storm_warning' %}
+          <a class="dropdown-item {% if 'storm' in segment %}active{% endif %}" href="{% url 'avisos_tormentas' %}">
+            Tormentas
           </a>
           {% endif %}
           {% if request.user|has_permission:'dashboard.view_radar_warning' %}

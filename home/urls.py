@@ -2,7 +2,7 @@ from django.urls import path
 
 from home.views.avisos.alertas_tempranas.views import EarlyWarningListView
 from home.views.avisos.ciclones_tropicales.views import TropicalCycloneListView
-from home.views.avisos.especiales.views import SpecialNoticeListView
+from home.views.avisos.tormentas.views import StormListView
 from home.views.avisos.radares.views import RadarWarningListView
 from home.views.comentarios.nota_meteorologica.views import \
     WeatherNoteDetailView
@@ -27,7 +27,7 @@ urlpatterns = [
     # Avisos
     path('aviso/alerta_temprana/', EarlyWarningListView.as_view(), name="alerta_temprana"),
     path('aviso/ciclon_tropical/', TropicalCycloneListView.as_view(), name="ciclon_tropical"),
-    path('aviso/especial/', SpecialNoticeListView.as_view(), name="especial"),
+    path('aviso/tormenta/', StormListView.as_view(), name="tormenta"),
     path('aviso/radar/', RadarWarningListView.as_view(), name="radar"),
     # Mapas
     path('mapa/niveles/', MapaNivelView.as_view(), name="niveles"),
