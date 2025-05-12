@@ -1,7 +1,9 @@
-/* ---------------------------------- */
-/* Estilos Generales y Efectos Hover */
-/* ---------------------------------- */
+/* ============================================= */
+/* SECCIÓN 1: EFECTOS HOVER GENERALES            */
+/* ============================================= */
+/* Añadimos la clase .weather-icon-region para aplicar hover a los iconos de regiones */
 .weather-icon img,
+.weather-icon-region img, /* Nueva clase para regiones */
 .lunarPhase img,
 .nextPhase img,
 .sunrise-sunset-item img,
@@ -23,31 +25,99 @@
     opacity: 0.9;
 }
 
-/* ------------------------- */
-/* Estructura Principal */
-/* ------------------------- */
+/* ============================================= */
+/* SECCIÓN 2: ESTRUCTURA PRINCIPAL               */
+/* ============================================= */
 .day-content {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
 }
 
+/* ============================================= */
+/* SECCIÓN 3: PRONÓSTICO EXTENDIDO (MODIFICADO)  */
+/* ============================================= */
 .weather-icon {
-    font-size: 2em;
-    margin-bottom: 10px;
-    margin-right: 20px;
-    position: relative;
+    margin: 0 auto 10px;
+    height: 80px;
+    width: 80px;
+}
+
+.weather-icon img {
+    width: 100%;
+    height: auto;
 }
 
 .temp-info {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row; /* Temperaturas en línea */
+    justify-content: center;
+    gap: 15px; /* Espacio entre temperaturas */
+    width: 100%;
 }
 
-/* ------------------------- */
-/* Componentes Específicos */
-/* ------------------------- */
+.temp-max, .temp-min {
+    font-size: 1rem; /* 16px exactos */
+    font-weight: 600;
+    margin: 0;
+}
+
+.temp-info {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    text-align: center;
+}
+
+.temp-max, .temp-min {
+    display: flex;
+    flex-direction: column;
+}
+
+.temp-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 2px;
+    font-weight: 500;
+}
+
+/* Ajuste para móviles */
+@media (max-width: 576px) {
+    .temp-info {
+        gap: 15px;
+    }
+    
+    .temp-label {
+        font-size: 0.7rem;
+    }
+}
+
+/* ============================================= */
+/* SECCIÓN 4: ESTILOS PARA REGIONES (NUEVO)      */
+/* ============================================= */
+/* Contenedor de iconos en regiones (Norte/Interior/Sur) */
+.weather-icon-region {
+    display: inline-block; /* Para que el hover funcione correctamente */
+    transition: all 0.3s ease;
+}
+
+/* ============================================= */
+/* SECCIÓN 5: RESPONSIVE                         */
+/* ============================================= */
+@media (max-width: 767px) {
+    .weather-icon {
+        height: 70px;
+        width: 70px;
+    }
+    
+    .temp-info {
+        gap: 10px; /* Menor espacio en móvil */
+    }
+}
+
+/* ============================================= */
+/* SECCIÓN 6: RESTA DE ESTILOS ORIGINALES        */
+/* ============================================= */
+/* (Mantener todo el resto de tu CSS original sin cambios) */
 .lunarPhase {
     display: flex;
     align-items: center;
@@ -77,9 +147,6 @@
     flex: 1;
 }
 
-/* ------------------------- */
-/* Tarjetas y Contenedores */
-/* ------------------------- */
 .card {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     border: none;
@@ -100,27 +167,6 @@
     box-sizing: border-box;
 }
 
-/* ------------------------- */
-/* Elementos de Temperatura */
-/* ------------------------- */
-.temp-min, .temp-max, .temp {
-    font-size: 1.2em;
-    margin: 5px 0;
-}
-
-.temp-max {
-    color: #dc3545;
-    font-weight: 600;
-}
-
-.temp-min {
-    color: #0d6efd;
-    font-weight: 500;
-}
-
-/* ------------------------- */
-/* Amanecer/Atardecer */
-/* ------------------------- */
 #sunrise-sunset-content {
     display: flex;
     flex-direction: row;
@@ -137,9 +183,6 @@
     margin: 0 10px;
 }
 
-/* ------------------------- */
-/* Detalles del Tiempo */
-/* ------------------------- */
 .weather-details {
     margin-top: 20px;
     display: flex;
@@ -158,9 +201,6 @@
     margin-bottom: 5px;
 }
 
-/* ------------------------- */
-/* Tiempo y Duración */
-/* ------------------------- */
 .time-details {
     display: flex;
     justify-content: space-between;
@@ -187,9 +227,6 @@
     color: #7f8c8d;
 }
 
-/* ------------------------- */
-/* Índice UV */
-/* ------------------------- */
 .uvLabelContainer {
     position: relative;
     width: 130px;
@@ -209,9 +246,6 @@
     color: #34495e;
 }
 
-/* ------------------------- */
-/* Scrollbar Personalizado */
-/* ------------------------- */
 ::-webkit-scrollbar {
     height: 8px;
     width: 6px;
@@ -226,9 +260,6 @@
     background: #ecf0f1;
 }
 
-/* ------------------------- */
-/* Efectos Adicionales */
-/* ------------------------- */
 .hover-scale {
     transition: transform 0.3s ease;
 }

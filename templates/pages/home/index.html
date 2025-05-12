@@ -18,11 +18,13 @@
                         <!-- Mañana -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
-                            <img src="{{ latest_forecast.nwm|get_weather_img }}" 
-                                alt="{{ latest_forecast.nwm|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.nwm|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.nwm|get_weather_img }}" 
+                                    alt="{{ latest_forecast.nwm|get_tiempo_description }}" 
+                                    class="weather-icon" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.nwm|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntm }}°C">
                                 {{ latest_forecast.ntm }}°C
                             </h3>
@@ -36,11 +38,13 @@
                         <!-- Tarde -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
-                            <img src="{{ latest_forecast.nwa|get_weather_img }}" 
-                                alt="{{ latest_forecast.nwa|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.nwa|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.nwa|get_weather_img }}" 
+                                    alt="{{ latest_forecast.nwa|get_tiempo_description }}" 
+                                    class="weather-icon" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.nwa|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.nta }}°C">
                                 {{ latest_forecast.nta }}°C
                             </h3>
@@ -54,11 +58,13 @@
                         <!-- Noche -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
-                            <img src="{{ latest_forecast.nwn|get_weather_img }}" 
-                                alt="{{ latest_forecast.nwn|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.nwn|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.nwn|get_weather_img }}" 
+                                    alt="{{ latest_forecast.nwn|get_tiempo_description }}" 
+                                    class="weather-icon" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.nwn|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntn }}°C">
                                 {{ latest_forecast.ntn }}°C
                             </h3>
@@ -89,46 +95,64 @@
                         <!-- Mañana -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
-                            <img src="{{ latest_forecast.iwm|get_weather_img }}" 
-                                alt="{{ latest_forecast.iwm|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.iwm|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.iwm|get_weather_img }}" 
+                                    alt="{{ latest_forecast.iwm|get_tiempo_description }}" 
+                                    class="weather-icon" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.iwm|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itm }}°C">
                                 {{ latest_forecast.itm }}°C
                             </h3>
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfm }} km/h Dirección: {{ latest_forecast.iwddm }}">
                                 {{ latest_forecast.iwddm }} {{ latest_forecast.iwdfm }} km/h
                             </p>
+                            <!-- Espacio reservado para mantener la alineación -->
+                            <p class="mb-1 invisible">
+                                <strong>Mar:</strong> <!-- Texto invisible pero ocupa espacio -->
+                            </p>
                         </div>
                         <!-- Tarde -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
-                            <img src="{{ latest_forecast.iwa|get_weather_img }}" 
-                                alt="{{ latest_forecast.iwa|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.iwa|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.iwa|get_weather_img }}" 
+                                    alt="{{ latest_forecast.iwa|get_tiempo_description }}" 
+                                    class="weather-icon" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.iwa|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ita }}°C">
                                 {{ latest_forecast.ita }}°C
                             </h3>
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfa }} km/h Dirección: {{ latest_forecast.iwdda }}">
                                 {{ latest_forecast.iwdda }} {{ latest_forecast.iwdfa }} km/h
                             </p>
+                            <!-- Espacio reservado para mantener la alineación -->
+                            <p class="mb-1 invisible">
+                                <strong>Mar:</strong> <!-- Texto invisible pero ocupa espacio -->
+                            </p>
                         </div>
                         <!-- Noche -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
-                            <img src="{{ latest_forecast.iwn|get_weather_img }}" 
-                                alt="{{ latest_forecast.iwn|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.iwn|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.iwn|get_weather_img }}" 
+                                    alt="{{ latest_forecast.iwn|get_tiempo_description }}" 
+                                    class="weather-icon" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.iwn|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itn }}°C">
                                 {{ latest_forecast.itn }}°C
                             </h3>
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfn }} km/h Dirección: {{ latest_forecast.iwddn }}">
                                 {{ latest_forecast.iwddn }} {{ latest_forecast.iwdfn }} km/h
+                            </p>
+                            <!-- Espacio reservado para mantener la alineación -->
+                            <p class="mb-1 invisible">
+                                <strong>Mar:</strong> <!-- Texto invisible pero ocupa espacio -->
                             </p>
                         </div>
                     </div>
@@ -151,11 +175,13 @@
                         <!-- Mañana -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
-                            <img src="{{ latest_forecast.swm|get_weather_img }}" 
-                                alt="{{ latest_forecast.swm|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.swm|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.swm|get_weather_img }}" 
+                                    alt="{{ latest_forecast.swm|get_tiempo_description }}" 
+                                    class="weather-icon" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.swm|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stm }}°C">
                                 {{ latest_forecast.stm }}°C
                             </h3>
@@ -169,11 +195,13 @@
                         <!-- Tarde -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
-                            <img src="{{ latest_forecast.swa|get_weather_img }}" 
-                                alt="{{ latest_forecast.swa|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.swa|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.swa|get_weather_img }}" 
+                                    alt="{{ latest_forecast.swa|get_tiempo_description }}" 
+                                    class="img-fluid" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.swa|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.sta }}°C">
                                 {{ latest_forecast.sta }}°C
                             </h3>
@@ -187,11 +215,13 @@
                         <!-- Noche -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
-                            <img src="{{ latest_forecast.swn|get_weather_img }}" 
-                                alt="{{ latest_forecast.swn|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.swn|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.swn|get_weather_img }}" 
+                                    alt="{{ latest_forecast.swn|get_tiempo_description }}" 
+                                    class="weather-icon" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.swn|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stn }}°C">
                                 {{ latest_forecast.stn }}°C
                             </h3>
@@ -220,12 +250,10 @@
     {% for day in "12345" %}
         <div class="col mb-3">
             <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h5 class="card-title fw-bold">
-                        {{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:"D d/m" }}
-                    </h5>
+                <div class="card-body">
+                    <p class="mb-1">{{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:"D d/m" }}</p>
                     <div class="day-content">
-                        <div class="weather-icon mx-auto" style="height: 100px; width: 100px">
+                        <div class="weather-icon mx-auto">
                             <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" 
                                 alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" 
                                 class="img-fluid"
@@ -233,12 +261,14 @@
                                 title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}">
                         </div>
                         <div class="temp-info mt-3">
-                            <div class="temp-max text-danger fs-5 fw-bold">
+                            <spam class="temp-max text-danger fs-5" data-bs-toggle="tooltip" title="Temperatura Máxima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C">
                                 {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
-                            </div>
-                            <div class="temp-min fs-5">
-                                {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
-                            </div>
+                                <span class="temp-label">Máxima</span>
+                            </spam>
+                            <spam class="temp-min text-info fs-5" data-bs-toggle="tooltip" title="Temperatura Mínima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C">
+                               {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
+                               <span class="temp-label">Mínima</span>
+                            </spam>
                         </div>
                     </div>
                 </div>
@@ -254,7 +284,7 @@
     <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body" id="lunar-phases" style="height: 250px;">
-                <h5 class="card-title">Fase Lunar</h5>
+                <p class="mb-1">Fase Lunar</p>
                 <div id="lunar-phases-content">
                     <div class="lunarPhase">
                         <img src="{{ latest_forecast.lp|get_moon_img }}" 
@@ -286,7 +316,7 @@
     <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body" id="sunrise-sunset" style="height: 250px;">
-                <h5 class="card-title">Salida y Puesta del Sol</h5>
+                <p class="mb-1">Salida y Puesta del Sol</p>
                 <div id="sunrise-sunset-content" class="d-flex justify-content-around">
                     <div class="sunrise-sunset-item">
                         <img src="{{ 'sunrise'|get_sun_img }}" 
@@ -325,7 +355,7 @@
     <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body" style="height: 250px;">
-                <h5 class="card-title">Índice UV</h5>
+                <p class="mb-1">Índice UV</p>
                 <div id="uv-index-content" class="d-flex justify-content-center align-items-center mb-3">
                     <div class="uvLabelContainer">
                         <svg width="130" height="134" viewBox="5 -12 171 178" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -413,7 +443,7 @@
         <h4>Estaciones Meteorologicas en la Provincia</h4>
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Estaciones</h5>
+                <p class="mb-1">Estaciones</p>
                 <div class="container" id="chartdiv" style="height: 450px;">
                     <!-- Mapa Estaciones Aquí -->
                 </div>
@@ -426,7 +456,7 @@
         <h4>Observaciones del Clima en las Estaciones</h4>
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Observación</h5>
+                <p class="mb-1">Observación</p>
                 <div class="container" id="station-details" style="height: 450px;">
                     <!-- Observaciones Aquí -->
                     <p id="station-date" class="h3 mb-4 text-center" data-bs-toggle="tooltip"
