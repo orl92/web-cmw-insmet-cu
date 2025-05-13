@@ -86,20 +86,26 @@ def create_default_env(production=False):
                 f.write("EMAIL_HOST_PASSWORD=tu_contraseña_segura\n")
                 f.write("DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
                 f.write("CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend\n")
-                f.write("EMAIL_USE_SSL=False\n\n")
+                f.write("EMAIL_USE_SSL=False\n")
                 
                 # 3.3 Base de datos
                 f.write("# =====================\n")
                 f.write("# BASE DE DATOS (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
                 f.write("# =====================\n")
-                f.write("# Opciones válidas: postgresql, mysql\n")
-                f.write("DB_ENGINE=postgresql\n")
-                f.write("DB_NAME=meteorologia_prod\n")
-                f.write("DB_USER=usuario_db\n")
-                f.write("DB_PASS=contraseña_muy_segura\n")
+                f.write("DB_ENGINE=postgresql  # Opciones: postgresql, mysql\n")
+                f.write("DB_NAME=web_db\n")
+                f.write("DB_USER=postgres\n")
+                f.write("DB_PASS=contraseña_segura\n")
                 f.write("DB_HOST=localhost\n")
-                f.write("DB_PORT=5432\n\n")
-                
+                f.write("DB_PORT=5432  # 3306 para MySQL\n")
+                f.write("# Configuración SSL PostgreSQL:\n")
+                f.write("DB_SSL_MODE=prefer  # disable, allow, prefer, require, verify-ca, verify-full\n")
+                f.write("# DB_SSL_ROOT_CERT=/ruta/ca.crt\n\n")
+                f.write("# Configuración SSL MySQL:\n")
+                f.write("# DB_SSL_MODE=PREFERRED  # DISABLED, PREFERRED, REQUIRED, VERIFY_CA, VERIFY_IDENTITY\n")
+                f.write("# DB_SSL_CA=/ruta/ca.pem\n")
+                f.write("# DB_SSL_CERT=/ruta/client-cert.pem\n")
+                f.write("# DB_SSL_KEY=/ruta/client-key.pem\n")           
             else:
                 f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
                 f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
@@ -182,37 +188,63 @@ def validate_environment():
 def validate_database_config():
     """Valida la configuración de base de datos para producción"""
     if not IS_PRODUCTION:
-        return  # Solo validar en producción
+        return
+
+    # Validar variables obligatorias para todos los motores
+    required_vars = ['DB_ENGINE', 'DB_NAME', 'DB_USER', 'DB_PASS', 'DB_HOST']
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
     
-    db_engine = os.getenv('DB_ENGINE', '').strip().lower()
-    valid_engines = ['postgresql', 'mysql']
-    
-    if db_engine not in valid_engines:
-        print("\n🚨 ERROR CRÍTICO: Configuración de base de datos incorrecta")
-        print("🔧 En producción debes usar PostgreSQL o MySQL")
-        print("\n💡 SOLUCIÓN: Edita tu .env y configura:")
-        print("   DB_ENGINE=postgresql  # o mysql")
-        print("   DB_NAME=nombre_bd")
-        print("   DB_USER=usuario_bd")
-        print("   DB_PASS=contraseña_segura")
-        print("   DB_HOST=servidor_bd")
-        print("   DB_PORT=puerto\n")
-        print("📌 No olvides instalar los paquetes necesarios:")
-        print("   pip install psycopg2-binary  # Para PostgreSQL")
-        print("   pip install mysqlclient      # Para MySQL\n")
+    if missing_vars:
+        print(f"\n🚨 ERROR: Faltan variables esenciales de BD: {', '.join(missing_vars)}")
         sys.exit(1)
+
+    db_engine = os.getenv('DB_ENGINE').lower()
     
-    # Verificar credenciales
-    missing_db_vars = []
-    for var in ['DB_NAME', 'DB_USER', 'DB_PASS']:
-        if not os.getenv(var):
-            missing_db_vars.append(var)
-    
-    if missing_db_vars:
-        print("\n🚨 ERROR: Faltan credenciales de base de datos")
-        print(f"🔍 Variables faltantes: {', '.join(missing_db_vars)}")
-        print("\n💡 Asegúrate de configurar estas variables en .env")
+    # Validar motor de BD soportado
+    if db_engine not in ['postgresql', 'mysql']:
+        print(f"\n🚨 ERROR: Motor de BD no soportado: {db_engine}")
+        print("💡 Use 'postgresql' o 'mysql' en producción")
         sys.exit(1)
+
+    # Validaciones específicas para PostgreSQL
+    if db_engine == 'postgresql':
+        ssl_mode = os.getenv('DB_SSL_MODE', 'prefer').lower()
+        
+        if ssl_mode in ['verify-ca', 'verify-full']:
+            if not os.getenv('DB_SSL_ROOT_CERT'):
+                print("\n🚨 ERROR: PostgreSQL en modo verify-ca/verify-full requiere:")
+                print("💡 Debe configurar DB_SSL_ROOT_CERT con la ruta al certificado CA")
+                sys.exit(1)
+                
+            if not os.path.exists(os.getenv('DB_SSL_ROOT_CERT')):
+                print(f"\n🚨 ERROR: No se encuentra el certificado CA en: {os.getenv('DB_SSL_ROOT_CERT')}")
+                print("💡 Verifique la ruta en DB_SSL_ROOT_CERT")
+                sys.exit(1)
+
+    # Validaciones específicas para MySQL
+    elif db_engine == 'mysql':
+        ssl_mode = os.getenv('DB_SSL_MODE', 'PREFERRED').upper()
+        
+        if ssl_mode in ['VERIFY_CA', 'VERIFY_IDENTITY']:
+            missing_certs = [var for var in ['DB_SSL_CA', 'DB_SSL_CERT', 'DB_SSL_KEY'] if not os.getenv(var)]
+            
+            if missing_certs:
+                print(f"\n🚨 ERROR: MySQL en modo {ssl_mode} requiere: {', '.join(missing_certs)}")
+                sys.exit(1)
+                
+            for cert_var in ['DB_SSL_CA', 'DB_SSL_CERT', 'DB_SSL_KEY']:
+                if not os.path.exists(os.getenv(cert_var)):
+                    print(f"\n🚨 ERROR: No se encuentra el certificado {cert_var} en: {os.getenv(cert_var)}")
+                    sys.exit(1)
+
+    # Advertencia sobre modos SSL inseguros en producción
+    if db_engine == 'postgresql' and os.getenv('DB_SSL_MODE', 'prefer') in ['disable', 'allow']:
+        print("\n⚠️ ADVERTENCIA: PostgreSQL está usando un modo SSL poco seguro en producción")
+        print("💡 Recomendado: Usar al menos 'require' para conexiones encriptadas")
+        
+    elif db_engine == 'mysql' and os.getenv('DB_SSL_MODE', 'PREFERRED').upper() in ['DISABLED']:
+        print("\n⚠️ ADVERTENCIA: MySQL está configurado sin SSL en producción")
+        print("💡 Recomendado: Usar al menos 'REQUIRED' para conexiones encriptadas")
 
 # Validar configuración
 validate_environment()
@@ -327,35 +359,64 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # 7. DATABASE CONFIGURATION
 # =====================
 def get_database_config():
-    """Retorna la configuración de base de datos adecuada para el entorno"""
-    if IS_PRODUCTION:
-        db_engine = os.getenv('DB_ENGINE', '').strip().lower()
-        if db_engine not in ['postgresql', 'mysql']:
-            print("\n🚨 ERROR: No se ha configurado un motor de base de datos válido para producción")
-            print("💡 Use PostgreSQL o MySQL en producción")
-            sys.exit(1)
-            
-        return {
-            'default': {
-                'ENGINE': f'django.db.backends.{db_engine}',
-                'NAME': os.getenv('DB_NAME'),
-                'USER': os.getenv('DB_USER'),
-                'PASSWORD': os.getenv('DB_PASS'),
-                'HOST': os.getenv('DB_HOST', 'localhost'),
-                'PORT': os.getenv('DB_PORT', '5432' if db_engine == 'postgresql' else '3306'),
-                'CONN_MAX_AGE': 600,
-                'OPTIONS': {
-                    'sslmode': 'require' if not DEBUG else 'prefer',
-                } if db_engine == 'postgresql' else {}
-            }
-        }
-    else:
+    """Configuración dinámica para PostgreSQL y MySQL con soporte SSL"""
+    if not IS_PRODUCTION:
         return {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
                 'NAME': BASE_DIR / 'db.sqlite3',
             }
         }
+
+    db_engine = os.getenv('DB_ENGINE', '').strip().lower()
+    if db_engine not in ['postgresql', 'mysql']:
+        print("\n🚨 ERROR: Motor de BD no válido (use postgresql o mysql)")
+        sys.exit(1)
+
+    # Configuración común
+    db_config = {
+        'ENGINE': f'django.db.backends.{db_engine}',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASS'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT', '5432' if db_engine == 'postgresql' else '3306'),
+        'CONN_MAX_AGE': 600,
+    }
+
+    # Configuración SSL para PostgreSQL
+    if db_engine == 'postgresql':
+        ssl_mode = os.getenv('DB_SSL_MODE', 'prefer')
+        db_config['OPTIONS'] = {'sslmode': ssl_mode}
+        
+        if ssl_mode in ['verify-ca', 'verify-full']:
+            if ssl_cert := os.getenv('DB_SSL_ROOT_CERT'):
+                db_config['OPTIONS']['sslrootcert'] = ssl_cert
+            else:
+                print("\n🚨 ERROR: Se requiere DB_SSL_ROOT_CERT para verify-ca/verify-full")
+                sys.exit(1)
+
+    # Configuración SSL para MySQL
+    elif db_engine == 'mysql':
+        ssl_mode = os.getenv('DB_SSL_MODE', 'PREFERRED').upper()
+        if ssl_mode != 'DISABLED':
+            ssl_files = {
+                'ca': os.getenv('DB_SSL_CA'),
+                'cert': os.getenv('DB_SSL_CERT'),
+                'key': os.getenv('DB_SSL_KEY')
+            }
+            
+            if ssl_mode in ['VERIFY_CA', 'VERIFY_IDENTITY'] and not all(ssl_files.values()):
+                print("\n🚨 ERROR: Para VERIFY_CA/VERIFY_IDENTITY necesita:")
+                print("DB_SSL_CA, DB_SSL_CERT y DB_SSL_KEY")
+                sys.exit(1)
+                
+            db_config['OPTIONS'] = {
+                'ssl_mode': ssl_mode,
+                'ssl': {k: v for k, v in ssl_files.items() if v} or None
+            }
+
+    return {'default': db_config}
 
 DATABASES = get_database_config()
 
