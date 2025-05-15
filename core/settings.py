@@ -360,7 +360,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # =====================
 def get_database_config():
     """Configuración dinámica para PostgreSQL y MySQL con soporte SSL"""
-    if IS_PRODUCTION:
+    if DEBUG:
         return {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
