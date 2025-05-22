@@ -9,7 +9,7 @@ from django.contrib.auth.mixins import (LoginRequiredMixin,
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
 from core import settings
 from dashboard.forms.comentarios.tiempo.forms import WeatherCommentaryForm
@@ -281,6 +281,24 @@ class WeatherCommentaryDeleteView(LoginRequiredMixin, PermissionRequiredMixin, D
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Comentario del Tiempo'
+        context['parent'] = 'comentario'
+        context['segment'] = 'comentario_tiempo'
+        context['url_list'] = reverse_lazy('listado_comentarios_tiempo')
+        return context
+    
+class WeatherCommentaryDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = WeatherCommentary
+    template_name = 'pages/dashboard/comentarios/tiempo/detalle_comentario_tiempo.html'
+    permission_required = 'dashboard.view_weather_commentary'
+    context_object_name = 'weather_commentary'  # Nombre del objeto en el contexto
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(WeatherCommentary, uuid=uuid)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Detalle Comentario del Tiempo'
         context['parent'] = 'comentario'
         context['segment'] = 'comentario_tiempo'
         context['url_list'] = reverse_lazy('listado_comentarios_tiempo')

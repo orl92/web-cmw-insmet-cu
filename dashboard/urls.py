@@ -22,10 +22,10 @@ from dashboard.views.clientes.views import (CustomerCreateView,
                                             CustomerListView,
                                             CustomerUpdateView)
 from dashboard.views.comentarios.nota_meteorologica.views import (
-    WeatherNoteCreateView, WeatherNoteDeleteView, WeatherNoteListView,
+    WeatherNoteCreateView, WeatherNoteDeleteView, WeatherNoteDetailView, WeatherNoteListView,
     WeatherNoteUpdateView)
 from dashboard.views.comentarios.tiempo.views import (
-    WeatherCommentaryCreateView, WeatherCommentaryDeleteView,
+    WeatherCommentaryCreateView, WeatherCommentaryDeleteView, WeatherCommentaryDetailView,
     WeatherCommentaryListView, WeatherCommentaryUpdateView)
 from dashboard.views.dashboard.views import (DashboardView, ExcelJSONView,
                                              MaintenanceModeToggleView)
@@ -49,11 +49,11 @@ from dashboard.views.servicios.views import (ServiceCreateView,
                                              ServiceListView,
                                              ServiceUpdateView)
 from dashboard.views.tiempo.hoy.views import (WeatherTodayCreateView,
-                                              WeatherTodayDeleteView,
+                                              WeatherTodayDeleteView, WeatherTodayDetailView,
                                               WeatherTodayListView,
                                               WeatherTodayUpdateView)
 from dashboard.views.tiempo.manana.views import (WeatherTomorrowCreateView,
-                                                 WeatherTomorrowDeleteView,
+                                                 WeatherTomorrowDeleteView, WeatherTomorrowDetailView,
                                                  WeatherTomorrowListView,
                                                  WeatherTomorrowUpdateView)
 
@@ -116,21 +116,25 @@ urlpatterns = [
     path('crear/tiempo/hoy/', WeatherTodayCreateView.as_view(), name="crear_tiempo_h"),
     path('actualizar/tiempo/hoy/<uuid:uuid>/', WeatherTodayUpdateView.as_view(), name='actualizar_tiempo_h'),
     path('eliminar/tiempo/hoy/<uuid:uuid>/', WeatherTodayDeleteView.as_view(), name='eliminar_tiempo_h'),
+    path('detalle/tiempo/hoy/<uuid:uuid>/', WeatherTodayDetailView.as_view(), name='detalle_tiempo_h'),
     # Tiempo Mañana
     path('tiempo/manana/', WeatherTomorrowListView.as_view(), name='listado_tiempo_m'),
     path('crear/tiempo/manana/', WeatherTomorrowCreateView.as_view(), name="crear_tiempo_m"),
     path('actualizar/tiempo/manana/<uuid:uuid>/', WeatherTomorrowUpdateView.as_view(), name='actualizar_tiempo_m'),
     path('eliminar/tiempo/manana/<uuid:uuid>/', WeatherTomorrowDeleteView.as_view(), name='eliminar_tiempo_m'),
+    path('detalle/tiempo/manana/<uuid:uuid>/', WeatherTomorrowDetailView.as_view(), name='detalle_tiempo_m'),
     # Comentario Tiempo
     path('comentario/tiempo/', WeatherCommentaryListView.as_view(), name='listado_comentarios_tiempo'), 
     path('crear/comentario/tiempo/', WeatherCommentaryCreateView.as_view(), name="crear_comentario_tiempo"),
     path('actualizar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryUpdateView.as_view(), name='actualizar_comentario_tiempo'),
     path('eliminar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryDeleteView.as_view(), name='eliminar_comentario_tiempo'),
+    path('detalle/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryDetailView.as_view(), name='detalle_comentario_tiempo'),
     # Nota Meteorológica
     path('nota/meteorologica/', WeatherNoteListView.as_view(), name='listado_notas_meteorologicas'), 
     path('crear/nota/meteorologica/', WeatherNoteCreateView.as_view(), name="crear_nota_meteorologica"),
     path('actualizar/nota/meteorologica/<uuid:uuid>/', WeatherNoteUpdateView.as_view(), name='actualizar_nota_meteorologica'),
     path('eliminar/nota/meteorologica/<uuid:uuid>/', WeatherNoteDeleteView.as_view(), name='eliminar_nota_meteorologica'),
+    path('detalle/nota/meteorologica/<uuid:uuid>/', WeatherNoteDetailView.as_view(), name='detalle_nota_meteorologica'),
     # Listado de Correos
     path('listado/correos/', EmailRecipientListListView.as_view(), name='listado_correos'),
     path('crear/listado/correo/', EmailRecipientListCreateView.as_view(), name='crear_listado_correo'),

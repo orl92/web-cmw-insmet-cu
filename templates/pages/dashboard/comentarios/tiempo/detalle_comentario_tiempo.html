@@ -1,0 +1,11 @@
+<div class="card-body markdown">
+  <h1 class="d-flex justify-content-center">Comentario del Tiempo para la Provincia de Camagüey</h1>
+  <h3 class="d-flex justify-content-center">Departamento de Pronósticos</h3>
+  <div class="d-flex justify-content-between">
+    <p><strong>Fecha:</strong> {{ weather_commentary.date|date:"j \d\e F \d\e Y" }}</p>
+    <p><strong>Hora:</strong> {{ weather_commentary.date|time:"h:i A" }}</p>
+  </div>
+  <p class="d-flex justify-content-center">{{ weather_commentary.subject }}</p>
+  <p>{{ weather_commentary.detailed_commentary|safe }}</p>
+  <p><strong>Autor:</strong> {{ weather_commentary.user.get_full_name }}</p>
+</div>

@@ -11,7 +11,7 @@ from django.contrib.auth.mixins import (LoginRequiredMixin,
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
 from core import settings
 from dashboard.forms.tiempo.manana.forms import WeatherTomorrowForm
@@ -256,6 +256,24 @@ class WeatherTomorrowDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Del
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Tiempo para Mañana'
+        context['parent'] = 'tiempo'
+        context['segment'] = 'tiempo_m'
+        context['url_list'] = reverse_lazy('listado_tiempo_m')
+        return context
+    
+class WeatherTomorrowDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = WeatherTomorrow
+    template_name = 'pages/dashboard/tiempo/manana/detalle_tiempo_m.html'
+    permission_required = 'dashboard.view_weather_tomorrow'
+    context_object_name = 'weather_tomorrow'  # Nombre del objeto en el contexto
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(WeatherTomorrow, uuid=uuid)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Detalle Tiempo para Mañana'
         context['parent'] = 'tiempo'
         context['segment'] = 'tiempo_m'
         context['url_list'] = reverse_lazy('listado_tiempo_m')

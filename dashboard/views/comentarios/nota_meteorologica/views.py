@@ -9,7 +9,7 @@ from django.contrib.auth.mixins import (LoginRequiredMixin,
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
 from core import settings
 from dashboard.forms.comentarios.nota_meteorologica.forms import \
@@ -252,6 +252,24 @@ class WeatherNoteDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteV
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Nota Meteorológica'
+        context['parent'] = 'comentario'
+        context['segment'] = 'nota_meteorologica'
+        context['url_list'] = reverse_lazy('listado_notas_meteorologicas')
+        return context
+
+class WeatherNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = WeatherNote
+    template_name = 'pages/dashboard/comentarios/nota_meteorologica/detalle_nota_meteorologica.html'
+    permission_required = 'dashboard.view_weather_note'
+    context_object_name = 'weather_note'  # Nombre del objeto en el contexto
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(WeatherNote, uuid=uuid)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Detalle de la Nota Meteorológica'
         context['parent'] = 'comentario'
         context['segment'] = 'nota_meteorologica'
         context['url_list'] = reverse_lazy('listado_notas_meteorologicas')
