@@ -19,6 +19,16 @@ from dashboard.models import WeatherNote
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
 
+from django.http import HttpResponse
+from django.template.loader import get_template
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.shortcuts import get_object_or_404
+from django.views.generic import DetailView
+from xhtml2pdf import pisa
+from io import BytesIO
+import logging
+logger = logging.getLogger(__name__)
+
 # Create your views here. 
 
 class WeatherNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -273,4 +283,32 @@ class WeatherNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailV
         context['parent'] = 'comentario'
         context['segment'] = 'nota_meteorologica'
         context['url_list'] = reverse_lazy('listado_notas_meteorologicas')
-        return context
+        return context      
+        
+
+class WeatherNotePDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = WeatherNote
+    permission_required = 'dashboard.view_weather_note'
+    
+    def get(self, request, *args, **kwargs):
+        weather_note = self.get_object()
+        
+        # Renderizar template HTML
+        template = get_template('pages/dashboard/comentarios/nota_meteorologica/pdf_template.html')
+        context = {'note': weather_note}
+        html = template.render(context)
+        
+        # Crear PDF
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)  # ¡Paréntesis corregido aquí!
+        
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            filename = f"nota_meteorologica_{weather_note.date.strftime('%Y-%m-%d')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        return HttpResponse("Error al generar el PDF", status=400)
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(WeatherNote, uuid=uuid)
