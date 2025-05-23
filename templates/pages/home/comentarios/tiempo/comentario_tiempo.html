@@ -8,7 +8,7 @@
         <div class="card-body markdown">
           <h1 class="d-flex justify-content-center" id="weather-tomorrow">Comentario del Tiempo para la Provincia de Camagüey</h1>
           <h3 class="d-flex justify-content-center">Departamento de Pronósticos</h3>
-          <div class="d-flex justify-content-between">
+          <div class="d-flex text-muted justify-content-between">
             <p><strong>Fecha:</strong> {{ weather_commentary.date|date:"j \d\e F \d\e Y" }}</p>
             <p><strong>Hora:</strong> {{ weather_commentary.date|time:"h:i A" }}</p>
           </div>
@@ -16,8 +16,8 @@
           <p>{{ weather_commentary.detailed_commentary|safe }}</p>
           <div class="d-flex align-items-center">
             <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ weather_commentary.user.profile.get_avatar }})"></span>
-            <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
-            <span>{{ weather_commentary.user.get_full_name }}</span>
+            <span class="text-muted me-2 d-sm-inline">Autor:</span>
+            <span class="text-muted">{{ weather_commentary.user.get_full_name }}</span>
           </div>
         </div>
       </div>
