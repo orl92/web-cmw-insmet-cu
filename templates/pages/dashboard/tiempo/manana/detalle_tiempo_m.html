@@ -8,7 +8,7 @@
   <p class="d-flex justify-content-center">{{ weather_tomorrow.summary }}</p>
   <p>{{ weather_tomorrow.detailed_forecast|safe }}</p>
   <div class="d-flex align-items-center">
-    <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ weather_today.user.profile.get_avatar }})"></span>
+    <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ weather_tomorrow.user.profile.get_avatar }})"></span>
     <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
     <span>{{ weather_tomorrow.user.get_full_name }}</span>
   </div>
