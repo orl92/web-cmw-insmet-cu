@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Nota Meteorológica - {{ note.date|date:"d/m/Y" }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #000;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 1.5cm;
+        }
+        h1 {
+            font-size: 18pt;
+            margin-bottom: 0.5cm;
+            text-align: center;
+            font-weight: bold;
+        }
+        h2 {
+            font-size: 14pt;
+            text-align: center;
+            margin-bottom: 1cm;
+            font-weight: bold;
+        }
+        .metadata {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1cm;
+            font-size: 12pt;
+        }
+        .content {
+            font-size: 12pt;
+            margin-bottom: 2cm;
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+        .author {
+            text-align: left;
+            font-size: 12pt;
+            margin-top: 1.5cm;
+        }
+        .subject {
+            text-align: center;
+            font-style: italic;
+            font-size: 12pt;
+            margin: 1cm 0;
+        }
+        .logo {
+            height: 80px;
+            width: auto;
+            margin-bottom: 15px;
+            display: block; /* Añade esto */
+            margin-left: auto; /* Centrado horizontal */
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <!-- Reemplaza el bloque del SVG con esta línea -->
+        <spam class="logo" src="{% static 'dist/img/logo.png' %}">
+            <h1>Nota Meteorológica para la Provincia de Camagüey</h1>
+            <h2>Departamento de Pronósticos</h2>
+    </div>
+    
+    <div class="metadata">
+        <span><strong>Fecha:</strong> {{ note.date|date:"j \d\e F \d\e Y" }}</span>
+        <span><strong>Hora:</strong> {{ note.date|time:"h:i A" }}</span>
+    </div>
+    
+    {% if note.subject %}
+    <div class="subject">{{ note.subject }}</div>
+    {% endif %}
+    
+    <div class="content">
+        {{ note.detailed_note|safe }}
+    </div>
+    
+    <div class="author">
+        <strong>Autor:</strong> {{ note.user.get_full_name|default:note.user.username }}
+    </div>
+</body>
+</html>
