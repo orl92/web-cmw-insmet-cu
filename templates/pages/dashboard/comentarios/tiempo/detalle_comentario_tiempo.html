@@ -7,5 +7,9 @@
   </div>
   <p class="d-flex justify-content-center">{{ weather_commentary.subject }}</p>
   <p>{{ weather_commentary.detailed_commentary|safe }}</p>
-  <p><strong>Autor:</strong> {{ weather_commentary.user.get_full_name }}</p>
+  <div class="d-flex align-items-center">
+    <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ weather_commentary.user.profile.get_avatar }})"></span>
+    <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
+    <span>{{ weather_commentary.user.get_full_name }}</span>
+  </div>
 </div>
