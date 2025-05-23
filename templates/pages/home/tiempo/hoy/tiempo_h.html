@@ -14,7 +14,11 @@
           </div>
           <p class="d-flex justify-content-center">{{ weather_today.summary }}</p>
           <p>{{ weather_today.detailed_forecast|safe }}</p>
-          <p><strong>Autor:</strong> {{ weather_today.user.get_full_name }}</p>
+          <div class="d-flex align-items-center">
+            <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ weather_today.user.profile.get_avatar }})"></span>
+            <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
+            <span>{{ weather_today.user.get_full_name }}</span>
+          </div>
         </div>
       </div>
       {% else %} 
