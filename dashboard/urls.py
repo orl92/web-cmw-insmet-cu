@@ -22,7 +22,7 @@ from dashboard.views.clientes.views import (CustomerCreateView,
                                             CustomerListView,
                                             CustomerUpdateView)
 from dashboard.views.comentarios.nota_meteorologica.views import (
-    WeatherNoteCreateView, WeatherNoteDeleteView, WeatherNoteDetailView, WeatherNoteListView,
+    WeatherNoteCreateView, WeatherNoteDeleteView, WeatherNoteDetailView, WeatherNoteListView, WeatherNotePDFView,
     WeatherNoteUpdateView)
 from dashboard.views.comentarios.tiempo.views import (
     WeatherCommentaryCreateView, WeatherCommentaryDeleteView, WeatherCommentaryDetailView,
@@ -135,6 +135,7 @@ urlpatterns = [
     path('actualizar/nota/meteorologica/<uuid:uuid>/', WeatherNoteUpdateView.as_view(), name='actualizar_nota_meteorologica'),
     path('eliminar/nota/meteorologica/<uuid:uuid>/', WeatherNoteDeleteView.as_view(), name='eliminar_nota_meteorologica'),
     path('detalle/nota/meteorologica/<uuid:uuid>/', WeatherNoteDetailView.as_view(), name='detalle_nota_meteorologica'),
+    path('nota/meteorologica/<uuid:uuid>/pdf/', WeatherNotePDFView.as_view(), name='nota_meteorologica_pdf'),
     # Listado de Correos
     path('listado/correos/', EmailRecipientListListView.as_view(), name='listado_correos'),
     path('crear/listado/correo/', EmailRecipientListCreateView.as_view(), name='crear_listado_correo'),
