@@ -26,7 +26,7 @@ from dashboard.views.comentarios.nota_meteorologica.views import (
     WeatherNoteUpdateView)
 from dashboard.views.comentarios.tiempo.views import (
     WeatherCommentaryCreateView, WeatherCommentaryDeleteView, WeatherCommentaryDetailView,
-    WeatherCommentaryListView, WeatherCommentaryUpdateView)
+    WeatherCommentaryListView, WeatherCommentaryPDFView, WeatherCommentaryUpdateView)
 from dashboard.views.dashboard.views import (DashboardView, ExcelJSONView,
                                              MaintenanceModeToggleView)
 from dashboard.views.email_recipient.views import (
@@ -129,6 +129,7 @@ urlpatterns = [
     path('actualizar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryUpdateView.as_view(), name='actualizar_comentario_tiempo'),
     path('eliminar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryDeleteView.as_view(), name='eliminar_comentario_tiempo'),
     path('detalle/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryDetailView.as_view(), name='detalle_comentario_tiempo'),
+    path('comentario/tiempo/<uuid:uuid>/pdf/', WeatherCommentaryPDFView.as_view(), name='comentario_tiempo_pdf'),
     # Nota Meteorológica
     path('nota/meteorologica/', WeatherNoteListView.as_view(), name='listado_notas_meteorologicas'), 
     path('crear/nota/meteorologica/', WeatherNoteCreateView.as_view(), name="crear_nota_meteorologica"),
