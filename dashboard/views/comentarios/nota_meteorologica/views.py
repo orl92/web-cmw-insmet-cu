@@ -285,7 +285,6 @@ class WeatherNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailV
         context['url_list'] = reverse_lazy('listado_notas_meteorologicas')
         return context      
         
-
 class WeatherNotePDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = WeatherNote
     permission_required = 'dashboard.view_weather_note'
@@ -295,12 +294,12 @@ class WeatherNotePDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
         
         # Renderizar template HTML
         template = get_template('pages/dashboard/comentarios/nota_meteorologica/pdf_template.html')
-        context = {'note': weather_note}
+        context = {'weather_note': weather_note}
         html = template.render(context)
         
         # Crear PDF
         result = BytesIO()
-        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)  # ¡Paréntesis corregido aquí!
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
         
         if not pdf.err:
             response = HttpResponse(result.getvalue(), content_type='application/pdf')
