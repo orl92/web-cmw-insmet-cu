@@ -18,6 +18,16 @@ from dashboard.models import WeatherCommentary
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
 
+from django.http import HttpResponse
+from django.template.loader import get_template
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.shortcuts import get_object_or_404
+from django.views.generic import DetailView
+from xhtml2pdf import pisa
+from io import BytesIO
+import logging
+logger = logging.getLogger(__name__)
+
 # Create your views here. 
 
 class WeatherCommentaryListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -303,3 +313,30 @@ class WeatherCommentaryDetailView(LoginRequiredMixin, PermissionRequiredMixin, D
         context['segment'] = 'comentario_tiempo'
         context['url_list'] = reverse_lazy('listado_comentarios_tiempo')
         return context
+    
+class WeatherCommentaryPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = WeatherCommentary
+    permission_required = 'dashboard.view_weather_commentary'
+    
+    def get(self, request, *args, **kwargs):
+        weather_commentary = self.get_object()
+        
+        # Renderizar template HTML
+        template = get_template('pages/dashboard/comentarios/tiempo/pdf_template.html')
+        context = {'weather_commentary': weather_commentary}
+        html = template.render(context)
+        
+        # Crear PDF
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+        
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            filename = f"comentario_tiempo_{weather_commentary.date.strftime('%Y-%m-%d')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        return HttpResponse("Error al generar el PDF", status=400)
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(WeatherCommentary, uuid=uuid)
