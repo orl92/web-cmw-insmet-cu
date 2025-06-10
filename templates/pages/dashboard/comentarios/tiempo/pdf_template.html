@@ -19,7 +19,7 @@
             margin-bottom: 1.5cm;
         }
         h1 {
-            font-size: 18pt;
+            font-size: 16pt;
             margin-bottom: 0.5cm;
             text-align: center;
             font-weight: bold;
@@ -65,9 +65,7 @@
 </head>
 <body>
     <div class="header">
-        <!-- Reemplaza el bloque del SVG con esta línea -->
-{#        <img class="logo" src="{% static 'dist/img/logo.png' %}" alt="Logo">#}
-        <img class="logo" src="/home/omar/GitHub/web-cmw-insmet-cu/static/dist/img/logo.svg" alt="Logo">
+        <img class="logo" src="data:image/png;base64,{{ logo_base64 }}" alt="Logo">
         <h1>Comentario del Tiempo para la Provincia de Camagüey</h1>
         <h2>Departamento de Pronósticos</h2>
     </div>
@@ -78,7 +76,7 @@
     </div>
     
     {% if weather_commentary.subject %}
-    <div class="subject">{{ weather_commentary.subject }}</div>
+        <div class="subject">{{ weather_commentary.subject }}</div>
     {% endif %}
     
     <div class="content">
