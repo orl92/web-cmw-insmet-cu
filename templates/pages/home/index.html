@@ -247,34 +247,51 @@
 <!-- Pronóstico Extendido -->
 <h4 class="card-title mt-3">Pronóstico Extendido 5 días</h4>
 <div class="row row-deck row-cards mt-3 row-cols-1 row-cols-sm-2 row-cols-lg-5 ">
-    {% for day in "12345" %}
-        <div class="col mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <p class="mb-1">{{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:"D d/m" }}</p>
-                    <div class="day-content">
-                        <div class="weather-icon mx-auto">
-                            <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" 
-                                alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" 
-                                class="img-fluid"
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}">
-                        </div>
-                        <div class="temp-info mt-3">
-                            <spam class="temp-max text-danger fs-5" data-bs-toggle="tooltip" title="Temperatura Máxima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C">
-                                {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
-                                <span class="temp-label">Máxima</span>
-                            </spam>
-                            <spam class="temp-min text-info fs-5" data-bs-toggle="tooltip" title="Temperatura Mínima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C">
-                               {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
-                               <span class="temp-label">Mínima</span>
-                            </spam>
+    {% if latest_forecast %}
+        {% for day in "12345" %}
+            <div class="col mb-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <p class="mb-1">{{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:"D d/m" }}</p>
+                        <div class="day-content">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" 
+                                    alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" 
+                                    class="img-fluid"
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}">
+                            </div>
+                            <div class="temp-info mt-3">
+                                <spam class="temp-max text-danger fs-5" data-bs-toggle="tooltip" title="Temperatura Máxima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C">
+                                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
+                                    <span class="temp-label">Máxima</span>
+                                </spam>
+                                <spam class="temp-min text-info fs-5" data-bs-toggle="tooltip" title="Temperatura Mínima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C">
+                                   {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
+                                   <span class="temp-label">Mínima</span>
+                                </spam>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    {% endfor %}
+        {% endfor %}
+    {% else %}
+    {% for day in "12345" %}
+            <div class="col mb-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="col-12">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                No hay pronósticos disponibles.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
 </div>
 
 <!-- Datos Astronómicos -->
@@ -285,29 +302,36 @@
         <div class="card">
             <div class="card-body" id="lunar-phases" style="height: 250px;">
                 <p class="mb-1">Fase Lunar</p>
-                <div id="lunar-phases-content">
-                    <div class="lunarPhase">
-                        <img src="{{ latest_forecast.lp|get_moon_img }}" 
-                            alt="{{ latest_forecast.lp}}" 
-                            data-bs-toggle="tooltip" title="{{ latest_forecast.lp|get_luna_description }}" 
-                            style="height: 110px; width: 110px;">
-                        <div class="phaseInfo">
-                            <div data-bs-toggle="tooltip" title="Fase de la luna">{{ latest_forecast.lp }}</div>
+                {% if latest_forecast %}
+                    <div id="lunar-phases-content">
+                        <div class="lunarPhase">
+                            <img src="{{ latest_forecast.lp|get_moon_img }}" 
+                                alt="{{ latest_forecast.lp}}" 
+                                data-bs-toggle="tooltip" title="{{ latest_forecast.lp|get_luna_description }}" 
+                                style="height: 110px; width: 110px;">
+                            <div class="phaseInfo">
+                                <div data-bs-toggle="tooltip" title="Fase de la luna">{{ latest_forecast.lp }}</div>
+                            </div>
+                        </div>
+                        <div class="nextPhase">
+                            <img src="{{ latest_forecast.nlp|get_moon_img }}" 
+                                alt="{{ latest_forecast.nlp}}" 
+                                data-bs-toggle="tooltip" title="{{ latest_forecast.nlp|get_luna_description }}" 
+                                style="height: 33px; width: 33px;">
+                            <span class="moonDetails">
+                                <div>Próxima: {{ latest_forecast.nlp }}</div>
+                                <div>
+                                    {{ latest_forecast.nlpd|date:"d/m/Y" }}
+                                </div>
+                            </span>
                         </div>
                     </div>
-                    <div class="nextPhase">
-                        <img src="{{ latest_forecast.nlp|get_moon_img }}" 
-                            alt="{{ latest_forecast.nlp}}" 
-                            data-bs-toggle="tooltip" title="{{ latest_forecast.nlp|get_luna_description }}" 
-                            style="height: 33px; width: 33px;">
-                        <span class="moonDetails">
-                            <div>Próxima: {{ latest_forecast.nlp }}</div>
-                            <div>
-                                {{ latest_forecast.nlpd|date:"d/m/Y" }}
-                            </div>
-                        </span>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No hay datos astronómicos disponibles.
                     </div>
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -317,120 +341,134 @@
         <div class="card">
             <div class="card-body" id="sunrise-sunset" style="height: 250px;">
                 <p class="mb-1">Salida y Puesta del Sol</p>
-                <div id="sunrise-sunset-content" class="d-flex justify-content-around">
-                    <div class="sunrise-sunset-item">
-                        <img src="{{ 'sunrise'|get_sun_img }}" 
-                            alt="Amanecer" 
-                            data-bs-toggle="tooltip" title="{{ 'sunrise'|get_sol_description }}" 
-                            style="height: 75px; width: 75px;">
-                        <div class="time-details">
-                            <div class="time-item">
-                                <span class="time-value" id="sunrise-value">
-                                    {{ latest_forecast.sunrise|time:"g:i A" }}
-                                </span>
-                                <span class="time-label">Amanecer</span>
+                {% if latest_forecast %}
+                    <div id="sunrise-sunset-content" class="d-flex justify-content-around">
+                        <div class="sunrise-sunset-item">
+                            <img src="{{ 'sunrise'|get_sun_img }}" 
+                                alt="Amanecer" 
+                                data-bs-toggle="tooltip" title="{{ 'sunrise'|get_sol_description }}" 
+                                style="height: 75px; width: 75px;">
+                            <div class="time-details">
+                                <div class="time-item">
+                                    <span class="time-value" id="sunrise-value">
+                                        {{ latest_forecast.sunrise|time:"g:i A" }}
+                                    </span>
+                                    <span class="time-label">Amanecer</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="sunrise-sunset-item">
+                            <img src="{{ 'sunset'|get_sun_img }}" 
+                                alt="Puesta de sol" 
+                                data-bs-toggle="tooltip" title="{{ 'sunset'|get_sol_description }}" 
+                                style="height: 75px; width: 75px;">
+                            <div class="time-details">
+                                <div class="time-item">
+                                    <span class="time-value" id="sunset-value">
+                                        {{ latest_forecast.sunset|time:"g:i A" }}
+                                    </span>
+                                    <span class="time-label">Puesta de sol</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="sunrise-sunset-item">
-                        <img src="{{ 'sunset'|get_sun_img }}" 
-                            alt="Puesta de sol" 
-                            data-bs-toggle="tooltip" title="{{ 'sunset'|get_sol_description }}" 
-                            style="height: 75px; width: 75px;">
-                        <div class="time-details">
-                            <div class="time-item">
-                                <span class="time-value" id="sunset-value">
-                                    {{ latest_forecast.sunset|time:"g:i A" }}
-                                </span>
-                                <span class="time-label">Puesta de sol</span>
-                            </div>
-                        </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No hay datos astronómicos disponibles.
                     </div>
-                </div>
+                {% endif %}
             </div>
         </div>
     </div>
-    
+
     <!-- Índice UV -->
     <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body" style="height: 250px;">
                 <p class="mb-1">Índice UV</p>
-                <div id="uv-index-content" class="d-flex justify-content-center align-items-center mb-3">
-                    <div class="uvLabelContainer">
-                        <svg width="130" height="134" viewBox="5 -12 171 178" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Arcos de niveles UV -->
-                            <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-240 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
-                            <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-243 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
-                            <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-178 90.5 80)" fill="none" stroke="#FDE300" stroke-width="8" stroke-linecap="round"></path>
-                            <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-115 90.5 80)" fill="none" stroke="#FF8C00" stroke-width="8" stroke-linecap="round"></path>
-                            <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-52 90.5 80)" fill="none" stroke="#D13438" stroke-width="8" stroke-linecap="round"></path>
-                            <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(13 90.5 80)" fill="none" stroke="#5C2E91" stroke-width="8" stroke-linecap="round"></path>
-                            
-                            <!-- Indicador UV dinámico -->
-                            {% with uv_index=latest_forecast.uv_index %}
-                            {% if uv_index == 0 %}
-                                <circle cx="51" cy="146" r="10" fill="#73AA24"></circle>
-                                <circle cx="51" cy="146" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 1 %}
-                                <circle cx="40.5" cy="136" r="10" fill="#73AA24"></circle>
-                                <circle cx="40.5" cy="136" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 2 %}
-                                <circle cx="19" cy="105" r="10" fill="#73AA24"></circle>
-                                <circle cx="19" cy="105" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 3 %}
-                                <circle cx="18" cy="63" r="10" fill="#FDE300"></circle>
-                                <circle cx="18" cy="63" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 4 %}
-                                <circle cx="24" cy="44" r="10" fill="#FDE300"></circle>
-                                <circle cx="24" cy="44" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 5 %}
-                                <circle cx="36" cy="26" r="10" fill="#FDE300"></circle>
-                                <circle cx="36" cy="26" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 6 %}
-                                <circle cx="73" cy="5" r="10" fill="#FF8C00"></circle>
-                                <circle cx="73" cy="5" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 7 %}
-                                <circle cx="112" cy="8" r="10" fill="#FF8C00"></circle>
-                                <circle cx="112" cy="8" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 8 %}
-                                <circle cx="148" cy="30" r="10" fill="#D13438"></circle>
-                                <circle cx="148" cy="30" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 9 %}
-                                <circle cx="159" cy="48" r="10" fill="#D13438"></circle>
-                                <circle cx="159" cy="48" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index == 10 %}
-                                <circle cx="164" cy="68" r="10" fill="#D13438"></circle>
-                                <circle cx="164" cy="68" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% elif uv_index >= 11 %}
-                                <circle cx="158" cy="113" r="10" fill="#5C2E91"></circle>
-                                <circle cx="158" cy="113" r="11.5" stroke="white" stroke-width="3"></circle>
-                            {% endif %}
-                            {% endwith %}
-                        </svg>
-                        <div class="uvContentTitle">
-                            {% if latest_forecast.uv_index > 11 %}11+{% else %}{{ latest_forecast.uv_index }}{% endif %}
+                {% if latest_forecast %}
+                    <div id="uv-index-content" class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="uvLabelContainer">
+                            <svg width="130" height="134" viewBox="5 -12 171 178" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Arcos de niveles UV -->
+                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-240 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
+                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-243 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
+                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-178 90.5 80)" fill="none" stroke="#FDE300" stroke-width="8" stroke-linecap="round"></path>
+                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-115 90.5 80)" fill="none" stroke="#FF8C00" stroke-width="8" stroke-linecap="round"></path>
+                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-52 90.5 80)" fill="none" stroke="#D13438" stroke-width="8" stroke-linecap="round"></path>
+                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(13 90.5 80)" fill="none" stroke="#5C2E91" stroke-width="8" stroke-linecap="round"></path>
+                                
+                                <!-- Indicador UV dinámico -->
+                                {% with uv_index=latest_forecast.uv_index %}
+                                {% if uv_index == 0 %}
+                                    <circle cx="51" cy="146" r="10" fill="#73AA24"></circle>
+                                    <circle cx="51" cy="146" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 1 %}
+                                    <circle cx="40.5" cy="136" r="10" fill="#73AA24"></circle>
+                                    <circle cx="40.5" cy="136" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 2 %}
+                                    <circle cx="19" cy="105" r="10" fill="#73AA24"></circle>
+                                    <circle cx="19" cy="105" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 3 %}
+                                    <circle cx="18" cy="63" r="10" fill="#FDE300"></circle>
+                                    <circle cx="18" cy="63" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 4 %}
+                                    <circle cx="24" cy="44" r="10" fill="#FDE300"></circle>
+                                    <circle cx="24" cy="44" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 5 %}
+                                    <circle cx="36" cy="26" r="10" fill="#FDE300"></circle>
+                                    <circle cx="36" cy="26" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 6 %}
+                                    <circle cx="73" cy="5" r="10" fill="#FF8C00"></circle>
+                                    <circle cx="73" cy="5" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 7 %}
+                                    <circle cx="112" cy="8" r="10" fill="#FF8C00"></circle>
+                                    <circle cx="112" cy="8" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 8 %}
+                                    <circle cx="148" cy="30" r="10" fill="#D13438"></circle>
+                                    <circle cx="148" cy="30" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 9 %}
+                                    <circle cx="159" cy="48" r="10" fill="#D13438"></circle>
+                                    <circle cx="159" cy="48" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index == 10 %}
+                                    <circle cx="164" cy="68" r="10" fill="#D13438"></circle>
+                                    <circle cx="164" cy="68" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% elif uv_index >= 11 %}
+                                    <circle cx="158" cy="113" r="10" fill="#5C2E91"></circle>
+                                    <circle cx="158" cy="113" r="11.5" stroke="white" stroke-width="3"></circle>
+                                {% endif %}
+                                {% endwith %}
+                            </svg>
+                            <div class="uvContentTitle">
+                                {% if latest_forecast.uv_index > 11 %}11+{% else %}{{ latest_forecast.uv_index }}{% endif %}
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div id="uv-exposure-message" class="text-center">
-                    <p class="mb-0 fw-medium">
-                        {% if latest_forecast.uv_index <= 2 %}Protección no requerida
-                        {% elif latest_forecast.uv_index <= 5 %}Usa protector solar
-                        {% elif latest_forecast.uv_index <= 7 %}Usa gorra y protector solar
-                        {% else %}Evita exposición prolongada
-                        {% endif %}
-                    </p>
-                    <small class="text-muted">
-                        Índice UV {{ latest_forecast.uv_index }} - 
-                        {% if latest_forecast.uv_index <= 2 %}Bajo
-                        {% elif latest_forecast.uv_index <= 5 %}Moderado
-                        {% elif latest_forecast.uv_index <= 7 %}Alto
-                        {% elif latest_forecast.uv_index <= 10 %}Muy Alto
-                        {% else %}Extremo
-                        {% endif %}
-                    </small>
-                </div>
+                    <div id="uv-exposure-message" class="text-center">
+                        <p class="mb-0 fw-medium">
+                            {% if latest_forecast.uv_index <= 2 %}Protección no requerida
+                            {% elif latest_forecast.uv_index <= 5 %}Usa protector solar
+                            {% elif latest_forecast.uv_index <= 7 %}Usa gorra y protector solar
+                            {% else %}Evita exposición prolongada
+                            {% endif %}
+                        </p>
+                        <small class="text-muted">
+                            Índice UV {{ latest_forecast.uv_index }} - 
+                            {% if latest_forecast.uv_index <= 2 %}Bajo
+                            {% elif latest_forecast.uv_index <= 5 %}Moderado
+                            {% elif latest_forecast.uv_index <= 7 %}Alto
+                            {% elif latest_forecast.uv_index <= 10 %}Muy Alto
+                            {% else %}Extremo
+                            {% endif %}
+                        </small>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No hay datos de índice UV disponibles.
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
