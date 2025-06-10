@@ -30,29 +30,57 @@
 <script src="{% static '' %}dist/libs/hugerte/hugerte.min.js" defer></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    let options = {
-      selector: '#hugerte-textarea',
-      height: 300,
-      menubar: false,
-      statusbar: false,
-		license_key: 'gpl',
-      plugins: [
-        'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
-        'searchreplace', 'visualblocks', 'code', 'fullscreen',
-        'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
-      ],
-      toolbar: 'undo redo | formatselect | ' +
-        'bold italic backcolor | preview help |' +
-        'alignleft aligncenter alignright alignjustify bullist numlist outdent indent ' +
-        'removeformat ',
-      content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }'
-    }
-    if (localStorage.getItem("themeConfig") === 'dark') {
-      options.skin = 'oxide-dark';
-      options.content_css = 'default';
-    }
-    hugeRTE.init(options);
-  })
+      let options = {
+          selector: '#hugerte-textarea',
+          height: 300,
+          menubar: false,
+          statusbar: false,
+          license_key: 'gpl',
+          plugins: [
+              'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor',
+              'searchreplace', 'visualblocks', 'code', 'fullscreen',
+              'insertdatetime', 'media', 'table', 'help', 'wordcount'
+          ],
+          toolbar: 'undo redo | formatselect | ' +
+              'bold italic backcolor | preview help image |' +
+              'alignleft aligncenter alignright alignjustify bullist numlist outdent indent ' +
+              'removeformat ',
+          content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }',
+          file_picker_types: 'image',
+          automatic_uploads: false,
+          images_dataimg_filter: function(img) {
+              return img.hasAttribute('src');
+          },
+          file_picker_callback: function (callback, value, meta) {
+              let input = document.createElement('input');
+              input.setAttribute('type', 'file');
+              input.setAttribute('accept', 'image/*');
+              input.onchange = function () {
+                  let file = input.files[0];
+
+                  // Validar tamaño (por ejemplo, máximo 300KB)
+                  if (file.size > 300 * 1024) {
+                      alert("La imagen es demasiado grande. Debe ser menor a 300KB.");
+                      return;
+                  }
+
+                  let reader = new FileReader();
+                  reader.onload = function (e) {
+                      callback(e.target.result, { alt: file.name });
+                  };
+                  reader.readAsDataURL(file);
+              };
+              input.click();
+          }
+      };
+
+      if (localStorage.getItem("themeConfig") === 'dark') {
+          options.skin = 'oxide-dark';
+          options.content_css = 'default';
+      }
+
+      hugeRTE.init(options);
+  });
 </script>
 {% endblock extrajs %}
 
