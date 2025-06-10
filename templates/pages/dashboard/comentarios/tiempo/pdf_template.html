@@ -65,9 +65,7 @@
 </head>
 <body>
     <div class="header">
-        <!-- Reemplaza el bloque del SVG con esta línea -->
-{#        <img class="logo" src="{% static 'dist/img/logo.png' %}" alt="Logo">#}
-        <img class="logo" src="/home/omar/GitHub/web-cmw-insmet-cu/static/dist/img/logo.svg" alt="Logo">
+        <img class="logo" src="data:image/png;base64,{{ logo_base64 }}" alt="Logo">
         <h1>Comentario del Tiempo para la Provincia de Camagüey</h1>
         <h2>Departamento de Pronósticos</h2>
     </div>
