@@ -19,15 +19,14 @@ from dashboard.models import WeatherNote
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
 
+import base64
+import os
 from django.http import HttpResponse
-from django.template.loader import get_template
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.shortcuts import get_object_or_404
-from django.views.generic import DetailView
-from xhtml2pdf import pisa
+from django.template.loader import get_template
 from io import BytesIO
-import logging
-logger = logging.getLogger(__name__)
+import xhtml2pdf.pisa as pisa
+from django.conf import settings
 
 # Create your views here. 
 
@@ -288,19 +287,23 @@ class WeatherNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailV
 class WeatherNotePDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = WeatherNote
     permission_required = 'dashboard.view_weather_note'
-    
+
     def get(self, request, *args, **kwargs):
         weather_note = self.get_object()
+
+        # Obtener imagen en formato Base64
+        logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
+        logo_base64 = self.get_image_base64(logo_path)
         
         # Renderizar template HTML
         template = get_template('pages/dashboard/comentarios/nota_meteorologica/pdf_template.html')
-        context = {'weather_note': weather_note}
+        context = {'weather_note': weather_note, 'logo_base64': logo_base64}
         html = template.render(context)
-        
+
         # Crear PDF
         result = BytesIO()
         pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
-        
+
         if not pdf.err:
             response = HttpResponse(result.getvalue(), content_type='application/pdf')
             filename = f"nota_meteorologica_{weather_note.date.strftime('%Y-%m-%d')}.pdf"
@@ -311,3 +314,9 @@ class WeatherNotePDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
     def get_object(self, queryset=None):
         uuid = self.kwargs.get('uuid')
         return get_object_or_404(WeatherNote, uuid=uuid)
+
+    @staticmethod
+    def get_image_base64(image_path):
+        """Convierte la imagen en Base64."""
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
