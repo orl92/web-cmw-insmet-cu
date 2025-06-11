@@ -50,11 +50,11 @@ from dashboard.views.servicios.views import (ServiceCreateView,
                                              ServiceUpdateView)
 from dashboard.views.tiempo.hoy.views import (WeatherTodayCreateView,
                                               WeatherTodayDeleteView, WeatherTodayDetailView,
-                                              WeatherTodayListView,
+                                              WeatherTodayListView, WeatherTodayPDFView,
                                               WeatherTodayUpdateView)
 from dashboard.views.tiempo.manana.views import (WeatherTomorrowCreateView,
                                                  WeatherTomorrowDeleteView, WeatherTomorrowDetailView,
-                                                 WeatherTomorrowListView,
+                                                 WeatherTomorrowListView, WeatherTomorrowPDFView,
                                                  WeatherTomorrowUpdateView)
 
 urlpatterns = [
@@ -117,12 +117,14 @@ urlpatterns = [
     path('actualizar/tiempo/hoy/<uuid:uuid>/', WeatherTodayUpdateView.as_view(), name='actualizar_tiempo_h'),
     path('eliminar/tiempo/hoy/<uuid:uuid>/', WeatherTodayDeleteView.as_view(), name='eliminar_tiempo_h'),
     path('detalle/tiempo/hoy/<uuid:uuid>/', WeatherTodayDetailView.as_view(), name='detalle_tiempo_h'),
+    path('tiempo/hoy/<uuid:uuid>/pdf/', WeatherTodayPDFView.as_view(), name='tiempo_h_pdf'),
     # Tiempo Mañana
     path('tiempo/manana/', WeatherTomorrowListView.as_view(), name='listado_tiempo_m'),
     path('crear/tiempo/manana/', WeatherTomorrowCreateView.as_view(), name="crear_tiempo_m"),
     path('actualizar/tiempo/manana/<uuid:uuid>/', WeatherTomorrowUpdateView.as_view(), name='actualizar_tiempo_m'),
     path('eliminar/tiempo/manana/<uuid:uuid>/', WeatherTomorrowDeleteView.as_view(), name='eliminar_tiempo_m'),
     path('detalle/tiempo/manana/<uuid:uuid>/', WeatherTomorrowDetailView.as_view(), name='detalle_tiempo_m'),
+    path('tiempo/manana/<uuid:uuid>/pdf/', WeatherTomorrowPDFView.as_view(), name='tiempo_m_pdf'),
     # Comentario Tiempo
     path('comentario/tiempo/', WeatherCommentaryListView.as_view(), name='listado_comentarios_tiempo'), 
     path('crear/comentario/tiempo/', WeatherCommentaryCreateView.as_view(), name="crear_comentario_tiempo"),
