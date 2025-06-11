@@ -20,6 +20,15 @@ from dashboard.models import WeatherTomorrow
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
 
+import base64
+import os
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import get_template
+from io import BytesIO
+import xhtml2pdf.pisa as pisa
+from django.conf import settings
+
 # Create your views here. 
 
 class WeatherTomorrowListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -278,3 +287,40 @@ class WeatherTomorrowDetailView(LoginRequiredMixin, PermissionRequiredMixin, Det
         context['segment'] = 'tiempo_m'
         context['url_list'] = reverse_lazy('listado_tiempo_m')
         return context
+
+class WeatherTomorrowPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = WeatherTomorrow
+    permission_required = 'dashboard.view_weather_tomorrow'
+
+    def get(self, request, *args, **kwargs):
+        weather_tomorrow = self.get_object()
+
+        # Obtener imagen en formato Base64
+        logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
+        logo_base64 = self.get_image_base64(logo_path)
+        
+        # Renderizar template HTML
+        template = get_template('pages/dashboard/tiempo/manana/pdf_template.html')
+        context = {'weather_tomorrow': weather_tomorrow, 'logo_base64': logo_base64}
+        html = template.render(context)
+
+        # Crear PDF
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            filename = f"tiempo_mañana_{weather_tomorrow.date.strftime('%Y-%m-%d')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        return HttpResponse("Error al generar el PDF", status=400)
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(WeatherTomorrow, uuid=uuid)
+
+    @staticmethod
+    def get_image_base64(image_path):
+        """Convierte la imagen en Base64."""
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
