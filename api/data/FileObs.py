@@ -1,5 +1,5 @@
 import os
-import shutil
+import subprocess
 from ftplib import FTP
 from pathlib import Path
 
@@ -10,45 +10,40 @@ class FileObs:
     def __init__(self):
         pass
 
-    def file_name(self, station_number, hour):
-        station_number = str(station_number)
-        tri_h = ['03', '09', '15', '21']  # horarios de observations tri horarias
-        sinop = ['00', '06', '12', '18']  # horarios de observations sinópticas
-        for h in tri_h:
-            if hour == h:
-                return f'SI{station_number[2:]}.{hour}'
+    def descargar_archivos_por_hora(self, hora):
+        HOST = "10.0.100.224"
+        USER = "estaciones"
+        PASS = "CasaB2024*"
+        PORT = "990"
+        REMOTE_DIR = "/Reportes Procesados"
+        LOCAL_DIR = "./media/obs"
 
-        for h in sinop:
-            if hour == h:
-                return f'SM{station_number[2:]}.{hour}'
+        # Validar hora
+        horas_validas = ["00", "03", "06", "09", "12", "15", "18", "21"]
+        if hora not in horas_validas:
+            raise ValueError(f"Hora inválida. Usa una de: {horas_validas}")
 
-    def filename(self, station_number, hour):
-        path = Path('Salida/TRAFICO')
-        path.mkdir(parents=True, exist_ok=True)
+        # Crear directorio local si no existe
+        os.makedirs(LOCAL_DIR, exist_ok=True)
 
-        base_path = Path('Salida/TRAFICO').resolve()
-        filename = base_path / secure_filename(self.file_name(station_number, hour))
-        filename = Path(os.path.normpath(filename))
-        if not str(filename).startswith(str(base_path)):
-            raise Exception("Invalid file path")
+        # Comando LFTP corregido (usando `-O` para directorio de salida)
+        comando = f"""
+        set ftp:ssl-allow yes;
+        set ssl:verify-certificate no;
+        cd '{REMOTE_DIR}';
+        mget SM35[0-5].{hora} -O {LOCAL_DIR}/;
+        mget SI35[0-5].{hora} -O {LOCAL_DIR}/;
+        bye
+        """
+
+        # Ejecutar LFTP
         try:
-            ftp = FTP(host='10.0.100.204')
-            ftp.encoding = 'utf-8'
-            ftp.login(user='todos', passwd='todos')
-
-            with open(filename, "wb") as file:
-                ftp.retrbinary(f"RETR {filename}", file.write)
-            ftp.quit()
-
-            path = Path('media/salida/telex')
-            path.mkdir(parents=True, exist_ok=True)
-
-            shutil.copy(filename, path / filename.name)
-            
-            shutil.rmtree('Salida')
-
-        except Exception:
-            shutil.rmtree('Salida')
-            return str(path / filename.name)
-        
-        return str(path / filename.name)
+            subprocess.run(
+                ["lftp", "-u", f"{USER},{PASS}", "-p", PORT, f"ftps://{HOST}", "-e", comando],
+                check=True,
+                text=True
+            )
+            print(f"✅ Descarga completada para hora {hora}. Archivos en {LOCAL_DIR}")
+            print("Archivos descargados:", os.listdir(LOCAL_DIR))
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error al descargar archivos para hora {hora}: {e}")
