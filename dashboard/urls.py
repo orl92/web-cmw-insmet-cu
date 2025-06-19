@@ -2,7 +2,7 @@ from django.urls import path
 
 from dashboard.views.avisos.alertas_tempranas.views import (
     EarlyWarningCreateView, EarlyWarningDeleteView, EarlyWarningDetailView,
-    EarlyWarningListView, EarlyWarningUpdateView)
+    EarlyWarningListView, EarlyWarningPDFView, EarlyWarningUpdateView)
 from dashboard.views.avisos.ciclones_tropicales.views import (
     TropicalCycloneCreateView, TropicalCycloneDeleteView,
     TropicalCycloneDetailView, TropicalCycloneListView,
@@ -83,6 +83,7 @@ urlpatterns = [
     path('actualizar/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningUpdateView.as_view(), name='actualizar_aviso_alerta_temprana'),
     path('eliminar/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningDeleteView.as_view(), name='eliminar_aviso_alerta_temprana'),
     path('detalle/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningDetailView.as_view(), name='detalle_aviso_alerta_temprana'),
+    path('aviso/alerta_temprana/<uuid:uuid>/pdf/', EarlyWarningPDFView.as_view(), name='aviso_alerta_temprana_pdf'),
     # Aviso Ciclón Tropical
     path('avisos/ciclones_tropicales/', TropicalCycloneListView.as_view(), name='ciclones_tropicales'),
     path('crear/aviso/ciclon_tropical/', TropicalCycloneCreateView.as_view(), name="crear_aviso_ciclon_tropical"),
