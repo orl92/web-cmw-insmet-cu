@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Aviso Radar - {{ radar_warning.date|date:"d/m/Y" }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #000;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 1.5cm;
+        }
+        h1 {
+            font-size: 16pt;
+            margin-bottom: 0.5cm;
+            text-align: center;
+            font-weight: bold;
+        }
+        h2 {
+            font-size: 14pt;
+            text-align: center;
+            margin-bottom: 1cm;
+            font-weight: bold;
+        }
+        .metadata {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5cm;
+            font-size: 12pt;
+        }
+        .metadata-line {
+            width: 100%;
+            margin-bottom: 0.5cm;
+        }
+        .content {
+            font-size: 12pt;
+            margin-bottom: 1cm;
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+        .author {
+            text-align: left;
+            font-size: 12pt;
+            margin-top: 1cm;
+        }
+        .subject {
+            text-align: center;
+            font-style: italic;
+            font-size: 12pt;
+            margin: 1cm 0;
+        }
+        .valid-until {
+            font-size: 12pt;
+            margin: 0.5cm 0;
+        }
+        .logo {
+            height: 80px;
+            width: auto;
+            margin-bottom: 15px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .radar-image {
+            max-width: 100%;
+            max-height: 400px;  /* Limitar altura máxima */
+            height: auto;
+            margin: 1cm auto;
+            display: block;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img class="logo" src="{{ logo_base64 }}" alt="Logo">
+        <h1>Aviso de Radar para la Provincia de Camagüey</h1>
+        <h2>{{ radar_warning.title }}</h2>
+    </div>
+    
+    <div class="metadata-line">
+        <div class="metadata">
+            <span><strong>Fecha de creación:</strong> {{ radar_warning.date|date:"j \d\e F \d\e Y" }}</span>
+            <span><strong>Hora:</strong> {{ radar_warning.date|time:"h:i A" }}</span>
+        </div>
+    </div>
+
+    {% if radar_warning.subject %}
+        <div class="subject">{{ radar_warning.subject }}</div>
+    {% endif %}
+
+    {% if image_base64 %}
+        <img class="radar-image" src="{{ image_base64 }}" alt="Imagen del aviso de radar">
+    {% endif %}
+    
+    
+    <div class="content">
+        {{ radar_warning.description|safe }}
+    </div>
+    
+    <div class="metadata-line">
+        <div class="valid-until">
+            <strong>Válido hasta:</strong> {{ radar_warning.valid_until|date:"j \d\e F \d\e Y H:i" }}
+        </div>
+    </div>
+    
+    <div class="author">
+        <strong>Autor:</strong> {{ radar_warning.user.get_full_name|default:radar_warning.user.username }}
+    </div>
+</body>
+</html>
