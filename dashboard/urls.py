@@ -5,7 +5,7 @@ from dashboard.views.avisos.alertas_tempranas.views import (
     EarlyWarningListView, EarlyWarningPDFView, EarlyWarningUpdateView)
 from dashboard.views.avisos.ciclones_tropicales.views import (
     TropicalCycloneCreateView, TropicalCycloneDeleteView,
-    TropicalCycloneDetailView, TropicalCycloneListView,
+    TropicalCycloneDetailView, TropicalCycloneListView, TropicalCyclonePDFView,
     TropicalCycloneUpdateView)
 from dashboard.views.avisos.tormentas.views import (StormWarningCreateView,
                                                      StormWarningDeleteView,
@@ -89,7 +89,8 @@ urlpatterns = [
     path('crear/aviso/ciclon_tropical/', TropicalCycloneCreateView.as_view(), name="crear_aviso_ciclon_tropical"),
     path('actualizar/aviso/ciclon_tropical/<uuid:uuid>/',TropicalCycloneUpdateView.as_view(), name='actualizar_aviso_ciclon_tropical'),
     path('eliminar/aviso/ciclon_tropical/<uuid:uuid>/',TropicalCycloneDeleteView.as_view(), name='eliminar_aviso_ciclon_tropical'),
-    path('detalle/aviso/ciclone-tropical/<uuid:uuid>/', TropicalCycloneDetailView.as_view(), name='detalle_aviso_ciclon_tropical'),
+    path('detalle/aviso/ciclon-tropical/<uuid:uuid>/', TropicalCycloneDetailView.as_view(), name='detalle_aviso_ciclon_tropical'),
+    path('aviso/ciclon-tropical/<uuid:uuid>/pdf/', TropicalCyclonePDFView.as_view(), name='aviso_ciclon_tropical_pdf'),
     # Aviso Tormenta
     path('avisos/tormentas/', StormWarningListView.as_view(), name='avisos_tormentas'),
     path('crear/aviso/tormenta/', StormWarningCreateView.as_view(), name="crear_aviso_tormenta"),
