@@ -18,6 +18,14 @@ from dashboard.models import StormWarning
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
 
+import os
+import base64
+from django.conf import settings
+from django.http import HttpResponse
+from django.template.loader import get_template
+from io import BytesIO
+from xhtml2pdf import pisa
+
 # Create your views here.    
 
 class StormWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -279,3 +287,73 @@ class StormWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detail
         context['segment'] = 'storm'
         context['url_list'] = reverse_lazy('avisos_tormentas')
         return context
+    
+class StormWarningPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = StormWarning
+    permission_required = 'dashboard.view_storm_warning'
+
+    def get(self, request, *args, **kwargs):
+        storm_warning = self.get_object()
+
+        # Obtener imagen del logo en formato Base64
+        logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
+        logo_base64 = self.get_image_base64(logo_path)
+        
+        # Obtener imagen del storm_warning en Base64 si existe
+        image_base64 = None
+        if storm_warning.image:  # Asegúrate de que 'image' es el campo de la imagen en tu modelo
+            try:
+                # Obtener la ruta completa de la imagen
+                image_path = storm_warning.image.path
+                image_base64 = self.get_image_base64(image_path)
+            except Exception as e:
+                # Manejar excepción (puedes loguear el error)
+                print(f"Error al cargar imagen: {e}")
+
+        # Renderizar template HTML
+        template = get_template('pages/dashboard/avisos/tormentas/pdf_template.html')
+        context = {
+            'storm_warning': storm_warning,
+            'logo_base64': logo_base64,
+            'image_base64': image_base64,  # Pasamos la imagen en base64 al contexto
+        }
+        html = template.render(context)
+
+        # Crear PDF
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            filename = f"aviso_tormenta_{storm_warning.date.strftime('%Y-%m-%d')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+        return HttpResponse("Error al generar el PDF", status=400)
+
+    def get_object(self, queryset=None):
+        uuid = self.kwargs.get('uuid')
+        return get_object_or_404(StormWarning, uuid=uuid)
+
+    @staticmethod
+    def get_image_base64(image_path):
+        """Convierte la imagen en Base64 y detecta su tipo MIME."""
+        try:
+            # Determinar el tipo de imagen por extensión
+            ext = os.path.splitext(image_path)[1].lower()
+            if ext in ['.jpg', '.jpeg']:
+                mime_type = 'image/jpeg'
+            elif ext == '.png':
+                mime_type = 'image/png'
+            elif ext == '.gif':
+                mime_type = 'image/gif'
+            else:
+                # Tipo por defecto si no se reconoce
+                mime_type = 'image/jpeg'
+            
+            with open(image_path, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
+                # Formato: data:<mime_type>;base64,<encoded_string>
+                return f"data:{mime_type};base64,{encoded_string}"
+        except Exception as e:
+            print(f"Error al convertir imagen a base64: {e}")
+            return None

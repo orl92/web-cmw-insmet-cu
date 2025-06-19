@@ -10,7 +10,7 @@ from dashboard.views.avisos.ciclones_tropicales.views import (
 from dashboard.views.avisos.tormentas.views import (StormWarningCreateView,
                                                      StormWarningDeleteView,
                                                      StormWarningDetailView,
-                                                     StormWarningListView,
+                                                     StormWarningListView, StormWarningPDFView,
                                                      StormWarningUpdateView)
 from dashboard.views.avisos.radares.views import (RadarWarningCreateView,
                                                   RadarWarningDeleteView,
@@ -97,13 +97,14 @@ urlpatterns = [
     path('actualizar/aviso/tormenta/<uuid:uuid>/', StormWarningUpdateView.as_view(), name='actualizar_aviso_tormenta'),
     path('eliminar/aviso/tormenta/<uuid:uuid>/',StormWarningDeleteView.as_view(), name='eliminar_aviso_tormenta'),
     path('detalle/aviso/tormenta/<uuid:uuid>/', StormWarningDetailView.as_view(), name='detalle_aviso_tormenta'),
+    path('aviso/tormenta/<uuid:uuid>/pdf/', StormWarningPDFView.as_view(), name='aviso_tormenta_pdf'),
     # Avisos Radar
     path('avisos/radares/', RadarWarningListView.as_view(), name='avisos_radares'),
     path('crear/aviso/radar/', RadarWarningCreateView.as_view(), name="crear_aviso_radar"),
     path('actualizar/aviso/radar/<uuid:uuid>/', RadarWarningUpdateView.as_view(), name='actualizar_aviso_radar'),
     path('eliminar/aviso/radar/<uuid:uuid>/', RadarWarningDeleteView.as_view(), name='eliminar_aviso_radar'),
     path('detalle/aviso/radar/<uuid:uuid>/', RadarWarningDetailView.as_view(), name='detalle_aviso_radar'),
-    path('aviso/radar/<uuid:uuid>/pdf/', RadarWarningPDFView.as_view(), name='aviso_aviso_radar_pdf'),
+    path('aviso/radar/<uuid:uuid>/pdf/', RadarWarningPDFView.as_view(), name='aviso_radar_pdf'),
     # Clientes
     path('clientes/', CustomerListView.as_view(), name='listado_clientes'), 
     path('crear/cliente/', CustomerCreateView.as_view(), name='crear_cliente'),
