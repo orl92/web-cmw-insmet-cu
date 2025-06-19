@@ -1,54 +1,66 @@
 import os
 import shutil
-from ftplib import FTP
-from pathlib import Path
+import subprocess
 
 from werkzeug.utils import secure_filename
 
 
 class FileObs:
     def __init__(self):
-        pass
+        # Configuración
+        self.HOST = "10.0.100.224"
+        self.USER = "estaciones"
+        self.PASS = "CasaB2024*"
+        self.PORT = "990"
+        self.REMOTE_DIR = "/Reportes Procesados"
+        self.TEMP_DIR = "./media/temp"
+        self.FINAL_DIR = "./media/obs"
+        self.horas_validas = ["00", "03", "06", "09", "12", "15", "18", "21"]
 
-    def file_name(self, station_number, hour):
-        station_number = str(station_number)
-        tri_h = ['03', '09', '15', '21']  # horarios de observations tri horarias
-        sinop = ['00', '06', '12', '18']  # horarios de observations sinópticas
-        for h in tri_h:
-            if hour == h:
-                return f'SI{station_number[2:]}.{hour}'
+    def descargar_archivos_por_hora(self, hora):
 
-        for h in sinop:
-            if hour == h:
-                return f'SM{station_number[2:]}.{hour}'
+        # Validar hora
+        if hora not in self.horas_validas:
+            raise ValueError(f"Hora inválida. Usa una de: {self.horas_validas}")
 
-    def filename(self, station_number, hour):
-        path = Path('Salida/TRAFICO')
-        path.mkdir(parents=True, exist_ok=True)
+        # Crear directorios (temp y final)
+        os.makedirs(self.TEMP_DIR, exist_ok=True)
+        os.makedirs(self.FINAL_DIR, exist_ok=True)
 
-        base_path = Path('Salida/TRAFICO').resolve()
-        filename = base_path / secure_filename(self.file_name(station_number, hour))
-        filename = Path(os.path.normpath(filename))
-        if not str(filename).startswith(str(base_path)):
-            raise Exception("Invalid file path")
+        # Comando LFTP (descarga en temp)
+        comando = f"""
+        set ftp:ssl-allow yes;
+        set ssl:verify-certificate no;
+        cd '{self.REMOTE_DIR}';
+        mget SM35[0-5].{hora} -O {self.TEMP_DIR}/;
+        mget SI35[0-5].{hora} -O {self.TEMP_DIR}/;
+        bye
+        """
+
+        # Ejecutar LFTP
         try:
-            ftp = FTP(host='10.0.100.204')
-            ftp.encoding = 'utf-8'
-            ftp.login(user='todos', passwd='todos')
+            print(f"⏳ Descargando archivos .{hora} en {self.TEMP_DIR}...")
+            subprocess.run(
+                ["lftp", "-u", f"{self.USER},{self.PASS}", "-p", self.PORT, f"ftps://{self.HOST}", "-e", comando],
+                check=True,
+                text=True
+            )
 
-            with open(filename, "wb") as file:
-                ftp.retrbinary(f"RETR {filename}", file.write)
-            ftp.quit()
+            # Mover archivos de temp a final (sobrescribiendo)
+            archivos_descargados = os.listdir(self.TEMP_DIR)
+            for archivo in archivos_descargados:
+                origen = os.path.join(self.TEMP_DIR, archivo)
+                destino = os.path.join(self.FINAL_DIR, archivo)
+                shutil.move(origen, destino)
+                print(f"✓ Movido: {archivo}")
 
-            path = Path('media/salida/telex')
-            path.mkdir(parents=True, exist_ok=True)
+            print(f"✅ Descarga completada. Archivos en {self.FINAL_DIR}:")
+            print(os.listdir(self.FINAL_DIR))
 
-            shutil.copy(filename, path / filename.name)
-            
-            shutil.rmtree('Salida')
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Error en la descarga: {e}")
 
-        except Exception:
-            shutil.rmtree('Salida')
-            return str(path / filename.name)
-        
-        return str(path / filename.name)
+    def limpiar_directorio_temporal(self):
+        # Limpiar directorio temporal
+        if os.path.exists(self.TEMP_DIR):
+            shutil.rmtree(self.TEMP_DIR)
