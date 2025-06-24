@@ -88,10 +88,35 @@
   </div>
 {% endblock form %}
 {% block extrajs %}
-  <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
-  <script src="{% static '' %}dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
-  <script> $(document).ready(function() { $('select[multiple]').bootstrapDualListbox({ nonSelectedListLabel: 'Grupos disponibles', selectedListLabel: 'Grupos seleccionados', preserveSelectionOnMove: 'moved', moveOnSelect: false, nonSelectedFilter: '', filterTextClear: 'Mostrar todos', filterPlaceHolder: 'Filtrar', moveSelectedLabel: 'Mover seleccionados', moveAllLabel: 'Mover todos', removeSelectedLabel: 'Eliminar seleccionados', removeAllLabel: 'Eliminar todos', infoText: 'Mostrando todos {0}', infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}', infoTextEmpty: 'Lista vacía' }); }); </script>
-{% endblock extrajs %}
+  <!-- Carga jQuery primero -->
+  <script src="{% static 'dist/libs/jquery/jquery-3.6.0.min.js' %}"></script>
+  
+  <!-- Carga el plugin después -->
+  <script src="{% static 'dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js' %}"></script>
+  
+  <script>
+    // Usa jQuery en lugar de $ para evitar conflictos
+    jQuery(document).ready(function($) {
+      $('select[multiple]').bootstrapDualListbox({
+        nonSelectedListLabel: 'Grupos disponibles',
+        selectedListLabel: 'Grupos seleccionados',
+        preserveSelectionOnMove: 'moved',
+        moveOnSelect: false,
+        nonSelectedFilter: '',
+        filterTextClear: 'Mostrar todos',
+        filterPlaceHolder: 'Filtrar',
+        moveSelectedLabel: 'Mover seleccionados',
+        moveAllLabel: 'Mover todos',
+        removeSelectedLabel: 'Eliminar seleccionados',
+        removeAllLabel: 'Eliminar todos',
+        infoText: 'Mostrando todos {0}',
+        infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
+        infoTextEmpty: 'Lista vacía'
+      });
+    });
+  </script>
+
+  {% endblock extrajs %}
 
 
 

@@ -1,7 +1,7 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
 {% block extrahead %}
-  <link rel="stylesheet" href="{% static '' %}dist/libs/bootstrap-duallistbox/bootstrap-duallistbox.min.css">
+  <link rel="stylesheet" href="{% static 'dist/libs/bootstrap-duallistbox/bootstrap-duallistbox.min.css' %}">
 {% endblock extrahead %}
 {% block form %}
   <div class="mb-3">
@@ -20,7 +20,31 @@
   </div>
 {% endblock form %}
 {% block extrajs %}
-  <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
-  <script src="{% static '' %}dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js"></script>
-  <script> $(document).ready(function() { $('select[multiple]').bootstrapDualListbox({ nonSelectedListLabel: 'Permisos disponibles', selectedListLabel: 'Permisos seleccionados', preserveSelectionOnMove: 'moved', moveOnSelect: false, nonSelectedFilter: '', filterTextClear: 'Mostrar todos', filterPlaceHolder: 'Filtrar', moveSelectedLabel: 'Mover seleccionados', moveAllLabel: 'Mover todos', removeSelectedLabel: 'Eliminar seleccionados', removeAllLabel: 'Eliminar todos', infoText: 'Mostrando todos {0}', infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}', infoTextEmpty: 'Lista vacía' }); }); </script>
+  <!-- Carga jQuery primero -->
+  <script src="{% static 'dist/libs/jquery/jquery-3.6.0.min.js' %}"></script>
+  
+  <!-- Carga el plugin después -->
+  <script src="{% static 'dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js' %}"></script>
+  
+  <script>
+    // Usa jQuery en lugar de $ para evitar conflictos
+    jQuery(document).ready(function($) {
+      $('select[multiple]').bootstrapDualListbox({
+        nonSelectedListLabel: 'Permisos disponibles',
+        selectedListLabel: 'Permisos seleccionados',
+        preserveSelectionOnMove: 'moved',
+        moveOnSelect: false,
+        nonSelectedFilter: '',
+        filterTextClear: 'Mostrar todos',
+        filterPlaceHolder: 'Filtrar',
+        moveSelectedLabel: 'Mover seleccionados',
+        moveAllLabel: 'Mover todos',
+        removeSelectedLabel: 'Eliminar seleccionados',
+        removeAllLabel: 'Eliminar todos',
+        infoText: 'Mostrando todos {0}',
+        infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
+        infoTextEmpty: 'Lista vacía'
+      });
+    });
+  </script>
 {% endblock extrajs %}
