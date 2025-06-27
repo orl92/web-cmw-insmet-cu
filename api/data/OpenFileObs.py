@@ -7,7 +7,7 @@ class OpenFileObs:
     def __init__(self, station_number, hour):
         self.__hour = hour
         self.__station_number = station_number
-        self.__filename = FileObs().descargar_archivos_por_hora(self.__hour)
+        self.__filename = FileObs().descargar_archivos_por_hora(self.__hour, self.__station_number)
         f = open(self.filename, 'r')
         self.__openFile = f.readlines()
         f.close()
@@ -31,7 +31,7 @@ class OpenFileObs:
     def openFile(self):
         return self.__openFile
 
-    def allStations(self):
+    def obs(self):
         obs = []
         x = self.openFile()  # read().strip().split('=')
         for i in range(len(x)):
@@ -48,11 +48,11 @@ class OpenFileObs:
         return list2
 
     def station(self):
-        alls = self.allStations()
+        obs = self.obs()
         try:
             s = {
-                'day': alls[0].split()[-1][:2],
-                'hour': alls[0].split()[-1][2:4],
+                'day': obs[0].split()[-1][:2],
+                'hour': obs[0].split()[-1][2:4],
                 'number': self.station_number,
                 'sesion1': None,
                 'sesion2': None,
@@ -66,11 +66,11 @@ class OpenFileObs:
                 'sesion2': None,
             }
 
-        for i in range(len(alls)):
-            if str(self.station_number) in alls[i]:
-                if alls[i].split()[-1] == 'nil=':
-                    s['sesion1'] = alls[i]
+        for i in range(len(obs)):
+            if str(self.station_number) in obs[i]:
+                if obs[i].split()[-1] == 'nil=':
+                    s['sesion1'] = obs[i]
                 else:
-                    s['sesion1'] = alls[i]
-                    s['sesion2'] = alls[i + 1]
+                    s['sesion1'] = obs[i]
+                    s['sesion2'] = obs[i + 1]
         return s

@@ -4,6 +4,8 @@ import subprocess
 
 from werkzeug.utils import secure_filename
 
+from dashboard.templatetags.my_filters import filename
+
 
 class FileObs:
     def __init__(self):
@@ -17,8 +19,8 @@ class FileObs:
         self.FINAL_DIR = "./media/obs"
         self.horas_validas = ["00", "03", "06", "09", "12", "15", "18", "21"]
 
-    def descargar_archivos_por_hora(self, hora):
-
+    def descargar_archivos_por_hora(self, hora, station_number):
+        number = str(station_number)[2:]
         # Validar hora
         if hora not in self.horas_validas:
             raise ValueError(f"Hora inválida. Usa una de: {self.horas_validas}")
@@ -39,23 +41,27 @@ class FileObs:
 
         # Ejecutar LFTP
         try:
-            print(f"⏳ Descargando archivos .{hora} en {self.TEMP_DIR}...")
-            subprocess.run(
-                ["lftp", "-u", f"{self.USER},{self.PASS}", "-p", self.PORT, f"ftps://{self.HOST}", "-e", comando],
-                check=True,
-                text=True
-            )
-
-            # Mover archivos de temp a final (sobrescribiendo)
-            archivos_descargados = os.listdir(self.TEMP_DIR)
-            for archivo in archivos_descargados:
-                origen = os.path.join(self.TEMP_DIR, archivo)
-                destino = os.path.join(self.FINAL_DIR, archivo)
-                shutil.move(origen, destino)
-                print(f"✓ Movido: {archivo}")
+            # print(f"⏳ Descargando archivos .{hora} en {self.TEMP_DIR}...")
+            # subprocess.run(
+            #     ["lftp", "-u", f"{self.USER},{self.PASS}", "-p", self.PORT, f"ftps://{self.HOST}", "-e", comando],
+            #     check=True,
+            #     text=True
+            # )
+            #
+            # # Mover archivos de temp a final (sobrescribiendo)
+            # archivos_descargados = os.listdir(self.TEMP_DIR)
+            # for archivo in archivos_descargados:
+            #     origen = os.path.join(self.TEMP_DIR, archivo)
+            #     destino = os.path.join(self.FINAL_DIR, archivo)
+            #     shutil.move(origen, destino)
+            #     print(f"✓ Movido: {archivo}")
 
             print(f"✅ Descarga completada. Archivos en {self.FINAL_DIR}:")
             print(os.listdir(self.FINAL_DIR))
+            for i in os.listdir(self.FINAL_DIR):
+                if number in i:
+                    file = f'{self.FINAL_DIR}/{i}'
+                    return file
 
         except subprocess.CalledProcessError as e:
             print(f"❌ Error en la descarga: {e}")
