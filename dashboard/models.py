@@ -258,8 +258,8 @@ class TropicalCyclone(BaseWarning):
 class StormWarning(BaseWarning):
 
     class Meta:
-        verbose_name = 'Aviso Especial'
-        verbose_name_plural = "Avisos Especiales"
+        verbose_name = 'Aviso Tormenta'
+        verbose_name_plural = "Avisos Tormentas"
         default_permissions = ()
         permissions = (
             ('view_storm_warning', 'Ver'),
