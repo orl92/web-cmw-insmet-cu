@@ -7,7 +7,9 @@ class OpenFileObs:
     def __init__(self, station_number, hour):
         self.__hour = hour
         self.__station_number = station_number
-        self.__filename = FileObs().descargar_archivos_por_hora(self.__hour, self.__station_number)
+        fileobs = FileObs()
+        self.__filename = fileobs.descargar_archivos_por_hora(self.__hour, self.__station_number)
+        fileobs.limpiar_directorio_temporal()
         f = open(self.filename, 'r')
         self.__openFile = f.readlines()
         f.close()
