@@ -14,6 +14,11 @@ from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 from str2bool import str2bool
 
+# Para LDAP
+import ldap
+from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
+import logging
+
 # =====================
 # 1. INITIAL SETUP
 # =====================
@@ -22,19 +27,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Detectar entorno al inicio
 IS_PRODUCTION = 'PRODUCTION' in os.environ or '--production' in sys.argv
 
+
 def create_default_env(production=False):
     """Crea un archivo .env con valores por defecto y guías para el usuario"""
     env_path = BASE_DIR / '.env'
     if env_path.exists():
         return
-    
+
     print("\n🔧 Creando archivo .env automáticamente con valores iniciales...")
-    
+
     secret_key = get_random_secret_key()
     encryption_key = Fernet.generate_key()
     cipher_suite = Fernet(encryption_key)
     encrypted_secret_key = cipher_suite.encrypt(secret_key.encode()).decode()
-    
+
     try:
         with open(env_path, 'w', encoding='utf-8') as f:
             # 1. Configuración básica
@@ -44,7 +50,7 @@ def create_default_env(production=False):
             f.write(f"DEBUG={'False' if production else 'True'}\n")
             f.write(f"SECRET_KEY={encrypted_secret_key}\n")
             f.write(f"ENCRYPTION_KEY={encryption_key.decode()}\n\n")
-            
+
             # 2. Configuración de email (solo desarrollo)
             if not production:
                 f.write("# =====================\n")
@@ -61,7 +67,7 @@ def create_default_env(production=False):
                 f.write("# DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
                 f.write("# CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend\n")
                 f.write("# EMAIL_USE_SSL=False\n\n")
-            
+
             # 3. Configuración para producción
             if production:
                 # 3.1. Configuración de dominio
@@ -73,7 +79,7 @@ def create_default_env(production=False):
                 f.write("# Opcional: Puede definir manualmente estos valores si necesita configuraciones especiales\n")
                 f.write("# ALLOWED_HOSTS=tu-dominio.com,www.tu-dominio.com\n")
                 f.write("# CSRF_TRUSTED_ORIGINS=https://tu-dominio.com,https://www.tu-dominio.com\n\n")
-                
+
                 # 3.2 Email
                 f.write("# =====================\n")
                 f.write("# CONFIGURACIÓN DE EMAIL (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
@@ -87,7 +93,7 @@ def create_default_env(production=False):
                 f.write("DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
                 f.write("CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend\n")
                 f.write("EMAIL_USE_SSL=False\n")
-                
+
                 # 3.3 Base de datos
                 f.write("# =====================\n")
                 f.write("# BASE DE DATOS (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
@@ -105,17 +111,17 @@ def create_default_env(production=False):
                 f.write("# DB_SSL_MODE=PREFERRED  # DISABLED, PREFERRED, REQUIRED, VERIFY_CA, VERIFY_IDENTITY\n")
                 f.write("# DB_SSL_CA=/ruta/ca.pem\n")
                 f.write("# DB_SSL_CERT=/ruta/client-cert.pem\n")
-                f.write("# DB_SSL_KEY=/ruta/client-key.pem\n")           
+                f.write("# DB_SSL_KEY=/ruta/client-key.pem\n")
             else:
                 f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
                 f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
                 f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000\n\n")
                 f.write("# EXTERNAL_HOSTNAME=cmw.insmet.cu\n\n")
-        
+
         # Mensajes post-creación
         print("\n✅ Archivo .env creado exitosamente")
         print("🔑 SECRET_KEY generada automáticamente.")
-        
+
         if production:
             print("\n⚠️ ATENCIÓN: Debe editar manualmente estas variables CRÍTICAS para producción:")
             print("  - EXTERNAL_HOSTNAME (debe ser su dominio real sin http://)")
@@ -127,25 +133,27 @@ def create_default_env(production=False):
             print("\n⚙️ Si necesita configuraciones especiales, puede definir manualmente:")
             print("  - ALLOWED_HOSTS para múltiples dominios/subdominios")
             print("  - CSRF_TRUSTED_ORIGINS para protocolos/puertos específicos")
-            
+
             print("\n💡 RECOMENDACIONES PARA PRODUCCIÓN:")
             print("  - Use PostgreSQL o MySQL como motor de base de datos")
             print("  - Configure backups automáticos de la base de datos")
             print("  - Revise los permisos de los archivos sensibles")
-        
+
         print("\n✏️ Puede editarlo con:")
         print("  - VS Code: 'code .env'")
         print("  - Nano: 'nano .env'")
         print("  - Cualquier editor de texto")
-        
+
     except Exception as e:
         print(f"\n❌ Error al crear .env: {str(e)}")
         print("ℹ️ Posible solución: Verifique los permisos de escritura en el directorio")
         sys.exit(1)
 
+
 def decrypt_secret_key(encrypted_secret_key, encryption_key):
     cipher_suite = Fernet(encryption_key.encode())
     return cipher_suite.decrypt(encrypted_secret_key.encode()).decode()
+
 
 # Crear .env si no existe
 create_default_env(production=IS_PRODUCTION)
@@ -163,27 +171,29 @@ except Exception as e:
 # =====================
 DEBUG = str2bool(os.getenv('DEBUG', 'False' if IS_PRODUCTION else 'True'))
 
+
 def validate_environment():
     """Valida la configuración esencial"""
     errors = []
-    
+
     if not os.getenv('SECRET_KEY'):
         errors.append("🚨 ERROR: Falta SECRET_KEY en .env")
-    
+
     if not DEBUG:
         if not os.getenv('EXTERNAL_HOSTNAME'):
             errors.append("🚨 ERROR: Para producción debe configurar EXTERNAL_HOSTNAME en .env")
-    
+
         # Validar formato del dominio
         if (hostname := os.getenv('EXTERNAL_HOSTNAME')) and any(
-            c in hostname for c in ('http://', 'https://', '/', ':')
+                c in hostname for c in ('http://', 'https://', '/', ':')
         ):
             errors.append("🚨 ERROR: EXTERNAL_HOSTNAME debe ser solo el dominio (ej: cmw.insmet.cu)")
-    
+
     if errors:
         print("\n".join(errors))
         print("\n❌ Servidor no puede iniciar - Corrija estas configuraciones")
         sys.exit(1)
+
 
 def validate_database_config():
     """Valida la configuración de base de datos para producción"""
@@ -193,13 +203,13 @@ def validate_database_config():
     # Validar variables obligatorias para todos los motores
     required_vars = ['DB_ENGINE', 'DB_NAME', 'DB_USER', 'DB_PASS', 'DB_HOST']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
-    
+
     if missing_vars:
         print(f"\n🚨 ERROR: Faltan variables esenciales de BD: {', '.join(missing_vars)}")
         sys.exit(1)
 
     db_engine = os.getenv('DB_ENGINE').lower()
-    
+
     # Validar motor de BD soportado
     if db_engine not in ['postgresql', 'mysql']:
         print(f"\n🚨 ERROR: Motor de BD no soportado: {db_engine}")
@@ -209,13 +219,13 @@ def validate_database_config():
     # Validaciones específicas para PostgreSQL
     if db_engine == 'postgresql':
         ssl_mode = os.getenv('DB_SSL_MODE', 'prefer').lower()
-        
+
         if ssl_mode in ['verify-ca', 'verify-full']:
             if not os.getenv('DB_SSL_ROOT_CERT'):
                 print("\n🚨 ERROR: PostgreSQL en modo verify-ca/verify-full requiere:")
                 print("💡 Debe configurar DB_SSL_ROOT_CERT con la ruta al certificado CA")
                 sys.exit(1)
-                
+
             if not os.path.exists(os.getenv('DB_SSL_ROOT_CERT')):
                 print(f"\n🚨 ERROR: No se encuentra el certificado CA en: {os.getenv('DB_SSL_ROOT_CERT')}")
                 print("💡 Verifique la ruta en DB_SSL_ROOT_CERT")
@@ -224,14 +234,14 @@ def validate_database_config():
     # Validaciones específicas para MySQL
     elif db_engine == 'mysql':
         ssl_mode = os.getenv('DB_SSL_MODE', 'PREFERRED').upper()
-        
+
         if ssl_mode in ['VERIFY_CA', 'VERIFY_IDENTITY']:
             missing_certs = [var for var in ['DB_SSL_CA', 'DB_SSL_CERT', 'DB_SSL_KEY'] if not os.getenv(var)]
-            
+
             if missing_certs:
                 print(f"\n🚨 ERROR: MySQL en modo {ssl_mode} requiere: {', '.join(missing_certs)}")
                 sys.exit(1)
-                
+
             for cert_var in ['DB_SSL_CA', 'DB_SSL_CERT', 'DB_SSL_KEY']:
                 if not os.path.exists(os.getenv(cert_var)):
                     print(f"\n🚨 ERROR: No se encuentra el certificado {cert_var} en: {os.getenv(cert_var)}")
@@ -241,10 +251,11 @@ def validate_database_config():
     if db_engine == 'postgresql' and os.getenv('DB_SSL_MODE', 'prefer') in ['disable', 'allow']:
         print("\n⚠️ ADVERTENCIA: PostgreSQL está usando un modo SSL poco seguro en producción")
         print("💡 Recomendado: Usar al menos 'require' para conexiones encriptadas")
-        
+
     elif db_engine == 'mysql' and os.getenv('DB_SSL_MODE', 'PREFERRED').upper() in ['DISABLED']:
         print("\n⚠️ ADVERTENCIA: MySQL está configurado sin SSL en producción")
         print("💡 Recomendado: Usar al menos 'REQUIRED' para conexiones encriptadas")
+
 
 # Validar configuración
 validate_environment()
@@ -256,7 +267,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # 3. SECURITY SETTINGS
 # =====================
 if not DEBUG:
-    SECURE_SSL_REDIRECT = False # Se manejan con nginx
+    SECURE_SSL_REDIRECT = False  # Se manejan con nginx
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SESSION_COOKIE_SECURE = True
@@ -269,24 +280,24 @@ if not DEBUG:
 # 4. HOST CONFIGURATION
 # =====================
 ALLOWED_HOSTS = [
-    h.strip() 
-    for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') 
+    h.strip()
+    for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
     if h.strip()
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    o.strip() 
-    for o in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',') 
+    o.strip()
+    for o in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
     if o.strip()
 ]
 
 # Configuración dinámica del dominio
 if EXTERNAL_HOSTNAME := os.getenv('EXTERNAL_HOSTNAME'):
     domain = EXTERNAL_HOSTNAME.replace('https://', '').replace('http://', '').split('/')[0].split(':')[0]
-    
+
     if domain not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(domain)
-    
+
     schemes = ['http://', 'https://'] if not DEBUG else ['http://']
     for scheme in schemes:
         origin = f"{scheme}{domain}"
@@ -352,8 +363,9 @@ TEMPLATES = [
         },
     },
 ]
-    
+
 WSGI_APPLICATION = 'core.wsgi.application'
+
 
 # =====================
 # 7. DATABASE CONFIGURATION
@@ -388,7 +400,7 @@ def get_database_config():
     if db_engine == 'postgresql':
         ssl_mode = os.getenv('DB_SSL_MODE', 'prefer')
         db_config['OPTIONS'] = {'sslmode': ssl_mode}
-        
+
         if ssl_mode in ['verify-ca', 'verify-full']:
             if ssl_cert := os.getenv('DB_SSL_ROOT_CERT'):
                 db_config['OPTIONS']['sslrootcert'] = ssl_cert
@@ -405,18 +417,19 @@ def get_database_config():
                 'cert': os.getenv('DB_SSL_CERT'),
                 'key': os.getenv('DB_SSL_KEY')
             }
-            
+
             if ssl_mode in ['VERIFY_CA', 'VERIFY_IDENTITY'] and not all(ssl_files.values()):
                 print("\n🚨 ERROR: Para VERIFY_CA/VERIFY_IDENTITY necesita:")
                 print("DB_SSL_CA, DB_SSL_CERT y DB_SSL_KEY")
                 sys.exit(1)
-                
+
             db_config['OPTIONS'] = {
                 'ssl_mode': ssl_mode,
                 'ssl': {k: v for k, v in ssl_files.items() if v} or None
             }
 
     return {'default': db_config}
+
 
 DATABASES = get_database_config()
 
@@ -516,10 +529,10 @@ EMAIL_PORT = os.getenv('EMAIL_PORT')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-    
+
 if 'EMAIL_BACKEND' in os.environ:
     EMAIL_BACKEND = os.environ['EMAIL_BACKEND']
-    
+
 elif 'CUSTOM_EMAIL_BACKEND' in os.environ:
     EMAIL_BACKEND = os.environ['CUSTOM_EMAIL_BACKEND']
     EMAIL_USE_SSL = False
@@ -549,9 +562,9 @@ if not DEBUG:
         'EMAIL_HOST_PASSWORD': "Contraseña para autenticación SMTP",
         'DEFAULT_FROM_EMAIL': "Email desde el que se enviarán los correos"
     }
-    
+
     missing_vars = [var for var, desc in required_vars.items() if not os.getenv(var)]
-    
+
     if missing_vars:
         print("\n🚨 ERROR: Faltan configuraciones requeridas para producción:")
         for var in missing_vars:
@@ -560,3 +573,62 @@ if not DEBUG:
         sys.exit(1)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# =====================
+# LDAP
+# =====================
+# Configuración básica de LDAP
+AUTH_LDAP_SERVER_URI = "ldap://dc.cmw.insmet.cu:389"  # Reemplaza con tu servidor LDAP
+AUTH_LDAP_START_TLS = True  # Para habilitar STARTTLS
+AUTH_LDAP_GLOBAL_OPTIONS = {
+    ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER,  # Para desarrollo, en producción usa OPT_X_TLS_DEMAND
+    ldap.OPT_REFERRALS: 0,
+}
+
+# Credenciales para buscar usuarios
+AUTH_LDAP_BIND_DN = "CN=linux,CN=Users,DC=cmw,DC=insmet,DC=cu"  # DN del usuario con permisos de búsqueda
+AUTH_LDAP_BIND_PASSWORD = "100A.soledad"  # Contraseña del usuario
+
+# Configuración de búsqueda de usuarios
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    "OU=CMW,DC=cmw,DC=insmet,DC=cu",  # Base DN para buscar usuarios
+    ldap.SCOPE_SUBTREE,  # Ámbito de búsqueda
+    "(sAMAccountName=%(user)s)"  # Filtro de búsqueda (puede variar según tu LDAP)
+)
+
+# Configuración para mapear atributos LDAP a campos de usuario Django
+AUTH_LDAP_USER_ATTR_MAP = {
+    "first_name": "givenName",
+    "last_name": "sn",
+    "email": "mail"
+}
+
+# Configuración de grupos (opcional)
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    "OU=CMW,DC=cmw,DC=insmet,DC=cu",
+    ldap.SCOPE_SUBTREE,
+    "(objectClass=groupOfNames)"
+)
+AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr="cn")
+
+# Qué hacer cuando un usuario se autentica por primera vez
+AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+    "is_staff": "cn=staff,OU=CMW,DC=cmw,DC=insmet,DC=cu",
+    "is_superuser": "cn=superuser,OU=CMW,DC=cmw,DC=insmet,DC=cu"
+}
+
+AUTH_LDAP_FIND_GROUP_PERMS = True
+AUTH_LDAP_MIRROR_GROUPS = False  # Sincroniza grupos LDAP con grupos Django
+
+# Configuración de caché (recomendado para producción)
+AUTH_LDAP_CACHE_TIMEOUT = 3600
+
+# Configuración de autenticación
+AUTHENTICATION_BACKENDS = (
+    'django_auth_ldap.backend.LDAPBackend',  # Primero intenta LDAP
+    'django.contrib.auth.backends.ModelBackend',  # Luego la base de datos local
+)
+
+logger = logging.getLogger('django_auth_ldap')
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.DEBUG)  # Para desarrollo, en producción usa INFO o WARNING
