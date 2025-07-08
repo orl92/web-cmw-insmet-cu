@@ -111,7 +111,23 @@ def create_default_env(production=False):
                 f.write("# DB_SSL_MODE=PREFERRED  # DISABLED, PREFERRED, REQUIRED, VERIFY_CA, VERIFY_IDENTITY\n")
                 f.write("# DB_SSL_CA=/ruta/ca.pem\n")
                 f.write("# DB_SSL_CERT=/ruta/client-cert.pem\n")
-                f.write("# DB_SSL_KEY=/ruta/client-key.pem\n")
+                f.write("# DB_SSL_KEY=/ruta/client-key.pem\n\n")
+
+                # 3.4 Configuración LDAP
+                f.write("# =====================\n")
+                f.write("# CONFIGURACIÓN LDAP (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
+                f.write("# =====================\n")
+                f.write("LDAP_SERVER_URI=ldap://dc.cmw.insmet.cu:389\n")
+                f.write("LDAP_START_TLS=True\n")
+                f.write("LDAP_BIND_DN=CN=linux,CN=Users,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("LDAP_BIND_PASSWORD=tu_contraseña_ldap\n")
+                f.write("LDAP_USER_SEARCH_BASE=OU=CMW,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("LDAP_GROUP_SEARCH_BASE=OU=CMW,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("LDAP_STAFF_GROUP=cn=staff,OU=CMW,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("LDAP_SUPERUSER_GROUP=cn=superuser,OU=CMW,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("# Opciones adicionales LDAP:\n")
+                f.write("# LDAP_USER_ATTR_MAP=first_name:givenName,last_name:sn,email:mail\n")
+                f.write("# LDAP_CACHE_TIMEOUT=3600\n")
             else:
                 f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
                 f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
@@ -125,6 +141,7 @@ def create_default_env(production=False):
         if production:
             print("\n⚠️ ATENCIÓN: Debe editar manualmente estas variables CRÍTICAS para producción:")
             print("  - EXTERNAL_HOSTNAME (debe ser su dominio real sin http://)")
+            print("  - Configuración LDAP (servidor, credenciales y bases de búsqueda)")
             print("\n💡 El sistema automáticamente generará:")
             print("  - ALLOWED_HOSTS basado en EXTERNAL_HOSTNAME")
             print("  - Configuración de EMAIL (Modificar por servidor SMTP real)")
@@ -138,6 +155,7 @@ def create_default_env(production=False):
             print("  - Use PostgreSQL o MySQL como motor de base de datos")
             print("  - Configure backups automáticos de la base de datos")
             print("  - Revise los permisos de los archivos sensibles")
+            print("  - Para LDAP, use cuentas con permisos mínimos necesarios")
 
         print("\n✏️ Puede editarlo con:")
         print("  - VS Code: 'code .env'")
@@ -188,6 +206,17 @@ def validate_environment():
                 c in hostname for c in ('http://', 'https://', '/', ':')
         ):
             errors.append("🚨 ERROR: EXTERNAL_HOSTNAME debe ser solo el dominio (ej: cmw.insmet.cu)")
+
+        # Validar LDAP si está configurado
+        if os.getenv('LDAP_SERVER_URI'):
+            required_ldap_vars = [
+                'LDAP_BIND_DN', 'LDAP_BIND_PASSWORD',
+                'LDAP_USER_SEARCH_BASE', 'LDAP_GROUP_SEARCH_BASE'
+            ]
+            
+            missing_ldap_vars = [var for var in required_ldap_vars if not os.getenv(var)]
+            if missing_ldap_vars:
+                errors.append(f"🚨 ERROR: Configuración LDAP incompleta. Faltan: {', '.join(missing_ldap_vars)}")
 
     if errors:
         print("\n".join(errors))
@@ -261,7 +290,10 @@ def validate_database_config():
 validate_environment()
 validate_database_config()
 
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = decrypt_secret_key(
+    os.getenv('SECRET_KEY'),
+    os.getenv('ENCRYPTION_KEY')
+)
 
 # =====================
 # 3. SECURITY SETTINGS
@@ -532,7 +564,6 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 if 'EMAIL_BACKEND' in os.environ:
     EMAIL_BACKEND = os.environ['EMAIL_BACKEND']
-
 elif 'CUSTOM_EMAIL_BACKEND' in os.environ:
     EMAIL_BACKEND = os.environ['CUSTOM_EMAIL_BACKEND']
     EMAIL_USE_SSL = False
@@ -551,7 +582,70 @@ elif 'whitenoise.middleware.WhiteNoiseMiddleware' in MIDDLEWARE:
     MIDDLEWARE.remove('whitenoise.middleware.WhiteNoiseMiddleware')
 
 # =====================
-# 16. FINAL VALIDATION
+# 16. LDAP CONFIGURATION
+# =====================
+# Solo configurar LDAP si las variables están definidas
+if os.getenv('LDAP_SERVER_URI'):
+    # Configuración básica de LDAP
+    AUTH_LDAP_SERVER_URI = os.getenv('LDAP_SERVER_URI')
+    AUTH_LDAP_START_TLS = str2bool(os.getenv('LDAP_START_TLS', 'True'))
+    
+    AUTH_LDAP_GLOBAL_OPTIONS = {
+        ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER,  # Para desarrollo, en producción usa OPT_X_TLS_DEMAND
+        ldap.OPT_REFERRALS: 0,
+    }
+
+    # Credenciales para buscar usuarios
+    AUTH_LDAP_BIND_DN = os.getenv('LDAP_BIND_DN')
+    AUTH_LDAP_BIND_PASSWORD = os.getenv('LDAP_BIND_PASSWORD')
+
+    # Configuración de búsqueda de usuarios
+    AUTH_LDAP_USER_SEARCH = LDAPSearch(
+        os.getenv('LDAP_USER_SEARCH_BASE'),
+        ldap.SCOPE_SUBTREE,
+        "(sAMAccountName=%(user)s)"
+    )
+
+    # Configuración para mapear atributos LDAP a campos de usuario Django
+    AUTH_LDAP_USER_ATTR_MAP = {
+        "first_name": "givenName",
+        "last_name": "sn",
+        "email": "mail"
+    }
+
+    # Configuración de grupos (opcional)
+    AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+        os.getenv('LDAP_GROUP_SEARCH_BASE'),
+        ldap.SCOPE_SUBTREE,
+        "(objectClass=groupOfNames)"
+    )
+    AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr="cn")
+
+    # Qué hacer cuando un usuario se autentica por primera vez
+    AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+        "is_staff": os.getenv('LDAP_STAFF_GROUP'),
+        "is_superuser": os.getenv('LDAP_SUPERUSER_GROUP')
+    }
+
+    AUTH_LDAP_FIND_GROUP_PERMS = True
+    AUTH_LDAP_MIRROR_GROUPS = False  # Sincroniza grupos LDAP con grupos Django
+
+    # Configuración de caché (recomendado para producción)
+    AUTH_LDAP_CACHE_TIMEOUT = int(os.getenv('LDAP_CACHE_TIMEOUT', '3600'))
+
+    # Configuración de autenticación
+    AUTHENTICATION_BACKENDS = (
+        'django_auth_ldap.backend.LDAPBackend',  # Primero intenta LDAP
+        'django.contrib.auth.backends.ModelBackend',  # Luego la base de datos local
+    )
+
+    # Configuración de logging
+    logger = logging.getLogger('django_auth_ldap')
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
+
+# =====================
+# 17. FINAL VALIDATION
 # =====================
 # Variables necesarias en producción
 if not DEBUG:
@@ -573,62 +667,3 @@ if not DEBUG:
         sys.exit(1)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# =====================
-# LDAP
-# =====================
-# Configuración básica de LDAP
-AUTH_LDAP_SERVER_URI = "ldap://dc.cmw.insmet.cu:389"  # Reemplaza con tu servidor LDAP
-AUTH_LDAP_START_TLS = True  # Para habilitar STARTTLS
-AUTH_LDAP_GLOBAL_OPTIONS = {
-    ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER,  # Para desarrollo, en producción usa OPT_X_TLS_DEMAND
-    ldap.OPT_REFERRALS: 0,
-}
-
-# Credenciales para buscar usuarios
-AUTH_LDAP_BIND_DN = "CN=linux,CN=Users,DC=cmw,DC=insmet,DC=cu"  # DN del usuario con permisos de búsqueda
-AUTH_LDAP_BIND_PASSWORD = "100A.soledad"  # Contraseña del usuario
-
-# Configuración de búsqueda de usuarios
-AUTH_LDAP_USER_SEARCH = LDAPSearch(
-    "OU=CMW,DC=cmw,DC=insmet,DC=cu",  # Base DN para buscar usuarios
-    ldap.SCOPE_SUBTREE,  # Ámbito de búsqueda
-    "(sAMAccountName=%(user)s)"  # Filtro de búsqueda (puede variar según tu LDAP)
-)
-
-# Configuración para mapear atributos LDAP a campos de usuario Django
-AUTH_LDAP_USER_ATTR_MAP = {
-    "first_name": "givenName",
-    "last_name": "sn",
-    "email": "mail"
-}
-
-# Configuración de grupos (opcional)
-AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-    "OU=CMW,DC=cmw,DC=insmet,DC=cu",
-    ldap.SCOPE_SUBTREE,
-    "(objectClass=groupOfNames)"
-)
-AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr="cn")
-
-# Qué hacer cuando un usuario se autentica por primera vez
-AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-    "is_staff": "cn=staff,OU=CMW,DC=cmw,DC=insmet,DC=cu",
-    "is_superuser": "cn=superuser,OU=CMW,DC=cmw,DC=insmet,DC=cu"
-}
-
-AUTH_LDAP_FIND_GROUP_PERMS = True
-AUTH_LDAP_MIRROR_GROUPS = False  # Sincroniza grupos LDAP con grupos Django
-
-# Configuración de caché (recomendado para producción)
-AUTH_LDAP_CACHE_TIMEOUT = 3600
-
-# Configuración de autenticación
-AUTHENTICATION_BACKENDS = (
-    'django_auth_ldap.backend.LDAPBackend',  # Primero intenta LDAP
-    'django.contrib.auth.backends.ModelBackend',  # Luego la base de datos local
-)
-
-logger = logging.getLogger('django_auth_ldap')
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.DEBUG)  # Para desarrollo, en producción usa INFO o WARNING
