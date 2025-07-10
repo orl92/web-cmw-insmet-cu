@@ -1,6 +1,6 @@
 import os
 import uuid
-
+import logging
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.db.models.signals import post_save
@@ -10,12 +10,15 @@ from PIL import Image
 from common.utils import generic_image_path
 from core import settings
 
+logger = logging.getLogger(__name__)
+
 # Create your models here.
 
 class Profile(models.Model):
   user = models.OneToOneField(User, on_delete=models.CASCADE)
   avatar = models.ImageField(null=True, blank=True, upload_to=generic_image_path)
   uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+  is_ldap = models.BooleanField(default=False)
 
   def save(self, *args, **kwargs):
         try:
@@ -85,6 +88,29 @@ class Profile(models.Model):
   def __str__(self):
      return self.user.username
 
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """
+    Crea un perfil SOLO para usuarios no-LDAP
+    """
+    if created:
+        # Verificar si el usuario se está creando a través de LDAP
+        if not hasattr(instance, '_is_ldap_user'):
+            Profile.objects.create(user=instance, is_ldap=False)
+            logger.debug(f"Señal: Perfil no-LDAP creado para {instance.username}")
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """
+    Guarda el perfil solo para usuarios no LDAP
+    """
+    # Ignorar usuarios LDAP
+    if hasattr(instance, '_is_ldap_user'):
+        return
+        
+    if hasattr(instance, 'profile') and not instance.profile.is_ldap:
+        instance.profile.save()
+
 class GroupProfile(models.Model):
     group = models.OneToOneField(Group, on_delete=models.CASCADE)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -102,16 +128,6 @@ class GroupProfile(models.Model):
             ('change_group', 'Editar'),
             ('delete_group', 'Eliminar'),
         )
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    if not instance._state.adding:
-        instance.profile.save()
 
 @receiver(post_save, sender=Group)
 def create_group_profile(sender, instance, created, **kwargs):
