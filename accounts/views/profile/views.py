@@ -34,6 +34,7 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
         paginator = Paginator(log_entries, 4)  # Mostrar 4 registros por página
         page_number = self.request.GET.get('page')  # Obtener el número de página de la solicitud
         context['log_entries_page'] = paginator.get_page(page_number)  # Pasar la página actual al contexto
+        context['is_ldap'] = getattr(self.request.user.profile, 'is_ldap', False)
 
         return context
 
