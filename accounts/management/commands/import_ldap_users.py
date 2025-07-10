@@ -1,53 +1,56 @@
-import ldap
+import os
 from django.core.management.base import BaseCommand
-from django_auth_ldap.backend import LDAPBackend
 from django.contrib.auth import get_user_model
+from ldap3 import Server, Connection, SUBTREE, ALL
+from ldap3.core.exceptions import LDAPException
 
 
 class Command(BaseCommand):
-    help = 'Importa usuarios de LDAP que tengan email, nombre y apellido completos'
+    help = 'Importa usuarios de LDAP que tengan email, nombre y apellido completos usando ldap3'
 
     def handle(self, *args, **options):
         User = get_user_model()
-        ldap_backend = LDAPBackend()
 
-        # Configuración de búsqueda
-        search_base = 'OU=CMW,DC=cmw,DC=insmet,DC=cu'
+        # Configuración desde variables de entorno
+        server_uri = os.getenv('LDAP_SERVER_URI')
+        bind_dn = os.getenv('LDAP_BIND_DN')
+        bind_password = os.getenv('LDAP_BIND_PASSWORD')
+        search_base = os.getenv('LDAP_USER_SEARCH_BASE', 'OU=CMW,DC=cmw,DC=insmet,DC=cu')
         search_filter = '(&(objectClass=user)(mail=*)(givenName=*)(sn=*))'
-        attrs = ['sAMAccountName', 'givenName', 'sn', 'mail']
+        attributes = ['sAMAccountName', 'givenName', 'sn', 'mail']
+
+        if not server_uri or not bind_dn or not bind_password:
+            self.stdout.write(self.style.ERROR("Faltan variables de entorno necesarias para la conexión LDAP"))
+            return
 
         try:
-            # Conectar a LDAP
-            conn = ldap_backend.ldap.initialize(ldap_backend.settings.SERVER_URI)
-            conn.simple_bind_s(ldap_backend.settings.BIND_DN, ldap_backend.settings.BIND_PASSWORD)
+            server = Server(server_uri, get_info=ALL)
+            conn = Connection(server, user=bind_dn, password=bind_password, auto_bind=True)
 
-            # Buscar usuarios con los atributos requeridos
-            results = conn.search_s(
-                search_base,
-                ldap.SCOPE_SUBTREE,
-                search_filter,
-                attrs
+            conn.search(
+                search_base=search_base,
+                search_filter=search_filter,
+                search_scope=SUBTREE,
+                attributes=attributes
             )
 
             total = 0
             imported = 0
 
-            for dn, entry in results:
+            for entry in conn.entries:
                 total += 1
                 try:
-                    username = entry['sAMAccountName'][0].decode('utf-8')
-                    first_name = entry.get('givenName', [b''])[0].decode('utf-8').strip()
-                    last_name = entry.get('sn', [b''])[0].decode('utf-8').strip()
-                    email = entry.get('mail', [b''])[0].decode('utf-8').strip()
+                    username = str(entry.sAMAccountName)
+                    first_name = str(entry.givenName).strip()
+                    last_name = str(entry.sn).strip()
+                    email = str(entry.mail).strip()
 
-                    # Verificar que todos los campos tienen valores válidos
                     if not all([username, first_name, last_name, email]):
                         self.stdout.write(self.style.WARNING(
                             f'Usuario {username} omitido - faltan datos requeridos'
                         ))
                         continue
 
-                    # Crear o actualizar usuario
                     user, created = User.objects.get_or_create(username=username)
                     user.first_name = first_name
                     user.last_name = last_name
@@ -56,14 +59,10 @@ class Command(BaseCommand):
                     user.save()
 
                     imported += 1
-                    if created:
-                        self.stdout.write(self.style.SUCCESS(
-                            f'Creado: {username} - {first_name} {last_name} <{email}>'
-                        ))
-                    else:
-                        self.stdout.write(self.style.SUCCESS(
-                            f'Actualizado: {username} - {first_name} {last_name} <{email}>'
-                        ))
+                    action = "Creado" if created else "Actualizado"
+                    self.stdout.write(self.style.SUCCESS(
+                        f'{action}: {username} - {first_name} {last_name} <{email}>'
+                    ))
 
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(
@@ -74,5 +73,5 @@ class Command(BaseCommand):
                 f'\nProceso completado. {imported} de {total} usuarios importados/actualizados'
             ))
 
-        except ldap.LDAPError as e:
+        except LDAPException as e:
             self.stdout.write(self.style.ERROR(f'Error de conexión LDAP: {str(e)}'))
