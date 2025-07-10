@@ -30,7 +30,6 @@
   <script src="{% static 'dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js' %}"></script>
   
   <script>
-    // Usa jQuery en lugar de $ para evitar conflictos
     jQuery(document).ready(function($) {
       $('select[multiple]').bootstrapDualListbox({
         nonSelectedListLabel: 'Permisos disponibles',
@@ -40,14 +39,39 @@
         nonSelectedFilter: '',
         filterTextClear: 'Mostrar todos',
         filterPlaceHolder: 'Filtrar',
+        
+        // Iconos de Tabler I/O
         moveSelectedLabel: 'Mover seleccionados',
         moveAllLabel: 'Mover todos',
         removeSelectedLabel: 'Eliminar seleccionados',
         removeAllLabel: 'Eliminar todos',
+        
         infoText: 'Mostrando todos {0}',
-        infoTextFiltered: '<span class="label label-warning">Filtrado</span> {0} de {1}',
-        infoTextEmpty: 'Lista vacía'
+        infoTextFiltered: '<span class="badge bg-warning">Filtrado</span> {0} de {1}',
+        infoTextEmpty: 'Lista vacía',
+        
+        // Ajustes de tamaño
+        selectorMinimalHeight: 200,
+        bootstrap2Compatible: false,
+        
+        // Clases adicionales para compatibilidad con Bootstrap 5
+        moveOnSelect: false,
+        showFilterInputs: true,
+        filterPlaceHolder: 'Filtrar...',
+        infoTextEmpty: 'No hay elementos',
+        infoText: 'Mostrando {0} elementos',
+        infoTextFiltered: '<span class="badge bg-warning">Filtrado</span> {0} de {1}'
       });
+
+      // Ajustes adicionales de estilo
+      $('.bootstrap-duallistbox-container').addClass('bootstrap5-duallistbox');
+      $('.bootstrap-duallistbox-container .box1, .bootstrap-duallistbox-container .box2').css({
+        'height': '400px'
+      });
+      
+      // Asegurar que los botones muestren los iconos correctamente
+      $('.moveall, .move, .remove, .removeall').css('white-space', 'nowrap');
     });
   </script>
+    
 {% endblock extrajs %}
