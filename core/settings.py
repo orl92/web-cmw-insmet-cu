@@ -15,8 +15,6 @@ from dotenv import load_dotenv
 from str2bool import str2bool
 
 # Para LDAP
-import ldap
-from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
 import logging
 
 # =====================
@@ -113,10 +111,24 @@ def create_default_env(production=False):
                 f.write("# DB_SSL_CERT=/ruta/client-cert.pem\n")
                 f.write("# DB_SSL_KEY=/ruta/client-key.pem\n\n")
 
-                # 3.4 Configuración LDAP
+                # 3.4 Configuración LDAP (ambos entornos)
                 f.write("# =====================\n")
-                f.write("# CONFIGURACIÓN LDAP (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
+                f.write("# CONFIGURACIÓN LDAP (ELEGIR UNA OPCIÓN: WINDOWS AD o LINUX LDAP)\n")
                 f.write("# =====================\n")
+
+                # --- Active Directory (Windows) ---
+                f.write("# --- OPCIÓN 1: Active Directory (Windows) ---\n")
+                f.write("#LDAP_SERVER_URI=ldap://dc.cmw.insmet.cu:389\n")
+                f.write("#LDAP_START_TLS=True\n")
+                f.write("#LDAP_BIND_DN=CN=ldap-reader,CN=Users,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("#LDAP_BIND_PASSWORD=tu_contraseña_ad\n")
+                f.write("#LDAP_USER_SEARCH_BASE=OU=Usuarios,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("#LDAP_GROUP_SEARCH_BASE=OU=Grupos,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("#LDAP_STAFF_GROUP=CN=Staff,OU=Grupos,DC=cmw,DC=insmet,DC=cu\n")
+                f.write("#LDAP_SUPERUSER_GROUP=CN=Admins,OU=Grupos,DC=cmw,DC=insmet,DC=cu\n\n")
+
+                # --- OpenLDAP (Linux) ---
+                f.write("# --- OPCIÓN 2: OpenLDAP (Linux) ---\n")
                 f.write("LDAP_SERVER_URI=ldap://dc.cmw.insmet.cu:389\n")
                 f.write("LDAP_START_TLS=True\n")
                 f.write("LDAP_BIND_DN=CN=linux,CN=Users,DC=cmw,DC=insmet,DC=cu\n")
@@ -128,6 +140,10 @@ def create_default_env(production=False):
                 f.write("# Opciones adicionales LDAP:\n")
                 f.write("# LDAP_USER_ATTR_MAP=first_name:givenName,last_name:sn,email:mail\n")
                 f.write("# LDAP_CACHE_TIMEOUT=3600\n")
+
+                f.write("# 💡 Comenta la configuración que NO vayas a usar.\n")
+                f.write("# Solo una debe estar activa para evitar conflictos.\n\n")
+
             else:
                 f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
                 f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
@@ -587,60 +603,23 @@ elif 'whitenoise.middleware.WhiteNoiseMiddleware' in MIDDLEWARE:
 # Solo configurar LDAP si las variables están definidas
 if os.getenv('LDAP_SERVER_URI'):
     # Configuración básica de LDAP
-    AUTH_LDAP_SERVER_URI = os.getenv('LDAP_SERVER_URI')
-    AUTH_LDAP_START_TLS = str2bool(os.getenv('LDAP_START_TLS', 'True'))
+    LDAP_SERVER_URI = os.getenv('LDAP_SERVER_URI')
+    LDAP_START_TLS = str2bool(os.getenv('LDAP_START_TLS', 'True'))
+    LDAP_BIND_DN = os.getenv('LDAP_BIND_DN')
+    LDAP_BIND_PASSWORD = os.getenv('LDAP_BIND_PASSWORD')
+    LDAP_USER_SEARCH_BASE = os.getenv('LDAP_USER_SEARCH_BASE')
+    LDAP_GROUP_SEARCH_BASE = os.getenv('LDAP_GROUP_SEARCH_BASE')
+    LDAP_STAFF_GROUP = os.getenv('LDAP_STAFF_GROUP')
+    LDAP_SUPERUSER_GROUP = os.getenv('LDAP_SUPERUSER_GROUP')
     
-    AUTH_LDAP_GLOBAL_OPTIONS = {
-        ldap.OPT_X_TLS_REQUIRE_CERT: ldap.OPT_X_TLS_NEVER,  # Para desarrollo, en producción usa OPT_X_TLS_DEMAND
-        ldap.OPT_REFERRALS: 0,
-    }
-
-    # Credenciales para buscar usuarios
-    AUTH_LDAP_BIND_DN = os.getenv('LDAP_BIND_DN')
-    AUTH_LDAP_BIND_PASSWORD = os.getenv('LDAP_BIND_PASSWORD')
-
-    # Configuración de búsqueda de usuarios
-    AUTH_LDAP_USER_SEARCH = LDAPSearch(
-        os.getenv('LDAP_USER_SEARCH_BASE'),
-        ldap.SCOPE_SUBTREE,
-        "(sAMAccountName=%(user)s)"
-    )
-
-    # Configuración para mapear atributos LDAP a campos de usuario Django
-    AUTH_LDAP_USER_ATTR_MAP = {
-        "first_name": "givenName",
-        "last_name": "sn",
-        "email": "mail"
-    }
-
-    # Configuración de grupos (opcional)
-    AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
-        os.getenv('LDAP_GROUP_SEARCH_BASE'),
-        ldap.SCOPE_SUBTREE,
-        "(objectClass=groupOfNames)"
-    )
-    AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr="cn")
-
-    # Qué hacer cuando un usuario se autentica por primera vez
-    AUTH_LDAP_USER_FLAGS_BY_GROUP = {
-        "is_staff": os.getenv('LDAP_STAFF_GROUP'),
-        "is_superuser": os.getenv('LDAP_SUPERUSER_GROUP')
-    }
-
-    AUTH_LDAP_FIND_GROUP_PERMS = True
-    AUTH_LDAP_MIRROR_GROUPS = False  # Sincroniza grupos LDAP con grupos Django
-
-    # Configuración de caché (recomendado para producción)
-    AUTH_LDAP_CACHE_TIMEOUT = int(os.getenv('LDAP_CACHE_TIMEOUT', '3600'))
-
-    # Configuración de autenticación
-    AUTHENTICATION_BACKENDS = (
-        'django_auth_ldap.backend.LDAPBackend',  # Primero intenta LDAP
-        'django.contrib.auth.backends.ModelBackend',  # Luego la base de datos local
-    )
-
+    # Configurar backend de autenticación
+    AUTHENTICATION_BACKENDS = [
+        'accounts.ldap3_backend.LDAP3Backend', # Primero intenta LDAP
+        'django.contrib.auth.backends.ModelBackend', # Luego la base de datos local
+    ]
+    
     # Configuración de logging
-    logger = logging.getLogger('django_auth_ldap')
+    logger = logging.getLogger('ldap3_auth')
     logger.addHandler(logging.StreamHandler())
     logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
 
