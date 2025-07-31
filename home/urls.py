@@ -8,7 +8,6 @@ from home.views.comentarios.nota_meteorologica.views import \
     WeatherNoteDetailView
 from home.views.comentarios.tiempo.views import WeatherCommentaryDetailView
 from home.views.home.views import IndexView
-from home.views.mapas.views import *
 from home.views.satelites.views import ProxyImageView, SateliteView
 from home.views.servicios.comerciales.views import CommercialServicesListView
 from home.views.servicios.publicos.views import PublicServicesListView
@@ -29,13 +28,8 @@ urlpatterns = [
     path('aviso/ciclon_tropical/', TropicalCycloneListView.as_view(), name="ciclon_tropical"),
     path('aviso/tormenta/', StormListView.as_view(), name="tormenta"),
     path('aviso/radar/', RadarWarningListView.as_view(), name="radar"),
-    # Mapas
-    path('mapa/niveles/', MapaNivelView.as_view(), name="niveles"),
-    path('mapa/sinoptico/', MapaSinopticoView.as_view(), name="sinoptico"),
-    path('mapa/sinoptico_atlantico/', MapaSinopticoAtlanticoView.as_view(), name="sinoptico_atlantico"),
-    path('mapa/tri_horario/', MapaTriHorarioView.as_view(), name="tri_horario"),
-    path('mapa/tiempo/', MapaTvView.as_view(), name="tiempo"),
-    path('mapa/viento/', MapaVientoView.as_view(), name="viento"),
+    # Modelos
+
     # Servicios Públicos
     path('servicios/publicos/', PublicServicesListView.as_view(), name='servicios_publicos'),
      # Servicios Comerciales
