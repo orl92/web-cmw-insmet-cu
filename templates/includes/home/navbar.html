@@ -379,7 +379,7 @@
                         </div>
                     </li>
                     <!-- Modelos -->
-                    <li class="nav-item dropdown {% if 'mapas' in parent %}active{% endif %}">
+                    <li class="nav-item dropdown {% if 'modelos' in parent %}active{% endif %}">
                         <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                             <span class="nav-link-icon d-md-none d-lg-inline-block">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-world"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M3.6 9h16.8" /><path d="M3.6 15h16.8" /><path d="M11.5 3a17 17 0 0 0 0 18" /><path d="M12.5 3a17 17 0 0 1 0 18" /></svg>
@@ -387,17 +387,17 @@
                             <span class="nav-link-title">Modelos</span>
                         </a>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item {% if 'mapas' in segment %}active{% endif %}"
-                               href="#" rel="noopener">
+                            <a class="dropdown-item {% if 'maps' in segment %}active{% endif %}"
+                               href="{% url 'maps' %}" rel="noopener">
                                 Mapas
                             </a>
-                            <a class="dropdown-item {% if 'sondeo' in segment %}active{% endif %}"
-                               href="#" rel="noopener">
-                                Sondeo (Skew-T)
-                            </a>
-                            <a class="dropdown-item {% if 'meteograma' in segment %}active{% endif %}"
-                               href="#" rel="noopener">
+                            <a class="dropdown-item {% if 'meteogram' in segment %}active{% endif %}"
+                               href="{% url 'meteogram' %}" rel="noopener">
                                 Meteograma
+                            </a>
+                            <a class="dropdown-item {% if 'sounding' in segment %}active{% endif %}"
+                               href="{% url 'sounding' %}" rel="noopener">
+                                Sondeo (Skew-T)
                             </a>
                         </div>
                     </li>
