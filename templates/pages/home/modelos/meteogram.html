@@ -1,0 +1,125 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <style>
+        #meteogram-container {
+            min-height: 500px;
+        }
+
+        .highcharts-figure {
+            margin: 0;
+        }
+
+        .highcharts-description {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+
+        /* Estilos para el formulario */
+        .form-row-aligned {
+            align-items: flex-end; /* Alinea todos los elementos por la parte inferior */
+        }
+
+        .form-field {
+            margin-bottom: 1rem;
+        }
+
+        .form-button-wrapper {
+            display: flex;
+            height: 100%;
+            align-items: flex-end;
+            padding-bottom: 1rem; /* Igual al margin-bottom de los campos */
+        }
+
+        /* Ajuste para pantallas pequeñas */
+        @media (max-width: 768px) {
+            .form-row-aligned {
+                align-items: stretch;
+            }
+
+            .form-button-wrapper {
+                padding-bottom: 0;
+                align-items: center;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+  <div class="col-12">
+      <div class="card mb-4">
+          
+          <div class="card-body">
+              <form id="meteogram-form" method="post">
+                  {% csrf_token %}
+                  <div class="row form-row-aligned">
+                      <!-- Campo Fecha y Hora -->
+                      <div class="col-md-3 form-field">
+                          <label for="id_datetime_init" class="form-label">Fecha y Hora</label>
+                          <input type="text" class="form-control" id="id_datetime_init" name="datetime_init"
+                                  required>
+                          <small class="text-muted">Formato: YYYYMMDDHH</small>
+                      </div>
+
+                      <!-- Campo Latitud -->
+                      <div class="col-md-3 form-field">
+                          <label for="id_lat" class="form-label">Latitud</label>
+                          <input type="number" class="form-control" id="id_lat" name="lat" step="0.001" required>
+                      </div>
+
+                      <!-- Campo Longitud -->
+                      <div class="col-md-3 form-field">
+                          <label for="id_long" class="form-label">Longitud</label>
+                          <input type="number" class="form-control" id="id_long" name="long" step="0.001"
+                                  required>
+                      </div>
+
+                      <!-- Botón de enviar -->
+                      <div class="col-md-3">
+                          <div class="form-button-wrapper">
+                              <button type="submit" class="btn btn-primary w-100" id="submit-btn">
+                                  <i class="fas fa-chart-bar me-2"></i> Generar
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+                  <div id="form-feedback" class="mt-2"></div>
+              </form>
+          </div>
+      </div>
+  </div>
+
+  <div class="col-12">
+      <div class="card">
+          <div class="card-header">
+              <h5 class="card-title">Meteograma</h5>
+          </div>
+          <div class="card-body">
+              <div class="plot-container">
+                  <div id="loading" class="loading-overlay">
+                      <div class="spinner-border text-primary" role="status"></div>
+                      <p class="mt-2">Cargando datos meteorológicos...</p>
+                  </div>
+                  <div id="container" class="empty-plot-message">
+                      <i class="fas fa-chart-line fa-2x mb-2"></i>
+                      <p>Configure los parámetros y genere el meteograma</p>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'dist/libs/highcharts/highcharts.js' %}"></script>
+    <script src="{% static 'dist/libs/highcharts/modules/datagrouping.js' %}"></script>
+    <script src="{% static 'dist/libs/highcharts/modules/windbarb.js' %}"></script>
+    <script src="{% static 'dist/libs/highcharts/modules/pattern-fill.js' %}"></script>
+    <script src="{% static 'dist/libs/highcharts/modules/data.js' %}"></script>
+    <script src="{% static 'dist/libs/highcharts/modules/exporting.js' %}"></script>
+    <script src="{% static 'dist/libs/highcharts/modules/accessibility.js' %}"></script>
+    <script src="{% static 'dist/js/meteogram.js' %}"></script>
+    <script src="{% static 'dist/js/meteogram-form.js' %}"></script>
+{% endblock %}

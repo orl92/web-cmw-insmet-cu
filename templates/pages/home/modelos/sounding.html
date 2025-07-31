@@ -1,0 +1,75 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+
+{% block content %}
+  <div class="col-md-12">
+      <h2 class="mb-4">Sondeo Atmosférico (Skew-T)</h2>
+
+      <div class="card mb-4">
+          <div class="card-header">
+              <h5>Parámetros del Sondeo</h5>
+          </div>
+          <div class="card-body">
+              <form id="sounding-form" method="post">
+                  {% csrf_token %}
+                  <div class="row g-3">
+                      <div class="col-md-3">
+                          {{ form.datetime_init.label_tag }}
+                          {{ form.datetime_init }}
+                          <small class="form-text text-muted">{{ form.datetime_init.help_text }}</small>
+                      </div>
+                      <div class="col-md-3">
+                          {{ form.lat.label_tag }}
+                          {{ form.lat }}
+                      </div>
+                      <div class="col-md-3">
+                          {{ form.long.label_tag }}
+                          {{ form.long }}
+                      </div>
+                      <div class="col-md-3">
+                          {{ form.t_index.label_tag }}
+                          {{ form.t_index }}
+                          <small class="form-text text-muted">{{ form.t_index.help_text }}</small>
+                      </div>
+                  </div>
+                  <div class="mt-3 text-center">
+                      <button type="submit" class="btn btn-primary btn-lg">
+                          <i class="fas fa-chart-line me-2"></i> Generar Sondeo
+                      </button>
+                  </div>
+              </form>
+          </div>
+      </div>
+
+      <div class="card">
+          <div class="card-header">
+              <h5 id="plot-title">Resultado del Sondeo</h5>
+          </div>
+          <div class="card-body">
+              <div class="plot-container">
+                  <div class="loading-overlay" id="loading">
+                      <div class="spinner-border text-primary" role="status">
+                          <span class="visually-hidden">Cargando...</span>
+                      </div>
+                      <p class="mt-3">Generando gráfico...</p>
+                  </div>
+                  <img id="sounding-plot" src="" alt="Gráfico de sondeo" class="img-fluid d-none">
+              </div>
+          </div>
+          <div class="card-footer">
+              <div class="row">
+                  <div class="col-md-6">
+                      <span id="datetime-info" class="param-info">Seleccione parámetros y haga clic en "Generar Sondeo"</span>
+                  </div>
+                  <div class="col-md-6 text-end">
+                      <span id="params-info" class="param-info"></span>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'dist/js/sounding.js' %}"></script>
+{% endblock extrajs %}
