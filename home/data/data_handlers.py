@@ -11,7 +11,7 @@ def fetch_meteo_data(request):
         var_name = request.GET.get('var_name')
 
         # URL de la API externa
-        api_url = f"http://localhost:8001/api/data/?datetime_init={datetime_init}&var_name={var_name}"
+        api_url = f"http://127.0.0.1:8001/api/data/?datetime_init={datetime_init}&var_name={var_name}"
 
         try:
             response = requests.get(api_url, timeout=10)
