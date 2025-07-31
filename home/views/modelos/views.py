@@ -79,7 +79,7 @@ class MeteogramView(TemplateView):
                 'lat': form.cleaned_data['lat'],
                 'long': form.cleaned_data['long']
             }
-            api_url = f"http://127.0.0.1:8001/api/meteogram/?{urlencode(params)}"
+            api_url = f"http://localhost:8001/api/meteogram/?{urlencode(params)}"
 
             # Hacer la solicitud a la API externa
             response = requests.get(api_url)
@@ -134,7 +134,7 @@ class SoundingView(TemplateView):
                 'long': form.cleaned_data['long'],
                 't_index': form.cleaned_data['t_index']
             }
-            api_url = f"http://localhost:8000/api/sounding/?{urlencode(params)}"
+            api_url = f"http://localhost:8001/api/sounding/?{urlencode(params)}"
 
             # Obtener datos del sondeo
             response = requests.get(api_url, timeout=10)
