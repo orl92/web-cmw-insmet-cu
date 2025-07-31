@@ -378,38 +378,26 @@
                             </a>
                         </div>
                     </li>
-                    <!-- Mapas -->
+                    <!-- Modelos -->
                     <li class="nav-item dropdown {% if 'mapas' in parent %}active{% endif %}">
                         <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                             <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-map-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v7.5"/><path d="M9 4v13"/><path d="M15 7v5.5"/><path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879z"/><path d="M19 18v.01"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-world"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M3.6 9h16.8" /><path d="M3.6 15h16.8" /><path d="M11.5 3a17 17 0 0 0 0 18" /><path d="M12.5 3a17 17 0 0 1 0 18" /></svg>
                             </span>
-                            <span class="nav-link-title">Mapas</span>
+                            <span class="nav-link-title">Modelos</span>
                         </a>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item {% if 'niveles' in segment %}active{% endif %}"
-                               href="{% url 'niveles' %}" rel="noopener">
-                                Niveles
+                            <a class="dropdown-item {% if 'mapas' in segment %}active{% endif %}"
+                               href="#" rel="noopener">
+                                Mapas
                             </a>
-                            <a class="dropdown-item {% if 'sinoptico' in segment %}active{% endif %}"
-                               href="{% url 'sinoptico' %}" rel="noopener">
-                                Sinoptico
+                            <a class="dropdown-item {% if 'sondeo' in segment %}active{% endif %}"
+                               href="#" rel="noopener">
+                                Sondeo (Skew-T)
                             </a>
-                            <a class="dropdown-item {% if 's_atlantico' in segment %}active{% endif %}"
-                               href="{% url 'sinoptico_atlantico' %}" rel="noopener">
-                                Sinoptico Atlántico
-                            </a>
-                            <a class="dropdown-item {% if 'tri_horario' in segment %}active{% endif %}"
-                               href="{% url 'tri_horario' %}" rel="noopener">
-                                Tri Horario
-                            </a>
-                            <a class="dropdown-item {% if 'tiempo' in segment %}active{% endif %}" href="{% url 'tiempo' %}"
-                               rel="noopener">
-                                Tiempo
-                            </a>
-                            <a class="dropdown-item {% if 'viento' in segment %}active{% endif %}"
-                               href="{% url 'viento' %}" rel="noopener">
-                                Viento
+                            <a class="dropdown-item {% if 'meteograma' in segment %}active{% endif %}"
+                               href="#" rel="noopener">
+                                Meteograma
                             </a>
                         </div>
                     </li>
