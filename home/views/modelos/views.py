@@ -52,9 +52,9 @@ class MeteogramView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Visualización Meteorológica'
-        context['parent'] = 'models'
-        context['segment'] = 'maps'
+        context['title'] = 'Meteorama'
+        context['parent'] = 'modelos'
+        context['segment'] = 'meteogram'
         initial = {
             'datetime_init': self.request.GET.get('datetime_init', '2025071806'),
             'lat': float(self.request.GET.get('lat', 20.715)),
@@ -109,6 +109,9 @@ class SoundingView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['title'] = 'Sondeos'
+        context['parent'] = 'modelos'
+        context['segment'] = 'sounding'
         initial = {
             'datetime_init': self.request.GET.get('datetime_init', '2025071806'),
             'lat': float(self.request.GET.get('lat', 21.391)),

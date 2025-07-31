@@ -1,7 +1,7 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
 
-{% block extra_css %}
+{% block extrahead %}
     <style>
         #meteogram-container {
             min-height: 500px;
@@ -45,32 +45,40 @@
             }
         }
     </style>
-{% endblock %}
+{% endblock extrahead %}
 
 {% block content %}
   <div class="col-12">
       <div class="card mb-4">
-          
           <div class="card-body">
               <form id="meteogram-form" method="post">
-                  {% csrf_token %}
-                  <div class="row form-row-aligned">
-                      <!-- Campo Fecha y Hora -->
-                      <div class="col-md-3 form-field">
-                          <label for="id_datetime_init" class="form-label">Fecha y Hora</label>
-                          <input type="text" class="form-control" id="id_datetime_init" name="datetime_init"
-                                  required>
-                          <small class="text-muted">Formato: YYYYMMDDHH</small>
-                      </div>
+                    {% csrf_token %}
+                    <div class="row form-row-aligned">
+                        <!-- Campo Fecha y Hora -->
+                        <div class="col-md-3 form-field">
+                            <label for="id_datetime_init" class="form-label">Fecha y Hora</label>
+                            <input type="text" class="form-control" id="id_datetime_init" name="datetime_init" required>
+                        </div>
+
+                    <!-- Hora -->
+                    <div class="col-md-2 form-field">
+                        <label for="hour-select" class="form-label required">Hora</label>
+                        <select class="form-select" id="hour-select" required>
+                            <option value="00">00:00</option>
+                            <option value="06">06:00</option>
+                            <option value="12" selected>12:00</option>
+                            <option value="18">18:00</option>
+                        </select>
+                    </div>
 
                       <!-- Campo Latitud -->
-                      <div class="col-md-3 form-field">
+                      <div class="col-md-2 form-field">
                           <label for="id_lat" class="form-label">Latitud</label>
                           <input type="number" class="form-control" id="id_lat" name="lat" step="0.001" required>
                       </div>
 
                       <!-- Campo Longitud -->
-                      <div class="col-md-3 form-field">
+                      <div class="col-md-2 form-field">
                           <label for="id_long" class="form-label">Longitud</label>
                           <input type="number" class="form-control" id="id_long" name="long" step="0.001"
                                   required>
