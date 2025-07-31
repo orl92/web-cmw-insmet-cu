@@ -279,6 +279,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar Litepicker primero
     initLitepicker();
 
+    // Función para actualizar el campo datetime_init
+    function updateDatetimeInit() {
+        // Esta función ya no es necesaria si no tenemos un campo oculto
+    }
+
     // Actualizar cuando cambia la fecha o la hora
     document.getElementById('datepicker')?.addEventListener('change', updateDatetimeInit);
     document.getElementById('hour-select')?.addEventListener('change', updateDatetimeInit);
