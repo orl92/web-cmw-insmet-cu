@@ -9,22 +9,22 @@
                   {% csrf_token %}
                     <div class="row form-row-aligned">
                         <div class="col-md-3 form-field">
-                            {{ form.datetime_init.label_tag }}
+                            <label for="{{ form.datetime_init.id_for_label }}" class="form-label">Fecha y Hora</label>
                             {{ form.datetime_init }}
                         </div>
 
                         <div class="col-md-2 form-field">
-                            {{ form.lat.label_tag }}
+                            <label for="{{ form.lat.id_for_label }}" class="form-label">Latitud</label>
                             {{ form.lat }}
                         </div>
 
                         <div class="col-md-2 form-field">
-                            {{ form.long.label_tag }}
+                            <label for="{{ form.long.id_for_label }}" class="form-label">Longitud</label>
                             {{ form.long }}
                         </div>
 
                         <div class="col-md-2 form-field">
-                            {{ form.t_index.label_tag }}
+                            <label for="{{ form.t_index.id_for_label }}" class="form-label">Índice Térmico</label>
                             {{ form.t_index }}
                         </div>
 
