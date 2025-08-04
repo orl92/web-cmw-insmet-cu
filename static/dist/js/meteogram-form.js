@@ -1,7 +1,7 @@
 class MeteogramFormHandler {
     constructor() {
         this.meteogramInstance = null;
-        this.apiBaseUrl = 'http://127.0.0.1:8000'; // API en puerto 8000
+        this.apiBaseUrl = 'https://modelo.cmw.insmet.cu'; // API en puerto 8000, http://127.0.0.1:8000
         this.initElements();
         this.bindEvents();
         this.loadInitialData();
@@ -88,6 +88,7 @@ class MeteogramFormHandler {
 
         const response = await fetch(url, {
             method: 'GET',
+            // mode: 'no-cors',
             headers: {
                 'Accept': 'application/json'
             }
