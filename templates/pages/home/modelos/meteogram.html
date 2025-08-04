@@ -48,76 +48,99 @@
 {% endblock extrahead %}
 
 {% block content %}
-  <div class="col-12">
-      <div class="card mb-4">
-          <div class="card-body">
-              <form id="meteogram-form" method="post">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="meteogram-form" method="post">
                     {% csrf_token %}
                     <div class="row form-row-aligned">
-                        <!-- Campo Fecha y Hora -->
-                        <div class="col-md-3 form-field">
-                            <label for="id_datetime_init" class="form-label">Fecha y Hora</label>
-                            <input type="text" class="form-control" id="id_datetime_init" name="datetime_init" required>
+                        <!-- Campos Fecha y Hora -->
+                        <div class="col-md-4">
+                            <div class="row g-2">
+                                <input type="hidden" name="datetime_init" id="datetime-init">
+                                <!-- Fecha -->
+                                <div class="col-12">
+                                    <label class="form-label required">Fecha</label>
+                                    <div class="input-icon">
+                                        <input class="form-control" placeholder="Seleccione una fecha" id="datepicker"
+                                               value="{{ initial_date|default:'' }}">
+                                        <span class="input-icon-addon">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                       stroke-linejoin="round" class="icon icon-1">
+                                      <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                      <path d="M16 3v4"></path>
+                                      <path d="M8 3v4"></path>
+                                      <path d="M4 11h16"></path>
+                                      <path d="M11 15h1"></path>
+                                      <path d="M12 15v3"></path>
+                                  </svg>
+                              </span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                    <!-- Hora -->
-                    <div class="col-md-2 form-field">
-                        <label for="hour-select" class="form-label required">Hora</label>
-                        <select class="form-select" id="hour-select" required>
-                            <option value="00">00:00</option>
-                            <option value="06">06:00</option>
-                            <option value="12" selected>12:00</option>
-                            <option value="18">18:00</option>
-                        </select>
+                        <div class="col-md-2">
+                            <!-- Hora -->
+                            <div class="mb-0">
+                                <label for="hour-select" class="form-label required">Hora</label>
+                                <select class="form-select" id="hour-select" required>
+                                    <option value="00" selected>00:00</option>
+                                    <option value="06">06:00</option>
+                                    <option value="12">12:00</option>
+                                    <option value="18">18:00</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Campo Latitud -->
+                        <div class="col-md-2 form-field">
+                            <label for="id_lat" class="form-label">Latitud</label>
+                            <input type="number" class="form-control" id="id_lat" name="lat" step="0.001" required>
+                        </div>
+
+                        <!-- Campo Longitud -->
+                        <div class="col-md-2 form-field">
+                            <label for="id_long" class="form-label">Longitud</label>
+                            <input type="number" class="form-control" id="id_long" name="long" step="0.001"
+                                   required>
+                        </div>
+
+                        <!-- Botón de enviar -->
+                        <div class="col-md-3">
+                            <div class="form-button-wrapper">
+                                <button type="submit" class="btn btn-primary w-100" id="submit-btn">
+                                    Generar
+                                </button>
+                            </div>
+                        </div>
                     </div>
+                    <div id="form-feedback" class="mt-2"></div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-                      <!-- Campo Latitud -->
-                      <div class="col-md-2 form-field">
-                          <label for="id_lat" class="form-label">Latitud</label>
-                          <input type="number" class="form-control" id="id_lat" name="lat" step="0.001" required>
-                      </div>
-
-                      <!-- Campo Longitud -->
-                      <div class="col-md-2 form-field">
-                          <label for="id_long" class="form-label">Longitud</label>
-                          <input type="number" class="form-control" id="id_long" name="long" step="0.001"
-                                  required>
-                      </div>
-
-                      <!-- Botón de enviar -->
-                      <div class="col-md-3">
-                          <div class="form-button-wrapper">
-                              <button type="submit" class="btn btn-primary w-100" id="submit-btn">
-                                  Generar
-                              </button>
-                          </div>
-                      </div>
-                  </div>
-                  <div id="form-feedback" class="mt-2"></div>
-              </form>
-          </div>
-      </div>
-  </div>
-
-  <div class="col-12">
-      <div class="card">
-          <div class="card-header">
-              <h5 class="card-title">Meteograma</h5>
-          </div>
-          <div class="card-body">
-              <div class="plot-container">
-                  <div id="loading" class="loading-overlay">
-                      <div class="spinner-border text-primary" role="status"></div>
-                      <p class="mt-2">Cargando datos meteorológicos...</p>
-                  </div>
-                  <div id="container" class="empty-plot-message">
-                      <i class="fas fa-chart-line fa-2x mb-2"></i>
-                      <p>Configure los parámetros y genere el meteograma</p>
-                  </div>
-              </div>
-          </div>
-      </div>
-  </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Meteograma</h5>
+            </div>
+            <div class="card-body">
+                <div class="plot-container">
+                    <div id="loading" class="loading-overlay">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2">Cargando datos meteorológicos...</p>
+                    </div>
+                    <div id="container" class="empty-plot-message">
+                        <i class="fas fa-chart-line fa-2x mb-2"></i>
+                        <p>Configure los parámetros y genere el meteograma</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block extrajs %}
@@ -128,6 +151,7 @@
     <script src="{% static 'dist/libs/highcharts/modules/data.js' %}"></script>
     <script src="{% static 'dist/libs/highcharts/modules/exporting.js' %}"></script>
     <script src="{% static 'dist/libs/highcharts/modules/accessibility.js' %}"></script>
+    <script src="{% static 'dist/libs/litepicker/dist/litepicker.js' %}"></script>
     <script src="{% static 'dist/js/meteogram.js' %}"></script>
     <script src="{% static 'dist/js/meteogram-form.js' %}"></script>
 {% endblock extrajs %}

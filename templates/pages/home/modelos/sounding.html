@@ -117,9 +117,44 @@
                 <form id="sounding-form" method="post" action="{% url 'sounding' %}">
                     {% csrf_token %}
                     <div class="row form-row-aligned">
-                        <div class="col-md-3 form-field">
-                            <label for="{{ form.datetime_init.id_for_label }}" class="form-label">Fecha y Hora</label>
-                            {{ form.datetime_init }}
+                        <!-- Campos Fecha y Hora -->
+                        <div class="col-md-4">
+                            <div class="row g-2">
+                                <input type="hidden" name="datetime_init" id="datetime-init">
+                                <!-- Fecha -->
+                                <div class="col-12">
+                                    <label class="form-label required">Fecha</label>
+                                    <div class="input-icon">
+                                        <input class="form-control" placeholder="Seleccione una fecha" id="datepicker"
+                                               value="{{ initial_date|default:'' }}">
+                                        <span class="input-icon-addon">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                       stroke-linejoin="round" class="icon icon-1">
+                                      <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                      <path d="M16 3v4"></path>
+                                      <path d="M8 3v4"></path>
+                                      <path d="M4 11h16"></path>
+                                      <path d="M11 15h1"></path>
+                                      <path d="M12 15v3"></path>
+                                  </svg>
+                              </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <!-- Hora -->
+                            <div class="mb-0">
+                                <label for="hour-select" class="form-label required">Hora</label>
+                                <select class="form-select" id="hour-select" required>
+                                    <option value="00" selected>00:00</option>
+                                    <option value="06">06:00</option>
+                                    <option value="12">12:00</option>
+                                    <option value="18">18:00</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="col-md-2 form-field">
@@ -177,5 +212,6 @@
 {% endblock %}
 
 {% block extrajs %}
+    <script src="{% static 'dist/libs/litepicker/dist/litepicker.js' %}"></script>
     <script src="{% static 'dist/js/sounding.js' %}"></script>
 {% endblock extrajs %}

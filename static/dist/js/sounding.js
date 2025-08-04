@@ -9,6 +9,48 @@ class SoundingPlotter {
 
         this.initEvents();
         this.checkUrlParams();
+
+        this.initLitepicker();
+        this.setupDatetimeHandlers();
+    }
+
+    initLitepicker() {
+        const datepickerElement = document.getElementById('datepicker');
+        if (datepickerElement) {
+            new Litepicker({
+                element: datepickerElement,
+                format: 'YYYY-MM-DD',
+                lang: 'es-ES',
+                resetButton: false,
+                buttonText: {
+                    previousMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M15 6l-6 6l6 6" /></svg>`,
+                    nextMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M9 6l6 6l-6 6" /></svg>`
+                }
+            });
+        }
+    }
+
+    setupDatetimeHandlers() {
+        document.getElementById('datepicker')?.addEventListener('change', () => this.updateDatetimeInit());
+        document.getElementById('hour-select')?.addEventListener('change', () => this.updateDatetimeInit());
+    }
+
+    // updateDatetimeInit() {
+    //     const dateValue = document.getElementById('datepicker').value;
+    //     const hourValue = document.getElementById('hour-select').value;
+    //     const formattedDate = dateValue.replace(/-/g, '');
+    //     this.form.find('[name="datetime_init"]').val(formattedDate + hourValue);
+    // }
+
+    updateDatetimeInit() {
+        const dateValue = document.getElementById('datepicker').value; // Formato YYYY-MM-DD
+        const hourValue = document.getElementById('hour-select').value; // HH
+
+        // Convertir a YYYYMMDDHH
+        const formattedDate = dateValue.replace(/-/g, '') + hourValue;
+        this.form.find('[name="datetime_init"]').val(formattedDate);
+
+        console.log('datetime_init enviado:', formattedDate); // Para depuración
     }
 
     initEvents() {
@@ -21,13 +63,36 @@ class SoundingPlotter {
         }
     }
 
+    // loadFromUrlParams() {
+    //     const params = new URLSearchParams(window.location.search);
+    //     this.form.find('[name="datetime_init"]').val(params.get('datetime_init') || '');
+    //     this.form.find('[name="lat"]').val(params.get('lat') || '');
+    //     this.form.find('[name="long"]').val(params.get('long') || '');
+    //     this.form.find('[name="t_index"]').val(params.get('t_index') || '0');
+    //
+    //     this.submitForm();
+    // }
+
     loadFromUrlParams() {
         const params = new URLSearchParams(window.location.search);
-        this.form.find('[name="datetime_init"]').val(params.get('datetime_init') || '');
+        const datetimeInit = params.get('datetime_init') || '';
+
+        if (datetimeInit && datetimeInit.length === 10) {
+            const datePart = datetimeInit.substring(0, 8);
+            const formattedDate = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
+
+            document.getElementById('datepicker').value = formattedDate;
+            document.getElementById('hour-select').value = datetimeInit.substring(8, 10);
+        } else {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('datepicker').value = today;
+            document.getElementById('hour-select').value = '12';
+        }
+
         this.form.find('[name="lat"]').val(params.get('lat') || '');
         this.form.find('[name="long"]').val(params.get('long') || '');
         this.form.find('[name="t_index"]').val(params.get('t_index') || '0');
-
+        this.updateDatetimeInit();
         this.submitForm();
     }
 
@@ -37,6 +102,12 @@ class SoundingPlotter {
     }
 
     submitForm() {
+        const datetimeInit = this.form.find('[name="datetime_init"]').val();
+        if (!/^\d{10}$/.test(datetimeInit)) {
+            this.showError('Formato de fecha/hora inválido');
+            return;
+        }
+
         this.showLoading();
 
         $.ajax({
@@ -135,6 +206,6 @@ class SoundingPlotter {
 }
 
 // Inicialización cuando el DOM está listo
-$(document).ready(function() {
+$(document).ready(function () {
     new SoundingPlotter();
 });

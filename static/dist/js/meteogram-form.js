@@ -5,6 +5,32 @@ class MeteogramFormHandler {
         this.initElements();
         this.bindEvents();
         this.loadInitialData();
+        initLitepicker();
+        this.setupDatetimeHandlers();
+    }
+
+    setupDatetimeHandlers() {
+        // Actualizar datetime_init cuando cambian fecha u hora
+        document.getElementById('datepicker')?.addEventListener('change', () => this.updateDatetimeInit());
+        document.getElementById('hour-select')?.addEventListener('change', () => this.updateDatetimeInit());
+    }
+
+    // updateDatetimeInit() {
+    //     const dateValue = document.getElementById('datepicker').value;
+    //     const hourValue = document.getElementById('hour-select').value;
+    //     const formattedDate = dateValue.replace(/-/g, '');
+    //     document.getElementById('datetime-init').value = formattedDate + hourValue;
+    // }
+
+    updateDatetimeInit() {
+        const dateValue = document.getElementById('datepicker').value; // Formato YYYY-MM-DD
+        const hourValue = document.getElementById('hour-select').value; // HH
+
+        // Convertir a YYYYMMDDHH
+        const formattedDate = dateValue.replace(/-/g, '') + hourValue;
+        document.getElementById('datetime-init').value = formattedDate;
+
+        console.log('datetime_init enviado:', formattedDate); // Para depuración
     }
 
     initElements() {
@@ -19,23 +45,56 @@ class MeteogramFormHandler {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
     }
 
+    // loadInitialData() {
+    //     const params = new URLSearchParams(window.location.search);
+    //     const initialData = {
+    //         datetime_init: params.get('datetime_init') || '2025071806',
+    //         lat: parseFloat(params.get('lat')) || 20.715,
+    //         long: parseFloat(params.get('long')) || -77.993
+    //     };
+    //
+    //     this.form.querySelector('[name="datetime_init"]').value = initialData.datetime_init;
+    //     this.form.querySelector('[name="lat"]').value = initialData.lat;
+    //     this.form.querySelector('[name="long"]').value = initialData.long;
+    //
+    //     this.handleSubmit(new Event('submit'), true);
+    // }
+
     loadInitialData() {
         const params = new URLSearchParams(window.location.search);
+        let datetimeInit = params.get('datetime_init') || '';
         const initialData = {
-            datetime_init: params.get('datetime_init') || '2025071806',
             lat: parseFloat(params.get('lat')) || 20.715,
             long: parseFloat(params.get('long')) || -77.993
         };
 
-        this.form.querySelector('[name="datetime_init"]').value = initialData.datetime_init;
+        if (datetimeInit && datetimeInit.length === 10) {
+            const datePart = datetimeInit.substring(0, 8);
+            const formattedDate = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
+
+            document.getElementById('datepicker').value = formattedDate;
+            document.getElementById('hour-select').value = datetimeInit.substring(8, 10);
+        } else {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('datepicker').value = today;
+            document.getElementById('hour-select').value = '12';
+        }
+
         this.form.querySelector('[name="lat"]').value = initialData.lat;
         this.form.querySelector('[name="long"]').value = initialData.long;
-
-        this.handleSubmit(new Event('submit'), true);
+        this.updateDatetimeInit();
     }
 
     async handleSubmit(e, isInitialLoad = false) {
         if (!isInitialLoad) e.preventDefault();
+
+        // Verificar formato de datetime_init
+        const datetimeInit = document.getElementById('datetime-init').value;
+        if (!/^\d{10}$/.test(datetimeInit)) {
+            this.showFeedback('Formato de fecha/hora inválido', 'danger');
+            return;
+        }
+
         this.setLoadingState(true);
         this.clearFeedback();
         this.clearChart();
