@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import numpy as np
 
 from home.forms import MeteoDataForm, SoundingForm
@@ -56,7 +58,7 @@ class MeteogramView(TemplateView):
         context['parent'] = 'modelos'
         context['segment'] = 'meteogram'
         initial = {
-            'datetime_init': self.request.GET.get('datetime_init', '2025071806'),
+            'datetime_init': self.request.GET.get('datetime_init', f'{datetime.now().strftime("%Y%m%d")}00'),
             'lat': float(self.request.GET.get('lat', 20.715)),
             'long': float(self.request.GET.get('long', -77.993))
         }
@@ -79,7 +81,7 @@ class MeteogramView(TemplateView):
                 'lat': form.cleaned_data['lat'],
                 'long': form.cleaned_data['long']
             }
-            api_url = f"http://127.0.0.1:8001/api/meteogram/?{urlencode(params)}"
+            api_url = f"https://modelo.cmw.insmet.cu/api/meteogram/?{urlencode(params)}"
 
             # Hacer la solicitud a la API externa
             response = requests.get(api_url)
@@ -113,7 +115,7 @@ class SoundingView(TemplateView):
         context['parent'] = 'modelos'
         context['segment'] = 'sounding'
         initial = {
-            'datetime_init': self.request.GET.get('datetime_init', '2025071806'),
+            'datetime_init': self.request.GET.get('datetime_init', f'{datetime.now().strftime("%Y%m%d")}00'),
             'lat': float(self.request.GET.get('lat', 21.391)),
             'long': float(self.request.GET.get('long', -77.908)),
             't_index': int(self.request.GET.get('t_index', 1))
@@ -137,10 +139,10 @@ class SoundingView(TemplateView):
                 'long': form.cleaned_data['long'],
                 't_index': form.cleaned_data['t_index']
             }
-            api_url = f"http://127.0.0.1:8001/api/sounding/?{urlencode(params)}"
+            api_url = f"https://modelo.cmw.insmet.cu/api/sounding/?{urlencode(params)}"
 
             # Obtener datos del sondeo
-            response = requests.get(api_url, timeout=10)
+            response = requests.get(api_url, timeout=10, verify=False)
             response.raise_for_status()
             sounding_data = response.json()
 
@@ -151,8 +153,8 @@ class SoundingView(TemplateView):
                 'status': 'success',
                 'plot_image': img_base64,
                 'datetime': sounding_data.get('datetime'),
-                'params': params  # Opcional: devolver los parámetros usados
-            })
+                'params': params
+            }, content_type='application/json')
 
         except requests.exceptions.RequestException as e:
             return JsonResponse({

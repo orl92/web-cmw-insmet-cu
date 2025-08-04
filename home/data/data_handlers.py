@@ -14,7 +14,7 @@ def fetch_meteo_data(request):
         api_url = f"https://modelo.cmw.insmet.cu/api/data/?datetime_init={datetime_init}&var_name={var_name}"
 
         try:
-            response = requests.get(api_url, timeout=10)
+            response = requests.get(api_url, timeout=10, verify=False)
             response.raise_for_status()
             data = response.json()
 
