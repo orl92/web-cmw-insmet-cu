@@ -81,15 +81,10 @@ class MeteoPlotter {
     showRecoveryOptions(errorMessage) {
         this.loadingElement.innerHTML = `
             <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle me-2"></i>
                 <strong>Error:</strong> ${errorMessage}
                 <div class="mt-3 d-flex justify-content-center">
-                    <button class="btn btn-sm btn-primary me-2" id="retry-button">
-                        <i class="fas fa-sync-alt me-1"></i> Reintentar
-                    </button>
-                    <button class="btn btn-sm btn-secondary" id="back-button">
-                        <i class="fas fa-arrow-left me-1"></i> Volver
-                    </button>
+                    <button class="btn btn-sm btn-primary me-2" id="retry-button">Reintentar</button>
+                    <button class="btn btn-sm btn-secondary" id="back-button">Volver</button>
                 </div>
             </div>
         `;
