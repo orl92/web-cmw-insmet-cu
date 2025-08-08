@@ -5,8 +5,24 @@ class MeteogramFormHandler {
         this.initElements();
         this.bindEvents();
         this.loadInitialData();
-        initLitepicker();
+        this.initLitepicker();
         this.setupDatetimeHandlers();
+    }
+
+    initLitepicker() {
+        const datepickerElement = document.getElementById('datepicker');
+        if (datepickerElement) {
+            new Litepicker({
+                element: datepickerElement,
+                format: 'YYYY-MM-DD',
+                lang: 'es-ES',
+                resetButton: false,
+                buttonText: {
+                    previousMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M15 6l-6 6l6 6" /></svg>`,
+                    nextMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M9 6l6 6l-6 6" /></svg>`
+                }
+            });
+        }
     }
 
     setupDatetimeHandlers() {
@@ -14,13 +30,6 @@ class MeteogramFormHandler {
         document.getElementById('datepicker')?.addEventListener('change', () => this.updateDatetimeInit());
         document.getElementById('hour-select')?.addEventListener('change', () => this.updateDatetimeInit());
     }
-
-    // updateDatetimeInit() {
-    //     const dateValue = document.getElementById('datepicker').value;
-    //     const hourValue = document.getElementById('hour-select').value;
-    //     const formattedDate = dateValue.replace(/-/g, '');
-    //     document.getElementById('datetime-init').value = formattedDate + hourValue;
-    // }
 
     updateDatetimeInit() {
         const dateValue = document.getElementById('datepicker').value; // Formato YYYY-MM-DD
@@ -44,21 +53,6 @@ class MeteogramFormHandler {
     bindEvents() {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
     }
-
-    // loadInitialData() {
-    //     const params = new URLSearchParams(window.location.search);
-    //     const initialData = {
-    //         datetime_init: params.get('datetime_init') || '2025071806',
-    //         lat: parseFloat(params.get('lat')) || 20.715,
-    //         long: parseFloat(params.get('long')) || -77.993
-    //     };
-    //
-    //     this.form.querySelector('[name="datetime_init"]').value = initialData.datetime_init;
-    //     this.form.querySelector('[name="lat"]').value = initialData.lat;
-    //     this.form.querySelector('[name="long"]').value = initialData.long;
-    //
-    //     this.handleSubmit(new Event('submit'), true);
-    // }
 
     loadInitialData() {
         const params = new URLSearchParams(window.location.search);
