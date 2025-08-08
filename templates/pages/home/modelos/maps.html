@@ -2,81 +2,85 @@
 {% load static %}
 
 {% block content %}
-  <form method="post" id="data-form" class="needs-validation card" novalidate>
-      {% csrf_token %}
-      
-      <div class="card-body">
-          <!-- Fila principal con todos los campos -->
-          <div class="row g-3 align-items-end">
+<div class="col-12">
+    <div class="card mb-4">
+        <form method="post" id="data-form" class="needs-validation card" novalidate>
+            {% csrf_token %}
             
-              <!-- Campos Fecha y Hora -->
-              <div class="col-md-4">
-                  <div class="row g-2">
-                      <!-- Fecha -->
-                      <div class="col-12">
-                          <label class="form-label required">Fecha</label>
-                          <div class="input-icon">
-                              <input class="form-control" placeholder="Seleccione una fecha" id="datepicker" value="{{ initial_date|default:'' }}">
-                              <span class="input-icon-addon">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                                      <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
-                                      <path d="M16 3v4"></path>
-                                      <path d="M8 3v4"></path>
-                                      <path d="M4 11h16"></path>
-                                      <path d="M11 15h1"></path>
-                                      <path d="M12 15v3"></path>
-                                  </svg>
-                              </span>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-              
-              <div class="col-md-2">
-                  <!-- Hora -->
-                  <div class="mb-0">
-                      <label for="hour-select" class="form-label required">Hora</label>
-                      <select class="form-select" id="hour-select" required>
-                          <option value="00" selected>00:00</option>
-                          <option value="06">06:00</option>
-                          <option value="12">12:00</option>
-                          <option value="18">18:00</option>
-                      </select>
-                  </div>
-              </div>
-              
-              <!-- Variable Meteorológica -->
-              <div class="col-md-4">
-                  <div class="mb-0">
-                      <label class="form-label required" for="id_var_name">Variable Meteorológica</label>
-                      <select class="form-select" name="var_name" id="id_var_name">
-                          {% for value, text in form.var_name.field.choices %}
-                              <option value="{{ value }}" 
-                                  {% if form.var_name.value == value %}selected{% endif %}>
-                                  {{ text }}
-                              </option>
-                          {% endfor %}
-                      </select>
-                      {% if form.var_name.errors %}
-                          <div class="text-danger mt-1">
-                              {% for error in form.var_name.errors %}
-                                  <small>{{ error }}</small>
-                              {% endfor %}
-                          </div>
-                      {% endif %}
-                  </div>
-              </div>
-              
-              <!-- Botón -->
-              <div class="col-md-2">
-                  <div class="d-grid">
-                      <button type="submit" class="btn btn-primary">Generar Gráfico</button>
-                  </div>
-              </div>
-              
-          </div>
-      </div>
-  </form>
+            <div class="card-body">
+                <!-- Fila principal con todos los campos -->
+                <div class="row g-3 align-items-end">
+                    
+                    <!-- Campos Fecha y Hora -->
+                    <div class="col-md-3">
+                        <div class="row g-2">
+                            <!-- Fecha -->
+                            <div class="col-12">
+                                <label class="form-label required">Fecha</label>
+                                <div class="input-icon">
+                                    <input class="form-control" placeholder="Seleccione una fecha" id="datepicker" value="{{ initial_date|default:'' }}">
+                                    <span class="input-icon-addon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                                            <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                            <path d="M16 3v4"></path>
+                                            <path d="M8 3v4"></path>
+                                            <path d="M4 11h16"></path>
+                                            <path d="M11 15h1"></path>
+                                            <path d="M12 15v3"></path>
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <!-- Hora -->
+                        <div class="mb-0">
+                            <label for="hour-select" class="form-label required">Hora</label>
+                            <select class="form-select" id="hour-select" required>
+                                <option value="00" selected>00:00</option>
+                                <option value="06">06:00</option>
+                                <option value="12">12:00</option>
+                                <option value="18">18:00</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Variable Meteorológica -->
+                    <div class="col-md-3">
+                        <div class="mb-0">
+                            <label class="form-label required" for="id_var_name">Variable Meteorológica</label>
+                            <select class="form-select" name="var_name" id="id_var_name">
+                                {% for value, text in form.var_name.field.choices %}
+                                    <option value="{{ value }}" 
+                                        {% if form.var_name.value == value %}selected{% endif %}>
+                                        {{ text }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if form.var_name.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.var_name.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Botón -->
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Generar</button>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 
   <div id="plot-area" style="display: none;">
     <div class="card mt-4">

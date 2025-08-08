@@ -1,61 +1,15 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
 
-{% block extrahead %}
-    <style>
-        #meteogram-container {
-            min-height: 500px;
-        }
-
-        .highcharts-figure {
-            margin: 0;
-        }
-
-        .highcharts-description {
-            font-size: 0.85rem;
-            color: #6c757d;
-            margin-top: 10px;
-        }
-
-        /* Estilos para el formulario */
-        .form-row-aligned {
-            align-items: flex-end; /* Alinea todos los elementos por la parte inferior */
-        }
-
-        .form-field {
-            margin-bottom: 1rem;
-        }
-
-        .form-button-wrapper {
-            display: flex;
-            height: 100%;
-            align-items: flex-end;
-            padding-bottom: 1rem; /* Igual al margin-bottom de los campos */
-        }
-
-        /* Ajuste para pantallas pequeñas */
-        @media (max-width: 768px) {
-            .form-row-aligned {
-                align-items: stretch;
-            }
-
-            .form-button-wrapper {
-                padding-bottom: 0;
-                align-items: center;
-            }
-        }
-    </style>
-{% endblock extrahead %}
-
 {% block content %}
     <div class="col-12">
         <div class="card mb-4">
             <div class="card-body">
                 <form id="meteogram-form" method="post">
                     {% csrf_token %}
-                    <div class="row form-row-aligned">
+                    <div class="row g-3 align-items-end">
                         <!-- Campos Fecha y Hora -->
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="row g-2">
                                 <input type="hidden" name="datetime_init" id="datetime-init">
                                 <!-- Fecha -->
@@ -109,33 +63,28 @@
 
                         <!-- Botón de enviar -->
                         <div class="col-md-3">
-                            <div class="form-button-wrapper">
-                                <button type="submit" class="btn btn-primary w-100" id="submit-btn">
-                                    Generar
-                                </button>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary" id="submit-btn">Generar</button>
                             </div>
                         </div>
                     </div>
-                    <div id="form-feedback" class="mt-2"></div>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Meteograma</h5>
-            </div>
+    <div class="col-12" style="display: none;">
+        <div class="card mt-4">
             <div class="card-body">
                 <div class="plot-container">
-                    <div id="loading" class="loading-overlay">
+                    <div class="loading-overlay d-none" id="loading">
                         <div class="spinner-border text-primary" role="status"></div>
                         <p class="mt-2">Cargando datos meteorológicos...</p>
                     </div>
+
+                    <!-- Mensaje inicial -->
                     <div id="container" class="empty-plot-message">
-                        <i class="fas fa-chart-line fa-2x mb-2"></i>
-                        <p>Configure los parámetros y genere el meteograma</p>
+                        <p>Seleccione parámetros y haga clic en "Generar</p>
                     </div>
                 </div>
             </div>
