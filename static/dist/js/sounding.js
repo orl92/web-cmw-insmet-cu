@@ -3,6 +3,7 @@ class SoundingPlotter {
         this.form = $('#sounding-form');
         this.plot = $('#sounding-plot');
         this.loading = $('#loading');
+        this.emptyPlotMessage = $('#empty-plot');
         this.datetimeInfo = $('#datetime-info');
         this.paramsInfo = $('#params-info');
         this.plotTitle = $('#plot-title');
@@ -42,8 +43,6 @@ class SoundingPlotter {
         // Convertir a YYYYMMDDHH
         const formattedDate = dateValue.replace(/-/g, '') + hourValue;
         this.form.find('[name="datetime_init"]').val(formattedDate);
-
-        console.log('datetime_init enviado:', formattedDate); // Para depuración
     }
 
     initEvents() {
@@ -66,6 +65,8 @@ class SoundingPlotter {
 
             document.getElementById('datepicker').value = formattedDate;
             document.getElementById('hour-select').value = datetimeInit.substring(8, 10);
+            // Ocultar mensaje inicial cuando hay parámetros
+            this.emptyPlotMessage.addClass('d-none')
         } else {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('datepicker').value = today;
@@ -110,6 +111,8 @@ class SoundingPlotter {
             this.updateUrl();
         } else {
             this.showError(response.message || 'Error desconocido');
+            // Mostrar mensaje inicial en caso de error
+            this.emptyPlotMessage.removeClass('d-none');
         }
     }
 
@@ -120,10 +123,14 @@ class SoundingPlotter {
         } catch (e) {
             this.showError('Error al procesar la solicitud');
         }
+        // Mostrar mensaje inicial en caso de error
+        this.emptyPlotMessage.removeClass('d-none');
     }
 
     displayPlot(imageData) {
         this.plot.attr('src', 'data:image/png;base64,' + imageData).removeClass('d-none');
+        // Asegurar que el mensaje inicial esté oculto
+        this.emptyPlotMessage.addClass('d-none');
     }
 
     updateInfo(response) {
@@ -161,6 +168,8 @@ class SoundingPlotter {
     showLoading() {
         this.loading.show();
         this.plot.addClass('d-none');
+        // Ocultar mensaje inicial al comenzar carga
+        this.emptyPlotMessage.addClass('d-none');
         this.form.find('button[type="submit"]').prop('disabled', true)
             .html('<span class="spinner-border spinner-border-sm" role="status"></span> Procesando...');
     }
@@ -174,7 +183,6 @@ class SoundingPlotter {
     showError(message) {
         const errorAlert = $(`
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-triangle me-2"></i>
                 ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
