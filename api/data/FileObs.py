@@ -86,9 +86,14 @@ class FileObs:
                     temp_file = os.path.join(self.TEMP_DIR, filename)
                     if os.path.exists(temp_file):
                         destino = os.path.join(self.FINAL_DIR, filename)
-                        shutil.move(temp_file, destino)
+                        # Normalize and validate the destination path
+                        destino_norm = os.path.normpath(os.path.abspath(destino))
+                        final_dir_norm = os.path.normpath(os.path.abspath(self.FINAL_DIR))
+                        if not destino_norm.startswith(final_dir_norm + os.sep):
+                            raise Exception("Invalid file path: path traversal detected")
+                        shutil.move(temp_file, destino_norm)
                         print(f"✓ Descarga completada: {filename}")
-                        return destino
+                        return destino_norm
                     else:
                         raise Exception(f"Archivo {filename} no se descargó correctamente")
 
