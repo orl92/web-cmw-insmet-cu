@@ -8,11 +8,35 @@ class SoundingPlotter {
         this.paramsInfo = $('#params-info');
         this.plotTitle = $('#plot-title');
 
-        this.initEvents();
-        this.checkUrlParams();
+        // Referencias a elementos
+        this.datePicker = document.getElementById('datepicker');
+        this.hourSelect = document.getElementById('hour-select');
+        this.forecastSelect = document.getElementById('forecast-select'); // Este es el t_index
 
+        this.initEvents();
+        this.setDefaultDatetime();
         this.initLitepicker();
         this.setupDatetimeHandlers();
+        
+        // Inicializar el select de previsión
+        this.initForecastSelect();
+        this.checkUrlParams();
+    }
+
+    setDefaultDatetime() {
+        // Establecer fecha actual si no hay valor
+        if (!this.datePicker.value) {
+            const today = new Date().toISOString().split('T')[0];
+            this.datePicker.value = today;
+        }
+        
+        // Establecer hora 00 por defecto si no hay selección
+        if (!this.hourSelect.value) {
+            this.hourSelect.value = '00';
+        }
+        
+        // Actualizar campo oculto
+        this.updateDatetimeInit();
     }
 
     initLitepicker() {
@@ -32,17 +56,70 @@ class SoundingPlotter {
     }
 
     setupDatetimeHandlers() {
-        document.getElementById('datepicker')?.addEventListener('change', () => this.updateDatetimeInit());
-        document.getElementById('hour-select')?.addEventListener('change', () => this.updateDatetimeInit());
+        if (this.datePicker) {
+            this.datePicker.addEventListener('change', () => {
+                this.updateDatetimeInit();
+                this.updateForecastOptions();
+            });
+        }
+        
+        if (this.hourSelect) {
+            this.hourSelect.addEventListener('change', () => {
+                this.updateDatetimeInit();
+                this.updateForecastOptions();
+            });
+        }
     }
 
     updateDatetimeInit() {
-        const dateValue = document.getElementById('datepicker').value; // Formato YYYY-MM-DD
-        const hourValue = document.getElementById('hour-select').value; // HH
+        const dateValue = this.datePicker.value;
+        const hourValue = this.hourSelect.value;
 
-        // Convertir a YYYYMMDDHH
-        const formattedDate = dateValue.replace(/-/g, '') + hourValue;
-        this.form.find('[name="datetime_init"]').val(formattedDate);
+        if (dateValue && hourValue) {
+            const formattedDate = dateValue.replace(/-/g, '') + hourValue;
+            this.form.find('[name="datetime_init"]').val(formattedDate);
+        }
+    }
+
+    initForecastSelect() {
+        this.weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        this.months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        this.updateForecastOptions();
+    }
+
+    updateForecastOptions() {
+        if (!this.datePicker || !this.hourSelect || !this.forecastSelect) return;
+        
+        const dateValue = this.datePicker.value;
+        const hourValue = this.hourSelect.value;
+        
+        if (!dateValue || !hourValue) return;
+        
+        const baseDate = new Date(`${dateValue}T${hourValue}:00Z`);
+        if (isNaN(baseDate.getTime())) return;
+        
+        this.forecastSelect.innerHTML = '';
+        
+        for (let i = 0; i < 24; i++) {
+            const forecastDate = new Date(baseDate);
+            const hoursToAdd = i * 3;
+            forecastDate.setUTCHours(forecastDate.getUTCHours() + hoursToAdd);
+            
+            const weekday = this.weekdays[forecastDate.getUTCDay()];
+            const month = this.months[forecastDate.getUTCMonth()];
+            const day = forecastDate.getUTCDate();
+            const year = forecastDate.getUTCFullYear();
+            const hours = forecastDate.getUTCHours().toString().padStart(2, '0');
+            
+            const option = document.createElement('option');
+            option.value = i + 1; // Este valor será el t_index
+            option.textContent = `${weekday}, ${day} ${month} ${year} ${hours} UTC (+${hoursToAdd} Hrs)`;
+            
+            if (i === 0) option.selected = true;
+            
+            this.forecastSelect.appendChild(option);
+        }
     }
 
     initEvents() {
@@ -63,26 +140,38 @@ class SoundingPlotter {
             const datePart = datetimeInit.substring(0, 8);
             const formattedDate = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
 
-            document.getElementById('datepicker').value = formattedDate;
-            document.getElementById('hour-select').value = datetimeInit.substring(8, 10);
-            // Ocultar mensaje inicial cuando hay parámetros
-            this.emptyPlotMessage.addClass('d-none')
-        } else {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('datepicker').value = today;
-            document.getElementById('hour-select').value = '12';
+            if (this.datePicker) this.datePicker.value = formattedDate;
+            if (this.hourSelect) this.hourSelect.value = datetimeInit.substring(8, 10);
         }
+
+        this.updateForecastOptions();
 
         this.form.find('[name="lat"]').val(params.get('lat') || '');
         this.form.find('[name="long"]').val(params.get('long') || '');
-        this.form.find('[name="t_index"]').val(params.get('t_index') || '0');
+        
+        // Cargar t_index desde URL
+        const tIndex = params.get('t_index');
+        if (tIndex && this.forecastSelect) {
+            this.forecastSelect.value = tIndex;
+        }
+
         this.updateDatetimeInit();
-        this.submitForm();
     }
 
     handleSubmit(e) {
         e.preventDefault();
+        this.logFormData();
         this.submitForm();
+    }
+    
+    logFormData() {
+        const formData = {
+            datetime_init: this.form.find('[name="datetime_init"]').val(),
+            lat: this.form.find('[name="lat"]').val(),
+            long: this.form.find('[name="long"]').val(),
+            t_index: this.forecastSelect.value // Este es el valor importante
+        };
+        console.log("Datos del formulario a enviar:", formData);
     }
 
     submitForm() {
@@ -111,7 +200,6 @@ class SoundingPlotter {
             this.updateUrl();
         } else {
             this.showError(response.message || 'Error desconocido');
-            // Mostrar mensaje inicial en caso de error
             this.emptyPlotMessage.removeClass('d-none');
         }
     }
@@ -123,13 +211,11 @@ class SoundingPlotter {
         } catch (e) {
             this.showError('Error al procesar la solicitud');
         }
-        // Mostrar mensaje inicial en caso de error
         this.emptyPlotMessage.removeClass('d-none');
     }
 
     displayPlot(imageData) {
         this.plot.attr('src', 'data:image/png;base64,' + imageData).removeClass('d-none');
-        // Asegurar que el mensaje inicial esté oculto
         this.emptyPlotMessage.addClass('d-none');
     }
 
@@ -139,17 +225,8 @@ class SoundingPlotter {
         }
 
         if (response.params) {
-            const tIndexLabels = {
-                '0': 'Ninguno',
-                '1': 'Showalter',
-                '2': 'Lifted',
-                '3': 'CAPE'
-            };
-
-            this.paramsInfo.html(`
-                <strong>Posición:</strong> Lat ${response.params.lat}°, Long ${response.params.long}° | 
-                <strong>Índice T:</strong> ${tIndexLabels[response.params.t_index] || 'Desconocido'}
-            `);
+            // SOLO MOSTRAR POSICIÓN (sin información de previsión)
+            this.paramsInfo.html(`<strong>Posición:</strong> Lat ${response.params.lat}°, Long ${response.params.long}°`);
         }
     }
 
@@ -158,7 +235,7 @@ class SoundingPlotter {
             datetime_init: this.form.find('[name="datetime_init"]').val(),
             lat: this.form.find('[name="lat"]').val(),
             long: this.form.find('[name="long"]').val(),
-            t_index: this.form.find('[name="t_index"]').val()
+            t_index: this.forecastSelect.value // Este es el valor importante
         };
 
         const queryString = new URLSearchParams(params).toString();
@@ -168,7 +245,6 @@ class SoundingPlotter {
     showLoading() {
         this.loading.show();
         this.plot.addClass('d-none');
-        // Ocultar mensaje inicial al comenzar carga
         this.emptyPlotMessage.addClass('d-none');
         this.form.find('button[type="submit"]').prop('disabled', true)
             .html('<span class="spinner-border spinner-border-sm" role="status"></span> Procesando...');
@@ -196,7 +272,6 @@ class SoundingPlotter {
     }
 }
 
-// Inicialización cuando el DOM está listo
 $(document).ready(function () {
     new SoundingPlotter();
 });

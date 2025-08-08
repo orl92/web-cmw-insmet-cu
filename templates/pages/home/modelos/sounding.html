@@ -7,6 +7,8 @@
             <div class="card-body">
                 <form id="sounding-form" method="post" action="{% url 'sounding' %}">
                     {% csrf_token %}
+                    <input type="hidden" name="t_index" id="t-index" value="0">
+                    
                     <div class="row g-3 align-items-end">
                         <!-- Campos Fecha y Hora -->
                         <div class="col-md-2">
@@ -59,8 +61,12 @@
                         </div>
 
                         <div class="col-md-2 form-field">
-                            <label for="{{ form.t_index.id_for_label }}" class="form-label">Índice</label>
-                            {{ form.t_index }}
+                            <div class="mb-0">
+                                <label for="forecast-select" class="form-label">Previsión</label>
+                                <select class="form-select" id="forecast-select" name="t_index" required>
+                                    <!-- Opciones generadas dinámicamente por JavaScript -->
+                                </select>
+                            </div>
                         </div>
 
                         <div class="col-md-2">
@@ -97,6 +103,6 @@
 {% endblock %}
 
 {% block extrajs %}
-    <script src="{% static 'dist/libs/litepicker/dist/litepicker.js' %}"></script>
-    <script src="{% static 'dist/js/sounding.js' %}"></script>
+<script src="{% static 'dist/libs/litepicker/dist/litepicker.js' %}"></script>
+<script src="{% static 'dist/js/sounding.js' %}"></script>
 {% endblock extrajs %}
