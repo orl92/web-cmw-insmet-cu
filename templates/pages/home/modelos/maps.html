@@ -86,7 +86,8 @@
     <div class="card mt-4">
         <div class="card-body">
             <h2 id="plot-title" class="text-center mb-3"></h2>
-            <div class="plot-container">
+            <!-- Agregado el contenedor plot-container -->
+            <div id="plot-container" class="plot-container">
                 <div class="loading-overlay" id="loading">
                     <div class="spinner-border text-primary" role="status"></div>
                     <p class="mt-2">Generando gráfico...</p>
@@ -96,7 +97,6 @@
                 <div id="animation-container" class="empty-plot-message">
                     <p>Seleccione parámetros y haga clic en "Generar</p>
                 </div>
-                <div id="status-message"></div>
             </div>
         </div>
     </div>
