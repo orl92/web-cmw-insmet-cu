@@ -225,8 +225,14 @@ class SoundingPlotter {
         }
 
         if (response.params) {
-            // SOLO MOSTRAR POSICIÓN (sin información de previsión)
-            this.paramsInfo.html(`<strong>Posición:</strong> Lat ${response.params.lat}°, Long ${response.params.long}°`);
+            // Obtener el nombre del municipio seleccionado
+            const townSelect = document.getElementById('id_town');
+            const selectedTown = townSelect.options[townSelect.selectedIndex].text;
+            
+            this.paramsInfo.html(`
+                <strong>Municipio:</strong> ${selectedTown}<br>
+                <strong>Posición:</strong> Lat ${response.params.lat}°, Long ${response.params.long}°
+            `);
         }
     }
 
