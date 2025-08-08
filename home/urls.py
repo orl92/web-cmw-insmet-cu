@@ -15,7 +15,6 @@ from home.views.servicios.publicos.views import PublicServicesListView
 from home.views.tiempo.hoy.views import WeatherTodayDetailView
 from home.views.tiempo.manana.views import WeatherTomorrowDetailView
 
-
 from home.views.modelos import views
 
 urlpatterns = [
@@ -38,11 +37,13 @@ urlpatterns = [
     path('modelo/mapas/', MapaView.as_view(), name='maps'),
     path('modelo/meteogram/', MeteogramView.as_view(), name='meteogram'),
     path('modelo/sounding/', SoundingView.as_view(), name='sounding'),
+    path('api/meteogram-data/', views.fetch_meteogram_data, name='meteogram_data'),
     # Servicios Públicos
     path('servicios/publicos/', PublicServicesListView.as_view(), name='servicios_publicos'),
-     # Servicios Comerciales
+    # Servicios Comerciales
     path('servicios/comerciales/', CommercialServicesListView.as_view(), name='servicios_comerciales'),
     # Imagen Satélites
     path('imagenes/satelitales/', SateliteView.as_view(), name="satelites"),
     path('proxy_image/', ProxyImageView.as_view(), name='proxy_image'),
+
 ]

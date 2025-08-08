@@ -135,16 +135,39 @@ class MeteogramFormHandler {
         }
     }
 
+    // async fetchMeteogramData(params) {
+    //     const url = `${this.apiBaseUrl}/api/meteogram/?datetime_init=${params.datetime_init}&lat=${params.lat}&long=${params.long}`;
+    //     console.log('Solicitando datos a:', url);
+    //
+    //     const response = await fetch(url, {
+    //         method: 'GET',
+    //         // mode: 'no-cors',
+    //         headers: {
+    //             'Accept': 'application/json'
+    //         }
+    //     });
+    //
+    //     if (!response.ok) {
+    //         const errorData = await response.json().catch(() => ({}));
+    //         const error = new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+    //         error.response = response;
+    //         throw error;
+    //     }
+    //
+    //     return await response.json();
+    // }
+
     async fetchMeteogramData(params) {
-        const url = `${this.apiBaseUrl}/api/meteogram/?datetime_init=${params.datetime_init}&lat=${params.lat}&long=${params.long}`;
-        console.log('Solicitando datos a:', url);
+        const url = '/api/meteogram-data/';  // Nueva URL del endpoint
 
         const response = await fetch(url, {
-            method: 'GET',
-            // mode: 'no-cors',
+            method: 'POST',
             headers: {
-                'Accept': 'application/json'
-            }
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': this.getCSRFToken(),
+            },
+            body: JSON.stringify(params)
         });
 
         if (!response.ok) {
@@ -154,7 +177,20 @@ class MeteogramFormHandler {
             throw error;
         }
 
-        return await response.json();
+        const responseData = await response.json();
+
+        // Verificar estructura de respuesta esperada
+        if (responseData.status !== 'success' || !responseData.data) {
+            throw new Error(responseData.message || 'Respuesta inesperada del servidor');
+        }
+
+        return responseData.data;
+    }
+
+    // Función auxiliar para obtener token CSRF
+    getCSRFToken() {
+        const cookieValue = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
+        return cookieValue ? cookieValue.pop() : '';
     }
 
     updateMeteogram(formattedResponse) {

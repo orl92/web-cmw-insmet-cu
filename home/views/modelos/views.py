@@ -63,7 +63,7 @@ class MeteogramView(TemplateView):
             'long': float(self.request.GET.get('long', -77.993))
         }
         context['form'] = MeteogramForm(initial=initial)
-        
+
         return context
 
     def post(self, request, *args, **kwargs):
@@ -174,3 +174,60 @@ def fetch_data(request):
 
 def generate_plot(request):
     return generate_meteo_plot(request)
+
+
+@csrf_exempt
+def fetch_meteogram_data(request):
+    if request.method != 'POST':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Método no permitido'
+        }, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Formato JSON inválido'
+        }, status=400)
+
+    form = MeteogramForm(data)
+
+    if not form.is_valid():
+        return JsonResponse({
+            'status': 'error',
+            'errors': form.errors.get_json_data()
+        }, status=400)
+
+    try:
+        # Construir URL para la API externa
+        params = {
+            'datetime_init': form.cleaned_data['datetime_init'],
+            'lat': form.cleaned_data['lat'],
+            'long': form.cleaned_data['long']
+        }
+        api_url = f"https://modelo.cmw.insmet.cu/api/meteogram/?{urlencode(params)}"
+
+        # Hacer la solicitud a la API externa
+        response = requests.get(api_url, timeout=10, verify=False)
+        response.raise_for_status()
+        api_data = response.json()
+
+        # Verificar estructura básica de los datos
+        if not isinstance(api_data, dict) or 'times' not in api_data:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Estructura de datos inesperada de la API'
+            }, status=500)
+
+        return JsonResponse({
+            'status': 'success',
+            'data': api_data
+        })
+
+    except requests.RequestException as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': f"Error al conectar con la API: {str(e)}"
+        }, status=500)
