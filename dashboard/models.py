@@ -88,6 +88,28 @@ class Province(models.Model):
 
     def __str__(self):
         return self.name
+    
+class Town(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    province = models.ForeignKey(Province, on_delete=models.SET_NULL, null=True, related_name="towns", 
+                                 verbose_name='Provincia')
+    name = models.CharField(max_length=15, verbose_name='Nombre')
+    latitude = models.FloatField(verbose_name='Latitud')
+    longitude = models.FloatField(verbose_name='Longitud')
+
+    class Meta:
+        verbose_name = 'Municipio'
+        verbose_name_plural = "Municipios"
+        default_permissions = ()
+        permissions = (
+            ('view_town', 'Ver'),
+            ('add_town', 'Añadir'),
+            ('change_town', 'Editar'),
+            ('delete_town', 'Eliminar'),
+        )
+
+    def __str__(self):
+        return self.name
 
 class Station(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
