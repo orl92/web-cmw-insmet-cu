@@ -350,7 +350,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error);
                 loadingIndicator.innerHTML = `
                     <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
                         <strong>Error:</strong> ${error.message}
                     </div>
                 `;
