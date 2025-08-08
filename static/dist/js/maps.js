@@ -37,25 +37,12 @@ class MeteoPlotter {
     }
 
     showLoading(message, progress = null) {
-        let progressBar = '';
-        if (progress !== null) {
-            progressBar = `
-                <div class="progress mt-2" style="height: 6px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                         style="width: ${progress}%"></div>
-                </div>
-            `;
-        }
-
         this.loadingElement.innerHTML = `
             <div class="text-center py-3">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Cargando...</span>
                 </div>
                 <p class="mt-2">${message}</p>
-                ${progressBar}
-                ${this.retryCount > 0 ? 
-                 `<p class="text-muted small mt-2">Intento ${this.retryCount + 1} de ${this.maxRetries}</p>` : ''}
             </div>
         `;
     }
@@ -80,29 +67,6 @@ class MeteoPlotter {
             this.cleanupAnimation();
             document.getElementById('plot-area').style.display = 'none';
         });
-    }
-
-    async fetchData() {
-        try {
-            this.showLoading('Obteniendo datos meteorológicos...', 25);
-
-            const response = await fetch(
-                `/api/fetch-data/?datetime_init=${encodeURIComponent(this.datetimeInit)}&var_name=${encodeURIComponent(this.varName)}`,
-                {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                }
-            );
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `Error HTTP: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Error en fetchData:', error);
-            throw error;
-        }
     }
 
     async generatePlot() {
@@ -195,8 +159,8 @@ class MeteoPlotter {
         try {
             this.cleanupAnimation();
 
-            const data = await this.withRetries(() => this.fetchData());
-            console.log('Datos recibidos:', data);
+            // const data = await this.withRetries(() => this.fetchData());
+            // console.log('Datos recibidos:', data);
 
             const plotData = await this.withRetries(() => this.generatePlot());
             console.log('Animación generada:', plotData);
