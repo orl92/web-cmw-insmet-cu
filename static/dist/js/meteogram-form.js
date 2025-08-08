@@ -217,7 +217,7 @@ class MeteogramFormHandler {
             this.submitBtn.disabled = isLoading;
             this.submitBtn.innerHTML = isLoading
                 ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...'
-                : '<span class="weather-icon">☀️</span> Generar Meteograma';
+                : 'Generar';
         }
 
         if (this.loadingEl) {
