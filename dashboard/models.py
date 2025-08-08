@@ -93,7 +93,7 @@ class Town(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     province = models.ForeignKey(Province, on_delete=models.SET_NULL, null=True, related_name="towns", 
                                  verbose_name='Provincia')
-    name = models.CharField(max_length=15, verbose_name='Nombre')
+    name = models.CharField(max_length=25, verbose_name='Nombre')
     latitude = models.FloatField(verbose_name='Latitud')
     longitude = models.FloatField(verbose_name='Longitud')
 
