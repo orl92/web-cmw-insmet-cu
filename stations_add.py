@@ -1,14 +1,12 @@
 from core.wsgi import *
 from dashboard.models import Province, Station
 
-#Crear estaciones automaticamente
 
-province = {
-    'name': 'Camagüey',
-    'code': '009'
-}
-
-Province.objects.create(name=province['name'], code=province['code'])
+# Crear provincia Camagüey si no existe
+province, created = Province.objects.get_or_create(
+    name='Camagüey',
+    defaults={'code': '09'}
+)
 
 province = Province.objects.last()
 stations = [
