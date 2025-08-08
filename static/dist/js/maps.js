@@ -10,7 +10,9 @@ class MeteoPlotter {
         this.plotContainer = document.getElementById('plot-container');
         this.loadingElement = document.getElementById('loading');
         this.animationContainer = document.getElementById('animation-container') || this.createAnimationContainer();
-        this.statusElement = document.getElementById('status-message') || this.createStatusElement();
+        
+        // Eliminada la referencia a statusElement
+        // this.statusElement = document.getElementById('status-message') || this.createStatusElement();
 
         // Configuración de reintentos
         this.maxRetries = 3;
@@ -30,29 +32,31 @@ class MeteoPlotter {
         return container;
     }
 
-    createStatusElement() {
-        const elem = document.createElement('div');
-        elem.id = 'status-message';
-        elem.className = 'status-message';
-        this.plotContainer.appendChild(elem);
-        return elem;
-    }
+    // Eliminado el método createStatusElement()
+    // createStatusElement() {
+    //     const elem = document.createElement('div');
+    //     elem.id = 'status-message';
+    //     elem.className = 'status-message';
+    //     this.plotContainer.appendChild(elem);
+    //     return elem;
+    // }
 
-    showStatus(message, type = 'info') {
-        const icons = {
-            error: 'exclamation-triangle',
-            warning: 'exclamation-circle',
-            success: 'check-circle',
-            info: 'info-circle'
-        };
-
-        this.statusElement.innerHTML = `
-            <div class="alert alert-${type}">
-                <i class="fas fa-${icons[type] || 'info-circle'} me-2"></i>
-                ${message}
-            </div>
-        `;
-    }
+    // Eliminado el método showStatus()
+    // showStatus(message, type = 'info') {
+    //     const icons = {
+    //         error: 'exclamation-triangle',
+    //         warning: 'exclamation-circle',
+    //         success: 'check-circle',
+    //         info: 'info-circle'
+    //     };
+    //
+    //     this.statusElement.innerHTML = `
+    //         <div class="alert alert-${type}">
+    //             <i class="fas fa-${icons[type] || 'info-circle'} me-2"></i>
+    //             ${message}
+    //         </div>
+    //     `;
+    // }
 
     showLoading(message, progress = null) {
         let progressBar = '';
@@ -174,8 +178,6 @@ class MeteoPlotter {
             animationDiv.style.maxWidth = '100%';
             animationDiv.style.overflow = 'hidden';
         }
-
-        this.showStatus('Animación interactiva cargada', 'success');
     }
 
     cleanupAnimation() {
@@ -195,7 +197,8 @@ class MeteoPlotter {
             this.retryCount++;
 
             if (this.retryCount < this.maxRetries) {
-                this.showStatus(`Reintentando operación... (${this.retryCount}/${this.maxRetries})`, 'warning');
+                // Eliminada la llamada a showStatus()
+                // this.showStatus(`Reintentando operación... (${this.retryCount}/${this.maxRetries})`, 'warning');
                 await new Promise(resolve => setTimeout(resolve, this.retryDelay));
                 return this.withRetries(operation);
             } else {
