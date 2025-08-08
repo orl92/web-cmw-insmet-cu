@@ -35,13 +35,6 @@ class SoundingPlotter {
         document.getElementById('hour-select')?.addEventListener('change', () => this.updateDatetimeInit());
     }
 
-    // updateDatetimeInit() {
-    //     const dateValue = document.getElementById('datepicker').value;
-    //     const hourValue = document.getElementById('hour-select').value;
-    //     const formattedDate = dateValue.replace(/-/g, '');
-    //     this.form.find('[name="datetime_init"]').val(formattedDate + hourValue);
-    // }
-
     updateDatetimeInit() {
         const dateValue = document.getElementById('datepicker').value; // Formato YYYY-MM-DD
         const hourValue = document.getElementById('hour-select').value; // HH
@@ -62,16 +55,6 @@ class SoundingPlotter {
             this.loadFromUrlParams();
         }
     }
-
-    // loadFromUrlParams() {
-    //     const params = new URLSearchParams(window.location.search);
-    //     this.form.find('[name="datetime_init"]').val(params.get('datetime_init') || '');
-    //     this.form.find('[name="lat"]').val(params.get('lat') || '');
-    //     this.form.find('[name="long"]').val(params.get('long') || '');
-    //     this.form.find('[name="t_index"]').val(params.get('t_index') || '0');
-    //
-    //     this.submitForm();
-    // }
 
     loadFromUrlParams() {
         const params = new URLSearchParams(window.location.search);
