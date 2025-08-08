@@ -185,7 +185,7 @@ class SoundingPlotter {
     hideLoading() {
         this.loading.hide();
         this.form.find('button[type="submit"]').prop('disabled', false)
-            .html('<i class="fas fa-chart-line me-2"></i> Generar Sondeo');
+            .html('Generar');
     }
 
     showError(message) {
