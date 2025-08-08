@@ -2,6 +2,7 @@ from datetime import datetime
 
 import numpy as np
 
+from dashboard.models import Town
 from home.forms import MeteoDataForm, SoundingForm
 from home.data.data_handlers import fetch_meteo_data
 from home.data.plot_generators import generate_meteo_plot, generate_skewt
@@ -46,7 +47,6 @@ class MapaView(TemplateView):
             'status': 'error',
             'errors': form.errors.get_json_data()
         }, status=400)
-
 
 @method_decorator(csrf_exempt, name='dispatch')
 class MeteogramView(TemplateView):
@@ -104,7 +104,6 @@ class MeteogramView(TemplateView):
                 'message': f"Error al conectar con la API externa: {str(e)}"
             }, status=500)
 
-
 @method_decorator(csrf_exempt, name='dispatch')
 class SoundingView(TemplateView):
     template_name = 'pages/home/modelos/sounding.html'
@@ -114,8 +113,16 @@ class SoundingView(TemplateView):
         context['title'] = 'Sondeos'
         context['parent'] = 'modelos'
         context['segment'] = 'sounding'
+        
+        # Obtener municipio por defecto (ej. usando coordenadas predeterminadas)
+        default_town = Town.objects.filter(
+            latitude=21.391, 
+            longitude=-77.908
+        ).first()
+        
         initial = {
             'datetime_init': self.request.GET.get('datetime_init', f'{datetime.now().strftime("%Y%m%d")}00'),
+            'town': default_town.id if default_town else None,
             'lat': float(self.request.GET.get('lat', 21.391)),
             'long': float(self.request.GET.get('long', -77.908)),
             't_index': int(self.request.GET.get('t_index', 1))
@@ -132,11 +139,14 @@ class SoundingView(TemplateView):
             }, status=400)
 
         try:
-            # Construir URL para la API de sondeo
+            # Obtener el municipio seleccionado
+            town = form.cleaned_data['town']
+            
+            # Construir URL para la API de sondeo usando las coordenadas del municipio
             params = {
                 'datetime_init': form.cleaned_data['datetime_init'],
-                'lat': form.cleaned_data['lat'],
-                'long': form.cleaned_data['long'],
+                'lat': town.latitude,  # Usar latitud del municipio
+                'long': town.longitude,  # Usar longitud del municipio
                 't_index': form.cleaned_data['t_index']
             }
             api_url = f"https://modelo.cmw.insmet.cu/api/sounding/?{urlencode(params)}"
@@ -167,14 +177,11 @@ class SoundingView(TemplateView):
                 'message': f"Error al generar el gráfico: {str(e)}"
             }, status=500)
 
-
 def fetch_data(request):
     return fetch_meteo_data(request)
 
-
 def generate_plot(request):
     return generate_meteo_plot(request)
-
 
 @csrf_exempt
 def fetch_meteogram_data(request):

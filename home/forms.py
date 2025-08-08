@@ -2,6 +2,8 @@ from django import forms
 from datetime import datetime
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from dashboard.models import Town
+
 
 class MeteoDataForm(forms.Form):
     VAR_CHOICES = [
@@ -103,23 +105,18 @@ class SoundingForm(forms.Form):
         help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)'
     )
 
-    lat = forms.FloatField(
-        label='Latitud',
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.0001'
-        }),
-        validators=[MinValueValidator(-90), MaxValueValidator(90)]
+    # Nuevo campo para municipio
+    town = forms.ModelChoiceField(
+        queryset=Town.objects.all().order_by('name'),
+        label='Municipio',
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        help_text='Seleccione un municipio'
     )
-
-    long = forms.FloatField(
-        label='Longitud',
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.0001'
-        }),
-        validators=[MinValueValidator(-180), MaxValueValidator(180)]
-    )
+    
+    # Campos ocultos para lat/long
+    lat = forms.FloatField(widget=forms.HiddenInput())
+    long = forms.FloatField(widget=forms.HiddenInput())
 
     t_index = forms.IntegerField(
         label='Índice de tiempo',
@@ -127,7 +124,7 @@ class SoundingForm(forms.Form):
         widget=forms.NumberInput(attrs={
             'class': 'form-control',
             'min': '1',
-            'max': '25'
+            'max': '24'
         }),
         validators=[MinValueValidator(1), MaxValueValidator(24)],
         help_text='Índice de tiempo (1-24) para el pronóstico'

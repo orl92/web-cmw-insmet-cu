@@ -36,6 +36,7 @@ from dashboard.views.estaciones.views import (StationCreateView,
                                               StationDeleteView,
                                               StationListView,
                                               StationUpdateView)
+from dashboard.views.municipios.views import TownCreateView, TownDeleteView, TownListView, TownUpdateView
 from dashboard.views.pronosticos.views import (AllForecastCreateView,
                                                ForecastDeleteView,
                                                ForecastsListView,
@@ -63,13 +64,18 @@ urlpatterns = [
     # Provincias
     path('provincias/', ProvinceListView.as_view(), name='provincias'),
     path('crear/provincia/', ProvinceCreateView.as_view(), name='crear_provincia'),
-    path('actualizar/provincia/<uuid:uuid>//', ProvinceUpdateView.as_view(), name='actualizar_provincia'),
+    path('actualizar/provincia/<uuid:uuid>/', ProvinceUpdateView.as_view(), name='actualizar_provincia'),
     path('eliminar/provincia/<uuid:uuid>/', ProvinceDeleteView.as_view(), name='eliminar_provincia'),
     # Estaciones
     path('estaciones/', StationListView.as_view(), name='estaciones'),
     path('crear/estacion/', StationCreateView.as_view(), name='crear_estacion'),
-    path('actualizar/estacion/<uuid:uuid>//', StationUpdateView.as_view(), name='actualizar_estacion'),
+    path('actualizar/estacion/<uuid:uuid>/', StationUpdateView.as_view(), name='actualizar_estacion'),
     path('eliminar/estacion/<uuid:uuid>/', StationDeleteView.as_view(), name='eliminar_estacion'),
+    # Municipios
+    path('municipios/', TownListView.as_view(), name='municipios'),
+    path('crear/municipio/', TownCreateView.as_view(), name='crear_municipio'),
+    path('actualizar/municipio/<uuid:uuid>/', TownUpdateView.as_view(), name='actualizar_municipio'),
+    path('eliminar/municipio/<uuid:uuid>/', TownDeleteView.as_view(), name='eliminar_municipio'),
     # Pronósticos
     path('pronosticos/', ForecastsListView.as_view(), name='pronosticos'),
     path('crear/pronostico/', AllForecastCreateView.as_view(), name='crear_pronostico'),
