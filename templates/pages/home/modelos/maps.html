@@ -82,18 +82,19 @@
     </div>
 </div>
 
-  <div id="plot-area">
+<div id="plot-area" style="display: none;">
     <div class="card mt-4">
         <div class="card-body">
             <h2 id="plot-title" class="text-center mb-3"></h2>
             <div class="plot-container">
-                <div id="loading" class="loading-overlay">
+                <div class="loading-overlay" id="loading">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2">Generando visualización...</p>
+                    <p class="mt-2">Generando gráfico...</p>
                 </div>
+
+                <!-- Mensaje inicial -->
                 <div id="animation-container" class="empty-plot-message">
-                    <i class="fas fa-chart-area fa-2x mb-2"></i>
-                    <p>Seleccione parámetros y genere una visualización</p>
+                    <p>Seleccione parámetros y haga clic en "Generar</p>
                 </div>
                 <div id="status-message"></div>
             </div>
