@@ -64,10 +64,6 @@
                             </select>
                         </div>
 
-                        <!-- Campos ocultos para lat/long -->
-                        {{ form.lat }}
-                        {{ form.long }}
-
                         <div class="col-md-3 form-field">
                             <div class="mb-0">
                                 <label for="forecast-select" class="form-label required">Previsión</label>
@@ -113,24 +109,4 @@
 {% block extrajs %}
 <script src="{% static 'dist/libs/litepicker/dist/litepicker.js' %}"></script>
 <script src="{% static 'dist/js/sounding.js' %}"></script>
-<script>
-// Script para actualizar coordenadas cuando se selecciona un municipio
-document.addEventListener('DOMContentLoaded', function() {
-    const townSelect = document.getElementById('id_town');
-    const latInput = document.querySelector('[name="lat"]');
-    const longInput = document.querySelector('[name="long"]');
-    
-    function updateCoordinates() {
-        const selectedOption = townSelect.options[townSelect.selectedIndex];
-        latInput.value = selectedOption.getAttribute('data-lat');
-        longInput.value = selectedOption.getAttribute('data-long');
-    }
-    
-    // Actualizar al cambiar selección
-    townSelect.addEventListener('change', updateCoordinates);
-    
-    // Actualizar al cargar la página
-    updateCoordinates();
-});
-</script>
 {% endblock extrajs %}
