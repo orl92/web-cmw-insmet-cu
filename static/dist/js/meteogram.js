@@ -244,7 +244,7 @@ class Meteogram {
             wind: isDarkMode ? '#d6b3ff' : '#9370db',
             gridLine: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.1)',
             text: isDarkMode ? '#e4e6eb' : '#495057',
-            background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)'
+            background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'transparent'
         };
 
         return {
