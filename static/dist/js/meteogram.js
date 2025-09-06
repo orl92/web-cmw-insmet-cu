@@ -233,18 +233,18 @@ class Meteogram {
     getChartOptions() {
         // Detectar tema actual
         const isDarkMode = document.body.getAttribute('data-bs-theme') === 'dark';
-        
-        // Colores adaptativos para modo claro/oscuro
+
+        // Colores adaptativos optimizados para Tabler.io
         const colors = {
-            temperature: isDarkMode ? '#ff4500' : '#ff4500',
-            dewPoint: isDarkMode ? '#00bfff' : '#00bfff',
-            precipitation: isDarkMode ? '#1e90ff' : '#1e90ff',
-            pressure: isDarkMode ? '#3cb371' : '#3cb371',
-            humidity: isDarkMode ? '#64c8ff' : '#64c8ff',
-            wind: isDarkMode ? '#9370db' : '#9370db',
-            gridLine: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(107, 107, 107, 0.1)',
-            text: isDarkMode ? '#f5f5f5' : '#495057',
-            background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'transparent'
+            temperature: isDarkMode ? '#ff9d7a' : '#ff7b4f',
+            dewPoint: isDarkMode ? '#6bd4ff' : '#4dc4ff',
+            precipitation: isDarkMode ? '#4da6ff' : '#1e90ff',
+            pressure: isDarkMode ? '#4cd88d' : '#3cb371',
+            humidity: isDarkMode ? '#47b8ff' : '#47c6ff',
+            wind: isDarkMode ? '#d6b3ff' : '#9370db',
+            gridLine: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.1)',
+            text: isDarkMode ? '#e4e6eb' : '#495057',
+            background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)'
         };
 
         return {
