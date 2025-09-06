@@ -1,7 +1,7 @@
 class MeteogramFormHandler {
     constructor() {
         this.meteogramInstance = null;
-        this.apiBaseUrl = 'https://modelo.cmw.insmet.cu'; // API en puerto 8000, http://127.0.0.1:8000
+        this.apiBaseUrl = 'https://modelo.cmw.insmet.cu';
         this.initElements();
         this.bindEvents();
         this.loadInitialData();
@@ -26,20 +26,15 @@ class MeteogramFormHandler {
     }
 
     setupDatetimeHandlers() {
-        // Actualizar datetime_init cuando cambian fecha u hora
         document.getElementById('datepicker')?.addEventListener('change', () => this.updateDatetimeInit());
         document.getElementById('hour-select')?.addEventListener('change', () => this.updateDatetimeInit());
     }
 
     updateDatetimeInit() {
-        const dateValue = document.getElementById('datepicker').value; // Formato YYYY-MM-DD
-        const hourValue = document.getElementById('hour-select').value; // HH
-
-        // Convertir a YYYYMMDDHH
+        const dateValue = document.getElementById('datepicker').value;
+        const hourValue = document.getElementById('hour-select').value;
         const formattedDate = dateValue.replace(/-/g, '') + hourValue;
         document.getElementById('datetime-init').value = formattedDate;
-
-        console.log('datetime_init enviado:', formattedDate); // Para depuración
     }
 
     initElements() {
@@ -57,32 +52,30 @@ class MeteogramFormHandler {
     loadInitialData() {
         const params = new URLSearchParams(window.location.search);
         let datetimeInit = params.get('datetime_init') || '';
-        const initialData = {
-            lat: parseFloat(params.get('lat')) || 20.715,
-            long: parseFloat(params.get('long')) || -77.993
-        };
 
         if (datetimeInit && datetimeInit.length === 10) {
             const datePart = datetimeInit.substring(0, 8);
             const formattedDate = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
-
             document.getElementById('datepicker').value = formattedDate;
             document.getElementById('hour-select').value = datetimeInit.substring(8, 10);
         } else {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('datepicker').value = today;
-            document.getElementById('hour-select').value = '12';
+            document.getElementById('hour-select').value = '00';
         }
 
-        this.form.querySelector('[name="lat"]').value = initialData.lat;
-        this.form.querySelector('[name="long"]').value = initialData.long;
+        // Cargar el municipio desde los parámetros de la URL si existe
+        const townId = params.get('town');
+        if (townId) {
+            document.getElementById('id_town').value = townId;
+        }
+
         this.updateDatetimeInit();
     }
 
-    async handleSubmit(e, isInitialLoad = false) {
-        if (!isInitialLoad) e.preventDefault();
+    async handleSubmit(e) {
+        e.preventDefault();
 
-        // Verificar formato de datetime_init
         const datetimeInit = document.getElementById('datetime-init').value;
         if (!/^\d{10}$/.test(datetimeInit)) {
             this.showFeedback('Formato de fecha/hora inválido', 'danger');
@@ -97,110 +90,64 @@ class MeteogramFormHandler {
             const formData = new FormData(this.form);
             const params = {
                 datetime_init: formData.get('datetime_init'),
-                lat: formData.get('lat'),
-                long: formData.get('long')
+                town: formData.get('town')  // Solo enviamos datetime_init y town
             };
 
-            // Validación básica
-            if (!params.datetime_init || !params.lat || !params.long) {
+            if (!params.datetime_init || !params.town) {
                 throw new Error('Todos los campos son requeridos');
             }
 
-            const apiResponse = await this.fetchMeteogramData(params);
+            // Enviar el formulario a la vista de Django
+            const response = await fetch('', {
+                method: 'POST',
+                body: new URLSearchParams(params),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': this.getCSRFToken(),
+                }
+            });
 
-            // Verificar estructura de respuesta
-            if (!apiResponse || !apiResponse.times || !apiResponse.T2) {
-                throw new Error('La API devolvió una estructura de datos inesperada');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
             }
 
-            // Formatear respuesta para el meteograma
-            const formattedData = {
-                status: 'success',
-                data: apiResponse
-            };
+            const responseData = await response.json();
 
-            this.updateMeteogram(formattedData);
+            if (responseData.status !== 'success' || !responseData.data) {
+                throw new Error(responseData.message || 'Respuesta inesperada del servidor');
+            }
+
+            // Obtener las coordenadas del municipio seleccionado para el gráfico
+            const selectedOption = document.getElementById('id_town').selectedOptions[0];
+            const lat = parseFloat(selectedOption.getAttribute('data-lat'));
+            const long = parseFloat(selectedOption.getAttribute('data-long'));
+
+            this.updateMeteogram(responseData, lat, long);
             this.showFeedback('Datos meteorológicos actualizados correctamente ✅', 'success');
-            this.updateURL(params);
+            this.updateURL(params, lat, long);
 
         } catch (error) {
             console.error('Error:', error);
             this.showFeedback(`Error: ${error.message || 'Problema al procesar la solicitud'} ❌`, 'danger');
-
-            if (error.response) {
-                console.error('Detalles del error:', await error.response.json());
-            }
         } finally {
             this.setLoadingState(false);
         }
     }
 
-    // async fetchMeteogramData(params) {
-    //     const url = `${this.apiBaseUrl}/api/meteogram/?datetime_init=${params.datetime_init}&lat=${params.lat}&long=${params.long}`;
-    //     console.log('Solicitando datos a:', url);
-    //
-    //     const response = await fetch(url, {
-    //         method: 'GET',
-    //         // mode: 'no-cors',
-    //         headers: {
-    //             'Accept': 'application/json'
-    //         }
-    //     });
-    //
-    //     if (!response.ok) {
-    //         const errorData = await response.json().catch(() => ({}));
-    //         const error = new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-    //         error.response = response;
-    //         throw error;
-    //     }
-    //
-    //     return await response.json();
-    // }
-
-    async fetchMeteogramData(params) {
-        const url = '/api/meteogram-data/';  // Nueva URL del endpoint
-
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': this.getCSRFToken(),
-            },
-            body: JSON.stringify(params)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            const error = new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            error.response = response;
-            throw error;
-        }
-
-        const responseData = await response.json();
-
-        // Verificar estructura de respuesta esperada
-        if (responseData.status !== 'success' || !responseData.data) {
-            throw new Error(responseData.message || 'Respuesta inesperada del servidor');
-        }
-
-        return responseData.data;
-    }
-
-    // Función auxiliar para obtener token CSRF
     getCSRFToken() {
         const cookieValue = document.cookie.match('(^|;)\\s*csrftoken\\s*=\\s*([^;]+)');
         return cookieValue ? cookieValue.pop() : '';
     }
 
-    updateMeteogram(formattedResponse) {
+    updateMeteogram(formattedResponse, lat, long) {
         if (!formattedResponse || !formattedResponse.data || !formattedResponse.data.times) {
             throw new Error('Datos meteorológicos no válidos o vacíos');
         }
 
         const options = {
-            lat: parseFloat(this.form.querySelector('[name="lat"]').value),
-            long: parseFloat(this.form.querySelector('[name="long"]').value),
+            lat: lat,
+            long: long,
             timezone: 'UTC',
             apiBaseUrl: this.apiBaseUrl
         };
@@ -221,8 +168,15 @@ class MeteogramFormHandler {
         }
     }
 
-    updateURL(params) {
-        const newUrl = `${window.location.pathname}?${new URLSearchParams(params)}`;
+    updateURL(params, lat, long) {
+        // Incluir las coordenadas en la URL para compartir
+        const urlParams = new URLSearchParams({
+            datetime_init: params.datetime_init,
+            town: params.town,
+            lat: lat,
+            long: long
+        });
+        const newUrl = `${window.location.pathname}?${urlParams}`;
         window.history.pushState({}, '', newUrl);
     }
 
