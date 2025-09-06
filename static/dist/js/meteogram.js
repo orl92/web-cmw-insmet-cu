@@ -1,19 +1,14 @@
-/**
- * Clase Meteogram mejorada - Visualización meteorológica completa
- * Incluye todos los datos, ciclo día/noche y mejor representación
- */
+
+// Clase Meteogram con mejoras para Tabler.io
 class Meteogram {
     constructor(json, containerId, options = {}) {
-        // Validación inicial del contenedor
         this.container = document.getElementById(containerId);
         if (!this.container) {
             throw new Error(`Contenedor con ID '${containerId}' no encontrado`);
         }
 
-        // Limpiar contenedor antes de crear el gráfico
         this.container.innerHTML = '';
 
-        // Datos meteorológicos
         this.weatherData = [];
         this.temperatures = [];
         this.precipitations = [];
@@ -23,25 +18,19 @@ class Meteogram {
         this.dewPoints = [];
         this.visibility = [];
 
-        // Configuración
         this.json = json;
         this.lat = options.lat || 0;
         this.long = options.long || 0;
         this.timezone = options.timezone || 'UTC';
         this.apiBaseUrl = options.apiBaseUrl || 'http://127.0.0.1:8000';
 
-        // Estado del gráfico
         this.chart = null;
         this.weatherSymbolsGroup = null;
         this.dayNightBackgrounds = [];
 
-        // Inicialización
         this.parseData();
     }
 
-    /**
-     * Diccionario de estados del tiempo
-     */
     static weatherDictionary = {
         clearsky: {
             day: {symbol: '☀️', color: '#FFD700', text: 'Cielo despejado'},
@@ -85,12 +74,9 @@ class Meteogram {
         }
     };
 
-    /**
-     * Determina si es de día basado en la posición geográfica y hora
-     */
     isDaytime(timestamp, lat, long) {
         const date = new Date(timestamp);
-        const hours = date.getUTCHours() + (this.timezone === 'UTC' ? 0 : date.getTimezoneOffset() / 60);
+        const hours = date.getUTCHours();
         const isSummer = date.getUTCMonth() >= 4 && date.getUTCMonth() <= 9;
 
         let dayStart = 6, dayEnd = 20;
@@ -105,25 +91,19 @@ class Meteogram {
         return hours >= dayStart && hours < dayEnd;
     }
 
-    /**
-     * Determina el estado del tiempo considerando todas las variables
-     */
     getWeatherCondition(data) {
         const {temp, rain, clf, rh, windSpeed, td} = data;
 
-        // Condiciones especiales
         if (windSpeed > 15 && rain > 5) return 'thunderstorm';
         if (temp <= 0 && rain > 0.1) return 'snow';
         if (temp > 0 && temp < 3 && rain > 0.1) return 'sleet';
 
-        // Condiciones de precipitación
         if (rain > 0.1) {
             if (rain < 2) return 'lightrain';
             if (rain < 5) return 'rain';
             return 'heavyrain';
         }
 
-        // Condiciones de nubosidad y humedad
         if (rh > 90 && clf > 0.8) return 'fog';
         if (Math.abs(temp - td) < 2 && rh > 85) return 'fog';
         if (clf < 0.2) return 'clearsky';
@@ -131,9 +111,6 @@ class Meteogram {
         return 'cloudy';
     }
 
-    /**
-     * Dibuja fondos para indicar día/noche
-     */
     drawDayNightBackground(chart) {
         this.dayNightBackgrounds.forEach(bg => bg.destroy());
         this.dayNightBackgrounds = [];
@@ -186,89 +163,111 @@ class Meteogram {
         });
     }
 
-    /**
-     * Dibuja símbolos del tiempo sobre la línea de temperatura
-     */
+    drawWeatherSymbols(chart) {
+        if (!chart || !chart.renderer) return;
 
-    /**
-     * Dibuja símbolos del estado del tiempo sobre los puntos de temperatura
-     */
-    /**
-     * Dibuja símbolos del estado del tiempo sobre los puntos de temperatura
-     */
-    /**
- * Dibuja símbolos del estado del tiempo con tamaño aumentado y mejor visibilidad
- */
-drawWeatherSymbols(chart) {
-    if (!chart || !chart.renderer) return;
+        if (this.weatherSymbolsGroup) {
+            this.weatherSymbolsGroup.destroy();
+        }
 
-    // Limpiar símbolos anteriores
-    if (this.weatherSymbolsGroup) {
-        this.weatherSymbolsGroup.destroy();
+        this.weatherSymbolsGroup = chart.renderer.g()
+            .attr({ class: 'weather-symbols', zIndex: 5 })
+            .add();
+
+        const tempSeries = chart.get('temperatura');
+        if (!tempSeries) return;
+
+        const SYMBOL_SIZE = 28;
+        const Y_OFFSET = -24;
+        const STYLE = {
+            fontSize: `${SYMBOL_SIZE}px`,
+            fontWeight: 'normal',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+        };
+
+        this.weatherData.forEach((weather, i) => {
+            const point = tempSeries.data[i];
+            if (!point || !point.plotX || !point.plotY) return;
+
+            const condition = this.getWeatherCondition(weather);
+            const weatherType = Meteogram.weatherDictionary[condition];
+            if (!weatherType) return;
+
+            const variant = weather.isDay ? 'day' : 'night';
+            const symbol = weatherType[variant].symbol;
+
+            const x = point.plotX + chart.plotLeft;
+            const y = point.plotY + chart.plotTop + Y_OFFSET;
+
+            const symbolElement = chart.renderer.text(symbol, x, y)
+                .attr({
+                    ...STYLE,
+                    title: `${weatherType[variant].text}\n${new Date(weather.time).toLocaleString()}`,
+                    cursor: 'pointer'
+                })
+                .css({
+                    pointerEvents: 'all'
+                })
+                .add(this.weatherSymbolsGroup);
+
+            symbolElement.translate(
+                -symbolElement.getBBox().width / 2,
+                -symbolElement.getBBox().height / 2
+            );
+
+            symbolElement.on('mouseover', function() {
+                chart.tooltip.refresh([{
+                    series: tempSeries,
+                    point: point,
+                    x: point.x,
+                    y: point.y
+                }], point.x);
+            });
+
+            symbolElement.on('mouseout', function() {
+                chart.tooltip.hide();
+            });
+        });
     }
 
-    this.weatherSymbolsGroup = chart.renderer.g()
-        .attr({ class: 'weather-symbols', zIndex: 5 })
-        .add();
-
-    const tempSeries = chart.get('temperatura');
-    if (!tempSeries) return;
-
-    // Configuración de tamaño y estilo
-    const SYMBOL_SIZE = 36; // Tamaño aumentado (36px)
-    const Y_OFFSET = -20;   // Mayor desplazamiento vertical
-    const STYLE = {
-        fontSize: `${SYMBOL_SIZE}px`,
-        fontWeight: 'bold',
-        textShadow: '0 0 8px white, 0 0 4px black'
-    };
-
-    this.weatherData.forEach((weather, i) => {
-        const point = tempSeries.data[i];
-        if (!point || !point.plotX || !point.plotY) return;
-
-        const condition = this.getWeatherCondition(weather);
-        const weatherType = Meteogram.weatherDictionary[condition];
-        if (!weatherType) return;
-
-        const variant = weather.isDay ? 'day' : 'night';
-        const symbol = weatherType[variant].symbol;
-
-        // Posición del símbolo
-        const x = point.plotX + chart.plotLeft;
-        const y = point.plotY + chart.plotTop + Y_OFFSET;
-
-        // Crear símbolo con estilo mejorado
-        const symbolElement = chart.renderer.text(symbol, x, y)
-            .attr({
-                ...STYLE,
-                title: `${weatherType[variant].text}\n${new Date(weather.time).toLocaleString()}`
-            })
-            .add(this.weatherSymbolsGroup);
-
-        // Centrado preciso
-        symbolElement.translate(
-            -symbolElement.getBBox().width / 2,
-            -symbolElement.getBBox().height / 2
-        );
-    });
-}
-
-    /**
-     * Configuración completa del gráfico
-     */
     getChartOptions() {
+        // Detectar tema actual
+        const isDarkMode = document.body.getAttribute('data-bs-theme') === 'dark';
+        
+        // Colores adaptativos para modo claro/oscuro
+        const colors = {
+            temperature: isDarkMode ? '#4299e1' : '#206bc4',
+            dewPoint: isDarkMode ? '#7e9cd8' : '#5c7cfa',
+            precipitation: isDarkMode ? '#48bb78' : '#2fb344',
+            pressure: isDarkMode ? '#ed8936' : '#f76707',
+            humidity: isDarkMode ? '#9f7aea' : '#ae3ec9',
+            wind: isDarkMode ? '#5c7cfa' : '#4263eb',
+            gridLine: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(107, 107, 107, 0.1)',
+            text: isDarkMode ? '#f5f5f5' : '#495057',
+            background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'transparent'
+        };
+
         return {
+            time: {
+                useUTC: true,
+                timezoneOffset: 0
+            },
             chart: {
                 renderTo: this.container,
-                marginBottom: 120, // Aumentado para la leyenda
-                marginRight: 40,
-                marginTop: 60,
-                plotBorderWidth: 1,
-                height: 500,
+                marginBottom: 100,
+                marginRight: 30,
+                marginTop: 70,
+                marginLeft: 60,
+                plotBorderWidth: 0,
+                height: 550,
                 alignTicks: false,
+                backgroundColor: colors.background,
+                style: {
+                    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+                },
                 scrollablePlotArea: {
-                    minWidth: 800
+                    minWidth: 800,
+                    scrollPositionX: 0
                 },
                 events: {
                     load: (e) => this.onChartLoad(e.target),
@@ -283,107 +282,218 @@ drawWeatherSymbols(chart) {
                 align: 'left',
                 style: {
                     fontSize: '18px',
-                    fontWeight: 'bold'
-                }
-            },
-            subtitle: {
-                text: `Ubicación: Lat ${this.lat.toFixed(3)}, Long ${this.long.toFixed(3)}`,
-                align: 'left'
+                    fontWeight: '600',
+                    color: colors.text,
+                    marginBottom: '15px' // Margen inferior aumentado
+                },
+                margin: 25, // Margen general aumentado
+                y: 20       // Posición vertical ajustada
             },
             tooltip: {
                 shared: true,
                 useHTML: true,
-                headerFormat:
-                    '<small>{point.x:%A, %b %e, %H:%M}</small><br>' +
-                    '<b>{point.point.weatherDescription}</b><br>',
+                backgroundColor: isDarkMode ? 'rgba(33, 37, 41, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                borderWidth: 0,
+                borderRadius: 4,
+                shadow: true,
                 style: {
-                    fontSize: '12px'
-                }
+                    fontSize: '13px',
+                    color: colors.text
+                },
+                headerFormat: 
+                '<div style="border-bottom: 1px solid ' + (isDarkMode ? '#495057' : '#e9ecef') + '; padding-bottom: 5px; margin-bottom: 5px;">' +
+                '<small>{point.x:%A, %b %e, %H:%M} UTC</small><br>' +
+                '<span style="font-size: 16px; margin-right: 5px;">{point.point.weatherSymbol}</span>' +
+                '<b>{point.point.weatherDescription}</b>' +
+                '</div>',
+                pointFormat: 
+                    '<span style="color:{point.color}">●</span> {series.name}: <b>{point.y}</b>{series.tooltipOptions.valueSuffix}<br/>'
             },
             xAxis: [{
                 type: 'datetime',
                 tickInterval: 3 * 36e5,
                 minorTickInterval: 36e5,
-                gridLineWidth: 1,
-                gridLineColor: 'rgba(128, 128, 128, 0.1)',
+                gridLineWidth: 0,
+                gridLineColor: colors.gridLine,  // Usa el color definido
+                lineWidth: 0,
                 labels: {
                     format: '{value:%H}',
-                    style: {fontSize: '12px'}
+                    style: {
+                        fontSize: '11px',
+                        color: colors.text
+                    }
                 },
-                crosshair: true
+                crosshair: {
+                    width: 1,
+                    color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                    zIndex: 5
+                }
             }, {
                 linkedTo: 0,
                 type: 'datetime',
                 tickInterval: 24 * 36e5,
                 labels: {
-                    format: '{value:<span style="font-weight:bold">%a</span> %e %b}',
+                    format: '{value:<span style="font-weight:600">%a</span> %e %b}',
                     align: 'left',
-                    style: {fontSize: '12px'}
+                    style: {
+                        fontSize: '11px',
+                        color: colors.text
+                    }
                 },
                 opposite: true,
-                tickLength: 20
+                tickLength: 20,
+                lineWidth: 0,
+                gridLineWidth: 0,
+                gridLineColor: colors.gridLine,  // Usa el color definido
             }],
             yAxis: [
-                // Eje 0: Temperatura
                 {
-                    title: {text: 'Temperatura (°C)'},
-                    labels: {format: '{value:.1f}°'},
-                    plotLines: [{value: 0, color: '#888', width: 1}],
-                    minRange: 10
+                    title: {
+                        text: 'Temperatura (°C)',
+                        style: {
+                            color: colors.text,
+                            fontWeight: '500'
+                        }
+                    },
+                    labels: {
+                        format: '{value:.0f}°',
+                        style: {
+                            color: colors.temperature
+                        }
+                    },
+                    plotLines: [{
+                        value: 0, 
+                        color: colors.gridLine,  // Usa el mismo color para las líneas de referencia
+                        width: 1,
+                        zIndex: 2
+                    }],
+                    minRange: 10,
+                    gridLineWidth: 0,
+                    gridLineColor: colors.gridLine,  // Usa el color definido
+                    lineWidth: 0,
                 },
-                // Eje 1: Precipitación
                 {
-                    title: {text: 'Precipitación (mm)'},
+                    title: {
+                        text: 'Precipitación (mm)',
+                        style: {
+                            color: colors.text,
+                            fontWeight: '500'
+                        }
+                    },
                     opposite: true,
-                    min: 0
+                    min: 0,
+                    gridLineWidth: 0,
+                    gridLineColor: colors.gridLine,  // Usa el color definido
+                    lineWidth: 0,
+                    labels: {
+                        style: {
+                            color: colors.precipitation
+                        }
+                    }
                 },
-                // Eje 2: Presión
                 {
-                    title: {text: 'Presión (hPa)'},
+                    title: {
+                        text: 'Presión (hPa)',
+                        style: {
+                            color: colors.text,
+                            fontWeight: '500'
+                        }
+                    },
                     opposite: true,
-                    minRange: 20
+                    minRange: 20,
+                    gridLineWidth: 0,
+                    gridLineColor: colors.gridLine,  // Usa el color definido
+                    lineWidth: 0,
+                    labels: {
+                        style: {
+                            color: colors.pressure
+                        }
+                    }
                 },
-                // Eje 3: Humedad
                 {
-                    title: {text: 'Humedad (%)'},
+                    title: {
+                        text: 'Humedad (%)',
+                        style: {
+                            color: colors.text,
+                            fontWeight: '500'
+                        }
+                    },
                     min: 0,
                     max: 100,
-                    visible: false
+                    visible: false,
+                    gridLineWidth: 0,
+                    gridLineColor: colors.gridLine,  // Usa el color definido
+                    lineWidth: 0,
                 }
             ],
             legend: {
                 align: 'center',
                 verticalAlign: 'bottom',
                 layout: 'horizontal',
-                itemStyle: {fontSize: '12px'},
-                padding: 10,
+                itemStyle: {
+                    fontSize: '12px',
+                    color: colors.text,
+                    fontWeight: 'normal'
+                },
+                itemHoverStyle: {
+                    color: colors.text
+                },
+                padding: 15,
                 margin: 20,
-                itemDistance: 20,
-                symbolHeight: 12,
-                symbolWidth: 12,
-                symbolRadius: 0
+                itemDistance: 15,
+                symbolHeight: 10,
+                symbolWidth: 10,
+                symbolRadius: 3,
+                backgroundColor: 'transparent',
+                borderWidth: 0
             },
             plotOptions: {
                 series: {
                     pointPlacement: 'on',
-                    marker: {enabled: false},
+                    marker: {
+                        enabled: false,
+                        states: {
+                            hover: {
+                                enabled: true,
+                                radius: 4
+                            }
+                        }
+                    },
                     states: {
                         hover: {
                             halo: {
-                                size: 5,
-                                opacity: 0.1
+                                size: 6,
+                                opacity: 0.15
                             }
+                        },
+                        inactive: {
+                            opacity: 0.4
                         }
                     }
                 },
                 column: {
                     grouping: false,
                     shadow: false,
-                    borderWidth: 0
+                    borderWidth: 0,
+                    borderRadius: 2,
+                    pointPadding: 0.1,
+                    groupPadding: 0
+                },
+                spline: {
+                    lineWidth: 2.5,
+                    marker: {
+                        enabled: false
+                    }
+                },
+                areaspline: {
+                    fillOpacity: 0.4,
+                    lineWidth: 1,
+                    marker: {
+                        enabled: false
+                    }
                 }
             },
             series: [
-                // Temperatura
                 {
                     id: 'temperatura',
                     name: 'Temperatura',
@@ -393,24 +503,26 @@ drawWeatherSymbols(chart) {
                         valueSuffix: '°C',
                         valueDecimals: 1
                     },
-                    color: '#FF4500',
+                    color: colors.temperature,
                     yAxis: 0,
                     zIndex: 3,
                     dataLabels: {
                         enabled: true,
                         formatter: function () {
-                            return this.y.toFixed(1) + '°';
+                            return this.y.toFixed(0);
                         },
                         style: {
-                            fontSize: '10px',
-                            textOutline: 'none'
+                            fontSize: '9px',
+                            textOutline: 'none',
+                            fontWeight: '500',
+                            color: colors.temperature
                         },
                         align: 'center',
                         verticalAlign: 'top',
-                        y: -20
+                        y: -32,
+                        x: 0
                     }
                 },
-                // Punto de rocío
                 {
                     name: 'Punto de rocío',
                     type: 'spline',
@@ -419,31 +531,32 @@ drawWeatherSymbols(chart) {
                         valueSuffix: '°C',
                         valueDecimals: 1
                     },
-                    color: '#00BFFF',
+                    color: colors.dewPoint,
                     yAxis: 0,
                     zIndex: 2,
                     dashStyle: 'ShortDot',
                     dataLabels: {
                         enabled: true,
                         formatter: function () {
-                            return this.y.toFixed(1) + '°';
+                            return this.y.toFixed(0);
                         },
                         style: {
-                            fontSize: '10px',
+                            fontSize: '9px',
                             textOutline: 'none',
-                            color: '#00BFFF'
+                            color: colors.dewPoint,
+                            fontWeight: '500'
                         },
                         align: 'center',
                         verticalAlign: 'top',
-                        y: -35
+                        y: -32,
+                        x: 0
                     }
                 },
-                // Precipitación
                 {
                     name: 'Precipitación',
                     type: 'column',
                     data: this.precipitations,
-                    color: '#1E90FF',
+                    color: colors.precipitation,
                     yAxis: 1,
                     zIndex: 1,
                     tooltip: {
@@ -453,24 +566,25 @@ drawWeatherSymbols(chart) {
                     dataLabels: {
                         enabled: true,
                         formatter: function () {
-                            return this.y > 0 ? this.y.toFixed(1) + 'mm' : '';
+                            return this.y > 0.5 ? this.y.toFixed(1): '';
                         },
                         style: {
-                            fontSize: '10px',
+                            fontSize: '9px',
                             textOutline: 'none',
-                            color: '#1E90FF'
+                            color: colors.precipitation,
+                            fontWeight: '500'
                         },
+                        align: 'center',
                         verticalAlign: 'top',
-                        inside: false,
-                        y: -15
+                        y: -32,
+                        x: 0
                     }
                 },
-                // Presión
                 {
                     name: 'Presión',
                     type: 'spline',
                     data: this.pressures,
-                    color: '#3CB371',
+                    color: colors.pressure,
                     yAxis: 2,
                     dashStyle: 'ShortDot',
                     zIndex: 2,
@@ -481,24 +595,25 @@ drawWeatherSymbols(chart) {
                     dataLabels: {
                         enabled: true,
                         formatter: function () {
-                            return this.y.toFixed(0) + 'hPa';
+                            return this.y.toFixed(0);
                         },
                         style: {
-                            fontSize: '10px',
+                            fontSize: '9px',
                             textOutline: 'none',
-                            color: '#3CB371'
+                            color: colors.pressure,
+                            fontWeight: '500'
                         },
                         align: 'center',
-                        verticalAlign: 'bottom',
-                        y: 15
+                        verticalAlign: 'top',
+                        y: -32,
+                        x: 0
                     }
                 },
-                // Humedad
                 {
                     name: 'Humedad',
                     type: 'areaspline',
                     data: this.humidities,
-                    color: 'rgba(100, 200, 255, 0.3)',
+                    color: colors.humidity,
                     yAxis: 3,
                     zIndex: 0,
                     tooltip: {
@@ -506,28 +621,16 @@ drawWeatherSymbols(chart) {
                         valueDecimals: 1
                     },
                     dataLabels: {
-                        enabled: true,
-                        formatter: function () {
-                            return this.y.toFixed(0) + '%';
-                        },
-                        style: {
-                            fontSize: '10px',
-                            textOutline: 'none',
-                            color: '#64C8FF'
-                        },
-                        align: 'center',
-                        verticalAlign: 'middle',
-                        y: 0
+                        enabled: false
                     }
                 },
-                // Viento (sin dataLabels ya que no queremos mostrar la dirección)
                 {
                     name: 'Viento',
                     type: 'windbarb',
                     data: this.winds,
-                    color: '#9370DB',
+                    color: colors.wind,
                     yAxis: 0,
-                    vectorLength: 18,
+                    vectorLength: 16,
                     zIndex: 4,
                     tooltip: {
                         pointFormatter: function () {
@@ -537,24 +640,11 @@ drawWeatherSymbols(chart) {
                     }
                 }
             ],
-            credits: {
-                enabled: true,
-                text: 'Datos meteorológicos',
-                href: `${this.apiBaseUrl}/meteogram/`,
-                position: {
-                    align: 'right',
-                    x: -10
-                }
-            }
         };
     }
 
-    /**
-     * Eventos después de cargar el gráfico
-     */
     onChartLoad(chart) {
         this.drawDayNightBackground(chart);
-        // Pequeño delay para asegurar la renderización completa
         setTimeout(() => this.drawWeatherSymbols(chart), 50);
 
         window.addEventListener('resize', () => {
@@ -565,9 +655,6 @@ drawWeatherSymbols(chart) {
         });
     }
 
-    /**
-     * Procesa los datos de la API
-     */
     parseData() {
         if (!this.json || !this.json.times) {
             this.showError('Datos meteorológicos no disponibles');
@@ -595,10 +682,10 @@ drawWeatherSymbols(chart) {
         const visibilities = VIS ? validateArray(VIS, 'VIS', 10) : Array(times.length).fill(10);
 
         times.forEach((time, i) => {
-            const timestamp = new Date(time).getTime();
+            const timestamp = Date.parse(time + 'Z');
             const temp = temps[i];
             const rain = rains[i];
-            const windSpeed = Math.sqrt(Math.pow(uWinds[i], 2) + Math.pow(vWinds[i], 2)) * 3.6; // Convertir a km/h
+            const windSpeed = Math.sqrt(Math.pow(uWinds[i], 2) + Math.pow(vWinds[i], 2)) * 3.6;
             const windDir = (270 - (Math.atan2(vWinds[i], uWinds[i]) * 180 / Math.PI)) % 360;
             const isDay = this.isDaytime(timestamp, this.lat, this.long);
             const condition = this.getWeatherCondition({
@@ -610,7 +697,11 @@ drawWeatherSymbols(chart) {
                 td: dewPoints[i]
             });
 
-            // Almacenar datos meteorológicos
+            const weatherType = Meteogram.weatherDictionary[condition];
+            const variant = isDay ? 'day' : 'night';
+            const weatherSymbol = weatherType[variant].symbol;
+            const weatherDescription = weatherType[variant].text;
+
             this.weatherData.push({
                 time: timestamp,
                 condition,
@@ -622,27 +713,29 @@ drawWeatherSymbols(chart) {
                 humidity: humidities[i],
                 pressure: pressures[i],
                 visibility: visibilities[i],
-                dewPoint: dewPoints[i]
+                dewPoint: dewPoints[i],
+                weatherSymbol,
+                weatherDescription
             });
 
-            // Datos para series del gráfico
             this.temperatures.push({
                 x: timestamp,
                 y: temp,
-                weatherDescription: Meteogram.weatherDictionary[condition][isDay ? 'day' : 'night'].text,
-                isDay: isDay, // Asegurar que esta propiedad está incluida
+                weatherSymbol,
+                weatherDescription,
+                isDay: isDay,
                 humidity: humidities[i],
                 dewPoint: dewPoints[i],
                 visibility: visibilities[i],
                 windSpeed,
                 windDir,
-                color: temp > 0 ? '#FF4500' : '#00BFFF'
+                color: temp > 0 ? '#206bc4' : '#5c7cfa'
             });
 
             this.precipitations.push({
                 x: timestamp,
                 y: rain,
-                color: rain > 0 ? '#1E90FF' : 'transparent',
+                color: rain > 0 ? '#48bb78' : '#2fb344',
             });
 
             this.pressures.push({
@@ -660,7 +753,6 @@ drawWeatherSymbols(chart) {
                 y: dewPoints[i],
             });
 
-            // Viento en TODOS los puntos
             this.winds.push({
                 x: timestamp,
                 value: windSpeed,
@@ -671,31 +763,24 @@ drawWeatherSymbols(chart) {
         this.createChart();
     }
 
-    /**
-     * Crea el gráfico Highcharts
-     */
     createChart() {
         try {
             if (!Highcharts) {
                 throw new Error('Highcharts no está cargado');
             }
 
-            // Verificar nuevamente que el contenedor existe
             if (!this.container) {
                 throw new Error('Contenedor no disponible');
             }
 
-            // Asegurarse de que el contenedor esté visible
             this.container.style.display = 'block';
 
-            // Destruir gráfico existente
             if (this.chart) {
                 this.chart.destroy();
             }
 
-            // Crear nuevo gráfico con opciones actualizadas
             const options = this.getChartOptions();
-            options.chart.renderTo = this.container; // Usar el elemento DOM directamente
+            options.chart.renderTo = this.container;
 
             this.chart = new Highcharts.Chart(options);
 
@@ -705,13 +790,9 @@ drawWeatherSymbols(chart) {
         }
     }
 
-    /**
-     * Muestra errores en el contenedor
-     */
     showError(message) {
-        const container = document.getElementById(this.container);
-        if (container) {
-            container.innerHTML = `
+        if (this.container) {
+            this.container.innerHTML = `
                 <div style="
                     padding: 20px;
                     margin: 20px;
@@ -729,9 +810,6 @@ drawWeatherSymbols(chart) {
         }
     }
 
-    /**
-     * Destruye la instancia y limpia recursos
-     */
     destroy() {
         if (this.chart) {
             this.chart.destroy();
@@ -740,6 +818,5 @@ drawWeatherSymbols(chart) {
             this.weatherSymbolsGroup.destroy();
         }
         this.dayNightBackgrounds.forEach(bg => bg.destroy());
-        window.removeEventListener('resize', this.handleResize);
     }
 }
