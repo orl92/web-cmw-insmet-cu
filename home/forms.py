@@ -66,34 +66,30 @@ class MeteoDataForm(forms.Form):
 class MeteogramForm(forms.Form):
     datetime_init = forms.CharField(
         label='Fecha y hora inicial',
-        initial='2025071806',
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'YYYYMMDDHH'
+            'placeholder': 'YYYYMMDDHH',
+            'pattern': '\d{10}'
         }),
         help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)'
     )
-
-    lat = forms.FloatField(
-        label='Latitud',
-        initial=20.715,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.001'
-        }),
-        validators=[MinValueValidator(-90), MaxValueValidator(90)]
+    
+    town = forms.ModelChoiceField(
+        queryset=Town.objects.all().order_by('name'),
+        label='Municipio',
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        help_text='Seleccione un municipio'
     )
 
-    long = forms.FloatField(
-        label='Longitud',
-        initial=-77.993,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'step': '0.001'
-        }),
-        validators=[MinValueValidator(-180), MaxValueValidator(180)]
-    )
-
+    def clean_datetime_init(self):
+        data = self.cleaned_data['datetime_init']
+        try:
+            datetime.strptime(data, '%Y%m%d%H')
+        except ValueError:
+            raise forms.ValidationError("Formato debe ser YYYYMMDDHH")
+        return data
+    
 class SoundingForm(forms.Form):
     datetime_init = forms.CharField(
         label='Fecha y hora inicial',
@@ -105,18 +101,13 @@ class SoundingForm(forms.Form):
         help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)'
     )
 
-    # Nuevo campo para municipio
     town = forms.ModelChoiceField(
         queryset=Town.objects.all().order_by('name'),
         label='Municipio',
         required=True,
-        widget=forms.Select(attrs={'class': 'form-control'}),
+        widget=forms.Select(attrs={'class': 'form-select'}),
         help_text='Seleccione un municipio'
     )
-    
-    # Campos ocultos para lat/long
-    lat = forms.FloatField(widget=forms.HiddenInput())
-    long = forms.FloatField(widget=forms.HiddenInput())
 
     t_index = forms.IntegerField(
         label='Índice de tiempo',
