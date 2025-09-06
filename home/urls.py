@@ -32,12 +32,9 @@ urlpatterns = [
     path('aviso/tormenta/', StormListView.as_view(), name="tormenta"),
     path('aviso/radar/', RadarWarningListView.as_view(), name="radar"),
     # Modelos
-    path('api/fetch-data/', views.fetch_data, name='fetch_data'),
-    path('api/generate-plot/', views.generate_plot, name='generate_plot'),
     path('modelo/mapas/', MapaView.as_view(), name='maps'),
     path('modelo/meteogram/', MeteogramView.as_view(), name='meteogram'),
     path('modelo/sounding/', SoundingView.as_view(), name='sounding'),
-    path('api/meteogram-data/', views.fetch_meteogram_data, name='meteogram_data'),
     # Servicios Públicos
     path('servicios/publicos/', PublicServicesListView.as_view(), name='servicios_publicos'),
     # Servicios Comerciales
