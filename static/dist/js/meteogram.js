@@ -397,7 +397,7 @@ class Meteogram {
                 lineWidth: 0,
                 labels: {
                     style: {
-                        color: colors.precipitation
+                        color: colors.text
                     }
                 }
             },
