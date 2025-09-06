@@ -307,13 +307,13 @@ class Meteogram {
                 '<b>{point.point.weatherDescription}</b>' +
                 '</div>',
                 pointFormat: 
-                    '<span style="color:{point.color}">●</span> {series.name}: <b>{point.y}</b>{series.tooltipOptions.valueSuffix}<br/>'
+                    '<span style="color:{point.color}">●</span> {series.name}: <b>{point.y}</b><br/>'
             },
             xAxis: [{
                 type: 'datetime',
                 tickInterval: 3 * 36e5,
                 minorTickInterval: 36e5,
-                gridLineWidth: 0,
+                gridLineWidth: 1,
                 gridLineColor: colors.gridLine,  // Usa el color definido
                 lineWidth: 0,
                 labels: {
@@ -343,89 +343,89 @@ class Meteogram {
                 opposite: true,
                 tickLength: 20,
                 lineWidth: 0,
-                gridLineWidth: 0,
                 gridLineColor: colors.gridLine,  // Usa el color definido
             }],
             yAxis: [
-                {
-                    title: {
-                        text: 'Temperatura (°C)',
-                        style: {
-                            color: colors.text,
-                            fontWeight: '500'
-                        }
-                    },
-                    labels: {
-                        format: '{value:.0f}°',
-                        style: {
-                            color: colors.temperature
-                        }
-                    },
-                    plotLines: [{
-                        value: 0, 
-                        color: colors.gridLine,  // Usa el mismo color para las líneas de referencia
-                        width: 1,
-                        zIndex: 2
-                    }],
-                    minRange: 10,
-                    gridLineWidth: 0,
-                    gridLineColor: colors.gridLine,  // Usa el color definido
-                    lineWidth: 0,
-                },
-                {
-                    title: {
-                        text: 'Precipitación (mm)',
-                        style: {
-                            color: colors.text,
-                            fontWeight: '500'
-                        }
-                    },
-                    opposite: true,
-                    min: 0,
-                    gridLineWidth: 0,
-                    gridLineColor: colors.gridLine,  // Usa el color definido
-                    lineWidth: 0,
-                    labels: {
-                        style: {
-                            color: colors.precipitation
-                        }
+            {
+                title: {
+                    text: 'Temperatura (°C)',
+                    style: {
+                        color: colors.text,
+                        fontWeight: '500'
                     }
                 },
-                {
-                    title: {
-                        text: 'Presión (hPa)',
-                        style: {
-                            color: colors.text,
-                            fontWeight: '500'
-                        }
-                    },
-                    opposite: true,
-                    minRange: 20,
-                    gridLineWidth: 0,
-                    gridLineColor: colors.gridLine,  // Usa el color definido
-                    lineWidth: 0,
-                    labels: {
-                        style: {
-                            color: colors.pressure
-                        }
+                labels: {
+                    format: '{value:.0f}°',
+                    style: {
+                        color: colors.temperature
                     }
                 },
-                {
-                    title: {
-                        text: 'Humedad (%)',
-                        style: {
-                            color: colors.text,
-                            fontWeight: '500'
-                        }
-                    },
-                    min: 0,
-                    max: 100,
-                    visible: false,
-                    gridLineWidth: 0,
-                    gridLineColor: colors.gridLine,  // Usa el color definido
-                    lineWidth: 0,
+                plotLines: [{
+                    value: 0, 
+                    color: colors.gridLine,
+                    width: 1,
+                    zIndex: 2
+                }],
+                minRange: 10,
+                gridLineWidth: 0,    // ← Cambiado a 0
+                gridLineColor: colors.gridLine,
+                lineWidth: 0,        // ← Cambiado a 0
+            },
+            {
+                title: {
+                    text: 'Precipitación (mm)',
+                    style: {
+                        color: colors.text,
+                        fontWeight: '500'
+                    }
+                },
+                opposite: true,
+                min: 0,
+                gridLineWidth: 0,    // ← Cambiado a 0
+                gridLineColor: colors.gridLine,
+                lineWidth: 0,        // ← Cambiado a 0
+                labels: {
+                    style: {
+                        color: colors.precipitation
+                    }
                 }
-            ],
+            },
+            {
+                title: {
+                    text: 'Presión (hPa)',
+                    style: {
+                        color: colors.text,
+                        fontWeight: '500'
+                    }
+                },
+                opposite: true,
+                minRange: 20,
+                gridLineWidth: 0,    // ← Cambiado a 0
+                gridLineColor: colors.gridLine,
+                lineWidth: 0,        // ← Cambiado a 0
+                labels: {
+                    style: {
+                        color: colors.pressure
+                    }
+                }
+            },
+            {
+                title: {
+                    text: 'Humedad (%)',
+                    style: {
+                        color: colors.text,
+                        fontWeight: '500'
+                    }
+                },
+                min: 0,
+                max: 100,
+                visible: false,
+                gridLineWidth: 1,   // en lugar de 0, para mostrar las líneas de los ticks principales
+                minorGridLineWidth: 0, // asegurar que no hay líneas de ticks menores
+                gridLineColor: colors.gridLine,
+                lineWidth: 0,        // ← Cambiado a 0
+            }
+        ],
             legend: {
                 align: 'center',
                 verticalAlign: 'bottom',
@@ -509,7 +509,7 @@ class Meteogram {
                     dataLabels: {
                         enabled: true,
                         formatter: function () {
-                            return this.y.toFixed(0);
+                            return this.y.toFixed(0) + '°C';
                         },
                         style: {
                             fontSize: '9px',
@@ -538,7 +538,7 @@ class Meteogram {
                     dataLabels: {
                         enabled: true,
                         formatter: function () {
-                            return this.y.toFixed(0);
+                            return this.y.toFixed(0) + '°C';
                         },
                         style: {
                             fontSize: '9px',
@@ -560,13 +560,13 @@ class Meteogram {
                     yAxis: 1,
                     zIndex: 1,
                     tooltip: {
-                        valueSuffix: ' mm',
+                        valueSuffix: 'mm',
                         valueDecimals: 1
                     },
                     dataLabels: {
                         enabled: true,
                         formatter: function () {
-                            return this.y > 0.5 ? this.y.toFixed(1): '';
+                            return this.y > 0.5 ? this.y.toFixed(1) + 'mm' : '';
                         },
                         style: {
                             fontSize: '9px',
@@ -589,13 +589,13 @@ class Meteogram {
                     dashStyle: 'ShortDot',
                     zIndex: 2,
                     tooltip: {
-                        valueSuffix: ' hPa',
+                        valueSuffix: 'hPa',
                         valueDecimals: 1
                     },
                     dataLabels: {
                         enabled: true,
                         formatter: function () {
-                            return this.y.toFixed(0);
+                            return this.y.toFixed(0) + 'hPa';
                         },
                         style: {
                             fontSize: '9px',
