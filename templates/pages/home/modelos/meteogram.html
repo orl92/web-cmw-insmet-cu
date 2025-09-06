@@ -35,7 +35,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <!-- Hora -->
                             <div class="mb-0">
                                 <label for="hour-select" class="form-label required">Hora</label>
@@ -48,17 +48,19 @@
                             </div>
                         </div>
 
-                        <!-- Campo Latitud -->
-                        <div class="col-md-2 form-field">
-                            <label for="id_lat" class="form-label">Latitud</label>
-                            <input type="number" class="form-control" id="id_lat" name="lat" step="0.001" required>
-                        </div>
-
-                        <!-- Campo Longitud -->
-                        <div class="col-md-2 form-field">
-                            <label for="id_long" class="form-label">Longitud</label>
-                            <input type="number" class="form-control" id="id_long" name="long" step="0.001"
-                                   required>
+                        <!-- Campo de municipio -->
+                        <div class="col-md-3 form-field">
+                            <label for="id_town" class="form-label required">Municipio</label>
+                            <select class="form-select" id="id_town" name="town" required>
+                                {% for town in form.town.field.queryset %}
+                                    <option value="{{ town.id }}" 
+                                            data-lat="{{ town.latitude }}" 
+                                            data-long="{{ town.longitude }}"
+                                            {% if form.town.value == town.id %}selected{% endif %}>
+                                        {{ town.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
 
                         <!-- Botón de enviar -->
