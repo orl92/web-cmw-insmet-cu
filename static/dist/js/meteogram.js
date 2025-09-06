@@ -735,7 +735,7 @@ class Meteogram {
             this.precipitations.push({
                 x: timestamp,
                 y: rain,
-                color: rain > 0 ? '#48bb78' : '#2fb344',
+                color: rain > 0 ? '#48bb78' : '#2fb344',    
             });
 
             this.pressures.push({
