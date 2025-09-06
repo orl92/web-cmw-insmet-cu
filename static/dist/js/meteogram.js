@@ -236,12 +236,12 @@ class Meteogram {
         
         // Colores adaptativos para modo claro/oscuro
         const colors = {
-            temperature: isDarkMode ? '#4299e1' : '#206bc4',
-            dewPoint: isDarkMode ? '#7e9cd8' : '#5c7cfa',
-            precipitation: isDarkMode ? '#48bb78' : '#2fb344',
-            pressure: isDarkMode ? '#ed8936' : '#f76707',
-            humidity: isDarkMode ? '#9f7aea' : '#ae3ec9',
-            wind: isDarkMode ? '#5c7cfa' : '#4263eb',
+            temperature: isDarkMode ? '#ff4500' : '#ff4500',
+            dewPoint: isDarkMode ? '#00bfff' : '#00bfff',
+            precipitation: isDarkMode ? '#1e90ff' : '#1e90ff',
+            pressure: isDarkMode ? '#3cb371' : '#3cb371',
+            humidity: isDarkMode ? '#64c8ff' : '#64c8ff',
+            wind: isDarkMode ? '#9370db' : '#9370db',
             gridLine: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(107, 107, 107, 0.1)',
             text: isDarkMode ? '#f5f5f5' : '#495057',
             background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'transparent'
@@ -286,8 +286,8 @@ class Meteogram {
                     color: colors.text,
                     marginBottom: '15px' // Margen inferior aumentado
                 },
-                margin: 25, // Margen general aumentado
-                y: 20       // Posición vertical ajustada
+                margin: 30,
+                y: 25
             },
             tooltip: {
                 shared: true,
@@ -312,7 +312,8 @@ class Meteogram {
             xAxis: [{
                 type: 'datetime',
                 tickInterval: 3 * 36e5,
-                minorTickInterval: 36e5,
+                minorTickInterval: null,
+                minorGridLineWidth: 0,
                 gridLineWidth: 1,
                 gridLineColor: colors.gridLine,  // Usa el color definido
                 lineWidth: 0,
@@ -332,6 +333,9 @@ class Meteogram {
                 linkedTo: 0,
                 type: 'datetime',
                 tickInterval: 24 * 36e5,
+                minorTickInterval: null,  
+                minorGridLineWidth: 0,
+                gridLineWidth: 1,
                 labels: {
                     format: '{value:<span style="font-weight:600">%a</span> %e %b}',
                     align: 'left',
@@ -343,8 +347,9 @@ class Meteogram {
                 opposite: true,
                 tickLength: 20,
                 lineWidth: 0,
-                gridLineColor: colors.gridLine,  // Usa el color definido
+                gridLineColor: colors.gridLine,
             }],
+
             yAxis: [
             {
                 title: {
@@ -357,7 +362,7 @@ class Meteogram {
                 labels: {
                     format: '{value:.0f}°',
                     style: {
-                        color: colors.temperature
+                        color: colors.text
                     }
                 },
                 plotLines: [{
@@ -367,9 +372,12 @@ class Meteogram {
                     zIndex: 2
                 }],
                 minRange: 10,
-                gridLineWidth: 0,    // ← Cambiado a 0
+                tickInterval: 5,
+                minorTickInterval: null,
+                minorGridLineWidth: 0,
+                gridLineWidth: 1,
                 gridLineColor: colors.gridLine,
-                lineWidth: 0,        // ← Cambiado a 0
+                lineWidth: 0,
             },
             {
                 title: {
@@ -381,9 +389,12 @@ class Meteogram {
                 },
                 opposite: true,
                 min: 0,
-                gridLineWidth: 0,    // ← Cambiado a 0
+                tickInterval: 2,
+                minorTickInterval: null,
+                minorGridLineWidth: 0,
+                gridLineWidth: 1,
                 gridLineColor: colors.gridLine,
-                lineWidth: 0,        // ← Cambiado a 0
+                lineWidth: 0,
                 labels: {
                     style: {
                         color: colors.precipitation
@@ -400,9 +411,12 @@ class Meteogram {
                 },
                 opposite: true,
                 minRange: 20,
-                gridLineWidth: 0,    // ← Cambiado a 0
+                tickInterval: 5,
+                minorTickInterval: null,
+                minorGridLineWidth: 0,
+                gridLineWidth: 1,
                 gridLineColor: colors.gridLine,
-                lineWidth: 0,        // ← Cambiado a 0
+                lineWidth: 0,
                 labels: {
                     style: {
                         color: colors.pressure
@@ -420,10 +434,12 @@ class Meteogram {
                 min: 0,
                 max: 100,
                 visible: false,
-                gridLineWidth: 1,   // en lugar de 0, para mostrar las líneas de los ticks principales
-                minorGridLineWidth: 0, // asegurar que no hay líneas de ticks menores
+                tickInterval: 20,
+                minorTickInterval: null,
+                minorGridLineWidth: 0,
+                gridLineWidth: 1,
                 gridLineColor: colors.gridLine,
-                lineWidth: 0,        // ← Cambiado a 0
+                lineWidth: 0,
             }
         ],
             legend: {
@@ -621,7 +637,18 @@ class Meteogram {
                         valueDecimals: 1
                     },
                     dataLabels: {
-                        enabled: false
+                        enabled: true,
+                        formatter: function () {
+                            return this.y.toFixed(0) + '%';
+                        },
+                        style: {
+                            fontSize: '10px',
+                            textOutline: 'none',
+                            color: '#64C8FF'
+                        },
+                        align: 'center',
+                        verticalAlign: 'middle',
+                        y: 0
                     }
                 },
                 {
@@ -729,13 +756,13 @@ class Meteogram {
                 visibility: visibilities[i],
                 windSpeed,
                 windDir,
-                color: temp > 0 ? '#206bc4' : '#5c7cfa'
+                color: temp > 0 ? '#ff4500' : '#00bfff',
             });
 
             this.precipitations.push({
                 x: timestamp,
                 y: rain,
-                color: rain > 0 ? '#48bb78' : '#2fb344',    
+                color: rain > 0 ? '#1e90ff' : 'transparent',    
             });
 
             this.pressures.push({
