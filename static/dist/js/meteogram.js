@@ -1,4 +1,3 @@
-
 // Clase Meteogram con mejoras para Tabler.io
 class Meteogram {
     constructor(json, containerId, options = {}) {
@@ -21,7 +20,11 @@ class Meteogram {
         this.json = json;
         this.lat = options.lat || 0;
         this.long = options.long || 0;
-        this.timezone = options.timezone || 'UTC';
+
+        // Zona horaria de Cuba (UTC-4 normalmente, UTC-5 en horario de verano)
+        this.timezone = 'America/Havana';
+        this.timezoneOffset = 4 * 60; // Offset en minutos para Cuba (UTC-4)
+
         this.apiBaseUrl = options.apiBaseUrl || 'http://127.0.0.1:8000';
 
         this.chart = null;
@@ -56,14 +59,6 @@ class Meteogram {
             day: {symbol: '⛈️', color: '#000080', text: 'Lluvia intensa'},
             night: {symbol: '⛈️', color: '#191970', text: 'Lluvia intensa'}
         },
-        snow: {
-            day: {symbol: '❄️', color: '#ADD8E6', text: 'Nieve'},
-            night: {symbol: '❄️', color: '#B0E0E6', text: 'Nieve'}
-        },
-        fog: {
-            day: {symbol: '🌫️', color: '#D3D3D3', text: 'Niebla'},
-            night: {symbol: '🌫️', color: '#C0C0C0', text: 'Niebla'}
-        },
         thunderstorm: {
             day: {symbol: '⚡', color: '#FF4500', text: 'Tormenta'},
             night: {symbol: '⚡', color: '#FF8C00', text: 'Tormenta'}
@@ -74,38 +69,31 @@ class Meteogram {
         }
     };
 
-    isDaytime(timestamp, lat, long) {
+    isDaytime(timestamp) {
+        // Convertir a hora local de Cuba (RESTAR 4 o 5 horas)
         const date = new Date(timestamp);
-        const hours = date.getUTCHours();
-        const isSummer = date.getUTCMonth() >= 4 && date.getUTCMonth() <= 9;
+        const cubaTime = new Date(date.getTime() - (this.timezoneOffset * 60000));
+        const hours = cubaTime.getUTCHours();
 
-        let dayStart = 6, dayEnd = 20;
-        if (lat > 40 && isSummer) {
-            dayStart = 5;
-            dayEnd = 21;
-        } else if (lat < -40 && !isSummer) {
-            dayStart = 5;
-            dayEnd = 21;
-        }
-
-        return hours >= dayStart && hours < dayEnd;
+        // Determinar día/noche basado en hora local de Cuba
+        return hours >= 6 && hours <= 18;
     }
 
     getWeatherCondition(data) {
         const {temp, rain, clf, rh, windSpeed, td} = data;
 
+        // Primero verificamos condiciones extremas
         if (windSpeed > 15 && rain > 5) return 'thunderstorm';
-        if (temp <= 0 && rain > 0.1) return 'snow';
         if (temp > 0 && temp < 3 && rain > 0.1) return 'sleet';
 
+        // Luego verificamos precipitación
         if (rain > 0.1) {
             if (rain < 2) return 'lightrain';
             if (rain < 5) return 'rain';
             return 'heavyrain';
         }
 
-        if (rh > 90 && clf > 0.8) return 'fog';
-        if (Math.abs(temp - td) < 2 && rh > 85) return 'fog';
+        // Condiciones de nubosidad
         if (clf < 0.2) return 'clearsky';
         if (clf < 0.6) return 'partlycloudy';
         return 'cloudy';
@@ -119,46 +107,22 @@ class Meteogram {
         const plotHeight = chart.plotHeight;
         const plotTop = chart.plotTop;
 
+        // Agrupamos por día (en hora de Cuba)
         const days = {};
         this.weatherData.forEach(point => {
-            const date = new Date(point.time);
-            const dayKey = date.toISOString().split('T')[0];
+            // Convertir a hora local de Cuba (RESTAR 4 o 5 horas)
+            const cubaTime = new Date(point.time + (this.timezoneOffset * 60000));
+            const dayKey = cubaTime.toISOString().split('T')[0];
 
             if (!days[dayKey]) {
                 days[dayKey] = {
                     start: point.time,
                     end: point.time,
-                    isDay: point.isDay
+                    // Determinamos si es de día basado en el mediodía de ese día en Cuba
+                    isDay: this.isDaytime(point.time)
                 };
             } else {
                 days[dayKey].end = point.time;
-                if (days[dayKey].isDay !== point.isDay) {
-                    days[dayKey].isDay = this.isDaytime(
-                        new Date(point.time).setHours(12, 0, 0, 0),
-                        this.lat,
-                        this.long
-                    );
-                }
-            }
-        });
-
-        Object.values(days).forEach(day => {
-            const x1 = xAxis.toPixels(Date.parse(day.start), false);
-            const x2 = xAxis.toPixels(Date.parse(day.end), false);
-
-            if (!isNaN(x1) && !isNaN(x2)) {
-                const bg = chart.renderer.rect(
-                    x1,
-                    plotTop,
-                    x2 - x1,
-                    plotHeight
-                ).attr({
-                    fill: day.isDay ? 'rgba(255, 255, 200, 0.1)' : 'rgba(0, 50, 100, 0.1)',
-                    stroke: 'none',
-                    zIndex: -1
-                }).add();
-
-                this.dayNightBackgrounds.push(bg);
             }
         });
     }
@@ -171,7 +135,7 @@ class Meteogram {
         }
 
         this.weatherSymbolsGroup = chart.renderer.g()
-            .attr({ class: 'weather-symbols', zIndex: 5 })
+            .attr({class: 'weather-symbols', zIndex: 5})
             .add();
 
         const tempSeries = chart.get('temperatura');
@@ -189,7 +153,8 @@ class Meteogram {
             const point = tempSeries.data[i];
             if (!point || !point.plotX || !point.plotY) return;
 
-            const condition = this.getWeatherCondition(weather);
+            // Usamos la condición ya calculada en parseData, no la recalculamos
+            const condition = weather.condition;
             const weatherType = Meteogram.weatherDictionary[condition];
             if (!weatherType) return;
 
@@ -202,7 +167,7 @@ class Meteogram {
             const symbolElement = chart.renderer.text(symbol, x, y)
                 .attr({
                     ...STYLE,
-                    title: `${weatherType[variant].text}\n${new Date(weather.time).toLocaleString()}`,
+                    title: `${weatherType[variant].text}\n${new Date(weather.time + (this.timezoneOffset * 60000)).toLocaleString('es-CU')}`,
                     cursor: 'pointer'
                 })
                 .css({
@@ -215,7 +180,7 @@ class Meteogram {
                 -symbolElement.getBBox().height / 2
             );
 
-            symbolElement.on('mouseover', function() {
+            symbolElement.on('mouseover', function () {
                 chart.tooltip.refresh([{
                     series: tempSeries,
                     point: point,
@@ -224,7 +189,7 @@ class Meteogram {
                 }], point.x);
             });
 
-            symbolElement.on('mouseout', function() {
+            symbolElement.on('mouseout', function () {
                 chart.tooltip.hide();
             });
         });
@@ -244,13 +209,19 @@ class Meteogram {
             wind: isDarkMode ? '#d6b3ff' : '#9370db',
             gridLine: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.1)',
             text: isDarkMode ? '#e4e6eb' : '#495057',
-            background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'transparent'
+            background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)'
         };
 
         return {
             time: {
                 useUTC: true,
-                timezoneOffset: 0
+                timezoneOffset: this.timezoneOffset
+            },
+            lang: {
+                weekdays: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+                shortWeekdays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+                months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                shortMonths: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
             },
             chart: {
                 renderTo: this.container,
@@ -278,13 +249,13 @@ class Meteogram {
                 }
             },
             title: {
-                text: 'Meteograma Completo',
+                text: 'Meteograma Completo - Hora de Cuba',
                 align: 'left',
                 style: {
                     fontSize: '18px',
                     fontWeight: '600',
                     color: colors.text,
-                    marginBottom: '15px' // Margen inferior aumentado
+                    marginBottom: '15px'
                 },
                 margin: 30,
                 y: 25
@@ -300,13 +271,13 @@ class Meteogram {
                     fontSize: '13px',
                     color: colors.text
                 },
-                headerFormat: 
-                '<div style="border-bottom: 1px solid ' + (isDarkMode ? '#495057' : '#e9ecef') + '; padding-bottom: 5px; margin-bottom: 5px;">' +
-                '<small>{point.x:%A, %b %e, %H:%M} UTC</small><br>' +
-                '<span style="font-size: 16px; margin-right: 5px;">{point.point.weatherSymbol}</span>' +
-                '<b>{point.point.weatherDescription}</b>' +
-                '</div>',
-                pointFormat: 
+                headerFormat:
+                    '<div style="border-bottom: 1px solid ' + (isDarkMode ? '#495057' : '#e9ecef') + '; padding-bottom: 5px; margin-bottom: 5px;">' +
+                    '<small>{point.x:%A, %e de %B, %H:%M} Hora de Cuba</small><br>' +
+                    '<span style="font-size: 16px; margin-right: 5px;">{point.point.weatherSymbol}</span>' +
+                    '<b>{point.point.weatherDescription}</b>' +
+                    '</div>',
+                pointFormat:
                     '<span style="color:{point.color}">●</span> {series.name}: <b>{point.y}</b><br/>'
             },
             xAxis: [{
@@ -315,7 +286,7 @@ class Meteogram {
                 minorTickInterval: null,
                 minorGridLineWidth: 0,
                 gridLineWidth: 1,
-                gridLineColor: colors.gridLine,  // Usa el color definido
+                gridLineColor: colors.gridLine,
                 lineWidth: 0,
                 labels: {
                     format: '{value:%H}',
@@ -333,7 +304,7 @@ class Meteogram {
                 linkedTo: 0,
                 type: 'datetime',
                 tickInterval: 24 * 36e5,
-                minorTickInterval: null,  
+                minorTickInterval: null,
                 minorGridLineWidth: 0,
                 gridLineWidth: 1,
                 labels: {
@@ -351,97 +322,97 @@ class Meteogram {
             }],
 
             yAxis: [
-            {
-                title: {
-                    text: 'Temperatura (°C)',
-                    style: {
-                        color: colors.text,
-                        fontWeight: '500'
+                {
+                    title: {
+                        text: 'Temperatura (°C)',
+                        style: {
+                            color: colors.text,
+                            fontWeight: '500'
+                        }
+                    },
+                    labels: {
+                        format: '{value:.0f}°',
+                        style: {
+                            color: colors.text
+                        }
+                    },
+                    plotLines: [{
+                        value: 0,
+                        color: colors.gridLine,
+                        width: 1,
+                        zIndex: 2
+                    }],
+                    minRange: 10,
+                    tickInterval: 5,
+                    minorTickInterval: null,
+                    minorGridLineWidth: 0,
+                    gridLineWidth: 1,
+                    gridLineColor: colors.gridLine,
+                    lineWidth: 0,
+                },
+                {
+                    title: {
+                        text: 'Precipitación (mm)',
+                        style: {
+                            color: colors.text,
+                            fontWeight: '500'
+                        }
+                    },
+                    opposite: true,
+                    min: 0,
+                    tickInterval: 2,
+                    minorTickInterval: null,
+                    minorGridLineWidth: 0,
+                    gridLineWidth: 1,
+                    gridLineColor: colors.gridLine,
+                    lineWidth: 0,
+                    labels: {
+                        style: {
+                            color: colors.text
+                        }
                     }
                 },
-                labels: {
-                    format: '{value:.0f}°',
-                    style: {
-                        color: colors.text
+                {
+                    title: {
+                        text: 'Presión (hPa)',
+                        style: {
+                            color: colors.text,
+                            fontWeight: '500'
+                        }
+                    },
+                    opposite: true,
+                    minRange: 20,
+                    tickInterval: 5,
+                    minorTickInterval: null,
+                    minorGridLineWidth: 0,
+                    gridLineWidth: 1,
+                    gridLineColor: colors.gridLine,
+                    lineWidth: 0,
+                    labels: {
+                        style: {
+                            color: colors.pressure
+                        }
                     }
                 },
-                plotLines: [{
-                    value: 0, 
-                    color: colors.gridLine,
-                    width: 1,
-                    zIndex: 2
-                }],
-                minRange: 10,
-                tickInterval: 5,
-                minorTickInterval: null,
-                minorGridLineWidth: 0,
-                gridLineWidth: 1,
-                gridLineColor: colors.gridLine,
-                lineWidth: 0,
-            },
-            {
-                title: {
-                    text: 'Precipitación (mm)',
-                    style: {
-                        color: colors.text,
-                        fontWeight: '500'
-                    }
-                },
-                opposite: true,
-                min: 0,
-                tickInterval: 2,
-                minorTickInterval: null,
-                minorGridLineWidth: 0,
-                gridLineWidth: 1,
-                gridLineColor: colors.gridLine,
-                lineWidth: 0,
-                labels: {
-                    style: {
-                        color: colors.text
-                    }
+                {
+                    title: {
+                        text: 'Humedad (%)',
+                        style: {
+                            color: colors.text,
+                            fontWeight: '500'
+                        }
+                    },
+                    min: 0,
+                    max: 100,
+                    visible: false,
+                    tickInterval: 20,
+                    minorTickInterval: null,
+                    minorGridLineWidth: 0,
+                    gridLineWidth: 1,
+                    gridLineColor: colors.gridLine,
+                    lineWidth: 0,
                 }
-            },
-            {
-                title: {
-                    text: 'Presión (hPa)',
-                    style: {
-                        color: colors.text,
-                        fontWeight: '500'
-                    }
-                },
-                opposite: true,
-                minRange: 20,
-                tickInterval: 5,
-                minorTickInterval: null,
-                minorGridLineWidth: 0,
-                gridLineWidth: 1,
-                gridLineColor: colors.gridLine,
-                lineWidth: 0,
-                labels: {
-                    style: {
-                        color: colors.pressure
-                    }
-                }
-            },
-            {
-                title: {
-                    text: 'Humedad (%)',
-                    style: {
-                        color: colors.text,
-                        fontWeight: '500'
-                    }
-                },
-                min: 0,
-                max: 100,
-                visible: false,
-                tickInterval: 20,
-                minorTickInterval: null,
-                minorGridLineWidth: 0,
-                gridLineWidth: 1,
-                gridLineColor: colors.gridLine,
-                lineWidth: 0,
-            }
-        ],
+            ],
             legend: {
                 align: 'center',
                 verticalAlign: 'bottom',
@@ -714,7 +685,7 @@ class Meteogram {
             const rain = rains[i];
             const windSpeed = Math.sqrt(Math.pow(uWinds[i], 2) + Math.pow(vWinds[i], 2)) * 3.6;
             const windDir = (270 - (Math.atan2(vWinds[i], uWinds[i]) * 180 / Math.PI)) % 360;
-            const isDay = this.isDaytime(timestamp, this.lat, this.long);
+            const isDay = this.isDaytime(timestamp);
             const condition = this.getWeatherCondition({
                 temp,
                 rain,
@@ -762,7 +733,7 @@ class Meteogram {
             this.precipitations.push({
                 x: timestamp,
                 y: rain,
-                color: rain > 0 ? '#1e90ff' : 'transparent',    
+                color: rain > 0 ? '#1e90ff' : 'transparent',
             });
 
             this.pressures.push({
