@@ -20,6 +20,7 @@ class Meteogram {
         this.json = json;
         this.lat = options.lat || 0;
         this.long = options.long || 0;
+        this.municipio = options.municipio || 'Municipio'; // Nueva propiedad para el municipio
 
         // Zona horaria de Cuba (UTC-4 normalmente, UTC-5 en horario de verano)
         this.timezone = 'America/Havana';
@@ -249,7 +250,7 @@ class Meteogram {
                 }
             },
             title: {
-                text: 'Meteograma Completo - Hora de Cuba',
+                text: `Meteograma para ${this.municipio}`,
                 align: 'left',
                 style: {
                     fontSize: '18px',
