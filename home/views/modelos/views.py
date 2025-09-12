@@ -259,41 +259,41 @@ class SoundingView(TemplateView):
                 'errors': form.errors.get_json_data()
             }, status=400)
 
-        try:
+        #try:
             # Obtener el municipio seleccionado
-            town = form.cleaned_data['town']
+        town = form.cleaned_data['town']
 
             # Construir URL para la API de sondeo usando las coordenadas del municipio
-            params = {
+        params = {
                 'datetime_init': form.cleaned_data['datetime_init'],
                 'lat': town.latitude,  # Usar latitud del municipio
                 'long': town.longitude,  # Usar longitud del municipio
                 't_index': form.cleaned_data['t_index']
             }
-            api_url = f"https://modelo.cmw.insmet.cu/api/sounding/?{urlencode(params)}"
+        api_url = f"https://modelo.cmw.insmet.cu/api/sounding/?{urlencode(params)}"
 
             # Obtener datos del sondeo
-            response = requests.get(api_url, timeout=10, verify=False)
-            response.raise_for_status()
-            sounding_data = response.json()
+        response = requests.get(api_url, timeout=10, verify=False)
+        response.raise_for_status()
+        sounding_data = response.json()
 
             # Generar el gráfico Skew-T
-            img_base64 = generate_skewt(sounding_data)
+        img_base64 = generate_skewt(sounding_data)
 
-            return JsonResponse({
+        return JsonResponse({
                 'status': 'success',
                 'plot_image': img_base64,
                 'datetime': sounding_data.get('datetime'),
                 'params': params
             }, content_type='application/json')
 
-        except requests.exceptions.RequestException as e:
-            return JsonResponse({
-                'status': 'error',
-                'message': f"Error al conectar con la API de sondeo: {str(e)}"
-            }, status=500)
-        except Exception as e:
-            return JsonResponse({
-                'status': 'error',
-                'message': f"Error al generar el gráfico: {str(e)}"
-            }, status=500)
+        #except requests.exceptions.RequestException as e:
+        #    return JsonResponse({
+        #        'status': 'error',
+        #        'message': f"Error al conectar con la API de sondeo: {str(e)}"
+        #    }, status=500)
+        #except Exception as e:
+        #    return JsonResponse({
+        #        'status': 'error',
+        #        'message': f"Error al generar el gráfico: {str(e)}"
+        #    }, status=500)
