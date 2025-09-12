@@ -21,8 +21,8 @@ def generate_meteo_plot(request):
     if request.method == 'GET' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         temp_file = os.path.join(settings.MEDIA_ROOT, 'temp_data.npz')
 
-        #try:
-        with np.load(temp_file) as data:
+        try:
+            with np.load(temp_file) as data:
                 # Cargar datos básicos
                 lats = data['lats']
                 longs = data['longs']
@@ -112,11 +112,11 @@ def generate_meteo_plot(request):
                     'message': f"Gráfico generado con {len(times)} pasos temporales"
                 })
 
-        #except Exception as e:
-        #    return JsonResponse({
-        #        'status': 'error',
-        #        'message': str(e)
-        #    }, status=500)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
 
     return JsonResponse({
         'status': 'error',
