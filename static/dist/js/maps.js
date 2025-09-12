@@ -5,6 +5,7 @@ class MeteoPlotter {
         this.datetimeInit = params.datetimeInit;
         this.varName = params.varName;
         this.varLabel = params.varLabel;
+        this.animationHTML = params.animationHTML;  // HTML recibido del backend
 
         // Elementos del DOM
         this.plotContainer = document.getElementById('plot-container');
@@ -17,7 +18,6 @@ class MeteoPlotter {
         this.retryCount = 0;
 
         // Estado de la animación
-        this.animationHTML = null;
         this.animationScripts = [];
     }
 
@@ -70,28 +70,11 @@ class MeteoPlotter {
     }
 
     async generatePlot() {
-        try {
-            this.showLoading('Generando animación interactiva...', 50);
-
-            const response = await fetch(
-                `/api/generate-plot/?var_name=${encodeURIComponent(this.varName)}`,
-                {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                }
-            );
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || `Error HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            this.animationHTML = data.animation_html;
-            return data;
-        } catch (error) {
-            console.error('Error en generatePlot:', error);
-            throw error;
-        }
+                // Ya no necesitamos hacer una solicitud adicional aquí
+        // La animación HTML viene directamente desde el backend
+        return {
+            animation_html: this.animationHTML
+        };
     }
 
     showAnimation() {
@@ -272,7 +255,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const plotter = new MeteoPlotter({
                     datetimeInit: data.datetime_init,
                     varName: data.var_name,
-                    varLabel: data.var_label
+                    varLabel: data.var_label,
+                    animationHTML: data.animation_html  // Recibimos el HTML del backend
                 });
 
                 plotter.init();
