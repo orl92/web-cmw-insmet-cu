@@ -149,7 +149,10 @@ class MapaView(TemplateView):
             fake_request.META['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
 
             # Generar el plot
-            response = generate_meteo_plot(fake_request)
+            try:
+                response = generate_meteo_plot(fake_request)
+            except Exception as e:
+                print(e)
 
             if hasattr(response, 'content'):
                 data = json.loads(response.content)
