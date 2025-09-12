@@ -149,10 +149,8 @@ class MapaView(TemplateView):
             fake_request.META['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
 
             # Generar el plot
-            try:
-                response = generate_meteo_plot(fake_request)
-            except Exception as e:
-                raise e
+
+            response = generate_meteo_plot(fake_request)
 
             if hasattr(response, 'content'):
                 data = json.loads(response.content)
@@ -163,6 +161,7 @@ class MapaView(TemplateView):
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class MeteogramView(TemplateView):
     template_name = 'pages/home/modelos/meteogram.html'
@@ -172,13 +171,13 @@ class MeteogramView(TemplateView):
         context['title'] = 'Meteorama'
         context['parent'] = 'modelos'
         context['segment'] = 'meteogram'
-        
+
         # Obtener municipio por defecto
         default_town = Town.objects.filter(
-            latitude=21.391, 
+            latitude=21.391,
             longitude=-77.908
         ).first()
-        
+
         initial = {
             'datetime_init': self.request.GET.get('datetime_init', f'{datetime.now().strftime("%Y%m%d")}00'),
             'town': default_town.id if default_town else None,
@@ -197,7 +196,7 @@ class MeteogramView(TemplateView):
         try:
             # Obtener el municipio seleccionado
             town = form.cleaned_data['town']
-            
+
             # Construir URL usando coordenadas del municipio
             params = {
                 'datetime_init': form.cleaned_data['datetime_init'],
@@ -227,6 +226,7 @@ class MeteogramView(TemplateView):
                 'message': f"Error al conectar con la API: {str(e)}"
             }, status=500)
 
+
 @method_decorator(csrf_exempt, name='dispatch')
 class SoundingView(TemplateView):
     template_name = 'pages/home/modelos/sounding.html'
@@ -236,13 +236,13 @@ class SoundingView(TemplateView):
         context['title'] = 'Sondeos'
         context['parent'] = 'modelos'
         context['segment'] = 'sounding'
-        
+
         # Obtener municipio por defecto (ej. usando coordenadas predeterminadas)
         default_town = Town.objects.filter(
-            latitude=21.391, 
+            latitude=21.391,
             longitude=-77.908
         ).first()
-        
+
         initial = {
             'datetime_init': self.request.GET.get('datetime_init', f'{datetime.now().strftime("%Y%m%d")}00'),
             'town': default_town.id if default_town else None,
@@ -262,7 +262,7 @@ class SoundingView(TemplateView):
         try:
             # Obtener el municipio seleccionado
             town = form.cleaned_data['town']
-            
+
             # Construir URL para la API de sondeo usando las coordenadas del municipio
             params = {
                 'datetime_init': form.cleaned_data['datetime_init'],
