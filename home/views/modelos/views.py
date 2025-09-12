@@ -152,7 +152,7 @@ class MapaView(TemplateView):
             try:
                 response = generate_meteo_plot(fake_request)
             except Exception as e:
-                print(e)
+                raise e
 
             if hasattr(response, 'content'):
                 data = json.loads(response.content)
