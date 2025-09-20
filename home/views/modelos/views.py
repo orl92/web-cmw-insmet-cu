@@ -17,6 +17,18 @@ import requests
 from urllib.parse import urlencode
 from django.conf import settings
 
+import requests
+from django.http import HttpResponse
+from django.views import View
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from urllib.parse import urlparse, unquote
+from django.conf import settings
+import logging
+
+# Configurar logger
+logger = logging.getLogger(__name__)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class MapaView(TemplateView):
@@ -39,8 +51,8 @@ class MapaView(TemplateView):
         form = MeteoDataForm(data)
 
         if form.is_valid():
-            # Obtener datos de la API externa
-            api_result = self.fetch_external_api_data(
+            # Obtener datos de la nueva API de imágenes
+            api_result = self.fetch_image_urls(
                 form.cleaned_data['datetime_init'],
                 form.cleaned_data['var_name']
             )
@@ -51,23 +63,14 @@ class MapaView(TemplateView):
                     'message': api_result['message']
                 }, status=500)
 
-            # Generar la animación en el backend
-            plot_result = self.generate_plot(
-                form.cleaned_data['var_name']
-            )
-
-            if plot_result['status'] == 'error':
-                return JsonResponse({
-                    'status': 'error',
-                    'message': plot_result['message']
-                }, status=500)
-
             return JsonResponse({
                 'status': 'success',
                 'datetime_init': form.cleaned_data['datetime_init'],
                 'var_name': form.cleaned_data['var_name'],
                 'var_label': dict(MeteoDataForm.VAR_CHOICES).get(form.cleaned_data['var_name']),
-                'animation_html': plot_result['animation_html']
+                'image_urls': api_result['image_urls'],
+                'simulation_date': api_result.get('simulation_date'),
+                'count': api_result.get('count')
             })
 
         return JsonResponse({
@@ -75,88 +78,23 @@ class MapaView(TemplateView):
             'errors': form.errors.get_json_data()
         }, status=400)
 
-    def fetch_external_api_data(self, datetime_init, var_name):
-        """Obtener datos de la API externa"""
+    def fetch_image_urls(self, datetime_init, var_name):
+        """Obtener URLs de imágenes de la nueva API"""
         try:
-            api_url = f"https://modelo.cmw.insmet.cu/api/data/?datetime_init={datetime_init}&var_name={var_name}"
+            api_url = f"http://imgwrfserver.cmw.insmet.cu/simulations/?datetime_init={datetime_init}&var_name={var_name}"
             response = requests.get(api_url, timeout=30, verify=False)
             response.raise_for_status()
             data = response.json()
 
-            # Procesar datos básicos
-            lats = np.array(data['lats'])
-            longs = np.array(data['longs'])
-            times = data['times']
-            var_data = np.array(data['var'])
+            if data.get('status') != 'success':
+                raise ValueError(f"API returned error status: {data.get('message', 'Unknown error')}")
 
-            # Validación de dimensiones
-            if lats.shape != (29, 39) or longs.shape != (29, 39):
-                raise ValueError("Dimensiones de coordenadas incorrectas, esperado (29, 39)")
-
-            if var_data.ndim != 3 or var_data.shape[1:] != (29, 39):
-                raise ValueError(
-                    f"Dimensiones de variable incorrectas, esperado (t, 29, 39), recibido {var_data.shape}")
-
-            if len(times) != var_data.shape[0]:
-                raise ValueError(
-                    f"Número de tiempos ({len(times)}) no coincide con primera dimensión de datos ({var_data.shape[0]})")
-
-            # Preparar datos para guardar
-            save_data = {
-                'lats': lats,
-                'longs': longs,
-                'times': times,
-                'var_data': var_data
+            return {
+                'status': 'success',
+                'image_urls': data.get('image_urls', []),
+                'simulation_date': data.get('simulation_date'),
+                'count': data.get('count', 0)
             }
-
-            # Manejo especial para wd10 (dirección del viento)
-            if var_name == 'wd10':
-                if 'U10' not in data or 'V10' not in data:
-                    raise ValueError("Componentes U10 y V10 requeridos para wd10")
-
-                u_data = np.array(data['U10'])
-                v_data = np.array(data['V10'])
-
-                # Validar dimensiones de U10 y V10
-                if u_data.shape != var_data.shape:
-                    raise ValueError(
-                        f"Dimensiones U10 no coinciden: esperado {var_data.shape}, recibido {u_data.shape}")
-                if v_data.shape != var_data.shape:
-                    raise ValueError(
-                        f"Dimensiones V10 no coinciden: esperado {var_data.shape}, recibido {v_data.shape}")
-
-                save_data['U10'] = u_data
-                save_data['V10'] = v_data
-
-            # Guardar datos temporalmente
-            temp_file = os.path.join(settings.MEDIA_ROOT, 'temp_data.npz')
-            np.savez(temp_file, **save_data)
-
-            return {'status': 'success'}
-
-        except Exception as e:
-            return {'status': 'error', 'message': str(e)}
-
-    def generate_plot(self, var_name):
-        """Generar la animación en el backend"""
-        try:
-            from home.data.plot_generators import generate_meteo_plot
-
-            # Crear una request simulada para generate_meteo_plot
-            from django.test import RequestFactory
-            factory = RequestFactory()
-            fake_request = factory.get(f'/fake-path/?var_name={var_name}')
-            fake_request.META['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
-
-            # Generar el plot
-
-            response = generate_meteo_plot(fake_request)
-
-            if hasattr(response, 'content'):
-                data = json.loads(response.content)
-                return data
-            else:
-                return {'status': 'error', 'message': 'Error generating plot'}
 
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
@@ -297,3 +235,112 @@ class SoundingView(TemplateView):
                 'status': 'error',
                 'message': f"Error al generar el gráfico: {str(e)}"
             }, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ImageProxyModeloView(View):
+    """
+    Vista basada en clase para proxy de imágenes que evita problemas de CORS.
+    """
+
+    # Lista blanca de dominios permitidos (opcional, para mayor seguridad)
+    ALLOWED_DOMAINS = [
+        'imgwrfserver.cmw.insmet.cu',
+        'localhost',
+        '127.0.0.1'
+    ]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Maneja las solicitudes GET para el proxy de imágenes.
+        """
+        image_url = request.GET.get('image_url', '')
+        image_path = request.GET.get('image_path', '')
+
+        # Determinar la URL de destino
+        target_url = self._get_target_url(image_url, image_path)
+
+        if not target_url:
+            return HttpResponse('URL de imagen no proporcionada', status=400)
+
+        try:
+            # Validar la URL
+            if not self._is_valid_url(target_url):
+                return HttpResponse('URL no válida', status=400)
+
+            # Descargar la imagen
+            response = self._fetch_image(target_url)
+
+            if response.status_code != 200:
+                return HttpResponse('Error al obtener la imagen', status=response.status_code)
+
+            # Crear la respuesta
+            django_response = HttpResponse(
+                response.content,
+                content_type=response.headers.get('Content-Type', 'image/jpeg')
+            )
+
+            # Configurar headers para caching (opcional)
+            django_response['Cache-Control'] = 'public, max-age=3600'  # Cache de 1 hora
+
+            return django_response
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error en proxy de imagen: {str(e)}")
+            return HttpResponse('Error al obtener la imagen', status=500)
+        except Exception as e:
+            logger.error(f"Error inesperado en proxy de imagen: {str(e)}")
+            return HttpResponse('Error interno del servidor', status=500)
+
+    def _get_target_url(self, image_url, image_path):
+        """
+        Construye la URL de destino basándose en los parámetros proporcionados.
+        """
+        if image_url:
+            return unquote(image_url)
+        elif image_path:
+            # Si se proporciona image_path, construir la URL completa
+            base_url = getattr(settings, 'IMAGE_SERVER_BASE_URL', 'http://imgwrfserver.cmw.insmet.cu')
+            return f"{base_url}{unquote(image_path)}"
+        return None
+
+    def _is_valid_url(self, url):
+        """
+        Valida que la URL sea segura y esté permitida.
+        """
+        try:
+            parsed_url = urlparse(url)
+
+            # Verificar el esquema
+            if parsed_url.scheme not in ('http', 'https'):
+                return False
+
+            # Verificar el dominio (si se ha configurado una lista blanca)
+            if self.ALLOWED_DOMAINS and parsed_url.netloc not in self.ALLOWED_DOMAINS:
+                return False
+
+            return True
+
+        except Exception:
+            return False
+
+    def _fetch_image(self, url):
+        """
+        Descarga la imagen desde la URL proporcionada.
+        """
+        headers = {
+            'User-Agent': 'MeteoApp/1.0'
+        }
+
+        # Agregar headers de autenticación si es necesario
+        auth_headers = self._get_auth_headers()
+        headers.update(auth_headers)
+
+        return requests.get(url, stream=True, timeout=30, headers=headers)
+
+    def _get_auth_headers(self):
+        """
+        Devuelve headers de autenticación si es necesario.
+        Puede ser sobrescrito en subclases para agregar autenticación.
+        """
+        return {}

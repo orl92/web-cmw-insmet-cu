@@ -8,7 +8,7 @@ from home.views.comentarios.nota_meteorologica.views import \
     WeatherNoteDetailView
 from home.views.comentarios.tiempo.views import WeatherCommentaryDetailView
 from home.views.home.views import IndexView
-from home.views.modelos.views import MapaView, MeteogramView, SoundingView
+from home.views.modelos.views import MapaView, MeteogramView, SoundingView, ImageProxyModeloView
 from home.views.satelites.views import ProxyImageView, SateliteView
 from home.views.servicios.comerciales.views import CommercialServicesListView
 from home.views.servicios.publicos.views import PublicServicesListView
@@ -45,5 +45,6 @@ urlpatterns = [
     path('proxy_image/', ProxyImageView.as_view(), name='proxy_image'),
     # Pagos en linea
     path('pagos_en_linea/', PagosView.as_view(), name='pagos'),
+    path('proxy_image_modelo/', ImageProxyModeloView.as_view(), name='proxy_image_modelo'),
 
 ]
