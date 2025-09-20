@@ -14,6 +14,7 @@ from home.views.servicios.comerciales.views import CommercialServicesListView
 from home.views.servicios.publicos.views import PublicServicesListView
 from home.views.tiempo.hoy.views import WeatherTodayDetailView
 from home.views.tiempo.manana.views import WeatherTomorrowDetailView
+from home.views.pagos.views import PagosView
 
 from home.views.modelos import views
 
@@ -42,5 +43,7 @@ urlpatterns = [
     # Imagen Satélites
     path('imagenes/satelitales/', SateliteView.as_view(), name="satelites"),
     path('proxy_image/', ProxyImageView.as_view(), name='proxy_image'),
+    # Pagos en linea
+    path('pagos_en_linea/', PagosView.as_view(), name='pagos'),
 
 ]
