@@ -2,14 +2,15 @@
 {% load static %}
 {% block content %}
     <div class="row justify-content-center">
-        <div class="col-lg-10 col-xl-9">
+        <div class="col-lg-8 col-xl-6 text-center">  <!-- Reduje el ancho de la columna -->
             <div class="empty">
-                <p class="empty-subtitle text-secondary mb-3">
-                    Realice sus pagos de los servicios Meteorológicos en linea
+                <p class="empty-subtitle text-secondary mb-4">  <!-- Aumenté el margen inferior -->
+                    Realice sus pagos de los servicios Meteorológicos en línea
                 </p>
-                <img src="{% static 'dist/img/QR/QR.png' %}" class="img-fluid w-50" alt="building">
+                <div class="d-flex justify-content-center">  <!-- Contenedor flex para centrar -->
+                    <img src="{% static 'dist/img/QR/QR.png' %}" class="img-fluid w-50" alt="QR code para pagos">  <!-- Reduje a w-50 -->
+                </div>
             </div>
         </div>
     </div>
-
 {% endblock content %}

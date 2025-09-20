@@ -1,12 +1,18 @@
 // static/dist/js/sounding-form.js
 class SoundingFormHandler {
     constructor() {
+        // Primero inicializar las variables de días y meses
+        this.weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        this.months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        
         this.initElements();
+        this.setCurrentDateAndTime();
         this.bindEvents();
         this.initLitepicker();
         this.setupDatetimeHandlers();
         this.setupTownChangeHandler();
-        this.initForecastSelect();
+        this.updateForecastOptions(); // Actualizar opciones de previsión
         this.checkUrlParams();
     }
 
@@ -25,19 +31,37 @@ class SoundingFormHandler {
         this.townSelect = document.getElementById('id_town');
     }
 
+    // Nuevo método para establecer fecha y hora actual
+    setCurrentDateAndTime() {
+        const now = new Date();
+        const year = now.getUTCFullYear();
+        const month = (now.getUTCMonth() + 1).toString().padStart(2, '0');
+        const day = now.getUTCDate().toString().padStart(2, '0');
+        const currentDate = `${year}-${month}-${day}`;
+        
+        // Establecer fecha actual en el input solo si no hay valor previo
+        if (this.datePicker && !this.datePicker.value) {
+            this.datePicker.value = currentDate;
+        }
+        
+        // Establecer hora 00 UTC por defecto si no hay valor
+        if (this.hourSelect && !this.hourSelect.value) {
+            this.hourSelect.value = '00';
+        }
+        
+        // Actualizar campo oculto de datetime
+        this.updateDatetimeInit();
+    }
+
     bindEvents() {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
     }
 
     initLitepicker() {
-        if (this.datePicker) {
-            // Destruir cualquier instancia previa de Litepicker
-            if (this.datePicker._litepicker) {
-                this.datePicker._litepicker.destroy();
-            }
-            
+        const datepickerElement = document.getElementById('datepicker');
+        if (datepickerElement) {
             new Litepicker({
-                element: this.datePicker,
+                element: datepickerElement,
                 format: 'YYYY-MM-DD',
                 lang: 'es-ES',
                 resetButton: false,
@@ -86,15 +110,10 @@ class SoundingFormHandler {
     updateDatetimeInit() {
         const dateValue = this.datePicker.value;
         const hourValue = this.hourSelect.value;
-        const formattedDate = dateValue.replace(/-/g, '') + hourValue;
-        this.datetimeInitEl.value = formattedDate;
-    }
-
-    initForecastSelect() {
-        this.weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        this.months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
-                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        this.updateForecastOptions();
+        if (dateValue && hourValue) {
+            const formattedDate = dateValue.replace(/-/g, '') + hourValue;
+            this.datetimeInitEl.value = formattedDate;
+        }
     }
 
     updateForecastOptions() {
@@ -115,8 +134,28 @@ class SoundingFormHandler {
             const hoursToAdd = i * 3;
             forecastDate.setUTCHours(forecastDate.getUTCHours() + hoursToAdd);
             
-            const weekday = this.weekdays[forecastDate.getUTCDay()];
-            const month = this.months[forecastDate.getUTCMonth()];
+            // Validar que la fecha sea válida
+            if (isNaN(forecastDate.getTime())) {
+                console.error('Fecha inválida en previsión');
+                continue;
+            }
+            
+            const dayOfWeek = forecastDate.getUTCDay();
+            const monthIndex = forecastDate.getUTCMonth();
+            
+            // Validar índices
+            if (dayOfWeek < 0 || dayOfWeek >= this.weekdays.length) {
+                console.error('Índice de día fuera de rango:', dayOfWeek);
+                continue;
+            }
+            
+            if (monthIndex < 0 || monthIndex >= this.months.length) {
+                console.error('Índice de mes fuera de rango:', monthIndex);
+                continue;
+            }
+            
+            const weekday = this.weekdays[dayOfWeek];
+            const month = this.months[monthIndex];
             const day = forecastDate.getUTCDate();
             const year = forecastDate.getUTCFullYear();
             const hours = forecastDate.getUTCHours().toString().padStart(2, '0');
@@ -134,6 +173,10 @@ class SoundingFormHandler {
     checkUrlParams() {
         if (window.location.search) {
             this.loadFromUrlParams();
+        } else {
+            // Si no hay parámetros en la URL, actualizar con valores por defecto
+            this.updateDatetimeInit();
+            this.updateForecastOptions();
         }
     }
 
@@ -149,8 +192,6 @@ class SoundingFormHandler {
             if (this.hourSelect) this.hourSelect.value = datetimeInit.substring(8, 10);
         }
 
-        this.updateForecastOptions();
-
         // Cargar t_index desde URL
         const tIndex = params.get('t_index');
         if (tIndex && this.forecastSelect) {
@@ -158,6 +199,7 @@ class SoundingFormHandler {
         }
 
         this.updateDatetimeInit();
+        this.updateForecastOptions();
     }
 
     async handleSubmit(e) {
