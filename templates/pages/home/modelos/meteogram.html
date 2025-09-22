@@ -14,7 +14,7 @@
                                 <input type="hidden" name="datetime_init" id="datetime-init">
                                 <!-- Fecha -->
                                 <div class="col-12">
-                                    <label class="form-label required">Fecha</label>
+                                    <label class="form-label required">Fecha UTC</label>
                                     <div class="input-icon">
                                         <input class="form-control" placeholder="Seleccione una fecha" id="datepicker"
                                                value="{{ initial_date|default:'' }}">
@@ -38,7 +38,7 @@
                         <div class="col-md-3">
                             <!-- Hora -->
                             <div class="mb-0">
-                                <label for="hour-select" class="form-label required">Hora</label>
+                                <label for="hour-select" class="form-label required">Hora UTC</label>
                                 <select class="form-select" id="hour-select" required>
                                     <option value="00" selected>00:00</option>
                                     <option value="06">06:00</option>
