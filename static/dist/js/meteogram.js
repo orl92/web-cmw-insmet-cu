@@ -313,7 +313,7 @@ class Meteogram {
                         text: null
                     },
                     labels: {
-                        format: '{value:.0f}°',
+                        format: '{value:.0f}°C',
                         style: {
                             fontSize: '10px',
                             color: colors.temperature
