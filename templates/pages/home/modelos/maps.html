@@ -2,23 +2,26 @@
 {% load static %}
 
 {% block content %}
-  <form method="post" id="data-form" class="needs-validation card" novalidate>
-      {% csrf_token %}
-      
-      <div class="card-body">
-          <!-- Fila principal con todos los campos -->
-          <div class="row g-3 align-items-end">
-            
-              <!-- Campos Fecha y Hora -->
-              <div class="col-md-4">
-                  <div class="row g-2">
-                      <!-- Fecha -->
-                      <div class="col-12">
-                          <label class="form-label required">Fecha UTC</label>
-                          <div class="input-icon">
-                              <input class="form-control" placeholder="Seleccione una fecha" id="datepicker" value="{{ initial_date|default:'' }}">
-                              <span class="input-icon-addon">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+    <form method="post" id="data-form" class="needs-validation card" novalidate>
+        {% csrf_token %}
+
+        <div class="card-body">
+            <!-- Fila principal con todos los campos -->
+            <div class="row g-3 align-items-end">
+
+                <!-- Campos Fecha y Hora -->
+                <div class="col-md-4">
+                    <div class="row g-2">
+                        <!-- Fecha -->
+                        <div class="col-12">
+                            <label class="form-label required">Fecha UTC</label>
+                            <div class="input-icon">
+                                <input class="form-control" placeholder="Seleccione una fecha" id="datepicker"
+                                       value="{{ initial_date|default:'' }}">
+                                <span class="input-icon-addon">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                       stroke-linejoin="round" class="icon icon-1">
                                       <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
                                       <path d="M16 3v4"></path>
                                       <path d="M8 3v4"></path>
@@ -27,84 +30,82 @@
                                       <path d="M12 15v3"></path>
                                   </svg>
                               </span>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-              
-              <div class="col-md-2">
-                  <!-- Hora -->
-                  <div class="mb-0">
-                      <label for="hour-select" class="form-label required">Hora UTC</label>
-                      <select class="form-select" id="hour-select" required>
-                          <option value="00" selected>00:00</option>
-                          <option value="06">06:00</option>
-                          <option value="12">12:00</option>
-                          <option value="18">18:00</option>
-                      </select>
-                  </div>
-              </div>
-              
-              <!-- Variable Meteorológica -->
-              <div class="col-md-4">
-                  <div class="mb-0">
-                      <label class="form-label required" for="id_var_name">Variable Meteorológica</label>
-                      <select class="form-select" name="var_name" id="id_var_name">
-                          {% for value, text in form.var_name.field.choices %}
-                              <option value="{{ value }}" 
-                                  {% if form.var_name.value == value %}selected{% endif %}>
-                                  {{ text }}
-                              </option>
-                          {% endfor %}
-                      </select>
-                      {% if form.var_name.errors %}
-                          <div class="text-danger mt-1">
-                              {% for error in form.var_name.errors %}
-                                  <small>{{ error }}</small>
-                              {% endfor %}
-                          </div>
-                      {% endif %}
-                  </div>
-              </div>
-              
-              <!-- Botón -->
-              <div class="col-md-2">
-                  <div class="d-grid">
-                      <button type="submit" class="btn btn-primary">Cargar Imágenes</button>
-                  </div>
-              </div>
-              
-          </div>
-      </div>
-  </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-  <div id="plot-area" style="display: none;">
-    <div class="card mt-4">
-        <div class="card-body">
-            <h2 id="plot-title" class="text-center mb-3"></h2>
-            <div class="plot-container">
-                <div id="loading" class="loading-overlay">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2">Cargando imágenes...</p>
+                <div class="col-md-2">
+                    <!-- Hora -->
+                    <div class="mb-0">
+                        <label for="hour-select" class="form-label required">Hora UTC</label>
+                        <select class="form-select" id="hour-select" required>
+                            <option value="00" selected>00:00</option>
+                            <option value="06">06:00</option>
+                            <option value="12">12:00</option>
+                            <option value="18">18:00</option>
+                        </select>
+                    </div>
                 </div>
-                <!-- Galería de imágenes actualizada -->
-                <div id="gallery-container" class="row g-2 g-md-3 mt-3">
-                    <!-- Aquí se cargarán las imágenes en forma de galería -->
+
+                <!-- Variable Meteorológica -->
+                <div class="col-md-4">
+                    <div class="mb-0">
+                        <label class="form-label required" for="id_var_name">Variable Meteorológica</label>
+                        <select class="form-select" name="var_name" id="id_var_name">
+                            {% for value, text in form.var_name.field.choices %}
+                                <option value="{{ value }}"
+                                        {% if form.var_name.value == value %}selected{% endif %}>
+                                    {{ text }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.var_name.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.var_name.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
-                <div id="status-message"></div>
+
+                <!-- Botón -->
+                <div class="col-md-2">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Cargar Imágenes</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </form>
+
+    <div id="plot-area" style="display: none;">
+        <div class="card mt-4">
+            <div class="card-body">
+                <h2 id="plot-title" class="text-center mb-3"></h2>
+                <div class="plot-container">
+                    <div id="loading" class="loading-overlay">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2">Cargando imágenes...</p>
+                    </div>
+                    <!-- Galería de imágenes actualizada -->
+                    <div id="gallery-container" class="row g-2 g-md-3 mt-3">
+                        <!-- Aquí se cargarán las imágenes en forma de galería -->
+                    </div>
+                    <div id="status-message"></div>
+                </div>
             </div>
         </div>
     </div>
-  </div>
 {% endblock %}
 
 {% block extrajs %}
-<!-- Primero cargamos Litepicker -->
-<script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062"></script>
-<!-- Font Awesome para los iconos de los botones -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Primero cargamos Litepicker -->
+    <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062"></script>
     <script src="{% static '' %}dist/libs/fslightbox/index.js?1692870487" defer></script>
-<!-- FS Lightbox para la galería de imágenes -->
-<script src="{% static '' %}dist/js/maps.js"></script>
-    
+    <!-- FS Lightbox para la galería de imágenes -->
+    <script src="{% static '' %}dist/js/maps.js"></script>
+
 {% endblock extrajs %}
