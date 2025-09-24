@@ -371,8 +371,8 @@ class WeatherToday(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Autor')
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
-    summary = models.TextField(max_length=300, verbose_name='Resumen') 
-    detailed_forecast = models.TextField(verbose_name='Pronóstico Detallado')
+    summary = models.TextField(max_length=300, verbose_name='Resumen')
+    file = models.FileField(upload_to=generic_pdf_path, verbose_name='PDF')
     email_recipient_list = models.ForeignKey(
         'EmailRecipientList',
         on_delete=models.SET_NULL,
@@ -399,7 +399,7 @@ class WeatherTomorrow(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Autor')
     date = models.DateTimeField(verbose_name='Fecha y Hora de Creación')
     summary = models.CharField(max_length=300, verbose_name='Resumen') 
-    detailed_forecast = models.TextField(verbose_name='Pronóstico Detallado')
+    file = models.FileField(upload_to=generic_pdf_path, verbose_name='PDF')
     email_recipient_list = models.ForeignKey(
         'EmailRecipientList',
         on_delete=models.SET_NULL,
