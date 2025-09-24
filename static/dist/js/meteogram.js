@@ -700,7 +700,7 @@ class Meteogram {
     }
 }
 
-// Clase MeteogramFormHandler para manejar el formulario
+// Clase MeteogramFormHandler con envío AJAX y URL limpia
 class MeteogramFormHandler {
     constructor() {
         this.meteogramInstance = null;
@@ -715,7 +715,7 @@ class MeteogramFormHandler {
     initLitepicker() {
         const datepickerElement = document.getElementById('datepicker');
         if (datepickerElement) {
-            new Litepicker({
+            this.litepicker = new Litepicker({
                 element: datepickerElement,
                 format: 'YYYY-MM-DD',
                 lang: 'es-ES',
@@ -723,21 +723,30 @@ class MeteogramFormHandler {
                 buttonText: {
                     previousMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M15 6l-6 6l6 6" /></svg>`,
                     nextMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M9 6l6 6l-6 6" /></svg>`
+                },
+                onSelect: (date) => {
+                    this.updateDatetimeInit();
                 }
             });
         }
     }
 
     setupDatetimeHandlers() {
-        document.getElementById('datepicker')?.addEventListener('change', () => this.updateDatetimeInit());
+        document.getElementById('datepicker')?.addEventListener('input', () => this.updateDatetimeInit());
         document.getElementById('hour-select')?.addEventListener('change', () => this.updateDatetimeInit());
+        document.getElementById('id_town')?.addEventListener('change', () => {
+            this.updateDatetimeInit();
+        });
     }
 
     updateDatetimeInit() {
         const dateValue = document.getElementById('datepicker').value;
         const hourValue = document.getElementById('hour-select').value;
-        const formattedDate = dateValue.replace(/-/g, '') + hourValue;
-        document.getElementById('datetime-init').value = formattedDate;
+
+        if (dateValue && hourValue) {
+            const formattedDate = dateValue.replace(/-/g, '') + hourValue;
+            document.getElementById('datetime-init').value = formattedDate;
+        }
     }
 
     initElements() {
@@ -746,32 +755,24 @@ class MeteogramFormHandler {
         this.feedbackEl = document.getElementById('form-feedback');
         this.loadingEl = document.getElementById('loading');
         this.chartContainer = document.getElementById('container');
+        this.datepicker = document.getElementById('datepicker');
+        this.hourSelect = document.getElementById('hour-select');
+        this.townSelect = document.getElementById('id_town');
     }
 
     bindEvents() {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+
+        // Eliminar los event listeners que actualizan la URL
+        // Ya no necesitamos actualizar la URL cuando cambian los campos
     }
 
     loadInitialData() {
-        const params = new URLSearchParams(window.location.search);
-        let datetimeInit = params.get('datetime_init') || '';
-
-        if (datetimeInit && datetimeInit.length === 10) {
-            const datePart = datetimeInit.substring(0, 8);
-            const formattedDate = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
-            document.getElementById('datepicker').value = formattedDate;
-            document.getElementById('hour-select').value = datetimeInit.substring(8, 10);
-        } else {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('datepicker').value = today;
-            document.getElementById('hour-select').value = '00';
-        }
-
-        // Cargar el municipio desde los parámetros de la URL si existe
-        const townId = params.get('town');
-        if (townId) {
-            document.getElementById('id_town').value = townId;
-        }
+        // Ya no cargamos datos iniciales desde la URL
+        // En su lugar, establecemos valores por defecto
+        const today = new Date().toISOString().split('T')[0];
+        if (this.datepicker) this.datepicker.value = today;
+        if (this.hourSelect) this.hourSelect.value = '00';
 
         this.updateDatetimeInit();
     }
@@ -793,14 +794,14 @@ class MeteogramFormHandler {
             const formData = new FormData(this.form);
             const params = {
                 datetime_init: formData.get('datetime_init'),
-                town: formData.get('town')  // Solo enviamos datetime_init y town
+                town: formData.get('town')
             };
 
             if (!params.datetime_init || !params.town) {
                 throw new Error('Todos los campos son requeridos');
             }
 
-            // Enviar el formulario a la vista de Django
+            // Enviar el formulario por POST sin afectar la URL del navegador
             const response = await fetch('', {
                 method: 'POST',
                 body: new URLSearchParams(params),
@@ -822,13 +823,15 @@ class MeteogramFormHandler {
             }
 
             // Obtener las coordenadas del municipio seleccionado para el gráfico
-            const selectedOption = document.getElementById('id_town').selectedOptions[0];
-            const lat = parseFloat(selectedOption.getAttribute('data-lat'));
-            const long = parseFloat(selectedOption.getAttribute('data-long'));
+            const selectedOption = this.townSelect?.selectedOptions[0];
+            const lat = selectedOption ? parseFloat(selectedOption.getAttribute('data-lat')) : 0;
+            const long = selectedOption ? parseFloat(selectedOption.getAttribute('data-long')) : 0;
 
             this.updateMeteogram(responseData, lat, long);
             this.showFeedback('Datos meteorológicos actualizados correctamente ✅', 'success');
-            this.updateURL(params, lat, long);
+
+            // NO actualizamos la URL del navegador
+            // this.updateURL(params, lat, long, true);
 
         } catch (error) {
             console.error('Error:', error);
@@ -871,17 +874,8 @@ class MeteogramFormHandler {
         }
     }
 
-    updateURL(params, lat, long) {
-        // Incluir las coordenadas en la URL para compartir
-        const urlParams = new URLSearchParams({
-            datetime_init: params.datetime_init,
-            town: params.town,
-            lat: lat,
-            long: long
-        });
-        const newUrl = `${window.location.pathname}?${urlParams}`;
-        window.history.pushState({}, '', newUrl);
-    }
+    // Eliminar el método updateURL ya que no lo necesitamos más
+    // updateURL(params, lat, long, pushState = true) { ... }
 
     clearChart() {
         if (this.chartContainer) {
