@@ -18,6 +18,7 @@ class Meteogram {
         this.lat = options.lat || 0;
         this.long = options.long || 0;
         this.municipio = options.municipio || 'Municipio';
+        this.datetimeInit = options.datetimeInit || ''; // Nueva propiedad para la fecha/hora de inicio
 
         // Zona horaria de Cuba (UTC-4 normalmente, UTC-5 en horario de verano)
         this.timezone = 'America/Havana';
@@ -179,7 +180,7 @@ class Meteogram {
         });
     }
 
-    getChartOptions() {
+        getChartOptions() {
         const isDarkMode = document.body.getAttribute('data-bs-theme') === 'dark';
 
         const colors = {
@@ -191,6 +192,14 @@ class Meteogram {
             text: isDarkMode ? '#e4e6eb' : '#495057',
             background: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'transparent'
         };
+
+        // Formatear la fecha para el título
+        let titleText = this.municipio;
+        if (this.datetimeInit) {
+            // Formatear YYYYMMDDHH como "YYYYMMDD HH"
+                        const formattedDate = this.datetimeInit.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1-$2-$3 $4:00 UTC');
+            titleText += ` ${formattedDate}`;
+        }
 
         return {
             time: {
@@ -231,15 +240,15 @@ class Meteogram {
             },
 
             title: {
-                text: `Meteograma para ${this.municipio}`,
+                text: titleText, // Usar el título formateado
                 align: 'left',
                 style: {
                     whiteSpace: 'nowrap',
                     color: colors.text,
                     marginBottom: '15px'
                 },
-                margin: 30, // Aumenta este valor si necesitas más espacio
-                y: 25 // Ajusta la posición vertical del título
+                margin: 30,
+                y: 25
             },
 
             tooltip: {
@@ -851,9 +860,14 @@ class MeteogramFormHandler {
             throw new Error('Datos meteorológicos no válidos o vacíos');
         }
 
+        // Obtener datetime_init del formulario
+        const datetimeInit = document.getElementById('datetime-init').value;
+
         const options = {
             lat: lat,
             long: long,
+            municipio: this.townSelect?.selectedOptions[0]?.textContent || 'Municipio',
+            datetimeInit: datetimeInit, // Pasar la fecha/hora de inicio
             timezone: 'UTC',
             apiBaseUrl: this.apiBaseUrl
         };
