@@ -148,7 +148,7 @@ class WeatherNoteUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPas
     def form_valid(self, form):
         # Obtener el objeto original antes de los cambios
         original_object = self.get_object(queryset=None)
-        relevant_fields = ['subject', 'detailed_note', 'email_recipient_list']
+        relevant_fields = ['subject', 'file', 'email_recipient_list']
         
         # Detectar cambios en los campos relevantes
         has_changes = any(

@@ -6,7 +6,7 @@ from dashboard.models import WeatherCommentary
 class WeatherCommentaryForm(forms.ModelForm):
     class Meta:
         model = WeatherCommentary
-        fields = ['subject', 'detailed_commentary', 'email_recipient_list']
+        fields = ['subject', 'file', 'email_recipient_list']
         widgets = {
             'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),
         }

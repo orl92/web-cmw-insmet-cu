@@ -426,7 +426,7 @@ class WeatherCommentary(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Autor')
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
     subject = models.CharField(max_length=300, verbose_name='Asunto') 
-    detailed_commentary = models.TextField(verbose_name='Comentario Detallado')
+    file = models.FileField(upload_to=generic_pdf_path, verbose_name='PDF')
     email_recipient_list = models.ForeignKey(
         'EmailRecipientList',
         on_delete=models.SET_NULL,
@@ -453,7 +453,7 @@ class WeatherNote(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Autor')
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
     subject = models.CharField(max_length=300, verbose_name='Asunto') 
-    detailed_note = models.TextField(verbose_name='Nota Detallada')
+    file = models.FileField(upload_to=generic_pdf_path, verbose_name='PDF')
     email_recipient_list = models.ForeignKey(
         'EmailRecipientList',
         on_delete=models.SET_NULL,
