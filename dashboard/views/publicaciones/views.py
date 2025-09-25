@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
-from dashboard.forms.publicaciones.forms import ScientificPublicationForm, AuthorFormSet
+from dashboard.forms.publicaciones.forms import ScientificPublicationForm, CoauthorFormSet
 from dashboard.models import ScientificPublication, Author
 
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
@@ -34,7 +34,7 @@ class ScientificPublicationListView(LoginRequiredMixin, PermissionRequiredMixin,
         context['btn'] = 'Añadir Publicación'
         context['url_create'] = reverse_lazy('crear_publicacion')
         context['url_list'] = reverse_lazy('listado_publicaciones')
-        context['objects'] = ScientificPublication.objects.all().prefetch_related('authors')
+        context['objects'] = ScientificPublication.objects.all().prefetch_related('author', 'coauthors')
         return context
 
 
@@ -53,27 +53,25 @@ class ScientificPublicationCreateView(LoginRequiredMixin, PermissionRequiredMixi
 
     def form_valid(self, form):
         # Guardar la publicación principal primero
-        self.object = form.save()
+        self.object = form.save(commit=False)
+        self.object.user = self.request.user
+        self.object.save()
 
-        # Procesar el formset de autores
-        formset = AuthorFormSet(self.request.POST, prefix='authors')
+        # Procesar el formset de coautores
+        formset = CoauthorFormSet(self.request.POST, prefix='coauthors')
 
         if formset.is_valid():
-            authors = formset.save(commit=False)
+            # Guardar coautores
+            coauthors = []
+            for coauthor_form in formset:
+                if coauthor_form.cleaned_data and not coauthor_form.cleaned_data.get('DELETE'):
+                    coauthor = coauthor_form.save()
+                    if coauthor and coauthor != self.object.author:  # No añadir el autor como coautor
+                        coauthors.append(coauthor)
 
-            # Guardar cada autor y añadirlo a la publicación
-            for author in authors:
-                author.save()
-                self.object.authors.add(author)
-
-            # Guardar autores marcados para eliminar
-            for form in formset.deleted_forms:
-                if form.instance.pk:
-                    author = form.instance
-                    self.object.authors.remove(author)
-                    # Opcional: eliminar el autor de la base de datos si no está en otras publicaciones
-                    if author.publications.count() == 0:
-                        author.delete()
+            # Añadir coautores a la publicación
+            for coauthor in coauthors:
+                self.object.coauthors.add(coauthor)
 
             # Registrar la acción
             log_action(
@@ -83,19 +81,18 @@ class ScientificPublicationCreateView(LoginRequiredMixin, PermissionRequiredMixi
                 message=f"Se creó una nueva publicación científica: {self.object.title}."
             )
 
-            messages.success(self.request, 'La publicación científica y los autores se han creado con éxito.',
-                             extra_tags='success')
+            messages.success(self.request, 'La publicación científica se ha creado con éxito.', extra_tags='success')
         else:
             # Mostrar errores del formset
             print("Errores del formset:", formset.errors)
-            messages.error(self.request, 'Hubo un error con los autores. Verifica los campos.')
+            messages.error(self.request, 'Hubo un error con los coautores. Verifica los campos.')
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['formset'] = kwargs.get('formset', AuthorFormSet(queryset=Author.objects.none(), prefix='authors'))
+        context['formset'] = kwargs.get('formset', CoauthorFormSet(queryset=Author.objects.none(), prefix='coauthors'))
         context['title'] = 'Añadir Publicación Científica'
         context['parent'] = ''
         context['segment'] = 'publicaciones'
@@ -124,26 +121,24 @@ class ScientificPublicationUpdateView(LoginRequiredMixin, PermissionRequiredMixi
         # Guardar cambios en la publicación principal
         self.object = form.save()
 
-        # Procesar el formset de autores
-        formset = AuthorFormSet(self.request.POST, prefix='authors')
+        # Procesar el formset de coautores
+        formset = CoauthorFormSet(self.request.POST, prefix='coauthors')
 
         if formset.is_valid():
-            # Obtener autores actuales de la publicación
-            current_authors = set(self.object.authors.all())
-            new_authors = set()
+            # Limpiar coautores actuales
+            self.object.coauthors.clear()
 
-            # Guardar nuevos autores y actualizar existentes
-            for author_form in formset:
-                if author_form.cleaned_data.get('DELETE') and author_form.instance.pk:
-                    # Eliminar autor de la publicación
-                    self.object.authors.remove(author_form.instance)
-                    # Eliminar autor de la base de datos si no está en otras publicaciones
-                    if author_form.instance.publications.count() == 0:
-                        author_form.instance.delete()
-                elif author_form.has_changed():
-                    author = author_form.save()
-                    new_authors.add(author)
-                    self.object.authors.add(author)
+            # Guardar nuevos coautores
+            coauthors = []
+            for coauthor_form in formset:
+                if coauthor_form.cleaned_data and not coauthor_form.cleaned_data.get('DELETE'):
+                    coauthor = coauthor_form.save()
+                    if coauthor and coauthor != self.object.author:  # No añadir el autor como coautor
+                        coauthors.append(coauthor)
+
+            # Añadir coautores a la publicación
+            for coauthor in coauthors:
+                self.object.coauthors.add(coauthor)
 
             # Registrar acción
             log_action(
@@ -153,12 +148,12 @@ class ScientificPublicationUpdateView(LoginRequiredMixin, PermissionRequiredMixi
                 message=f"Se actualizó la publicación científica: {self.object.title}."
             )
 
-            messages.success(self.request, 'La publicación científica y los autores han sido actualizados con éxito.',
+            messages.success(self.request, 'La publicación científica ha sido actualizada con éxito.',
                              extra_tags='warning')
         else:
             # Renderizar nuevamente si hay errores
             print("Errores del formset:", formset.errors)
-            messages.error(self.request, 'Hubo un error con los autores. Verifica los campos.')
+            messages.error(self.request, 'Hubo un error con los coautores. Verifica los campos.')
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
         return super().form_valid(form)
@@ -166,13 +161,13 @@ class ScientificPublicationUpdateView(LoginRequiredMixin, PermissionRequiredMixi
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Obtener autores existentes de la publicación
+        # Obtener coautores existentes de la publicación
         if self.object:
-            authors_queryset = self.object.authors.all()
+            coauthors_queryset = self.object.coauthors.all()
         else:
-            authors_queryset = Author.objects.none()
+            coauthors_queryset = Author.objects.none()
 
-        formset = kwargs.get('formset', AuthorFormSet(queryset=authors_queryset, prefix='authors'))
+        formset = kwargs.get('formset', CoauthorFormSet(queryset=coauthors_queryset, prefix='coauthors'))
 
         context['formset'] = formset
         context['title'] = 'Actualizar Publicación Científica'
@@ -182,12 +177,10 @@ class ScientificPublicationUpdateView(LoginRequiredMixin, PermissionRequiredMixi
         return context
 
     def test_func(self):
-        # Verifica si el usuario es superusuario o si es el creador de la publicación
         publicacion = self.get_object()
         return self.request.user.is_superuser or publicacion.user == self.request.user
 
 
-# Las demás vistas (DeleteView, DetailView) permanecen igual...
 class ScientificPublicationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = ScientificPublication
     template_name = 'pages/dashboard/publicaciones/eliminar_publicacion.html'
@@ -243,7 +236,7 @@ class ScientificPublicationDetailView(LoginRequiredMixin, PermissionRequiredMixi
         context['segment'] = 'publicaciones'
         context['url_list'] = reverse_lazy('listado_publicaciones')
         # Prefetch related authors for better performance
-        context['publicacion'] = ScientificPublication.objects.prefetch_related('authors').get(
+        context['publicacion'] = ScientificPublication.objects.prefetch_related('author', 'coauthors').get(
             uuid=self.kwargs.get('uuid'))
         return context
 
@@ -264,7 +257,8 @@ class ScientificPublicationPDFView(LoginRequiredMixin, PermissionRequiredMixin, 
         context = {
             'publicacion': publicacion,
             'logo_base64': logo_base64,
-            'authors': publicacion.authors.all()
+            'author': publicacion.author,
+            'coauthors': publicacion.coauthors.all()
         }
         html = template.render(context)
 

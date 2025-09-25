@@ -3,18 +3,20 @@
 {% block columns %}
     <th>Título</th>
     <th>Fecha de Publicación</th>
-    <th>Autores</th>
+    <th>Autor</th>
+    <th>Coautores</th>
     <th>Usuario</th>
     <th class="text-end">Acciones</th>
 {% endblock columns %}
 {% block row %}
     <td>{{ object.title }}</td>
     <td>{{ object.publication_date }}</td>
+    <td>{{ object.author.first_name }} {{ object.author.last_name }}</td>
     <td>
-        {% for author in object.authors.all %}
-            {{ author.first_name }} {{ author.last_name }}{% if not forloop.last %}, {% endif %}
+        {% for coauthor in object.coauthors.all %}
+            {{ coauthor.first_name }} {{ coauthor.last_name }}{% if not forloop.last %}, {% endif %}
         {% empty %}
-            Sin autores
+            Sin coautores
         {% endfor %}
     </td>
     <td>{{ object.user }}</td>

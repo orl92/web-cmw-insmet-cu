@@ -519,7 +519,18 @@ class EmailRecipient(models.Model):
 class ScientificPublication(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=200, verbose_name="Título")
-    authors = models.ManyToManyField('Author', related_name="publications", verbose_name="Autores")
+    author = models.ForeignKey(
+        'Author',
+        on_delete=models.CASCADE,
+        related_name="authored_publications",
+        verbose_name="Autor"
+    )
+    coauthors = models.ManyToManyField(
+        'Author',
+        related_name="coauthored_publications",
+        verbose_name="Coautores",
+        blank=True
+    )
     publication_date = models.DateField(verbose_name="Fecha de Publicación")
     summary = models.TextField(verbose_name="Resumen")
     pdf_file = models.FileField(

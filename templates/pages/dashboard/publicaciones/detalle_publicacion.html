@@ -74,31 +74,53 @@
                     </div>
 
                     <div class="row mt-4">
-                        <div class="col-12">
-                            <h4>Autores</h4>
+                        <div class="col-md-6">
+                            <h4>Autor Principal</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <tbody>
+                                    <tr>
+                                        <th>Nombre:</th>
+                                        <td>{{ publicacion.author.first_name }} {{ publicacion.author.last_name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Correo:</th>
+                                        <td>{{ publicacion.author.email|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Institución:</th>
+                                        <td>{{ publicacion.author.institution|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>ORCID ID:</th>
+                                        <td>{{ publicacion.author.orcid_id|default:"-" }}</td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h4>Coautores</h4>
                             <div class="table-responsive">
                                 <table class="table table-bordered">
                                     <thead>
                                     <tr>
-                                        <th>Nombres</th>
-                                        <th>Apellidos</th>
-                                        <th>Correo Electrónico</th>
+                                        <th>Nombre</th>
+                                        <th>Correo</th>
                                         <th>Institución</th>
-                                        <th>ORCID ID</th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {% for author in publicacion.authors.all %}
+                                    {% for coauthor in publicacion.coauthors.all %}
                                         <tr>
-                                            <td>{{ author.first_name }}</td>
-                                            <td>{{ author.last_name }}</td>
-                                            <td>{{ author.email|default:"-" }}</td>
-                                            <td>{{ author.institution|default:"-" }}</td>
-                                            <td>{{ author.orcid_id|default:"-" }}</td>
+                                            <td>{{ coauthor.first_name }} {{ coauthor.last_name }}</td>
+                                            <td>{{ coauthor.email|default:"-" }}</td>
+                                            <td>{{ coauthor.institution|default:"-" }}</td>
                                         </tr>
                                     {% empty %}
                                         <tr>
-                                            <td colspan="5" class="text-center">No hay autores registrados</td>
+                                            <td colspan="3" class="text-center">No hay coautores registrados</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>

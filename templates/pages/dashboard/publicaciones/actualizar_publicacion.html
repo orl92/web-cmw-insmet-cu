@@ -21,6 +21,34 @@
         {% endif %}
     </div>
 
+    <!-- Búsqueda de Autor -->
+    <div class="mb-3">
+        <label class="form-label">{{ form.author_search.label }}</label>
+        <input type="text" class="form-control" id="{{ form.author_search.id_for_label }}"
+               name="{{ form.author_search.name }}" value="{{ form.author_search.value|default:'' }}"
+               placeholder="Buscar autor por nombre, apellido o email">
+        <small class="form-text text-muted">Busca un autor existente o selecciona uno de la lista</small>
+        {% if form.author_search.errors %}
+            <span class="text-danger d-block mb-3">{{ form.author_search.errors }}</span>
+        {% endif %}
+    </div>
+
+    <!-- Selección de Autor -->
+    <div class="mb-3">
+        <label class="form-label required">{{ form.author.label }}</label>
+        <select class="form-control" id="{{ form.author.id_for_label }}" name="{{ form.author.name }}" required>
+            <option value="">Seleccione un autor</option>
+            {% for author in form.author.field.queryset %}
+                <option value="{{ author.id }}" {% if author.id == form.author.value %}selected{% endif %}>
+                    {{ author.first_name }} {{ author.last_name }} {% if author.email %}({{ author.email }}){% endif %}
+                </option>
+            {% endfor %}
+        </select>
+        {% if form.author.errors %}
+            <span class="text-danger d-block mb-3">{{ form.author.errors }}</span>
+        {% endif %}
+    </div>
+
     <!-- Campo para el Resumen -->
     <div class="mb-3">
         <label class="form-label required">{{ form.summary.label }}</label>
@@ -44,13 +72,17 @@
         {% endif %}
     </div>
 
-    <!-- Sección para Autores -->
+    <!-- Sección para Coautores -->
     <fieldset>
-        <legend>Autores</legend>
+        <legend>Coautores (Opcional)</legend>
+        <small class="form-text text-muted">Puedes buscar coautores existentes o añadir nuevos. El autor principal no
+            puede ser coautor.</small>
+
         {{ formset.management_form }}
-        <table class="table table-bordered">
+        <table class="table table-bordered mt-3">
             <thead>
             <tr>
+                <th>Buscar Coautor</th>
                 <th>Nombres</th>
                 <th>Apellidos</th>
                 <th>Correo Electrónico</th>
@@ -59,51 +91,41 @@
                 <th>Eliminar</th>
             </tr>
             </thead>
-            <tbody id="author-table-body">
+            <tbody id="coauthor-table-body">
             {% for form in formset %}
                 <tr>
                     <td>
-                        <input type="text" class="form-control" name="authors-{{ forloop.counter0 }}-first_name"
-                               value="{{ form.first_name.value|default:'' }}" placeholder="Nombres" required>
-                        {% if form.first_name.errors %}
-                            <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
-                        {% endif %}
+                        <input type="text" class="form-control search-term"
+                               name="coauthors-{{ forloop.counter0 }}-search_term"
+                               value="{{ form.search_term.value|default:'' }}" placeholder="Buscar...">
                     </td>
                     <td>
-                        <input type="text" class="form-control" name="authors-{{ forloop.counter0 }}-last_name"
-                               value="{{ form.last_name.value|default:'' }}" placeholder="Apellidos" required>
-                        {% if form.last_name.errors %}
-                            <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
-                        {% endif %}
+                        <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-first_name"
+                               value="{{ form.first_name.value|default:'' }}" placeholder="Nombres">
                     </td>
                     <td>
-                        <input type="email" class="form-control" name="authors-{{ forloop.counter0 }}-email"
-                               value="{{ form.email.value|default:'' }}" placeholder="Correo (opcional)">
-                        {% if form.email.errors %}
-                            <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
-                        {% endif %}
+                        <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-last_name"
+                               value="{{ form.last_name.value|default:'' }}" placeholder="Apellidos">
                     </td>
                     <td>
-                        <input type="text" class="form-control" name="authors-{{ forloop.counter0 }}-institution"
-                               value="{{ form.institution.value|default:'' }}" placeholder="Institución (opcional)">
-                        {% if form.institution.errors %}
-                            <span class="text-danger d-block mb-3">{{ form.institution.errors }}</span>
-                        {% endif %}
+                        <input type="email" class="form-control" name="coauthors-{{ forloop.counter0 }}-email"
+                               value="{{ form.email.value|default:'' }}" placeholder="Correo">
                     </td>
                     <td>
-                        <input type="text" class="form-control" name="authors-{{ forloop.counter0 }}-orcid_id"
-                               value="{{ form.orcid_id.value|default:'' }}" placeholder="ORCID ID (opcional)">
-                        {% if form.orcid_id.errors %}
-                            <span class="text-danger d-block mb-3">{{ form.orcid_id.errors }}</span>
-                        {% endif %}
+                        <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-institution"
+                               value="{{ form.institution.value|default:'' }}" placeholder="Institución">
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-orcid_id"
+                               value="{{ form.orcid_id.value|default:'' }}" placeholder="ORCID ID">
                     </td>
                     <td>
                         {% if form.instance.pk %}
-                            <input type="hidden" name="authors-{{ forloop.counter0 }}-id"
+                            <input type="hidden" name="coauthors-{{ forloop.counter0 }}-id"
                                    value="{{ form.instance.pk }}">
                             {{ form.DELETE }}
                         {% endif %}
-                        <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-author">
+                        <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-coauthor">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                  stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
@@ -120,7 +142,7 @@
             {% endfor %}
             </tbody>
         </table>
-        <button type="button" id="add-author" class="btn btn-pill btn-outline-success btn-sm">Añadir Autor</button>
+        <button type="button" id="add-coauthor" class="btn btn-pill btn-outline-success btn-sm">Añadir Coautor</button>
     </fieldset>
 {% endblock form %}
 
@@ -128,31 +150,34 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Evento para añadir autores
-            $('#add-author').click(function () {
-                const authorTableBody = $('#author-table-body');
-                const totalFormsInput = $('#id_authors-TOTAL_FORMS');
+            // Evento para añadir coautores
+            $('#add-coauthor').click(function () {
+                const coauthorTableBody = $('#coauthor-table-body');
+                const totalFormsInput = $('#id_coauthors-TOTAL_FORMS');
                 const formIndex = parseInt(totalFormsInput.val());
 
                 const newRow = `
         <tr>
           <td>
-            <input type="text" class="form-control" name="authors-${formIndex}-first_name" value="" placeholder="Nombres" required>
+            <input type="text" class="form-control search-term" name="coauthors-${formIndex}-search_term" value="" placeholder="Buscar...">
           </td>
           <td>
-            <input type="text" class="form-control" name="authors-${formIndex}-last_name" value="" placeholder="Apellidos" required>
+            <input type="text" class="form-control" name="coauthors-${formIndex}-first_name" value="" placeholder="Nombres">
           </td>
           <td>
-            <input type="email" class="form-control" name="authors-${formIndex}-email" value="" placeholder="Correo (opcional)">
+            <input type="text" class="form-control" name="coauthors-${formIndex}-last_name" value="" placeholder="Apellidos">
           </td>
           <td>
-            <input type="text" class="form-control" name="authors-${formIndex}-institution" value="" placeholder="Institución (opcional)">
+            <input type="email" class="form-control" name="coauthors-${formIndex}-email" value="" placeholder="Correo">
           </td>
           <td>
-            <input type="text" class="form-control" name="authors-${formIndex}-orcid_id" value="" placeholder="ORCID ID (opcional)">
+            <input type="text" class="form-control" name="coauthors-${formIndex}-institution" value="" placeholder="Institución">
           </td>
           <td>
-            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-author">
+            <input type="text" class="form-control" name="coauthors-${formIndex}-orcid_id" value="" placeholder="ORCID ID">
+          </td>
+          <td>
+            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-coauthor">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M4 7l16 0" />
@@ -166,12 +191,12 @@
         </tr>
       `;
 
-                authorTableBody.append(newRow);
+                coauthorTableBody.append(newRow);
                 totalFormsInput.val(formIndex + 1);
             });
 
-            // Evento para eliminar autores (marcar para eliminación)
-            $('#author-table-body').on('click', '.delete-author', function () {
+            // Evento para eliminar coautores (marcar para eliminación)
+            $('#coauthor-table-body').on('click', '.delete-coauthor', function () {
                 const row = $(this).closest('tr');
                 const deleteCheckbox = row.find('input[type="checkbox"][name$="-DELETE"]');
 
@@ -180,8 +205,8 @@
                     row.hide();
                 } else {
                     row.remove();
-                    const totalFormsInput = $('#id_authors-TOTAL_FORMS');
-                    const remainingRows = $('#author-table-body tr:visible').length;
+                    const totalFormsInput = $('#id_coauthors-TOTAL_FORMS');
+                    const remainingRows = $('#coauthor-table-body tr:visible').length;
                     totalFormsInput.val(remainingRows);
                 }
             });
