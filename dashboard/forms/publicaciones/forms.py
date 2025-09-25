@@ -1,5 +1,5 @@
 from django import forms
-from django.forms import inlineformset_factory
+from django.forms import modelformset_factory  # Cambia a modelformset_factory
 from django.core.validators import FileExtensionValidator
 
 from dashboard.models import ScientificPublication, Author
@@ -39,6 +39,8 @@ class ScientificPublicationForm(forms.ModelForm):
             instance.user = self.user
         if commit:
             instance.save()
+            # Guardar la relación many-to-many después de guardar la instancia
+            self.save_m2m()
         return instance
 
 
@@ -115,14 +117,12 @@ class AuthorForm(forms.ModelForm):
         return orcid_id
 
 
-# Formset para autores (similar al ejemplo de EmailRecipient)
-AuthorFormSet = inlineformset_factory(
-    ScientificPublication,
+# Cambia inlineformset_factory por modelformset_factory
+AuthorFormSet = modelformset_factory(
     Author,
     form=AuthorForm,
     extra=1,  # Agregar 1 formulario vacío automáticamente
     can_delete=True,  # Permitir eliminación
-    can_order=False,  # No permitir ordenar
     min_num=1,  # Mínimo 1 autor requerido
     validate_min=True  # Validar el mínimo
 )

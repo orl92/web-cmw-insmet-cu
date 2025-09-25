@@ -1,10 +1,174 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'layouts/form.html' %}
+{% load static %}
+{% block form %}
+    <!-- Campo para el Título -->
+    <div class="mb-3">
+        <label class="form-label required">{{ form.title.label }}</label>
+        <input type="text" class="form-control" id="{{ form.title.id_for_label }}" name="{{ form.title.name }}"
+               placeholder="Título de la publicación científica" required>
+        {% if form.title.errors %}
+            <span class="text-danger d-block mb-3">{{ form.title.errors }}</span>
+        {% endif %}
+    </div>
 
-</body>
-</html>
+    <!-- Campo para la Fecha de Publicación -->
+    <div class="mb-3">
+        <label class="form-label required">{{ form.publication_date.label }}</label>
+        <input type="date" class="form-control" id="{{ form.publication_date.id_for_label }}"
+               name="{{ form.publication_date.name }}" required>
+        {% if form.publication_date.errors %}
+            <span class="text-danger d-block mb-3">{{ form.publication_date.errors }}</span>
+        {% endif %}
+    </div>
+
+    <!-- Campo para el Resumen -->
+    <div class="mb-3">
+        <label class="form-label required">{{ form.summary.label }}</label>
+        <textarea class="form-control" id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
+                  placeholder="Resumen de la publicación" rows="4" required></textarea>
+        {% if form.summary.errors %}
+            <span class="text-danger d-block mb-3">{{ form.summary.errors }}</span>
+        {% endif %}
+    </div>
+
+    <!-- Campo para el Archivo PDF -->
+    <div class="mb-3">
+        <label class="form-label required">{{ form.pdf_file.label }}</label>
+        <input type="file" class="form-control" id="{{ form.pdf_file.id_for_label }}" name="{{ form.pdf_file.name }}"
+               accept=".pdf" required>
+        {% if form.pdf_file.errors %}
+            <span class="text-danger d-block mb-3">{{ form.pdf_file.errors }}</span>
+        {% endif %}
+    </div>
+
+    <!-- Sección para Autores -->
+    <fieldset>
+        <legend>Autores</legend>
+        {{ formset.management_form }}
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th>Nombres</th>
+                <th>Apellidos</th>
+                <th>Correo Electrónico</th>
+                <th>Institución</th>
+                <th>ORCID ID</th>
+                <th>Eliminar</th>
+            </tr>
+            </thead>
+            <tbody id="author-table-body">
+            {% for form in formset %}
+                <tr>
+                    <td>
+                        <input type="text" class="form-control" name="authors-{{ forloop.counter0 }}-first_name"
+                               value="{{ form.first_name.value|default:'' }}" placeholder="Nombres" required>
+                        {% if form.first_name.errors %}
+                            <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" name="authors-{{ forloop.counter0 }}-last_name"
+                               value="{{ form.last_name.value|default:'' }}" placeholder="Apellidos" required>
+                        {% if form.last_name.errors %}
+                            <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <input type="email" class="form-control" name="authors-{{ forloop.counter0 }}-email"
+                               value="{{ form.email.value|default:'' }}" placeholder="Correo (opcional)">
+                        {% if form.email.errors %}
+                            <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" name="authors-{{ forloop.counter0 }}-institution"
+                               value="{{ form.institution.value|default:'' }}" placeholder="Institución (opcional)">
+                        {% if form.institution.errors %}
+                            <span class="text-danger d-block mb-3">{{ form.institution.errors }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <input type="text" class="form-control" name="authors-{{ forloop.counter0 }}-orcid_id"
+                               value="{{ form.orcid_id.value|default:'' }}" placeholder="ORCID ID (opcional)">
+                        {% if form.orcid_id.errors %}
+                            <span class="text-danger d-block mb-3">{{ form.orcid_id.errors }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-author">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                 stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M4 7l16 0"/>
+                                <path d="M10 11l0 6"/>
+                                <path d="M14 11l0 6"/>
+                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <button type="button" id="add-author" class="btn btn-pill btn-outline-success btn-sm">Añadir Autor</button>
+    </fieldset>
+{% endblock form %}
+
+{% block extrajs %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Evento para añadir autores
+            $('#add-author').click(function () {
+                const authorTableBody = $('#author-table-body');
+                const totalFormsInput = $('#id_authors-TOTAL_FORMS');
+                const formIndex = parseInt(totalFormsInput.val());
+
+                const newRow = `
+        <tr>
+          <td>
+            <input type="text" class="form-control" name="authors-${formIndex}-first_name" value="" placeholder="Nombres" required>
+          </td>
+          <td>
+            <input type="text" class="form-control" name="authors-${formIndex}-last_name" value="" placeholder="Apellidos" required>
+          </td>
+          <td>
+            <input type="email" class="form-control" name="authors-${formIndex}-email" value="" placeholder="Correo (opcional)">
+          </td>
+          <td>
+            <input type="text" class="form-control" name="authors-${formIndex}-institution" value="" placeholder="Institución (opcional)">
+          </td>
+          <td>
+            <input type="text" class="form-control" name="authors-${formIndex}-orcid_id" value="" placeholder="ORCID ID (opcional)">
+          </td>
+          <td>
+            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-author">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4 7l16 0" />
+                <path d="M10 11l0 6" />
+                <path d="M14 11l0 6" />
+                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+      `;
+
+                authorTableBody.append(newRow);
+                totalFormsInput.val(formIndex + 1);
+            });
+
+            // Evento para eliminar autores
+            $('#author-table-body').on('click', '.delete-author', function () {
+                $(this).closest('tr').remove();
+                const totalFormsInput = $('#id_authors-TOTAL_FORMS');
+                const remainingRows = $('#author-table-body tr').length;
+                totalFormsInput.val(remainingRows);
+            });
+        });
+    </script>
+{% endblock extrajs %}
