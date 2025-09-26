@@ -7,18 +7,59 @@ from dashboard.models import ScientificPublication, Author
 
 
 class ScientificPublicationForm(forms.ModelForm):
-    author_search = forms.CharField(
-        required=False,
+    # Campos para el autor principal (igual que los coautores)
+    author_first_name = forms.CharField(
+        max_length=100,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Buscar autor por nombre, apellido o email'
+            'placeholder': 'Nombres del autor'
         }),
-        label="Buscar Autor Existente"
+        label="Nombres del Autor",
+        required=True
+    )
+
+    author_last_name = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Apellidos del autor'
+        }),
+        label="Apellidos del Autor",
+        required=True
+    )
+
+    author_email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Correo electrónico del autor'
+        }),
+        label="Correo del Autor",
+        required=False
+    )
+
+    author_institution = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Institución del autor'
+        }),
+        label="Institución del Autor",
+        required=False
+    )
+
+    author_orcid_id = forms.CharField(
+        max_length=19,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'ORCID ID del autor'
+        }),
+        label="ORCID ID del Autor",
+        required=False
     )
 
     class Meta:
         model = ScientificPublication
-        fields = ['title', 'publication_date', 'summary', 'pdf_file', 'author']
+        fields = ['title', 'publication_date', 'summary', 'pdf_file']
         widgets = {
             'title': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -37,38 +78,82 @@ class ScientificPublicationForm(forms.ModelForm):
                 'class': 'form-control',
                 'accept': '.pdf'
             }),
-            'author': forms.Select(attrs={
-                'class': 'form-control'
-            }),
         }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        # Filtrar autores existentes para el select
-        self.fields['author'].queryset = Author.objects.all()
-        self.fields['author'].required = True
+        # Si es una instancia existente y tiene autor, cargar los datos del autor
+        if self.instance and self.instance.pk and hasattr(self.instance, 'author'):
+            self.fields['author_first_name'].initial = self.instance.author.first_name
+            self.fields['author_last_name'].initial = self.instance.author.last_name
+            self.fields['author_email'].initial = self.instance.author.email
+            self.fields['author_institution'].initial = self.instance.author.institution
+            self.fields['author_orcid_id'].initial = self.instance.author.orcid_id
+
+    def clean(self):
+        cleaned_data = super().clean()
+        author_first_name = cleaned_data.get('author_first_name')
+        author_last_name = cleaned_data.get('author_last_name')
+
+        # Validar que el autor principal tenga al menos nombre y apellido
+        if not author_first_name or not author_last_name:
+            raise forms.ValidationError("El autor principal debe tener al menos nombre y apellido.")
+
+        return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+
+        # Crear o obtener el autor principal usando get_or_create
+        author_first_name = self.cleaned_data.get('author_first_name')
+        author_last_name = self.cleaned_data.get('author_last_name')
+        author_email = self.cleaned_data.get('author_email')
+
+        if author_email:
+            author, created = Author.objects.get_or_create(
+                email=author_email,
+                defaults={
+                    'first_name': author_first_name,
+                    'last_name': author_last_name,
+                    'institution': self.cleaned_data.get('author_institution', ''),
+                    'orcid_id': self.cleaned_data.get('author_orcid_id', '')
+                }
+            )
+        else:
+            author, created = Author.objects.get_or_create(
+                first_name=author_first_name,
+                last_name=author_last_name,
+                defaults={
+                    'email': author_email,
+                    'institution': self.cleaned_data.get('author_institution', ''),
+                    'orcid_id': self.cleaned_data.get('author_orcid_id', '')
+                }
+            )
+
+        # Si no es nuevo, actualizar los campos si están vacíos
+        if not created:
+            if not author.email and author_email:
+                author.email = author_email
+            if not author.institution and self.cleaned_data.get('author_institution'):
+                author.institution = self.cleaned_data.get('author_institution')
+            if not author.orcid_id and self.cleaned_data.get('author_orcid_id'):
+                author.orcid_id = self.cleaned_data.get('author_orcid_id')
+            author.save()
+
+        instance.author = author
+
         if self.user:
             instance.user = self.user
+
         if commit:
             instance.save()
+
         return instance
 
 
 class CoauthorForm(forms.ModelForm):
-    search_term = forms.CharField(
-        required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Buscar coautor existente'
-        }),
-        label="Buscar Coautor"
-    )
-
     class Meta:
         model = Author
         fields = ['first_name', 'last_name', 'email', 'institution', 'orcid_id']
@@ -97,94 +182,63 @@ class CoauthorForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Hacer campos opcionales
-        for field in ['email', 'institution', 'orcid_id']:
-            self.fields[field].required = False
+        # Hacer campos opcionales excepto nombre y apellido
+        self.fields['email'].required = False
+        self.fields['institution'].required = False
+        self.fields['orcid_id'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
-        search_term = cleaned_data.get('search_term')
-        email = cleaned_data.get('email')
+        first_name = cleaned_data.get('first_name')
+        last_name = cleaned_data.get('last_name')
 
-        # Si se proporcionó un término de búsqueda, buscar autor existente
-        if search_term:
-            author = self.find_existing_author(search_term)
-            if author:
-                # Usar el autor existente
-                self.instance = author
-                # Actualizar los campos del formulario con los datos del autor existente
-                for field in ['first_name', 'last_name', 'email', 'institution', 'orcid_id']:
-                    if field in cleaned_data:
-                        cleaned_data[field] = getattr(author, field)
-
-        # Si no se encontró por búsqueda pero hay email, buscar por email
-        elif email and not self.instance.pk:
-            existing_author = Author.objects.filter(email=email).first()
-            if existing_author:
-                self.instance = existing_author
-                for field in ['first_name', 'last_name', 'institution', 'orcid_id']:
-                    if field in cleaned_data:
-                        cleaned_data[field] = getattr(existing_author, field)
+        # Validar que al menos tenga nombre y apellido
+        if not first_name or not last_name:
+            raise forms.ValidationError("El coautor debe tener al menos nombre y apellido.")
 
         return cleaned_data
 
-    def find_existing_author(self, search_term):
-        """Buscar autor existente por nombre, apellido o email"""
-        if not search_term:
-            return None
+    def save(self, commit=True):
+        # Usar get_or_create para evitar duplicados
+        first_name = self.cleaned_data.get('first_name')
+        last_name = self.cleaned_data.get('last_name')
+        email = self.cleaned_data.get('email')
 
-        # Buscar por email exacto
-        author = Author.objects.filter(email__iexact=search_term).first()
-        if author:
-            return author
+        if email:
+            # Buscar por email si está disponible
+            author, created = Author.objects.get_or_create(
+                email=email,
+                defaults={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'institution': self.cleaned_data.get('institution', ''),
+                    'orcid_id': self.cleaned_data.get('orcid_id', '')
+                }
+            )
+        else:
+            # Buscar por nombre y apellido si no hay email
+            author, created = Author.objects.get_or_create(
+                first_name=first_name,
+                last_name=last_name,
+                defaults={
+                    'email': email,
+                    'institution': self.cleaned_data.get('institution', ''),
+                    'orcid_id': self.cleaned_data.get('orcid_id', '')
+                }
+            )
 
-        # Buscar por nombre y apellido
-        search_terms = search_term.split()
-        if len(search_terms) >= 2:
-            first_name = search_terms[0]
-            last_name = ' '.join(search_terms[1:])
-            author = Author.objects.filter(
-                first_name__icontains=first_name,
-                last_name__icontains=last_name
-            ).first()
-            if author:
-                return author
-
-        # Buscar por nombre o apellido
-        author = Author.objects.filter(
-            models.Q(first_name__icontains=search_term) |
-            models.Q(last_name__icontains=search_term)
-        ).first()
+        # Si no es nuevo, actualizar los campos si están vacíos
+        if not created:
+            if not author.email and email:
+                author.email = email
+            if not author.institution and self.cleaned_data.get('institution'):
+                author.institution = self.cleaned_data.get('institution')
+            if not author.orcid_id and self.cleaned_data.get('orcid_id'):
+                author.orcid_id = self.cleaned_data.get('orcid_id')
+            if commit:
+                author.save()
 
         return author
-
-    def save(self, commit=True):
-        # Si el autor ya existe, no guardar cambios (solo reutilizar)
-        if self.instance.pk:
-            return self.instance
-
-        # Solo crear nuevo autor si no existe
-        if not Author.objects.filter(
-                models.Q(email=self.cleaned_data.get('email')) |
-                models.Q(
-                    first_name=self.cleaned_data.get('first_name'),
-                    last_name=self.cleaned_data.get('last_name')
-                )
-        ).exists():
-            return super().save(commit=commit)
-
-        # Si existe, encontrar y retornar el autor existente
-        if self.cleaned_data.get('email'):
-            existing_author = Author.objects.filter(email=self.cleaned_data.get('email')).first()
-            if existing_author:
-                return existing_author
-
-        existing_author = Author.objects.filter(
-            first_name=self.cleaned_data.get('first_name'),
-            last_name=self.cleaned_data.get('last_name')
-        ).first()
-
-        return existing_author or super().save(commit=commit)
 
 
 # Formset para coautores
@@ -193,6 +247,6 @@ CoauthorFormSet = modelformset_factory(
     form=CoauthorForm,
     extra=1,
     can_delete=True,
-    min_num=0,  # Puede haber 0 coautores
+    min_num=0,
     validate_min=True
 )

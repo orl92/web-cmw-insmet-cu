@@ -21,32 +21,60 @@
         {% endif %}
     </div>
 
-    <!-- Búsqueda de Autor -->
-    <div class="mb-3">
-        <label class="form-label">{{ form.author_search.label }}</label>
-        <input type="text" class="form-control" id="{{ form.author_search.id_for_label }}"
-               name="{{ form.author_search.name }}" placeholder="Buscar autor por nombre, apellido o email">
-        <small class="form-text text-muted">Busca un autor existente o selecciona uno de la lista</small>
-        {% if form.author_search.errors %}
-            <span class="text-danger d-block mb-3">{{ form.author_search.errors }}</span>
-        {% endif %}
-    </div>
-
-    <!-- Selección de Autor -->
-    <div class="mb-3">
-        <label class="form-label required">{{ form.author.label }}</label>
-        <select class="form-control" id="{{ form.author.id_for_label }}" name="{{ form.author.name }}" required>
-            <option value="">Seleccione un autor</option>
-            {% for author in form.author.field.queryset %}
-                <option value="{{ author.id }}" {% if author.id == form.author.value %}selected{% endif %}>
-                    {{ author.first_name }} {{ author.last_name }} {% if author.email %}({{ author.email }}){% endif %}
-                </option>
-            {% endfor %}
-        </select>
-        {% if form.author.errors %}
-            <span class="text-danger d-block mb-3">{{ form.author.errors }}</span>
-        {% endif %}
-    </div>
+    <!-- Sección para el Autor Principal -->
+    <fieldset class="mb-4">
+        <legend>Autor Principal</legend>
+        <small class="form-text text-muted">Información del autor principal de la publicación.</small>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label required">{{ form.author_first_name.label }}</label>
+                <input type="text" class="form-control" name="{{ form.author_first_name.name }}"
+                       value="{{ form.author_first_name.value|default:'' }}" placeholder="Nombres del autor" required>
+                {% if form.author_first_name.errors %}
+                    <span class="text-danger d-block mb-3">{{ form.author_first_name.errors }}</span>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label required">{{ form.author_last_name.label }}</label>
+                <input type="text" class="form-control" name="{{ form.author_last_name.name }}"
+                       value="{{ form.author_last_name.value|default:'' }}" placeholder="Apellidos del autor" required>
+                {% if form.author_last_name.errors %}
+                    <span class="text-danger d-block mb-3">{{ form.author_last_name.errors }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <label class="form-label">{{ form.author_email.label }}</label>
+                <input type="email" class="form-control" name="{{ form.author_email.name }}"
+                       value="{{ form.author_email.value|default:'' }}" placeholder="Correo electrónico del autor">
+                {% if form.author_email.errors %}
+                    <span class="text-danger d-block mb-3">{{ form.author_email.errors }}</span>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">{{ form.author_institution.label }}</label>
+                <input type="text" class="form-control" name="{{ form.author_institution.name }}"
+                       value="{{ form.author_institution.value|default:'' }}" placeholder="Institución del autor">
+                {% if form.author_institution.errors %}
+                    <span class="text-danger d-block mb-3">{{ form.author_institution.errors }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <label class="form-label">{{ form.author_orcid_id.label }}</label>
+                <input type="text" class="form-control" name="{{ form.author_orcid_id.name }}"
+                       value="{{ form.author_orcid_id.value|default:'' }}" placeholder="ORCID ID del autor">
+                {% if form.author_orcid_id.errors %}
+                    <span class="text-danger d-block mb-3">{{ form.author_orcid_id.errors }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </fieldset>
 
     <!-- Campo para el Resumen -->
     <div class="mb-3">
@@ -71,13 +99,12 @@
     <!-- Sección para Coautores -->
     <fieldset>
         <legend>Coautores (Opcional)</legend>
-        <small class="form-text text-muted">Puedes buscar coautores existentes o añadir nuevos</small>
+        <small class="form-text text-muted">Añade los coautores. El sistema buscará automáticamente autores existentes o creará nuevos.</small>
 
         {{ formset.management_form }}
         <table class="table table-bordered mt-3">
             <thead>
             <tr>
-                <th>Buscar Coautor</th>
                 <th>Nombres</th>
                 <th>Apellidos</th>
                 <th>Correo Electrónico</th>
@@ -90,17 +117,12 @@
             {% for form in formset %}
                 <tr>
                     <td>
-                        <input type="text" class="form-control search-term"
-                               name="coauthors-{{ forloop.counter0 }}-search_term"
-                               value="{{ form.search_term.value|default:'' }}" placeholder="Buscar...">
-                    </td>
-                    <td>
                         <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-first_name"
-                               value="{{ form.first_name.value|default:'' }}" placeholder="Nombres">
+                               value="{{ form.first_name.value|default:'' }}" placeholder="Nombres" required>
                     </td>
                     <td>
                         <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-last_name"
-                               value="{{ form.last_name.value|default:'' }}" placeholder="Apellidos">
+                               value="{{ form.last_name.value|default:'' }}" placeholder="Apellidos" required>
                     </td>
                     <td>
                         <input type="email" class="form-control" name="coauthors-{{ forloop.counter0 }}-email"
@@ -149,13 +171,10 @@
                 const newRow = `
         <tr>
           <td>
-            <input type="text" class="form-control search-term" name="coauthors-${formIndex}-search_term" value="" placeholder="Buscar...">
+            <input type="text" class="form-control" name="coauthors-${formIndex}-first_name" value="" placeholder="Nombres" required>
           </td>
           <td>
-            <input type="text" class="form-control" name="coauthors-${formIndex}-first_name" value="" placeholder="Nombres">
-          </td>
-          <td>
-            <input type="text" class="form-control" name="coauthors-${formIndex}-last_name" value="" placeholder="Apellidos">
+            <input type="text" class="form-control" name="coauthors-${formIndex}-last_name" value="" placeholder="Apellidos" required>
           </td>
           <td>
             <input type="email" class="form-control" name="coauthors-${formIndex}-email" value="" placeholder="Correo">
