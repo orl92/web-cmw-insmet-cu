@@ -5,18 +5,12 @@ import os
 
 from dashboard.models import Town
 from home.forms import MeteoDataForm, SoundingForm
-from home.data.data_handlers import fetch_meteo_data
-from home.data.plot_generators import generate_meteo_plot, generate_skewt
+from home.data.plot_generators import generate_skewt
 import json
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 from home.forms import MeteogramForm
-import requests
 from urllib.parse import urlencode
-from django.conf import settings
-
 import requests
 from django.http import HttpResponse
 from django.views import View
@@ -37,8 +31,8 @@ class MapaView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = MeteoDataForm()
-        context['title'] = 'Mapas'
-        context['parent'] = 'modelos'
+        context['title'] = 'Modelo de pronóstico WRF'
+        context['parent'] = 'Fícica de la atmósfera'
         context['segment'] = 'maps'
         return context
 
@@ -107,7 +101,7 @@ class MeteogramView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Meteorama'
-        context['parent'] = 'modelos'
+        context['parent'] = 'Fícica de la atmósfera'
         context['segment'] = 'meteogram'
 
         # Obtener municipio por defecto
@@ -172,7 +166,7 @@ class SoundingView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Sondeos'
-        context['parent'] = 'modelos'
+        context['parent'] = 'Fícica de la atmósfera'
         context['segment'] = 'sounding'
 
         # Obtener municipio por defecto (ej. usando coordenadas predeterminadas)

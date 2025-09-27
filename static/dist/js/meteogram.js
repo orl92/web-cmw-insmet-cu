@@ -197,7 +197,7 @@ class Meteogram {
         let titleText = this.municipio;
         if (this.datetimeInit) {
             // Formatear YYYYMMDDHH como "YYYYMMDD HH"
-                        const formattedDate = this.datetimeInit.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1-$2-$3 $4:00 UTC');
+                        const formattedDate = this.datetimeInit.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, 'Inicializado $1-$2-$3 $4:00 UTC');
             titleText += ` ${formattedDate}`;
         }
 
@@ -264,7 +264,7 @@ class Meteogram {
                 },
                 headerFormat:
                     '<div style="border-bottom: 1px solid ' + (isDarkMode ? '#495057' : '#e9ecef') + '; padding-bottom: 5px; margin-bottom: 5px;">' +
-                    '<small>{point.x:%A, %e de %B, %H:%M} Hora de Cuba</small><br>' +
+                    '<small>{point.x:%A, %e de %B, %H:%M} hora local</small><br>' +
                     '<img src="https://cdn.jsdelivr.net/gh/nrkno/yr-weather-symbols@8.0.1/dist/svg/{point.point.weatherSymbol}.svg" style="height: 24px; vertical-align: middle; margin-right: 5px;">' +
                     '<b>{point.point.weatherDescription}</b>' +
                     '</div>',
