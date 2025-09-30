@@ -32,7 +32,7 @@ class MapaView(TemplateView):
         context = super().get_context_data(**kwargs)
         context['form'] = MeteoDataForm()
         context['title'] = 'Modelo de pronóstico WRF'
-        context['parent'] = 'Fícica de la atmósfera'
+        context['parent'] = 'Física de la atmósfera'
         context['segment'] = 'maps'
         return context
 
@@ -101,7 +101,7 @@ class MeteogramView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Meteorama'
-        context['parent'] = 'Fícica de la atmósfera'
+        context['parent'] = 'Física de la atmósfera'
         context['segment'] = 'meteogram'
 
         # Obtener municipio por defecto
@@ -166,7 +166,7 @@ class SoundingView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Sondeos'
-        context['parent'] = 'Fícica de la atmósfera'
+        context['parent'] = 'Física de la atmósfera'
         context['segment'] = 'sounding'
 
         # Obtener municipio por defecto (ej. usando coordenadas predeterminadas)
