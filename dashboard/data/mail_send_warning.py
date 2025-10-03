@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.conf import settings
 
 
-def mail_send_warning(request, object):
+def mail_send_warning(request, object, subject):
     # Construir la URL dinámica"
     listado_url = request.build_absolute_uri(reverse('alerta_temprana'))
     index_url = request.build_absolute_uri(reverse('index'))
@@ -22,7 +22,7 @@ def mail_send_warning(request, object):
         if recipients:
             # Enviar correo
             try:
-                subject = f'Alerta Temprana: {object.date}'
+                subject = subject
                 html_message = render_to_string(
                     'pages/dashboard/emails/notification.html',
                     {

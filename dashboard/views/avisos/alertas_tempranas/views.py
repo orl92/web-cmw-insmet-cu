@@ -71,7 +71,8 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         # Mensaje de éxito
         messages.success(self.request, 'El aviso de alerta temprana ha sido creado con éxito.', extra_tags='success')
 
-        mail_send_warning(self.request, self.object)
+        subject = f'Alerta Temprana: {self.object.date}'
+        mail_send_warning(self.request, self.object, subject)
 
         return response
 
@@ -123,7 +124,8 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
 
         # Enviar correo solo si hay cambios
         if has_changes:
-            mail_send_warning(self.request, self.object)
+            subject = f'Alerta Temprana Actualizado: {self.object.date}'
+            mail_send_warning(self.request, self.object, subject)
 
         # Mensaje de éxito en la actualización
         messages.success(self.request, 'El aviso de alerta temprana ha sido actualizado con éxito.',
