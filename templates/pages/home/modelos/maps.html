@@ -9,10 +9,9 @@
             <!-- Fila principal con todos los campos -->
             <div class="row g-3 align-items-end">
 
-                <!-- Campos Fecha y Hora -->
+                <!-- Fecha -->
                 <div class="col-md-4">
                     <div class="row g-2">
-                        <!-- Fecha -->
                         <div class="col-12">
                             <label class="form-label required">Fecha UTC</label>
                             <div class="input-icon">
@@ -35,8 +34,8 @@
                     </div>
                 </div>
 
+                <!-- Hora -->
                 <div class="col-md-2">
-                    <!-- Hora -->
                     <div class="mb-0">
                         <label for="hour-select" class="form-label required">Hora UTC</label>
                         <select class="form-select" id="hour-select" required>
@@ -85,16 +84,25 @@
         <div class="card mt-4">
             <div class="card-body">
                 <h2 id="plot-title" class="text-center mb-3"></h2>
-                <div class="plot-container">
-                    <div id="loading" class="loading-overlay">
-                        <div class="spinner-border text-primary" role="status"></div>
-                        <p class="mt-2">Cargando imágenes...</p>
+                
+                <!-- Contenedor para mensajes de error -->
+                <div id="error-container" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <div class="d-flex align-items-center">
+                        <span id="error-message"></span>
                     </div>
-                    <!-- Galería de imágenes actualizada -->
-                    <div id="gallery-container" class="row g-2 g-md-3 mt-3">
-                        <!-- Aquí se cargarán las imágenes en forma de galería -->
-                    </div>
-                    <div id="status-message"></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Galería de imágenes -->
+                <div id="gallery-container" class="row g-2 g-md-3 mt-3 min-vh-50">
+                    <!-- Aquí se cargarán las imágenes en forma de galería -->
+                </div>
+                
+                <!-- Estado vacío -->
+                <div id="empty-state" class="text-center py-5 d-none">
+                    <i class="fas fa-cloud display-1 text-muted mb-3"></i>
+                    <h4 class="text-muted">No hay datos disponibles</h4>
+                    <p class="text-muted">No se encontraron imágenes para los parámetros seleccionados.</p>
                 </div>
             </div>
         </div>
@@ -107,5 +115,4 @@
     <script src="{% static '' %}dist/libs/fslightbox/index.js?1692870487" defer></script>
     <!-- FS Lightbox para la galería de imágenes -->
     <script src="{% static '' %}dist/js/maps.js"></script>
-
 {% endblock extrajs %}

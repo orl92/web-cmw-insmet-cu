@@ -10,304 +10,138 @@ class MeteoPlotter {
         this.count = params.count;
 
         // Elementos del DOM
-        this.plotContainer = document.getElementById('plot-container');
-        this.loadingElement = document.getElementById('loading');
-        this.galleryContainer = document.getElementById('gallery-container') || this.createGalleryContainer();
+        this.galleryContainer = document.getElementById('gallery-container');
+        this.emptyStateElement = document.getElementById('empty-state');
+        this.errorContainer = document.getElementById('error-container');
+        this.errorMessageElement = document.getElementById('error-message');
 
-        // Estado de la galería
-        this.currentImageIndex = 0;
-        this.slideshowInterval = null;
-
-        // Configuración de reintentos
-        this.maxRetries = 3;
-        this.retryDelay = 2000;
-        this.retryCount = 0;
+        // Para auto-ocultar errores
+        this.autoHideTimeout = null;
     }
 
-    createGalleryContainer() {
-        const container = document.createElement('div');
-        container.id = 'gallery-container';
-        container.className = 'row g-2 g-md-3 mt-3';
+    showError(message) {
+        if (!this.errorContainer || !this.errorMessageElement) return;
 
-        if (this.plotContainer) {
-            this.plotContainer.appendChild(container);
-        } else {
-            console.error('plotContainer no encontrado');
+        // Limpiar timeout anterior si existe
+        if (this.autoHideTimeout) {
+            clearTimeout(this.autoHideTimeout);
         }
 
-        return container;
+        this.errorMessageElement.textContent = message;
+        this.errorContainer.classList.remove('d-none');
+        this.errorContainer.classList.add('show');
+
+        // Auto-ocultar después de 5 segundos
+        this.autoHideTimeout = setTimeout(() => {
+            this.hideError();
+        }, 5000);
     }
 
-    showLoading(message, progress = null) {
-        if (!this.loadingElement) return;
-
-        this.loadingElement.innerHTML = `
-            <div class="text-center py-3">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Cargando...</span>
-                </div>
-                <p class="mt-2">${message}</p>
-            </div>
-        `;
+    hideError() {
+        if (this.errorContainer) {
+            this.errorContainer.classList.remove('show');
+            setTimeout(() => {
+                this.errorContainer.classList.add('d-none');
+            }, 150);
+        }
     }
 
-    showRecoveryOptions(errorMessage) {
-        if (!this.loadingElement) return;
-
-        this.loadingElement.innerHTML = `
-            <div class="alert alert-danger">
-                <strong>Error:</strong> ${errorMessage}
-                <div class="mt-3 d-flex justify-content-center">
-                    <button class="btn btn-sm btn-primary me-2" id="retry-button">Reintentar</button>
-                    <button class="btn btn-sm btn-secondary" id="back-button">Volver</button>
-                </div>
-            </div>
-        `;
-
-        // Añadir event listeners después de que el DOM se haya actualizado
-        setTimeout(() => {
-            const retryButton = document.getElementById('retry-button');
-            const backButton = document.getElementById('back-button');
-
-            if (retryButton) {
-                retryButton.addEventListener('click', () => {
-                    this.retryCount = 0;
-                    this.init();
-                });
-            }
-
-            if (backButton) {
-                backButton.addEventListener('click', () => {
-                    this.cleanupGallery();
-                    const plotArea = document.getElementById('plot-area');
-                    if (plotArea) plotArea.style.display = 'none';
-                });
-            }
-        }, 100);
+    showEmptyState() {
+        this.hideError();
+        if (this.emptyStateElement) {
+            this.emptyStateElement.classList.remove('d-none');
+        }
+        
+        if (this.galleryContainer) {
+            this.galleryContainer.innerHTML = '';
+        }
     }
 
     createImageGallery() {
-    if (!this.galleryContainer) return;
+        if (!this.galleryContainer) return;
 
-    this.galleryContainer.innerHTML = '';
+        this.galleryContainer.innerHTML = '';
+        this.hideError();
 
-    if (this.imageUrls.length === 0) {
-        this.galleryContainer.innerHTML = `
-            <div class="col-12 text-center">
-                <p class="text-muted">No hay imágenes disponibles para estos parámetros.</p>
-            </div>
-        `;
-        return;
-    }
+        // Ocultar estado vacío
+        if (this.emptyStateElement) {
+            this.emptyStateElement.classList.add('d-none');
+        }
 
-    this.imageUrls.forEach((url, index) => {
-        const col = document.createElement('div');
-        col.className = 'col-lg-4';
+        if (this.imageUrls.length === 0) {
+            this.showEmptyState();
+            return;
+        }
 
-        // Extraer nombre del archivo para el título
-        const filename = url.split('/').pop();
-        const timePart = filename.split('_').pop().replace('.png', '').replace('T', ' ').replace(/-/g, ':');
+        this.imageUrls.forEach((url, index) => {
+            const col = document.createElement('div');
+            col.className = 'col-lg-4';
 
-        // Usar el proxy para evitar problemas de CORS
-        // Extraer la ruta de la imagen desde la URL completa
-        const imagePath = url.replace('http://imgwrfserver.cmw.insmet.cu', '');
-        const proxyUrl = `/proxy_image_modelo/?image_path=${encodeURIComponent(imagePath)}`;
+            // Extraer nombre del archivo para el título
+            const filename = url.split('/').pop();
+            const timePart = filename.split('_').pop().replace('.png', '').replace('T', ' ').replace(/-/g, ':');
 
-        col.innerHTML = `
-            <div class="row g-2 g-md-3">
-                <div class="col-12">
-                    <a data-fslightbox="gallery" href="${proxyUrl}" data-caption="${this.varLabel} - ${timePart}">
-                        <div class="img-responsive img-responsive-3x1 rounded-3 border" 
-                             style="background-image: url(${proxyUrl})">
-                        </div>
-                    </a>
-                    <figcaption class="figure-caption text-center">${timePart}</figcaption>
+            // Usar el proxy para evitar problemas de CORS
+            const imagePath = url.replace('http://imgwrfserver.cmw.insmet.cu', '');
+            const proxyUrl = `/proxy_image_modelo/?image_path=${encodeURIComponent(imagePath)}`;
+
+            col.innerHTML = `
+                <div class="row g-2 g-md-3">
+                    <div class="col-12">
+                        <a data-fslightbox="gallery" href="${proxyUrl}" data-caption="${this.varLabel} - ${timePart}">
+                            <div class="img-responsive img-responsive-3x1 rounded-3 border" 
+                                 style="background-image: url(${proxyUrl})">
+                            </div>
+                        </a>
+                        <figcaption class="figure-caption text-center">${timePart}</figcaption>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
 
-        this.galleryContainer.appendChild(col);
-    });
+            this.galleryContainer.appendChild(col);
+        });
 
-    // Inicializar FS Lightbox después de un breve delay
-    setTimeout(() => {
-        if (typeof refreshFsLightbox === 'function') {
-            refreshFsLightbox();
-        }
-    }, 100);
-
-    // Añadir controles de navegación si no existen
-    this.addNavigationControls();
-}
-
-    addNavigationControls() {
-        // Eliminar controles existentes
-        const existingControls = document.getElementById('gallery-navigation-controls');
-        if (existingControls) {
-            existingControls.remove();
-        }
-
-        // Crear controles de navegación
-        const controls = document.createElement('div');
-        controls.id = 'gallery-navigation-controls';
-        controls.className = 'navigation-controls';
-        controls.innerHTML = `
-            <button id="prev-gallery-button" title="Imagen anterior">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-            <button id="play-gallery-button" title="Iniciar slideshow">
-                <i class="fas fa-play"></i>
-            </button>
-            <button id="stop-gallery-button" title="Detener slideshow" style="display: none;">
-                <i class="fas fa-stop"></i>
-            </button>
-            <button id="next-gallery-button" title="Siguiente imagen">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        `;
-
-        document.body.appendChild(controls);
-
-        // Añadir event listeners
+        // Inicializar FS Lightbox después de un breve delay
         setTimeout(() => {
-            const prevButton = document.getElementById('prev-gallery-button');
-            const nextButton = document.getElementById('next-gallery-button');
-            const playButton = document.getElementById('play-gallery-button');
-            const stopButton = document.getElementById('stop-gallery-button');
-
-            if (prevButton) prevButton.addEventListener('click', () => this.prevImage());
-            if (nextButton) nextButton.addEventListener('click', () => this.nextImage());
-            if (playButton) playButton.addEventListener('click', () => this.startSlideshow());
-            if (stopButton) stopButton.addEventListener('click', () => this.stopSlideshow());
+            if (typeof refreshFsLightbox === 'function') {
+                refreshFsLightbox();
+            }
         }, 100);
     }
 
-    nextImage() {
-        if (this.imageUrls.length === 0) return;
-
-        if (this.currentImageIndex < this.imageUrls.length - 1) {
-            this.currentImageIndex++;
-        } else {
-            this.currentImageIndex = 0; // Volver al inicio
-        }
-
-        // Abrir la siguiente imagen con FS Lightbox
-        this.openWithFSLightbox(this.currentImageIndex);
-    }
-
-    prevImage() {
-        if (this.imageUrls.length === 0) return;
-
-        if (this.currentImageIndex > 0) {
-            this.currentImageIndex--;
-        } else {
-            this.currentImageIndex = this.imageUrls.length - 1; // Ir al final
-        }
-
-        // Abrir la imagen anterior con FS Lightbox
-        this.openWithFSLightbox(this.currentImageIndex);
-    }
-
-    openWithFSLightbox(index) {
-        // Encontrar el elemento <a> correspondiente y hacer clic en él
-        const galleryLinks = document.querySelectorAll('[data-fslightbox="gallery"]');
-        if (galleryLinks && galleryLinks[index]) {
-            galleryLinks[index].click();
-        }
-    }
-
-    startSlideshow() {
-        // Buscar botones en el DOM
-        const playButton = document.getElementById('play-gallery-button');
-        const stopButton = document.getElementById('stop-gallery-button');
-
-        // Si existen, cambiar su visibilidad
-        if (playButton && stopButton) {
-            playButton.style.display = 'none';
-            stopButton.style.display = 'inline-block';
-        }
-
-        // Iniciar intervalo
-        this.slideshowInterval = setInterval(() => {
-            this.nextImage();
-        }, 2000); // Cambiar cada 2 segundos
-    }
-
-    stopSlideshow() {
-        // Buscar botones en el DOM
-        const playButton = document.getElementById('play-gallery-button');
-        const stopButton = document.getElementById('stop-gallery-button');
-
-        // Si existen, cambiar su visibilidad
-        if (playButton && stopButton) {
-            playButton.style.display = 'inline-block';
-            stopButton.style.display = 'none';
-        }
-
-        // Detener intervalo
-        if (this.slideshowInterval) {
-            clearInterval(this.slideshowInterval);
-            this.slideshowInterval = null;
-        }
-    }
-
     cleanupGallery() {
-        // Limpiar intervalo de slideshow
-        this.stopSlideshow();
+        this.hideError();
 
-        // Limpiar contenedor de galería si existe
         if (this.galleryContainer) {
             this.galleryContainer.innerHTML = '';
         }
 
-        // Eliminar controles de navegación
-        const controls = document.getElementById('gallery-navigation-controls');
-        if (controls) {
-            controls.remove();
+        // Ocultar estado vacío
+        if (this.emptyStateElement) {
+            this.emptyStateElement.classList.add('d-none');
         }
     }
 
-    async withRetries(operation) {
-        try {
-            return await operation();
-        } catch (error) {
-            this.retryCount++;
-
-            if (this.retryCount < this.maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-                return this.withRetries(operation);
-            } else {
-                throw error;
-            }
-        }
-    }
-
-    async init() {
+    init() {
         try {
             this.cleanupGallery();
-            this.showLoading('Cargando imágenes...');
-
-            // Simular carga asíncrona
-            await new Promise(resolve => setTimeout(resolve, 100));
-
             this.createImageGallery();
-
-            if (this.loadingElement) {
-                this.loadingElement.style.display = 'none';
-            }
-
         } catch (error) {
             console.error('Error en MeteoPlotter:', error);
-            this.showRecoveryOptions(error.message);
+            this.showError(this.cleanErrorDisplay(error.message));
+        }
+    }
 
-            console.group('Detalles del error');
-            console.error('Variable:', this.varName);
-            console.error('Fecha:', this.datetimeInit);
-            console.error('Mensaje:', error.message);
-            console.error('Stack:', error.stack);
-            console.groupEnd();
-        } finally {
-            this.retryCount = 0;
+    // Método para limpiar la visualización de errores
+    cleanErrorDisplay(errorMessage) {
+        try {
+            if (typeof errorMessage === 'string' && errorMessage.includes('{')) {
+                const errorObj = JSON.parse(errorMessage);
+                return errorObj.message || errorMessage;
+            }
+            return errorMessage;
+        } catch (e) {
+            return errorMessage;
         }
     }
 }
@@ -339,15 +173,108 @@ function initLitepicker() {
     }
 }
 
+// Función para enviar el formulario automáticamente
+async function submitFormWithDefaultValues() {
+    const form = document.getElementById('data-form');
+    const plotArea = document.getElementById('plot-area');
+    const plotTitle = document.getElementById('plot-title');
+    const galleryContainer = document.getElementById('gallery-container');
+    const errorContainer = document.getElementById('error-container');
+
+    if (!form) return;
+
+    // Ocultar error previo
+    if (errorContainer) {
+        errorContainer.classList.add('d-none');
+    }
+
+    // Ocultar galería y mostrar área de plot
+    if (galleryContainer) galleryContainer.innerHTML = '';
+    if (plotArea) plotArea.style.display = 'block';
+
+    // Construir datetime_init a partir de los campos de fecha y hora
+    const dateValue = document.getElementById('datepicker').value;
+    const hourValue = document.getElementById('hour-select').value;
+    const formattedDate = dateValue.replace(/-/g, '');
+    const datetimeInit = formattedDate + hourValue;
+
+    const formData = {
+        datetime_init: datetimeInit,
+        var_name: form.var_name.value,
+        csrfmiddlewaretoken: document.querySelector('[name=csrfmiddlewaretoken]').value
+    };
+
+    try {
+        const response = await fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.csrfmiddlewaretoken
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.status !== 'success') {
+            throw new Error(data.message || `Error ${response.status}: ${response.statusText}`);
+        }
+
+        if (plotTitle) plotTitle.textContent = `${data.var_label} - ${data.datetime_init}`;
+
+        const plotter = new MeteoPlotter({
+            datetimeInit: data.datetime_init,
+            varName: data.var_name,
+            varLabel: data.var_label,
+            imageUrls: data.image_urls,
+            simulationDate: data.simulation_date,
+            count: data.count
+        });
+
+        plotter.init();
+
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Mostrar error usando el método de MeteoPlotter
+        const plotter = new MeteoPlotter({ imageUrls: [] });
+        plotter.showError(error.message);
+    }
+}
+
+// Función para formatear errores de forma más amigable
+function formatErrorMessage(error) {
+    if (!error) return 'Error desconocido';
+    
+    const errorStr = error.toString();
+    
+    // Manejar errores comunes de la API
+    if (errorStr.includes('404')) {
+        return 'No se encontraron datos para los parámetros seleccionados. Por favor, intente con otra fecha o variable.';
+    } else if (errorStr.includes('Network Error') || errorStr.includes('Failed to fetch')) {
+        return 'Error de conexión. Por favor, verifique su conexión a internet e intente nuevamente.';
+    } else if (errorStr.includes('Timeout')) {
+        return 'La solicitud tardó demasiado tiempo. Por favor, intente nuevamente.';
+    } else if (errorStr.includes('500')) {
+        return 'Error interno del servidor. Por favor, contacte al administrador.';
+    }
+    
+    // Para otros errores, devolver el mensaje original pero limpiado
+    return errorStr.replace(/Error:|["{}]/g, '').trim();
+}
+
 // Código de inicialización cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', function () {
     // Inicializar Litepicker primero
     initLitepicker();
 
     const form = document.getElementById('data-form');
-    const plotArea = document.getElementById('plot-area');
-    const plotTitle = document.getElementById('plot-title');
-    const loadingIndicator = document.getElementById('loading');
+
+    // Enviar formulario automáticamente al cargar la página
+    setTimeout(() => {
+        submitFormWithDefaultValues();
+    }, 500);
 
     if (form) {
         form.addEventListener('submit', async function (e) {
@@ -359,69 +286,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            if (plotArea) plotArea.style.display = 'block';
-            if (loadingIndicator) loadingIndicator.style.display = 'block';
-
-            try {
-                // Construir datetime_init a partir de los campos de fecha y hora
-                const dateValue = document.getElementById('datepicker').value;
-                const hourValue = document.getElementById('hour-select').value;
-                const formattedDate = dateValue.replace(/-/g, '');
-                const datetimeInit = formattedDate + hourValue;
-
-                const formData = {
-                    datetime_init: datetimeInit,
-                    var_name: form.var_name.value,
-                    csrfmiddlewaretoken: document.querySelector('[name=csrfmiddlewaretoken]').value
-                };
-
-                const response = await fetch('', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': formData.csrfmiddlewaretoken
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!response.ok) {
-                    const error = await response.text();
-                    throw new Error(error || 'Error en el servidor');
-                }
-
-                const data = await response.json();
-
-                if (data.status !== 'success') {
-                    throw new Error(JSON.stringify(data.errors));
-                }
-
-                if (plotTitle) plotTitle.textContent = `${data.var_label} - ${data.datetime_init}`;
-
-                const plotter = new MeteoPlotter({
-                    datetimeInit: data.datetime_init,
-                    varName: data.var_name,
-                    varLabel: data.var_label,
-                    imageUrls: data.image_urls,
-                    simulationDate: data.simulation_date,
-                    count: data.count
-                });
-
-                plotter.init();
-
-            } catch (error) {
-                console.error('Error:', error);
-                if (loadingIndicator) {
-                    loadingIndicator.innerHTML = `
-                        <div class="alert alert-danger">
-                            <strong>Error:</strong> ${error.message}
-                        </div>
-                    `;
-                }
-            }
+            await submitFormWithDefaultValues();
         });
     }
 });
 
 // Para depuración
 window.MeteoPlotter = MeteoPlotter;
+window.submitFormWithDefaultValues = submitFormWithDefaultValues;

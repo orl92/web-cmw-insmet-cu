@@ -23,38 +23,58 @@ import logging
 # Configurar logger
 logger = logging.getLogger(__name__)
 
-
-@method_decorator(csrf_exempt, name='dispatch')
 class MapaView(TemplateView):
     template_name = 'pages/home/modelos/maps.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['form'] = MeteoDataForm()
+        
+        # Establecer valores por defecto
+        initial_data = {
+            'datetime_init': self.get_default_datetime(),
+            'var_name': 'temp'
+        }
+        
+        context['form'] = MeteoDataForm(initial=initial_data)
+        context['initial_date'] = self.get_default_date()
         context['title'] = 'Modelo de pronóstico WRF'
         context['parent'] = 'Física de la atmósfera'
         context['segment'] = 'maps'
         return context
 
+    def get_default_datetime(self):
+        """Obtener datetime_init por defecto (fecha actual a las 00:00)"""
+        now = datetime.now()
+        return now.strftime('%Y%m%d00')
+
+    def get_default_date(self):
+        """Obtener fecha por defecto para el datepicker"""
+        now = datetime.now()
+        return now.strftime('%Y-%m-%d')
+
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Datos inválidos en la solicitud'
+            }, status=400)
 
         form = MeteoDataForm(data)
 
         if form.is_valid():
-            # Obtener datos de la nueva API de imágenes
             api_result = self.fetch_image_urls(
                 form.cleaned_data['datetime_init'],
                 form.cleaned_data['var_name']
             )
 
             if api_result['status'] == 'error':
+                # Mejorar el mensaje de error para el usuario
+                error_message = self.parse_api_error(api_result['message'])
                 return JsonResponse({
                     'status': 'error',
-                    'message': api_result['message']
+                    'message': error_message
                 }, status=500)
 
             return JsonResponse({
@@ -67,10 +87,32 @@ class MapaView(TemplateView):
                 'count': api_result.get('count')
             })
 
+        # Mejorar los errores de validación del formulario
+        errors = self.format_form_errors(form.errors.get_json_data())
         return JsonResponse({
             'status': 'error',
-            'errors': form.errors.get_json_data()
+            'message': errors
         }, status=400)
+
+    def parse_api_error(self, error_message):
+        """Parsear y mejorar los mensajes de error de la API"""
+        if "404" in error_message and "Not Found" in error_message:
+            return "No se encontraron datos para los parámetros seleccionados. Por favor, intente con otra fecha o variable."
+        elif "ConnectionError" in error_message or "Timeout" in error_message:
+            return "Error de conexión con el servidor de datos. Por favor, intente nuevamente en unos momentos."
+        elif "500" in error_message:
+            return "Error interno del servidor. Por favor, contacte al administrador."
+        else:
+            # Para otros errores, devolver un mensaje genérico sin detalles técnicos
+            return "No se pudieron cargar los datos. Por favor, verifique los parámetros e intente nuevamente."
+
+    def format_form_errors(self, errors_dict):
+        """Formatear errores del formulario para mostrarlos al usuario"""
+        error_messages = []
+        for field, errors in errors_dict.items():
+            for error in errors:
+                error_messages.append(f"{field}: {error['message']}")
+        return "; ".join(error_messages)
 
     def fetch_image_urls(self, datetime_init, var_name):
         """Obtener URLs de imágenes de la nueva API"""
@@ -81,7 +123,8 @@ class MapaView(TemplateView):
             data = response.json()
 
             if data.get('status') != 'success':
-                raise ValueError(f"API returned error status: {data.get('message', 'Unknown error')}")
+                error_msg = data.get('message', 'Error desconocido en la API')
+                raise ValueError(f"API error: {error_msg}")
 
             return {
                 'status': 'success',
@@ -90,11 +133,18 @@ class MapaView(TemplateView):
                 'count': data.get('count', 0)
             }
 
+        except requests.exceptions.ConnectionError:
+            return {'status': 'error', 'message': 'ConnectionError: No se pudo conectar al servidor de datos'}
+        except requests.exceptions.Timeout:
+            return {'status': 'error', 'message': 'Timeout: La conexión con el servidor tardó demasiado'}
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                return {'status': 'error', 'message': '404: No se encontraron datos para los parámetros solicitados'}
+            else:
+                return {'status': 'error', 'message': f'HTTPError {e.response.status_code}: Error del servidor'}
         except Exception as e:
-            return {'status': 'error', 'message': str(e)}
+            return {'status': 'error', 'message': str(e)}    
 
-
-@method_decorator(csrf_exempt, name='dispatch')
 class MeteogramView(TemplateView):
     template_name = 'pages/home/modelos/meteogram.html'
 
@@ -158,8 +208,6 @@ class MeteogramView(TemplateView):
                 'message': f"Error al conectar con la API: {str(e)}"
             }, status=500)
 
-
-@method_decorator(csrf_exempt, name='dispatch')
 class SoundingView(TemplateView):
     template_name = 'pages/home/modelos/sounding.html'
 
@@ -230,8 +278,6 @@ class SoundingView(TemplateView):
                 'message': f"Error al generar el gráfico: {str(e)}"
             }, status=500)
 
-
-@method_decorator(csrf_exempt, name='dispatch')
 class ImageProxyModeloView(View):
     """
     Vista basada en clase para proxy de imágenes que evita problemas de CORS.
