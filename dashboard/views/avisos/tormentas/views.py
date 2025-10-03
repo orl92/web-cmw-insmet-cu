@@ -71,8 +71,8 @@ class StormWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         
         # Mensaje de éxito
         messages.success(self.request, 'El aviso de tormenta ha sido creado con éxito.', extra_tags='success')
-        
-        mail_send_warning(self.request, self.object)
+        subject = f'Aviso de Tormentas: {self.object.date}'
+        mail_send_warning(self.request, self.object, subject)
         
         return response
 
@@ -124,7 +124,8 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         
         # Enviar correo solo si hay cambios
         if has_changes:
-            mail_send_warning(self.request, self.object)
+            subject = f'Aviso de Tormentas Actualizado: {self.object.date}'
+            mail_send_warning(self.request, self.object, subject)
         
         # Mensaje de éxito en la actualización del aviso
         messages.success(self.request, 'El aviso de tormenta ha sido actualizado con éxito.', extra_tags='success')

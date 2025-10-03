@@ -1,47 +1,4 @@
 {% extends 'layouts/form.html' %}
 {% block form %}
-    <div class="row">
-        <div class="col-md-8 mb-3">
-            <label class="form-label required">{{ form.summary.label }}</label>
-            <input type="text" class="form-control" id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
-                   value="{{ form.summary.value }}" placeholder="Título" required>
-            {% if form.summary.errors %}
-                <span class="text-danger d-block mb-3">{{ form.summary.errors }}</span>
-            {% endif %}
-        </div>
-        <div class="col-md-4 mb-3">
-            <label class="form-label required">{{ form.valid_until.label }}</label>
-            <input type="datetime-local" class="form-control" id="{{ form.valid_until.id_for_label }}"
-                   name="{{ form.valid_until.name }}" value="{{ form.valid_until.value|date:"Y-m-d\TH:i" }}" required>
-            {% if form.valid_until.errors %}
-                <span class="text-danger d-block mb-3">{{ form.valid_until.errors }}</span>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            <label class="form-label required">{{ form.file.label }}</label>
-            <input type="file" class="form-control" id="{{ form.image.id_for_label }}" name="{{ form.file.name }}"
-                   {% if not form.file.value %}required{% endif %} onchange="previewImage(event)">
-            {% if form.image.errors %}
-                <span class="text-danger d-block mb-3">{{ form.file.errors }}</span>
-            {% endif %}
-        </div>
-        <div class="col-md-12 mb-3">
-            <label class="form-label required">{{ form.email_recipient_list.label }}</label>
-            {{ form.email_recipient_list }}
-            {% if form.email_recipient_list.errors %}
-                <span class="text-danger d-block mb-3">{{ form.email_recipient_list.errors }}</span>
-            {% endif %}
-        </div>
-    </div>
-    <script>
-        function previewImage(event) {
-            var reader = new FileReader();
-            reader.onload = function () {
-                var output = document.getElementById('image-preview');
-                output.src = reader.result;
-                output.classList.remove('d-none');
-            };
-            reader.readAsDataURL(event.target.files[0]);
-        }
-    </script>
+   {% include 'pages/dashboard/avisos/form_actualizar.html' %}
 {% endblock form %}

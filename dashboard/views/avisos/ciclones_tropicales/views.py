@@ -70,8 +70,9 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
         )
         
         messages.success(self.request, 'El aviso de ciclón tropical ha sido creado con éxito.', extra_tags='success')
-        
-        mail_send_warning(self.request, self.object)
+
+        subject = f'Aviso de Ciclon Tropical: {self.object.date}'
+        mail_send_warning(self.request, self.object, subject)
         
         return response
 
@@ -123,7 +124,8 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
 
         # Enviar correo solo si hay cambios
         if has_changes:
-            mail_send_warning(self.request, self.object)
+            subject = f'Aviso de Ciclon Tropical Actualizado: {self.object.date}'
+            mail_send_warning(self.request, self.object, subject)
 
         # Mensaje de éxito en la actualización del aviso
         messages.success(self.request, 'El aviso de ciclón tropical ha sido actualizado con éxito.', extra_tags='success')
