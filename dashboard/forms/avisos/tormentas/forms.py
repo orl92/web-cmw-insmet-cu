@@ -6,7 +6,7 @@ from dashboard.models import StormWarning
 class StormWarningForm(forms.ModelForm):
     class Meta:
         model = StormWarning
-        fields = ['title', 'subject', 'valid_until', 'image', 'description', 'email_recipient_list']
+        fields = ['summary', 'valid_until', 'file', 'email_recipient_list']
         widgets = {
             'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),
         }

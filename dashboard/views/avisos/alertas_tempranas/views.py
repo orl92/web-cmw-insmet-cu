@@ -71,7 +71,7 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         # Construir la URL dinámica"
         listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))
         index_url = self.request.build_absolute_uri(reverse('index'))
-        image_url = self.request.build_absolute_uri(self.object.image.url)
+        # image_url = self.request.build_absolute_uri(self.object.file.url)
 
         # Obtener la lista seleccionada en el formulario
         recipient_list = self.object.email_recipient_list
@@ -82,14 +82,14 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             if recipients:
                 # Enviar correo
                 try:
-                    subject = f'Alerta Temprana: {self.object.title}'
+                    subject = f'Alerta Temprana: {self.object.date}'
                     html_message = render_to_string(
                         'pages/dashboard/emails/notification.html',
                         {
                             'alert': self.object,
                             'listado_url': listado_url,  # Pasa la URL al contexto del correo
                             'index_url': index_url,     # URL al índice de la página
-                            'image_url': image_url,
+                            # 'image_url': image_url,
                             'current_year': datetime.now().year  # Pasa el año actual
                         }
                     )
@@ -144,7 +144,7 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
     def form_valid(self, form):
        # Almacenar los valores originales del objeto antes de cualquier actualización
         original_object = self.get_object(queryset=None)
-        relevant_fields = ['title', 'description', 'valid_until']
+        relevant_fields = ['summary', 'file', 'valid_until']
         
         # Detectar si hay cambios en los campos relevantes
         has_changes = any(
@@ -167,7 +167,7 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
             # Construir la URL dinámica para el listado de alertas
             listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))  # Genera la URL completa
             index_url = self.request.build_absolute_uri(reverse('index'))
-            image_url = self.request.build_absolute_uri(self.object.image.url)
+            image_url = self.request.build_absolute_uri(self.object.file.url)
             
             # Obtener la lista de destinatarios seleccionada
             recipient_list = self.object.email_recipient_list
@@ -178,22 +178,22 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
                 from django.utils.html import strip_tags
                 
                 # Renderizar el correo electrónico
-                subject = f'Alerta Temprana Actualizada: {self.object.title}'
+                subject = f'Alerta Temprana Actualizada: {self.object.date}'
                 html_message = render_to_string(
                     'pages/dashboard/emails/notification.html',
                     {
                         'alert': self.object,
-                        'listado_url': listado_url,
-                        'index_url': index_url,     # URL al índice de la página
-                        'image_url': image_url,
+                        'listado_url': listado_url,  # Pasa la URL al contexto del correo
+                        'index_url': index_url,  # URL al índice de la página
+                        # 'image_url': image_url,
                         'current_year': datetime.now().year  # Pasa el año actual
                     }
                 )
 
                 # Limpia la descripción de etiquetas HTML
-                plain_description = strip_tags(self.object.description)
+                plain_summary = strip_tags(self.object.summary)
 
-                plain_message = strip_tags(html_message).replace(self.object.description, plain_description)
+                plain_message = strip_tags(html_message).replace(self.object.summary, plain_summary)
 
                 try:
                     email = EmailMessage(

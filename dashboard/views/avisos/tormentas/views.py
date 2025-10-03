@@ -74,7 +74,7 @@ class StormWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         # Construir la URL dinámica para "Ver todas las alertas"
         listado_url = self.request.build_absolute_uri(reverse('tormenta'))
         index_url = self.request.build_absolute_uri(reverse('index'))
-        image_url = self.request.build_absolute_uri(self.object.image.url)
+        image_url = self.request.build_absolute_uri(self.object.file.url)
 
         # Obtener la lista seleccionada en el formulario
         recipient_list = self.object.email_recipient_list
@@ -92,7 +92,7 @@ class StormWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
                             'alert': self.object,
                             'listado_url': listado_url,
                             'index_url': index_url,     # URL al índice de la página
-                            'image_url': image_url,
+                            # 'image_url': image_url,
                             'current_year': datetime.now().year  # Pasa el año actual
                         }
                     )
@@ -148,7 +148,7 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
     def form_valid(self, form):
         # Almacenar los valores originales del objeto antes de cualquier actualización
         original_object = self.get_object(queryset=None)
-        relevant_fields = ['title', 'description', 'valid_until']
+        relevant_fields = ['summary', 'file', 'valid_until']
         
         # Detectar si hay cambios en los campos relevantes
         has_changes = any(
@@ -171,7 +171,7 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
             # Construir la URL dinámica para el listado de alertas
             listado_url = self.request.build_absolute_uri(reverse('tormenta'))
             index_url = self.request.build_absolute_uri(reverse('index'))
-            image_url = self.request.build_absolute_uri(self.object.image.url)
+            image_url = self.request.build_absolute_uri(self.object.file.url)
             
             # Obtener la lista de destinatarios seleccionada
             recipient_list = self.object.email_recipient_list
@@ -189,7 +189,7 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
                         'alert': self.object,
                         'listado_url': listado_url,
                         'index_url': index_url,     # URL al índice de la página
-                        'image_url': image_url,
+                        # 'image_url': image_url,
                         'current_year': datetime.now().year  # Pasa el año actual
                     }
                 )
