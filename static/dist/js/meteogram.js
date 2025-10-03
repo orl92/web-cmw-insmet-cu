@@ -647,36 +647,15 @@ class MeteogramFormHandler {
             this.plotArea.style.display = 'block';
         }
         
-        // RESETEO COMPLETO DEL CONTENEDOR DE ERROR
-        // Esto es crucial para que funcione después de cerrar manualmente
-        this.errorContainer.innerHTML = `
-            <div class="d-flex align-items-center">
-                <span id="error-message">${message}</span>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        // Actualizar la referencia al elemento del mensaje
-        this.errorMessageElement = document.getElementById('error-message');
-        
-        // Restablecer completamente las clases de Bootstrap
-        this.errorContainer.className = 'alert alert-danger alert-dismissible fade show';
+        // Mostrar el contenedor de error
         this.errorContainer.style.display = 'block';
-        
-        // Re-inicializar el comportamiento de Bootstrap para el nuevo botón de cierre
-        const closeButton = this.errorContainer.querySelector('.btn-close');
-        if (closeButton) {
-            closeButton.addEventListener('click', () => {
-                this.hideError();
-            });
-        }
 
         // Ocultar el gráfico cuando hay error
         this.hideChart();
 
         // Auto-ocultar después de 8 segundos (solo el error, no el plot-area)
         this.autoHideTimeout = setTimeout(() => {
-            this.hideError(); // Solo oculta el error, no el plot-area
+            this.hideError();
         }, 8000);
     }
 
