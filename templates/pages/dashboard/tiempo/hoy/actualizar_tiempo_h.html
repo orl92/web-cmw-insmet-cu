@@ -13,7 +13,7 @@
         <div class="mb-3">
             <label class="form-label required">{{ form.file.label }}</label>
             <input type="file" class="form-control" id="{{ form.file.id_for_label }}" name="{{ form.file.name }}"
-                   accept=".pdf" required>
+                   value="{{ form.file.value }}" accept=".pdf" required>
             {% if form.file.errors %}
                 <span class="text-danger d-block mb-3">{{ form.file.errors }}</span>
             {% endif %}
