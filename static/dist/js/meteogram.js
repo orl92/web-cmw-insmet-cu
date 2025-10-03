@@ -1,4 +1,4 @@
-// Clase Meteogram con mejoras para Tabler.io
+// Clase Meteogram
 class Meteogram {
     constructor(json, containerId, options = {}) {
         this.container = document.getElementById(containerId);
@@ -18,17 +18,13 @@ class Meteogram {
         this.lat = options.lat || 0;
         this.long = options.long || 0;
         this.municipio = options.municipio || 'Municipio';
-        this.datetimeInit = options.datetimeInit || ''; // Nueva propiedad para la fecha/hora de inicio
+        this.datetimeInit = options.datetimeInit || '';
 
         // Zona horaria de Cuba (UTC-4 normalmente, UTC-5 en horario de verano)
         this.timezone = 'America/Havana';
-        this.timezoneOffset = 4 * 60; // Offset en minutos para Cuba (UTC-4)
-
-        this.apiBaseUrl = options.apiBaseUrl || 'http://127.0.0.1:8000';
+        this.timezoneOffset = 4 * 60;
 
         this.chart = null;
-        this.weatherSymbolsGroup = null;
-        this.dayNightBackgrounds = [];
 
         this.parseData();
     }
@@ -87,100 +83,7 @@ class Meteogram {
         return 'cloudy';
     }
 
-    drawDayNightBackground(chart) {
-        this.dayNightBackgrounds.forEach(bg => bg.destroy());
-        this.dayNightBackgrounds = [];
-
-        const xAxis = chart.xAxis[0];
-        const plotHeight = chart.plotHeight;
-        const plotTop = chart.plotTop;
-
-        const days = {};
-        this.weatherData.forEach(point => {
-            const cubaTime = new Date(point.time + (this.timezoneOffset * 60000));
-            const dayKey = cubaTime.toISOString().split('T')[0];
-
-            if (!days[dayKey]) {
-                days[dayKey] = {
-                    start: point.time,
-                    end: point.time,
-                    isDay: this.isDaytime(point.time)
-                };
-            } else {
-                days[dayKey].end = point.time;
-            }
-        });
-    }
-
-    drawWeatherSymbols(chart) {
-        if (!chart || !chart.renderer) return;
-
-        // Obtener la serie de temperatura
-        const tempSeries = chart.get('temperatura');
-        if (!tempSeries || !tempSeries.visible) {
-            // Si la serie de temperatura está oculta, ocultar los símbolos
-            if (this.weatherSymbolsGroup) {
-                this.weatherSymbolsGroup.hide();
-            }
-            return;
-        } else if (this.weatherSymbolsGroup) {
-            // Si la serie de temperatura es visible, mostrar los símbolos
-            this.weatherSymbolsGroup.show();
-        }
-
-        if (this.weatherSymbolsGroup) {
-            this.weatherSymbolsGroup.destroy();
-        }
-
-        this.weatherSymbolsGroup = chart.renderer.g()
-            .attr({class: 'weather-symbols', zIndex: 5})
-            .add();
-
-        const SYMBOL_SIZE = 30;
-        const Y_OFFSET = -35;
-
-        this.weatherData.forEach((weather, i) => {
-            const point = tempSeries.data[i];
-            if (!point || !point.plotX || !point.plotY) return;
-
-            const condition = weather.condition;
-            const weatherType = Meteogram.weatherDictionary[condition];
-            if (!weatherType) return;
-
-            const variant = weather.isDay ? 'day' : 'night';
-            const symbolCode = weatherType[variant].symbol;
-
-            const x = point.plotX + chart.plotLeft - (SYMBOL_SIZE / 2);
-            const y = point.plotY + chart.plotTop + Y_OFFSET;
-
-            const iconUrl = `https://cdn.jsdelivr.net/gh/nrkno/yr-weather-symbols@8.0.1/dist/svg/${symbolCode}.svg`;
-
-            const symbolElement = chart.renderer.image(iconUrl, x, y, SYMBOL_SIZE, SYMBOL_SIZE)
-                .attr({
-                    title: `${weatherType[variant].text}\n${new Date(weather.time + (this.timezoneOffset * 60000)).toLocaleString('es-CU')}`,
-                    cursor: 'pointer'
-                })
-                .css({
-                    pointerEvents: 'all'
-                })
-                .add(this.weatherSymbolsGroup);
-
-            symbolElement.on('mouseover', function() {
-                chart.tooltip.refresh([{
-                    series: tempSeries,
-                    point: point,
-                    x: point.x,
-                    y: point.y
-                }], point.x);
-            });
-
-            symbolElement.on('mouseout', function() {
-                chart.tooltip.hide();
-            });
-        });
-    }
-
-        getChartOptions() {
+    getChartOptions() {
         const isDarkMode = document.body.getAttribute('data-bs-theme') === 'dark';
 
         const colors = {
@@ -196,8 +99,7 @@ class Meteogram {
         // Formatear la fecha para el título
         let titleText = this.municipio;
         if (this.datetimeInit) {
-            // Formatear YYYYMMDDHH como "YYYYMMDD HH"
-                        const formattedDate = this.datetimeInit.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, 'Inicializado $1-$2-$3 $4:00 UTC');
+            const formattedDate = this.datetimeInit.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, 'Inicializado $1-$2-$3 $4:00 UTC');
             titleText += ` ${formattedDate}`;
         }
 
@@ -229,18 +131,11 @@ class Meteogram {
                 },
                 scrollablePlotArea: {
                     minWidth: 720
-                },
-                events: {
-                    load: (e) => this.onChartLoad(e.target),
-                    redraw: () => {
-                        this.drawDayNightBackground(this.chart);
-                        this.drawWeatherSymbols(this.chart);
-                    }
                 }
             },
 
             title: {
-                text: titleText, // Usar el título formateado
+                text: titleText,
                 align: 'left',
                 style: {
                     whiteSpace: 'nowrap',
@@ -265,8 +160,6 @@ class Meteogram {
                 headerFormat:
                     '<div style="border-bottom: 1px solid ' + (isDarkMode ? '#495057' : '#e9ecef') + '; padding-bottom: 5px; margin-bottom: 5px;">' +
                     '<small>{point.x:%A, %e de %B, %H:%M} hora local</small><br>' +
-                    '<img src="https://cdn.jsdelivr.net/gh/nrkno/yr-weather-symbols@8.0.1/dist/svg/{point.point.weatherSymbol}.svg" style="height: 24px; vertical-align: middle; margin-right: 5px;">' +
-                    '<b>{point.point.weatherDescription}</b>' +
                     '</div>',
                 pointFormat:
                     '<span style="color:{point.color}">●</span> {series.name}: <b>{point.y}</b><br/>'
@@ -315,7 +208,6 @@ class Meteogram {
             }],
 
             yAxis: [
-
                 // Temperature 
                 {
                      title: {
@@ -443,17 +335,6 @@ class Meteogram {
                         inactive: {
                             opacity: 0.4
                         }
-                    },
-                    events: {
-                        // Cuando se oculta o muestra una serie, redibujar los símbolos
-                        legendItemClick: function() {
-                            const chart = this.chart;
-                            setTimeout(() => {
-                                if (chart.meteogram) {
-                                    chart.meteogram.drawWeatherSymbols(chart);
-                                }
-                            }, 100);
-                        }
                     }
                 },
                 column: {
@@ -546,32 +427,15 @@ class Meteogram {
         };
     }
 
-    onChartLoad(chart) {
-        // Guardar referencia al meteograma en el chart
-        chart.meteogram = this;
-        
-        this.drawDayNightBackground(chart);
-        setTimeout(() => this.drawWeatherSymbols(chart), 50);
-
-        window.addEventListener('resize', () => {
-            if (this.chart) {
-                this.chart.reflow();
-                setTimeout(() => this.drawWeatherSymbols(this.chart), 100);
-            }
-        });
-    }
-
     parseData() {
         if (!this.json || !this.json.times) {
-            this.showError('Datos meteorológicos no disponibles');
-            return;
+            throw new Error('Datos meteorológicos no disponibles');
         }
 
         const {times, T2, RAINC, PSFC, U10, V10, CLF, VIS} = this.json;
 
         const validateArray = (arr, name, defaultValue = 0) => {
             if (!arr || !arr.value || arr.value.length !== times.length) {
-                console.warn(`Array ${name} no existe o tiene longitud incorrecta. Usando valores por defecto.`);
                 return Array(times.length).fill(defaultValue);
             }
             return arr.value;
@@ -599,11 +463,6 @@ class Meteogram {
                 windSpeed
             });
 
-            const weatherType = Meteogram.weatherDictionary[condition];
-            const variant = isDay ? 'day' : 'night';
-            const weatherSymbol = weatherType[variant].symbol;
-            const weatherDescription = weatherType[variant].text;
-
             this.weatherData.push({
                 time: timestamp,
                 condition,
@@ -613,20 +472,12 @@ class Meteogram {
                 windSpeed,
                 windDir,
                 pressure: pressures[i],
-                visibility: visibilities[i],
-                weatherSymbol,
-                weatherDescription
+                visibility: visibilities[i]
             });
 
             this.temperatures.push({
                 x: timestamp,
                 y: temp,
-                weatherSymbol,
-                weatherDescription,
-                isDay: isDay,
-                visibility: visibilities[i],
-                windSpeed,
-                windDir,
                 color: temp > 0 ? '#ff4500' : '#00bfff',
             });
 
@@ -661,6 +512,8 @@ class Meteogram {
                 throw new Error('Contenedor no disponible');
             }
 
+            // Limpia el contenedor antes de crear el nuevo gráfico
+            this.container.innerHTML = '';
             this.container.style.display = 'block';
 
             if (this.chart) {
@@ -673,28 +526,11 @@ class Meteogram {
             this.chart = new Highcharts.Chart(options);
 
         } catch (error) {
-            console.error('Error al crear el gráfico:', error);
-            this.showError(`Error al crear el gráfico: ${error.message}`);
-        }
-    }
-
-    showError(message) {
-        if (this.container) {
-            this.container.innerHTML = `
-                <div style="
-                    padding: 20px;
-                    margin: 20px;
-                    background: #FFEBEE;
-                    border-left: 4px solid #F44336;
-                    color: #B71C1C;
-                ">
-                    <span style="font-size:24px">⚠️</span>
-                    <strong>Error:</strong> ${message}
-                    <div style="margin-top:10px;font-size:12px">
-                        <a href="javascript:window.location.reload()">Recargar página</a>
-                    </div>
-                </div>
-            `;
+            // Limpia el contenedor en caso de error
+            if (this.container) {
+                this.container.innerHTML = '<div class="text-center text-muted p-4">Error al cargar el gráfico</div>';
+            }
+            throw new Error(`Error al crear el gráfico: ${error.message}`);
         }
     }
 
@@ -702,23 +538,21 @@ class Meteogram {
         if (this.chart) {
             this.chart.destroy();
         }
-        if (this.weatherSymbolsGroup) {
-            this.weatherSymbolsGroup.destroy();
-        }
-        this.dayNightBackgrounds.forEach(bg => bg.destroy());
     }
 }
 
-// Clase MeteogramFormHandler con envío AJAX y URL limpia
+// Clase MeteogramFormHandler
 class MeteogramFormHandler {
     constructor() {
         this.meteogramInstance = null;
-        this.apiBaseUrl = 'https://modelo.cmw.insmet.cu';
+        this.autoHideTimeout = null;
         this.initElements();
         this.bindEvents();
-        this.loadInitialData();
         this.initLitepicker();
         this.setupDatetimeHandlers();
+        this.setDefaultValues();
+        // Carga inicial automática
+        this.loadInitialData();
     }
 
     initLitepicker() {
@@ -733,19 +567,19 @@ class MeteogramFormHandler {
                     previousMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M15 6l-6 6l6 6" /></svg>`,
                     nextMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M9 6l6 6l-6 6" /></svg>`
                 },
-                onSelect: (date) => {
-                    this.updateDatetimeInit();
+                setup: (picker) => {
+                    picker.on('selected', (date) => {
+                        this.updateDatetimeInit();
+                    });
                 }
             });
         }
     }
 
     setupDatetimeHandlers() {
-        document.getElementById('datepicker')?.addEventListener('input', () => this.updateDatetimeInit());
+        document.getElementById('datepicker')?.addEventListener('change', () => this.updateDatetimeInit());
         document.getElementById('hour-select')?.addEventListener('change', () => this.updateDatetimeInit());
-        document.getElementById('id_town')?.addEventListener('change', () => {
-            this.updateDatetimeInit();
-        });
+        document.getElementById('datepicker')?.addEventListener('input', () => this.updateDatetimeInit());
     }
 
     updateDatetimeInit() {
@@ -761,9 +595,10 @@ class MeteogramFormHandler {
     initElements() {
         this.form = document.getElementById('meteogram-form');
         this.submitBtn = document.getElementById('submit-btn');
-        this.feedbackEl = document.getElementById('form-feedback');
-        this.loadingEl = document.getElementById('loading');
+        this.errorContainer = document.getElementById('error-container');
+        this.errorMessageElement = document.getElementById('error-message');
         this.chartContainer = document.getElementById('container');
+        this.plotArea = document.getElementById('plot-area');
         this.datepicker = document.getElementById('datepicker');
         this.hourSelect = document.getElementById('hour-select');
         this.townSelect = document.getElementById('id_town');
@@ -771,33 +606,139 @@ class MeteogramFormHandler {
 
     bindEvents() {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-
-        // Eliminar los event listeners que actualizan la URL
-        // Ya no necesitamos actualizar la URL cuando cambian los campos
     }
 
-    loadInitialData() {
-        // Ya no cargamos datos iniciales desde la URL
-        // En su lugar, establecemos valores por defecto
+    setDefaultValues() {
         const today = new Date().toISOString().split('T')[0];
         if (this.datepicker) this.datepicker.value = today;
         if (this.hourSelect) this.hourSelect.value = '00';
+        
+        setTimeout(() => {
+            this.updateDatetimeInit();
+        }, 0);
+    }
 
-        this.updateDatetimeInit();
+    loadInitialData() {
+        setTimeout(() => {
+            this.updateDatetimeInit();
+            setTimeout(() => {
+                this.handleSubmit(new Event('submit'));
+            }, 100);
+        }, 1000);
+    }
+
+    showError(message) {
+        if (!this.errorContainer || !this.errorMessageElement) {
+            console.error('Error: No se pudo encontrar el contenedor de error');
+            return;
+        }
+
+        // Limpiar timeout anterior si existe
+        if (this.autoHideTimeout) {
+            clearTimeout(this.autoHideTimeout);
+            this.autoHideTimeout = null;
+        }
+
+        // Actualizar el mensaje de error
+        this.errorMessageElement.textContent = message;
+        
+        // Mostrar el plot-area para que el error sea visible
+        if (this.plotArea) {
+            this.plotArea.style.display = 'block';
+        }
+        
+        // RESETEO COMPLETO DEL CONTENEDOR DE ERROR
+        // Esto es crucial para que funcione después de cerrar manualmente
+        this.errorContainer.innerHTML = `
+            <div class="d-flex align-items-center">
+                <span id="error-message">${message}</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Actualizar la referencia al elemento del mensaje
+        this.errorMessageElement = document.getElementById('error-message');
+        
+        // Restablecer completamente las clases de Bootstrap
+        this.errorContainer.className = 'alert alert-danger alert-dismissible fade show';
+        this.errorContainer.style.display = 'block';
+        
+        // Re-inicializar el comportamiento de Bootstrap para el nuevo botón de cierre
+        const closeButton = this.errorContainer.querySelector('.btn-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                this.hideError();
+            });
+        }
+
+        // Ocultar el gráfico cuando hay error
+        this.hideChart();
+
+        // Auto-ocultar después de 8 segundos (solo el error, no el plot-area)
+        this.autoHideTimeout = setTimeout(() => {
+            this.hideError(); // Solo oculta el error, no el plot-area
+        }, 8000);
+    }
+
+    hideError() {
+        if (this.errorContainer) {
+            // Solo ocultamos el contenedor de error, no el plot-area
+            this.errorContainer.style.display = 'none';
+        }
+        
+        // Limpiar el timeout
+        if (this.autoHideTimeout) {
+            clearTimeout(this.autoHideTimeout);
+            this.autoHideTimeout = null;
+        }
+    }
+
+    hidePlotArea() {
+        // Ocultar el plot-area completo (solo se usa cuando hay éxito)
+        if (this.plotArea) {
+            this.plotArea.style.display = 'none';
+        }
+    }
+
+    // Método para ocultar el gráfico
+    hideChart() {
+        if (this.meteogramInstance) {
+            try {
+                this.meteogramInstance.destroy();
+                this.meteogramInstance = null;
+            } catch (e) {
+                console.warn('Error al destruir instancia del meteograma:', e);
+            }
+        }
+        
+        // También limpia el contenedor del gráfico
+        if (this.chartContainer) {
+            this.chartContainer.innerHTML = '';
+        }
     }
 
     async handleSubmit(e) {
         e.preventDefault();
 
+        // Forzar actualización de datetime-init antes de enviar
+        this.updateDatetimeInit();
+
         const datetimeInit = document.getElementById('datetime-init').value;
+        
+        if (!this.form.checkValidity()) {
+            e.stopPropagation();
+            this.form.classList.add('was-validated');
+            return;
+        }
+        
         if (!/^\d{10}$/.test(datetimeInit)) {
-            this.showFeedback('Formato de fecha/hora inválido', 'danger');
+            this.showError(`Formato de fecha/hora inválido: ${datetimeInit}`);
             return;
         }
 
-        this.setLoadingState(true);
-        this.clearFeedback();
-        this.clearChart();
+        // Ocultar error previo (solo el error, no el plot-area)
+        this.hideError();
+        this.setSubmitButtonState(true);
 
         try {
             const formData = new FormData(this.form);
@@ -806,11 +747,6 @@ class MeteogramFormHandler {
                 town: formData.get('town')
             };
 
-            if (!params.datetime_init || !params.town) {
-                throw new Error('Todos los campos son requeridos');
-            }
-
-            // Enviar el formulario por POST sin afectar la URL del navegador
             const response = await fetch('', {
                 method: 'POST',
                 body: new URLSearchParams(params),
@@ -820,33 +756,34 @@ class MeteogramFormHandler {
                 }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-            }
-
             const responseData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(responseData.message || `Error ${response.status}: ${response.statusText}`);
+            }
 
             if (responseData.status !== 'success' || !responseData.data) {
                 throw new Error(responseData.message || 'Respuesta inesperada del servidor');
             }
 
-            // Obtener las coordenadas del municipio seleccionado para el gráfico
+            // Verificar si hay datos realmente
+            if (!responseData.data.times || responseData.data.times.length === 0) {
+                this.showError('No hay datos disponibles para los criterios seleccionados');
+                return;
+            }
+
+            // Obtener las coordenadas del municipio seleccionado
             const selectedOption = this.townSelect?.selectedOptions[0];
             const lat = selectedOption ? parseFloat(selectedOption.getAttribute('data-lat')) : 0;
             const long = selectedOption ? parseFloat(selectedOption.getAttribute('data-long')) : 0;
 
             this.updateMeteogram(responseData, lat, long);
-            this.showFeedback('Datos meteorológicos actualizados correctamente ✅', 'success');
-
-            // NO actualizamos la URL del navegador
-            // this.updateURL(params, lat, long, true);
 
         } catch (error) {
-            console.error('Error:', error);
-            this.showFeedback(`Error: ${error.message || 'Problema al procesar la solicitud'} ❌`, 'danger');
+            console.error('Error en handleSubmit:', error);
+            this.showError(error.message || 'Error al procesar la solicitud');
         } finally {
-            this.setLoadingState(false);
+            this.setSubmitButtonState(false);
         }
     }
 
@@ -857,72 +794,44 @@ class MeteogramFormHandler {
 
     updateMeteogram(formattedResponse, lat, long) {
         if (!formattedResponse || !formattedResponse.data || !formattedResponse.data.times) {
-            throw new Error('Datos meteorológicos no válidos o vacíos');
+            this.showError('Datos meteorológicos no válidos o vacíos');
+            return;
         }
 
-        // Obtener datetime_init del formulario
         const datetimeInit = document.getElementById('datetime-init').value;
 
         const options = {
             lat: lat,
             long: long,
             municipio: this.townSelect?.selectedOptions[0]?.textContent || 'Municipio',
-            datetimeInit: datetimeInit, // Pasar la fecha/hora de inicio
-            timezone: 'UTC',
-            apiBaseUrl: this.apiBaseUrl
+            datetimeInit: datetimeInit
         };
 
-        if (this.meteogramInstance) {
-            try {
-                this.meteogramInstance.destroy();
-            } catch (e) {
-                console.warn('Error al limpiar instancia anterior:', e);
-            }
-        }
+        // Limpia la instancia anterior
+        this.hideChart();
 
         try {
+            // Mostrar el plot-area
+            if (this.plotArea) {
+                this.plotArea.style.display = 'block';
+            }
+
+            // Ocultar error si existe
+            this.hideError();
+
+            // Crear el meteograma
             this.meteogramInstance = new Meteogram(formattedResponse.data, 'container', options);
+            
         } catch (error) {
             console.error('Error al crear meteograma:', error);
-            throw new Error(`Error al crear gráfico: ${error.message}`);
+            this.showError(`Error al crear gráfico: ${error.message}`);
         }
     }
 
-    // Eliminar el método updateURL ya que no lo necesitamos más
-    // updateURL(params, lat, long, pushState = true) { ... }
-
-    clearChart() {
-        if (this.chartContainer) {
-            this.chartContainer.innerHTML = '<div id="loading" style="display: none;">⏳ Cargando datos meteorológicos...</div>';
-        }
-    }
-
-    showFeedback(message, type = 'success') {
-        if (this.feedbackEl) {
-            this.feedbackEl.innerHTML = `
-                <div class="alert alert-${type}">
-                    ${message}
-                </div>
-            `;
-        }
-    }
-
-    clearFeedback() {
-        if (this.feedbackEl) {
-            this.feedbackEl.innerHTML = '';
-        }
-    }
-
-    setLoadingState(isLoading) {
+    setSubmitButtonState(isLoading) {
         if (this.submitBtn) {
             this.submitBtn.disabled = isLoading;
-            this.submitBtn.innerHTML = isLoading
-                ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...'
-                : 'Generar';
-        }
-
-        if (this.loadingEl) {
-            this.loadingEl.style.display = isLoading ? 'block' : 'none';
+            this.submitBtn.textContent = isLoading ? 'Cargando...' : 'Generar';
         }
     }
 }
