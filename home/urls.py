@@ -3,7 +3,6 @@ from django.urls import path
 from home.views.avisos.alertas_tempranas.views import EarlyWarningListView
 from home.views.avisos.ciclones_tropicales.views import TropicalCycloneListView
 from home.views.avisos.tormentas.views import StormListView
-from home.views.avisos.radares.views import RadarWarningListView
 from home.views.comentarios.nota_meteorologica.views import \
     WeatherNoteDetailView
 from home.views.comentarios.tiempo.views import WeatherCommentaryDetailView
@@ -31,7 +30,6 @@ urlpatterns = [
     path('aviso/alerta_temprana/', EarlyWarningListView.as_view(), name="alerta_temprana"),
     path('aviso/ciclon_tropical/', TropicalCycloneListView.as_view(), name="ciclon_tropical"),
     path('aviso/tormenta/', StormListView.as_view(), name="tormenta"),
-    path('aviso/radar/', RadarWarningListView.as_view(), name="radar"),
     # Modelos
     path('modelo/mapas/', MapaView.as_view(), name='maps'),
     path('modelo/meteogram/', MeteogramView.as_view(), name='meteogram'),

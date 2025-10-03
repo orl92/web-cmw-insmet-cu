@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
+from dashboard.data.mail_send_warning import mail_send_warning
 from dashboard.forms.avisos.alertas_tempranas.forms import EarlyWarningForm
 from dashboard.models import EarlyWarning
 
@@ -23,6 +24,7 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 from io import BytesIO
 from xhtml2pdf import pisa
+
 
 # Create your views here.
 
@@ -41,6 +43,7 @@ class EarlyWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['url_list'] = reverse_lazy('alertas_tempranas')
         context['objects'] = EarlyWarning.objects.all()
         return context
+
 
 class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = EarlyWarning
@@ -68,55 +71,10 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         # Mensaje de éxito
         messages.success(self.request, 'El aviso de alerta temprana ha sido creado con éxito.', extra_tags='success')
 
-        # Construir la URL dinámica"
-        listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))
-        index_url = self.request.build_absolute_uri(reverse('index'))
-        image_url = self.request.build_absolute_uri(self.object.image.url)
+        mail_send_warning(self.request, self.object)
 
-        # Obtener la lista seleccionada en el formulario
-        recipient_list = self.object.email_recipient_list
-        
-        if recipient_list:
-            recipients = recipient_list.recipients.values_list('email', flat=True)
-
-            if recipients:
-                # Enviar correo
-                try:
-                    subject = f'Alerta Temprana: {self.object.title}'
-                    html_message = render_to_string(
-                        'pages/dashboard/emails/notification.html',
-                        {
-                            'alert': self.object,
-                            'listado_url': listado_url,  # Pasa la URL al contexto del correo
-                            'index_url': index_url,     # URL al índice de la página
-                            'image_url': image_url,
-                            'current_year': datetime.now().year  # Pasa el año actual
-                        }
-                    )
-                    # Limpia las etiquetas HTML de la descripción, si existe
-                    plain_message = strip_tags(html_message)
-
-                    email = EmailMessage(
-                        subject=subject,
-                        body=html_message,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=list(recipients),
-                    )
-                    email.content_subtype = 'html'  # Asegura que el correo se envíe como HTML
-                    email.send()
-
-                    # Mostrar mensaje de éxito para el envío del correo
-                    messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
-                except Exception as e:
-                    # Manejar errores de envío
-                    messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
-            else:
-                messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
-        else:
-            messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
-        
         return response
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Añadir Alerta Temprana'
@@ -124,6 +82,7 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         context['segment'] = 'early'
         context['url_list'] = reverse_lazy('alertas_tempranas')
         return context
+
 
 class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = EarlyWarning
@@ -142,10 +101,10 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         return kwargs
 
     def form_valid(self, form):
-       # Almacenar los valores originales del objeto antes de cualquier actualización
+        # Almacenar los valores originales del objeto antes de cualquier actualización
         original_object = self.get_object(queryset=None)
-        relevant_fields = ['title', 'description', 'valid_until']
-        
+        relevant_fields = ['summary', 'file', 'valid_until']
+
         # Detectar si hay cambios en los campos relevantes
         has_changes = any(
             form.cleaned_data[field] != getattr(original_object, field)
@@ -153,7 +112,7 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         )
 
         response = super().form_valid(form)  # Guarda los cambios del formulario
-        
+
         # Registro de acción
         log_action(
             user=self.request.user,
@@ -164,57 +123,11 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
 
         # Enviar correo solo si hay cambios
         if has_changes:
-            # Construir la URL dinámica para el listado de alertas
-            listado_url = self.request.build_absolute_uri(reverse('alerta_temprana'))  # Genera la URL completa
-            index_url = self.request.build_absolute_uri(reverse('index'))
-            image_url = self.request.build_absolute_uri(self.object.image.url)
-            
-            # Obtener la lista de destinatarios seleccionada
-            recipient_list = self.object.email_recipient_list
-            
-            if recipient_list:
-                recipients = recipient_list.recipients.values_list('email', flat=True)
-                
-                from django.utils.html import strip_tags
-                
-                # Renderizar el correo electrónico
-                subject = f'Alerta Temprana Actualizada: {self.object.title}'
-                html_message = render_to_string(
-                    'pages/dashboard/emails/notification.html',
-                    {
-                        'alert': self.object,
-                        'listado_url': listado_url,
-                        'index_url': index_url,     # URL al índice de la página
-                        'image_url': image_url,
-                        'current_year': datetime.now().year  # Pasa el año actual
-                    }
-                )
-
-                # Limpia la descripción de etiquetas HTML
-                plain_description = strip_tags(self.object.description)
-
-                plain_message = strip_tags(html_message).replace(self.object.description, plain_description)
-
-                try:
-                    email = EmailMessage(
-                        subject=subject,
-                        body=html_message,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=list(recipients),
-                    )
-                    email.content_subtype = 'html'
-                    email.send()
-
-                    # Mostrar un mensaje de éxito si el correo se envía correctamente
-                    messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
-                except Exception as e:
-                    # Manejar errores y mostrar un mensaje al usuario
-                    messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
-            else:
-                messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta alerta.', extra_tags='warning')
+            mail_send_warning(self.request, self.object)
 
         # Mensaje de éxito en la actualización
-        messages.success(self.request, 'El aviso de alerta temprana ha sido actualizado con éxito.', extra_tags='success')
+        messages.success(self.request, 'El aviso de alerta temprana ha sido actualizado con éxito.',
+                         extra_tags='success')
         return response
 
     def get_context_data(self, **kwargs):
@@ -227,6 +140,7 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
 
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
+
 
 class EarlyWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = EarlyWarning
@@ -265,6 +179,7 @@ class EarlyWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delete
         context['url_list'] = reverse_lazy('alertas_tempranas')
         return context
 
+
 class EarlyWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = EarlyWarning
     template_name = 'pages/dashboard/avisos/alertas_tempranas/detalle_alerta_temprana.html'
@@ -283,6 +198,7 @@ class EarlyWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detail
         context['url_list'] = reverse_lazy('alertas_tempranas')
         return context
 
+
 class EarlyWarningPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = EarlyWarning
     permission_required = 'dashboard.view_early_warning'
@@ -293,7 +209,7 @@ class EarlyWarningPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
         # Obtener imagen del logo en formato Base64
         logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
         logo_base64 = self.get_image_base64(logo_path)
-        
+
         # Obtener imagen del early_warning en Base64 si existe
         image_base64 = None
         if early_warning.image:  # Asegúrate de que 'image' es el campo de la imagen en tu modelo
@@ -344,7 +260,7 @@ class EarlyWarningPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
             else:
                 # Tipo por defecto si no se reconoce
                 mime_type = 'image/jpeg'
-            
+
             with open(image_path, "rb") as image_file:
                 encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
                 # Formato: data:<mime_type>;base64,<encoded_string>

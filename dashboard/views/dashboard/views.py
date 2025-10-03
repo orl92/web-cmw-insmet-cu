@@ -14,7 +14,7 @@ from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist
 
 from common.utils import log_action
-from dashboard.models import EarlyWarning, Forecasts, RadarWarning, SiteConfiguration, StormWarning, TropicalCyclone
+from dashboard.models import EarlyWarning, Forecasts, SiteConfiguration, StormWarning, TropicalCyclone
 
 # Create your views here.
    
@@ -140,7 +140,6 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'early_warnings': EarlyWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
             'tropical_cyclones': TropicalCyclone.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
             'storm_warnings': StormWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
-            'radar_warnings': RadarWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
         }
 
         # Datos exclusivos para superusuarios

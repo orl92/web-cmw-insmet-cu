@@ -1,14 +1,16 @@
 {% extends 'layouts/list.html' %}
 {% load static %}
 {% block columns %}
-  <th>Título</th>
+  <th>Resumen</th>
   <th>Fecha</th>
+  <th>Valido</th>
   <th>Usuario</th>
   <th class="text-end">Acciones</th>
 {% endblock columns %}
 {% block row %}
-  <td>{{object.title}}</td>
+  <td>{{object.summary}}</td>
   <td>{{object.date}}</td>
+  <td>{{object.valid_until}}</td>
   <td>{{object.user}}</td>
   <td class="text-end">
     <a href="{% url 'actualizar_aviso_tormenta' object.uuid %}" type="button" class="btn btn-pill btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">

@@ -6,7 +6,7 @@ from dashboard.models import TropicalCyclone
 class TropicalCycloneForm(forms.ModelForm):
     class Meta:
         model = TropicalCyclone
-        fields = ['title', 'subject', 'valid_until', 'image', 'description', 'email_recipient_list']
+        fields = ['summary', 'valid_until', 'file', 'email_recipient_list']
         widgets = {
             'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),
         }

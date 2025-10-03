@@ -233,11 +233,10 @@ class Forecasts(models.Model):
 class BaseWarning(ImageModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=50, verbose_name='Título')
-    subject = models.CharField(max_length=100, verbose_name='Asunto')
-    date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
+    summary = models.TextField(max_length=300, verbose_name='Resumen')
+    file = models.FileField(upload_to=generic_pdf_path, verbose_name='PDF')
     valid_until = models.DateTimeField(verbose_name='Válido Hasta')
-    description = models.TextField(verbose_name='Descripción')
+    date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
     email_recipient_list = models.ForeignKey(
         'EmailRecipientList',
         on_delete=models.SET_NULL,
@@ -250,7 +249,7 @@ class BaseWarning(ImageModel):
         abstract = True
 
     def __str__(self):
-        return self.title
+        return self.summary
 
 class EarlyWarning(BaseWarning):
 
@@ -289,19 +288,6 @@ class StormWarning(BaseWarning):
             ('add_storm_warning', 'Añadir'),
             ('change_storm_warning', 'Editar'),
             ('delete_storm_warning', 'Eliminar'),
-        )
-
-class RadarWarning(BaseWarning):
-    
-    class Meta:
-        verbose_name = 'Aviso Radar'
-        verbose_name_plural = "Avisos Radares"
-        default_permissions = ()
-        permissions = (
-            ('view_radar_warning', 'Ver'),
-            ('add_radar_warning', 'Añadir'),
-            ('change_radar_warning', 'Editar'),
-            ('delete_radar_warning', 'Eliminar'),
         )
 
 class Customer(models.Model):

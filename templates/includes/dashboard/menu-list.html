@@ -194,11 +194,6 @@
             Tormentas
           </a>
           {% endif %}
-          {% if request.user|has_permission:'dashboard.view_radar_warning' %}
-          <a class="dropdown-item {% if 'radar' in segment %}active{% endif %}" href="{% url 'avisos_radares' %}">
-            Radares
-          </a>
-          {% endif %}
       </div>
     </div>
   </li>

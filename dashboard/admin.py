@@ -21,19 +21,15 @@ class StationAdmin(admin.ModelAdmin):
 
 @admin.register(EarlyWarning)
 class EarlyWarningAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date', 'user')
+    list_display = ('summary', 'date', 'user')
 
 @admin.register(TropicalCyclone)
 class TropicalCycloneAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date', 'user')
+    list_display = ('summary', 'date', 'user')
 
 @admin.register(StormWarning)
 class StormWarningAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date', 'user')
-
-@admin.register(RadarWarning)
-class RadarWarningAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date', 'user')
+    list_display = ('summary', 'date', 'user')
 
 @admin.register(Service)
 class ServicesAdmin(admin.ModelAdmin):
