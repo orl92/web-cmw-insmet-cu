@@ -17,6 +17,7 @@
             {% if form.file.errors %}
                 <span class="text-danger d-block mb-3">{{ form.file.errors }}</span>
             {% endif %}
+            <div id="pdfPreview" class="preview-container m-3"></div>
         </div>
         <div class="col-md-12 mb-3">
             <label class="form-label required">{{ form.email_recipient_list.label }}</label>
@@ -26,4 +27,26 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+        document.getElementById('id_file').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('pdfPreview');
+
+            if (file && file.type === 'application/pdf') {
+                const fileURL = URL.createObjectURL(file);
+
+                preview.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
+    <iframe src="${fileURL}" width="75%" height="400px" style="border: 1px solid #ccc;"></iframe>
+    <div style="padding: 10px; background: #f5f5f5; width: 75%; text-align: center;">
+        <strong>Archivo:</strong> ${file.name} 
+    </div>
+</div>
+                `;
+            } else {
+                preview.innerHTML = '<p style="padding: 20px; color: red;">Por favor, selecciona un archivo PDF válido.</p>';
+            }
+        });
+    </script>
 {% endblock form %}
