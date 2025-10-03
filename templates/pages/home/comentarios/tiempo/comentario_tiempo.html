@@ -1,36 +1,103 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-10 col-xl-9">
-    {% if weather_commentary %}
-      <div class="card card-lg">
-        <div class="card-body markdown">
-          <h1 class="d-flex justify-content-center" id="weather-tomorrow">Comentario del Tiempo para la Provincia de Camagüey</h1>
-          <h3 class="d-flex justify-content-center">Departamento de Pronósticos</h3>
-          <div class="d-flex text-muted justify-content-between">
-            <p><strong>Fecha:</strong> {{ weather_commentary.date|date:"j \d\e F \d\e Y" }}</p>
-            <p><strong>Hora:</strong> {{ weather_commentary.date|time:"h:i A" }}</p>
-          </div>
-          <p class="d-flex justify-content-center">{{ weather_commentary.subject }}</p>
-          <p>{{ weather_commentary.detailed_commentary|safe }}</p>
-          <div class="d-flex align-items-center">
-            <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ weather_commentary.user.profile.get_avatar }})"></span>
-            <span class="text-muted me-2 d-sm-inline">Autor:</span>
-            <span class="text-muted">{{ weather_commentary.user.get_full_name }}</span>
-          </div>
-        </div>
-      </div>
-      {% else %} 
-      <div class="text-center">
-          <img src="{% static 'dist/img/webp/boy-refresh.webp' %}" class="img-fluid w-50" alt="boy-refresh">
-          <p class="empty-title">Nada que mostrar...</p>
-          <p class="empty-subtitle text-secondary">
-             No hay Comentarios del Tiempo disponibles por el momento.
-          </p>
-      </div>
-      {% endif %}
-  </div>
-</div>
-{% endblock content %}
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-9">
+            {% if weather_commentary %}
+                <div class="card card-lg">
+                    <div class="card-body markdown">
+                        <h1 class="d-flex justify-content-center" id="weather-tomorrow">Comentario del Tiempo para la
+                            Provincia de Camagüey</h1>
+                        <h3 class="d-flex justify-content-center">Departamento de Pronósticos</h3>
+                        <div class="d-flex text-muted justify-content-between">
+                            <p><strong>Fecha:</strong> {{ weather_commentary.date|date:"j \d\e F \d\e Y" }}</p>
+                            <p><strong>Hora:</strong> {{ weather_commentary.date|time:"h:i A" }}</p>
+                        </div>
+                        <p class="d-flex justify-content-center">{{ weather_commentary.subject }}</p>
+                        <p>{{ weather_commentary.detailed_commentary|safe }}</p>
+                        <div class="d-flex align-items-center">
+                            <span class="avatar avatar-xs rounded-circle me-1"
+                                  style="background-image: url({{ weather_commentary.user.profile.get_avatar }})"></span>
+                            <span class="text-muted me-2 d-sm-inline">Autor:</span>
+                            <span class="text-muted">{{ weather_commentary.user.get_full_name }}</span>
+                        </div>
 
+                        <!-- Botón para ver PDF si existe -->
+                        {% if weather_commentary.file %}
+                            <div class="mt-4 text-center">
+                                <a href="#" class="btn btn-pill btn-outline-primary"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#pdfModal"
+                                   data-pdf-url="{{ weather_commentary.file.url }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                         stroke-linejoin="round"
+                                         class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
+                                        <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4"/>
+                                        <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6"/>
+                                        <path d="M17 18h2"/>
+                                        <path d="M20 15h-3v6"/>
+                                        <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z"/>
+                                    </svg>
+                                    Ver PDF Completo
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center">
+                    <img src="{% static 'dist/img/webp/boy-refresh.webp' %}" class="img-fluid w-50" alt="boy-refresh">
+                    <p class="empty-title">Nada que mostrar...</p>
+                    <p class="empty-subtitle text-secondary">
+                        No hay Comentarios del Tiempo disponibles por el momento.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal para PDF en pantalla completa -->
+    <div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pdfModalLabel">PDF - Comentario del Tiempo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <iframe id="pdfFrame" src="" width="100%" height="100%" style="border: none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Manejar el evento del modal de PDF
+            var pdfModal = document.getElementById('pdfModal');
+            pdfModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                if (!button) return;
+
+                var pdfUrl = button.getAttribute('data-pdf-url');
+                var pdfFrame = document.getElementById('pdfFrame');
+
+                if (pdfFrame && pdfUrl) {
+                    pdfFrame.src = pdfUrl;
+                }
+            });
+
+            // Limpiar el iframe cuando se cierre el modal
+            pdfModal.addEventListener('hidden.bs.modal', function () {
+                var pdfFrame = document.getElementById('pdfFrame');
+                if (pdfFrame) {
+                    pdfFrame.src = '';
+                }
+            });
+        });
+    </script>
+
+{% endblock content %}
