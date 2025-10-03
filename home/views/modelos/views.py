@@ -172,18 +172,29 @@ class MeteogramView(TemplateView):
         if not form.is_valid():
             return JsonResponse({
                 'status': 'error',
+                'message': 'Datos del formulario inválidos',
                 'errors': form.errors.get_json_data()
             }, status=400)
 
         try:
             # Obtener el municipio seleccionado
             town = form.cleaned_data['town']
+            datetime_init = form.cleaned_data['datetime_init']
+
+            # Validar que la fecha no sea futura
+            datetime_init = form.cleaned_data['datetime_init']
+            init_date = datetime.strptime(datetime_init, '%Y%m%d%H')
+            if init_date > datetime.now():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'No se pueden solicitar datos para fechas futuras'
+                }, status=400)
 
             # Construir URL usando coordenadas del municipio
             params = {
-                'datetime_init': form.cleaned_data['datetime_init'],
-                'lat': town.latitude,  # Usar latitud del municipio
-                'long': town.longitude,  # Usar longitud del municipio
+                'datetime_init': datetime_init,
+                'lat': town.latitude,
+                'long': town.longitude,
             }
             api_url = f"https://modelo.cmw.insmet.cu/api/meteogram/?{urlencode(params)}"
 
@@ -197,6 +208,13 @@ class MeteogramView(TemplateView):
                     'message': 'Estructura de datos inesperada de la API'
                 }, status=500)
 
+            # Validar que hay datos disponibles
+            if not api_data.get('times') or len(api_data['times']) == 0:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'No hay datos disponibles para la fecha y ubicación seleccionadas'
+                }, status=404)
+
             return JsonResponse({
                 'status': 'success',
                 'data': api_data
@@ -207,7 +225,12 @@ class MeteogramView(TemplateView):
                 'status': 'error',
                 'message': f"Error al conectar con la API: {str(e)}"
             }, status=500)
-
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f"Error interno del servidor: {str(e)}"
+            }, status=500)
+            
 class SoundingView(TemplateView):
     template_name = 'pages/home/modelos/sounding.html'
 
