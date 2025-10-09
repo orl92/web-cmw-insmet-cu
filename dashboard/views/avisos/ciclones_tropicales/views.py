@@ -11,7 +11,7 @@ from django.urls import reverse_lazy, reverse
 from django.views.generic import *
 
 from core import settings
-from dashboard.data.mail_send_warning import mail_send_warning
+from dashboard.data.mail_send import mail_send
 from dashboard.forms.avisos.ciclones_tropicales.forms import \
     TropicalCycloneForm
 from dashboard.models import TropicalCyclone
@@ -72,8 +72,8 @@ class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
         messages.success(self.request, 'El aviso de ciclón tropical ha sido creado con éxito.', extra_tags='success')
 
         subject = f'Aviso de Ciclon Tropical: {self.object.date}'
-        mail_send_warning(self.request, self.object, subject)
-        
+        mail_send(self.request, self.object, subject, "ciclon_tropical")
+
         return response
 
     def get_context_data(self, **kwargs):
@@ -125,7 +125,7 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
         # Enviar correo solo si hay cambios
         if has_changes:
             subject = f'Aviso de Ciclon Tropical Actualizado: {self.object.date}'
-            mail_send_warning(self.request, self.object, subject)
+            mail_send(self.request, self.object, subject, "ciclon_tropical")
 
         # Mensaje de éxito en la actualización del aviso
         messages.success(self.request, 'El aviso de ciclón tropical ha sido actualizado con éxito.', extra_tags='success')

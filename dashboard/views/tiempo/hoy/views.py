@@ -26,8 +26,10 @@ from django.template.loader import get_template
 from io import BytesIO
 import xhtml2pdf.pisa as pisa
 from django.conf import settings
+from dashboard.data.mail_send import mail_send
 
-# Create your views here. 
+
+# Create your views here.
 
 class WeatherTodayListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/tiempo/hoy/listado_tiempo_h.html'
@@ -43,7 +45,8 @@ class WeatherTodayListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['url_create'] = reverse_lazy('crear_tiempo_h')
         context['url_list'] = reverse_lazy('listado_tiempo_h')
         context['objects'] = WeatherToday.objects.all()
-        return context 
+        return context
+
 
 class WeatherTodayCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = WeatherToday
@@ -63,7 +66,7 @@ class WeatherTodayCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         instance.date = timezone.now()
         instance.save()
         response = super().form_valid(form)
-        
+
         # Registro de acción
         log_action(
             user=self.request.user,
@@ -71,54 +74,13 @@ class WeatherTodayCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             action_flag=ADDITION,
             message=f"Se creó un nuevo pronóstico del tiempo para hoy: {self.object.date}."
         )
-        
-        messages.success(self.request, 'El pronóstico del tiempo para hoy ha sido creado con éxito.', extra_tags='success')
-        
-        # Construir la URL dinámica"
-        listado_url = self.request.build_absolute_uri(reverse('tiempo_h'))
-        index_url = self.request.build_absolute_uri(reverse('index'))
 
-        # Obtener la lista seleccionada en el formulario
-        recipient_list = self.object.email_recipient_list
-        
-        if recipient_list:
-            recipients = recipient_list.recipients.values_list('email', flat=True)
+        messages.success(self.request, 'El pronóstico del tiempo para hoy ha sido creado con éxito.',
+                         extra_tags='success')
 
-            if recipients:
-                # Enviar el correo
-                try:
-                    subject = f"El Tiempo para Hoy"
-                    html_message = render_to_string(
-                        'pages/dashboard/emails/weather_today.html',
-                        {
-                            'tiempo_h': self.object,
-                            'listado_url': listado_url,  # Pasa la URL al contexto del correo
-                            'index_url': index_url,     # URL al índice de la página
-                            'current_year': datetime.now().year  # Pasa el año actual
-                        }
-                    )
-                    # Limpia las etiquetas HTML de la descripción, si existe
-                    plain_message = strip_tags(html_message)
-                    
-                    email = EmailMessage(
-                        subject=subject,
-                        body=html_message,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=list(recipients),
-                    )
-                    email.content_subtype = 'html'
-                    email.send()
+        subject = f'El Tiempo para Hoy'
+        mail_send(self.request, self.object, subject, 'tiempo_h')
 
-                    # Mostrar mensaje de éxito para el envío del correo
-                    messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
-                except Exception as e:
-                    # Manejar errores de envío
-                    messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
-            else:
-                messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
-        else:
-            messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
-        
         return response
 
     def get_context_data(self, **kwargs):
@@ -128,6 +90,7 @@ class WeatherTodayCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         context['segment'] = 'tiempo_h'
         context['url_list'] = reverse_lazy('listado_tiempo_h')
         return context
+
 
 class WeatherTodayUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = WeatherToday
@@ -150,19 +113,19 @@ class WeatherTodayUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         # Obtener el objeto original antes de los cambios
         original_object = self.get_object(queryset=None)
         relevant_fields = ['summary', 'file', 'email_recipient_list']
-        
+
         # Detectar cambios en los campos relevantes
         has_changes = any(
             form.cleaned_data[field] != getattr(original_object, field)
             for field in relevant_fields
         )
-        
+
         # Guardar el formulario actualizado
         instance = form.save(commit=False)
         instance.date = timezone.now()
         instance.save()
         response = super().form_valid(form)
-        
+
         # Registro de acción
         log_action(
             user=self.request.user,
@@ -170,55 +133,15 @@ class WeatherTodayUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
             action_flag=CHANGE,
             message=f"Se actualizó el pronóstico del tiempo para hoy: {self.object.date}."
         )
-       
+
         # Enviar correos solo si hay cambios
         if has_changes:
-            # Construir la URL dinámica"
-            listado_url = self.request.build_absolute_uri(reverse('tiempo_h'))
-            index_url = self.request.build_absolute_uri(reverse('index'))
-            
-            # Obtener la lista de correos seleccionada
-            recipient_list = self.object.email_recipient_list
-        
-            if recipient_list:
-                recipients = recipient_list.recipients.values_list('email', flat=True)
-                
-                if recipients:
-                    # Enviar el correo
-                    try:
-                        subject = f"El Tiempo para Hoy Actualizado "
-                        html_message = render_to_string(
-                            'pages/dashboard/emails/weather_today.html',
-                            {
-                                'tiempo_h': self.object,
-                                'listado_url': listado_url,  # Pasa la URL al contexto del correo
-                                'index_url': index_url,     # URL al índice de la página
-                                'current_year': datetime.now().year  # Pasa el año actual
-                            }
-                        )
-                        plain_message = strip_tags(html_message)
-                        
-                        email = EmailMessage(
-                            subject=subject,
-                            body=html_message,
-                            from_email=settings.DEFAULT_FROM_EMAIL,
-                            to=list(recipients),
-                        )
-                        email.content_subtype = 'html'
-                        email.send()
-
-                        # Mostrar mensaje de éxito
-                        messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
-                    except Exception as e:
-                        # Manejar errores de envío
-                        messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
-                else:
-                    messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
-            else:
-                messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
+            subject = f'El Tiempo para Hoy Actualiozado'
+            mail_send(self.request, self.object, subject, 'tiempo_h')
 
         # Mensaje de éxito tras la actualización
-        messages.success(self.request, 'El pronóstico del tiempo para hoy ha sido actualizado con éxito.', extra_tags='success')
+        messages.success(self.request, 'El pronóstico del tiempo para hoy ha sido actualizado con éxito.',
+                         extra_tags='success')
         return response
 
     def get_context_data(self, **kwargs):
@@ -232,20 +155,21 @@ class WeatherTodayUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
+
 class WeatherTodayDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = WeatherToday
     template_name = 'pages/dashboard/tiempo/hoy/eliminar_tiempo_h.html'
     permission_required = 'dashboard.delete_weather_today'
     success_url = reverse_lazy('listado_tiempo_h')
     url_redirect = success_url
-    
+
     def get_object(self, queryset=None):
         uuid = self.kwargs.get('uuid')
         return get_object_or_404(WeatherToday, uuid=uuid)
 
     def post(self, request, *args, **kwargs):
         weather_today = self.get_object()
-        
+
         # Registro de acción antes de eliminar
         log_action(
             user=self.request.user,
@@ -253,7 +177,7 @@ class WeatherTodayDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delete
             action_flag=DELETION,
             message=f"Se eliminó el pronóstico del tiempo para hoy: {weather_today.date}."
         )
-        
+
         try:
             weather_today.delete()
             messages.success(request, 'El tiempo para hoy ha sido eliminado con éxito.', extra_tags='danger')
@@ -268,6 +192,7 @@ class WeatherTodayDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delete
         context['segment'] = 'tiempo_h'
         context['url_list'] = reverse_lazy('listado_tiempo_h')
         return context
+
 
 class WeatherTodayDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = WeatherToday
@@ -286,7 +211,8 @@ class WeatherTodayDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detail
         context['segment'] = 'tiempo_h'
         context['url_list'] = reverse_lazy('listado_tiempo_h')
         return context
-    
+
+
 class WeatherTodayPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = WeatherToday
     permission_required = 'dashboard.view_weather_today'
@@ -297,7 +223,7 @@ class WeatherTodayPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
         # Obtener imagen en formato Base64
         logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
         logo_base64 = self.get_image_base64(logo_path)
-        
+
         # Renderizar template HTML
         template = get_template('pages/dashboard/tiempo/hoy/pdf_template.html')
         context = {'weather_today': weather_today, 'logo_base64': logo_base64}

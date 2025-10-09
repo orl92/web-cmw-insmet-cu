@@ -14,7 +14,7 @@ class StormListView(ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Aviso de Tormenta'
+        context['title'] = 'Aviso de Tormentas'
         context['parent'] = 'aviso'
         context['segment'] = 'tormenta'
         context['objects'] = self.get_queryset()

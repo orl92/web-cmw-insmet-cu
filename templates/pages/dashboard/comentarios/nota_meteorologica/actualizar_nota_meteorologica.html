@@ -3,11 +3,11 @@
 {% block form %}
     <div class="row">
         <div class="mb-3">
-            <label class="form-label required">{{ form.subject.label }}</label>
-            <input type="text" class="form-control" id="{{ form.subject.id_for_label }}" name="{{ form.subject.name }}"
-                   placeholder="Asunto" value="{{ form.subject.value }}" required>
-            {% if form.subject.errors %}
-                <span class="text-danger d-block mb-3">{{ form.subject.errors }}</span>
+            <label class="form-label required">{{ form.summary.label }}</label>
+            <input type="text" class="form-control" id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
+                   placeholder="Asunto" value="{{ form.summary.value }}" required>
+            {% if form.summary.errors %}
+                <span class="text-danger d-block mb-3">{{ form.summary.errors }}</span>
             {% endif %}
         </div>
         <div class="mb-3">

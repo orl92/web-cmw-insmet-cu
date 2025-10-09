@@ -13,9 +13,10 @@ class WeatherTomorrowDetailView(DetailView):
     context_object_name = 'weather_tomorrow'
 
     def get_object(self):
-        tomorrow_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-        tomorrow_end = tomorrow_start + timedelta(days=1)
-        return WeatherTomorrow.objects.filter(date__range=(tomorrow_start, tomorrow_end)).first()
+        # tomorrow_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        # tomorrow_end = tomorrow_start + timedelta(days=1)
+        # return WeatherTomorrow.objects.filter(date__range=(tomorrow_start, tomorrow_end)).first()
+        return WeatherTomorrow.objects.filter(date__date=timezone.now().date()).first()
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

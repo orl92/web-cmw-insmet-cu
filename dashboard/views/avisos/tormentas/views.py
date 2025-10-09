@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -12,7 +11,7 @@ from django.urls import reverse_lazy, reverse
 from django.views.generic import *
 
 from core import settings
-from dashboard.data.mail_send_warning import mail_send_warning
+from dashboard.data.mail_send import mail_send
 from dashboard.forms.avisos.tormentas.forms import StormWarningForm
 from dashboard.models import StormWarning
 
@@ -27,7 +26,8 @@ from django.template.loader import get_template
 from io import BytesIO
 from xhtml2pdf import pisa
 
-# Create your views here.    
+
+# Create your views here.
 
 class StormWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/avisos/tormentas/avisos_tormentas.html'
@@ -45,6 +45,7 @@ class StormWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['objects'] = StormWarning.objects.all()
         return context
 
+
 class StormWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = StormWarning
     form_class = StormWarningForm
@@ -60,7 +61,7 @@ class StormWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        
+
         # Registro de acción
         log_action(
             user=self.request.user,
@@ -68,12 +69,12 @@ class StormWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             action_flag=ADDITION,
             message=f"Se creó un nuevo aviso de tormenta para el: {self.object.date.strftime('%d-%m-%Y')}."
         )
-        
+
         # Mensaje de éxito
         messages.success(self.request, 'El aviso de tormenta ha sido creado con éxito.', extra_tags='success')
         subject = f'Aviso de Tormentas: {self.object.date}'
-        mail_send_warning(self.request, self.object, subject)
-        
+        mail_send(self.request, self.object, subject, "tormenta")
+
         return response
 
     def get_context_data(self, **kwargs):
@@ -83,6 +84,7 @@ class StormWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         context['segment'] = 'storm'
         context['url_list'] = reverse_lazy('avisos_tormentas')
         return context
+
 
 class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = StormWarning
@@ -105,7 +107,7 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         # Almacenar los valores originales del objeto antes de cualquier actualización
         original_object = self.get_object(queryset=None)
         relevant_fields = ['summary', 'file', 'valid_until']
-        
+
         # Detectar si hay cambios en los campos relevantes
         has_changes = any(
             form.cleaned_data[field] != getattr(original_object, field)
@@ -113,7 +115,7 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         )
 
         response = super().form_valid(form)  # Guarda los cambios del formulario
-        
+
         # Registro de acción
         log_action(
             user=self.request.user,
@@ -121,12 +123,12 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
             action_flag=CHANGE,
             message=f"Se actualizó el aviso de tormenta del: {self.object.date.strftime('%d-%m-%Y')}."
         )
-        
+
         # Enviar correo solo si hay cambios
         if has_changes:
             subject = f'Aviso de Tormentas Actualizado: {self.object.date}'
-            mail_send_warning(self.request, self.object, subject)
-        
+            mail_send(self.request, self.object, subject, "tormenta")
+
         # Mensaje de éxito en la actualización del aviso
         messages.success(self.request, 'El aviso de tormenta ha sido actualizado con éxito.', extra_tags='success')
         return response
@@ -141,6 +143,7 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
 
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
+
 
 class StormWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = StormWarning
@@ -179,6 +182,7 @@ class StormWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delete
         context['url_list'] = reverse_lazy('avisos_tormentas')
         return context
 
+
 class StormWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = StormWarning
     template_name = 'pages/dashboard/avisos/tormentas/detalle_aviso_tormenta.html'
@@ -196,7 +200,8 @@ class StormWarningDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detail
         context['segment'] = 'storm'
         context['url_list'] = reverse_lazy('avisos_tormentas')
         return context
-    
+
+
 class StormWarningPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = StormWarning
     permission_required = 'dashboard.view_storm_warning'
@@ -207,7 +212,7 @@ class StormWarningPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
         # Obtener imagen del logo en formato Base64
         logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
         logo_base64 = self.get_image_base64(logo_path)
-        
+
         # Obtener imagen del storm_warning en Base64 si existe
         image_base64 = None
         if storm_warning.image:  # Asegúrate de que 'image' es el campo de la imagen en tu modelo
@@ -258,7 +263,7 @@ class StormWarningPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailVie
             else:
                 # Tipo por defecto si no se reconoce
                 mime_type = 'image/jpeg'
-            
+
             with open(image_path, "rb") as image_file:
                 encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
                 # Formato: data:<mime_type>;base64,<encoded_string>

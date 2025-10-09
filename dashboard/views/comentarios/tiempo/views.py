@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
 from core import settings
+from dashboard.data.mail_send import mail_send
 from dashboard.forms.comentarios.tiempo.forms import WeatherCommentaryForm
 from dashboard.models import WeatherCommentary
 
@@ -73,51 +74,9 @@ class WeatherCommentaryCreateView(LoginRequiredMixin, PermissionRequiredMixin, C
         )
         
         messages.success(self.request, 'El Comentario del Tiempo ha sido creado con éxito.', extra_tags='success')
-            
-        # Construir la URL dinámica"
-        listado_url = self.request.build_absolute_uri(reverse('comentario_tiempo'))
-        index_url = self.request.build_absolute_uri(reverse('index'))
 
-        # Obtener la lista seleccionada en el formulario
-        recipient_list = self.object.email_recipient_list
-        
-        if recipient_list:
-            recipients = recipient_list.recipients.values_list('email', flat=True)
-                
-            if recipients:
-                # Enviar el correo
-                try:
-                    subject = f"Comentario del Tiempo"
-                    html_message = render_to_string(
-                        'pages/dashboard/emails/weather_commentary.html',
-                        {
-                            'commentary': self.object,
-                            'listado_url': listado_url,  # Pasa la URL al contexto del correo
-                            'index_url': index_url,     # URL al índice de la página
-                            'current_year': datetime.now().year  # Pasa el año actual
-                        }
-                    )
-                    # Limpia las etiquetas HTML de la descripción, si existe
-                    plain_message = strip_tags(html_message)
-
-                    email = EmailMessage(
-                        subject=subject,
-                        body=html_message,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        to=list(recipients),
-                    )
-                    email.content_subtype = 'html'  # Asegura que el correo se envíe como HTML
-                    email.send()
-
-                     # Mostrar mensaje de éxito
-                    messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
-                except Exception as e:
-                    # Manejar errores de envío
-                    messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
-            else:
-                messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
-        else:
-            messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
+        subject = f'Comentario del Tiempo'
+        mail_send(self.request, self.object, subject, 'comentario_tiempo')
         
         return response
 
@@ -149,7 +108,7 @@ class WeatherCommentaryUpdateView(LoginRequiredMixin, PermissionRequiredMixin, U
     def form_valid(self, form):
         # Obtener el objeto original antes de los cambios
         original_object = self.get_object(queryset=None)
-        relevant_fields = ['subject', 'file', 'email_recipient_list']
+        relevant_fields = ['summary', 'file', 'email_recipient_list']
         
         # Detectar cambios en los campos relevantes
         has_changes = any(
@@ -173,48 +132,8 @@ class WeatherCommentaryUpdateView(LoginRequiredMixin, PermissionRequiredMixin, U
 
         # Enviar correos solo si hay cambios
         if has_changes:
-            # Construir la URL dinámica"
-            listado_url = self.request.build_absolute_uri(reverse('comentario_tiempo'))
-            index_url = self.request.build_absolute_uri(reverse('index'))
-            
-            # Obtener la lista de correos seleccionada
-            recipient_list = self.object.email_recipient_list
-            
-            if recipient_list:
-                recipients = recipient_list.recipients.values_list('email', flat=True)
-                
-                if recipients:
-                    # Enviar el correo
-                    try:
-                        subject = f"Comentario del Tiempo Actualizado"
-                        html_message = render_to_string(
-                            'pages/dashboard/emails/weather_commentary.html',
-                            {
-                                'commentary': self.object,
-                                'listado_url': listado_url,  # Pasa la URL al contexto del correo
-                                'index_url': index_url,     # URL al índice de la página
-                                'current_year': datetime.now().year  # Pasa el año actual
-                            }
-                        )
-                        plain_message = strip_tags(html_message)
-                        email = EmailMessage(
-                            subject=subject,
-                            body=html_message,
-                            from_email=settings.DEFAULT_FROM_EMAIL,
-                            to=list(recipients),
-                        )
-                        email.content_subtype = 'html'
-                        email.send()
-
-                        # Mostrar mensaje de éxito
-                        messages.success(self.request, 'El correo de notificación ha sido enviado con éxito.', extra_tags='success')
-                    except Exception as e:
-                        # Manejar errores de envío
-                        messages.error(self.request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
-                else:
-                    messages.warning(self.request, 'La lista de correos seleccionada no tiene destinatarios.', extra_tags='warning')
-            else:
-                messages.warning(self.request, 'No se seleccionó ninguna lista de correos para esta actualización.', extra_tags='warning')
+            subject = f'Comentario del Tiempo Actualizado'
+            mail_send(self.request, self.object, subject, 'comentario_tiempo')
 
         # Mensaje de éxito tras la actualización
         messages.success(self.request, 'El Comentario del Tiempo ha sido actualizado con éxito.', extra_tags='success')

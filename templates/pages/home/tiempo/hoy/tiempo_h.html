@@ -13,7 +13,14 @@
                             <p><strong>Fecha:</strong> {{ weather_today.date|date:"j \d\e F \d\e Y" }}</p>
                             <p><strong>Hora:</strong> {{ weather_today.date|time:"h:i A" }}</p>
                         </div>
-                        <p class="d-flex justify-content-center">{{ weather_today.summary }}</p>
+                        <div>
+                            {% if weather_today.file %}
+                                <div style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
+                                    <iframe src="{{ weather_today.file.url }}#toolbar=0&navpanes=0" width="75%"
+                                            height="400px" style="border: 1px solid #ccc;"></iframe>
+                                </div>
+                            {% endif %}
+                        </div>
                         <p>{{ weather_today.detailed_forecast|safe }}</p>
                         <div class="d-flex align-items-center">
                             <span class="avatar avatar-xs rounded-circle me-1"
@@ -41,7 +48,7 @@
                                         <path d="M20 15h-3v6"/>
                                         <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z"/>
                                     </svg>
-                                    Ver PDF Completo
+                                    Ver PDF
                                 </a>
                             </div>
                         {% endif %}

@@ -412,7 +412,7 @@ class WeatherCommentary(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Autor')
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
-    subject = models.CharField(max_length=300, verbose_name='Asunto') 
+    summary = models.CharField(max_length=300, verbose_name='Resumen')
     file = models.FileField(upload_to=generic_pdf_path, verbose_name='PDF')
     email_recipient_list = models.ForeignKey(
         'EmailRecipientList',
@@ -439,7 +439,7 @@ class WeatherNote(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Autor')
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha y Hora de Creación')
-    subject = models.CharField(max_length=300, verbose_name='Asunto') 
+    summary = models.CharField(max_length=300, verbose_name='Resumen')
     file = models.FileField(upload_to=generic_pdf_path, verbose_name='PDF')
     email_recipient_list = models.ForeignKey(
         'EmailRecipientList',

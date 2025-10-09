@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.conf import settings
 
 
-def mail_send_warning(request, object, subject, url):
+def mail_send(request, object, subject, url):
     # Construir la URL dinámica
     listado_url = request.build_absolute_uri(reverse(f'{url}'))
     index_url = request.build_absolute_uri(reverse('index'))

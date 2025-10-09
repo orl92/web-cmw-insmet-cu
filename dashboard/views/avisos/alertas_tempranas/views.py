@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
-from dashboard.data.mail_send_warning import mail_send_warning
+from dashboard.data.mail_send import mail_send
 from dashboard.forms.avisos.alertas_tempranas.forms import EarlyWarningForm
 from dashboard.models import EarlyWarning
 
@@ -72,7 +72,7 @@ class EarlyWarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         messages.success(self.request, 'El aviso de alerta temprana ha sido creado con éxito.', extra_tags='success')
 
         subject = f'Alerta Temprana: {self.object.date}'
-        mail_send_warning(self.request, self.object, subject)
+        mail_send(self.request, self.object, subject, 'alerta_temprana')
 
         return response
 
@@ -125,7 +125,7 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         # Enviar correo solo si hay cambios
         if has_changes:
             subject = f'Alerta Temprana Actualizado: {self.object.date}'
-            mail_send_warning(self.request, self.object, subject)
+            mail_send(self.request, self.object, subject, 'alerta_temprana')
 
         # Mensaje de éxito en la actualización
         messages.success(self.request, 'El aviso de alerta temprana ha sido actualizado con éxito.',
