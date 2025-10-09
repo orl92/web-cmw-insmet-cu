@@ -1,10 +1,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-
 from common.utils import get_img_path, get_moon_img_path, get_sun_img_path
 from dashboard.models import Forecasts, Station
-
-# serializers.py
 
 class StationSerializer(serializers.ModelSerializer):
     province_code = serializers.CharField(source='province.code', read_only=True)
@@ -40,7 +37,7 @@ class ForecastSerializer(serializers.ModelSerializer):
             "morning": {
                 "temp": obj.ntm,
                 "weather": obj.nwm,
-                "weather_icon": get_img_path(obj.nwm),
+                "weather_icon": get_img_path(obj.nwm, 'morning'),
                 "wind_dir": obj.nwddm,
                 "wind_speed": obj.nwdfm,
                 "sea": obj.nsm
@@ -48,7 +45,7 @@ class ForecastSerializer(serializers.ModelSerializer):
             "afternoon": {
                 "temp": obj.nta,
                 "weather": obj.nwa,
-                "weather_icon": get_img_path(obj.nwa),
+                "weather_icon": get_img_path(obj.nwa, 'afternoon'),
                 "wind_dir": obj.nwdda,
                 "wind_speed": obj.nwdfa,
                 "sea": obj.nsa
@@ -56,7 +53,7 @@ class ForecastSerializer(serializers.ModelSerializer):
             "night": {
                 "temp": obj.ntn,
                 "weather": obj.nwn,
-                "weather_icon": get_img_path(obj.nwn, is_night=True),
+                "weather_icon": get_img_path(obj.nwn, 'night'),
                 "wind_dir": obj.nwddn,
                 "wind_speed": obj.nwdfn,
                 "sea": obj.nsn
@@ -69,21 +66,21 @@ class ForecastSerializer(serializers.ModelSerializer):
             "morning": {
                 "temp": obj.itm,
                 "weather": obj.iwm,
-                "weather_icon": get_img_path(obj.iwm),
+                "weather_icon": get_img_path(obj.iwm, 'morning'),
                 "wind_dir": obj.iwddm,
                 "wind_speed": obj.iwdfm
             },
             "afternoon": {
                 "temp": obj.ita,
                 "weather": obj.iwa,
-                "weather_icon": get_img_path(obj.iwa),
+                "weather_icon": get_img_path(obj.iwa, 'afternoon'),
                 "wind_dir": obj.iwdda,
                 "wind_speed": obj.iwdfa
             },
             "night": {
                 "temp": obj.itn,
                 "weather": obj.iwn,
-                "weather_icon": get_img_path(obj.iwn, is_night=True),
+                "weather_icon": get_img_path(obj.iwn, 'night'),
                 "wind_dir": obj.iwddn,
                 "wind_speed": obj.iwdfn
             }
@@ -95,7 +92,7 @@ class ForecastSerializer(serializers.ModelSerializer):
             "morning": {
                 "temp": obj.stm,
                 "weather": obj.swm,
-                "weather_icon": get_img_path(obj.swm),
+                "weather_icon": get_img_path(obj.swm, 'morning'),
                 "wind_dir": obj.swddm,
                 "wind_speed": obj.swdfm,
                 "sea": obj.ssm
@@ -103,7 +100,7 @@ class ForecastSerializer(serializers.ModelSerializer):
             "afternoon": {
                 "temp": obj.sta,
                 "weather": obj.swa,
-                "weather_icon": get_img_path(obj.swa),
+                "weather_icon": get_img_path(obj.swa, 'afternoon'),
                 "wind_dir": obj.swdda,
                 "wind_speed": obj.swdfa,
                 "sea": obj.ssa
@@ -111,7 +108,7 @@ class ForecastSerializer(serializers.ModelSerializer):
             "night": {
                 "temp": obj.stn,
                 "weather": obj.swn,
-                "weather_icon": get_img_path(obj.swn, is_night=True),
+                "weather_icon": get_img_path(obj.swn, 'night'),
                 "wind_dir": obj.swddn,
                 "wind_speed": obj.swdfn,
                 "sea": obj.ssn
@@ -120,41 +117,42 @@ class ForecastSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.JSONField)
     def get_extended_forecast(self, obj):
+        # Para el pronóstico extendido, usamos el período de la Tarde
         return {
             "day1": {
                 "date": obj.day1_date,
                 "min_temp": obj.day1_min_temp,
                 "max_temp": obj.day1_max_temp,
                 "weather": obj.day1_weather,
-                "weather_icon": get_img_path(obj.day1_weather)
+                "weather_icon": get_img_path(obj.day1_weather, 'afternoon')
             },
             "day2": {
                 "date": obj.day2_date,
                 "min_temp": obj.day2_min_temp,
                 "max_temp": obj.day2_max_temp,
                 "weather": obj.day2_weather,
-                "weather_icon": get_img_path(obj.day2_weather)
+                "weather_icon": get_img_path(obj.day2_weather, 'afternoon')
             },
             "day3": {
                 "date": obj.day3_date,
                 "min_temp": obj.day3_min_temp,
                 "max_temp": obj.day3_max_temp,
                 "weather": obj.day3_weather,
-                "weather_icon": get_img_path(obj.day3_weather)
+                "weather_icon": get_img_path(obj.day3_weather, 'afternoon')
             },
             "day4": {
                 "date": obj.day4_date,
                 "min_temp": obj.day4_min_temp,
                 "max_temp": obj.day4_max_temp,
                 "weather": obj.day4_weather,
-                "weather_icon": get_img_path(obj.day4_weather)
+                "weather_icon": get_img_path(obj.day4_weather, 'afternoon')
             },
             "day5": {
                 "date": obj.day5_date,
                 "min_temp": obj.day5_min_temp,
                 "max_temp": obj.day5_max_temp,
                 "weather": obj.day5_weather,
-                "weather_icon": get_img_path(obj.day5_weather)
+                "weather_icon": get_img_path(obj.day5_weather, 'afternoon')
             }
         }
 

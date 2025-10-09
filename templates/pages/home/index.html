@@ -8,6 +8,7 @@
 <!-- Pronóstico Principal -->
 <div class="row row-deck row-cards mt-3">
     <h4 class="card-title">Pronóstico del: {{ latest_forecast.date}}</h4>
+    
     <!-- Costa Norte -->
     <div class="col-lg-4 mb-3">
         <div class="card">
@@ -19,7 +20,7 @@
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.nwm|get_weather_img }}" 
+                                <img src="{{ latest_forecast.nwm|get_weather_img_morning }}" 
                                     alt="{{ latest_forecast.nwm|get_tiempo_description }}" 
                                     class="weather-icon" 
                                     data-bs-toggle="tooltip" 
@@ -39,7 +40,7 @@
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.nwa|get_weather_img }}" 
+                                <img src="{{ latest_forecast.nwa|get_weather_img_afternoon }}" 
                                     alt="{{ latest_forecast.nwa|get_tiempo_description }}" 
                                     class="weather-icon" 
                                     data-bs-toggle="tooltip" 
@@ -59,7 +60,7 @@
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.nwn|get_weather_img }}" 
+                                <img src="{{ latest_forecast.nwn|get_weather_img_night }}" 
                                     alt="{{ latest_forecast.nwn|get_tiempo_description }}" 
                                     class="weather-icon" 
                                     data-bs-toggle="tooltip" 
@@ -85,6 +86,7 @@
             </div>
         </div>
     </div>
+
     <!-- Interior -->
     <div class="col-lg-4 mb-3">
         <div class="card">
@@ -96,7 +98,7 @@
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.iwm|get_weather_img }}" 
+                                <img src="{{ latest_forecast.iwm|get_weather_img_morning }}" 
                                     alt="{{ latest_forecast.iwm|get_tiempo_description }}" 
                                     class="weather-icon" 
                                     data-bs-toggle="tooltip" 
@@ -108,16 +110,15 @@
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfm }} km/h Dirección: {{ latest_forecast.iwddm }}">
                                 {{ latest_forecast.iwddm }} {{ latest_forecast.iwdfm }} km/h
                             </p>
-                            <!-- Espacio reservado para mantener la alineación -->
                             <p class="mb-1 invisible">
-                                <strong>Mar:</strong> <!-- Texto invisible pero ocupa espacio -->
+                                <strong>Mar:</strong>
                             </p>
                         </div>
                         <!-- Tarde -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.iwa|get_weather_img }}" 
+                                <img src="{{ latest_forecast.iwa|get_weather_img_afternoon }}" 
                                     alt="{{ latest_forecast.iwa|get_tiempo_description }}" 
                                     class="weather-icon" 
                                     data-bs-toggle="tooltip" 
@@ -129,16 +130,15 @@
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfa }} km/h Dirección: {{ latest_forecast.iwdda }}">
                                 {{ latest_forecast.iwdda }} {{ latest_forecast.iwdfa }} km/h
                             </p>
-                            <!-- Espacio reservado para mantener la alineación -->
                             <p class="mb-1 invisible">
-                                <strong>Mar:</strong> <!-- Texto invisible pero ocupa espacio -->
+                                <strong>Mar:</strong>
                             </p>
                         </div>
                         <!-- Noche -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.iwn|get_weather_img }}" 
+                                <img src="{{ latest_forecast.iwn|get_weather_img_night }}" 
                                     alt="{{ latest_forecast.iwn|get_tiempo_description }}" 
                                     class="weather-icon" 
                                     data-bs-toggle="tooltip" 
@@ -150,9 +150,8 @@
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfn }} km/h Dirección: {{ latest_forecast.iwddn }}">
                                 {{ latest_forecast.iwddn }} {{ latest_forecast.iwdfn }} km/h
                             </p>
-                            <!-- Espacio reservado para mantener la alineación -->
                             <p class="mb-1 invisible">
-                                <strong>Mar:</strong> <!-- Texto invisible pero ocupa espacio -->
+                                <strong>Mar:</strong>
                             </p>
                         </div>
                     </div>
@@ -165,6 +164,7 @@
             </div>
         </div>
     </div>
+
     <!-- Costa Sur -->
     <div class="col-lg-4 mb-3">
         <div class="card">
@@ -176,7 +176,7 @@
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.swm|get_weather_img }}" 
+                                <img src="{{ latest_forecast.swm|get_weather_img_morning }}" 
                                     alt="{{ latest_forecast.swm|get_tiempo_description }}" 
                                     class="weather-icon" 
                                     data-bs-toggle="tooltip" 
@@ -196,9 +196,9 @@
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.swa|get_weather_img }}" 
+                                <img src="{{ latest_forecast.swa|get_weather_img_afternoon }}" 
                                     alt="{{ latest_forecast.swa|get_tiempo_description }}" 
-                                    class="img-fluid" 
+                                    class="weather-icon" 
                                     data-bs-toggle="tooltip" 
                                     title="{{ latest_forecast.swa|get_tiempo_description }}">
                             </div>
@@ -216,7 +216,7 @@
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
                             <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.swn|get_weather_img }}" 
+                                <img src="{{ latest_forecast.swn|get_weather_img_night }}" 
                                     alt="{{ latest_forecast.swn|get_tiempo_description }}" 
                                     class="weather-icon" 
                                     data-bs-toggle="tooltip" 

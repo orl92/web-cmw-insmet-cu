@@ -7,6 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.shortcuts import render
 from django.views import View
+from django.templatetags.static import static
 
 
 def generic_image_path(instance, filename):
@@ -49,51 +50,72 @@ class ImageModel(models.Model):
             return f'{settings.MEDIA_URL}{self.image}'
         return f'{settings.STATIC_URL}dist/img/default.svg'
     
-TIEMPO_IMG_MAP = {
-    'PN': 'static/dist/img/weather_icon/poco_nublado.png',
-    'PARCN': 'static/dist/img/weather_icon/parcialmente_nublado.png',
-    'N': 'static/dist/img/weather_icon/nublado.png',
-    'AIS CHUB': 'static/dist/img/weather_icon/aislados_chubascos.png',
-    'ALG CHUB': 'static/dist/img/weather_icon/algunos_chubascos.png',
-    'NUM CHUB': 'static/dist/img/weather_icon/numerosos_chubascos.png',
-    'ALG TORM': 'static/dist/img/weather_icon/algunas_tormentas.png',
-    'NUM TORM': 'static/dist/img/weather_icon/numerosas_tormentas.png',
-    'PN_NIGHT': 'static/dist/img/weather_icon/poco_nublado_noche.png',
-    'PARCN_NIGHT': 'static/dist/img/weather_icon/parcialmente_nublado_noche.png',
-    'N_NIGHT': 'static/dist/img/weather_icon/nublado_noche.png',
-    'AIS CHUB_NIGHT': 'static/dist/img/weather_icon/aislados_chubascos_noche.png',
-    'ALG CHUB_NIGHT': 'static/dist/img/weather_icon/algunos_chubascos_noche.png',
-    'NUM CHUB_NIGHT': 'static/dist/img/weather_icon/numerosos_chubascos_noche.png',
-    'ALG TORM_NIGHT': 'static/dist/img/weather_icon/algunas_tormentas_noche.png',
-    'NUM TORM_NIGHT': 'static/dist/img/weather_icon/numerosas_tormentas_noche.png',
+# Mapa de códigos meteorológicos a nombres base de archivos
+TIEMPO_IMG_BASE_MAP = {
+    'PN': 'poco_nublado',
+    'PARCN': 'parcialmente_nublado',
+    'N': 'nublado',
+    'AIS CHUB': 'aislados_chubascos',
+    'ALG CHUB': 'algunos_chubascos',
+    'NUM CHUB': 'numerosos_chubascos',
+    'ALG TORM': 'algunas_tormentas',
+    'NUM TORM': 'numerosas_tormentas',
 }
 
-def get_img_path(weather_code, is_night=False):
-    if is_night:
-        return TIEMPO_IMG_MAP.get(f"{weather_code}_NIGHT")
-    return TIEMPO_IMG_MAP.get(weather_code)
+# Códigos que usan la MISMA imagen para todos los períodos
+CODIGOS_SIN_VARIACION = ['N', 'ALG TORM', 'NUM TORM', 'ALG CHUB', 'NUM CHUB']
 
-MOON_IMG_MAP = {
-    'Luna Nueva': 'static/dist/img/moon_faces/new_moon.png',
-    'Creciente': 'static/dist/img/moon_faces/waning_crescent_moon.png',
-    'Cuarto Creciente': 'static/dist/img/moon_faces/first_quarter_moon.png',
-    'Gibosa Creciente': 'static/dist/img/moon_faces/waning_gibbous_moon.png',
-    'Luna Llena': 'static/dist/img/moon_faces/full_moon.png',
-    'Gibosa Menguante': 'static/dist/img/moon_faces/waxing_gibbous_moon.png',
-    'Cuarto Menguante': 'static/dist/img/moon_faces/last_quarter_moon.png',
-    'Menguante': 'static/dist/img/moon_faces/waxing_crescent_moon.png', 
+# Sufijos para cada período
+PERIOD_SUFFIXES = {
+    'morning': 'm',
+    'afternoon': 'a', 
+    'night': 'n'
 }
 
-def get_moon_img_path(moon_code):
-    return MOON_IMG_MAP.get(moon_code)
+def get_img_path(weather_code, period='afternoon'):
+    """
+    Obtiene la ruta de la imagen según el código meteorológico y el período del día.
+    Para códigos sin variación, usa siempre la imagen base.
+    Para códigos con variación, usa el sufijo del período.
+    """
+    if weather_code not in TIEMPO_IMG_BASE_MAP:
+        return ''  # O una imagen por defecto si prefieres
+    
+    base_name = TIEMPO_IMG_BASE_MAP[weather_code]
+    
+    # Si el código NO tiene variación entre períodos, usa solo el nombre base
+    if weather_code in CODIGOS_SIN_VARIACION:
+        file_path = f'dist/img/weather_icon/{base_name}.png'
+    else:
+        # Si el código SÍ tiene variación, usa el sufijo del período
+        suffix = PERIOD_SUFFIXES.get(period, 'a')  # Por defecto 'a' (tarde)
+        file_path = f'dist/img/weather_icon/{base_name}_{suffix}.png'
+    
+    return static(file_path)
 
-SUN_IMG_MAP = {
-    'sunrise': 'static/dist/img/sun/sunrise.png',
-    'sunset': 'static/dist/img/sun/sunset.png',
-}
+# Funciones para la luna
+def get_moon_img_path(moon_phase):
+    MOON_IMG_MAP = {
+        'Luna Nueva': 'dist/img/moon_faces/new_moon.png',
+        'Creciente': 'dist/img/moon_faces/waning_crescent_moon.png',
+        'Cuarto Creciente': 'dist/img/moon_faces/first_quarter_moon.png',
+        'Gibosa Creciente': 'dist/img/moon_faces/waning_gibbous_moon.png',
+        'Luna Llena': 'dist/img/moon_faces/full_moon.png',
+        'Gibosa Menguante': 'dist/img/moon_faces/waxing_gibbous_moon.png',
+        'Cuarto Menguante': 'dist/img/moon_faces/last_quarter_moon.png',
+        'Menguante': 'dist/img/moon_faces/waxing_crescent_moon.png', 
+    }
+    file_path = MOON_IMG_MAP.get(moon_phase)
+    return static(file_path) if file_path else ''
 
-def get_sun_img_path(sun_code):
-    return SUN_IMG_MAP.get(sun_code)
+# Funciones para el sol
+def get_sun_img_path(sun_event):
+    SUN_IMG_MAP = {
+        'sunrise': 'dist/img/sun/sunrise.png',
+        'sunset': 'dist/img/sun/sunset.png',
+    }
+    file_path = SUN_IMG_MAP.get(sun_event)
+    return static(file_path) if file_path else ''
 
 def log_action(user, obj, action_flag, message=""):
     LogEntry.objects.log_action(
