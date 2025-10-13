@@ -10,6 +10,11 @@
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x pan-y;
     margin: 0 auto;
+    cursor: grab;
+}
+
+.pdf-container-mobile:active {
+    cursor: grabbing;
 }
 
 /* Estilos responsivos */
@@ -32,6 +37,8 @@
     align-items: center;
     padding: 20px;
     min-width: min-content;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .pdf-page-canvas {
@@ -43,6 +50,7 @@
     height: auto;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+    pointer-events: none; /* Evitar que el canvas interfiera con los gestos */
 }
 
 /* Estilos para el modal */
@@ -219,4 +227,11 @@ button:disabled {
     0% { opacity: 1; }
     70% { opacity: 1; }
     100% { opacity: 0; }
+}
+
+/* Estados para pan táctil */
+.panning {
+    cursor: grabbing !important;
+    user-select: none;
+    -webkit-user-select: none;
 }

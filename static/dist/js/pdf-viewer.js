@@ -10,13 +10,16 @@ class PDFViewer {
         this.modalCurrentScale = 1.0;
         this.cardCurrentScale = 1.0;
         
-        // Variables para zoom táctil
+        // Variables para zoom y pan táctil
         this.initialDistance = null;
         this.lastScale = 1;
         this.isZooming = false;
+        this.isPanning = false;
         this.touchStartX = 0;
         this.touchStartY = 0;
         this.lastTouchTime = 0;
+        this.startScrollLeft = 0;
+        this.startScrollTop = 0;
         
         // Calidad de renderizado
         this.renderQuality = window.devicePixelRatio || 1;
@@ -201,20 +204,33 @@ class PDFViewer {
         }, 2000);
     }
 
-    // Manejar gestos táctiles para zoom
+    // Manejar gestos táctiles para zoom y pan
     handleTouchStart(e) {
+        const pdfContainer = document.getElementById('pdfPreviewContainer');
+        
         if (e.touches.length === 2) {
             e.preventDefault();
             this.isZooming = true;
+            this.isPanning = false;
             this.initialDistance = Math.hypot(
                 e.touches[0].clientX - e.touches[1].clientX,
                 e.touches[0].clientY - e.touches[1].clientY
             );
             this.lastScale = this.cardCurrentScale;
+        } else if (e.touches.length === 1 && this.cardCurrentScale > 1.0) {
+            // Solo permitir pan si hay zoom
+            this.isPanning = true;
+            this.isZooming = false;
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+            this.startScrollLeft = pdfContainer.scrollLeft;
+            this.startScrollTop = pdfContainer.scrollTop;
         }
     }
 
     handleTouchMove(e) {
+        const pdfContainer = document.getElementById('pdfPreviewContainer');
+        
         if (e.touches.length === 2 && this.isZooming) {
             e.preventDefault();
             
@@ -234,6 +250,14 @@ class PDFViewer {
                 // Mostrar indicador de zoom
                 this.showZoomIndicator(Math.round(this.cardCurrentScale * 100) + '%');
             }
+        } else if (e.touches.length === 1 && this.isPanning && this.cardCurrentScale > 1.0) {
+            e.preventDefault();
+            
+            const deltaX = this.touchStartX - e.touches[0].clientX;
+            const deltaY = this.touchStartY - e.touches[0].clientY;
+            
+            pdfContainer.scrollLeft = this.startScrollLeft + deltaX;
+            pdfContainer.scrollTop = this.startScrollTop + deltaY;
         }
     }
 
@@ -241,6 +265,9 @@ class PDFViewer {
         if (e.touches.length < 2) {
             this.isZooming = false;
             this.initialDistance = null;
+        }
+        if (e.touches.length === 0) {
+            this.isPanning = false;
         }
     }
 
@@ -254,6 +281,12 @@ class PDFViewer {
             
             if (this.cardCurrentScale !== 1.0) {
                 this.cardCurrentScale = 1.0;
+                // Resetear scroll al centro
+                const pdfContainer = document.getElementById('pdfPreviewContainer');
+                if (pdfContainer) {
+                    pdfContainer.scrollLeft = 0;
+                    pdfContainer.scrollTop = 0;
+                }
             } else {
                 this.cardCurrentScale = 1.5;
             }
@@ -305,6 +338,9 @@ class PDFViewer {
 
                 // Doble tap para zoom
                 pdfContainer.addEventListener('touchend', (e) => this.handleDoubleTap(e));
+                
+                // Mejorar la experiencia táctil
+                pdfContainer.style.cursor = 'grab';
             }
 
         }).catch((error) => {
