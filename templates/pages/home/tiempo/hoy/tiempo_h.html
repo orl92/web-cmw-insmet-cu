@@ -18,6 +18,24 @@
                                 <div class="d-flex justify-content-center align-items-center flex-column">
                                     <div id="pdfPreviewContainer" class="pdf-container-mobile">
                                         <div id="pdfPages" class="pdf-pages-container"></div>
+                                        <!-- Controles de zoom para móvil -->
+                                        <div class="mobile-pdf-controls d-none d-md-none">
+                                            <button type="button" id="mobileZoomOut" class="btn btn-sm btn-light">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                                </svg>
+                                            </button>
+                                            <span id="mobileZoomLevel" class="zoom-level">100%</span>
+                                            <button type="button" id="mobileZoomIn" class="btn btn-sm btn-light">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                                </svg>
+                                            </button>
+                                            <button type="button" id="mobileFitWidth" class="btn btn-sm btn-light ms-2">
+                                                📏
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             {% endif %}
@@ -85,7 +103,9 @@
                             <span id="modalPageInfo" class="modal-page-info">Página 1 de 1</span>
                             <button type="button" id="modalNextPage" class="btn btn-sm btn-light">›</button>
                             <button type="button" id="modalZoomOut" class="btn btn-sm btn-light ms-2">-</button>
+                            <span id="modalZoomLevel" class="modal-zoom-level">150%</span>
                             <button type="button" id="modalZoomIn" class="btn btn-sm btn-light">+</button>
+                            <button type="button" id="modalFitWidth" class="btn btn-sm btn-light ms-2">Ajustar</button>
                         </div>
                     </div>
                 </div>
@@ -93,374 +113,24 @@
         </div>
     </div>
 
-    <!-- PDF.js desde CDN -->
+    <!-- Incluir PDF.js local -->
     <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
+    
+    <!-- Incluir archivos separados -->
+    <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}">
+    <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
+
     <script>
+        // Configurar PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
-
-        // Variables globales para ambos visores
-        let cardPdfDoc = null;
-        let modalPdfDoc = null;
-        let modalCurrentPage = 1;
-        let modalCurrentScale = 1.5;
-
-        // Función para calcular el ancho del contenedor
-        function getContainerWidth() {
-            const container = document.getElementById('pdfPreviewContainer');
-            if (!container) return 0;
-            
-            // Para móviles, usar el ancho completo menos padding
-            if (window.innerWidth <= 768) {
-                return container.clientWidth - 20;
-            }
-            // Para desktop, usar el 75% del ancho
-            return container.clientWidth - 20;
-        }
-
-        // Función para renderizar todas las páginas en el visor de la tarjeta
-        function renderAllCardPages() {
-            const pagesContainer = document.getElementById('pdfPages');
-            
-            if (!cardPdfDoc) return;
-            
-            pagesContainer.innerHTML = '';
-            
-            // Ancho disponible para cada página
-            const containerWidth = getContainerWidth();
-            
-            // Renderizar todas las páginas
-            for (let pageNum = 1; pageNum <= cardPdfDoc.numPages; pageNum++) {
-                cardPdfDoc.getPage(pageNum).then(function(page) {
-                    const viewport = page.getViewport({ scale: 1 });
-                    const scale = containerWidth / viewport.width;
-                    const scaledViewport = page.getViewport({ scale: scale });
-                    
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = scaledViewport.height;
-                    canvas.width = scaledViewport.width;
-                    
-                    canvas.className = 'pdf-page-canvas';
-                    
-                    pagesContainer.appendChild(canvas);
-                    
-                    page.render({
-                        canvasContext: context,
-                        viewport: scaledViewport
-                    });
-                });
-            }
-        }
-
-        // Función para renderizar una página en el modal
-        function renderModalPage(pageNum) {
-            const pagesContainer = document.getElementById('modalPdfPages');
-            const pageInfo = document.getElementById('modalPageInfo');
-            
-            if (!modalPdfDoc) return;
-            
-            pagesContainer.innerHTML = '';
-            pageInfo.textContent = `Página ${pageNum} de ${modalPdfDoc.numPages}`;
-            
-            modalPdfDoc.getPage(pageNum).then(function(page) {
-                // Ajustar escala para móviles
-                let scale = modalCurrentScale;
-                if (window.innerWidth <= 768) {
-                    // En móviles, ajustar automáticamente al ancho
-                    const containerWidth = window.innerWidth - 40;
-                    const viewport = page.getViewport({ scale: 1 });
-                    scale = Math.min(modalCurrentScale, containerWidth / viewport.width);
-                }
-                
-                const viewport = page.getViewport({ scale: scale });
-                
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                canvas.className = 'modal-pdf-canvas';
-                
-                pagesContainer.appendChild(canvas);
-                
-                page.render({
-                    canvasContext: context,
-                    viewport: viewport
-                });
-                
-                updateModalNavigation();
-            });
-        }
-
-        // Funciones de navegación para el modal
-        function updateModalNavigation() {
-            const prevBtn = document.getElementById('modalPrevPage');
-            const nextBtn = document.getElementById('modalNextPage');
-            
-            if (prevBtn) prevBtn.disabled = modalCurrentPage <= 1;
-            if (nextBtn) nextBtn.disabled = modalCurrentPage >= modalPdfDoc.numPages;
-        }
-
-        // Redimensionar al cambiar tamaño de ventana
-        function handleResize() {
-            if (cardPdfDoc) {
-                renderAllCardPages();
-            }
-            if (modalPdfDoc) {
-                renderModalPage(modalCurrentPage);
-            }
-        }
-
-        // Cargar PDF en la tarjeta principal
+        
+        // Inicializar el visor de PDF cuando el documento esté listo
         document.addEventListener('DOMContentLoaded', function() {
-            {% if weather_today.file %}
-                // Cargar PDF para la vista previa de la tarjeta
-                pdfjsLib.getDocument('{{ weather_today.file.url }}').promise.then(function(pdf) {
-                    cardPdfDoc = pdf;
-                    renderAllCardPages();
-                }).catch(function(error) {
-                    console.error('Error al cargar el PDF:', error);
-                    document.getElementById('pdfPages').innerHTML = '<div class="pdf-error-message">Error al cargar el PDF</div>';
-                });
-            {% endif %}
-
-            // Agregar listener para redimensionamiento
-            window.addEventListener('resize', handleResize);
-        });
-
-        // Manejar el modal
-        document.addEventListener('DOMContentLoaded', function() {
-            const pdfModal = document.getElementById('pdfModal');
-            
-            pdfModal.addEventListener('show.bs.modal', function(event) {
-                const button = event.relatedTarget;
-                if (!button) return;
-
-                const pdfUrl = button.getAttribute('data-pdf-url');
-                
-                if (pdfUrl) {
-                    // Cargar PDF para el modal
-                    pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
-                        modalPdfDoc = pdf;
-                        modalCurrentPage = 1;
-                        modalCurrentScale = window.innerWidth <= 768 ? 1.0 : 1.5;
-                        renderModalPage(modalCurrentPage);
-                    }).catch(function(error) {
-                        console.error('Error al cargar el PDF en el modal:', error);
-                        document.getElementById('modalPdfPages').innerHTML = '<div class="pdf-error-message">Error al cargar el PDF</div>';
-                    });
-                }
+            const pdfViewer = new PDFViewer({
+                pdfUrl: '{% if weather_today.file %}{{ weather_today.file.url }}{% endif %}',
+                modalPdfUrl: '{% if weather_today.file %}{{ weather_today.file.url }}{% endif %}'
             });
-
-            // Event listeners para controles del modal
-            document.getElementById('modalPrevPage').addEventListener('click', function() {
-                if (modalCurrentPage > 1) {
-                    modalCurrentPage--;
-                    renderModalPage(modalCurrentPage);
-                }
-            });
-
-            document.getElementById('modalNextPage').addEventListener('click', function() {
-                if (modalCurrentPage < modalPdfDoc.numPages) {
-                    modalCurrentPage++;
-                    renderModalPage(modalCurrentPage);
-                }
-            });
-
-            document.getElementById('modalZoomOut').addEventListener('click', function() {
-                if (modalCurrentScale > 0.5) {
-                    modalCurrentScale -= 0.2;
-                    renderModalPage(modalCurrentPage);
-                }
-            });
-
-            document.getElementById('modalZoomIn').addEventListener('click', function() {
-                modalCurrentScale += 0.2;
-                renderModalPage(modalCurrentPage);
-            });
-
-            // Limpiar cuando se cierre el modal
-            pdfModal.addEventListener('hidden.bs.modal', function() {
-                modalPdfDoc = null;
-                modalCurrentPage = 1;
-                modalCurrentScale = window.innerWidth <= 768 ? 1.0 : 1.5;
-                document.getElementById('modalPdfPages').innerHTML = '';
-            });
+            pdfViewer.init();
         });
     </script>
-
-    <style>
-        /* Estilos para el contenedor principal del PDF */
-        .pdf-container-mobile {
-            width: 75%;
-            height: 400px;
-            border: 1px solid #ccc;
-            overflow: auto;
-            background: white;
-            position: relative;
-        }
-
-        /* Estilos responsivos */
-        @media (max-width: 768px) {
-            .pdf-container-mobile {
-                width: 100%;
-                height: 300px;
-            }
-            
-            h1 {
-                font-size: 1.5rem !important;
-            }
-            
-            h3 {
-                font-size: 1.2rem !important;
-            }
-        }
-
-        @media (max-width: 576px) {
-            .pdf-container-mobile {
-                height: 250px;
-            }
-        }
-
-        .pdf-pages-container {
-            width: 100%;
-            min-height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px 0;
-        }
-
-        .pdf-page-canvas {
-            display: block;
-            margin: 10px auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            border: 1px solid #eee;
-            max-width: 100%;
-            height: auto;
-        }
-
-        /* Estilos para el modal */
-        .modal-pdf-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-
-        .modal-pdf-viewer {
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background: #f8f9fa;
-        }
-
-        .modal-pdf-pages {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .modal-pdf-canvas {
-            display: block;
-            margin: 0 auto 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 1px solid #ddd;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .modal-pdf-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Ajustes para móviles en el modal */
-        @media (max-width: 768px) {
-            .modal-pdf-controls {
-                bottom: 10px;
-                padding: 8px 15px;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 5px;
-            }
-            
-            .modal-page-info {
-                font-size: 0.9rem;
-            }
-            
-            .modal-pdf-pages {
-                padding: 10px;
-            }
-        }
-
-        /* Estilos para scrollbars */
-        .pdf-container-mobile {
-            scrollbar-width: thin;
-            scrollbar-color: #c1c1c1 #f1f1f1;
-        }
-        
-        .pdf-container-mobile::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        
-        .pdf-container-mobile::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        
-        .pdf-container-mobile::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 3px;
-        }
-        
-        .pdf-container-mobile::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-        
-        .modal-pdf-viewer {
-            scrollbar-width: thin;
-            scrollbar-color: #888 #f1f1f1;
-        }
-        
-        .modal-pdf-viewer::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        .modal-pdf-viewer::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        
-        .modal-pdf-viewer::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 4px;
-        }
-        
-        .modal-pdf-viewer::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        
-        /* Estilos para botones deshabilitados */
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Mensajes de error */
-        .pdf-error-message {
-            text-align: center;
-            padding: 50px;
-            color: #666;
-        }
-    </style>
 {% endblock content %}

@@ -1,0 +1,219 @@
+/* Estilos para el contenedor principal del PDF */
+.pdf-container-mobile {
+    width: 75%;
+    height: 400px;
+    border: 1px solid #ccc;
+    overflow: auto;
+    background: white;
+    position: relative;
+    -webkit-overflow-scrolling: touch; /* Mejor scroll en iOS */
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .pdf-container-mobile {
+        width: 100%;
+        height: 350px; /* Más alto en móviles para mejor visualización */
+        touch-action: pan-x pan-y; /* Permitir scroll y zoom */
+    }
+
+    /* Mejorar la legibilidad del texto en PDF */
+    .pdf-page-canvas {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+@media (max-width: 576px) {
+    .pdf-container-mobile {
+        height: 300px;
+    }
+}
+
+.pdf-pages-container {
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.pdf-page-canvas {
+    display: block;
+    margin: 10px auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #eee;
+    max-width: 100%;
+    height: auto;
+    image-rendering: -webkit-optimize-contrast; /* Mejor calidad en Chrome */
+    image-rendering: crisp-edges; /* Mejor calidad en Firefox */
+}
+
+/* Controles de zoom para móvil */
+.mobile-pdf-controls {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+.mobile-pdf-controls .btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.zoom-level {
+    font-size: 0.8rem;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Estilos para el modal */
+.modal-pdf-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.modal-pdf-viewer {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background: #f8f9fa;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-pdf-pages {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.modal-pdf-canvas {
+    display: block;
+    margin: 0 auto 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid #ddd;
+    max-width: 100%;
+    height: auto;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+.modal-pdf-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.modal-zoom-level {
+    margin: 0 5px;
+    font-size: 0.9rem;
+}
+
+/* Ajustes para móviles en el modal */
+@media (max-width: 768px) {
+    .modal-pdf-controls {
+        bottom: 10px;
+        padding: 8px 15px;
+        gap: 5px;
+    }
+
+    .modal-page-info {
+        font-size: 0.9rem;
+    }
+
+    .modal-pdf-pages {
+        padding: 10px;
+    }
+
+    .modal-zoom-level {
+        font-size: 0.8rem;
+    }
+}
+
+/* Estilos para scrollbars */
+.pdf-container-mobile {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.pdf-container-mobile::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.pdf-container-mobile::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.pdf-container-mobile::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.pdf-container-mobile::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.modal-pdf-viewer {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+.modal-pdf-viewer::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.modal-pdf-viewer::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.modal-pdf-viewer::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-pdf-viewer::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Estilos para botones deshabilitados */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Mensajes de error */
+.pdf-error-message {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+}
