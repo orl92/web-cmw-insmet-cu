@@ -1,3 +1,4 @@
+{% load static %}
 <div class="row">
     <div class="col-md-8 mb-3">
         <label class="form-label required">{{ form.summary.label }}</label>
@@ -19,7 +20,7 @@
     <div class="mb-3">
         <label class="form-label required">{{ form.file.label }}</label>
         <input type="file" class="form-control" id="{{ form.file.id_for_label }}" name="{{ form.file.name }}"
-               required onchange="previewImage(event)">
+               required>
         {% if form.image.errors %}
             <span class="text-danger d-block mb-3">{{ form.file.errors }}</span>
         {% endif %}
@@ -35,24 +36,19 @@
     </div>
 </div>
 
-<script>
-    document.getElementById('id_file').addEventListener('change', function (e) {
-        const file = e.target.files[0];
-        const preview = document.getElementById('pdfPreview');
-
-        if (file && file.type === 'application/pdf') {
-            const fileURL = URL.createObjectURL(file);
-
-            preview.innerHTML = `
-                    <div style="display: flex; justify-content: center; align-items: center; flex-direction: column;">
-    <iframe src="${fileURL}" width="75%" height="400px" style="border: 1px solid #ccc;"></iframe>
-    <div style="padding: 10px; background: #f5f5f5; width: 75%; text-align: center;">
-        <strong>Archivo:</strong> ${file.name} 
-    </div>
+<!-- Elemento de inicialización automática -->
+<div data-pdf-preview 
+     data-file-input="{{ form.file.id_for_label }}" 
+     data-preview-container="pdfPreview" 
+     style="display: none;">
 </div>
-                `;
-        } else {
-            preview.innerHTML = '<p style="padding: 20px; color: red;">Por favor, selecciona un archivo PDF válido.</p>';
-        }
-    });
+
+<!-- En el head -->
+<link rel="stylesheet" href="{% static 'dist/css/pdf-form-preview.css' %}">
+
+<!-- Antes de cerrar el body -->
+<script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
+<script src="{% static 'dist/js/pdf-form-preview.js' %}"></script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
 </script>
