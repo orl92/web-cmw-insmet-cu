@@ -1,10 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% load static %}
+<div class="row">
+    <div class="mb-3">
+        <label class="form-label required">{{ form.summary.label }}</label>
+        <input type="text" class="form-control" id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
+               placeholder="Resumen" value="{{ form.summary.value }}" required>
+        {% if form.summary.errors %}
+            <span class="text-danger d-block mb-3">{{ form.summary.errors }}</span>
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        <label class="form-label required">{{ form.file.label }}</label>
+        <input type="file" class="form-control" id="{{ form.file.id_for_label }}" name="{{ form.file.name }}"
+               accept=".pdf">
+        {% if form.file.errors %}
+            <span class="text-danger d-block mb-3">{{ form.file.errors }}</span>
+        {% endif %}
+        <div id="pdfPreview" class="preview-container m-3"></div>
+    </div>
 
-</body>
-</html>
+    <div class="col-md-12 mb-3">
+        <label class="form-label required">{{ form.email_recipient_list.label }}</label>
+        {{ form.email_recipient_list }}
+        {% if form.email_recipient_list.errors %}
+            <span class="text-danger d-block mb-3">{{ form.email_recipient_list.errors }}</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Elemento de inicialización automática -->
+<div data-pdf-preview
+     data-file-input="{{ form.file.id_for_label }}"
+     data-preview-container="pdfPreview"
+     style="display: none;">
+</div>
+
+<link rel="stylesheet" href="{% static 'dist/css/pdf-form-preview.css' %}">
+
+<!-- PDF.js -->
+<script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
+<script src="{% static 'dist/js/pdf-form-preview.js' %}"></script>
+<script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
+</script>

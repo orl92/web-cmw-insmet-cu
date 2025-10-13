@@ -1,0 +1,61 @@
+/* pdf-form-preview.css */
+.pdf-preview-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+}
+
+.pdf-preview-container {
+    width: 100%;
+    max-width: 800px;
+    height: 500px;
+    border: 1px solid #ccc;
+    overflow: auto;
+    background: white;
+}
+
+.pdf-pages-container {
+    width: 100%;
+    padding: 10px;
+}
+
+.pdf-preview-page {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-preview-initial-state,
+.pdf-preview-error {
+    padding: 20px;
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.pdf-preview-container {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.pdf-preview-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.pdf-preview-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.pdf-preview-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.pdf-preview-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.preview-container {
+    min-height: 100px;
+}
