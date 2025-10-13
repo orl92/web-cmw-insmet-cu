@@ -7,20 +7,15 @@
     background: white;
     position: relative;
     -webkit-overflow-scrolling: touch; /* Mejor scroll en iOS */
+    touch-action: pan-x pan-y; /* Permitir gestos táctiles */
 }
 
 /* Estilos responsivos */
 @media (max-width: 768px) {
     .pdf-container-mobile {
         width: 100%;
-        height: 350px; /* Más alto en móviles para mejor visualización */
-        touch-action: pan-x pan-y; /* Permitir scroll y zoom */
-    }
-
-    /* Mejorar la legibilidad del texto en PDF */
-    .pdf-page-canvas {
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
+        height: 350px;
+        touch-action: manipulation; /* Optimizar para tacto */
     }
 }
 
@@ -37,6 +32,8 @@
     flex-direction: column;
     align-items: center;
     padding: 10px 0;
+    transform-origin: 0 0; /* Para zoom suave */
+    transition: transform 0.1s ease; /* Transición suave para zoom */
 }
 
 .pdf-page-canvas {
@@ -46,41 +43,9 @@
     border: 1px solid #eee;
     max-width: 100%;
     height: auto;
-    image-rendering: -webkit-optimize-contrast; /* Mejor calidad en Chrome */
-    image-rendering: crisp-edges; /* Mejor calidad en Firefox */
-}
-
-/* Controles de zoom para móvil */
-.mobile-pdf-controls {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    padding: 5px 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    z-index: 10;
-}
-
-.mobile-pdf-controls .btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border-radius: 50%;
-}
-
-.zoom-level {
-    font-size: 0.8rem;
-    font-weight: bold;
-    min-width: 40px;
-    text-align: center;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated; /* Mejor calidad en móviles */
 }
 
 /* Estilos para el modal */
@@ -96,6 +61,7 @@
     overflow: auto;
     background: #f8f9fa;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
 }
 
 .modal-pdf-pages {
@@ -103,6 +69,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    transform-origin: 0 0;
+    transition: transform 0.1s ease;
 }
 
 .modal-pdf-canvas {
@@ -114,6 +82,7 @@
     height: auto;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+    image-rendering: pixelated;
 }
 
 .modal-pdf-controls {
@@ -216,4 +185,17 @@ button:disabled {
     text-align: center;
     padding: 50px;
     color: #666;
+}
+
+/* Estados para zoom táctil */
+.zooming {
+    transition: none; /* Desactivar transición durante zoom */
+}
+
+/* Mejorar la legibilidad en móviles */
+@media (max-width: 768px) {
+    .pdf-page-canvas,
+    .modal-pdf-canvas {
+        image-rendering: optimizeQuality;
+    }
 }
