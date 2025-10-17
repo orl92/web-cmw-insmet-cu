@@ -40,6 +40,10 @@ class FileObs:
             else:
                 filename = None
 
+        # Sanitize filename to prevent path traversal or dangerous characters
+        if filename is not None:
+            filename = os.path.basename(os.path.normpath(str(filename)))
+
         # Crear directorios (temp y final)
         os.makedirs(self.TEMP_DIR, exist_ok=True)
         os.makedirs(self.FINAL_DIR, exist_ok=True)
