@@ -25,6 +25,9 @@ import ipaddress
 # Configurar logger
 logger = logging.getLogger(__name__)
 
+# Lista estricta de dominios permitidos para proxy de imágenes (obliga a configurar)
+ALLOWED_IMAGE_PROXY_DOMAINS = getattr(settings, 'ALLOWED_IMAGE_PROXY_DOMAINS', None)
+
 class MapaView(TemplateView):
     template_name = 'pages/home/modelos/maps.html'
 
@@ -325,13 +328,18 @@ class ImageProxyModeloView(View):
         # Determinar la URL de destino
         target_url = self._get_target_url(image_url, image_path)
 
+        # Obligar a que la lista de dominios permitidos esté presente y sea no vacía
+        if not ALLOWED_IMAGE_PROXY_DOMAINS or not isinstance(ALLOWED_IMAGE_PROXY_DOMAINS, (list, tuple)) or not ALLOWED_IMAGE_PROXY_DOMAINS:
+            logger.error("ALLOWED_IMAGE_PROXY_DOMAINS no configurado.")
+            return HttpResponse('Configuración de dominios permitidos ausente', status=500)
+
         if not target_url:
             return HttpResponse('URL de imagen no proporcionada', status=400)
 
         try:
             # Validar la URL
-            if not self._is_valid_url(target_url):
-                return HttpResponse('URL no válida', status=400)
+            if not self._is_valid_url(target_url, ALLOWED_IMAGE_PROXY_DOMAINS):
+                return HttpResponse('URL no válida o dominio no permitido', status=400)
 
             # Descargar la imagen
             response = self._fetch_image(target_url)
@@ -369,9 +377,9 @@ class ImageProxyModeloView(View):
             return f"{base_url}{unquote(image_path)}"
         return None
 
-    def _is_valid_url(self, url):
+    def _is_valid_url(self, url, allowed_domains):
         """
-        Valida que la URL sea segura y esté permitida.
+        Valida que la URL sea segura y esté permitida por la lista blanca.
         Bloquea direcciones IP privadas, locales, loopback, multicast y link-local.
         """
         try:
@@ -381,11 +389,15 @@ class ImageProxyModeloView(View):
             if parsed_url.scheme not in ('http', 'https'):
                 return False
 
-            # Verificar el dominio (si se ha configurado una lista blanca)
-            if getattr(self, "ALLOWED_DOMAINS", None) and parsed_url.netloc not in self.ALLOWED_DOMAINS:
+            # Verificar el dominio contra la lista blanca (obligatorio)
+            # Comparar solo el 'hostname' para robustez frente a puertos o trucos en netloc
+            # Evitar redirecciones peligrosas (no permitir '@' en userinfo/nombre de usuario)
+            if '@' in parsed_url.netloc:
                 return False
-
-            # Obtener el host sin puerto
+            # Comparación exacta o por sufijo (ejemplo: '.mi-dominio.com')
+            allowed = any(host == d or host.endswith('.'+d) for d in allowed_domains)
+            if not allowed:
+                return False
             host = parsed_url.hostname
             if not host:
                 return False
