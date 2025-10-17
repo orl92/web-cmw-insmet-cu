@@ -19,6 +19,8 @@ from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, unquote
 from django.conf import settings
 import logging
+import socket
+import ipaddress
 
 # Configurar logger
 logger = logging.getLogger(__name__)
@@ -370,6 +372,7 @@ class ImageProxyModeloView(View):
     def _is_valid_url(self, url):
         """
         Valida que la URL sea segura y esté permitida.
+        Bloquea direcciones IP privadas, locales, loopback, multicast y link-local.
         """
         try:
             parsed_url = urlparse(url)
@@ -379,7 +382,27 @@ class ImageProxyModeloView(View):
                 return False
 
             # Verificar el dominio (si se ha configurado una lista blanca)
-            if self.ALLOWED_DOMAINS and parsed_url.netloc not in self.ALLOWED_DOMAINS:
+            if getattr(self, "ALLOWED_DOMAINS", None) and parsed_url.netloc not in self.ALLOWED_DOMAINS:
+                return False
+
+            # Obtener el host sin puerto
+            host = parsed_url.hostname
+            if not host:
+                return False
+
+            # Intentar resolver todas las direcciones IP (IPv4 & IPv6)
+            try:
+                addrinfos = socket.getaddrinfo(host, None)
+                for info in addrinfos:
+                    ip = info[4][0]
+                    ip_obj = ipaddress.ip_address(ip)
+                    if (ip_obj.is_private or
+                        ip_obj.is_loopback or
+                        ip_obj.is_link_local or
+                        ip_obj.is_multicast or
+                        ip_obj.is_reserved):
+                        return False
+            except Exception:
                 return False
 
             return True
