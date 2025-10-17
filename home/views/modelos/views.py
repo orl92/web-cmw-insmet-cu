@@ -223,9 +223,10 @@ class MeteogramView(TemplateView):
             })
 
         except requests.RequestException as e:
+            logger.exception("Error al conectar con la API en MeteogramView:")
             return JsonResponse({
                 'status': 'error',
-                'message': f"Error al conectar con la API: {str(e)}"
+                'message': "No se pudo conectar con la API de meteogramas en este momento."
             }, status=500)
         except Exception as e:
             logger.exception("Error interno del servidor en MeteogramView:")
