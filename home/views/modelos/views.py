@@ -145,7 +145,8 @@ class MapaView(TemplateView):
             else:
                 return {'status': 'error', 'message': f'HTTPError {e.response.status_code}: Error del servidor'}
         except Exception as e:
-            return {'status': 'error', 'message': str(e)}    
+            logger.exception('Unhandled exception in fetch_image_urls')
+            return {'status': 'error', 'message': 'Ocurrió un error interno al procesar la solicitud.'}
 
 class MeteogramView(TemplateView):
     template_name = 'pages/home/modelos/meteogram.html'
