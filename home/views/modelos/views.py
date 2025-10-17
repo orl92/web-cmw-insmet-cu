@@ -294,14 +294,16 @@ class SoundingView(TemplateView):
             }, content_type='application/json')
 
         except requests.exceptions.RequestException as e:
+            logger.error("Error al conectar con la API de sondeo", exc_info=True)
             return JsonResponse({
                 'status': 'error',
-                'message': f"Error al conectar con la API de sondeo: {str(e)}"
+                'message': "Error al conectar con la API de sondeo."
             }, status=500)
         except Exception as e:
+            logger.error("Error al generar el gráfico", exc_info=True)
             return JsonResponse({
                 'status': 'error',
-                'message': f"Error al generar el gráfico: {str(e)}"
+                'message': "Error al generar el gráfico."
             }, status=500)
 
 class ImageProxyModeloView(View):
