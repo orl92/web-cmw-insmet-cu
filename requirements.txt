@@ -56,7 +56,7 @@ pydyf==0.11.0
 pyHanko==0.27.1
 pyhanko-certvalidator==0.26.8
 pyparsing==3.2.3
-pypdf==5.5.0
+pypdf==6.0.0
 pyphen==0.17.2
 pyproj==3.7.1
 pyshp==2.3.1
