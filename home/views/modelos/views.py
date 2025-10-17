@@ -228,9 +228,10 @@ class MeteogramView(TemplateView):
                 'message': f"Error al conectar con la API: {str(e)}"
             }, status=500)
         except Exception as e:
+            logger.exception("Error interno del servidor en MeteogramView:")
             return JsonResponse({
                 'status': 'error',
-                'message': f"Error interno del servidor: {str(e)}"
+                'message': "Error interno del servidor"
             }, status=500)
             
 class SoundingView(TemplateView):
