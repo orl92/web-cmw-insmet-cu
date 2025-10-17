@@ -3,7 +3,7 @@ import os
 import requests
 from django.conf import settings
 from django.http import JsonResponse
-
+import logging
 
 def fetch_meteo_data(request):
     if request.method == 'GET' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -74,10 +74,11 @@ def fetch_meteo_data(request):
                 'message': f"Datos recibidos correctamente. Shape: {var_data.shape}"
             })
 
+            logging.exception("Error in fetch_meteo_data")
         except Exception as e:
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
+                'message': 'Ha ocurrido un error interno.'
             }, status=500)
 
     return JsonResponse({
