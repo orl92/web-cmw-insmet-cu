@@ -12,10 +12,13 @@ from .plot_config import get_plot_config
 from django.http import JsonResponse
 import base64
 from io import BytesIO
+import logging
 import metpy.calc as mpcalc
 from metpy.plots import SkewT, Hodograph
 from metpy.units import units
 
+
+logger = logging.getLogger(__name__)
 
 def generate_meteo_plot(request):
     if request.method == 'GET' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -108,6 +111,7 @@ def generate_meteo_plot(request):
                 return JsonResponse({
                     'status': 'success',
                     'animation_html': jshtml,
+            logger.exception("Unhandled exception in generate_meteo_plot")
                     'time_steps': len(times),
                     'message': f"Gráfico generado con {len(times)} pasos temporales"
                 })
@@ -115,7 +119,7 @@ def generate_meteo_plot(request):
         except Exception as e:
             return JsonResponse({
                 'status': 'error',
-                'message': str(e)
+                'message': "An internal error has occurred."
             }, status=500)
 
     return JsonResponse({
