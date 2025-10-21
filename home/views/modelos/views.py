@@ -313,17 +313,15 @@ class ImageProxyModeloView(View):
     Vista basada en clase para proxy de imágenes que evita problemas de CORS.
     """
 
-    # Lista blanca de dominios permitidos (opcional, para mayor seguridad)
+    # Lista blanca de dominios permitidos
     ALLOWED_DOMAINS = [
         'imgwrfserver.cmw.insmet.cu',
+        'modelo.cmw.insmet.cu',  # ← Agregar este también
         'localhost',
         '127.0.0.1'
     ]
 
     def get(self, request, *args, **kwargs):
-        """
-        Maneja las solicitudes GET para el proxy de imágenes.
-        """
         image_url = request.GET.get('image_url', '')
         image_path = request.GET.get('image_path', '')
 
@@ -336,12 +334,14 @@ class ImageProxyModeloView(View):
         try:
             # Validar la URL
             if not self._is_valid_url(target_url):
+                logger.warning(f"URL rechazada por validación de seguridad: {target_url}")
                 return HttpResponse('URL no válida', status=400)
 
             # Descargar la imagen
             response = self._fetch_image(target_url)
 
             if response.status_code != 200:
+                logger.error(f"Error {response.status_code} al obtener imagen: {target_url}")
                 return HttpResponse('Error al obtener la imagen', status=response.status_code)
 
             # Crear la respuesta
@@ -350,34 +350,31 @@ class ImageProxyModeloView(View):
                 content_type=response.headers.get('Content-Type', 'image/jpeg')
             )
 
-            # Configurar headers para caching (opcional)
-            django_response['Cache-Control'] = 'public, max-age=3600'  # Cache de 1 hora
-
+            # Configurar headers para caching
+            django_response['Cache-Control'] = 'public, max-age=3600'
             return django_response
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error en proxy de imagen: {str(e)}")
+            logger.error(f"Error en proxy de imagen: {str(e)} - URL: {target_url}")
             return HttpResponse('Error al obtener la imagen', status=500)
         except Exception as e:
-            logger.error(f"Error inesperado en proxy de imagen: {str(e)}")
+            logger.error(f"Error inesperado en proxy de imagen: {str(e)} - URL: {target_url}")
             return HttpResponse('Error interno del servidor', status=500)
 
     def _get_target_url(self, image_url, image_path):
-        """
-        Construye la URL de destino basándose en los parámetros proporcionados.
-        """
         if image_url:
             return unquote(image_url)
         elif image_path:
-            # Si se proporciona image_path, construir la URL completa
             base_url = getattr(settings, 'IMAGE_SERVER_BASE_URL', 'http://imgwrfserver.cmw.insmet.cu')
-            return f"{base_url}{unquote(image_path)}"
+            # Limpiar el path para evitar dobles barras
+            clean_path = unquote(image_path).lstrip('/')
+            return f"{base_url.rstrip('/')}/{clean_path}"
         return None
 
     def _is_valid_url(self, url):
         """
         Valida que la URL sea segura y esté permitida.
-        Bloquea direcciones IP privadas, locales, loopback, multicast y link-local.
+        CORREGIDO: Ahora bloquea IPs privadas correctamente.
         """
         try:
             parsed_url = urlparse(url)
@@ -386,8 +383,9 @@ class ImageProxyModeloView(View):
             if parsed_url.scheme not in ('http', 'https'):
                 return False
 
-            # Verificar el dominio (si se ha configurado una lista blanca)
-            if getattr(self, "ALLOWED_DOMAINS", None) and parsed_url.netloc not in self.ALLOWED_DOMAINS:
+            # Verificar el dominio contra la lista blanca
+            if parsed_url.netloc not in self.ALLOWED_DOMAINS:
+                logger.warning(f"Dominio no permitido: {parsed_url.netloc}")
                 return False
 
             # Obtener el host sin puerto
@@ -395,42 +393,44 @@ class ImageProxyModeloView(View):
             if not host:
                 return False
 
-            # Intentar resolver todas las direcciones IP (IPv4 & IPv6)
+            # Validación de IPs - CORREGIDO: incluye is_private
             try:
                 addrinfos = socket.getaddrinfo(host, None)
                 for info in addrinfos:
                     ip = info[4][0]
                     ip_obj = ipaddress.ip_address(ip)
-                    if (ip_obj.is_loopback or
+                    if (ip_obj.is_private or      # ← ESTA ES LA LÍNEA CRÍTICA QUE FALTA
+                        ip_obj.is_loopback or
                         ip_obj.is_link_local or
                         ip_obj.is_multicast or
                         ip_obj.is_reserved):
+                        logger.warning(f"IP no permitida: {ip}")
                         return False
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Error resolviendo IP para {host}: {str(e)}")
                 return False
 
             return True
 
-        except Exception:
+        except Exception as e:
+            logger.error(f"Error en validación de URL {url}: {str(e)}")
             return False
 
     def _fetch_image(self, url):
         """
         Descarga la imagen desde la URL proporcionada.
+        MEJORADO: Agrega verify=False para entornos internos
         """
         headers = {
-            'User-Agent': 'MeteoApp/1.0'
+            'User-Agent': 'MeteoApp/1.0',
+            'Accept': 'image/*'
         }
 
         # Agregar headers de autenticación si es necesario
         auth_headers = self._get_auth_headers()
         headers.update(auth_headers)
 
-        return requests.get(url, stream=True, timeout=30, headers=headers)
+        return requests.get(url, stream=True, timeout=30, headers=headers, verify=False)
 
     def _get_auth_headers(self):
-        """
-        Devuelve headers de autenticación si es necesario.
-        Puede ser sobrescrito en subclases para agregar autenticación.
-        """
         return {}
