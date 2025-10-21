@@ -43,12 +43,19 @@ class ProxyImageView(View):
         
         try:
             # Configurar seguridad adicional
+            proxies = {
+                'http': 'http://proxy.cmw.insmet.cu:3128',
+                'https': 'http://proxy.cmw.insmet.cu:3128',
+            }
+
             response = requests.get(
                 full_url,
                 stream=True,
                 timeout=10,
-                allow_redirects=False
+                allow_redirects=False,
+                proxies=proxies
             )
+
             
             # Validar respuesta
             if response.status_code != 200:
