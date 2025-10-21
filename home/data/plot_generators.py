@@ -17,8 +17,8 @@ import metpy.calc as mpcalc
 from metpy.plots import SkewT, Hodograph
 from metpy.units import units
 
-
 logger = logging.getLogger(__name__)
+
 
 def generate_meteo_plot(request):
     if request.method == 'GET' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -111,7 +111,7 @@ def generate_meteo_plot(request):
                 return JsonResponse({
                     'status': 'success',
                     'animation_html': jshtml,
-            logger.exception("Unhandled exception in generate_meteo_plot")
+                    'logger': logger.exception("Unhandled exception in generate_meteo_plot"),
                     'time_steps': len(times),
                     'message': f"Gráfico generado con {len(times)} pasos temporales"
                 })
