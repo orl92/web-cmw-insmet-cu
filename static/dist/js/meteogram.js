@@ -234,6 +234,10 @@ class Meteogram {
                 y: 25
             },
 
+            exporting: {
+                enabled: false // Deshabilitar el menú de exportación
+            },
+
             tooltip: {
                 shared: true,
                 useHTML: true,
