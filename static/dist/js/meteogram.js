@@ -25,6 +25,7 @@ class Meteogram {
         this.timezoneOffset = 4 * 60;
 
         this.chart = null;
+        this.weatherSymbolsGroup = null;
 
         this.parseData();
     }
@@ -83,6 +84,88 @@ class Meteogram {
         return 'cloudy';
     }
 
+    drawWeatherSymbols(chart) {
+        if (!chart || !chart.renderer) return;
+
+        // Obtener la serie de temperatura
+        const tempSeries = chart.get('temperatura');
+        if (!tempSeries || !tempSeries.visible) {
+            // Si la serie de temperatura está oculta, ocultar los símbolos
+            if (this.weatherSymbolsGroup) {
+                this.weatherSymbolsGroup.hide();
+            }
+            return;
+        } else if (this.weatherSymbolsGroup) {
+            // Si la serie de temperatura es visible, mostrar los símbolos
+            this.weatherSymbolsGroup.show();
+        }
+
+        if (this.weatherSymbolsGroup) {
+            this.weatherSymbolsGroup.destroy();
+        }
+
+        this.weatherSymbolsGroup = chart.renderer.g()
+            .attr({class: 'weather-symbols', zIndex: 5})
+            .add();
+
+        const SYMBOL_SIZE = 30;
+        const Y_OFFSET = -35;
+
+        this.weatherData.forEach((weather, i) => {
+            const point = tempSeries.data[i];
+            if (!point || !point.plotX || !point.plotY) return;
+
+            const condition = weather.condition;
+            const weatherType = Meteogram.weatherDictionary[condition];
+            if (!weatherType) return;
+
+            const variant = weather.isDay ? 'day' : 'night';
+            const symbolCode = weatherType[variant].symbol;
+
+            const x = point.plotX + chart.plotLeft - (SYMBOL_SIZE / 2);
+            const y = point.plotY + chart.plotTop + Y_OFFSET;
+
+            const iconUrl = `https://cdn.jsdelivr.net/gh/nrkno/yr-weather-symbols@8.0.1/dist/svg/${symbolCode}.svg`;
+
+            const symbolElement = chart.renderer.image(iconUrl, x, y, SYMBOL_SIZE, SYMBOL_SIZE)
+                .attr({
+                    title: `${weatherType[variant].text}\n${new Date(weather.time + (this.timezoneOffset * 60000)).toLocaleString('es-CU')}`,
+                    cursor: 'pointer'
+                })
+                .css({
+                    pointerEvents: 'all'
+                })
+                .add(this.weatherSymbolsGroup);
+
+            symbolElement.on('mouseover', function() {
+                chart.tooltip.refresh([{
+                    series: tempSeries,
+                    point: point,
+                    x: point.x,
+                    y: point.y
+                }], point.x);
+            });
+
+            symbolElement.on('mouseout', function() {
+                chart.tooltip.hide();
+            });
+        });
+    }
+
+    onChartLoad(chart) {
+        // Guardar referencia al meteograma en el chart
+        chart.meteogram = this;
+        
+        setTimeout(() => this.drawWeatherSymbols(chart), 50);
+
+        window.addEventListener('resize', () => {
+            if (this.chart) {
+                this.chart.reflow();
+                setTimeout(() => this.drawWeatherSymbols(this.chart), 100);
+            }
+        });
+    }
+
     getChartOptions() {
         const isDarkMode = document.body.getAttribute('data-bs-theme') === 'dark';
 
@@ -118,10 +201,9 @@ class Meteogram {
 
             chart: {
                 renderTo: this.container,
-                marginBottom: 70,
+                marginBottom: 100, // Aumentado para separar la leyenda
                 marginRight: 40,
                 marginTop: 70,
-                marginBottom: 100,
                 plotBorderWidth: 1,
                 height: 400,
                 alignTicks: false,
@@ -131,6 +213,12 @@ class Meteogram {
                 },
                 scrollablePlotArea: {
                     minWidth: 720
+                },
+                events: {
+                    load: (e) => this.onChartLoad(e.target),
+                    redraw: () => {
+                        this.drawWeatherSymbols(this.chart);
+                    }
                 }
             },
 
@@ -160,6 +248,8 @@ class Meteogram {
                 headerFormat:
                     '<div style="border-bottom: 1px solid ' + (isDarkMode ? '#495057' : '#e9ecef') + '; padding-bottom: 5px; margin-bottom: 5px;">' +
                     '<small>{point.x:%A, %e de %B, %H:%M} hora local</small><br>' +
+                    '<img src="https://cdn.jsdelivr.net/gh/nrkno/yr-weather-symbols@8.0.1/dist/svg/{point.point.weatherSymbol}.svg" style="height: 24px; vertical-align: middle; margin-right: 5px;">' +
+                    '<b>{point.point.weatherDescription}</b>' +
                     '</div>',
                 pointFormat:
                     '<span style="color:{point.color}">●</span> {series.name}: <b>{point.y}</b><br/>'
@@ -252,13 +342,16 @@ class Meteogram {
                         x: -3
                     },
                     opposite: false, 
-                    min: 0,
+                    min: 0, // Forzar que empiece en 0
+                    max: 10, // Establecer un máximo razonable
                     tickInterval: 2,
                     minorTickInterval: null,
                     minorGridLineWidth: 0,
                     gridLineWidth: 1,
                     gridLineColor: colors.gridLine,
                     lineWidth: 0,
+                    startOnTick: true,
+                    endOnTick: false
                 },
 
                 // Pressure
@@ -303,9 +396,9 @@ class Meteogram {
                 itemHoverStyle: {
                     color: colors.text
                 },
-                padding: 20,
-                margin: 40,
-                itemDistance: 20,
+                padding: 15,
+                margin: 20, // Reducido para dar más espacio
+                itemDistance: 25,
                 symbolHeight: 10,
                 symbolWidth: 10,
                 symbolRadius: 3,
@@ -335,15 +428,18 @@ class Meteogram {
                         inactive: {
                             opacity: 0.4
                         }
+                    },
+                    events: {
+                        // Cuando se oculta o muestra una serie, redibujar los símbolos
+                        legendItemClick: function() {
+                            const chart = this.chart;
+                            setTimeout(() => {
+                                if (chart.meteogram) {
+                                    chart.meteogram.drawWeatherSymbols(chart);
+                                }
+                            }, 100);
+                        }
                     }
-                },
-                column: {
-                    grouping: false,
-                    shadow: false,
-                    borderWidth: 0,
-                    borderRadius: 2,
-                    pointPadding: 0.1,
-                    groupPadding: 0
                 },
                 spline: {
                     lineWidth: 2.5,
@@ -379,7 +475,7 @@ class Meteogram {
                 },
                 {
                     name: 'Precipitación',
-                    type: 'spline',
+                    type: 'spline', // Mantenemos spline en lugar de column
                     data: this.precipitations,
                     color: colors.precipitation,
                     yAxis: 1,
@@ -438,7 +534,7 @@ class Meteogram {
             if (!arr || !arr.value || arr.value.length !== times.length) {
                 return Array(times.length).fill(defaultValue);
             }
-            return arr.value;
+            return arr.value.map(val => val !== null && val !== undefined ? val : defaultValue);
         };
 
         const temps = validateArray(T2, 'T2');
@@ -449,10 +545,17 @@ class Meteogram {
         const cloudiness = validateArray(CLF, 'CLF');
         const visibilities = VIS ? validateArray(VIS, 'VIS', 10) : Array(times.length).fill(10);
 
+        // Limpiar arrays antes de llenarlos
+        this.weatherData = [];
+        this.temperatures = [];
+        this.precipitations = [];
+        this.pressures = [];
+        this.winds = [];
+
         times.forEach((time, i) => {
             const timestamp = Date.parse(time + 'Z');
             const temp = temps[i];
-            const rain = rains[i];
+            const rain = Math.max(0, rains[i]); // Asegurar que no sea negativo
             const windSpeed = Math.sqrt(Math.pow(uWinds[i], 2) + Math.pow(vWinds[i], 2)) * 3.6;
             const windDir = (270 - (Math.atan2(vWinds[i], uWinds[i]) * 180 / Math.PI)) % 360;
             const isDay = this.isDaytime(timestamp);
@@ -463,6 +566,12 @@ class Meteogram {
                 windSpeed
             });
 
+            // Obtener información del símbolo del clima
+            const weatherType = Meteogram.weatherDictionary[condition];
+            const variant = isDay ? 'day' : 'night';
+            const weatherSymbol = weatherType[variant].symbol;
+            const weatherDescription = weatherType[variant].text;
+
             this.weatherData.push({
                 time: timestamp,
                 condition,
@@ -472,19 +581,22 @@ class Meteogram {
                 windSpeed,
                 windDir,
                 pressure: pressures[i],
-                visibility: visibilities[i]
+                visibility: visibilities[i],
+                weatherSymbol,
+                weatherDescription
             });
 
             this.temperatures.push({
                 x: timestamp,
                 y: temp,
+                weatherSymbol,
+                weatherDescription,
                 color: temp > 0 ? '#ff4500' : '#00bfff',
             });
 
             this.precipitations.push({
                 x: timestamp,
                 y: rain,
-                color: rain > 0 ? '#1e90ff' : 'transparent',
             });
 
             this.pressures.push({
@@ -537,6 +649,9 @@ class Meteogram {
     destroy() {
         if (this.chart) {
             this.chart.destroy();
+        }
+        if (this.weatherSymbolsGroup) {
+            this.weatherSymbolsGroup.destroy();
         }
     }
 }
