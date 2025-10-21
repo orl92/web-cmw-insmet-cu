@@ -401,8 +401,7 @@ class ImageProxyModeloView(View):
                 for info in addrinfos:
                     ip = info[4][0]
                     ip_obj = ipaddress.ip_address(ip)
-                    if (ip_obj.is_private or
-                        ip_obj.is_loopback or
+                    if (ip_obj.is_loopback or
                         ip_obj.is_link_local or
                         ip_obj.is_multicast or
                         ip_obj.is_reserved):
