@@ -1,5 +1,5 @@
 // gif-download.js
-// Manejo del modal de descarga de GIF animado
+// Manejo del modal de descarga de GIF animado - Versión Tabler UI
 
 class GifDownloadManager {
     constructor(config) {
@@ -20,7 +20,7 @@ class GifDownloadManager {
         this.clearBtn = document.getElementById('clearGifForm');
         this.downloadStatus = document.getElementById('download-status');
         this.statusMessage = document.getElementById('status-message');
-        this.successToast = new bootstrap.Toast(document.getElementById('successToast'));
+        this.successToast = document.getElementById('successToast');
 
         if (!this.validateElements()) {
             console.error('No se pudieron inicializar todos los elementos del modal de GIF');
@@ -41,13 +41,14 @@ class GifDownloadManager {
 
     setupEventListeners() {
         // Evento cuando se abre el modal
-        this.modal.addEventListener('show.bs.modal', () => {
+        this.modal.addEventListener('show', () => {
             this.hideDownloadStatus();
             this.updateModalFormValues();
+            this.resetFormState();
         });
 
         // Evento cuando se cierra el modal
-        this.modal.addEventListener('hidden.bs.modal', () => {
+        this.modal.addEventListener('hidden', () => {
             this.hideDownloadStatus();
         });
 
@@ -63,6 +64,14 @@ class GifDownloadManager {
         this.clearBtn.addEventListener('click', () => {
             this.clearForm();
         });
+
+        // Cerrar modal al hacer clic en el botón de cerrar
+        const closeButtons = this.modal.querySelectorAll('[data-bs-dismiss="modal"]');
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.hideModal();
+            });
+        });
     }
 
     setupMainFormListeners() {
@@ -72,7 +81,7 @@ class GifDownloadManager {
             const field = document.getElementById(fieldId);
             if (field) {
                 field.addEventListener('change', () => {
-                    if (this.modal && this.modal.classList.contains('show')) {
+                    if (this.modal && this.modal.style.display === 'block') {
                         this.updateModalFormValues();
                     }
                 });
@@ -140,12 +149,25 @@ class GifDownloadManager {
         this.updateModalFormValues();
     }
 
+    resetFormState() {
+        // Restablecer el estado del botón y mensajes
+        this.confirmBtn.disabled = false;
+        this.hideDownloadStatus();
+    }
+
     showDownloadStatus(message, isError = false) {
         if (!this.downloadStatus || !this.statusMessage) return;
 
         this.statusMessage.textContent = message;
-        this.downloadStatus.classList.remove('d-none', 'alert-danger', 'alert-success');
-        this.downloadStatus.classList.add(isError ? 'alert-danger' : 'alert-info');
+        this.downloadStatus.classList.remove('d-none', 'alert-danger', 'alert-success', 'alert-info');
+
+        if (isError) {
+            this.downloadStatus.classList.add('alert-danger');
+        } else {
+            this.downloadStatus.classList.add('alert-info');
+        }
+
+        this.downloadStatus.classList.remove('d-none');
 
         const spinner = this.downloadStatus.querySelector('.spinner-border');
         if (spinner) {
@@ -165,7 +187,42 @@ class GifDownloadManager {
             toastMessage.textContent = message;
         }
         if (this.successToast) {
-            this.successToast.show();
+            this.successToast.style.display = 'block';
+            this.successToast.classList.add('show');
+
+            // Auto-ocultar después de 3 segundos
+            setTimeout(() => {
+                this.hideSuccessNotification();
+            }, 3000);
+        }
+    }
+
+    hideSuccessNotification() {
+        if (this.successToast) {
+            this.successToast.style.display = 'none';
+            this.successToast.classList.remove('show');
+        }
+    }
+
+    showModal() {
+        if (this.modal) {
+            this.modal.style.display = 'block';
+            this.modal.classList.add('show');
+            document.body.classList.add('modal-open');
+
+            // Disparar evento personalizado
+            this.modal.dispatchEvent(new Event('show'));
+        }
+    }
+
+    hideModal() {
+        if (this.modal) {
+            this.modal.style.display = 'none';
+            this.modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+
+            // Disparar evento personalizado
+            this.modal.dispatchEvent(new Event('hidden'));
         }
     }
 
@@ -248,12 +305,20 @@ class GifDownloadManager {
             const downloadUrl = this.buildDownloadUrl(data);
             await this.downloadGif(downloadUrl, data);
 
+            // ÉXITO: Mostrar notificación pero mantener el modal abierto
             this.hideDownloadStatus();
             this.showSuccessNotification('¡GIF descargado exitosamente!');
+
+            // Restablecer el estado del formulario para permitir otra descarga
+            this.resetFormState();
+
+            // Opcional: Limpiar automáticamente los campos después de descarga exitosa
+            // this.clearForm();
 
         } catch (error) {
             this.handleDownloadError(error);
         } finally {
+            // Asegurarse de que el botón se reactive incluso en caso de error
             setTimeout(() => {
                 this.confirmBtn.disabled = false;
             }, 1000);
@@ -316,8 +381,56 @@ class GifDownloadManager {
     }
 }
 
+// Sistema simple de modales para Tabler
+class SimpleModalSystem {
+    static init() {
+        // Abrir modal con data-bs-toggle="modal"
+        document.addEventListener('click', (e) => {
+            const toggleBtn = e.target.closest('[data-bs-toggle="modal"]');
+            if (toggleBtn && toggleBtn.dataset.bsTarget) {
+                const modalId = toggleBtn.dataset.bsTarget;
+                const modal = document.getElementById(modalId.replace('#', ''));
+                if (modal) {
+                    modal.style.display = 'block';
+                    modal.classList.add('show');
+                    document.body.classList.add('modal-open');
+                    modal.dispatchEvent(new Event('show'));
+                }
+            }
+        });
+
+        // Cerrar modal con data-bs-dismiss="modal"
+        document.addEventListener('click', (e) => {
+            const dismissBtn = e.target.closest('[data-bs-dismiss="modal"]');
+            if (dismissBtn) {
+                const modal = dismissBtn.closest('.modal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                    modal.dispatchEvent(new Event('hidden'));
+                }
+            }
+        });
+
+        // Cerrar modal al hacer clic fuera del contenido
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+                e.target.classList.remove('show');
+                document.body.classList.remove('modal-open');
+                e.target.dispatchEvent(new Event('hidden'));
+            }
+        });
+    }
+}
+
 // Inicialización cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar sistema de modales
+    SimpleModalSystem.init();
+
+    // Inicializar gestor de descarga de GIF
     if (window.GIF_DOWNLOAD_CONFIG) {
         new GifDownloadManager(window.GIF_DOWNLOAD_CONFIG);
     } else {

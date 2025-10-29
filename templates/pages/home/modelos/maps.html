@@ -84,7 +84,7 @@
     </form>
 
     <!-- Modal para descargar GIF -->
-    <div class="modal fade" id="gifModal" tabindex="-1" aria-labelledby="gifModalLabel" aria-hidden="true">
+    <div class="modal" id="gifModal" tabindex="-1" aria-labelledby="gifModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -96,7 +96,7 @@
                         {% csrf_token %}
                         <input type="hidden" id="gif_datetime_init" name="datetime_init">
                         <input type="hidden" id="gif_var_name" name="var_name">
-                        
+
                         <div class="mb-3">
                             <label for="{{ gif_form.fecha_inicio.id_for_label }}" class="form-label required">
                                 {{ gif_form.fecha_inicio.label }}
@@ -111,7 +111,7 @@
                             {% endif %}
                             <div class="form-text">Formato: AAAAMMDDHH (10 dígitos)</div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="{{ gif_form.fecha_fin.id_for_label }}" class="form-label required">
                                 {{ gif_form.fecha_fin.label }}
@@ -126,7 +126,7 @@
                             {% endif %}
                             <div class="form-text">Formato: AAAAMMDDHH (10 dígitos)</div>
                         </div>
-                        
+
                         <!-- Mensaje de estado de descarga -->
                         <div id="download-status" class="alert alert-info d-none">
                             <div class="d-flex align-items-center">
@@ -136,7 +136,7 @@
                                 <span id="status-message">Preparando descarga...</span>
                             </div>
                         </div>
-                        
+
                         <div class="alert alert-info">
                             <small>
                                 <i class="fas fa-info-circle me-1"></i>
@@ -159,16 +159,17 @@
         </div>
     </div>
 
-    <!-- Toast de notificación -->
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-        <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <span id="toast-message">GIF descargado exitosamente</span>
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    <!-- Toast de notificación simplificado -->
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert"
+         aria-live="assertive" aria-atomic="true"
+         style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: none;">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-check-circle me-2"></i>
+                <span id="toast-message">GIF descargado exitosamente</span>
             </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                    onclick="this.parentElement.parentElement.style.display='none'"></button>
         </div>
     </div>
 
@@ -176,9 +177,10 @@
         <div class="card mt-4">
             <div class="card-body">
                 <h2 id="plot-title" class="text-center mb-3"></h2>
-                
+
                 <!-- Contenedor para mensajes de error -->
-                <div id="error-container" class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;">
+                <div id="error-container" class="alert alert-danger alert-dismissible fade show" role="alert"
+                     style="display: none;">
                     <div class="d-flex align-items-center">
                         <span id="error-message"></span>
                     </div>
@@ -189,7 +191,7 @@
                 <div id="gallery-container" class="row g-2 g-md-3 mt-3 min-vh-50">
                     <!-- Aquí se cargarán las imágenes en forma de galería -->
                 </div>
-                
+
                 <!-- Estado vacío -->
                 <div id="empty-state" class="text-center py-5 d-none">
                     <i class="fas fa-cloud display-1 text-muted mb-3"></i>
@@ -205,7 +207,11 @@
     <!-- Primero cargamos Litepicker -->
     <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062"></script>
     <script src="{% static '' %}dist/libs/fslightbox/index.js?1692870487" defer></script>
-    
+    <!-- Bootstrap JS -->
+    {#    <script src="{% static '' %}dist/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>#}
+    <!-- FontAwesome para íconos -->
+    {#    <script src="{% static '' %}dist/libs/@fortawesome/fontawesome-free/js/all.min.js"></script>#}
+
     <!-- Configuración para el script de GIF -->
     <script>
         // Configuración global para el modal de GIF
@@ -215,7 +221,7 @@
             fechaFinId: "{{ gif_form.fecha_fin.id_for_label }}"
         };
     </script>
-    
+
     <!-- Scripts separados -->
     <script src="{% static '' %}dist/js/maps.js"></script>
     <script src="{% static '' %}dist/js/gif-download.js"></script>
