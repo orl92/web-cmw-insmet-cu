@@ -69,10 +69,13 @@
                     </div>
                 </div>
 
-                <!-- Botón -->
+                <!-- Botones -->
                 <div class="col-md-2">
-                    <div class="d-grid">
+                    <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Cargar Imágenes</button>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#gifModal">
+                            <i class="fas fa-download me-1"></i>Descargar GIF
+                        </button>
                     </div>
                 </div>
 
@@ -80,16 +83,103 @@
         </div>
     </form>
 
+    <!-- Modal para descargar GIF -->
+    <div class="modal fade" id="gifModal" tabindex="-1" aria-labelledby="gifModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="gifModalLabel">Descargar GIF Animado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="gifDownloadForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="gif_datetime_init" name="datetime_init">
+                        <input type="hidden" id="gif_var_name" name="var_name">
+                        
+                        <div class="mb-3">
+                            <label for="{{ gif_form.fecha_inicio.id_for_label }}" class="form-label required">
+                                {{ gif_form.fecha_inicio.label }}
+                            </label>
+                            {{ gif_form.fecha_inicio }}
+                            {% if gif_form.fecha_inicio.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in gif_form.fecha_inicio.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Formato: AAAAMMDDHH (10 dígitos)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ gif_form.fecha_fin.id_for_label }}" class="form-label required">
+                                {{ gif_form.fecha_fin.label }}
+                            </label>
+                            {{ gif_form.fecha_fin }}
+                            {% if gif_form.fecha_fin.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in gif_form.fecha_fin.errors %}
+                                        <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Formato: AAAAMMDDHH (10 dígitos)</div>
+                        </div>
+                        
+                        <!-- Mensaje de estado de descarga -->
+                        <div id="download-status" class="alert alert-info d-none">
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Procesando...</span>
+                                </div>
+                                <span id="status-message">Preparando descarga...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="fas fa-info-circle me-1"></i>
+                                Las imágenes están espaciadas cada 3 horas. Seleccione el rango deseado para el GIF.
+                                <br><strong>Rango máximo: 3 días (72 horas)</strong>
+                            </small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="confirmDownloadGif">
+                        <i class="fas fa-download me-1"></i>Descargar GIF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de notificación -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span id="toast-message">GIF descargado exitosamente</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
     <div id="plot-area" style="display: none;">
         <div class="card mt-4">
             <div class="card-body">
                 <h2 id="plot-title" class="text-center mb-3"></h2>
                 
                 <!-- Contenedor para mensajes de error -->
-                <div id="error-container" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div id="error-container" class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;">
                     <div class="d-flex align-items-center">
                         <span id="error-message"></span>
                     </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
 
                 <!-- Galería de imágenes -->
@@ -112,6 +202,220 @@
     <!-- Primero cargamos Litepicker -->
     <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062"></script>
     <script src="{% static '' %}dist/libs/fslightbox/index.js?1692870487" defer></script>
+    <!-- Bootstrap JS -->
+    <script src="{% static '' %}dist/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- FontAwesome para íconos -->
+    <script src="{% static '' %}dist/libs/@fortawesome/fontawesome-free/js/all.min.js"></script>
     <!-- FS Lightbox para la galería de imágenes -->
     <script src="{% static '' %}dist/js/maps.js"></script>
+    
+    <script>
+        // Función para manejar la descarga del GIF
+        document.addEventListener('DOMContentLoaded', function() {
+            const gifModal = document.getElementById('gifModal');
+            const confirmDownloadBtn = document.getElementById('confirmDownloadGif');
+            const downloadStatus = document.getElementById('download-status');
+            const statusMessage = document.getElementById('status-message');
+            const successToast = new bootstrap.Toast(document.getElementById('successToast'));
+            
+            // Función para mostrar estado de descarga
+            function showDownloadStatus(message, isError = false) {
+                statusMessage.textContent = message;
+                downloadStatus.classList.remove('d-none', 'alert-danger', 'alert-success');
+                downloadStatus.classList.add(isError ? 'alert-danger' : 'alert-info');
+                
+                if (isError) {
+                    downloadStatus.querySelector('.spinner-border').classList.add('d-none');
+                } else {
+                    downloadStatus.querySelector('.spinner-border').classList.remove('d-none');
+                }
+            }
+            
+            // Función para ocultar estado de descarga
+            function hideDownloadStatus() {
+                downloadStatus.classList.add('d-none');
+            }
+            
+            // Función para mostrar notificación de éxito
+            function showSuccessNotification(message) {
+                document.getElementById('toast-message').textContent = message;
+                successToast.show();
+            }
+            
+            // Cuando se abre el modal, actualizar los campos ocultos con los valores actuales
+            if (gifModal) {
+                gifModal.addEventListener('show.bs.modal', function() {
+                    // Ocultar estado de descarga previo
+                    hideDownloadStatus();
+                    
+                    // Obtener los valores actuales del formulario principal
+                    const dateValue = document.getElementById('datepicker').value;
+                    const hourValue = document.getElementById('hour-select').value;
+                    const varNameValue = document.getElementById('id_var_name').value;
+                    
+                    // Formatear datetime_init
+                    const formattedDate = dateValue.replace(/-/g, '');
+                    const datetimeInit = formattedDate + hourValue;
+                    
+                    // Actualizar los campos ocultos en el formulario del GIF
+                    document.getElementById('gif_datetime_init').value = datetimeInit;
+                    document.getElementById('gif_var_name').value = varNameValue;
+                    
+                    // Si los campos de fecha están vacíos, establecer valores por defecto
+                    const fechaInicioField = document.getElementById('{{ gif_form.fecha_inicio.id_for_label }}');
+                    const fechaFinField = document.getElementById('{{ gif_form.fecha_fin.id_for_label }}');
+                    
+                    if (!fechaInicioField.value) {
+                        // Usar la fecha actual como inicio
+                        fechaInicioField.value = datetimeInit;
+                    }
+                    
+                    if (!fechaFinField.value) {
+                        // Calcular fecha final por defecto (inicio + 18 horas para mantener dentro de 3 días)
+                        const fechaInicioObj = new Date(
+                            parseInt(datetimeInit.substring(0, 4)),
+                            parseInt(datetimeInit.substring(4, 6)) - 1,
+                            parseInt(datetimeInit.substring(6, 8)),
+                            parseInt(datetimeInit.substring(8, 10))
+                        );
+                        
+                        const fechaFinObj = new Date(fechaInicioObj.getTime() + (18 * 60 * 60 * 1000)); // +18 horas
+                        
+                        const fechaFin = fechaFinObj.toISOString().replace(/[-:]/g, '').substring(0, 10);
+                        fechaFinField.value = fechaFin;
+                    }
+                });
+                
+                // Limpiar estado cuando se cierra el modal
+                gifModal.addEventListener('hidden.bs.modal', function() {
+                    hideDownloadStatus();
+                    // Resetear el formulario para la próxima vez
+                    document.getElementById('gifDownloadForm').reset();
+                });
+            }
+            
+            // Manejar el clic en el botón de descargar GIF
+            if (confirmDownloadBtn) {
+                confirmDownloadBtn.addEventListener('click', async function() {
+                    const datetimeInit = document.getElementById('gif_datetime_init').value;
+                    const varName = document.getElementById('gif_var_name').value;
+                    const fechaInicio = document.getElementById('{{ gif_form.fecha_inicio.id_for_label }}').value;
+                    const fechaFin = document.getElementById('{{ gif_form.fecha_fin.id_for_label }}').value;
+                    
+                    // Validar los campos
+                    if (!datetimeInit || !varName || !fechaInicio || !fechaFin) {
+                        showDownloadStatus('Por favor, complete todos los campos requeridos.', true);
+                        return;
+                    }
+                    
+                    // Validar formato de fechas
+                    const dateRegex = /^\d{10}$/;
+                    if (!dateRegex.test(fechaInicio) || !dateRegex.test(fechaFin)) {
+                        showDownloadStatus('Las fechas deben tener el formato YYYYMMDDHH (10 dígitos).', true);
+                        return;
+                    }
+                    
+                    // Validar que fecha_inicio <= fecha_fin
+                    const fechaInicioNum = parseInt(fechaInicio);
+                    const fechaFinNum = parseInt(fechaFin);
+                    if (fechaInicioNum > fechaFinNum) {
+                        showDownloadStatus('La fecha de inicio no puede ser mayor que la fecha final.', true);
+                        return;
+                    }
+                    
+                    // Validar rango máximo de 3 días (72 horas)
+                    const fechaInicioObj = new Date(
+                        parseInt(fechaInicio.substring(0, 4)),
+                        parseInt(fechaInicio.substring(4, 6)) - 1,
+                        parseInt(fechaInicio.substring(6, 8)),
+                        parseInt(fechaInicio.substring(8, 10))
+                    );
+                    
+                    const fechaFinObj = new Date(
+                        parseInt(fechaFin.substring(0, 4)),
+                        parseInt(fechaFin.substring(4, 6)) - 1,
+                        parseInt(fechaFin.substring(6, 8)),
+                        parseInt(fechaFin.substring(8, 10))
+                    );
+                    
+                    const diferenciaHoras = (fechaFinObj - fechaInicioObj) / (1000 * 60 * 60);
+                    if (diferenciaHoras > 72) {
+                        showDownloadStatus('El rango máximo permitido es de 3 días (72 horas).', true);
+                        return;
+                    }
+                    
+                    // Mostrar estado de procesamiento
+                    showDownloadStatus('Generando GIF animado, por favor espere...');
+                    
+                    // Deshabilitar botón temporalmente para evitar múltiples clics
+                    confirmDownloadBtn.disabled = true;
+                    
+                    try {
+                        // Construir la URL de descarga
+                        const params = new URLSearchParams({
+                            'datetime_init': datetimeInit,
+                            'var_name': varName,
+                            'fecha_inicio': fechaInicio,
+                            'fecha_fin': fechaFin
+                        });
+                        
+                        const downloadUrl = `{% url 'descargar_gif' %}?${params.toString()}`;
+                        
+                        // Realizar la descarga usando fetch para manejar errores
+                        const response = await fetch(downloadUrl);
+                        
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(errorText || `Error ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        // Convertir la respuesta a blob
+                        const blob = await response.blob();
+                        
+                        if (blob.size === 0) {
+                            throw new Error('El archivo GIF está vacío');
+                        }
+                        
+                        // Crear un enlace temporal para la descarga
+                        const link = document.createElement('a');
+                        const url = window.URL.createObjectURL(blob);
+                        link.href = url;
+                        link.download = `${varName}_${fechaInicio}_to_${fechaFin}.gif`;
+                        document.body.appendChild(link);
+                        link.click();
+                        
+                        // Limpiar
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(link);
+                        
+                        // Ocultar estado de descarga
+                        hideDownloadStatus();
+                        
+                        // Cerrar el modal
+                        const modal = bootstrap.Modal.getInstance(gifModal);
+                        modal.hide();
+                        
+                        // Mostrar notificación de éxito
+                        showSuccessNotification('¡GIF descargado exitosamente!');
+                        
+                    } catch (error) {
+                        console.error('Error en la descarga:', error);
+                        // Extraer solo el mensaje de error sin detalles técnicos
+                        let errorMessage = 'Error al descargar el GIF';
+                        if (error.message.includes('No se encontraron imágenes')) {
+                            errorMessage = 'No se encontraron imágenes para el rango seleccionado';
+                        } else if (error.message.includes('rango máximo')) {
+                            errorMessage = 'El rango seleccionado excede el límite permitido';
+                        } else if (error.message.includes('conexión') || error.message.includes('timeout')) {
+                            errorMessage = 'Error de conexión con el servidor';
+                        }
+                        showDownloadStatus(errorMessage, true);
+                    } finally {
+                        // Rehabilitar el botón
+                        confirmDownloadBtn.disabled = false;
+                    }
+                });
+            }
+        });
+    </script>
 {% endblock extrajs %}

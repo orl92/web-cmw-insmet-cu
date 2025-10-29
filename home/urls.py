@@ -14,7 +14,7 @@ from home.views.servicios.publicos.views import PublicServicesListView
 from home.views.tiempo.hoy.views import WeatherTodayDetailView
 from home.views.tiempo.manana.views import WeatherTomorrowDetailView
 from home.views.pagos.views import PagosView
-
+from home.views.modelos.views import DescargarGifView
 from home.views.modelos import views
 
 urlpatterns = [
@@ -44,5 +44,6 @@ urlpatterns = [
     # Pagos en linea
     path('pagos_en_linea/', PagosView.as_view(), name='pagos'),
     path('proxy_image_modelo/', ImageProxyModeloView.as_view(), name='proxy_image_modelo'),
+    path('modelo/descargar_gif/', DescargarGifView.as_view(), name='descargar_gif'),
 
 ]

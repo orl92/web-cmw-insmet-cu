@@ -4,7 +4,7 @@ import numpy as np
 import os
 
 from dashboard.models import Town
-from home.forms import MeteoDataForm, SoundingForm
+from home.forms import MeteoDataForm, SoundingForm, GifDownloadForm
 from home.data.plot_generators import generate_skewt
 import json
 from django.http import JsonResponse
@@ -22,22 +22,39 @@ import logging
 import socket
 import ipaddress
 
+import io
+from PIL import Image
+import re
+
 # Configurar logger
 logger = logging.getLogger(__name__)
+
 
 class MapaView(TemplateView):
     template_name = 'pages/home/modelos/maps.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
+
         # Establecer valores por defecto
         initial_data = {
             'datetime_init': self.get_default_datetime(),
-            'var_name': 'temp'
+            'var_name': 'T2'
         }
-        
+
+        # Obtener parámetros de la URL si existen
+        fecha_inicio_url = self.request.GET.get('fecha_inicio')
+        fecha_fin_url = self.request.GET.get('fecha_fin')
+
+        # Formulario para GIF con valores iniciales
+        gif_initial = {}
+        if fecha_inicio_url:
+            gif_initial['fecha_inicio'] = fecha_inicio_url
+        if fecha_fin_url:
+            gif_initial['fecha_fin'] = fecha_fin_url
+
         context['form'] = MeteoDataForm(initial=initial_data)
+        context['gif_form'] = GifDownloadForm(initial=gif_initial)  # Nuevo formulario para GIF
         context['initial_date'] = self.get_default_date()
         context['title'] = 'Modelo de pronóstico WRF'
         context['parent'] = 'Física de la atmósfera'
@@ -59,7 +76,7 @@ class MapaView(TemplateView):
             data = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({
-                'status': 'error', 
+                'status': 'error',
                 'message': 'Datos inválidos en la solicitud'
             }, status=400)
 
@@ -148,6 +165,7 @@ class MapaView(TemplateView):
             logger.exception('Unhandled exception in fetch_image_urls')
             return {'status': 'error', 'message': 'Ocurrió un error interno al procesar la solicitud.'}
 
+
 class MeteogramView(TemplateView):
     template_name = 'pages/home/modelos/meteogram.html'
 
@@ -235,7 +253,8 @@ class MeteogramView(TemplateView):
                 'status': 'error',
                 'message': "Error interno del servidor"
             }, status=500)
-            
+
+
 class SoundingView(TemplateView):
     template_name = 'pages/home/modelos/sounding.html'
 
@@ -307,6 +326,7 @@ class SoundingView(TemplateView):
                 'status': 'error',
                 'message': "Error al generar el gráfico."
             }, status=500)
+
 
 class ImageProxyModeloView(View):
     """
@@ -400,10 +420,10 @@ class ImageProxyModeloView(View):
                     ip = info[4][0]
                     ip_obj = ipaddress.ip_address(ip)
                     if (
-                        ip_obj.is_loopback or
-                        ip_obj.is_link_local or
-                        ip_obj.is_multicast or
-                        ip_obj.is_reserved):
+                            ip_obj.is_loopback or
+                            ip_obj.is_link_local or
+                            ip_obj.is_multicast or
+                            ip_obj.is_reserved):
                         logger.warning(f"IP no permitida: {ip}")
                         return False
             except Exception as e:
@@ -434,3 +454,180 @@ class ImageProxyModeloView(View):
 
     def _get_auth_headers(self):
         return {}
+
+
+class DescargarGifView(View):
+    """
+    Vista para descargar GIF animado de datos meteorológicos
+    """
+
+    def get(self, request, *args, **kwargs):
+        # Obtener parámetros de la URL
+        datetime_init = request.GET.get('datetime_init')
+        var_name = request.GET.get('var_name')
+        fecha_inicio = request.GET.get('fecha_inicio')
+        fecha_fin = request.GET.get('fecha_fin')
+
+        # Validar parámetros obligatorios
+        if not datetime_init or not var_name:
+            return HttpResponse('Se requieren los parámetros datetime_init y var_name', status=400)
+
+        # Validar formato de fecha inicial
+        if not self.validar_formato_fecha(datetime_init):
+            return HttpResponse('Formato de datetime_init inválido. Use YYYYMMDDHH', status=400)
+
+        # Validar variable
+        if var_name not in dict(MeteoDataForm.VAR_CHOICES):
+            return HttpResponse(f'Variable no válida', status=400)
+
+        # Validar rango de fechas si se proporciona
+        if fecha_inicio or fecha_fin:
+            if not fecha_inicio or not fecha_fin:
+                return HttpResponse('Se deben proporcionar ambas fechas: fecha_inicio y fecha_fin', status=400)
+
+            if not self.validar_formato_fecha(fecha_inicio) or not self.validar_formato_fecha(fecha_fin):
+                return HttpResponse('Formato de fechas inválido. Use YYYYMMDDHH', status=400)
+
+            # Validar que fecha_inicio <= fecha_fin
+            fecha_ini_dt = datetime.strptime(fecha_inicio, '%Y%m%d%H')
+            fecha_fin_dt = datetime.strptime(fecha_fin, '%Y%m%d%H')
+            if fecha_ini_dt > fecha_fin_dt:
+                return HttpResponse('La fecha de inicio no puede ser mayor que la fecha final', status=400)
+
+            # Validar rango máximo de 3 días (72 horas)
+            diferencia = fecha_fin_dt - fecha_ini_dt
+            if diferencia.total_seconds() > 72 * 3600:  # 72 horas en segundos
+                return HttpResponse('El rango máximo permitido es de 3 días (72 horas)', status=400)
+
+        try:
+            # Construir la URL del servicio
+            url = f"http://imgwrfserver.cmw.insmet.cu/simulations/?datetime_init={datetime_init}&var_name={var_name}"
+
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+
+            # Verificar si la solicitud fue exitosa
+            if data.get("status") != "success":
+                return HttpResponse(f'Error del servidor meteorológico: {data.get("status")}', status=500)
+
+            image_urls = data.get("image_urls", [])
+            if not image_urls:
+                return HttpResponse('No se encontraron imágenes en la respuesta del servidor', status=404)
+
+            # Filtrar imágenes por rango si se especificó
+            if fecha_inicio and fecha_fin:
+                image_urls = self.filtrar_imagenes_por_rango(image_urls, fecha_inicio, fecha_fin)
+
+            if not image_urls:
+                return HttpResponse('No hay imágenes en el rango especificado', status=404)
+
+            # Validar que no haya demasiadas imágenes (máximo 25 imágenes para 3 días)
+            if len(image_urls) > 25:
+                return HttpResponse('Demasiadas imágenes para el rango seleccionado', status=400)
+
+            # Lista para almacenar las imágenes PIL
+            images = []
+            downloaded_count = 0
+
+            # Descargar y procesar cada imagen
+            for i, img_url in enumerate(image_urls):
+                try:
+                    img_response = requests.get(img_url, timeout=30)
+                    img_response.raise_for_status()
+
+                    # Abrir la imagen con PIL
+                    img = Image.open(io.BytesIO(img_response.content))
+
+                    # Convertir a RGB si es necesario
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        bg = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        bg.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                        img = bg
+                    elif img.mode != 'RGB':
+                        img = img.convert('RGB')
+
+                    images.append(img)
+                    downloaded_count += 1
+
+                except Exception as e:
+                    print(f"Error al procesar {img_url}: {str(e)}")
+                    continue
+
+            # Crear el GIF si hay imágenes descargadas
+            if images:
+                # Crear nombre descriptivo para el archivo
+                descripcion = dict(MeteoDataForm.VAR_CHOICES).get(var_name, var_name)
+                if fecha_inicio and fecha_fin:
+                    nombre_archivo = f"{var_name}_{fecha_inicio}_to_{fecha_fin}.gif"
+                else:
+                    nombre_archivo = f"{var_name}_{datetime_init}_full_range.gif"
+
+                # Crear el GIF en memoria
+                gif_buffer = io.BytesIO()
+                images[0].save(
+                    gif_buffer,
+                    format='GIF',
+                    save_all=True,
+                    append_images=images[1:],
+                    duration=500,
+                    loop=0,
+                    optimize=True
+                )
+                gif_buffer.seek(0)
+
+                # Limpiar imágenes
+                for img in images:
+                    img.close()
+
+                # Crear respuesta HTTP con el GIF
+                response = HttpResponse(gif_buffer.getvalue(), content_type='image/gif')
+                response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+                return response
+            else:
+                return HttpResponse('No se pudieron cargar imágenes para crear el GIF', status=500)
+
+        except requests.exceptions.RequestException as e:
+            return HttpResponse(f'Error de conexión: {str(e)}', status=500)
+        except Exception as e:
+            return HttpResponse(f'Error interno del servidor: {str(e)}', status=500)
+
+    def validar_formato_fecha(self, fecha_str):
+        """Valida el formato de fecha YYYYMMDDHH"""
+        try:
+            if len(fecha_str) != 10:
+                return False
+            datetime.strptime(fecha_str, '%Y%m%d%H')
+            return True
+        except ValueError:
+            return False
+
+    def extraer_fecha_desde_url(self, url):
+        """Extrae la fecha y hora desde la URL de la imagen"""
+        patron = r'(\d{4}-\d{2}-\d{2})T(\d{2})-\d{2}-\d{2}'
+        coincidencia = re.search(patron, url)
+
+        if coincidencia:
+            fecha_str = coincidencia.group(1)  # 2025-10-28
+            hora_str = coincidencia.group(2)  # 18
+            return f"{fecha_str.replace('-', '')}{hora_str}"
+        return None
+
+    def filtrar_imagenes_por_rango(self, image_urls, fecha_inicio, fecha_fin):
+        """Filtra las imágenes por rango de fechas"""
+        imagenes_filtradas = []
+
+        for url in image_urls:
+            fecha_imagen = self.extraer_fecha_desde_url(url)
+            if fecha_imagen:
+                # Convertir a objetos datetime para comparación
+                fecha_img_dt = datetime.strptime(fecha_imagen, '%Y%m%d%H')
+                fecha_ini_dt = datetime.strptime(fecha_inicio, '%Y%m%d%H')
+                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y%m%d%H')
+
+                if fecha_ini_dt <= fecha_img_dt <= fecha_fin_dt:
+                    imagenes_filtradas.append(url)
+
+        return imagenes_filtradas
