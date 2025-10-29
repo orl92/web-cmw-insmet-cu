@@ -118,13 +118,13 @@ class ScientificPublicationUpdateView(LoginRequiredMixin, PermissionRequiredMixi
         return kwargs
 
     def form_valid(self, form):
-        # Guardar cambios en la publicación principal
-        self.object = form.save()
-
-        # Procesar el formset de coautores
+        # Procesar el formset de coautores PRIMERO
         formset = CoauthorFormSet(self.request.POST, prefix='coauthors')
 
         if formset.is_valid():
+            # Guardar cambios en la publicación principal (incluyendo el autor)
+            self.object = form.save()
+
             # Limpiar coautores actuales
             self.object.coauthors.clear()
 
@@ -148,8 +148,8 @@ class ScientificPublicationUpdateView(LoginRequiredMixin, PermissionRequiredMixi
                 message=f"Se actualizó la publicación científica: {self.object.title}."
             )
 
-            messages.success(self.request, 'La publicación científica ha sido actualizada con éxito.',
-                             extra_tags='warning')
+            messages.success(self.request, 'La publicación científica ha sido actualizada con éxito.')
+
         else:
             # Renderizar nuevamente si hay errores
             print("Errores del formset:", formset.errors)
@@ -177,8 +177,16 @@ class ScientificPublicationUpdateView(LoginRequiredMixin, PermissionRequiredMixi
         return context
 
     def test_func(self):
-        publicacion = self.get_object()
-        return self.request.user.is_superuser or publicacion.user == self.request.user
+        """
+        Verificar permisos adicionales.
+        Como ScientificPublication no tiene campo 'user',
+        puedes ajustar esta lógica según tus necesidades.
+        """
+        # Opción 1: Solo superusuarios pueden editar
+        return self.request.user.is_superuser
+
+        # Opción 2: Si tienes otra forma de verificar propiedad, implementa aquí
+        # Por ejemplo, si el autor está relacionado con el usuario de alguna manera
 
 
 class ScientificPublicationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):

@@ -134,12 +134,11 @@ class ScientificPublicationForm(forms.ModelForm):
 
         # Si no es nuevo, actualizar los campos si están vacíos
         if not created:
-            if not author.email and author_email:
-                author.email = author_email
-            if not author.institution and self.cleaned_data.get('author_institution'):
-                author.institution = self.cleaned_data.get('author_institution')
-            if not author.orcid_id and self.cleaned_data.get('author_orcid_id'):
-                author.orcid_id = self.cleaned_data.get('author_orcid_id')
+            author.email = self.cleaned_data.get('author_email')
+            author.first_name = self.cleaned_data.get('author_first_name')
+            author.last_name = self.cleaned_data.get('author_last_name')
+            author.institution = self.cleaned_data.get('author_institution')
+            author.orcid_id = self.cleaned_data.get('author_orcid_id')
             author.save()
 
         instance.author = author
