@@ -147,7 +147,10 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-outline-secondary me-2" id="clearGifForm">
+                        <i class="fas fa-redo me-1"></i>Limpiar
+                    </button>
                     <button type="button" class="btn btn-primary" id="confirmDownloadGif">
                         <i class="fas fa-download me-1"></i>Descargar GIF
                     </button>
@@ -206,216 +209,18 @@
     <script src="{% static '' %}dist/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <!-- FontAwesome para íconos -->
     <script src="{% static '' %}dist/libs/@fortawesome/fontawesome-free/js/all.min.js"></script>
-    <!-- FS Lightbox para la galería de imágenes -->
-    <script src="{% static '' %}dist/js/maps.js"></script>
     
+    <!-- Configuración para el script de GIF -->
     <script>
-        // Función para manejar la descarga del GIF
-        document.addEventListener('DOMContentLoaded', function() {
-            const gifModal = document.getElementById('gifModal');
-            const confirmDownloadBtn = document.getElementById('confirmDownloadGif');
-            const downloadStatus = document.getElementById('download-status');
-            const statusMessage = document.getElementById('status-message');
-            const successToast = new bootstrap.Toast(document.getElementById('successToast'));
-            
-            // Función para mostrar estado de descarga
-            function showDownloadStatus(message, isError = false) {
-                statusMessage.textContent = message;
-                downloadStatus.classList.remove('d-none', 'alert-danger', 'alert-success');
-                downloadStatus.classList.add(isError ? 'alert-danger' : 'alert-info');
-                
-                if (isError) {
-                    downloadStatus.querySelector('.spinner-border').classList.add('d-none');
-                } else {
-                    downloadStatus.querySelector('.spinner-border').classList.remove('d-none');
-                }
-            }
-            
-            // Función para ocultar estado de descarga
-            function hideDownloadStatus() {
-                downloadStatus.classList.add('d-none');
-            }
-            
-            // Función para mostrar notificación de éxito
-            function showSuccessNotification(message) {
-                document.getElementById('toast-message').textContent = message;
-                successToast.show();
-            }
-            
-            // Cuando se abre el modal, actualizar los campos ocultos con los valores actuales
-            if (gifModal) {
-                gifModal.addEventListener('show.bs.modal', function() {
-                    // Ocultar estado de descarga previo
-                    hideDownloadStatus();
-                    
-                    // Obtener los valores actuales del formulario principal
-                    const dateValue = document.getElementById('datepicker').value;
-                    const hourValue = document.getElementById('hour-select').value;
-                    const varNameValue = document.getElementById('id_var_name').value;
-                    
-                    // Formatear datetime_init
-                    const formattedDate = dateValue.replace(/-/g, '');
-                    const datetimeInit = formattedDate + hourValue;
-                    
-                    // Actualizar los campos ocultos en el formulario del GIF
-                    document.getElementById('gif_datetime_init').value = datetimeInit;
-                    document.getElementById('gif_var_name').value = varNameValue;
-                    
-                    // Si los campos de fecha están vacíos, establecer valores por defecto
-                    const fechaInicioField = document.getElementById('{{ gif_form.fecha_inicio.id_for_label }}');
-                    const fechaFinField = document.getElementById('{{ gif_form.fecha_fin.id_for_label }}');
-                    
-                    if (!fechaInicioField.value) {
-                        // Usar la fecha actual como inicio
-                        fechaInicioField.value = datetimeInit;
-                    }
-                    
-                    if (!fechaFinField.value) {
-                        // Calcular fecha final por defecto (inicio + 18 horas para mantener dentro de 3 días)
-                        const fechaInicioObj = new Date(
-                            parseInt(datetimeInit.substring(0, 4)),
-                            parseInt(datetimeInit.substring(4, 6)) - 1,
-                            parseInt(datetimeInit.substring(6, 8)),
-                            parseInt(datetimeInit.substring(8, 10))
-                        );
-                        
-                        const fechaFinObj = new Date(fechaInicioObj.getTime() + (18 * 60 * 60 * 1000)); // +18 horas
-                        
-                        const fechaFin = fechaFinObj.toISOString().replace(/[-:]/g, '').substring(0, 10);
-                        fechaFinField.value = fechaFin;
-                    }
-                });
-                
-                // Limpiar estado cuando se cierra el modal
-                gifModal.addEventListener('hidden.bs.modal', function() {
-                    hideDownloadStatus();
-                    // Resetear el formulario para la próxima vez
-                    document.getElementById('gifDownloadForm').reset();
-                });
-            }
-            
-            // Manejar el clic en el botón de descargar GIF
-            if (confirmDownloadBtn) {
-                confirmDownloadBtn.addEventListener('click', async function() {
-                    const datetimeInit = document.getElementById('gif_datetime_init').value;
-                    const varName = document.getElementById('gif_var_name').value;
-                    const fechaInicio = document.getElementById('{{ gif_form.fecha_inicio.id_for_label }}').value;
-                    const fechaFin = document.getElementById('{{ gif_form.fecha_fin.id_for_label }}').value;
-                    
-                    // Validar los campos
-                    if (!datetimeInit || !varName || !fechaInicio || !fechaFin) {
-                        showDownloadStatus('Por favor, complete todos los campos requeridos.', true);
-                        return;
-                    }
-                    
-                    // Validar formato de fechas
-                    const dateRegex = /^\d{10}$/;
-                    if (!dateRegex.test(fechaInicio) || !dateRegex.test(fechaFin)) {
-                        showDownloadStatus('Las fechas deben tener el formato YYYYMMDDHH (10 dígitos).', true);
-                        return;
-                    }
-                    
-                    // Validar que fecha_inicio <= fecha_fin
-                    const fechaInicioNum = parseInt(fechaInicio);
-                    const fechaFinNum = parseInt(fechaFin);
-                    if (fechaInicioNum > fechaFinNum) {
-                        showDownloadStatus('La fecha de inicio no puede ser mayor que la fecha final.', true);
-                        return;
-                    }
-                    
-                    // Validar rango máximo de 3 días (72 horas)
-                    const fechaInicioObj = new Date(
-                        parseInt(fechaInicio.substring(0, 4)),
-                        parseInt(fechaInicio.substring(4, 6)) - 1,
-                        parseInt(fechaInicio.substring(6, 8)),
-                        parseInt(fechaInicio.substring(8, 10))
-                    );
-                    
-                    const fechaFinObj = new Date(
-                        parseInt(fechaFin.substring(0, 4)),
-                        parseInt(fechaFin.substring(4, 6)) - 1,
-                        parseInt(fechaFin.substring(6, 8)),
-                        parseInt(fechaFin.substring(8, 10))
-                    );
-                    
-                    const diferenciaHoras = (fechaFinObj - fechaInicioObj) / (1000 * 60 * 60);
-                    if (diferenciaHoras > 72) {
-                        showDownloadStatus('El rango máximo permitido es de 3 días (72 horas).', true);
-                        return;
-                    }
-                    
-                    // Mostrar estado de procesamiento
-                    showDownloadStatus('Generando GIF animado, por favor espere...');
-                    
-                    // Deshabilitar botón temporalmente para evitar múltiples clics
-                    confirmDownloadBtn.disabled = true;
-                    
-                    try {
-                        // Construir la URL de descarga
-                        const params = new URLSearchParams({
-                            'datetime_init': datetimeInit,
-                            'var_name': varName,
-                            'fecha_inicio': fechaInicio,
-                            'fecha_fin': fechaFin
-                        });
-                        
-                        const downloadUrl = `{% url 'descargar_gif' %}?${params.toString()}`;
-                        
-                        // Realizar la descarga usando fetch para manejar errores
-                        const response = await fetch(downloadUrl);
-                        
-                        if (!response.ok) {
-                            const errorText = await response.text();
-                            throw new Error(errorText || `Error ${response.status}: ${response.statusText}`);
-                        }
-                        
-                        // Convertir la respuesta a blob
-                        const blob = await response.blob();
-                        
-                        if (blob.size === 0) {
-                            throw new Error('El archivo GIF está vacío');
-                        }
-                        
-                        // Crear un enlace temporal para la descarga
-                        const link = document.createElement('a');
-                        const url = window.URL.createObjectURL(blob);
-                        link.href = url;
-                        link.download = `${varName}_${fechaInicio}_to_${fechaFin}.gif`;
-                        document.body.appendChild(link);
-                        link.click();
-                        
-                        // Limpiar
-                        window.URL.revokeObjectURL(url);
-                        document.body.removeChild(link);
-                        
-                        // Ocultar estado de descarga
-                        hideDownloadStatus();
-                        
-                        // Cerrar el modal
-                        const modal = bootstrap.Modal.getInstance(gifModal);
-                        modal.hide();
-                        
-                        // Mostrar notificación de éxito
-                        showSuccessNotification('¡GIF descargado exitosamente!');
-                        
-                    } catch (error) {
-                        console.error('Error en la descarga:', error);
-                        // Extraer solo el mensaje de error sin detalles técnicos
-                        let errorMessage = 'Error al descargar el GIF';
-                        if (error.message.includes('No se encontraron imágenes')) {
-                            errorMessage = 'No se encontraron imágenes para el rango seleccionado';
-                        } else if (error.message.includes('rango máximo')) {
-                            errorMessage = 'El rango seleccionado excede el límite permitido';
-                        } else if (error.message.includes('conexión') || error.message.includes('timeout')) {
-                            errorMessage = 'Error de conexión con el servidor';
-                        }
-                        showDownloadStatus(errorMessage, true);
-                    } finally {
-                        // Rehabilitar el botón
-                        confirmDownloadBtn.disabled = false;
-                    }
-                });
-            }
-        });
+        // Configuración global para el modal de GIF
+        window.GIF_DOWNLOAD_CONFIG = {
+            downloadUrl: "{% url 'descargar_gif' %}",
+            fechaInicioId: "{{ gif_form.fecha_inicio.id_for_label }}",
+            fechaFinId: "{{ gif_form.fecha_fin.id_for_label }}"
+        };
     </script>
+    
+    <!-- Scripts separados -->
+    <script src="{% static '' %}dist/js/maps.js"></script>
+    <script src="{% static '' %}dist/js/gif-download.js"></script>
 {% endblock extrajs %}
