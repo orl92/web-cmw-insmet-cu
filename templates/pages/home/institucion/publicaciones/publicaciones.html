@@ -2,34 +2,61 @@
 {% load static %}
 {% block content %}
 
-    <!-- Modal para visualizar PDF -->
-    <div class="modal modal-blur fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="pdfModalLabel">Visualizar PDF</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="d-flex justify-content-center mb-3">
-                        <button id="prevPage" class="btn btn-secondary me-2">Anterior</button>
-                        <span class="align-self-center">Página: <span id="pageNum">1</span> / <span id="pageCount">0</span></span>
-                        <button id="nextPage" class="btn btn-secondary ms-2">Siguiente</button>
+    <!-- Modal para visualizar PDF en pantalla completa -->
+    <div class="pdf-modal" id="pdfModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1050; overflow: auto;">
+        <div class="pdf-modal-content" style="position: relative; background-color: white; margin: 2% auto; width: 96%; height: 96%; border-radius: 8px; display: flex; flex-direction: column;">
+            <!-- Header del Modal -->
+            <div class="pdf-modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #dee2e6; background-color: #f8f9fa;">
+                <h5 class="pdf-modal-title" id="pdfModalLabel" style="margin: 0; font-weight: 600;">Visualizar PDF</h5>
+                <button type="button" class="pdf-modal-close" onclick="PDFViewerInstance.hideModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6c757d;">
+                    &times;
+                </button>
+            </div>
+            
+            <!-- Body del Modal -->
+            <div class="pdf-modal-body" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
+                <!-- Controles de navegación -->
+                <div style="padding: 1rem; border-bottom: 1px solid #dee2e6; background-color: #f8f9fa;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button id="prevPage" class="pdf-nav-btn" style="padding: 0.5rem 1rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                ← Anterior
+                            </button>
+                            <button id="nextPage" class="pdf-nav-btn" style="padding: 0.5rem 1rem; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Siguiente →
+                            </button>
+                            <span style="margin-left: 1rem; color: #6c757d;">
+                                Página: <span id="pageNum">1</span> / <span id="pageCount">0</span>
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <select id="zoomSelect" style="padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px;">
+                                <option value="0.5">50%</option>
+                                <option value="0.75">75%</option>
+                                <option value="1" selected>100%</option>
+                                <option value="1.25">125%</option>
+                                <option value="1.5">150%</option>
+                                <option value="2">200%</option>
+                                <option value="auto">Auto</option>
+                            </select>
+                            <a id="downloadPdf" class="pdf-download-btn" href="#" download style="padding: 0.5rem 1rem; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; display: flex; align-items: center; gap: 0.5rem;">
+                                📥 Descargar
+                            </a>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-center">
-                        <canvas id="pdfCanvas" class="border"></canvas>
-                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <a id="downloadPdf" class="btn btn-primary" href="#" download>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
-                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                        </svg>
-                        Descargar PDF
-                    </a>
+                
+                <!-- Contenedor del PDF -->
+                <div id="pdfContainer" style="flex: 1; display: flex; justify-content: center; align-items: flex-start; overflow: auto; padding: 1rem; background-color: #f8f9fa;">
+                    <canvas id="pdfCanvas" style="box-shadow: 0 2px 10px rgba(0,0,0,0.1); background-color: white;"></canvas>
                 </div>
+            </div>
+            
+            <!-- Footer del Modal -->
+            <div class="pdf-modal-footer" style="padding: 1rem; border-top: 1px solid #dee2e6; background-color: #f8f9fa; text-align: right;">
+                <button type="button" onclick="PDFViewerInstance.hideModal()" style="padding: 0.5rem 1.5rem; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Cerrar Vista PDF
+                </button>
             </div>
         </div>
     </div>
@@ -91,27 +118,20 @@
                                                 {{ object.publication_date }}
                                             </div>
                                             <div class="list-inline-item">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                     class="icon icon-tabler icons-tabler-outline icon-tabler-building">
-                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                                    <path d="M3 21l18 0"/>
-                                                    <path d="M9 8l1 0"/>
-                                                    <path d="M9 12l1 0"/>
-                                                    <path d="M9 16l1 0"/>
-                                                    <path d="M14 8l1 0"/>
-                                                    <path d="M14 12l1 0"/>
-                                                    <path d="M14 16l1 0"/>
-                                                    <path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16"/>
-                                                </svg>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                     stroke-linejoin="round"
+                                     class="icon icon-tabler icons-tabler-outline icon-tabler-building-bank"><path
+                                        stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l18 0"/><path
+                                        d="M3 10l18 0"/><path d="M5 6l7 -3l7 3"/><path d="M4 10l0 11"/><path
+                                        d="M20 10l0 11"/><path d="M8 14l0 3"/><path d="M12 14l0 3"/><path
+                                        d="M16 14l0 3"/></svg>
                                                 {{ object.author.institution }}
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-auto">
                                         <div class="mt-3 badges">
-                                            <!-- Botón para abrir el PDF - CORREGIDO para usar object.pdf_file -->
                                             {% if object.pdf_file %}
                                             <button class="btn btn-icon btn-success view-pdf-btn" 
                                                     data-pdf-url="{{ object.pdf_file.url }}" 
@@ -159,136 +179,15 @@
         </div>
     {% endfor %}
 
-    <!-- Incluir PDF.js desde CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- Incluir PDF.js -->
+    <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
     
+    <!-- Pasar la URL del worker como variable global -->
     <script>
-        // Configurar PDF.js worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        
-        let pdfDoc = null;
-        let pageNum = 1;
-        let pageRendering = false;
-        let pageNumPending = null;
-        const scale = 1.5;
-        
-        const canvas = document.getElementById('pdfCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Función para renderizar una página
-        function renderPage(num) {
-            pageRendering = true;
-            
-            pdfDoc.getPage(num).then(function(page) {
-                const viewport = page.getViewport({scale: scale});
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                
-                const renderTask = page.render(renderContext);
-                
-                renderTask.promise.then(function() {
-                    pageRendering = false;
-                    
-                    if (pageNumPending !== null) {
-                        renderPage(pageNumPending);
-                        pageNumPending = null;
-                    }
-                    
-                    document.getElementById('pageNum').textContent = num;
-                });
-            });
-            
-            document.getElementById('pageCount').textContent = pdfDoc.numPages;
-        }
-        
-        // Función para navegar a la siguiente página
-        function queueRenderPage(num) {
-            if (pageRendering) {
-                pageNumPending = num;
-            } else {
-                renderPage(num);
-            }
-        }
-        
-        // Función para mostrar la página anterior
-        function onPrevPage() {
-            if (pageNum <= 1) {
-                return;
-            }
-            pageNum--;
-            queueRenderPage(pageNum);
-        }
-        
-        // Función para mostrar la siguiente página
-        function onNextPage() {
-            if (pageNum >= pdfDoc.numPages) {
-                return;
-            }
-            pageNum++;
-            queueRenderPage(pageNum);
-        }
-        
-        // Event listeners para los botones de navegación
-        document.getElementById('prevPage').addEventListener('click', onPrevPage);
-        document.getElementById('nextPage').addEventListener('click', onNextPage);
-        
-        // Manejar la apertura del modal para visualizar PDF
-        document.querySelectorAll('.view-pdf-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const pdfUrl = this.getAttribute('data-pdf-url');
-                const pdfTitle = this.getAttribute('data-pdf-title');
-                
-                // Actualizar título del modal
-                document.getElementById('pdfModalLabel').textContent = pdfTitle;
-                
-                // Actualizar enlace de descarga
-                document.getElementById('downloadPdf').href = pdfUrl;
-                
-                // Mostrar mensaje de carga
-                const modalBody = document.querySelector('#pdfModal .modal-body');
-                const originalContent = modalBody.innerHTML;
-                modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando PDF...</span></div><p class="mt-2">Cargando PDF...</p></div>';
-                
-                // Cargar el PDF
-                pdfjsLib.getDocument(pdfUrl).promise.then(function(pdfDoc_) {
-                    pdfDoc = pdfDoc_;
-                    pageNum = 1;
-                    
-                    // Restaurar contenido original del modal
-                    modalBody.innerHTML = originalContent;
-                    
-                    // Reasignar event listeners después de restaurar el contenido
-                    document.getElementById('prevPage').addEventListener('click', onPrevPage);
-                    document.getElementById('nextPage').addEventListener('click', onNextPage);
-                    
-                    // Renderizar la primera página
-                    renderPage(pageNum);
-                    
-                    // Mostrar el modal
-                    const pdfModal = new bootstrap.Modal(document.getElementById('pdfModal'));
-                    pdfModal.show();
-                }).catch(function(error) {
-                    console.error('Error al cargar el PDF:', error);
-                    // Restaurar contenido original en caso de error
-                    modalBody.innerHTML = originalContent;
-                    alert('Error al cargar el PDF. Por favor, intente nuevamente.');
-                });
-            });
-        });
-        
-        // Limpiar el canvas cuando se cierra el modal
-        document.getElementById('pdfModal').addEventListener('hidden.bs.modal', function() {
-            if (ctx) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-            pdfDoc = null;
-            pageNum = 1;
-        });
+        window.PDFJS_WORKER_SRC = '{% static "dist/libs/PDF/pdf.worker.min.js" %}';
     </script>
+    
+    <!-- Incluir el script separado para el visor de PDF -->
+    <script src="{% static 'dist/js/publicaciones.js' %}"></script>
 
 {% endblock content %}
