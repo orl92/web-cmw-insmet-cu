@@ -1,8 +1,7 @@
 
-from django.urls import reverse_lazy, reverse
-from django.views.generic import *
+from django.views.generic import ListView
 
-from dashboard.models import StormWarning, ScientificPublication
+from dashboard.models import ScientificPublication
 
 
 class ScientificPublicationListView(ListView):
