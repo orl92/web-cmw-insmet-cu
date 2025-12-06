@@ -1,7 +1,6 @@
-// static/dist/js/sounding-form.js
+// static/dist/js/sounding.js
 class SoundingFormHandler {
     constructor() {
-        // Primero inicializar las variables de días y meses
         this.weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
         this.months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -12,18 +11,25 @@ class SoundingFormHandler {
         this.initLitepicker();
         this.setupDatetimeHandlers();
         this.setupTownChangeHandler();
-        this.updateForecastOptions(); // Actualizar opciones de previsión
+        this.updateForecastOptions();
         this.checkUrlParams();
+        
+        this.autoHideTimeout = null;
+        
+        // Carga inicial automática después de un breve delay
+        // para asegurar que todo está inicializado
+        setTimeout(() => {
+            this.loadInitialData();
+        }, 100);
     }
 
     initElements() {
         this.form = document.getElementById('sounding-form');
-        this.submitBtn = this.form.querySelector('button[type="submit"]');
-        this.loadingEl = document.getElementById('loading');
+        this.submitBtn = document.getElementById('submit-btn');
         this.plotEl = document.getElementById('sounding-plot');
-        this.emptyPlotEl = document.getElementById('empty-plot');
-        this.datetimeInfoEl = document.getElementById('datetime-info');
-        this.paramsInfoEl = document.getElementById('params-info');
+        this.plotArea = document.getElementById('plot-area');
+        this.errorContainer = document.getElementById('error-container');
+        this.errorMessageElement = document.getElementById('error-message');
         this.datePicker = document.getElementById('datepicker');
         this.hourSelect = document.getElementById('hour-select');
         this.forecastSelect = document.getElementById('forecast-select');
@@ -31,7 +37,6 @@ class SoundingFormHandler {
         this.townSelect = document.getElementById('id_town');
     }
 
-    // Nuevo método para establecer fecha y hora actual
     setCurrentDateAndTime() {
         const now = new Date();
         const year = now.getUTCFullYear();
@@ -39,17 +44,15 @@ class SoundingFormHandler {
         const day = now.getUTCDate().toString().padStart(2, '0');
         const currentDate = `${year}-${month}-${day}`;
         
-        // Establecer fecha actual en el input solo si no hay valor previo
+        // Solo establecer valores si no existen ya (por ejemplo, de parámetros URL)
         if (this.datePicker && !this.datePicker.value) {
             this.datePicker.value = currentDate;
         }
         
-        // Establecer hora 00 UTC por defecto si no hay valor
         if (this.hourSelect && !this.hourSelect.value) {
             this.hourSelect.value = '00';
         }
         
-        // Actualizar campo oculto de datetime
         this.updateDatetimeInit();
     }
 
@@ -96,7 +99,6 @@ class SoundingFormHandler {
                 const lat = selectedOption.getAttribute('data-lat');
                 const long = selectedOption.getAttribute('data-long');
                 
-                // Actualizar campos ocultos si existen
                 if (document.querySelector('[name="lat"]')) {
                     document.querySelector('[name="lat"]').value = lat;
                 }
@@ -134,7 +136,6 @@ class SoundingFormHandler {
             const hoursToAdd = i * 3;
             forecastDate.setUTCHours(forecastDate.getUTCHours() + hoursToAdd);
             
-            // Validar que la fecha sea válida
             if (isNaN(forecastDate.getTime())) {
                 console.error('Fecha inválida en previsión');
                 continue;
@@ -143,7 +144,6 @@ class SoundingFormHandler {
             const dayOfWeek = forecastDate.getUTCDay();
             const monthIndex = forecastDate.getUTCMonth();
             
-            // Validar índices
             if (dayOfWeek < 0 || dayOfWeek >= this.weekdays.length) {
                 console.error('Índice de día fuera de rango:', dayOfWeek);
                 continue;
@@ -171,35 +171,102 @@ class SoundingFormHandler {
     }
 
     checkUrlParams() {
-        if (window.location.search) {
-            this.loadFromUrlParams();
-        } else {
-            // Si no hay parámetros en la URL, actualizar con valores por defecto
-            this.updateDatetimeInit();
-            this.updateForecastOptions();
+        const params = new URLSearchParams(window.location.search);
+        
+        // Verificar si hay parámetros en la URL
+        if (params.toString()) {
+            const datetimeInit = params.get('datetime_init') || '';
+
+            if (datetimeInit && datetimeInit.length === 10) {
+                const datePart = datetimeInit.substring(0, 8);
+                const formattedDate = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
+
+                if (this.datePicker) this.datePicker.value = formattedDate;
+                if (this.hourSelect) this.hourSelect.value = datetimeInit.substring(8, 10);
+            }
+
+            const tIndex = params.get('t_index');
+            if (tIndex && this.forecastSelect) {
+                this.forecastSelect.value = tIndex;
+            }
+        }
+        
+        this.updateDatetimeInit();
+        this.updateForecastOptions();
+    }
+
+    loadInitialData() {
+        // Forzar actualización de datetime-init antes de enviar
+        this.updateDatetimeInit();
+        
+        // Simular envío del formulario para cargar datos iniciales
+        setTimeout(() => {
+            this.handleSubmit(new Event('submit'));
+        }, 100);
+    }
+
+    showError(message) {
+        if (!this.errorContainer || !this.errorMessageElement) {
+            console.error('Error: No se pudo encontrar el contenedor de error');
+            return;
+        }
+
+        if (this.autoHideTimeout) {
+            clearTimeout(this.autoHideTimeout);
+            this.autoHideTimeout = null;
+        }
+
+        this.errorMessageElement.textContent = message;
+        
+        if (this.plotArea) {
+            this.plotArea.style.display = 'block';
+        }
+        
+        this.errorContainer.style.display = 'block';
+        this.hidePlot();
+
+        this.autoHideTimeout = setTimeout(() => {
+            this.hideError();
+        }, 8000);
+    }
+
+    hideError() {
+        if (this.errorContainer) {
+            this.errorContainer.style.display = 'none';
+        }
+        
+        if (this.autoHideTimeout) {
+            clearTimeout(this.autoHideTimeout);
+            this.autoHideTimeout = null;
         }
     }
 
-    loadFromUrlParams() {
-        const params = new URLSearchParams(window.location.search);
-        const datetimeInit = params.get('datetime_init') || '';
-
-        if (datetimeInit && datetimeInit.length === 10) {
-            const datePart = datetimeInit.substring(0, 8);
-            const formattedDate = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
-
-            if (this.datePicker) this.datePicker.value = formattedDate;
-            if (this.hourSelect) this.hourSelect.value = datetimeInit.substring(8, 10);
+    showPlotArea() {
+        if (this.plotArea) {
+            this.plotArea.style.display = 'block';
         }
+    }
 
-        // Cargar t_index desde URL
-        const tIndex = params.get('t_index');
-        if (tIndex && this.forecastSelect) {
-            this.forecastSelect.value = tIndex;
+    hidePlotArea() {
+        if (this.plotArea) {
+            this.plotArea.style.display = 'none';
         }
+    }
 
-        this.updateDatetimeInit();
-        this.updateForecastOptions();
+    showPlot() {
+        if (this.plotEl) {
+            this.plotEl.style.display = 'block';
+        }
+    }
+
+    hidePlot() {
+        if (this.plotEl) {
+            this.plotEl.style.display = 'none';
+        }
+    }
+
+    clearPlot() {
+        this.hidePlot();
     }
 
     async handleSubmit(e) {
@@ -207,23 +274,30 @@ class SoundingFormHandler {
 
         const datetimeInit = this.datetimeInitEl.value;
         if (!/^\d{10}$/.test(datetimeInit)) {
-            this.showError('Formato de fecha/hora inválido');
+            this.showError(`Formato de fecha/hora inválido: ${datetimeInit}`);
             return;
         }
 
-        this.setLoadingState(true);
-        this.clearPlot();
+        if (!this.form.checkValidity()) {
+            e.stopPropagation();
+            this.form.classList.add('was-validated');
+            return;
+        }
+
+        // Ocultar error previo
+        this.hideError();
+        this.setSubmitButtonState(true);
 
         try {
             const formData = new FormData(this.form);
             
             const response = await fetch('', {
                 method: 'POST',
+                body: formData,
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': this.getCSRFToken(),
-                },
-                body: formData
+                }
             });
 
             if (!response.ok) {
@@ -235,7 +309,7 @@ class SoundingFormHandler {
 
             if (data.status === 'success') {
                 this.displayPlot(data.plot_image);
-                this.updateInfo(data);
+                this.hideError();
                 this.updateURL();
             } else {
                 throw new Error(data.message || 'Error al procesar la solicitud');
@@ -245,7 +319,7 @@ class SoundingFormHandler {
             console.error('Error:', error);
             this.showError(`Error: ${error.message || 'Problema al procesar la solicitud'}`);
         } finally {
-            this.setLoadingState(false);
+            this.setSubmitButtonState(false);
         }
     }
 
@@ -255,29 +329,21 @@ class SoundingFormHandler {
     }
 
     displayPlot(imageData) {
-        this.plotEl.src = 'data:image/png;base64,' + imageData;
-        this.plotEl.classList.remove('d-none');
-        this.emptyPlotEl.classList.add('d-none');
-    }
-
-    clearPlot() {
-        this.plotEl.classList.add('d-none');
-        this.emptyPlotEl.classList.remove('d-none');
-    }
-
-    updateInfo(data) {
-        if (data.datetime && this.datetimeInfoEl) {
-            this.datetimeInfoEl.innerHTML = `<strong>Fecha/Hora:</strong> ${data.datetime}`;
+        if (!imageData) {
+            this.showError('No se recibieron datos de imagen');
+            return;
         }
 
-        if (data.params && this.paramsInfoEl) {
-            const selectedOption = this.townSelect.options[this.townSelect.selectedIndex];
-            const townName = selectedOption.textContent;
-            
-            this.paramsInfoEl.innerHTML = `
-                <strong>Municipio:</strong> ${townName}<br>
-                <strong>Posición:</strong> Lat ${data.params.lat}°, Long ${data.params.long}°
-            `;
+        // Mostrar el área del gráfico
+        this.showPlotArea();
+        this.plotEl.src = 'data:image/png;base64,' + imageData;
+        this.showPlot();
+    }
+
+    setSubmitButtonState(isLoading) {
+        if (this.submitBtn) {
+            this.submitBtn.disabled = isLoading;
+            this.submitBtn.textContent = isLoading ? 'Cargando...' : 'Generar';
         }
     }
 
@@ -294,47 +360,8 @@ class SoundingFormHandler {
         };
         
         const urlParams = new URLSearchParams(params);
-        const newUrl = `${window.location.pathname}?${urlParams}`;
+        const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
         window.history.pushState({}, '', newUrl);
-    }
-
-    setLoadingState(isLoading) {
-        if (this.submitBtn) {
-            this.submitBtn.disabled = isLoading;
-            this.submitBtn.innerHTML = isLoading
-                ? '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Procesando...'
-                : 'Generar';
-        }
-
-        if (this.loadingEl) {
-            this.loadingEl.classList.toggle('d-none', !isLoading);
-        }
-    }
-
-    showError(message) {
-        // Crear elemento de alerta si no existe
-        let alertEl = document.getElementById('form-alert');
-        if (!alertEl) {
-            alertEl = document.createElement('div');
-            alertEl.id = 'form-alert';
-            alertEl.className = 'alert alert-danger alert-dismissible fade show';
-            alertEl.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            this.form.prepend(alertEl);
-        } else {
-            alertEl.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            alertEl.classList.remove('d-none');
-        }
-
-        // Auto-ocultar después de 5 segundos
-        setTimeout(() => {
-            alertEl.classList.add('d-none');
-        }, 5000);
     }
 }
 
