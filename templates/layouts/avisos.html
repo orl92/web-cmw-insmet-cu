@@ -1,5 +1,8 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}">
+{% endblock extrahead %}
 {% load my_filters %}
 {% block content %}
     <div class="col-md">
@@ -61,7 +64,8 @@
                             </div>
                         </div>
                     {% endfor %}
-                {% else %}
+                    {% else %}
+                    <!-- Mensaje cuando no hay publicaciones -->
                     <div class="row row-cards">
                         <div class="col-12">
                             <div class="card">
@@ -70,7 +74,7 @@
                                         <img src="{% static 'dist/img/webp/boy-refresh.webp' %}" class="img-fluid w-25" alt="No hay publicaciones">
                                         <p class="empty-title mt-4">Nada que mostrar...</p>
                                         <p class="empty-subtitle text-secondary">
-                                            No se han encontrado avisos disponibles en este momento.
+                                            No hay avisos disponibles por el momento.
                                         </p>
                                     </div>
                                 </div>
@@ -78,7 +82,7 @@
                         </div>
                     </div>
                 {% endif %}
-             </div>
+            </div>
         </div>
     </div>
 
@@ -87,7 +91,7 @@
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="pdfModalLabel">PDF - Alerta Temprana</h5>
+                    <h5 class="modal-title" id="pdfModalLabel">{{title}}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -110,33 +114,33 @@
         </div>
     </div>
 
-    <!-- Incluir PDF.js local -->
-    <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
-    
-    <!-- Incluir archivos separados -->
-    <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}">
-    <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
-
-    <script>
-        // Configurar PDF.js worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
-        
-        // Inicializar el visor de PDF cuando el documento esté listo
-        document.addEventListener('DOMContentLoaded', function() {
-            // Para avisos, necesitamos inicializar múltiples visores si hay múltiples avisos
-            {% if objects %}
-                {% for warning in objects %}
-                    {% if warning.file %}
-                    const pdfViewer{{ forloop.counter }} = new PDFViewer({
-                        pdfUrl: '{{ warning.file.url }}',
-                        modalPdfUrl: '{{ warning.file.url }}',
-                        containerId: 'pdfPreviewContainer-{{ forloop.counter }}',
-                        pagesId: 'pdfPages-{{ forloop.counter }}'
-                    });
-                    pdfViewer{{ forloop.counter }}.init();
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-        });
-    </script>
 {% endblock content %}
+
+{% block script %}
+<!-- Incluir PDF.js local -->
+<script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
+<script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
+
+<script>
+    // Configurar PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
+    
+    // Inicializar el visor de PDF cuando el documento esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        // Para avisos, necesitamos inicializar múltiples visores si hay múltiples avisos
+        {% if objects %}
+            {% for warning in objects %}
+                {% if warning.file %}
+                const pdfViewer{{ forloop.counter }} = new PDFViewer({
+                    pdfUrl: '{{ warning.file.url }}',
+                    modalPdfUrl: '{{ warning.file.url }}',
+                    containerId: 'pdfPreviewContainer-{{ forloop.counter }}',
+                    pagesId: 'pdfPages-{{ forloop.counter }}'
+                });
+                pdfViewer{{ forloop.counter }}.init();
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    });
+</script>
+{% endblock script %}
