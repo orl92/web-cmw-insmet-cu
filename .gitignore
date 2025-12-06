@@ -13,6 +13,7 @@ staticfiles/*
 db.sqlite3
 media
 .idea
+.gitconfig
 Salida
 Salida/*
 
