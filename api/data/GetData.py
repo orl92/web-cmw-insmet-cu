@@ -21,28 +21,23 @@ class GetData:
         try:
             obs = OpenFileObs(station_number, hour).station()
             d = Descodificador(obs)
-            if int(d.get_dia()) == int(datetime.now().day):
-                return {
-                    'estacion': int(d.get_estacion()),
-                    'dia': d.get_dia(),
-                    'hora': d.get_horario(),
-                    'estado del cielo': d.get_estado_cielo(),
-                    'cielo cubierto': d.get_cielo_cubierto(),
-                    'temperatura': d.get_temp(),  # °C
-                    'temperatura maxima': d.get_tempTx(),  # °C
-                    'temperatura minima': d.get_tempTn(),  # °C
-                    'humedad relativa': d.get_rh(),  # %'
-                    'velocidad del viento': float(d.get_ffViento()) * 3.6,  # Km/h
-                    'direccion del viento': d.get_ddViento(),
-                    'dd': d.get_ddViento2(),
-                    'precipitacion en 3 horas': d.get_precipitacion(),  # mm
-                    'precipitacion en 24 horas': d.get_precipitacion24(),  # mm
-                }
-            else:
-                return {
-                    'estacion': station_number,
-                    'data': None
-                }
+            return {
+                'estacion': int(d.get_estacion()),
+                'dia': d.get_dia(),
+                'hora': d.get_horario(),
+                'estado del cielo': d.get_estado_cielo(),
+                'cielo cubierto': d.get_cielo_cubierto(),
+                'temperatura': d.get_temp(),  # °C
+                'temperatura maxima': d.get_tempTx(),  # °C
+                'temperatura minima': d.get_tempTn(),  # °C
+                'humedad relativa': d.get_rh(),  # %'
+                'velocidad del viento': float(d.get_ffViento()) * 3.6,  # Km/h
+                'direccion del viento': d.get_ddViento(),
+                'dd': d.get_ddViento2(),
+                'precipitacion en 3 horas': d.get_precipitacion(),  # mm
+                'precipitacion en 24 horas': d.get_precipitacion24(),  # mm
+            }
+
 
         except Exception:
             return {
