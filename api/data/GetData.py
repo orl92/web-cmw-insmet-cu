@@ -1,5 +1,6 @@
 from api.data.Descodificador import Descodificador
 from api.data.OpenFileObs import OpenFileObs
+from datetime import datetime
 
 
 class GetData:
@@ -20,7 +21,6 @@ class GetData:
         try:
             obs = OpenFileObs(station_number, hour).station()
             d = Descodificador(obs)
-
             return {
                 'estacion': int(d.get_estacion()),
                 'dia': d.get_dia(),
@@ -37,16 +37,17 @@ class GetData:
                 'precipitacion en 3 horas': d.get_precipitacion(),  # mm
                 'precipitacion en 24 horas': d.get_precipitacion24(),  # mm
             }
+
+
         except Exception:
             return {
                 'estacion': station_number,
                 'data': None
             }
-    
+
     def get_all_stations(self, hour):
         _dict = {}
 
         for i in self._numbers_stations:
             _dict[f'{i}'] = self.get_station(hour, i)
         return _dict
-
