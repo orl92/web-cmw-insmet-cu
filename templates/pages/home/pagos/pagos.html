@@ -26,11 +26,8 @@
                                                             </a>
                                                         </div>
                                                         <div class="col-md-4 text-center">
-                                                            
                                                             <div class="d-flex justify-content-center align-items-center mb-3">
-                                                                <div class="d-flex justify-content-center align-items-center mb-3">
-                                                                    <img src="{% static 'dist/img/webp/payment.webp' %}" class="img-fluid" style="max-width: 150px;" alt="Payment">
-                                                                </div>
+                                                                <img src="{% static 'dist/img/webp/payment.webp' %}" class="img-fluid" style="max-width: 150px;" alt="Payment">
                                                             </div>
                                                         </div>
                                                     </div>
@@ -44,14 +41,15 @@
                                             <div class="row">
                                                 <!-- Columna izquierda: QR Mejorado -->
                                                 <div class="col-md-6">
-                                                    <div class="sticky-top" style="top: 20px;">
+                                                    <!-- SOLUCIÓN: Cambiado de sticky-top a position-sticky con top personalizado -->
+                                                    <div class="position-sticky qr-sticky-wrapper">
                                                         <div class="card border-0 shadow-sm">
                                                             <div class="card-body text-center p-5">
-                                                                <!-- QR Code - Más grande y con estilo similar a móvil -->
+                                                                <!-- QR Code -->
                                                                 <div class="mb-4">
                                                                     <div class="position-relative d-inline-block">
                                                                         <div class="p-4 bg-white border rounded-3 shadow-sm">
-                                                                            <img src="{% static 'dist/img/QR/QR.png' %}" class="img-fluid" style="max-width: 320px;" alt="Código QR para pago con EnZona">
+                                                                            <img src="{% static 'dist/img/QR/QR.png' %}" class="img-fluid qr-image" alt="Código QR para pago con EnZona">
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -92,6 +90,7 @@
                                                 </div>
                                                 <!-- Columna derecha: Pasos -->
                                                 <div class="col-md-6">
+                                                    <!-- El resto del contenido se mantiene igual -->
                                                     <div class="mb-5">
                                                         <h2 class="mb-4">Pasos para pagar con EnZona</h2>
                                                         <div class="list-group list-group-flush">
@@ -175,7 +174,7 @@
                                                             <!-- Registro EnZona -->
                                                             <div class="d-flex align-items-center">
                                                                 <span class="text-muted small">
-                                                                    ¿No tienes una cuenta de EnZona? <a href="https://enzona.cu/registro"  class="text-decoration-none">Regístrate aquí</a>
+                                                                    ¿No tienes una cuenta de EnZona? <a href="https://enzona.cu/registro" class="text-decoration-none">Regístrate aquí</a>
                                                                 </span>
                                                             </div>
                                                             <!-- Contacto y ayuda -->
@@ -218,7 +217,6 @@
                                 <div class="d-md-none py-4">
                                     <!-- Header minimalista -->
                                     <div class="text-center mb-5">
-                                        
                                         <p class="text-muted mb-4">
                                             Desde un navegador en tu computadora, abre esta página para pagar con EnZona.
                                         </p>
@@ -226,7 +224,7 @@
                                     <!-- QR grande centrado -->
                                     <div class="text-center mb-5">
                                         <div class="qr-container d-inline-block p-3 bg-white border rounded-3 shadow-sm">
-                                            <img src="{% static 'dist/img/QR/QR.png' %}" class="img-fluid" style="max-width: 280px;" alt="Código QR para pago con EnZona">
+                                            <img src="{% static 'dist/img/QR/QR.png' %}" class="img-fluid" style="max-width: 250px;" alt="Código QR para pago con EnZona">
                                         </div>
                                     </div>
                                     <!-- Instrucciones simples -->
@@ -309,7 +307,6 @@
                                             ¿Necesita ayuda con el pago?
                                         </p>
                                         <div class="text-center small">
-                                            <!-- Iconos de contacto con texto "Soporte:" -->
                                             <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
                                                 <a href="mailto:infoweb@cmw.insmet.cu" class="text-decoration-none d-flex align-items-center gap-1">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-mail">
@@ -348,7 +345,6 @@
                     url: window.location.href
                 });
             } else {
-                // Fallback para navegadores que no soportan Web Share API
                 const tempInput = document.createElement('input');
                 tempInput.value = window.location.href;
                 document.body.appendChild(tempInput);
@@ -357,50 +353,30 @@
                 document.execCommand('copy');
                 document.body.removeChild(tempInput);
                 
-                // Mostrar notificación
                 alert('Enlace copiado al portapapeles. Compártelo para pagar desde una computadora.');
             }
         }
+        
+        // Ajustar dinámicamente el top del sticky QR según la altura del navbar
+        function adjustStickyQR() {
+            const qrWrapper = document.querySelector('.qr-sticky-wrapper');
+            if (qrWrapper) {
+                // Obtener la altura del navbar (ajusta el selector según tu navbar)
+                const navbar = document.querySelector('nav.navbar, .navbar, header.navbar');
+                let navbarHeight = 0;
+                
+                if (navbar) {
+                    navbarHeight = navbar.offsetHeight;
+                }
+                
+                // Añadir un margen adicional (por ejemplo, 20px)
+                const offsetTop = navbarHeight + 20;
+                qrWrapper.style.top = offsetTop + 'px';
+            }
+        }
+        
+        // Ejecutar al cargar y al redimensionar
+        window.addEventListener('load', adjustStickyQR);
+        window.addEventListener('resize', adjustStickyQR);
     </script>
-    
-    <style>
-        /* Asegurar que el QR sea visible en ambos temas */
-        .qr-container img {
-            background: white;
-            padding: 8px;
-            border-radius: 8px;
-        }
-        
-        /* Mejorar la responsividad del QR en móvil */
-        @media (max-width: 767.98px) {
-            .qr-container img {
-                max-width: 250px !important;
-                width: 100% !important;
-            }
-        }
-        
-        /* Ajustes específicos para móvil */
-        @media (max-width: 767.98px) {
-            .card-body {
-                padding-left: 1rem !important;
-                padding-right: 1rem !important;
-            }
-            
-            .d-grid {
-                padding-left: 0.5rem;
-                padding-right: 0.5rem;
-            }
-        }
-        
-        /* QR más grande en escritorio */
-        @media (min-width: 768px) {
-            .sticky-top .card-body {
-                padding: 2rem !important;
-            }
-            
-            .sticky-top .card-body img {
-                max-width: 320px !important;
-            }
-        }
-    </style>
 {% endblock content %}
