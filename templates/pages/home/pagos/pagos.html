@@ -10,7 +10,7 @@
                             <div class="card-body">
                                 <!-- Versión para escritorio (oculta en móvil) -->
                                 <div class="d-none d-md-block py-5">
-                                    <!-- Encabezado estilo WhatsApp -->
+                                    <!-- Encabezado -->
                                     <div class="row justify-content-center mb-6">
                                         <div class="col-lg-10">
                                             <div class="card card-sm border">
@@ -39,17 +39,16 @@
                                     <div class="row justify-content-center">
                                         <div class="col-lg-10">
                                             <div class="row">
-                                                <!-- Columna izquierda: QR Mejorado -->
+                                                <!-- Columna izquierda: QR -->
                                                 <div class="col-md-6">
-                                                    <!-- SOLUCIÓN: Cambiado de sticky-top a position-sticky con top personalizado -->
-                                                    <div class="position-sticky qr-sticky-wrapper">
+                                                    <div>
                                                         <div class="card border-0 shadow-sm">
                                                             <div class="card-body text-center p-5">
                                                                 <!-- QR Code -->
                                                                 <div class="mb-4">
                                                                     <div class="position-relative d-inline-block">
                                                                         <div class="p-4 bg-white border rounded-3 shadow-sm">
-                                                                            <img src="{% static 'dist/img/QR/QR.png' %}" class="img-fluid qr-image" alt="Código QR para pago con EnZona">
+                                                                            <img src="{% static 'dist/img/QR/QR.png' %}" class="img-fluid" style="max-width: 320px;" alt="Código QR para pago con EnZona">
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -90,7 +89,6 @@
                                                 </div>
                                                 <!-- Columna derecha: Pasos -->
                                                 <div class="col-md-6">
-                                                    <!-- El resto del contenido se mantiene igual -->
                                                     <div class="mb-5">
                                                         <h2 class="mb-4">Pasos para pagar con EnZona</h2>
                                                         <div class="list-group list-group-flush">
@@ -151,9 +149,9 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <!-- Opciones adicionales -->
+                                                        <!-- Información adicional -->
                                                         <div class="mt-5">
-                                                            <!-- Información adicional -->
+                                                            <!-- Nota -->
                                                             <div class="mt-4">
                                                                 <div class="alert alert-light border">
                                                                     <div class="d-flex">
@@ -295,13 +293,14 @@
                                             Compartir enlace
                                         </button>
                                     </div>
-                                    <!-- Información adicional -->
+                                    <!-- Registro EnZona -->
                                     <div class="mt-4 pt-3 border-top">
                                         <div class="text-center text-muted small mb-2">
                                             ¿No tienes EnZona?
                                             <a href="https://enzona.cu/registro" target="_blank" class="text-decoration-none ms-1">Regístrate gratis</a>
                                         </div>
                                     </div>
+                                    <!-- Ayuda y Contacto -->
                                     <div class="mt-4 pt-3 border-top">
                                         <p class="text-center text-muted small mb-2">
                                             ¿Necesita ayuda con el pago?
@@ -356,27 +355,5 @@
                 alert('Enlace copiado al portapapeles. Compártelo para pagar desde una computadora.');
             }
         }
-        
-        // Ajustar dinámicamente el top del sticky QR según la altura del navbar
-        function adjustStickyQR() {
-            const qrWrapper = document.querySelector('.qr-sticky-wrapper');
-            if (qrWrapper) {
-                // Obtener la altura del navbar (ajusta el selector según tu navbar)
-                const navbar = document.querySelector('nav.navbar, .navbar, header.navbar');
-                let navbarHeight = 0;
-                
-                if (navbar) {
-                    navbarHeight = navbar.offsetHeight;
-                }
-                
-                // Añadir un margen adicional (por ejemplo, 20px)
-                const offsetTop = navbarHeight + 20;
-                qrWrapper.style.top = offsetTop + 'px';
-            }
-        }
-        
-        // Ejecutar al cargar y al redimensionar
-        window.addEventListener('load', adjustStickyQR);
-        window.addEventListener('resize', adjustStickyQR);
     </script>
 {% endblock content %}
