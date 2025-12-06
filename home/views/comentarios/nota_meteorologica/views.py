@@ -1,5 +1,5 @@
 from django.utils import timezone
-from django.views.generic import *
+from django.views.generic import DetailView
 
 from dashboard.models import WeatherNote
 
