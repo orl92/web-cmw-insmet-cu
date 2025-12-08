@@ -43,7 +43,7 @@ urlpatterns = [
     path('imagenes/satelitales/', SateliteView.as_view(), name="satelites"),
     path('proxy_image/', ProxyImageView.as_view(), name='proxy_image'),
     # Pagos en linea
-    path('pagos_en_linea/', PagosView.as_view(), name='pagos'),
+    # path('pagos_en_linea/', PagosView.as_view(), name='pagos'),
     path('proxy_image_modelo/', ImageProxyModeloView.as_view(), name='proxy_image_modelo'),
     path('modelo/descargar_gif/', DescargarGifView.as_view(), name='descargar_gif'),
     # Institución
