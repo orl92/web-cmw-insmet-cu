@@ -1,16 +1,22 @@
 <div class="settings">
-  <a href="#" class="btn btn-floating btn-icon btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSettings"> <!-- Download SVG icon from http://tabler.io/icons/icon/brush -->
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M3 21v-4a4 4 0 1 1 4 4h-4" /><path d="M21 3a16 16 0 0 0 -12.8 10.2" /><path d="M21 3a16 16 0 0 1 -10.2 12.8" /><path d="M10.6 9a9 9 0 0 1 4.4 4.4" /></svg> </a>
-  <form class="offcanvas offcanvas-start offcanvas-narrow" tabindex="-1" id="offcanvasSettings">
+  <a href="#" class="btn btn-floating btn-icon btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvas-settings" aria-controls="offcanvas-settings" aria-label="Theme Settings">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"aria-hidden="true" focusable="false" class="icon icon-1">
+      <path d="M3 21v-4a4 4 0 1 1 4 4h-4" />
+      <path d="M21 3a16 16 0 0 0 -12.8 10.2" />
+      <path d="M21 3a16 16 0 0 1 -10.2 12.8" />
+      <path d="M10.6 9a9 9 0 0 1 4.4 4.4" />
+    </svg>
+  </a>
+  <form class="offcanvas offcanvas-start offcanvas-narrow" tabindex="-1" id="offcanvas-settings" role="dialog" aria-modal="true" aria-labelledby="offcanvas-settings-title">
     <div class="offcanvas-header">
-      <h2 class="offcanvas-title">Theme Builder</h2>
+      <h2 class="offcanvas-title" id="offcanvas-settings-title">Configuración del tema</h2>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body d-flex flex-column">
       <div>
         <div class="mb-4">
-          <label class="form-label">Color mode</label>
-          <p class="form-hint">Choose the color mode for your app.</p>
+          <label class="form-label">Modo de color</label>
+          <p class="form-hint">Elige el modo de color para tu aplicación.</p>
           <label class="form-check">
             <div class="form-selectgroup-item">
               <input type="radio" name="theme" value="light" class="form-check-input" checked />
@@ -25,8 +31,8 @@
           </label>
         </div>
         <div class="mb-4">
-          <label class="form-label">Color scheme</label>
-          <p class="form-hint">The perfect color mode for your app.</p>
+          <label class="form-label">Esquema de colores</label>
+          <p class="form-hint">El modo de color perfecto para tu aplicación.</p>
           <div class="row g-2">
             <div class="col-auto">
               <label class="form-colorinput">
@@ -103,8 +109,8 @@
           </div>
         </div>
         <div class="mb-4">
-          <label class="form-label">Font family</label>
-          <p class="form-hint">Choose the font family that fits your app.</p>
+          <label class="form-label">Familia tipográfica</label>
+          <p class="form-hint">Elige la familia de fuentes que se adapte a tu aplicación.</p>
           <div>
             <label class="form-check">
               <div class="form-selectgroup-item">
@@ -133,8 +139,8 @@
           </div>
         </div>
         <div class="mb-4">
-          <label class="form-label">Theme base</label>
-          <p class="form-hint">Choose the gray shade for your app.</p>
+          <label class="form-label">Tema Base</label>
+          <p class="form-hint">Elige el tono gris para tu aplicación.</p>
           <div>
             <label class="form-check">
               <div class="form-selectgroup-item">
@@ -169,10 +175,8 @@
           </div>
         </div>
         <div class="mb-4">
-          <label class="form-label">Corner Radius</label>
-          <p class="form-hint">
-            Choose the border radius factory for your app.
-          </p>
+          <label class="form-label">Radio de esquina</label>
+          <p class="form-hint">Elige el factor de radio de borde para tu aplicación.</p>
           <div>
             <label class="form-check">
               <div class="form-selectgroup-item">
@@ -209,13 +213,12 @@
       </div>
       <div class="mt-auto space-y">
         <button type="button" class="btn w-100" id="reset-changes">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5" /></svg>
-          Reset changes
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" class="icon icon-1">
+            <path d="M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5" />
+          </svg>
+          Restablecer
         </button>
-        <a href="#" class="btn btn-primary w-100" data-bs-dismiss="offcanvas">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
-          Save settings
-        </a>
+        <a href="#" class="btn btn-primary w-100" data-bs-dismiss="offcanvas"> Save </a>
       </div>
     </div>
   </form>

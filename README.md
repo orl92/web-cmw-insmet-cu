@@ -54,6 +54,10 @@ El sistema detecta automáticamente el entorno (development/production) y config
 - Python 3.8+
 - pip
 - virtualenv (recomendado)
+- Instalar dependencias necesarias 
+```bash
+sudo apt install libcairo2-dev pkg-config python3-dev
+```
 
 ### 1. Clonar el repositorio
 
