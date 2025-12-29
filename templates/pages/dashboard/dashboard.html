@@ -484,13 +484,38 @@
     <div class="col-lg-12">
         <div class="card">
             <div class="card-body">
-                <h3 class="card-title">Tendencias de Temperatura</h3>
+                <div class="d-flex">
+                    <h3 class="card-title">Tendencias de Temperatura</h3>
+                    <div class="ms-auto">
+                        <div class="dropdown">
+                            <a class="dropdown-toggle text-secondary" href="#" data-bs-toggle="dropdown" id="temperature-range-dropdown" aria-haspopup="true" aria-expanded="false">
+                                {% if selected_range == '30d' %}
+                                    Últimos 30 días
+                                {% elif selected_range == '3m' %}
+                                    Últimos 3 meses
+                                {% else %}
+                                    Últimos 7 días
+                                {% endif %}
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="temperature-range-dropdown">
+                                <a class="dropdown-item {% if selected_range == '7d' %}active{% endif %}" href="?range=7d{% if user.is_superuser %}{% if request.GET.page_groups %}&page_groups={{ request.GET.page_groups }}{% endif %}{% if request.GET.page_logins %}&page_logins={{ request.GET.page_logins }}{% endif %}{% endif %}">
+                                    Últimos 7 días
+                                </a>
+                                <a class="dropdown-item {% if selected_range == '30d' %}active{% endif %}" href="?range=30d{% if user.is_superuser %}{% if request.GET.page_groups %}&page_groups={{ request.GET.page_groups }}{% endif %}{% if request.GET.page_logins %}&page_logins={{ request.GET.page_logins }}{% endif %}{% endif %}">
+                                    Últimos 30 días
+                                </a>
+                                <a class="dropdown-item {% if selected_range == '3m' %}active{% endif %}" href="?range=3m{% if user.is_superuser %}{% if request.GET.page_groups %}&page_groups={{ request.GET.page_groups }}{% endif %}{% if request.GET.page_logins %}&page_logins={{ request.GET.page_logins }}{% endif %}{% endif %}">
+                                    Últimos 3 meses
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="temperatureTrendChart" class="position-relative chart-lg"></div>
             </div>
         </div>
     </div>
 </div>
-
 
 {% endblock content %}
 
@@ -503,7 +528,7 @@
         const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
         const days = {{ temperature_labels|safe }};
         
-        // ===== GRÁFICO: LÍNEAS DE TENDENCIA =====
+        // ===== GRÁFICO: TENDENCIAS DE TEMPERATURA (ESTILO chart-temperature de Tabler) =====
         new ApexCharts(document.getElementById("temperatureTrendChart"), {
             chart: {
                 type: "line",
@@ -512,12 +537,15 @@
                 parentHeightOffset: 0,
                 toolbar: {
                     show: false
+                },
+                animations: {
+                    enabled: false
                 }
             },
-            stroke: { 
-                curve: "smooth", 
-                width: 3,
-                lineCap: 'round'
+            stroke: {
+                width: 2,
+                lineCap: "round",
+                curve: "smooth"
             },
             series: [
                 { name: "Costa Norte Máx", data: {{ max_temperatures_north|safe }} },
@@ -528,106 +556,96 @@
                 { name: "Costa Sur Mín", data: {{ min_temperatures_south|safe }} }
             ],
             tooltip: { 
-                theme: currentTheme, 
-                shared: true,
-                intersect: false,
-                enabledOnSeries: undefined,
+                theme: currentTheme,
                 y: {
                     formatter: function(value) {
-                        return value + " °C";
+                        return value + "°C";
                     }
                 }
             },
-            grid: { 
-                borderColor: 'var(--tblr-border-color)',
-                strokeDashArray: 4,
+            grid: {
                 padding: {
                     top: -20,
                     right: 0,
                     left: -4,
                     bottom: -4
                 },
-                xaxis: {
-                    lines: {
-                        show: true
-                    }
-                }
+                strokeDashArray: 4,
+                borderColor: 'transparent', // Quitamos el borde del grid
             },
-            xaxis: { 
+            dataLabels: {
+                enabled: true,
+            },
+            xaxis: {
                 categories: days,
-                labels: { 
-                    style: { 
+                labels: {
+                    padding: 0,
+                    style: {
                         colors: 'var(--tblr-body-color)',
                         fontSize: '12px',
                         fontFamily: 'inherit'
-                    },
-                    padding: 0
+                    }
+                },
+                tooltip: {
+                    enabled: false
                 },
                 axisBorder: {
                     show: false
                 },
                 axisTicks: {
                     show: false
-                },
-                tooltip: {
-                    enabled: false
                 }
             },
             yaxis: {
-                title: { 
-                    text: "Temperatura (°C)", 
-                    style: { 
-                        color: 'var(--tblr-body-color)',
-                        fontSize: '12px',
-                        fontFamily: 'inherit',
-                        fontWeight: 600
-                    } 
-                },
-                labels: { 
-                    style: { 
+                labels: {
+                    padding: 4,
+                    style: {
                         colors: 'var(--tblr-body-color)',
                         fontSize: '12px',
                         fontFamily: 'inherit'
                     },
-                    padding: 4,
                     formatter: function (val) {
                         return val + "°";
                     }
+                },
+                axisBorder: {
+                    show: false
                 }
             },
-            // Colores por región con tonos diferentes para máxima y mínima
+            // COLORES ESPECÍFICOS DEL EJEMPLO chart-temperature
             colors: [
-                "#228be6",  // Costa Norte Máx - Azul marino
-                "#4dabf7",  // Costa Norte Mín - Azul celeste
-                "#12b886",  // Interior Máx - Verde esmeralda
-                "#38d9a9",  // Interior Mín - Verde menta
-                "#ae3ec9",  // Costa Sur Máx - Morado
-                "#cc5de8"   // Costa Sur Mín - Lila
+                "var(--chart-temperature-color-0)",
+                "var(--chart-temperature-color-1)",
+                "var(--chart-temperature-color-2)",
+                "var(--chart-temperature-color-3)",
+                "var(--chart-temperature-color-4)",
+                "var(--chart-temperature-color-5)"
             ],
-            legend: { 
-                show: true, 
-                horizontalAlign: "center",
-                fontSize: '12px',
-                fontFamily: 'inherit',
-                labels: { 
-                    colors: 'var(--tblr-body-color)',
-                    useSeriesColors: false
-                },
+            legend: {
+                show: true,
+                position: "bottom",
+                offsetY: 12,
                 markers: {
                     width: 10,
                     height: 10,
-                    strokeWidth: 0,
-                    radius: 10,
-                    offsetX: 0,
-                    offsetY: 0
+                    radius: 100,
                 },
                 itemMargin: {
-                    horizontal: 10,
-                    vertical: 5
+                    horizontal: 8,
+                    vertical: 8,
+                },
+                labels: {
+                    colors: 'var(--tblr-body-color)',
+                    useSeriesColors: false,
+                    style: {
+                        fontSize: '13px',
+                        fontFamily: 'inherit',
+                        fontWeight: 400
+                    }
                 }
             },
             markers: {
-                size: 0,
+                size: 2,  // Tamaño de marcadores igual que chart-temperature
                 hover: {
                     size: 6
                 }
@@ -636,4 +654,82 @@
         {% endif %}
     });
 </script>
+
+<style>
+    /* Estilos específicos */
+    :root {
+        /* Definir las variables CSS */
+        --chart-temperature-color-0: #206bc4;  /* Costa Norte Máx */
+        --chart-temperature-color-1: #4299e1;  /* Costa Norte Mín */
+        --chart-temperature-color-2: #2fb344;  /* Interior Máx */
+        --chart-temperature-color-3: #51cf66;  /* Interior Mín */
+        --chart-temperature-color-4: #ae3ec9;  /* Costa Sur Máx */
+        --chart-temperature-color-5: #cc5de8;  /* Costa Sur Mín */
+        
+        /* Colores para líneas de grid más tenues */
+        --chart-grid-light: rgba(0, 0, 0, 0.07);      /* Muy tenue para modo claro */
+        --chart-grid-dark: rgba(255, 255, 255, 0.07); /* Muy tenue para modo oscuro */
+    }
+    
+    [data-bs-theme="dark"] {
+        --chart-temperature-color-0: #3d8bf2;  /* Azul más brillante para modo oscuro */
+        --chart-temperature-color-1: #66b3ff;  /* Azul claro para modo oscuro */
+        --chart-temperature-color-2: #40c057;  /* Verde más brillante para modo oscuro */
+        --chart-temperature-color-3: #69db7c;  /* Verde claro para modo oscuro */
+        --chart-temperature-color-4: #cc5de8;  /* Morado para modo oscuro */
+        --chart-temperature-color-5: #e599f7;  /* Lila para modo oscuro */
+    }
+    
+    /* Estilos para hacer el grid más tenue */
+    #temperatureTrendChart .apexcharts-gridline {
+        stroke-dasharray: 4 !important;
+        stroke: var(--chart-grid-light) !important;
+    }
+    
+    [data-bs-theme="dark"] #temperatureTrendChart .apexcharts-gridline {
+        stroke: var(--chart-grid-dark) !important;
+    }
+    
+    /* Hacer las líneas del eje X un poco más tenues también */
+    #temperatureTrendChart .apexcharts-xaxis-tick,
+    #temperatureTrendChart .apexcharts-yaxis-tick {
+        stroke: var(--tblr-border-color-translucent) !important;
+        opacity: 0.5 !important;
+    }
+    
+    /* Estilos de leyenda */
+    #temperatureTrendChart .apexcharts-legend-text {
+        color: var(--tblr-body-color) !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        font-family: inherit !important;
+    }
+    
+    /* Estilos para data labels */
+    #temperatureTrendChart .apexcharts-datalabels text {
+        fill: var(--tblr-body-color) !important;
+        font-size: 12px !important;
+        font-family: inherit !important;
+        opacity: 0.9 !important;
+    }
+    
+    /* Opcional: Hacer que los tooltips sean más sutiles */
+    #temperatureTrendChart .apexcharts-tooltip {
+        border: 1px solid var(--tblr-border-color-translucent) !important;
+        box-shadow: var(--tblr-shadow-sm) !important;
+        background-color: var(--tblr-bg-surface) !important;
+    }
+    
+    #temperatureTrendChart .apexcharts-tooltip-title {
+        background-color: var(--tblr-bg-surface-tertiary) !important;
+        border-bottom: 1px solid var(--tblr-border-color-translucent) !important;
+        color: var(--tblr-body-color) !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Para una transición suave entre temas */
+    #temperatureTrendChart .apexcharts-svg {
+        transition: all 0.2s ease;
+    }
+</style>
 {% endblock extrajs %}
