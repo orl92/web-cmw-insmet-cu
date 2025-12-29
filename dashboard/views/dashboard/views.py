@@ -1,20 +1,26 @@
 import datetime as dt
-import pandas as pd
-from django.contrib import messages
-from django.http import JsonResponse
-from django.views import View
-from django.shortcuts import redirect
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import TemplateView
-from django.contrib.auth.models import User, Group
-from django.contrib.sessions.models import Session
-from django.utils import timezone
-from django.db.models import Count
-from django.core.paginator import Paginator
-from django.core.exceptions import ObjectDoesNotExist
 
+import pandas as pd
 from common.utils import log_action
-from dashboard.models import EarlyWarning, Forecasts, SiteConfiguration, StormWarning, TropicalCyclone
+from dashboard.models import (
+    EarlyWarning,
+    Forecasts,
+    SiteConfiguration,
+    StormWarning,
+    TropicalCyclone,
+)
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.models import Group, User
+from django.contrib.sessions.models import Session
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.paginator import Paginator
+from django.db.models import Count
+from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.utils import timezone
+from django.views import View
+from django.views.generic import TemplateView
 
 # Create your views here.
    
@@ -91,29 +97,42 @@ class ExcelJSONView(View):
 
         return JsonResponse(forecats)
 
+
 class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'pages/dashboard/dashboard.html'
 
     def dispatch(self, request, *args, **kwargs):
-        # Verifica si el usuario es staff antes de procesar la solicitud
         if not request.user.is_staff:
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
 
     def test_func(self):
-        # Solo usuarios con is_staff = True pueden acceder
         return self.request.user.is_staff
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # Datos base para todos los usuarios
+        # Obtener el parámetro de rango de tiempo
+        time_range = self.request.GET.get('range', '7d')
+        
+        # Determinar el número de días según el rango
+        if time_range == '30d':
+            days = 30
+        elif time_range == '3m':
+            days = 90
+        else:
+            days = 7
+        
+        # Fecha de inicio para filtrar
+        start_date = timezone.now().date() - timezone.timedelta(days=days)
+
         context.update({
             'title': 'Dashboard',
             'parent': '',
             'segment': 'dashboard',
             'is_superuser': user.is_superuser,
+            'selected_range': time_range,
         })
 
         # Datos meteorológicos comunes
@@ -122,18 +141,32 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         except ObjectDoesNotExist:
             context['latest_forecast'] = None
         
-        # Últimos 7 pronósticos para el gráfico (si existen)
-        forecasts = Forecasts.objects.order_by('-date')[:7]
+        # Pronósticos filtrados por rango de tiempo
+        forecasts = Forecasts.objects.filter(
+            date__gte=start_date
+        ).order_by('date')  # Ordenamos ascendente para el gráfico
+        
+        # Limitamos a un máximo de 30 puntos para mejor visualización
+        total_forecasts = forecasts.count()
+        if total_forecasts > 30:
+            step = total_forecasts // 30
+            forecast_ids = forecasts.values_list('id', flat=True)
+            sampled_ids = forecast_ids[::step]
+            forecasts = Forecasts.objects.filter(id__in=sampled_ids).order_by('date')
+        
         context['has_forecasts'] = forecasts.exists()
 
         if context['has_forecasts']:
-            context['temperature_labels'] = [f.date.strftime('%d/%m') for f in forecasts]
-            context['max_temperatures_north'] = [f.nta for f in forecasts]
-            context['min_temperatures_north'] = [f.ntn for f in forecasts]
-            context['max_temperatures_south'] = [f.sta for f in forecasts]
-            context['min_temperatures_south'] = [f.stn for f in forecasts]
-            context['max_temperatures_inland'] = [f.ita for f in forecasts]
-            context['min_temperatures_inland'] = [f.itn for f in forecasts]
+            # Asegurarnos de que las fechas están en orden ascendente
+            forecasts_list = list(forecasts)
+            
+            context['temperature_labels'] = [f.date.strftime('%d/%m') for f in forecasts_list]
+            context['max_temperatures_north'] = [float(f.nta) for f in forecasts_list]
+            context['min_temperatures_north'] = [float(f.ntn) for f in forecasts_list]
+            context['max_temperatures_south'] = [float(f.sta) for f in forecasts_list]
+            context['min_temperatures_south'] = [float(f.stn) for f in forecasts_list]
+            context['max_temperatures_inland'] = [float(f.ita) for f in forecasts_list]
+            context['min_temperatures_inland'] = [float(f.itn) for f in forecasts_list]
 
         # Últimas alertas activas (hasta 5)
         context['latest_alerts'] = {
@@ -155,16 +188,16 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             permission_groups = Group.objects.annotate(
                 user_count=Count('user')
             ).prefetch_related('permissions').order_by('-user_count')
-            paginator_groups = Paginator(permission_groups, 2)  # 10 grupos por página
-            page_number_groups = self.request.GET.get('page_groups')  # Nombre único para evitar conflictos
+            paginator_groups = Paginator(permission_groups, 2)  # 2 grupos por página (ajustable)
+            page_number_groups = self.request.GET.get('page_groups')
             context['permission_groups_page'] = paginator_groups.get_page(page_number_groups)
 
             # Últimos inicios de sesión (con paginación)
             recent_logins = User.objects.filter(
                 last_login__gte=timezone.now() - timezone.timedelta(hours=24)
             ).order_by('-last_login')
-            paginator_logins = Paginator(recent_logins, 2)  # 5 usuarios por página
-            page_number_logins = self.request.GET.get('page_logins')  # Nombre único
+            paginator_logins = Paginator(recent_logins, 2)  # 2 usuarios por página (ajustable)
+            page_number_logins = self.request.GET.get('page_logins')
             context['recent_logins_page'] = paginator_logins.get_page(page_number_logins)
 
             # Sesiones activas
@@ -211,5 +244,3 @@ class MaintenanceModeToggleView(UserPassesTestMixin, TemplateView):
 
     def test_func(self):
         return self.request.user.is_superuser
-
-
