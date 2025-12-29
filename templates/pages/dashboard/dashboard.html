@@ -481,92 +481,159 @@
         </div>
     </div>
     <!-- Gráfico de Temperaturas -->
-    <div class="col-sm-6 col-lg-12">
+    <div class="col-lg-12">
         <div class="card">
             <div class="card-body">
-                {% if has_forecasts %}
-                    <div id="temperatureChart" class="chart-lg"></div>
-                {% else %}
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-chart-bar me-2"></i>
-                        No hay suficientes datos para mostrar el gráfico.
-                    </div>
-                {% endif %}
+                <h3 class="card-title">Tendencias de Temperatura</h3>
+                <div id="temperatureTrendChart" class="position-relative chart-lg"></div>
             </div>
         </div>
     </div>
 </div>
 
+
 {% endblock content %}
 
 {% block extrajs %}
-<!-- Scripts para gráficos de Tabler.io -->
 <script src="{% static 'dist/libs/apexcharts/dist/apexcharts.min.js' %}"></script>
+
 <script>
-    {% if has_forecasts %}
-        // Configuración del gráfico de temperaturas utilizando ApexCharts
-        var temperatureOptions = {
+    document.addEventListener("DOMContentLoaded", function () {
+        {% if has_forecasts %}
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        const days = {{ temperature_labels|safe }};
+        
+        // ===== GRÁFICO: LÍNEAS DE TENDENCIA =====
+        new ApexCharts(document.getElementById("temperatureTrendChart"), {
             chart: {
-                type: 'line',
-                height: 350,
-                zoom: {
+                type: "line",
+                fontFamily: "inherit",
+                height: 320,
+                parentHeightOffset: 0,
+                toolbar: {
+                    show: false
+                }
+            },
+            stroke: { 
+                curve: "smooth", 
+                width: 3,
+                lineCap: 'round'
+            },
+            series: [
+                { name: "Costa Norte Máx", data: {{ max_temperatures_north|safe }} },
+                { name: "Costa Norte Mín", data: {{ min_temperatures_north|safe }} },
+                { name: "Interior Máx", data: {{ max_temperatures_inland|safe }} },
+                { name: "Interior Mín", data: {{ min_temperatures_inland|safe }} },
+                { name: "Costa Sur Máx", data: {{ max_temperatures_south|safe }} },
+                { name: "Costa Sur Mín", data: {{ min_temperatures_south|safe }} }
+            ],
+            tooltip: { 
+                theme: currentTheme, 
+                shared: true,
+                intersect: false,
+                enabledOnSeries: undefined,
+                y: {
+                    formatter: function(value) {
+                        return value + " °C";
+                    }
+                }
+            },
+            grid: { 
+                borderColor: 'var(--tblr-border-color)',
+                strokeDashArray: 4,
+                padding: {
+                    top: -20,
+                    right: 0,
+                    left: -4,
+                    bottom: -4
+                },
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
+            },
+            xaxis: { 
+                categories: days,
+                labels: { 
+                    style: { 
+                        colors: 'var(--tblr-body-color)',
+                        fontSize: '12px',
+                        fontFamily: 'inherit'
+                    },
+                    padding: 0
+                },
+                axisBorder: {
+                    show: false
+                },
+                axisTicks: {
+                    show: false
+                },
+                tooltip: {
                     enabled: false
                 }
             },
-            series: [
-                {
-                    name: 'Máxima Costa Norte (°C)',
-                    data: {{ max_temperatures_north|safe }}
+            yaxis: {
+                title: { 
+                    text: "Temperatura (°C)", 
+                    style: { 
+                        color: 'var(--tblr-body-color)',
+                        fontSize: '12px',
+                        fontFamily: 'inherit',
+                        fontWeight: 600
+                    } 
                 },
-                {
-                    name: 'Mínima Costa Norte (°C)',
-                    data: {{ min_temperatures_north|safe }}
-                },
-                {
-                    name: 'Máxima Interior (°C)',
-                    data: {{ max_temperatures_inland|safe }}
-                },
-                {
-                    name: 'Mínima Interior (°C)',
-                    data: {{ min_temperatures_inland|safe }}
-                },
-                {
-                    name: 'Máxima Costa Sur (°C)',
-                    data: {{ max_temperatures_south|safe }}
-                },
-                {
-                    name: 'Mínima Costa Sur (°C)',
-                    data: {{ min_temperatures_south|safe }}
+                labels: { 
+                    style: { 
+                        colors: 'var(--tblr-body-color)',
+                        fontSize: '12px',
+                        fontFamily: 'inherit'
+                    },
+                    padding: 4,
+                    formatter: function (val) {
+                        return val + "°";
+                    }
                 }
+            },
+            // Colores por región con tonos diferentes para máxima y mínima
+            colors: [
+                "#228be6",  // Costa Norte Máx - Azul marino
+                "#4dabf7",  // Costa Norte Mín - Azul celeste
+                "#12b886",  // Interior Máx - Verde esmeralda
+                "#38d9a9",  // Interior Mín - Verde menta
+                "#ae3ec9",  // Costa Sur Máx - Morado
+                "#cc5de8"   // Costa Sur Mín - Lila
             ],
-            xaxis: {
-                categories: {{ temperature_labels|safe }}
-            },
-            stroke: {
-                curve: 'smooth'
-            },
-            title: {
-                text: 'Evolución de Temperaturas (Últimos 7 días)',
-                align: 'left'
+            legend: { 
+                show: true, 
+                horizontalAlign: "center",
+                fontSize: '12px',
+                fontFamily: 'inherit',
+                labels: { 
+                    colors: 'var(--tblr-body-color)',
+                    useSeriesColors: false
+                },
+                markers: {
+                    width: 10,
+                    height: 10,
+                    strokeWidth: 0,
+                    radius: 10,
+                    offsetX: 0,
+                    offsetY: 0
+                },
+                itemMargin: {
+                    horizontal: 10,
+                    vertical: 5
+                }
             },
             markers: {
-                size: 1
-            },
-            yaxis: {
-                title: {
-                    text: 'Temperatura (°C)'
+                size: 0,
+                hover: {
+                    size: 6
                 }
-            },
-            tooltip: {
-                shared: true,
-                intersect: false
-            },
-            legend: {
-                position: 'top'
             }
-        };
-        var temperatureChart = new ApexCharts(document.querySelector("#temperatureChart"), temperatureOptions);
-        temperatureChart.render();
-    {% endif %}
+        }).render();
+        {% endif %}
+    });
 </script>
 {% endblock extrajs %}
