@@ -1,8 +1,4 @@
 from datetime import datetime
-
-import numpy as np
-import os
-
 from dashboard.models import Town
 from home.forms import MeteoDataForm, SoundingForm, GifDownloadForm
 from home.data.plot_generators import generate_skewt
@@ -14,14 +10,11 @@ from urllib.parse import urlencode
 import requests
 from django.http import HttpResponse
 from django.views import View
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, unquote
 from django.conf import settings
 import logging
 import socket
 import ipaddress
-
 import io
 from PIL import Image
 import re
@@ -266,14 +259,14 @@ class SoundingView(TemplateView):
 
         # Obtener municipio por defecto (ej. usando coordenadas predeterminadas)
         default_town = Town.objects.filter(
-            latitude=21.391,
-            longitude=-77.908
+            latitude=21.3786,
+            longitude=-77.9186
         ).first()
 
         initial = {
             'datetime_init': self.request.GET.get('datetime_init', f'{datetime.now().strftime("%Y%m%d")}00'),
             'town': default_town.id if default_town else None,
-            't_index': int(self.request.GET.get('t_index', 1))
+            't_index': int(self.request.GET.get('t_index', 0))
         }
         context['form'] = SoundingForm(initial=initial)
         return context
@@ -295,7 +288,7 @@ class SoundingView(TemplateView):
                 'datetime_init': form.cleaned_data['datetime_init'],
                 'lat': town.latitude,  # Usar latitud del municipio
                 'long': town.longitude,  # Usar longitud del municipio
-                't_index': form.cleaned_data['t_index']
+                't_index': form.cleaned_data['t_index']-1
             }
             api_url = f"https://modelo.cmw.insmet.cu/api/sounding/?{urlencode(params)}"
 
@@ -303,6 +296,8 @@ class SoundingView(TemplateView):
             response = requests.get(api_url, timeout=10, verify=False)
             response.raise_for_status()
             sounding_data = response.json()
+
+            x = sounding_data['datetime']
 
             # Generar el gráfico Skew-T
             img_base64 = generate_skewt(sounding_data)
