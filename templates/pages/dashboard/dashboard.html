@@ -4,245 +4,215 @@
 {% block content %}
 <!-- Sección exclusiva para Superusuarios -->
 {% if user.is_superuser %}
-  <!-- Estadisticas de Usuarios -->
-    <div class="row row-deck row-cards">
-        <div class="col-sm-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Usuarios Totales</h5>
-                    <p class="card-text display-4">{{ user_stats.total_users }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Activos Hoy</h5>
-                    <p class="card-text display-4">{{ user_stats.active_today }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Staff</h5>
-                    <p class="card-text display-4">{{ user_stats.staff_users }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Sesiones Activas</h5>
-                    <p class="card-text display-4">{{ active_sessions }}</p>
-                </div>
-            </div>
-        </div>
-        <!-- Grupos de Permisos -->
-        <div class="col-sm-6 col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Grupos de Permisos</h3>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Grupo</th>
-                                    <th>Usuarios</th>
-                                    <th>Permisos</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for group in permission_groups_page %}
-                                    <tr>
-                                        <td>{{ group.name }}</td>
-                                        <td>{{ group.user_count }}</td>
-                                        <td>
-                                            <ul class="list-unstyled mb-0">
-                                                {% for perm in group.permissions.all|slice:":4" %}
-                                                    <li class="text-muted small">{{ perm.name }}</li>
-                                                {% endfor %}
-                                            </ul>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- Paginación -->
-                    <div class="pagination mt-3">
-                        <ul class="pagination justify-content-center">
-                          {% if permission_groups_page.has_previous %}
-                            <li class="page-item">
-                              <a href="?page_groups=1" class="page-link" aria-label="Primera">
-                                <span aria-hidden="true">&laquo;</span>
-                                <span class="sr-only">Primera</span>
-                              </a>
-                            </li>
-                            <li class="page-item">
-                              <a href="?page_groups={{ permission_groups_page.previous_page_number }}" class="page-link">Anterior</a>
-                            </li>
-                          {% endif %}
-                      
-                          <li class="page-item disabled">
-                            <span class="page-link">Página {{ permission_groups_page.number }} de {{ permission_groups_page.paginator.num_pages }}</span>
-                          </li>
-                      
-                          {% if permission_groups_page.has_next %}
-                            <li class="page-item">
-                              <a href="?page_groups={{ permission_groups_page.next_page_number }}" class="page-link">Siguiente</a>
-                            </li>
-                            <li class="page-item">
-                              <a href="?page_groups={{ permission_groups_page.paginator.num_pages }}" class="page-link" aria-label="Última">
-                                <span aria-hidden="true">&raquo;</span>
-                                <span class="sr-only">Última</span>
-                              </a>
-                            </li>
-                          {% endif %}
-                        </ul>
-                    </div>                      
-                </div>
-            </div>
-        </div>
-        <!-- Últimos Inicios de Sesión -->
-        <div class="col-sm-6 col-lg-6">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Últimos Inicios de Sesión (24h)</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row row-cols-1 g-0">
-                        {% for login_user in recent_logins_page %}
-                        <div class="col pb-3">
-                            <div class="row g-0 align-items-center">
-                                <div class="col-auto">
-                                    <span class="avatar avatar-lg rounded-circle" style="background-image: url({{ login_user.profile.get_avatar }})"></span>
-                                </div>
-                                <div class="col ms-3">
-                                    <div class="text-truncate d-flex w-100 justify-content-between">
-                                        <strong>{{ login_user.get_full_name }}</strong>
-                                        <small>{{ login_user.last_login|time_since }}</small>
-                                    </div>
-                                    <small class="text-muted mt-2 d-block">
-                                        {% if login_user.is_superuser %}
-                                            <span class="badge bg-green-lt me-2">Superusuario</span>
-                                        {% endif %}
-                                        {% if login_user.is_staff %}
-                                            <span class="badge bg-azure-lt">Staff</span>
-                                        {% endif %}
-                                    </small>
-                                </div>
-                            </div>
+<!-- Estadísticas estilo KPI Dashboard -->
+<div class="container-fluid px-0">
+    <div class="row g-2 g-md-3">
+        <!-- Usuarios Totales -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card bg-primary-lt h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="subheader">Usuarios Totales</div>
+                        <div class="ms-auto lh-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-primary" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                                <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                            </svg>
                         </div>
-                        {% if not forloop.last %}
-                            <hr class="my-2 text-muted">
-                        {% endif %}
-                        {% empty %}
-                        <div class="text-center text-muted py-3">
-                            No hay inicios de sesión recientes
-                        </div>
-                        {% endfor %}
                     </div>
-                    <!-- Paginación -->
-                    <div class="pagination mt-3">
-                        <ul class="pagination justify-content-center">
-                          {% if recent_logins_page.has_previous %}
-                            <li class="page-item">
-                              <a href="?page_logins=1" class="page-link" aria-label="Primera">
-                                <span aria-hidden="true">&laquo;</span>
-                                <span class="sr-only">Primera</span>
-                              </a>
-                            </li>
-                            <li class="page-item">
-                              <a href="?page_logins={{ recent_logins_page.previous_page_number }}" class="page-link">Anterior</a>
-                            </li>
-                          {% endif %}
-                      
-                          <li class="page-item disabled">
-                            <span class="page-link">Página {{ recent_logins_page.number }} de {{ recent_logins_page.paginator.num_pages }}</span>
-                          </li>
-                      
-                          {% if recent_logins_page.has_next %}
-                            <li class="page-item">
-                              <a href="?page_logins={{ recent_logins_page.next_page_number }}" class="page-link">Siguiente</a>
-                            </li>
-                            <li class="page-item">
-                              <a href="?page_logins={{ recent_logins_page.paginator.num_pages }}" class="page-link" aria-label="Última">
-                                <span aria-hidden="true">&raquo;</span>
-                                <span class="sr-only">Última</span>
-                              </a>
-                            </li>
-                          {% endif %}
-                        </ul>
-                    </div>                      
-                </div>  
+                    <div class="mt-auto">
+                        <div class="h1 mb-2">{{ user_stats.total_users }}</div>
+                        <div class="text-muted">Registrados en el sistema</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activos Hoy -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card bg-green-lt h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="subheader">Activos Hoy</div>
+                        <div class="ms-auto lh-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-green" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                                <path d="M6 21v-2a4 4 0 0 1 4 -4h4" />
+                                <path d="M15 19l2 2l4 -4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-auto">
+                        <div class="h1 mb-2">{{ user_stats.active_today }}</div>
+                        <div class="text-muted">Iniciaron sesión hoy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Staff -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card bg-yellow-lt h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="subheader">Staff</div>
+                        <div class="ms-auto lh-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-yellow" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 21v-2a4 4 0 0 1 4 -4h2" />
+                                <path d="M22 16c0 4 -2.5 6 -3.5 6s-3.5 -2 -3.5 -6c1 0 2.5 -.5 3.5 -1.5c1 1 2.5 1.5 3.5 1.5z" /><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-auto">
+                        <div class="h1 mb-2">{{ user_stats.staff_users }}</div>
+                        <div class="text-muted">Usuarios con permisos</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sesiones Activas -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card bg-purple-lt h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="subheader">Sesiones Activas</div>
+                        <div class="ms-auto lh-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-purple" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+                                <path d="M20 12h-13l3 -3m0 6l-3 -3" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="mt-auto">
+                        <div class="h1 mb-2">{{ active_sessions }}</div>
+                        <div class="text-muted">Sesiones en curso</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+</div>
 {% endif %}
-<!-- Sección: Alertas -->
+<!-- Sección: Alertas - Versión mejorada -->
 <div class="row row-deck row-cards mt-3">
-  <h3 class="card-title">Alertas Activas</h3>
+    <div class="col-12">
+        <h3 class="card-title">Alertas Activas</h3>
+    </div>
+    
     <!-- Alertas Tempranas -->
     <div class="col-sm-6 col-lg-4">
-        <div class="card h-100">
-        <div class="card-body d-flex flex-column">
-            <h5><i class="fas fa-bell me-2"></i>Tempranas</h5>
-            <ul class="list-group list-group-flush flex-grow-1">
-            {% for alert in latest_alerts.early_warnings %}
-                <li class="list-group-item small">
-                {{ alert.summary }}<br>
-                <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
-                </li>
-            {% empty %}
-                <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
-                No hay alertas tempranas
-                </li>
-            {% endfor %}
-            </ul>
-        </div>
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="subheader">
+                        Alertas Tempranas
+                    </div>
+                    <div class="ms-auto">
+                        <span class="badge bg-yellow-lt">{{ latest_alerts.early_warnings|length }}</span>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% for alert in latest_alerts.early_warnings %}
+                    <div class="border-bottom py-2 {% if not forloop.last %}mb-2{% endif %}">
+                        <div class="text-truncate">
+                            {{ alert.summary }}
+                        </div>
+                        <div class="text-muted small">
+                            {{ alert.date|date:"d/m H:i" }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                            <path d="M9 12l2 2l4 -4" />
+                        </svg>
+                        <div>No hay alertas tempranas</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
+    
     <!-- Ciclones Tropicales -->
     <div class="col-sm-6 col-lg-4">
-        <div class="card h-100">
-        <div class="card-body d-flex flex-column">
-            <h5><i class="fas fa-hurricane me-2"></i>Ciclones</h5>
-            <ul class="list-group list-group-flush flex-grow-1">
-            {% for alert in latest_alerts.tropical_cyclones %}
-                <li class="list-group-item small">
-                {{ alert.summary }}<br>
-                <span class="text-muted">{{ alert.valid_until|date:"d/m H:i" }}</span>
-                </li>
-            {% empty %}
-                <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
-                No hay alertas de ciclones
-                </li>
-            {% endfor %}
-            </ul>
-        </div>
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="subheader">
+                        Ciclones Tropicales
+                    </div>
+                    <div class="ms-auto">
+                        <span class="badge bg-red-lt">{{ latest_alerts.tropical_cyclones|length }}</span>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% for alert in latest_alerts.tropical_cyclones %}
+                    <div class="border-bottom py-2 {% if not forloop.last %}mb-2{% endif %}">
+                        <div class="text-truncate">
+                            {{ alert.summary }}
+                        </div>
+                        <div class="text-muted small">
+                            Válido hasta: {{ alert.valid_until|date:"d/m H:i" }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                            <path d="M9 12l2 2l4 -4" />
+                        </svg>
+                        <div>No hay alertas de ciclones</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
+    
     <!-- Tormentas -->
     <div class="col-sm-6 col-lg-4">
-        <div class="card h-100">
-        <div class="card-body d-flex flex-column">
-            <h5><i class="fas fa-comment-exclamation me-2"></i>Tormentas</h5>
-            <ul class="list-group list-group-flush flex-grow-1">
-            {% for alert in latest_alerts.storm_warnings %}
-                <li class="list-group-item small">
-                {{ alert.summary }}<br>
-                <span class="text-muted">{{ alert.date|date:"d/m H:i" }}</span>
-                </li>
-            {% empty %}
-                <li class="list-group-item text-muted small d-flex align-items-center justify-content-center flex-grow-1">
-                No hay avisos de tormentas
-                </li>
-            {% endfor %}
-            </ul>
-        </div>
+        <div class="card card-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="subheader">
+                        Avisos de Tormentas
+                    </div>
+                    <div class="ms-auto">
+                        <span class="badge bg-blue-lt">{{ latest_alerts.storm_warnings|length }}</span>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% for alert in latest_alerts.storm_warnings %}
+                    <div class="border-bottom py-2 {% if not forloop.last %}mb-2{% endif %}">
+                        <div class="text-truncate">
+                            {{ alert.summary }}
+                        </div>
+                        <div class="text-muted small">
+                            {{ alert.date|date:"d/m H:i" }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                            <path d="M9 12l2 2l4 -4" />
+                        </svg>
+                        <div>No hay avisos de tormentas</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
