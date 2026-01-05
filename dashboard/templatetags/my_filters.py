@@ -1,9 +1,11 @@
 import os
 import re
+
 from django import template
 from django.templatetags.static import static
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
+
 from common.utils import get_img_path  # Importa la función unificada
 
 register = template.Library()
@@ -176,3 +178,90 @@ def get_forecast_day(obj, day_number):
 def get_dict_value(dictionary, key):
     """Obtiene un valor de un diccionario"""
     return dictionary.get(key, '--')
+
+@register.filter
+def get_permission_type(perm_name):
+    """Determina el tipo de permiso basado en palabras clave"""
+    perm_name_lower = perm_name.lower()
+    if any(keyword in perm_name_lower for keyword in ['view', 'ver']):
+        return 'view'
+    elif any(keyword in perm_name_lower for keyword in ['add', 'añadir', 'crear']):
+        return 'add'
+    elif any(keyword in perm_name_lower for keyword in ['change', 'edit', 'editar', 'modificar']):
+        return 'change'
+    elif any(keyword in perm_name_lower for keyword in ['delete', 'eliminar', 'borrar']):
+        return 'delete'
+    else:
+        return 'other'
+
+@register.filter
+def sort_permissions_by_type(permissions):
+    """Ordena permisos por tipo: view, add, change, delete, other"""
+    from collections import defaultdict
+    
+    # Agrupar por tipo
+    grouped = defaultdict(list)
+    for perm in permissions:
+        perm_type = get_permission_type(perm.name)
+        grouped[perm_type].append(perm)
+    
+    # Ordenar según el orden deseado
+    ordered_types = ['view', 'add', 'change', 'delete', 'other']
+    result = []
+    
+    for perm_type in ordered_types:
+        if perm_type in grouped:
+            # Ordenar alfabéticamente dentro de cada tipo
+            sorted_perms = sorted(grouped[perm_type], key=lambda x: x.name.lower())
+            result.extend(sorted_perms)
+    
+    return result
+
+@register.filter
+def group_permissions_by_app(permissions):
+    """Agrupa permisos por aplicación y modelo"""
+    from collections import defaultdict
+    
+    grouped = defaultdict(lambda: defaultdict(list))
+    
+    for perm in permissions:
+        # Extraer app_label y model del codename (formato: app_label.model)
+        # Django permissions tienen formato: <action>_<modelname>
+        # Pero también podemos usar el content_type si está disponible
+        app_label = perm.content_type.app_label if hasattr(perm, 'content_type') else 'unknown'
+        model_name = perm.content_type.model if hasattr(perm, 'content_type') else 'unknown'
+        
+        # Determinar tipo de permiso
+        perm_type = get_permission_type(perm.name)
+        
+        grouped[app_label][model_name].append({
+            'perm': perm,
+            'type': perm_type
+        })
+    
+    # Convertir a estructura ordenada
+    result = []
+    for app_label in sorted(grouped.keys()):
+        models = []
+        for model_name in sorted(grouped[app_label].keys()):
+            models.append({
+                'name': model_name,
+                'permissions': grouped[app_label][model_name]
+            })
+        result.append({
+            'app_label': app_label,
+            'models': models
+        })
+    
+    return result
+
+@register.filter
+def filter_permissions_by_type(permissions, perm_type):
+    """Filtra permisos por tipo"""
+    return [p for p in permissions if get_permission_type(p.name) == perm_type]
+
+@register.filter
+def exclude_permissions_by_type(permissions, types_to_exclude):
+    """Excluye permisos por tipo(s)"""
+    types_list = [t.strip() for t in types_to_exclude.split(',')]
+    return [p for p in permissions if get_permission_type(p.name) not in types_list]
