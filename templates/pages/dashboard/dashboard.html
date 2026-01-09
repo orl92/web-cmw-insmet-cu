@@ -284,7 +284,6 @@
         </div>
     </div>
 </div>
-
 <!-- Modales para Detalles de Permisos de Grupos -->
 {% for group in permission_groups_page %}
 <div class="modal fade" id="modal-group-{{ group.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ group.id }}" aria-hidden="true">
@@ -536,9 +535,9 @@
 </div>
 <!-- Sección: Pronósticos -->
 <div class="row row-deck row-cards mt-3">
-  <h3 class="card-title">Ultimo Pronóstico: {{ latest_forecast.date|date:"d/m/Y" }}</h3>
+    <h3 class="card-title">Ultimo Pronóstico: {{ latest_forecast.date}}</h3>
     <!-- Costa Norte -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -547,14 +546,13 @@
                         <!-- Mañana -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="Tiempo: {{ latest_forecast.nwm|get_tiempo_description }}">
-                                {{ latest_forecast.nwm }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.nwm|get_weather_img }}" 
-                                alt="{{ latest_forecast.nwm|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.nwm|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.nwm|get_weather_img_morning }}" 
+                                    alt="{{ latest_forecast.nwm|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.nwm|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntm }}°C">
                                 {{ latest_forecast.ntm }}°C
                             </h3>
@@ -568,14 +566,13 @@
                         <!-- Tarde -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="Tiempo: {{ latest_forecast.nwa|get_tiempo_description }}">
-                                {{ latest_forecast.nwa }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.nwa|get_weather_img }}" 
-                                alt="{{ latest_forecast.nwa|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.nwa|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.nwa|get_weather_img_afternoon }}" 
+                                    alt="{{ latest_forecast.nwa|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.nwa|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.nta }}°C">
                                 {{ latest_forecast.nta }}°C
                             </h3>
@@ -589,14 +586,13 @@
                         <!-- Noche -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="Tiempo: {{ latest_forecast.nwn|get_tiempo_description }}">
-                                {{ latest_forecast.nwn }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.nwn|get_weather_img }}" 
-                                alt="{{ latest_forecast.nwn|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.nwn|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.nwn|get_weather_img_night }}" 
+                                    alt="{{ latest_forecast.nwn|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.nwn|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntn }}°C">
                                 {{ latest_forecast.ntn }}°C
                             </h3>
@@ -609,21 +605,16 @@
                         </div>
                     </div>
                 {% else %}
-                    <div class="text-center text-muted py-3">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M12 9v4" />
-                            <path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" />
-                            <path d="M12 16h.01" />
-                        </svg>
-                        <div>No hay pronósticos disponibles.</div>
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No hay pronósticos disponibles.
                     </div>
                 {% endif %}
             </div>
         </div>
     </div>
     <!-- Interior -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -632,55 +623,61 @@
                         <!-- Mañana -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="Tiempo: {{ latest_forecast.iwm|get_tiempo_description }}">
-                                {{ latest_forecast.iwm }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.iwm|get_weather_img }}" 
-                                alt="{{ latest_forecast.iwm|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.iwm|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.iwm|get_weather_img_morning }}" 
+                                    alt="{{ latest_forecast.iwm|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.iwm|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itm }}°C">
                                 {{ latest_forecast.itm }}°C
                             </h3>
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfm }} km/h Dirección: {{ latest_forecast.iwddm }}">
                                 {{ latest_forecast.iwddm }} {{ latest_forecast.iwdfm }} km/h
                             </p>
+                            <p class="mb-1 invisible">
+                                <strong>Mar:</strong>
+                            </p>
                         </div>
                         <!-- Tarde -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="Tiempo: {{ latest_forecast.iwa|get_tiempo_description }}">
-                                {{ latest_forecast.iwa }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.iwa|get_weather_img }}" 
-                                alt="{{ latest_forecast.iwa|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.iwa|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.iwa|get_weather_img_afternoon }}" 
+                                    alt="{{ latest_forecast.iwa|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.iwa|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ita }}°C">
                                 {{ latest_forecast.ita }}°C
                             </h3>
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfa }} km/h Dirección: {{ latest_forecast.iwdda }}">
                                 {{ latest_forecast.iwdda }} {{ latest_forecast.iwdfa }} km/h
                             </p>
+                            <p class="mb-1 invisible">
+                                <strong>Mar:</strong>
+                            </p>
                         </div>
                         <!-- Noche -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="Tiempo: {{ latest_forecast.iwn|get_tiempo_description }}">
-                                {{ latest_forecast.iwn }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.iwn|get_weather_img }}" 
-                                alt="{{ latest_forecast.iwn|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.iwn|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.iwn|get_weather_img_night }}" 
+                                    alt="{{ latest_forecast.iwn|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.iwn|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itn }}°C">
                                 {{ latest_forecast.itn }}°C
                             </h3>
                             <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfn }} km/h Dirección: {{ latest_forecast.iwddn }}">
                                 {{ latest_forecast.iwddn }} {{ latest_forecast.iwdfn }} km/h
+                            </p>
+                            <p class="mb-1 invisible">
+                                <strong>Mar:</strong>
                             </p>
                         </div>
                     </div>
@@ -694,7 +691,7 @@
         </div>
     </div>
     <!-- Costa Sur -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-lg-4 mb-3">
         <div class="card">
             <div class="card-body">
                 {% if latest_forecast %}
@@ -703,14 +700,13 @@
                         <!-- Mañana -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Mañana</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.swm|get_tiempo_description }}">
-                                {{ latest_forecast.swm }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.swm|get_weather_img }}" 
-                                alt="{{ latest_forecast.swm|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.swm|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.swm|get_weather_img_morning }}" 
+                                    alt="{{ latest_forecast.swm|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.swm|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stm }}°C">
                                 {{ latest_forecast.stm }}°C
                             </h3>
@@ -724,14 +720,13 @@
                         <!-- Tarde -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Tarde (Max)</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.swa|get_tiempo_description }}">
-                                {{ latest_forecast.swa }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.swa|get_weather_img }}" 
-                                alt="{{ latest_forecast.swa|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.swa|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.swa|get_weather_img_afternoon }}" 
+                                    alt="{{ latest_forecast.swa|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.swa|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.sta }}°C">
                                 {{ latest_forecast.sta }}°C
                             </h3>
@@ -745,14 +740,13 @@
                         <!-- Noche -->
                         <div class="col-4 text-center">
                             <p class="text-muted small">Noche</p>
-                            {% comment %} <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.swn|get_tiempo_description }}">
-                                {{ latest_forecast.swn }}
-                            </p> {% endcomment %}
-                            <img src="{{ latest_forecast.swn|get_weather_img }}" 
-                                alt="{{ latest_forecast.swn|get_tiempo_description }}" 
-                                class="weather-icon w-50" 
-                                data-bs-toggle="tooltip" 
-                                title="{{ latest_forecast.swn|get_tiempo_description }}">
+                            <div class="weather-icon mx-auto">
+                                <img src="{{ latest_forecast.swn|get_weather_img_night }}" 
+                                    alt="{{ latest_forecast.swn|get_tiempo_description }}" 
+                                    class="weather-icon w-50" 
+                                    data-bs-toggle="tooltip" 
+                                    title="{{ latest_forecast.swn|get_tiempo_description }}">
+                            </div>
                             <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stn }}°C">
                                 {{ latest_forecast.stn }}°C
                             </h3>
@@ -810,10 +804,8 @@
     </div>
 </div>
 {% endblock content %}
-
 {% block extrajs %}
 <script src="{% static 'dist/libs/apexcharts/dist/apexcharts.min.js' %}"></script>
-
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         {% if has_forecasts %}
@@ -946,7 +938,6 @@
         {% endif %}
     });
 </script>
-
 <style>
     /* Estilos específicos */
     :root {
