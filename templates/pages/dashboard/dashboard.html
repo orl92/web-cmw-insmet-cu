@@ -152,7 +152,7 @@
                 </div>
                 <!-- Paginación en el footer, solo si hay más de una página -->
                 {% if permission_groups_page.paginator.num_pages > 1 %}
-                <div class="card-footer bg-white border-0 pt-0">
+                <div class="card-footer border-0 pt-0">
                     <div class="pagination justify-content-center">
                         <ul class="pagination pagination-sm mb-0">
                             {% if permission_groups_page.has_previous %}
@@ -248,7 +248,7 @@
                 </div>
                 <!-- Paginación en el footer, solo si hay más de una página -->
                 {% if recent_logins_page.paginator.num_pages > 1 %}
-                <div class="card-footer bg-white border-0 pt-0">
+                <div class="card-footer border-0 pt-0">
                     <div class="pagination justify-content-center">
                         <ul class="pagination pagination-sm mb-0">
                             {% if recent_logins_page.has_previous %}
@@ -347,7 +347,7 @@
                     {% if grouped_permissions %}
                         {% for app in grouped_permissions %}
                             <div class="card mb-3">
-                                <div class="card-header bg-light">
+                                <div class="card-header">
                                     <h6 class="mb-0">{{ app.app_label|title }}</h6>
                                 </div>
                                 <div class="card-body p-0">
