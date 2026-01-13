@@ -1,6 +1,6 @@
 {% extends 'layouts/list.html' %}
 {% load static %}
-{% block title - actions %}
+{% block title_actions %}
 {% if not has_data %}
   <div class="col-auto ms-auto d-print-none">
     <div class="d-flex">
@@ -33,7 +33,7 @@
     </div>
   {% endfor %}
 {% endif %}
-{% endblock title - actions %}
+{% endblock title_actions %}
 
 {% block content %}
   <div class="card">
