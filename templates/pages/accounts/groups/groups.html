@@ -18,7 +18,7 @@
             <span class="avatar avatar-xs rounded-circle" style="background-image: url({{ user.profile.get_avatar|default:'' }})" data-bs-toggle="tooltip" title="{{ user.get_full_name|default:user.username }}"></span>
           {% endfor %}
           {% if user_count > 3 %}
-            <span class="avatar avatar-xs" data-bs-toggle="tooltip" title="{{ user_count|add:'-3' }} usuarios más">+{{ user_count|add:'-3' }}</span>
+            <span class="avatar avatar-xs rounded-circle" data-bs-toggle="tooltip" title="{{ user_count|add:'-3' }} usuarios más">+{{ user_count|add:'-3' }}</span>
           {% endif %}
         </div>
         <small class="text-muted d-block mt-1">{{ user_count }} usuario{{ user_count|pluralize }}</small>
