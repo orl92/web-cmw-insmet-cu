@@ -1,36 +1,34 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
 {% block extrahead %}
-  <link rel="stylesheet" href="{% static 'dist/libs/bootstrap-duallistbox/bootstrap-duallistbox.min.css' %}">
-{% endblock extrahead %}
+  <link rel="stylesheet" href="{% static 'dist/libs/bootstrap-duallistbox/bootstrap-duallistbox.min.css' %}" />
+{% endblock %}
 {% block form %}
   <div class="mb-3">
     <label class="form-label required">{{ form.name.label }}</label>
-    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" placeholder="Nombre del Grupo" required>
+    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" placeholder="Nombre del Grupo" required />
     {% if form.name.errors %}
       <span class="text-danger d-block mb-3">{{ form.name.errors }}</span>
     {% endif %}
   </div>
 
-
   <div class="mb-3">
     <label class="form-label required">{{ form.permissions.label }}</label>
     {{ form.permissions }}
     {% if form.permissions.errors %}
-    <span class="text-danger d-block mb-3">{{ form.permissions.errors }}</span>
+      <span class="text-danger d-block mb-3">{{ form.permissions.errors }}</span>
     {% endif %}
   </div>
-  
-{% endblock form %}
+{% endblock %}
 {% block extrajs %}
   <!-- Carga jQuery primero -->
   <script src="{% static 'dist/libs/jquery/jquery-3.6.0.min.js' %}"></script>
-  
+
   <!-- Carga el plugin después -->
   <script src="{% static 'dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js' %}"></script>
-  
+
   <script>
-    jQuery(document).ready(function($) {
+    jQuery(document).ready(function ($) {
       $('select[multiple]').bootstrapDualListbox({
         nonSelectedListLabel: 'Permisos disponibles',
         selectedListLabel: 'Permisos seleccionados',
@@ -39,21 +37,21 @@
         nonSelectedFilter: '',
         filterTextClear: 'Mostrar todos',
         filterPlaceHolder: 'Filtrar',
-        
+    
         // Iconos de Tabler I/O
         moveSelectedLabel: 'Mover seleccionados',
         moveAllLabel: 'Mover todos',
         removeSelectedLabel: 'Eliminar seleccionados',
         removeAllLabel: 'Eliminar todos',
-        
+    
         infoText: 'Mostrando todos {0}',
         infoTextFiltered: '<span class="badge bg-warning">Filtrado</span> {0} de {1}',
         infoTextEmpty: 'Lista vacía',
-        
+    
         // Ajustes de tamaño
         selectorMinimalHeight: 200,
         bootstrap2Compatible: false,
-        
+    
         // Clases adicionales para compatibilidad con Bootstrap 5
         moveOnSelect: false,
         showFilterInputs: true,
@@ -61,17 +59,16 @@
         infoTextEmpty: 'No hay elementos',
         infoText: 'Mostrando {0} elementos',
         infoTextFiltered: '<span class="badge bg-warning">Filtrado</span> {0} de {1}'
-      });
-
-      // Ajustes adicionales de estilo
-      $('.bootstrap-duallistbox-container').addClass('bootstrap5-duallistbox');
-      $('.bootstrap-duallistbox-container .box1, .bootstrap-duallistbox-container .box2').css({
-        'height': '400px'
-      });
-      
-      // Asegurar que los botones muestren los iconos correctamente
-      $('.moveall, .move, .remove, .removeall').css('white-space', 'nowrap');
-    });
-  </script>
+      })
     
-{% endblock extrajs %}
+      // Ajustes adicionales de estilo
+      $('.bootstrap-duallistbox-container').addClass('bootstrap5-duallistbox')
+      $('.bootstrap-duallistbox-container .box1, .bootstrap-duallistbox-container .box2').css({
+        height: '400px'
+      })
+    
+      // Asegurar que los botones muestren los iconos correctamente
+      $('.moveall, .move, .remove, .removeall').css('white-space', 'nowrap')
+    })
+  </script>
+{% endblock %}

@@ -7,34 +7,34 @@
   <th>Rol</th>
   <th>Staff</th>
   <th class="text-end">Acciones</th>
-{% endblock columns %}
+{% endblock %}
 {% block row %}
-  <td><img src="{{object.profile.get_avatar}}" alt="Avatar de {{object.username}}" class="rounded-circle" width="50" height="50"></td>
-  <td>{{object.username}}</td>
-  <td>{{object.email}}</td>
+  <td>
+    <img src="{{ object.profile.get_avatar }}" alt="Avatar de {{ object.username }}" class="rounded-circle" width="50" height="50" />
+  </td>
+  <td>{{ object.username }}</td>
+  <td>{{ object.email }}</td>
   <td>
     {% if object.is_superuser %}
-        <span class="badge badge-outline text-green">Superuser</span>
+      <span class="badge badge-outline text-green">Superuser</span>
     {% else %}
-        {% for group in object.groups.all %}
-            <span class="badge badge-outline text-blue">{{ group.name }}</span>{% if not forloop.last %},
+      {% for group in object.groups.all %}
+        <span class="badge badge-outline text-blue">{{ group.name }}</span>{% if not forloop.last %}
+          ,
         {% endif %}
-        {% endfor %}
+      {% endfor %}
     {% endif %}
   </td>
   <td>
     {% if object.is_staff %}
-    <span style="color: green;">✔️</span>
+      <span style="color: green;">✔️</span>
     {% else %}
-    <span style="color: red;">❌</span>
+      <span style="color: red;">❌</span>
     {% endif %}
   </td>
   <td class="text-end">
-    <a href="{% url 'update_user' object.profile.uuid %}" type="button" class="btn btn-pill btn-outline-warning btn-sm" data-bs-toggle="tooltip"
-      data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-        class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
+    <a href="{% url 'update_user' object.profile.uuid %}" type="button" class="btn btn-pill btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
         <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
         <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
@@ -52,4 +52,4 @@
       </svg>
     </a>
   </td>
-{% endblock row %}
+{% endblock %}

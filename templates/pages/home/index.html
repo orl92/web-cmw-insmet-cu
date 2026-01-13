@@ -2,538 +2,441 @@
 {% load static %}
 {% load my_filters %}
 {% block extrastyle %}
-    <link href="{% static '' %}dist/css/forecast.css" rel="stylesheet"/>
-{% endblock extrastyle %}
+  <link href="{% static '' %}dist/css/forecast.css" rel="stylesheet" />
+{% endblock %}
 {% block content %}
-<!-- Pronóstico Principal -->
-<div class="row row-deck row-cards mt-3">
-    <h4 class="card-title">Pronóstico del: {{ latest_forecast.date}}</h4>
+  <!-- Pronóstico Principal -->
+  <div class="row row-deck row-cards mt-3">
+    <h4 class="card-title">Pronóstico del: {{ latest_forecast.date }}</h4>
     <!-- Costa Norte -->
     <div class="col-lg-4 mb-3">
-        <div class="card">
-            <div class="card-body">
-                {% if latest_forecast %}
-                    <p class="mb-1">Costa Norte</p>
-                    <div class="row">
-                        <!-- Mañana -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Mañana</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.nwm|get_weather_img_morning }}" 
-                                    alt="{{ latest_forecast.nwm|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.nwm|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntm }}°C">
-                                {{ latest_forecast.ntm }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfm }} km/h Dirección: {{ latest_forecast.nwddm }}">
-                                {{ latest_forecast.nwddm }} {{ latest_forecast.nwdfm }} km/h
-                            </p>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsm|get_mar_description }}">
-                                <strong>Mar:</strong> {{ latest_forecast.nsm }}
-                            </p>
-                        </div>
-                        <!-- Tarde -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Tarde (Max)</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.nwa|get_weather_img_afternoon }}" 
-                                    alt="{{ latest_forecast.nwa|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.nwa|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.nta }}°C">
-                                {{ latest_forecast.nta }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfa }} km/h Dirección: {{ latest_forecast.nwdda }}">
-                                {{ latest_forecast.nwdda }} {{ latest_forecast.nwdfa }} km/h
-                            </p>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsa|get_mar_description }}">
-                                <strong>Mar:</strong> {{ latest_forecast.nsa }}
-                            </p>
-                        </div>
-                        <!-- Noche -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Noche</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.nwn|get_weather_img_night }}" 
-                                    alt="{{ latest_forecast.nwn|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.nwn|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntn }}°C">
-                                {{ latest_forecast.ntn }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfn }} km/h Dirección: {{ latest_forecast.nwddn }}">
-                                {{ latest_forecast.nwddn }} {{ latest_forecast.nwdfn }} km/h
-                            </p>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsn|get_mar_description }}">
-                                <strong>Mar:</strong> {{ latest_forecast.nsn }}
-                            </p>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        No hay pronósticos disponibles.
-                    </div>
-                {% endif %}
+      <div class="card">
+        <div class="card-body">
+          {% if latest_forecast %}
+            <p class="mb-1">Costa Norte</p>
+            <div class="row">
+              <!-- Mañana -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Mañana</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.nwm|get_weather_img_morning }}" alt="{{ latest_forecast.nwm|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.nwm|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntm }}°C">{{ latest_forecast.ntm }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfm }} km/h Dirección: {{ latest_forecast.nwddm }}">{{ latest_forecast.nwddm }} {{ latest_forecast.nwdfm }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsm|get_mar_description }}">
+                  <strong>Mar:</strong> {{ latest_forecast.nsm }}
+                </p>
+              </div>
+              <!-- Tarde -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Tarde (Max)</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.nwa|get_weather_img_afternoon }}" alt="{{ latest_forecast.nwa|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.nwa|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.nta }}°C">{{ latest_forecast.nta }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfa }} km/h Dirección: {{ latest_forecast.nwdda }}">{{ latest_forecast.nwdda }} {{ latest_forecast.nwdfa }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsa|get_mar_description }}">
+                  <strong>Mar:</strong> {{ latest_forecast.nsa }}
+                </p>
+              </div>
+              <!-- Noche -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Noche</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.nwn|get_weather_img_night }}" alt="{{ latest_forecast.nwn|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.nwn|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntn }}°C">{{ latest_forecast.ntn }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfn }} km/h Dirección: {{ latest_forecast.nwddn }}">{{ latest_forecast.nwddn }} {{ latest_forecast.nwdfn }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsn|get_mar_description }}">
+                  <strong>Mar:</strong> {{ latest_forecast.nsn }}
+                </p>
+              </div>
             </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              No hay pronósticos disponibles.
+            </div>
+          {% endif %}
         </div>
+      </div>
     </div>
     <!-- Interior -->
     <div class="col-lg-4 mb-3">
-        <div class="card">
-            <div class="card-body">
-                {% if latest_forecast %}
-                    <p class="mb-1">Interior</p>
-                    <div class="row">
-                        <!-- Mañana -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Mañana</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.iwm|get_weather_img_morning }}" 
-                                    alt="{{ latest_forecast.iwm|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.iwm|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itm }}°C">
-                                {{ latest_forecast.itm }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfm }} km/h Dirección: {{ latest_forecast.iwddm }}">
-                                {{ latest_forecast.iwddm }} {{ latest_forecast.iwdfm }} km/h
-                            </p>
-                            <p class="mb-1 invisible">
-                                <strong>Mar:</strong>
-                            </p>
-                        </div>
-                        <!-- Tarde -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Tarde (Max)</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.iwa|get_weather_img_afternoon }}" 
-                                    alt="{{ latest_forecast.iwa|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.iwa|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ita }}°C">
-                                {{ latest_forecast.ita }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfa }} km/h Dirección: {{ latest_forecast.iwdda }}">
-                                {{ latest_forecast.iwdda }} {{ latest_forecast.iwdfa }} km/h
-                            </p>
-                            <p class="mb-1 invisible">
-                                <strong>Mar:</strong>
-                            </p>
-                        </div>
-                        <!-- Noche -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Noche</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.iwn|get_weather_img_night }}" 
-                                    alt="{{ latest_forecast.iwn|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.iwn|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itn }}°C">
-                                {{ latest_forecast.itn }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfn }} km/h Dirección: {{ latest_forecast.iwddn }}">
-                                {{ latest_forecast.iwddn }} {{ latest_forecast.iwdfn }} km/h
-                            </p>
-                            <p class="mb-1 invisible">
-                                <strong>Mar:</strong>
-                            </p>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        No hay pronósticos disponibles.
-                    </div>
-                {% endif %}
+      <div class="card">
+        <div class="card-body">
+          {% if latest_forecast %}
+            <p class="mb-1">Interior</p>
+            <div class="row">
+              <!-- Mañana -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Mañana</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.iwm|get_weather_img_morning }}" alt="{{ latest_forecast.iwm|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.iwm|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itm }}°C">{{ latest_forecast.itm }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfm }} km/h Dirección: {{ latest_forecast.iwddm }}">{{ latest_forecast.iwddm }} {{ latest_forecast.iwdfm }} km/h</p>
+                <p class="mb-1 invisible">
+                  <strong>Mar:</strong>
+                </p>
+              </div>
+              <!-- Tarde -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Tarde (Max)</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.iwa|get_weather_img_afternoon }}" alt="{{ latest_forecast.iwa|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.iwa|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ita }}°C">{{ latest_forecast.ita }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfa }} km/h Dirección: {{ latest_forecast.iwdda }}">{{ latest_forecast.iwdda }} {{ latest_forecast.iwdfa }} km/h</p>
+                <p class="mb-1 invisible">
+                  <strong>Mar:</strong>
+                </p>
+              </div>
+              <!-- Noche -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Noche</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.iwn|get_weather_img_night }}" alt="{{ latest_forecast.iwn|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.iwn|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itn }}°C">{{ latest_forecast.itn }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfn }} km/h Dirección: {{ latest_forecast.iwddn }}">{{ latest_forecast.iwddn }} {{ latest_forecast.iwdfn }} km/h</p>
+                <p class="mb-1 invisible">
+                  <strong>Mar:</strong>
+                </p>
+              </div>
             </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              No hay pronósticos disponibles.
+            </div>
+          {% endif %}
         </div>
+      </div>
     </div>
     <!-- Costa Sur -->
     <div class="col-lg-4 mb-3">
-        <div class="card">
-            <div class="card-body">
-                {% if latest_forecast %}
-                    <p class="mb-1">Costa Sur</p>
-                    <div class="row">
-                        <!-- Mañana -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Mañana</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.swm|get_weather_img_morning }}" 
-                                    alt="{{ latest_forecast.swm|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.swm|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stm }}°C">
-                                {{ latest_forecast.stm }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfm }} km/h Dirección: {{ latest_forecast.swddm }}">
-                                {{ latest_forecast.swddm }} {{ latest_forecast.swdfm }} km/h
-                            </p>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssm|get_mar_description }}">
-                                <strong>Mar:</strong> {{ latest_forecast.ssm }}
-                            </p>
-                        </div>
-                        <!-- Tarde -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Tarde (Max)</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.swa|get_weather_img_afternoon }}" 
-                                    alt="{{ latest_forecast.swa|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.swa|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.sta }}°C">
-                                {{ latest_forecast.sta }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfa }} km/h Dirección: {{ latest_forecast.swdda }}">
-                                {{ latest_forecast.swdda }} {{ latest_forecast.swdfa }} km/h
-                            </p>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssa|get_mar_description }}">
-                                <strong>Mar:</strong> {{ latest_forecast.ssa }}
-                            </p>
-                        </div>
-                        <!-- Noche -->
-                        <div class="col-4 text-center">
-                            <p class="text-muted small">Noche</p>
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast.swn|get_weather_img_night }}" 
-                                    alt="{{ latest_forecast.swn|get_tiempo_description }}" 
-                                    class="weather-icon" 
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast.swn|get_tiempo_description }}">
-                            </div>
-                            <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stn }}°C">
-                                {{ latest_forecast.stn }}°C
-                            </h3>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfn }} km/h Dirección: {{ latest_forecast.swddn }}">
-                                {{ latest_forecast.swddn }} {{ latest_forecast.swdfn }} km/h
-                            </p>
-                            <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssn|get_mar_description }}">
-                                <strong>Mar:</strong> {{ latest_forecast.ssn }}
-                            </p>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        No hay pronósticos disponibles.
-                    </div>
-                {% endif %}
+      <div class="card">
+        <div class="card-body">
+          {% if latest_forecast %}
+            <p class="mb-1">Costa Sur</p>
+            <div class="row">
+              <!-- Mañana -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Mañana</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.swm|get_weather_img_morning }}" alt="{{ latest_forecast.swm|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.swm|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stm }}°C">{{ latest_forecast.stm }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfm }} km/h Dirección: {{ latest_forecast.swddm }}">{{ latest_forecast.swddm }} {{ latest_forecast.swdfm }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssm|get_mar_description }}">
+                  <strong>Mar:</strong> {{ latest_forecast.ssm }}
+                </p>
+              </div>
+              <!-- Tarde -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Tarde (Max)</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.swa|get_weather_img_afternoon }}" alt="{{ latest_forecast.swa|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.swa|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.sta }}°C">{{ latest_forecast.sta }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfa }} km/h Dirección: {{ latest_forecast.swdda }}">{{ latest_forecast.swdda }} {{ latest_forecast.swdfa }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssa|get_mar_description }}">
+                  <strong>Mar:</strong> {{ latest_forecast.ssa }}
+                </p>
+              </div>
+              <!-- Noche -->
+              <div class="col-4 text-center">
+                <p class="text-muted small">Noche</p>
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast.swn|get_weather_img_night }}" alt="{{ latest_forecast.swn|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.swn|get_tiempo_description }}" />
+                </div>
+                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stn }}°C">{{ latest_forecast.stn }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfn }} km/h Dirección: {{ latest_forecast.swddn }}">{{ latest_forecast.swddn }} {{ latest_forecast.swdfn }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssn|get_mar_description }}">
+                  <strong>Mar:</strong> {{ latest_forecast.ssn }}
+                </p>
+              </div>
             </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              No hay pronósticos disponibles.
+            </div>
+          {% endif %}
         </div>
+      </div>
     </div>
-</div>
-<!-- Pronóstico Extendido -->
-<h4 class="card-title mt-3">Pronóstico Extendido 5 días</h4>
-<div class="row row-deck row-cards mt-3 row-cols-1 row-cols-sm-2 row-cols-lg-5 ">
+  </div>
+  <!-- Pronóstico Extendido -->
+  <h4 class="card-title mt-3">Pronóstico Extendido 5 días</h4>
+  <div class="row row-deck row-cards mt-3 row-cols-1 row-cols-sm-2 row-cols-lg-5">
     {% if latest_forecast %}
-        {% for day in "12345" %}
-            <div class="col mb-3">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <p class="mb-1">{{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:"D d/m" }}</p>
-                        <div class="day-content">
-                            <div class="weather-icon mx-auto">
-                                <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" 
-                                    alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" 
-                                    class="img-fluid"
-                                    data-bs-toggle="tooltip" 
-                                    title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}">
-                            </div>
-                            <div class="temp-info mt-3">
-                                <spam class="temp-max text-danger fs-5" data-bs-toggle="tooltip" title="Temperatura Máxima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C">
-                                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
-                                    <span class="temp-label">Máxima</span>
-                                </spam>
-                                <spam class="temp-min text-info fs-5" data-bs-toggle="tooltip" title="Temperatura Mínima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C">
-                                   {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
-                                   <span class="temp-label">Mínima</span>
-                                </spam>
-                            </div>
-                        </div>
-                    </div>
+      {% for day in 12345 %}
+        <div class="col mb-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <p class="mb-1">{{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:'D d/m' }}</p>
+              <div class="day-content">
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" class="img-fluid" data-bs-toggle="tooltip" title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}" />
                 </div>
+                <div class="temp-info mt-3">
+                  <spam class="temp-max text-danger fs-5" data-bs-toggle="tooltip" title="Temperatura Máxima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C">
+                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
+                    <span class="temp-label">Máxima</span>
+                  </spam>
+                  <spam class="temp-min text-info fs-5" data-bs-toggle="tooltip" title="Temperatura Mínima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C">
+                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
+                    <span class="temp-label">Mínima</span>
+                  </spam>
+                </div>
+              </div>
             </div>
-        {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
     {% else %}
-    {% for day in "12345" %}
-            <div class="col mb-3">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <div class="col-12">
-                            <div class="alert alert-info mb-0">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                No hay pronósticos disponibles.
-                            </div>
-                        </div>
-                    </div>
+      {% for day in 12345 %}
+        <div class="col mb-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <div class="col-12">
+                <div class="alert alert-info mb-0">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  No hay pronósticos disponibles.
                 </div>
+              </div>
             </div>
-        {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
     {% endif %}
-</div>
-<!-- Datos Astronómicos -->
-<div class="row row-deck row-cards mt-3">
+  </div>
+  <!-- Datos Astronómicos -->
+  <div class="row row-deck row-cards mt-3">
     <h4 class="card-title">Datos Astronómicos</h4>
     <!-- Fases Lunares -->
     <div class="col-lg-4 mb-3">
-        <div class="card">
-            <div class="card-body" id="lunar-phases" style="height: 250px;">
-                <p class="mb-1">Fase Lunar</p>
-                {% if latest_forecast %}
-                    <div id="lunar-phases-content">
-                        <div class="lunarPhase">
-                            <img src="{{ latest_forecast.lp|get_moon_img }}" 
-                                alt="{{ latest_forecast.lp}}" 
-                                data-bs-toggle="tooltip" title="{{ latest_forecast.lp|get_luna_description }}" 
-                                style="height: 110px; width: 110px;">
-                            <div class="phaseInfo">
-                                <div data-bs-toggle="tooltip" title="Fase de la luna">{{ latest_forecast.lp }}</div>
-                            </div>
-                        </div>
-                        <div class="nextPhase">
-                            <img src="{{ latest_forecast.nlp|get_moon_img }}" 
-                                alt="{{ latest_forecast.nlp}}" 
-                                data-bs-toggle="tooltip" title="{{ latest_forecast.nlp|get_luna_description }}" 
-                                style="height: 33px; width: 33px;">
-                            <span class="moonDetails">
-                                <div>Próxima: {{ latest_forecast.nlp }}</div>
-                                <div>
-                                    {{ latest_forecast.nlpd|date:"d/m/Y" }}
-                                </div>
-                            </span>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        No hay datos astronómicos disponibles.
-                    </div>
-                {% endif %}
+      <div class="card">
+        <div class="card-body" id="lunar-phases" style="height: 250px;">
+          <p class="mb-1">Fase Lunar</p>
+          {% if latest_forecast %}
+            <div id="lunar-phases-content">
+              <div class="lunarPhase">
+                <img src="{{ latest_forecast.lp|get_moon_img }}" alt="{{ latest_forecast.lp }}" data-bs-toggle="tooltip" title="{{ latest_forecast.lp|get_luna_description }}" style="height: 110px; width: 110px;" />
+                <div class="phaseInfo">
+                  <div data-bs-toggle="tooltip" title="Fase de la luna">{{ latest_forecast.lp }}</div>
+                </div>
+              </div>
+              <div class="nextPhase">
+                <img src="{{ latest_forecast.nlp|get_moon_img }}" alt="{{ latest_forecast.nlp }}" data-bs-toggle="tooltip" title="{{ latest_forecast.nlp|get_luna_description }}" style="height: 33px; width: 33px;" />
+                <span class="moonDetails">
+                  <div>Próxima: {{ latest_forecast.nlp }}</div>
+                  <div>{{ latest_forecast.nlpd|date:'d/m/Y' }}</div>
+                </span>
+              </div>
             </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              No hay datos astronómicos disponibles.
+            </div>
+          {% endif %}
         </div>
+      </div>
     </div>
     <!-- Salida y Puesta del Sol -->
     <div class="col-lg-4 mb-3">
-        <div class="card">
-            <div class="card-body" id="sunrise-sunset" style="height: 250px;">
-                <p class="mb-1">Salida y Puesta del Sol</p>
-                {% if latest_forecast %}
-                    <div id="sunrise-sunset-content" class="d-flex justify-content-around">
-                        <div class="sunrise-sunset-item">
-                            <img src="{{ 'sunrise'|get_sun_img }}" 
-                                alt="Amanecer" 
-                                data-bs-toggle="tooltip" title="{{ 'sunrise'|get_sol_description }}" 
-                                style="height: 75px; width: 75px;">
-                            <div class="time-details">
-                                <div class="time-item">
-                                    <span class="time-value" id="sunrise-value">
-                                        {{ latest_forecast.sunrise|time:"g:i A" }}
-                                    </span>
-                                    <span class="time-label">Amanecer</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="sunrise-sunset-item">
-                            <img src="{{ 'sunset'|get_sun_img }}" 
-                                alt="Puesta de sol" 
-                                data-bs-toggle="tooltip" title="{{ 'sunset'|get_sol_description }}" 
-                                style="height: 75px; width: 75px;">
-                            <div class="time-details">
-                                <div class="time-item">
-                                    <span class="time-value" id="sunset-value">
-                                        {{ latest_forecast.sunset|time:"g:i A" }}
-                                    </span>
-                                    <span class="time-label">Puesta de sol</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        No hay datos astronómicos disponibles.
-                    </div>
-                {% endif %}
+      <div class="card">
+        <div class="card-body" id="sunrise-sunset" style="height: 250px;">
+          <p class="mb-1">Salida y Puesta del Sol</p>
+          {% if latest_forecast %}
+            <div id="sunrise-sunset-content" class="d-flex justify-content-around">
+              <div class="sunrise-sunset-item">
+                <img src="{{ 'sunrise'|get_sun_img }}" alt="Amanecer" data-bs-toggle="tooltip" title="{{ 'sunrise'|get_sol_description }}" style="height: 75px; width: 75px;" />
+                <div class="time-details">
+                  <div class="time-item">
+                    <span class="time-value" id="sunrise-value">{{ latest_forecast.sunrise|time:'g:i A' }}</span>
+                    <span class="time-label">Amanecer</span>
+                  </div>
+                </div>
+              </div>
+              <div class="sunrise-sunset-item">
+                <img src="{{ 'sunset'|get_sun_img }}" alt="Puesta de sol" data-bs-toggle="tooltip" title="{{ 'sunset'|get_sol_description }}" style="height: 75px; width: 75px;" />
+                <div class="time-details">
+                  <div class="time-item">
+                    <span class="time-value" id="sunset-value">{{ latest_forecast.sunset|time:'g:i A' }}</span>
+                    <span class="time-label">Puesta de sol</span>
+                  </div>
+                </div>
+              </div>
             </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              No hay datos astronómicos disponibles.
+            </div>
+          {% endif %}
         </div>
+      </div>
     </div>
     <!-- Índice UV -->
     <div class="col-lg-4 mb-3">
-        <div class="card">
-            <div class="card-body" style="height: 250px;">
-                <p class="mb-1">Índice UV</p>
-                {% if latest_forecast %}
-                    <div id="uv-index-content" class="d-flex justify-content-center align-items-center mb-3">
-                        <div class="uvLabelContainer">
-                            <svg width="130" height="134" viewBox="5 -12 171 178" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <!-- Arcos de niveles UV -->
-                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-240 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
-                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-243 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
-                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-178 90.5 80)" fill="none" stroke="#FDE300" stroke-width="8" stroke-linecap="round"></path>
-                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-115 90.5 80)" fill="none" stroke="#FF8C00" stroke-width="8" stroke-linecap="round"></path>
-                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-52 90.5 80)" fill="none" stroke="#D13438" stroke-width="8" stroke-linecap="round"></path>
-                                <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(13 90.5 80)" fill="none" stroke="#5C2E91" stroke-width="8" stroke-linecap="round"></path>
-                                
-                                <!-- Indicador UV dinámico -->
-                                {% with uv_index=latest_forecast.uv_index %}
-                                {% if uv_index == 0 %}
-                                    <circle cx="51" cy="146" r="10" fill="#73AA24"></circle>
-                                    <circle cx="51" cy="146" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 1 %}
-                                    <circle cx="40.5" cy="136" r="10" fill="#73AA24"></circle>
-                                    <circle cx="40.5" cy="136" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 2 %}
-                                    <circle cx="19" cy="105" r="10" fill="#73AA24"></circle>
-                                    <circle cx="19" cy="105" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 3 %}
-                                    <circle cx="18" cy="63" r="10" fill="#FDE300"></circle>
-                                    <circle cx="18" cy="63" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 4 %}
-                                    <circle cx="24" cy="44" r="10" fill="#FDE300"></circle>
-                                    <circle cx="24" cy="44" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 5 %}
-                                    <circle cx="36" cy="26" r="10" fill="#FDE300"></circle>
-                                    <circle cx="36" cy="26" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 6 %}
-                                    <circle cx="73" cy="5" r="10" fill="#FF8C00"></circle>
-                                    <circle cx="73" cy="5" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 7 %}
-                                    <circle cx="112" cy="8" r="10" fill="#FF8C00"></circle>
-                                    <circle cx="112" cy="8" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 8 %}
-                                    <circle cx="148" cy="30" r="10" fill="#D13438"></circle>
-                                    <circle cx="148" cy="30" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 9 %}
-                                    <circle cx="159" cy="48" r="10" fill="#D13438"></circle>
-                                    <circle cx="159" cy="48" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index == 10 %}
-                                    <circle cx="164" cy="68" r="10" fill="#D13438"></circle>
-                                    <circle cx="164" cy="68" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% elif uv_index >= 11 %}
-                                    <circle cx="158" cy="113" r="10" fill="#5C2E91"></circle>
-                                    <circle cx="158" cy="113" r="11.5" stroke="white" stroke-width="3"></circle>
-                                {% endif %}
-                                {% endwith %}
-                            </svg>
-                            <div class="uvContentTitle">
-                                {% if latest_forecast.uv_index > 11 %}11+{% else %}{{ latest_forecast.uv_index }}{% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    <div id="uv-exposure-message" class="text-center">
-                        <p class="mb-0 fw-medium">
-                            {% if latest_forecast.uv_index <= 2 %}Protección no requerida
-                            {% elif latest_forecast.uv_index <= 5 %}Usa protector solar
-                            {% elif latest_forecast.uv_index <= 7 %}Usa gorra y protector solar
-                            {% else %}Evita exposición prolongada
-                            {% endif %}
-                        </p>
-                        <small class="text-muted">
-                            Índice UV {{ latest_forecast.uv_index }} - 
-                            {% if latest_forecast.uv_index <= 2 %}Bajo
-                            {% elif latest_forecast.uv_index <= 5 %}Moderado
-                            {% elif latest_forecast.uv_index <= 7 %}Alto
-                            {% elif latest_forecast.uv_index <= 10 %}Muy Alto
-                            {% else %}Extremo
-                            {% endif %}
-                        </small>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        No hay datos de índice UV disponibles.
-                    </div>
-                {% endif %}
+      <div class="card">
+        <div class="card-body" style="height: 250px;">
+          <p class="mb-1">Índice UV</p>
+          {% if latest_forecast %}
+            <div id="uv-index-content" class="d-flex justify-content-center align-items-center mb-3">
+              <div class="uvLabelContainer">
+                <svg width="130" height="134" viewBox="5 -12 171 178" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Arcos de niveles UV -->
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-240 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-243 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-178 90.5 80)" fill="none" stroke="#FDE300" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-115 90.5 80)" fill="none" stroke="#FF8C00" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-52 90.5 80)" fill="none" stroke="#D13438" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(13 90.5 80)" fill="none" stroke="#5C2E91" stroke-width="8" stroke-linecap="round"></path>
+
+                  <!-- Indicador UV dinámico -->
+                  {% with uv_index=latest_forecast.uv_index %}
+                    {% if uv_index == 0 %}
+                      <circle cx="51" cy="146" r="10" fill="#73AA24"></circle>
+                      <circle cx="51" cy="146" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 1 %}
+                      <circle cx="40.5" cy="136" r="10" fill="#73AA24"></circle>
+                      <circle cx="40.5" cy="136" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 2 %}
+                      <circle cx="19" cy="105" r="10" fill="#73AA24"></circle>
+                      <circle cx="19" cy="105" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 3 %}
+                      <circle cx="18" cy="63" r="10" fill="#FDE300"></circle>
+                      <circle cx="18" cy="63" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 4 %}
+                      <circle cx="24" cy="44" r="10" fill="#FDE300"></circle>
+                      <circle cx="24" cy="44" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 5 %}
+                      <circle cx="36" cy="26" r="10" fill="#FDE300"></circle>
+                      <circle cx="36" cy="26" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 6 %}
+                      <circle cx="73" cy="5" r="10" fill="#FF8C00"></circle>
+                      <circle cx="73" cy="5" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 7 %}
+                      <circle cx="112" cy="8" r="10" fill="#FF8C00"></circle>
+                      <circle cx="112" cy="8" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 8 %}
+                      <circle cx="148" cy="30" r="10" fill="#D13438"></circle>
+                      <circle cx="148" cy="30" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 9 %}
+                      <circle cx="159" cy="48" r="10" fill="#D13438"></circle>
+                      <circle cx="159" cy="48" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index == 10 %}
+                      <circle cx="164" cy="68" r="10" fill="#D13438"></circle>
+                      <circle cx="164" cy="68" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% elif uv_index >= 11 %}
+                      <circle cx="158" cy="113" r="10" fill="#5C2E91"></circle>
+                      <circle cx="158" cy="113" r="11.5" stroke="white" stroke-width="3"></circle>
+                    {% endif %}
+                  {% endwith %}
+                </svg>
+                <div class="uvContentTitle">
+                  {% if latest_forecast.uv_index > 11 %}
+                    11+
+                  {% else %}
+                    {{ latest_forecast.uv_index }}
+                  {% endif %}
+                </div>
+              </div>
             </div>
+            <div id="uv-exposure-message" class="text-center">
+              <p class="mb-0 fw-medium">
+                {% if latest_forecast.uv_index <= 2 %}
+                  Protección no requerida
+                {% elif latest_forecast.uv_index <= 5 %}
+                  Usa protector solar
+                {% elif latest_forecast.uv_index <= 7 %}
+                  Usa gorra y protector solar
+                {% else %}
+                  Evita exposición prolongada
+                {% endif %}
+              </p>
+              <small class="text-muted">
+                Índice UV {{ latest_forecast.uv_index }} -{% if latest_forecast.uv_index <= 2 %}
+                  Bajo
+                {% elif latest_forecast.uv_index <= 5 %}
+                  Moderado
+                {% elif latest_forecast.uv_index <= 7 %}
+                  Alto
+                {% elif latest_forecast.uv_index <= 10 %}
+                  Muy Alto
+                {% else %}
+                  Extremo
+                {% endif %}
+              </small>
+            </div>
+          {% else %}
+            <div class="alert alert-info mb-0">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              No hay datos de índice UV disponibles.
+            </div>
+          {% endif %}
         </div>
+      </div>
     </div>
-</div>
-<!-- Mapa y Observaciones -->
-<div class="row row-cards mt-3">
+  </div>
+  <!-- Mapa y Observaciones -->
+  <div class="row row-cards mt-3">
     <!-- Estaciones -->
     <div class="col-lg-8 mb-3">
-        <h4>Estaciones Meteorologicas en la Provincia</h4>
-        <div class="card">
-            <div class="card-body">
-                <p class="mb-1">Estaciones</p>
-                <div class="container" id="chartdiv" style="height: 450px;">
-                    <!-- Mapa Estaciones Aquí -->
-                </div>
-            </div>
+      <h4>Estaciones Meteorologicas en la Provincia</h4>
+      <div class="card">
+        <div class="card-body">
+          <p class="mb-1">Estaciones</p>
+          <div class="container" id="chartdiv" style="height: 450px;">
+            <!-- Mapa Estaciones Aquí -->
+          </div>
         </div>
+      </div>
     </div>
     <!-- Observaciones del Clima -->
     <div class="col-lg-4 mb-3">
-        <h4>Observaciones del Clima en las Estaciones</h4>
-        <div class="card">
-            <div class="card-body">
-                <p class="mb-1">Observación</p>
-                <div class="container" id="station-details" style="height: 450px;">
-                    <!-- Observaciones Aquí -->
-                    <p id="station-date" class="h3 mb-4 text-center" data-bs-toggle="tooltip"
-                    data-bs-placement="bottom" title="Fecha de la Observación"></p>
-                    <p id="station-title" class="h3 mb-4 text-center" data-bs-toggle="tooltip"
-                    data-bs-placement="bottom" title="Nombre y Número de la estación"></p>
-                    <p id="station-weather" class="h5 mb-4 text-center" data-bs-toggle="tooltip"
-                    data-bs-placement="bottom" title="Estado del cielo"></p>
-                    <p id="station-temperature" class="display-2 text-center" data-bs-toggle="tooltip"
-                    data-bs-placement="bottom" title="Temperatura actual"></p>
-                    <div id="station-temperatures" class="text-center" data-bs-toggle="tooltip"
-                        data-bs-placement="bottom" title="Temperaturas máxima y mínima"></div>
-                    <br>
-                    <div id="station-humidity" class="text-center" data-bs-toggle="tooltip"
-                        data-bs-placement="bottom" title="Humedad relativa">
-                        <!-- Aquí va el contenido de la estación de humedad relativa -->
-                    </div>
-                    <div class="weather__status d-flex flex-row justify-content-center align-items-center mt-3">
-                        <div id="station-wind"
-                            class="p-1 d-flex flex-column justify-content-center align-items-center"
-                            data-bs-toggle="tooltip" data-bs-placement="bottom"
-                            title="Velocidad y dirección del viento">
-                            <!-- Aquí va el contenido de la estación de viento -->
-                        </div>
-                        <div id="station-rain-3h"
-                            class="p-1 d-flex flex-column justify-content-center align-items-center"
-                            data-bs-toggle="tooltip" data-bs-placement="bottom"
-                            title="Precipitaciones en las últimas 3h">
-                            <!-- Aquí va el contenido de la estación de lluvia en las últimas 3 horas -->
-                        </div>
-                        <div id="station-rain-24h"
-                            class="p-1 d-flex flex-column justify-content-center align-items-center"
-                            data-bs-toggle="tooltip" data-bs-placement="bottom"
-                            title="Precipitaciones en las últimas 24h">
-                            <!-- Aquí va el contenido de la estación de lluvia en las últimas 24 horas -->
-                        </div>
-                    </div>
-                </div>
+      <h4>Observaciones del Clima en las Estaciones</h4>
+      <div class="card">
+        <div class="card-body">
+          <p class="mb-1">Observación</p>
+          <div class="container" id="station-details" style="height: 450px;">
+            <!-- Observaciones Aquí -->
+            <p id="station-date" class="h3 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Fecha de la Observación"></p>
+            <p id="station-title" class="h3 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Nombre y Número de la estación"></p>
+            <p id="station-weather" class="h5 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Estado del cielo"></p>
+            <p id="station-temperature" class="display-2 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Temperatura actual"></p>
+            <div id="station-temperatures" class="text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Temperaturas máxima y mínima"></div>
+            <br />
+            <div id="station-humidity" class="text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Humedad relativa">
+              <!-- Aquí va el contenido de la estación de humedad relativa -->
             </div>
+            <div class="weather__status d-flex flex-row justify-content-center align-items-center mt-3">
+              <div id="station-wind" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Velocidad y dirección del viento">
+                <!-- Aquí va el contenido de la estación de viento -->
+              </div>
+              <div id="station-rain-3h" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Precipitaciones en las últimas 3h">
+                <!-- Aquí va el contenido de la estación de lluvia en las últimas 3 horas -->
+              </div>
+              <div id="station-rain-24h" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Precipitaciones en las últimas 24h">
+                <!-- Aquí va el contenido de la estación de lluvia en las últimas 24 horas -->
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
-</div>
-{% endblock content %}
+  </div>
+{% endblock %}
 {% block extrajs %}
-    <!-- Libs JS -->
-    <script src="{% static '' %}dist/libs/amcharts/dist/index.js"></script>
-    <script src="{% static '' %}dist/libs/amcharts/dist/map.js"></script>
-    <script src="{% static '' %}dist/libs/amcharts/dist/themes/Animated.js"></script>
-    <script src="{% static '' %}dist/libs/amcharts/dist/geodata/data/countries2.js"></script>
-    <script src="{% static '' %}dist/js/map_station.js"></script>
-{% endblock extrajs %}
+  <!-- Libs JS -->
+  <script src="{% static '' %}dist/libs/amcharts/dist/index.js"></script>
+  <script src="{% static '' %}dist/libs/amcharts/dist/map.js"></script>
+  <script src="{% static '' %}dist/libs/amcharts/dist/themes/Animated.js"></script>
+  <script src="{% static '' %}dist/libs/amcharts/dist/geodata/data/countries2.js"></script>
+  <script src="{% static '' %}dist/js/map_station.js"></script>
+{% endblock %}

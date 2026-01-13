@@ -2,8 +2,12 @@
   <h1 class="d-flex justify-content-center" id="weather-tomorrow">Pronóstico del Tiempo para Mañana en la Provincia de Camagüey</h1>
   <h3 class="d-flex justify-content-center">Departamento de Pronósticos</h3>
   <div class="d-flex justify-content-between">
-    <p><strong>Fecha:</strong> {{ weather_tomorrow.date|date:"j \d\e F \d\e Y" }}</p>
-    <p><strong>Hora:</strong> {{ weather_tomorrow.date|time:"h:i A" }}</p>
+    <p>
+      <strong>Fecha:</strong> {{ weather_tomorrow.date|date:'j \d\e F \d\e Y' }}
+    </p>
+    <p>
+      <strong>Hora:</strong> {{ weather_tomorrow.date|time:'h:i A' }}
+    </p>
   </div>
   <p class="d-flex justify-content-center">{{ weather_tomorrow.summary }}</p>
   <p>{{ weather_tomorrow.detailed_forecast|safe }}</p>

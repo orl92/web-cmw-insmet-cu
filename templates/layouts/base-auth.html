@@ -1,24 +1,31 @@
-<!doctype html>
+<!DOCTYPE html>
 {% load static %}
-<!--
+<!-- 
 * Tabler - Premium and Open Source dashboard template with responsive and high quality UI.
 * @version 1.4.0
 * @link https://tabler.io
 * Copyright 2018-2025 The Tabler Authors
 * Copyright 2018-2025 codecalm.net Paweł Kuna
 * Licensed under MIT (https://github.com/tabler/tabler/blob/master/LICENSE)
--->
+ -->
 <html lang="en">
   <head>
-    <title>{% block title %}{{title}}{% endblock title %} - Centro Meteorológico Provincial Camagüey.</title>
+    <title>
+      {% block title %}
+        {{ title }}
+      {% endblock %}- Centro Meteorológico Provincial Camagüey.
+    </title>
     {% include 'includes/base/head.html' %}
   </head>
-  <body class="{% block body %}{% endblock body %}">
+  <body class="{% block body %}
+    {% endblock %}">
     <script src="{% static '' %}dist/js/tabler-theme.min.js"></script>
-    {% block content %}{% endblock content %}
+    {% block content %}
+    {% endblock %}
     {% include 'includes/base/settings.html' %}
     <!-- Tabler JS -->
-    {% block extrajs %}{% endblock extrajs %}
+    {% block extrajs %}
+    {% endblock %}
     <!-- Tabler Core -->
     {% include 'includes/base/scripts.html' %}
   </body>

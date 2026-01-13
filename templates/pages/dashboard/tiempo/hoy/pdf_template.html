@@ -1,90 +1,88 @@
 <!DOCTYPE html>
 {% load static %}
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>El Tiempo para Hoy - {{ weather_today.date|date:"d/m/Y" }}</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>El Tiempo para Hoy - {{ weather_today.date|date:'d/m/Y' }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 2.5cm;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-            color: #000;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 1.5cm;
-        }
-        h1 {
-            font-size: 16pt;
-            margin-bottom: 0.5cm;
-            text-align: center;
-            font-weight: bold;
-        }
-        h2 {
-            font-size: 14pt;
-            text-align: center;
-            margin-bottom: 1cm;
-            font-weight: bold;
-        }
-        .metadata {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1cm;
-            font-size: 12pt;
-        }
-        .content {
-            font-size: 12pt;
-            margin-bottom: 2cm;
-            white-space: pre-line;
-            line-height: 1.6;
-        }
-        .author {
-            text-align: left;
-            font-size: 12pt;
-            margin-top: 1.5cm;
-        }
-        .subject {
-            text-align: center;
-            font-style: italic;
-            font-size: 12pt;
-            margin: 1cm 0;
-        }
-        .logo {
-            height: 80px;
-            width: auto;
-            margin-bottom: 15px;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
+      @page {
+        size: A4;
+        margin: 2.5cm;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+        color: #000;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 1.5cm;
+      }
+      h1 {
+        font-size: 16pt;
+        margin-bottom: 0.5cm;
+        text-align: center;
+        font-weight: bold;
+      }
+      h2 {
+        font-size: 14pt;
+        text-align: center;
+        margin-bottom: 1cm;
+        font-weight: bold;
+      }
+      .metadata {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1cm;
+        font-size: 12pt;
+      }
+      .content {
+        font-size: 12pt;
+        margin-bottom: 2cm;
+        white-space: pre-line;
+        line-height: 1.6;
+      }
+      .author {
+        text-align: left;
+        font-size: 12pt;
+        margin-top: 1.5cm;
+      }
+      .subject {
+        text-align: center;
+        font-style: italic;
+        font-size: 12pt;
+        margin: 1cm 0;
+      }
+      .logo {
+        height: 80px;
+        width: auto;
+        margin-bottom: 15px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="header">
-        <img class="logo" src="data:image/png;base64,{{ logo_base64 }}" alt="Logo">
-        <h1>El Tiempo para hoy en la Provincia de Camagüey</h1>
-        <h2>Departamento de Pronósticos</h2>
+      <img class="logo" src="data:image/png;base64,{{ logo_base64 }}" alt="Logo" />
+      <h1>El Tiempo para hoy en la Provincia de Camagüey</h1>
+      <h2>Departamento de Pronósticos</h2>
     </div>
-    
+
     <div class="metadata">
-        <span><strong>Fecha:</strong> {{ weather_today.date|date:"j \d\e F \d\e Y" }}</span>
-        <span><strong>Hora:</strong> {{ weather_today.date|time:"h:i A" }}</span>
+      <span><strong>Fecha:</strong> {{ weather_today.date|date:'j \d\e F \d\e Y' }}</span>
+      <span><strong>Hora:</strong> {{ weather_today.date|time:'h:i A' }}</span>
     </div>
-    
+
     {% if weather_today.subject %}
-        <div class="subject">{{ weather_today.summary }}</div>
+      <div class="subject">{{ weather_today.summary }}</div>
     {% endif %}
-    
-    <div class="content">
-        {{ weather_today.detailed_forecast|safe }}
-    </div>
-    
+
+    <div class="content">{{ weather_today.detailed_forecast|safe }}</div>
+
     <div class="author">
-        <strong>Autor:</strong> {{ weather_today.user.get_full_name|default:weather_today.user.username }}
+      <strong>Autor:</strong> {{ weather_today.user.get_full_name|default:weather_today.user.username }}
     </div>
-</body>
+  </body>
 </html>
