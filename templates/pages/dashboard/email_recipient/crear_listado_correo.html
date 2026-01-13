@@ -40,8 +40,8 @@
               <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
             {% endif %}
           </td>
-          <td>
-            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
+          <td class="align-middle">
+            <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-recipient" name="form-${formIndex}-DELETE">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M4 7l16 0" />
@@ -54,10 +54,9 @@
           </td>
         </tr>
         {% endfor %}
-        
       </tbody>
     </table>
-    <button type="button" id="add-recipient" class="btn btn-pill btn-outline-success btn-sm">Añadir Destinatario</button>
+    <button type="button" id="add-recipient" class="btn btn-icon btn-outline-success btn-sm">Añadir Destinatario</button>
   </fieldset>
 {% endblock form %}
 
@@ -70,18 +69,16 @@
     $('#add-recipient').click(function () {
       const formsetTableBody = $('table tbody'); // Selecciona el cuerpo de la tabla
       const totalFormsInput = $('#id_recipients-TOTAL_FORMS'); // Campo que lleva la cuenta total de formularios
-
       // Obtiene el número actual de formularios
       const formIndex = parseInt(totalFormsInput.val());
-
       // Crea una nueva fila con un botón para eliminar
       const newRow = `
         <tr>
           <td>
             <input type="email" class="form-control" name="recipients-${formIndex}-email" placeholder="Correo Electrónico" required>
           </td>
-          <td>
-            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="recipients-${formIndex}-DELETE">
+          <td class="align-middle">
+            <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-recipient" name="recipients-${formIndex}-DELETE">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M4 7l16 0" />

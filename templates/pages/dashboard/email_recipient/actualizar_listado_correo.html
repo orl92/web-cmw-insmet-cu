@@ -31,7 +31,7 @@
           <th>Eliminar</th>
         </tr>
       </thead>
-      <tbody id="recipient-table-body">
+      <tbody>
         {% for form in formset %}
         <tr>
           <td>
@@ -40,10 +40,10 @@
               <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
             {% endif %}
           </td>
-          <td>
+          <td class="align-middle">
             <input type="hidden" name="recipients-{{ forloop.counter0 }}-id" value="{{ form.instance.pk }}">
             <input type="checkbox" name="recipients-{{ forloop.counter0 }}-DELETE" style="display:none;">
-            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient">
+            <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-recipient">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M4 7l16 0" />
@@ -68,21 +68,20 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
   $(document).ready(function () {
+    // Evento para añadir destinatarios
     $('#add-recipient').click(function () {
-      const formsetTableBody = $('#recipient-table-body');
-      const totalFormsInput = $('#id_recipients-TOTAL_FORMS');
-  
+      const formsetTableBody = $('table tbody'); // Selecciona el cuerpo de la tabla
+      const totalFormsInput = $('#id_recipients-TOTAL_FORMS'); // Campo que lleva la cuenta total de formularios
+      // Obtiene el número actual de formularios
       const formIndex = parseInt(totalFormsInput.val());
-  
+      // Crea una nueva fila con un botón para eliminar
       const newRow = `
-      <tr>
-        <td>
-          <input type="email" class="form-control" name="recipients-${formIndex}-email" value="" placeholder="Correo Electrónico">
-        </td>
-        <td>
-          <input type="hidden" name="recipients-${formIndex}-id" value="">
-          <input type="checkbox" name="recipients-${formIndex}-DELETE" style="display:none;">
-          <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-recipient" name="recipients-${formIndex}-DELETE">
+        <tr>
+          <td>
+            <input type="email" class="form-control" name="recipients-${formIndex}-email" placeholder="Correo Electrónico" required>
+          </td>
+          <td class="align-middle">
+            <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-recipient" name="recipients-${formIndex}-DELETE">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M4 7l16 0" />
@@ -92,20 +91,25 @@
                 <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
               </svg>
             </button>
-        </td>
-      </tr>
+          </td>
+        </tr>
       `;
-  
+      // Añade la nueva fila al cuerpo de la tabla
       formsetTableBody.append(newRow);
+
+      // Actualiza el campo que lleva la cuenta total de formularios
       totalFormsInput.val(formIndex + 1);
     });
-  
+
+    // Evento para eliminar destinatarios
     $('table').on('click', '.delete-recipient', function () {
-      const row = $(this).closest('tr');
-      row.find('input[type="checkbox"][name$="-DELETE"]').prop('checked', true);
-      row.hide();
+      // Elimina la fila donde se hizo clic
+      $(this).closest('tr').remove();
+      // Opcional: Actualiza el campo que lleva la cuenta total de formularios
+      const totalFormsInput = $('#id_recipients-TOTAL_FORMS');
+      const remainingRows = $('table tbody tr').length;
+      totalFormsInput.val(remainingRows); // Ajusta el conteo al número actual de filas restantes
     });
   });
-  
 </script>
 {% endblock extrajs %}
