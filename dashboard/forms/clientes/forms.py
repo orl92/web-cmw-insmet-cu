@@ -10,7 +10,7 @@ class CustomerForm(forms.ModelForm):
 
     class Meta:
         model = Customer
-        fields = ['username', 'password', 'company_name']
+        fields = ['username', 'password', 'company_name', 'phone']
 
     def save(self, commit=True):
         customer = super().save(commit=False)
@@ -26,4 +26,4 @@ class CustomerForm(forms.ModelForm):
 class CustomerUpdateForm(forms.ModelForm):
     class Meta:
         model = Customer
-        fields = ['company_name']
+        fields = ['company_name', 'phone']
