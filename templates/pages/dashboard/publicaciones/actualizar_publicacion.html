@@ -4,7 +4,7 @@
     <!-- Campo para el Título -->
     <div class="mb-3">
         <label class="form-label required">{{ form.title.label }}</label>
-        <input type="text" class="form-control" id="{{ form.title.id_for_label }}" name="{{ form.title.name }}"
+        <input type="text" class="form-control" name="{{ form.title.name }}"
                value="{{ form.title.value }}" placeholder="Título de la publicación científica" required>
         {% if form.title.errors %}
             <span class="text-danger d-block mb-3">{{ form.title.errors }}</span>
@@ -14,8 +14,8 @@
     <!-- Campo para la Fecha de Publicación -->
     <div class="mb-3">
         <label class="form-label required">{{ form.publication_date.label }}</label>
-        <input type="date" class="form-control" id="{{ form.publication_date.id_for_label }}"
-               name="{{ form.publication_date.name }}" value="{{ form.publication_date.value|date:'Y-m-d' }}" required>
+        <input type="date" class="form-control" name="{{ form.publication_date.name }}" 
+               value="{{ form.publication_date.value|date:'Y-m-d' }}" required>
         {% if form.publication_date.errors %}
             <span class="text-danger d-block mb-3">{{ form.publication_date.errors }}</span>
         {% endif %}
@@ -79,7 +79,7 @@
     <!-- Campo para el Resumen -->
     <div class="mb-3">
         <label class="form-label required">{{ form.summary.label }}</label>
-        <textarea class="form-control" id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
+        <textarea class="form-control" name="{{ form.summary.name }}"
                   placeholder="Resumen de la publicación" rows="4" required>{{ form.summary.value }}</textarea>
         {% if form.summary.errors %}
             <span class="text-danger d-block mb-3">{{ form.summary.errors }}</span>
@@ -89,10 +89,12 @@
     <!-- Campo para el Archivo PDF -->
     <div class="mb-3">
         <label class="form-label">{{ form.pdf_file.label }}</label>
-        <input type="file" class="form-control" id="{{ form.pdf_file.id_for_label }}" name="{{ form.pdf_file.name }}"
+        <input type="file" class="form-control" name="{{ form.pdf_file.name }}"
                accept=".pdf">
-        {% if form.pdf_file.value %}
-            <small class="form-text text-muted">Archivo actual: {{ form.pdf_file.value.name }}</small>
+        {% if form.instance.pdf_file %}
+            <small class="form-text text-muted">
+                Archivo actual: <a href="{{ form.instance.pdf_file.url }}" target="_blank">{{ form.instance.pdf_file.name }}</a>
+            </small>
         {% endif %}
         {% if form.pdf_file.errors %}
             <span class="text-danger d-block mb-3">{{ form.pdf_file.errors }}</span>
@@ -102,132 +104,368 @@
     <!-- Sección para Coautores -->
     <fieldset>
         <legend>Coautores (Opcional)</legend>
-        <small class="form-text text-muted">Añade los coautores. El sistema buscará automáticamente autores existentes o
-            creará nuevos.</small>
+        <small class="form-text text-muted">Añade los coautores.</small>
 
         {{ formset.management_form }}
-        <table class="table table-bordered mt-3">
-            <thead>
-            <tr>
-                <th>Nombres</th>
-                <th>Apellidos</th>
-                <th>Correo Electrónico</th>
-                <th>Institución</th>
-                <th>ORCID ID</th>
-                <th>Eliminar</th>
-            </tr>
-            </thead>
-            <tbody id="coauthor-table-body">
-            {% for form in formset %}
-                <tr>
-                    <td>
-                        <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-first_name"
-                               value="{{ form.first_name.value|default:'' }}" placeholder="Nombres" required>
-                    </td>
-                    <td>
-                        <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-last_name"
-                               value="{{ form.last_name.value|default:'' }}" placeholder="Apellidos" required>
-                    </td>
-                    <td>
-                        <input type="email" class="form-control" name="coauthors-{{ forloop.counter0 }}-email"
-                               value="{{ form.email.value|default:'' }}" placeholder="Correo">
-                    </td>
-                    <td>
-                        <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-institution"
-                               value="{{ form.institution.value|default:'' }}" placeholder="Institución">
-                    </td>
-                    <td>
-                        <input type="text" class="form-control" name="coauthors-{{ forloop.counter0 }}-orcid_id"
-                               value="{{ form.orcid_id.value|default:'' }}" placeholder="ORCID ID">
-                    </td>
-                    <td>
-                        {% if form.instance.pk %}
-                            <input type="hidden" name="coauthors-{{ forloop.counter0 }}-id"
-                                   value="{{ form.instance.pk }}">
-                            {{ form.DELETE }}
-                        {% endif %}
-                        <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-coauthor">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                 stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M4 7l16 0"/>
-                                <path d="M10 11l0 6"/>
-                                <path d="M14 11l0 6"/>
-                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
-                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
-                            </svg>
-                        </button>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        <button type="button" id="add-coauthor" class="btn btn-pill btn-outline-success btn-sm">Añadir Coautor</button>
+        
+        <!-- Versión para escritorio (table) -->
+        <div class="d-none d-md-block">
+            <div class="table-responsive">
+                <table class="table table-bordered mt-3" id="coauthors-table-desktop">
+                    <thead>
+                        <tr>
+                            <th>Nombres</th>
+                            <th>Apellidos</th>
+                            <th>Correo Electrónico</th>
+                            <th>Institución</th>
+                            <th>ORCID ID</th>
+                            <th>Eliminar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coauthors-table-body-desktop">
+                        {% for form in formset %}
+                            <tr class="coauthor-row">
+                                {% if form.instance.pk %}
+                                    <input type="hidden" name="{{ form.id.name }}" value="{{ form.instance.pk }}" id="{{ form.id.id_for_label }}">
+                                {% endif %}
+                                <td>
+                                    <input type="text" class="form-control" 
+                                           name="{{ form.first_name.name }}"
+                                           value="{{ form.first_name.value|default:'' }}" 
+                                           placeholder="Nombres">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" 
+                                           name="{{ form.last_name.name }}"
+                                           value="{{ form.last_name.value|default:'' }}" 
+                                           placeholder="Apellidos">
+                                </td>
+                                <td>
+                                    <input type="email" class="form-control" 
+                                           name="{{ form.email.name }}"
+                                           value="{{ form.email.value|default:'' }}" 
+                                           placeholder="Correo">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" 
+                                           name="{{ form.institution.name }}"
+                                           value="{{ form.institution.value|default:'' }}" 
+                                           placeholder="Institución">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" 
+                                           name="{{ form.orcid_id.name }}"
+                                           value="{{ form.orcid_id.value|default:'' }}" 
+                                           placeholder="ORCID ID">
+                                </td>
+                                <td class="align-middle text-center">
+                                    <input type="checkbox" name="{{ form.DELETE.name }}" style="display:none;">
+                                    <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-coauthor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M4 7l16 0"/>
+                                            <path d="M10 11l0 6"/>
+                                            <path d="M14 11l0 6"/>
+                                            <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                            <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Versión para móvil (tarjetas) -->
+        <div class="d-md-none">
+            <div id="coauthors-mobile-container">
+                {% for form in formset %}
+                    <div class="card mb-3 coauthor-card" data-index="{{ forloop.counter0 }}">
+                        <div class="card-body">
+                            {% if form.instance.pk %}
+                                <input type="hidden" name="{{ form.id.name }}" value="{{ form.instance.pk }}">
+                            {% endif %}
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <label class="form-label">Nombres</label>
+                                    <input type="text" class="form-control" 
+                                           name="{{ form.first_name.name }}"
+                                           value="{{ form.first_name.value|default:'' }}" 
+                                           placeholder="Nombres">
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <label class="form-label">Apellidos</label>
+                                    <input type="text" class="form-control" 
+                                           name="{{ form.last_name.name }}"
+                                           value="{{ form.last_name.value|default:'' }}" 
+                                           placeholder="Apellidos">
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <label class="form-label">Correo Electrónico</label>
+                                    <input type="email" class="form-control" 
+                                           name="{{ form.email.name }}"
+                                           value="{{ form.email.value|default:'' }}" 
+                                           placeholder="Correo">
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <label class="form-label">Institución</label>
+                                    <input type="text" class="form-control" 
+                                           name="{{ form.institution.name }}"
+                                           value="{{ form.institution.value|default:'' }}" 
+                                           placeholder="Institución">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label class="form-label">ORCID ID</label>
+                                    <input type="text" class="form-control" 
+                                           name="{{ form.orcid_id.name }}"
+                                           value="{{ form.orcid_id.value|default:'' }}" 
+                                           placeholder="ORCID ID">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 text-end">
+                                    <input type="checkbox" name="{{ form.DELETE.name }}" style="display:none;">
+                                    <button type="button" class="btn btn-outline-danger btn-sm delete-coauthor-mobile">
+                                        Eliminar Coautor
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <button type="button" id="add-coauthor" class="btn btn-pill btn-outline-success btn-sm mt-3">Añadir Coautor</button>
     </fieldset>
 {% endblock form %}
+
+{% block extracss %}
+<style>
+    .coauthor-card {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
+    
+    @media (max-width: 767.98px) {
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+</style>
+{% endblock extracss %}
 
 {% block extrajs %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Evento para añadir coautores
+            let formIndex = {{ formset.total_form_count }};
+            let nextIndex = formIndex;
+            
+            // Función para actualizar el TOTAL_FORMS
+            function updateTotalForms() {
+                const totalForms = $('.coauthor-row:visible, .coauthor-card:visible').length;
+                $('#id_coauthors-TOTAL_FORMS').val(totalForms);
+            }
+            
+            // Función para crear una nueva fila de coautor
+            function createCoauthorRow(index) {
+                const desktopRow = `
+                    <tr class="coauthor-row">
+                        <td>
+                            <input type="text" class="form-control" 
+                                   name="coauthors-${index}-first_name" 
+                                   placeholder="Nombres">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control" 
+                                   name="coauthors-${index}-last_name" 
+                                   placeholder="Apellidos">
+                        </td>
+                        <td>
+                            <input type="email" class="form-control" 
+                                   name="coauthors-${index}-email" 
+                                   placeholder="Correo">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control" 
+                                   name="coauthors-${index}-institution" 
+                                   placeholder="Institución">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control" 
+                                   name="coauthors-${index}-orcid_id" 
+                                   placeholder="ORCID ID">
+                        </td>
+                        <td class="align-middle text-center">
+                            <input type="checkbox" name="coauthors-${index}-DELETE" style="display:none;">
+                            <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-coauthor">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M4 7l16 0"/>
+                                    <path d="M10 11l0 6"/>
+                                    <path d="M14 11l0 6"/>
+                                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                
+                const mobileCard = `
+                    <div class="card mb-3 coauthor-card" data-index="${index}">
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <label class="form-label">Nombres</label>
+                                    <input type="text" class="form-control" 
+                                           name="coauthors-${index}-first_name" 
+                                           placeholder="Nombres">
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <label class="form-label">Apellidos</label>
+                                    <input type="text" class="form-control" 
+                                           name="coauthors-${index}-last_name" 
+                                           placeholder="Apellidos">
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <label class="form-label">Correo Electrónico</label>
+                                    <input type="email" class="form-control" 
+                                           name="coauthors-${index}-email" 
+                                           placeholder="Correo">
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-12">
+                                    <label class="form-label">Institución</label>
+                                    <input type="text" class="form-control" 
+                                           name="coauthors-${index}-institution" 
+                                           placeholder="Institución">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <label class="form-label">ORCID ID</label>
+                                    <input type="text" class="form-control" 
+                                           name="coauthors-${index}-orcid_id" 
+                                           placeholder="ORCID ID">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 text-end">
+                                    <input type="checkbox" name="coauthors-${index}-DELETE" style="display:none;">
+                                    <button type="button" class="btn btn-outline-danger btn-sm delete-coauthor-mobile">
+                                        Eliminar Coautor
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                return { desktopRow, mobileCard };
+            }
+            
+            // Añadir nueva fila de coautor
             $('#add-coauthor').click(function () {
-                const coauthorTableBody = $('#coauthor-table-body');
-                const totalFormsInput = $('#id_coauthors-TOTAL_FORMS');
-                const formIndex = parseInt(totalFormsInput.val());
-
-                const newRow = `
-        <tr>
-          <td>
-            <input type="text" class="form-control" name="coauthors-${formIndex}-first_name" value="" placeholder="Nombres" required>
-          </td>
-          <td>
-            <input type="text" class="form-control" name="coauthors-${formIndex}-last_name" value="" placeholder="Apellidos" required>
-          </td>
-          <td>
-            <input type="email" class="form-control" name="coauthors-${formIndex}-email" value="" placeholder="Correo">
-          </td>
-          <td>
-            <input type="text" class="form-control" name="coauthors-${formIndex}-institution" value="" placeholder="Institución">
-          </td>
-          <td>
-            <input type="text" class="form-control" name="coauthors-${formIndex}-orcid_id" value="" placeholder="ORCID ID">
-          </td>
-          <td>
-            <button type="button" class="btn btn-pill btn-outline-danger btn-sm delete-coauthor">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M4 7l16 0" />
-                <path d="M10 11l0 6" />
-                <path d="M14 11l0 6" />
-                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
-              </svg>
-            </button>
-          </td>
-        </tr>
-      `;
-
-                coauthorTableBody.append(newRow);
-                totalFormsInput.val(formIndex + 1);
+                const newRow = createCoauthorRow(nextIndex);
+                
+                // Añadir a la versión de escritorio
+                $('#coauthors-table-body-desktop').append(newRow.desktopRow);
+                
+                // Añadir a la versión móvil
+                $('#coauthors-mobile-container').append(newRow.mobileCard);
+                
+                nextIndex++;
+                updateTotalForms();
             });
-
-            // Evento para eliminar coautores (marcar para eliminación)
-            $('#coauthor-table-body').on('click', '.delete-coauthor', function () {
+            
+            // Eliminar fila de coautor (versión escritorio)
+            $('#coauthors-table-body-desktop').on('click', '.delete-coauthor', function () {
                 const row = $(this).closest('tr');
-                const deleteCheckbox = row.find('input[type="checkbox"][name$="-DELETE"]');
-
+                const deleteCheckbox = row.find('input[name$="-DELETE"]');
+                const index = row.index();
+                
                 if (deleteCheckbox.length > 0) {
                     deleteCheckbox.prop('checked', true);
                     row.hide();
                 } else {
                     row.remove();
-                    const totalFormsInput = $('#id_coauthors-TOTAL_FORMS');
-                    const remainingRows = $('#coauthor-table-body tr:visible').length;
-                    totalFormsInput.val(remainingRows);
                 }
+                
+                // También eliminar la tarjeta móvil correspondiente
+                $(`.coauthor-card[data-index="${index}"]`).remove();
+                
+                updateTotalForms();
             });
+            
+            // Eliminar tarjeta de coautor (versión móvil)
+            $('#coauthors-mobile-container').on('click', '.delete-coauthor-mobile', function () {
+                const card = $(this).closest('.coauthor-card');
+                const index = card.data('index');
+                const deleteCheckbox = card.find('input[name$="-DELETE"]');
+                
+                if (deleteCheckbox.length > 0) {
+                    deleteCheckbox.prop('checked', true);
+                    card.hide();
+                } else {
+                    card.remove();
+                }
+                
+                // También eliminar la fila de escritorio correspondiente
+                $(`#coauthors-table-body-desktop tr.coauthor-row:eq(${index})`).remove();
+                
+                updateTotalForms();
+            });
+            
+            // Inicializar el contador de formularios
+            updateTotalForms();
+            
+            // Función para sincronizar índices
+            function syncIndices() {
+                // Sincronizar índices en escritorio
+                $('#coauthors-table-body-desktop tr.coauthor-row').each(function(index) {
+                    const row = $(this);
+                    row.find('input').each(function() {
+                        const name = $(this).attr('name');
+                        if (name) {
+                            const newName = name.replace(/coauthors-\d+-/, `coauthors-${index}-`);
+                            $(this).attr('name', newName);
+                        }
+                    });
+                });
+                
+                // Sincronizar índices en móvil
+                $('#coauthors-mobile-container .coauthor-card').each(function(index) {
+                    const card = $(this);
+                    card.data('index', index);
+                    card.find('input').each(function() {
+                        const name = $(this).attr('name');
+                        if (name) {
+                            const newName = name.replace(/coauthors-\d+-/, `coauthors-${index}-`);
+                            $(this).attr('name', newName);
+                        }
+                    });
+                });
+                
+                updateTotalForms();
+            }
         });
     </script>
 {% endblock extrajs %}
