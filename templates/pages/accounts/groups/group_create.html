@@ -87,62 +87,66 @@
                             <div class="d-flex justify-content-end">
                                 <!-- Ver -->
                                 {% if perms.view %}
+                                    {% with perm_type='view' %}
                                     <div class="form-check mb-0 mt-1 me-4 me-lg-12">
                                         <input type="checkbox" 
                                                name="{{ perms.view.field_name }}" 
                                                value="{{ perms.view.perm.id }}"
                                                id="{{ perms.view.field_id }}"
-                                               class="form-check-input permission-checkbox"
-                                               {% if perms.view.is_checked %}checked{% endif %}>
-                                        <label class="form-check-label" for="{{ perms.view.field_id }}"> 
+                                               class="form-check-input permission-checkbox {{ perm_type|get_permission_checkbox_class }}">
+                                        <label class="form-check-label text-green fw-medium" for="{{ perms.view.field_id }}"> 
                                             Ver
                                         </label>
                                     </div>
+                                    {% endwith %}
                                 {% endif %}
                                 
                                 <!-- Añadir -->
                                 {% if perms.add %}
+                                    {% with perm_type='add' %}
                                     <div class="form-check mb-0 mt-1 me-4 me-lg-12">
                                         <input type="checkbox" 
                                                name="{{ perms.add.field_name }}" 
                                                value="{{ perms.add.perm.id }}"
                                                id="{{ perms.add.field_id }}"
-                                               class="form-check-input permission-checkbox"
-                                               {% if perms.add.is_checked %}checked{% endif %}>
-                                        <label class="form-check-label" for="{{ perms.add.field_id }}"> 
+                                               class="form-check-input permission-checkbox {{ perm_type|get_permission_checkbox_class }}">
+                                        <label class="form-check-label text-blue fw-medium" for="{{ perms.add.field_id }}"> 
                                             Añadir
                                         </label>
                                     </div>
+                                    {% endwith %}
                                 {% endif %}
                                 
                                 <!-- Editar -->
                                 {% if perms.change %}
+                                    {% with perm_type='change' %}
                                     <div class="form-check mb-0 mt-1 me-4 me-lg-12">
                                         <input type="checkbox" 
                                                name="{{ perms.change.field_name }}" 
                                                value="{{ perms.change.perm.id }}"
                                                id="{{ perms.change.field_id }}"
-                                               class="form-check-input permission-checkbox"
-                                               {% if perms.change.is_checked %}checked{% endif %}>
-                                        <label class="form-check-label" for="{{ perms.change.field_id }}"> 
+                                               class="form-check-input permission-checkbox {{ perm_type|get_permission_checkbox_class }}">
+                                        <label class="form-check-label text-orange fw-medium" for="{{ perms.change.field_id }}"> 
                                             Editar
                                         </label>
                                     </div>
+                                    {% endwith %}
                                 {% endif %}
                                 
                                 <!-- Eliminar -->
                                 {% if perms.delete %}
+                                    {% with perm_type='delete' %}
                                     <div class="form-check mb-0 mt-1">
                                         <input type="checkbox" 
                                                name="{{ perms.delete.field_name }}" 
                                                value="{{ perms.delete.perm.id }}"
                                                id="{{ perms.delete.field_id }}"
-                                               class="form-check-input permission-checkbox"
-                                               {% if perms.delete.is_checked %}checked{% endif %}>
-                                        <label class="form-check-label" for="{{ perms.delete.field_id }}"> 
+                                               class="form-check-input permission-checkbox {{ perm_type|get_permission_checkbox_class }}">
+                                        <label class="form-check-label text-red fw-medium" for="{{ perms.delete.field_id }}"> 
                                             Eliminar
                                         </label>
                                     </div>
+                                    {% endwith %}
                                 {% endif %}
                             </div>
                         </td>
@@ -183,6 +187,25 @@
 {% endblock %}
 
 {% block extrajs %}
+<style>
+.checkbox-view:checked {
+    background-color: var(--tblr-green);
+    border-color: var(--tblr-green);
+}
+.checkbox-add:checked {
+    background-color: var(--tblr-blue);
+    border-color: var(--tblr-blue);
+}
+.checkbox-change:checked {
+    background-color: var(--tblr-orange);
+    border-color: var(--tblr-orange);
+}
+.checkbox-delete:checked {
+    background-color: var(--tblr-red);
+    border-color: var(--tblr-red);
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const adminAccessCheckbox = document.getElementById('admin_access_checkbox');
