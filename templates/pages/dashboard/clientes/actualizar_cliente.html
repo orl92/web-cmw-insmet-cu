@@ -8,4 +8,11 @@
       <span class="text-danger d-block mb-3">{{ form.company_name.errors }}</span>
     {% endif %}
   </div>
+  <div class="mb-3">
+    <label class="form-label required">{{ form.phone.label }}</label>
+    <input type="text" class="form-control" id="{{ form.phone.id_for_label }}" name="{{ form.phone.name }}" placeholder="Número de Teléfono" value="{{ form.phone.value }}" required />
+    {% if form.phone.errors %}
+      <span class="text-danger d-block mb-3">{{ form.phone.errors }}</span>
+    {% endif %}
+  </div>
 {% endblock %}
