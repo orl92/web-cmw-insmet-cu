@@ -619,6 +619,19 @@ def group_permissions_for_modal(permissions):
     return result
 
 
+@register.filter
+def get_permission_verb(perm_type):
+    """Devuelve el verbo en español para el tipo de permiso."""
+    verbs = {
+        "view": "Ver",
+        "add": "Añadir",
+        "change": "Editar",
+        "delete": "Eliminar",
+        "other": "Otro",
+    }
+    return verbs.get(perm_type, "Otro")
+
+
 # ============================================================================
 # FILTROS PARA COLORES Y ESTILOS DE PERMISOS
 # ============================================================================
