@@ -161,11 +161,9 @@
                         <a href="?page_groups={{ permission_groups_page.previous_page_number }}" class="page-link">&lsaquo;</a>
                       </li>
                     {% endif %}
-
                     <li class="page-item disabled">
                       <span class="page-link">Pág. {{ permission_groups_page.number }} de {{ permission_groups_page.paginator.num_pages }}</span>
                     </li>
-
                     {% if permission_groups_page.has_next %}
                       <li class="page-item">
                         <a href="?page_groups={{ permission_groups_page.next_page_number }}" class="page-link">&rsaquo;</a>
@@ -284,116 +282,154 @@
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+              <!-- Sección superior: 2 columnas con altura fija -->
               <div class="row mb-3">
-                <div class="col-md-6">
-                  <div class="card">
-                    <div class="card-body p-3">
+                <!-- Información del Grupo -->
+                <div class="col-md-6 mb-3 mb-md-0">
+                  <div class="card h-100">
+                    <div class="card-body p-3 d-flex flex-column">
                       <h6 class="card-title">Información del Grupo</h6>
-                      <ul class="list-unstyled mb-0">
-                        <li>
-                          <strong>Nombre:</strong> {{ group.name }}
-                        </li>
-                        <li>
-                          <strong>Usuarios:</strong> <span class="badge bg-blue-lt">{{ group.user_count }}</span>
-                        </li>
-                        <li>
-                          <strong>Permisos totales:</strong> {{ group.permissions.count }}
-                        </li>
-                      </ul>
+                      <div class="flex-grow-1">
+                        <ul class="list-unstyled mb-0">
+                          <li class="mb-2">
+                            <strong>Nombre:</strong> {{ group.name }}
+                          </li>
+                          <li class="mb-2">
+                            <strong>Usuarios:</strong> <span class="badge bg-blue-lt">{{ group.user_count }}</span>
+                          </li>
+                          <li>
+                            <strong>Permisos totales:</strong> {{ group.permissions.count }}
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
+                <!-- Usuarios del Grupo -->
                 <div class="col-md-6">
-                  <div class="card">
-                    <div class="card-body p-3">
-                      <h6 class="card-title">Resumen de Tipos</h6>
-                      <div class="d-flex flex-wrap gap-2">
-                        {% with perms=group.permissions.all %}
-                          {% with view_count=perms|filter_permissions_by_type:'view'|length %}
-                            {% if view_count > 0 %}
-                              <span class="badge bg-green-lt">{{ view_count }} Ver</span>
-                            {% endif %}
-                          {% endwith %}
-                          {% with add_count=perms|filter_permissions_by_type:'add'|length %}
-                            {% if add_count > 0 %}
-                              <span class="badge bg-blue-lt">{{ add_count }} Añadir</span>
-                            {% endif %}
-                          {% endwith %}
-                          {% with change_count=perms|filter_permissions_by_type:'change'|length %}
-                            {% if change_count > 0 %}
-                              <span class="badge bg-orange-lt">{{ change_count }} Editar</span>
-                            {% endif %}
-                          {% endwith %}
-                          {% with delete_count=perms|filter_permissions_by_type:'delete'|length %}
-                            {% if delete_count > 0 %}
-                              <span class="badge bg-red-lt">{{ delete_count }} Eliminar</span>
-                            {% endif %}
-                          {% endwith %}
+                  <div class="card h-100">
+                    <div class="card-body p-3 d-flex flex-column">
+                      <h6 class="card-title">Usuarios del Grupo</h6>
+                      <div class="flex-grow-1">
+                        {% with user_count=group.user_set.count %}
+                          {% if user_count > 0 %}
+                            <!--   <div class="avatar-list avatar-list-stacked mb-3">
+                              {% for user in group.user_set.all|slice:':5' %}
+                                <span class="avatar avatar-xs rounded-circle" style="background-image: url({{ user.profile.get_avatar|default:'' }})" data-bs-toggle="tooltip" title="{{ user.get_full_name|default:user.username }} - {{ user.email|default:'Sin email' }}"></span>
+                              {% endfor %}
+                              {% if user_count > 5 %}
+                                <span class="avatar avatar-xs rounded-circle d-flex align-items-center justify-content-center bg-secondary-lt" data-bs-toggle="tooltip" title="{{ user_count|add:'-5' }} usuarios más"><span class="fs-6">+{{ user_count|add:'-5' }}</span></span>
+                              {% endif %}
+                            </div>
+                            <div class="small text-muted mb-3">
+                              <strong>{{ user_count }} usuario{{ user_count|pluralize }}</strong> en este grupo
+                            </div>   -->
+                            <div class="mt-auto">
+                              {% for user in group.user_set.all|slice:':2' %}
+                                <div class="d-flex align-items-center mb-2">
+                                  <span class="avatar avatar-xs rounded-circle me-2" style="background-image: url({{ user.profile.get_avatar|default:'' }})"></span>
+                                  <div class="text-truncate" style="max-width: 180px;">
+                                    <span class="d-block small">{{ user.get_full_name|default:user.username }}</span>
+                                    <span class="d-block x-small text-muted">{{ user.email|default:'Sin email' }}</span>
+                                  </div>
+                                </div>
+                              {% endfor %}
+                              {% if user_count > 2 %}
+                                <div class="text-center mt-2">
+                                  <span class="badge bg-secondary-lt">+{{ user_count|add:'-2' }} usuario{{ user_count|add:'-2'|pluralize }} más</span>
+                                </div>
+                              {% endif %}
+                            </div>
+                          {% else %}
+                            <div class="d-flex flex-column justify-content-center align-items-center h-100 py-3">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-muted mb-2">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                                <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                              </svg>
+                              <p class="text-muted mb-0 text-center">No hay usuarios en este grupo</p>
+                            </div>
+                          {% endif %}
                         {% endwith %}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <h6 class="mb-3">Permisos por Aplicación y Modelo</h6>
-              {% with grouped_permissions=group.permissions.all|group_permissions_for_modal %}
-                {% if grouped_permissions %}
-                  {% for app in grouped_permissions %}
-                    <div class="card mb-3">
-                      <div class="card-header">
-                        <h6 class="mb-0">{{ app.app_label|title }}</h6>
-                      </div>
-                      <div class="card-body p-0">
-                        <div class="table-responsive">
-                          <table class="table table-sm table-hover mb-0">
-                            <thead>
-                              <tr>
-                                <th>Modelo</th>
-                                <th class="text-center">Ver</th>
-                                <th class="text-center">Añadir</th>
-                                <th class="text-center">Editar</th>
-                                <th class="text-center">Eliminar</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {% for model in app.models %}
+              <!-- Permisos por Aplicación y Modelo -->
+              <div class="mb-3">
+                <h6 class="mb-3">Permisos por Aplicación y Modelo</h6>
+                {% with grouped_permissions=group.permissions.all|group_permissions_for_modal %}
+                  {% if grouped_permissions %}
+                    {% for app in grouped_permissions %}
+                      <div class="card mb-3">
+                        <div class="card-header">
+                          <h6 class="mb-0">{{ app.app_label|title }}</h6>
+                        </div>
+                        <div class="card-body p-3">
+                          <!-- Cambié de p-0 a p-3 para alinear márgenes -->
+                          <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                              <thead>
                                 <tr>
-                                  <td class="fw-medium">{{ model.name }}</td>
-                                  <td class="text-center">
-                                    {% if model.permissions.view %}
-                                      <span class="badge bg-green-lt">✓</span>
-                                    {% endif %}
-                                  </td>
-                                  <td class="text-center">
-                                    {% if model.permissions.add %}
-                                      <span class="badge bg-blue-lt">✓</span>
-                                    {% endif %}
-                                  </td>
-                                  <td class="text-center">
-                                    {% if model.permissions.change %}
-                                      <span class="badge bg-orange-lt">✓</span>
-                                    {% endif %}
-                                  </td>
-                                  <td class="text-center">
-                                    {% if model.permissions.delete %}
-                                      <span class="badge bg-red-lt">✓</span>
-                                    {% endif %}
-                                  </td>
+                                  <th>Modelo</th>
+                                  <th class="text-center">Ver</th>
+                                  <th class="text-center">Añadir</th>
+                                  <th class="text-center">Editar</th>
+                                  <th class="text-center">Eliminar</th>
                                 </tr>
-                              {% endfor %}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {% for model in app.models %}
+                                  <tr>
+                                    <td class="fw-medium">{{ model.name }}</td>
+                                    <td class="text-center">
+                                      {% if model.permissions.view %}
+                                        <span class="badge bg-green-lt">✓</span>
+                                      {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                      {% if model.permissions.add %}
+                                        <span class="badge bg-blue-lt">✓</span>
+                                      {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                      {% if model.permissions.change %}
+                                        <span class="badge bg-orange-lt">✓</span>
+                                      {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                      {% if model.permissions.delete %}
+                                        <span class="badge bg-red-lt">✓</span>
+                                      {% endif %}
+                                    </td>
+                                  </tr>
+                                {% endfor %}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <div class="card">
+                      <div class="card-body p-3">
+                        <div class="text-center text-muted py-4">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-muted mb-2">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                            <path d="M12 9v4" />
+                            <path d="M12 16v.01" />
+                          </svg>
+                          <p class="mb-0">Este grupo no tiene permisos asignados.</p>
                         </div>
                       </div>
                     </div>
-                  {% endfor %}
-                {% else %}
-                  <div class="text-center text-muted py-4">
-                    <p>Este grupo no tiene permisos asignados.</p>
-                  </div>
-                {% endif %}
-              {% endwith %}
+                  {% endif %}
+                {% endwith %}
+              </div>
             </div>
             <div class="modal-footer">
               <a href="{% url 'update_group' group.groupprofile.uuid %}" class="btn btn-primary">Editar Grupo</a>
@@ -688,15 +724,39 @@
                         
                         
                         
+                        
+                        
+                        
+                        
+                        
+                        
                         &page_groups={{ request.GET.page_groups }}
                       {% endif %}
                       
                       
                       
+                      
+                      
+                      
+                      
+                      
+                      
+
+
+
+
+
+
 
 
 
                       {% if request.GET.page_logins %}
+                        
+                        
+                        
+                        
+                        
+                        
                         
                         
                         
@@ -711,15 +771,39 @@
                         
                         
                         
+                        
+                        
+                        
+                        
+                        
+                        
                         &page_groups={{ request.GET.page_groups }}
                       {% endif %}
                       
                       
                       
+                      
+                      
+                      
+                      
+                      
+                      
+
+
+
+
+
+
 
 
 
                       {% if request.GET.page_logins %}
+                        
+                        
+                        
+                        
+                        
+                        
                         
                         
                         
@@ -734,15 +818,39 @@
                         
                         
                         
+                        
+                        
+                        
+                        
+                        
+                        
                         &page_groups={{ request.GET.page_groups }}
                       {% endif %}
                       
                       
                       
+                      
+                      
+                      
+                      
+                      
+                      
+
+
+
+
+
+
 
 
 
                       {% if request.GET.page_logins %}
+                        
+                        
+                        
+                        
+                        
+                        
                         
                         
                         
