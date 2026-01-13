@@ -337,7 +337,7 @@
               </div>
 
               <h6 class="mb-3">Permisos por Aplicación y Modelo</h6>
-              {% with grouped_permissions=group.permissions.all|group_permissions_by_app %}
+              {% with grouped_permissions=group.permissions.all|group_permissions_for_modal %}
                 {% if grouped_permissions %}
                   {% for app in grouped_permissions %}
                     <div class="card mb-3">
@@ -359,34 +359,26 @@
                             <tbody>
                               {% for model in app.models %}
                                 <tr>
-                                  <td class="fw-medium">{{ model.name|title }}</td>
+                                  <td class="fw-medium">{{ model.name }}</td>
                                   <td class="text-center">
-                                    {% for perm_info in model.permissions %}
-                                      {% if perm_info.type == 'view' %}
-                                        <span class="badge bg-green-lt">✓</span>
-                                      {% endif %}
-                                    {% endfor %}
+                                    {% if model.permissions.view %}
+                                      <span class="badge bg-green-lt">✓</span>
+                                    {% endif %}
                                   </td>
                                   <td class="text-center">
-                                    {% for perm_info in model.permissions %}
-                                      {% if perm_info.type == 'add' %}
-                                        <span class="badge bg-blue-lt">✓</span>
-                                      {% endif %}
-                                    {% endfor %}
+                                    {% if model.permissions.add %}
+                                      <span class="badge bg-blue-lt">✓</span>
+                                    {% endif %}
                                   </td>
                                   <td class="text-center">
-                                    {% for perm_info in model.permissions %}
-                                      {% if perm_info.type == 'change' %}
-                                        <span class="badge bg-orange-lt">✓</span>
-                                      {% endif %}
-                                    {% endfor %}
+                                    {% if model.permissions.change %}
+                                      <span class="badge bg-orange-lt">✓</span>
+                                    {% endif %}
                                   </td>
                                   <td class="text-center">
-                                    {% for perm_info in model.permissions %}
-                                      {% if perm_info.type == 'delete' %}
-                                        <span class="badge bg-red-lt">✓</span>
-                                      {% endif %}
-                                    {% endfor %}
+                                    {% if model.permissions.delete %}
+                                      <span class="badge bg-red-lt">✓</span>
+                                    {% endif %}
                                   </td>
                                 </tr>
                               {% endfor %}
@@ -402,6 +394,9 @@
                   </div>
                 {% endif %}
               {% endwith %}
+            </div>
+            <div class="modal-footer">
+              <a href="{% url 'update_group' group.groupprofile.uuid %}" class="btn btn-primary">Editar Grupo</a>
             </div>
           </div>
         </div>
@@ -690,9 +685,21 @@
                   <a class="dropdown-item {% if selected_range == '7d' %}active{% endif %}"
                     href="?range=7d{% if user.is_superuser %}
                       {% if request.GET.page_groups %}
+                        
+                        
+                        
                         &page_groups={{ request.GET.page_groups }}
                       {% endif %}
+                      
+                      
+                      
+
+
+
                       {% if request.GET.page_logins %}
+                        
+                        
+                        
                         &page_logins={{ request.GET.page_logins }}
                       {% endif %}
                     {% endif %}">
@@ -701,9 +708,21 @@
                   <a class="dropdown-item {% if selected_range == '30d' %}active{% endif %}"
                     href="?range=30d{% if user.is_superuser %}
                       {% if request.GET.page_groups %}
+                        
+                        
+                        
                         &page_groups={{ request.GET.page_groups }}
                       {% endif %}
+                      
+                      
+                      
+
+
+
                       {% if request.GET.page_logins %}
+                        
+                        
+                        
                         &page_logins={{ request.GET.page_logins }}
                       {% endif %}
                     {% endif %}">
@@ -712,9 +731,21 @@
                   <a class="dropdown-item {% if selected_range == '3m' %}active{% endif %}"
                     href="?range=3m{% if user.is_superuser %}
                       {% if request.GET.page_groups %}
+                        
+                        
+                        
                         &page_groups={{ request.GET.page_groups }}
                       {% endif %}
+                      
+                      
+                      
+
+
+
                       {% if request.GET.page_logins %}
+                        
+                        
+                        
                         &page_logins={{ request.GET.page_logins }}
                       {% endif %}
                     {% endif %}">
