@@ -387,6 +387,7 @@ class StormWarning(BaseWarning):
 class Customer(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     company_name = models.CharField(max_length=100, verbose_name="Nombre de la Empresa")
+    phone = models.CharField(max_length=8, verbose_name="Número de Teléfono")
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
 
     def __str__(self):
