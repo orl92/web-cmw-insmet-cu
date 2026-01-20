@@ -37,5 +37,5 @@ handler403 = My403View.as_view()
 handler404 = My404View.as_view()
 handler500 = My500View.as_view()
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
