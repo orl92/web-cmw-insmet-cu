@@ -4,10 +4,11 @@ import uuid
 from django.conf import settings
 from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.storage import default_storage
 from django.db import models
 from django.shortcuts import render
-from django.views import View
 from django.templatetags.static import static
+from django.views import View
 
 
 def generic_image_path(instance, filename):
@@ -24,7 +25,9 @@ def generic_pdf_path(instance, filename):
     # Recuperar la extensión del archivo PDF
     extension = os.path.splitext(filename)[1]
     # Devolver la ruta completa final del archivo
-    return 'pdf/{}/{}{}'.format(instance.__class__.__name__.lower(), random_filename, extension)
+    # Usamos el nombre de la clase del modelo concreto si existe
+    class_name = instance.__class__.__name__.lower() if hasattr(instance, '__class__') else 'pdf'
+    return 'pdf/{}/{}{}'.format(class_name, random_filename, extension)
 
 class ImageModel(models.Model):
     image = models.ImageField(upload_to=generic_image_path, verbose_name='Imágen')
@@ -49,7 +52,80 @@ class ImageModel(models.Model):
         if self.image:
             return f'{settings.MEDIA_URL}{self.image}'
         return f'{settings.STATIC_URL}dist/img/default.svg'
-    
+
+
+class PDFModel(models.Model):
+    """
+    Modelo abstracto para manejar archivos PDF con eliminación automática.
+    """
+    file = models.FileField(upload_to=generic_pdf_path, verbose_name='Archivo PDF')
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        """
+        Sobrescribe el método save para eliminar el archivo antiguo cuando se actualiza.
+        """
+        try:
+            # Obtener instancia anterior de la base de datos
+            this = self.__class__.objects.get(id=self.id)
+            
+            # Verificar si el archivo ha cambiado
+            if this.file and this.file != self.file:
+                # Eliminar el archivo antiguo del almacenamiento
+                this.file.delete(save=False)
+        except self.__class__.DoesNotExist:
+            # Es una nueva instancia, no hay archivo antiguo que eliminar
+            pass
+        except Exception as e:
+            # Capturar cualquier excepción para no interrumpir el guardado
+            print(f"Error al eliminar archivo antiguo: {e}")
+        
+        super(PDFModel, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """
+        Sobrescribe el método delete para eliminar el archivo físico.
+        """
+        # Eliminar el archivo del almacenamiento
+        if self.file:
+            self.file.delete(save=False)
+        
+        super(PDFModel, self).delete(*args, **kwargs)
+
+    def get_filename(self):
+        """
+        Obtener solo el nombre del archivo sin la ruta.
+        """
+        if self.file:
+            return os.path.basename(self.file.name)
+        return "Sin archivo"
+
+    def get_file_url(self):
+        """
+        Obtener la URL completa del archivo.
+        """
+        if self.file:
+            return f'{settings.MEDIA_URL}{self.file}'
+        return None
+
+    def get_file_path(self):
+        """
+        Obtener la ruta completa del archivo en el sistema de archivos.
+        """
+        if self.file:
+            return self.file.path
+        return None
+
+    def file_exists(self):
+        """
+        Verificar si el archivo físico existe en el sistema de archivos.
+        """
+        if self.file:
+            return default_storage.exists(self.file.name)
+        return False
+
 # Mapa de códigos meteorológicos a nombres base de archivos
 TIEMPO_IMG_BASE_MAP = {
     'PN': 'poco_nublado',
