@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from common.utils import ImageModel, generic_pdf_path
+from common.utils import PDFModel
 
 # Create your models here.
 
@@ -321,11 +321,11 @@ class Forecasts(models.Model):
         return f"Pronóstico detallado - {self.date.strftime('%d/%m/%Y')}"
 
 
-class BaseWarning(ImageModel):
+class BaseWarning(PDFModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     summary = models.TextField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=generic_pdf_path, verbose_name="PDF")
+    # El campo 'file' ya está heredado de PDFModel
     valid_until = models.DateTimeField(verbose_name="Válido Hasta")
     date = models.DateTimeField(
         auto_now_add=True, verbose_name="Fecha y Hora de Creación"
@@ -410,7 +410,7 @@ class Customer(models.Model):
         )
 
 
-class Service(models.Model):
+class Service(PDFModel):
     PUBLIC = "public"
     COMMERCIAL = "commercial"
     SERVICE_TYPE_CHOICES = [
@@ -428,7 +428,7 @@ class Service(models.Model):
     )
     title = models.CharField(max_length=100, verbose_name="Título")
     summary = models.CharField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=generic_pdf_path, verbose_name="PDF")
+    # El campo 'file' ya está heredado de PDFModel
     service_type = models.CharField(
         max_length=10,
         choices=SERVICE_TYPE_CHOICES,
@@ -462,14 +462,14 @@ class Service(models.Model):
         )
 
 
-class WeatherToday(models.Model):
+class WeatherToday(PDFModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
     date = models.DateTimeField(
         auto_now_add=True, verbose_name="Fecha y Hora de Creación"
     )
     summary = models.TextField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=generic_pdf_path, verbose_name="PDF")
+    # El campo 'file' ya está heredado de PDFModel
     email_recipient_list = models.ForeignKey(
         "EmailRecipientList",
         on_delete=models.SET_NULL,
@@ -493,12 +493,12 @@ class WeatherToday(models.Model):
         )
 
 
-class WeatherTomorrow(models.Model):
+class WeatherTomorrow(PDFModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
     date = models.DateTimeField(verbose_name="Fecha y Hora de Creación")
     summary = models.CharField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=generic_pdf_path, verbose_name="PDF")
+    # El campo 'file' ya está heredado de PDFModel
     email_recipient_list = models.ForeignKey(
         "EmailRecipientList",
         on_delete=models.SET_NULL,
@@ -522,14 +522,14 @@ class WeatherTomorrow(models.Model):
         )
 
 
-class WeatherCommentary(models.Model):
+class WeatherCommentary(PDFModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
     date = models.DateTimeField(
         auto_now_add=True, verbose_name="Fecha y Hora de Creación"
     )
     summary = models.CharField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=generic_pdf_path, verbose_name="PDF")
+    # El campo 'file' ya está heredado de PDFModel
     email_recipient_list = models.ForeignKey(
         "EmailRecipientList",
         on_delete=models.SET_NULL,
@@ -553,14 +553,14 @@ class WeatherCommentary(models.Model):
         )
 
 
-class WeatherNote(models.Model):
+class WeatherNote(PDFModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
     date = models.DateTimeField(
         auto_now_add=True, verbose_name="Fecha y Hora de Creación"
     )
     summary = models.CharField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=generic_pdf_path, verbose_name="PDF")
+    # El campo 'file' ya está heredado de PDFModel
     email_recipient_list = models.ForeignKey(
         "EmailRecipientList",
         on_delete=models.SET_NULL,
