@@ -1,14 +1,6 @@
 import datetime as dt
 
 import pandas as pd
-from common.utils import log_action
-from dashboard.models import (
-    EarlyWarning,
-    Forecasts,
-    SiteConfiguration,
-    StormWarning,
-    TropicalCyclone,
-)
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import Group, User
@@ -17,10 +9,19 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
+
+from common.utils import log_action
+from dashboard.models import (
+    EarlyWarning,
+    Forecasts,
+    SiteConfiguration,
+    StormWarning,
+    TropicalCyclone,
+)
 
 # Create your views here.
    
@@ -144,7 +145,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         # Pronósticos filtrados por rango de tiempo
         forecasts = Forecasts.objects.filter(
             date__gte=start_date
-        ).order_by('date')  # Ordenamos ascendente para el gráfico
+        ).order_by('date')
         
         # Limitamos a un máximo de 30 puntos para mejor visualización
         total_forecasts = forecasts.count()
@@ -157,7 +158,6 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['has_forecasts'] = forecasts.exists()
 
         if context['has_forecasts']:
-            # Asegurarnos de que las fechas están en orden ascendente
             forecasts_list = list(forecasts)
             
             context['temperature_labels'] = [f.date.strftime('%d/%m') for f in forecasts_list]
@@ -168,35 +168,56 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['max_temperatures_inland'] = [float(f.ita) for f in forecasts_list]
             context['min_temperatures_inland'] = [float(f.itn) for f in forecasts_list]
 
-        # Últimas alertas activas (hasta 5)
+        # Última alerta activa de cada tipo (SOLO UNA)
+        now = timezone.now()
+        
+        # Para cada tipo, obtener solo el más reciente que esté vigente
+        # EarlyWarning: usar valid_until para determinar si está activo
+        latest_early_warning = EarlyWarning.objects.filter(
+            valid_until__gte=now
+        ).order_by('-date').first()
+        
+        # TropicalCyclone: usar valid_until para determinar si está activo
+        latest_tropical_cyclone = TropicalCyclone.objects.filter(
+            valid_until__gte=now
+        ).order_by('-date').first()
+        
+        # StormWarning: usar valid_until si existe, si no, usar el más reciente
+        try:
+            latest_storm_warning = StormWarning.objects.filter(
+                valid_until__gte=now
+            ).order_by('-date').first()
+        except FieldError:
+            # Si StormWarning no tiene campo valid_until, tomar el más reciente
+            latest_storm_warning = StormWarning.objects.order_by('-date').first()
+        
         context['latest_alerts'] = {
-            'early_warnings': EarlyWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
-            'tropical_cyclones': TropicalCyclone.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
-            'storm_warnings': StormWarning.objects.filter(valid_until__gt=timezone.now()).order_by('-date')[:5],
+            'early_warnings': [latest_early_warning] if latest_early_warning else [],
+            'tropical_cyclones': [latest_tropical_cyclone] if latest_tropical_cyclone else [],
+            'storm_warnings': [latest_storm_warning] if latest_storm_warning else [],
         }
 
         # Datos exclusivos para superusuarios
         if user.is_superuser:
-            # Estadísticas de usuarios
             context['user_stats'] = {
                 'total_users': User.objects.count(),
                 'active_today': User.objects.filter(last_login__date=timezone.now().date()).count(),
                 'staff_users': User.objects.filter(is_staff=True).count(),
             }
 
-            # Grupos y permisos (con paginación)
+            # Grupos y permisos
             permission_groups = Group.objects.annotate(
                 user_count=Count('user')
             ).prefetch_related('permissions').order_by('-user_count')
-            paginator_groups = Paginator(permission_groups, 2)  # 2 grupos por página (ajustable)
+            paginator_groups = Paginator(permission_groups, 2)
             page_number_groups = self.request.GET.get('page_groups')
             context['permission_groups_page'] = paginator_groups.get_page(page_number_groups)
 
-            # Últimos inicios de sesión (con paginación)
+            # Últimos inicios de sesión
             recent_logins = User.objects.filter(
                 last_login__gte=timezone.now() - timezone.timedelta(hours=24)
             ).order_by('-last_login')
-            paginator_logins = Paginator(recent_logins, 2)  # 2 usuarios por página (ajustable)
+            paginator_logins = Paginator(recent_logins, 2)
             page_number_logins = self.request.GET.get('page_logins')
             context['recent_logins_page'] = paginator_logins.get_page(page_number_logins)
 
@@ -206,7 +227,6 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             ).count()
 
         return context
-
 class MaintenanceModeToggleView(UserPassesTestMixin, TemplateView):
     template_name = 'pages/dashboard/maintenance_mode/toggle_maintenance.html'
 
