@@ -21,24 +21,6 @@
         <path d="M16 5l3 3" />
       </svg>
     </a>
-    <a href="#" type="button" class="btn btn-icon btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle" data-bs-toggle="modal" data-bs-target="#earlyDetailModal" data-url="{% url 'detalle_aviso_alerta_temprana' object.uuid %}">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
-        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
-      </svg>
-    </a>
-    <a href="{% url 'aviso_alerta_temprana_pdf' object.uuid %}" type="button" class="btn btn-icon btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Pdf" data-bs-original-title="Pdf">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-        <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
-        <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
-        <path d="M17 18h2" />
-        <path d="M20 15h-3v6" />
-        <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z" />
-      </svg>
-    </a>
     <a href="{% url 'eliminar_aviso_alerta_temprana' object.uuid %}" type="button" class="btn btn-icon btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -50,36 +32,4 @@
       </svg>
     </a>
   </td>
-
-  <!-- Modal para el detalle -->
-  <div class="modal modal-blur fade" id="earlyDetailModal" tabindex="-1" aria-labelledby="earlyDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="earlyDetailModalLabel">Detalle Alerta Temprana</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <!-- Contenido del detalle -->
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="{% static '' %}dist/libs/jquery/jquery-3.6.0.min.js"></script>
-  <script>
-    $(document).ready(function () {
-      // Cuando se haga clic en el botón "Detalle"
-      $('a[data-bs-target="#earlyDetailModal"]').on('click', function () {
-        // Obtener la URL del detalle desde el atributo data-url
-        var detailUrl = $(this).data('url')
-    
-        // Cargar el contenido del detalle en el modal
-        $('#earlyDetailModal .modal-body').load(detailUrl, function () {
-          // Mostrar el modal
-          $('#earlyDetailModal').modal('show')
-        })
-      })
-    })
-  </script>
 {% endblock %}

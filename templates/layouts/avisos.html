@@ -24,25 +24,38 @@
                     </p>
                   </div>
                 {% endif %}
+                <!-- Resumen del aviso -->
+                <div class="mt-3">
+                  <h4>Resumen:</h4>
+                  <p>{{ warning.summary|linebreaks }}</p>
+                </div>
+                <!-- Vista previa del PDF -->
                 <div class="mt-3">
                   {% if warning.file %}
                     <div class="d-flex justify-content-center align-items-center flex-column">
-                      <div id="pdfPreviewContainer-{{ forloop.counter }}" class="pdf-container-mobile">
+                      <!-- Contenedor principal para vista previa del PDF -->
+                      <div id="pdfPreviewContainer-{{ forloop.counter }}"  class="pdf-container-mobile" data-pdf-url="{{ warning.absolute_file_url|default:warning.file.url }}">
                         <div id="pdfPages-{{ forloop.counter }}" class="pdf-pages-container"></div>
                       </div>
                     </div>
                   {% endif %}
                 </div>
+                <!-- Información del autor -->
                 <div class="d-flex align-items-center mt-3">
                   <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ warning.user.profile.get_avatar }})"></span>
                   <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
                   <span>{{ warning.user.get_full_name }}</span>
+                  <span class="text-muted mx-2">•</span>
+                  <span class="text-muted">{{ warning.date|date:'d/m/Y H:i' }}</span>
                 </div>
-
-                <!-- Botón para ver PDF si existe -->
+                <!-- Botón para ver PDF -->
                 {% if warning.file %}
                   <div class="mt-4 text-center">
-                    <a href="#" class="btn btn-pill btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pdfModal" data-pdf-url="{{ warning.file.url }}">
+                    <a href="#" class="btn btn-pill btn-outline-primary" 
+                       data-bs-toggle="modal" 
+                       data-bs-target="#pdfModal" 
+                       data-pdf-url="{{ warning.absolute_file_url|default:warning.file.url }}"
+                       data-pdf-title="{{ title }} - {{ warning.date|date:'d/m/Y' }}">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
@@ -51,7 +64,7 @@
                         <path d="M17 18h2" />
                         <path d="M20 15h-3v6" />
                         <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z" />
-                      </svg>Ver PDF
+                      </svg> Ver PDF
                     </a>
                   </div>
                 {% endif %}
@@ -89,7 +102,8 @@
         <div class="modal-body p-0">
           <div id="modalPdfContainer" class="modal-pdf-container">
             <div id="modalPdfViewer" class="modal-pdf-viewer">
-              <div id="modalPdfPages" class="modal-pdf-pages"></div>
+              <div id="modalPdfPages" class="modal-pdf-pages">
+              </div>
             </div>
             <div class="modal-pdf-controls">
               <button type="button" id="modalPrevPage" class="btn btn-sm btn-light">‹</button>
@@ -107,31 +121,18 @@
   </div>
 {% endblock %}
 
-{% block script %}
+{% block extrajs %}
   <!-- Incluir PDF.js local -->
   <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
   <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
-
   <script>
     // Configurar PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
-    
-    // Inicializar el visor de PDF cuando el documento esté listo
+    // Inicializar cuando el documento esté listo
     document.addEventListener('DOMContentLoaded', function() {
-        // Para avisos, necesitamos inicializar múltiples visores si hay múltiples avisos
-        {% if objects %}
-            {% for warning in objects %}
-                {% if warning.file %}
-                const pdfViewer{{ forloop.counter }} = new PDFViewer({
-                    pdfUrl: '{{ warning.file.url }}',
-                    modalPdfUrl: '{{ warning.file.url }}',
-                    containerId: 'pdfPreviewContainer-{{ forloop.counter }}',
-                    pagesId: 'pdfPages-{{ forloop.counter }}'
-                });
-                pdfViewer{{ forloop.counter }}.init();
-                {% endif %}
-            {% endfor %}
-        {% endif %}
+      console.log('Inicializando visores de PDF para avisos...');
+      // El manager ya se inicializa automáticamente
+      // No necesitamos hacer nada más aquí
     });
-</script>
+  </script>
 {% endblock %}
