@@ -1,585 +1,460 @@
 class PDFViewer {
     constructor(options) {
-        this.pdfUrl = options.pdfUrl;
-        this.modalPdfUrl = options.modalPdfUrl;
-
-        // IDs personalizables para múltiples instancias
+        // URLs
+        this.pdfUrl = options.pdfUrl || '';
+        this.modalPdfUrl = options.modalPdfUrl || '';
+        
+        // IDs personalizables
         this.containerId = options.containerId || 'pdfPreviewContainer';
         this.pagesId = options.pagesId || 'pdfPages';
-
-        // Variables globales para ambos visores
-        this.cardPdfDoc = null;
-        this.modalPdfDoc = null;
-        this.modalCurrentPage = 1;
-        this.modalCurrentScale = 1.0;
-        this.cardCurrentScale = 1.0;
+        this.statusId = options.statusId || '';
         
-        // Variables para zoom y pan táctil
-        this.initialDistance = null;
-        this.lastScale = 1;
-        this.isZooming = false;
-        this.isPanning = false;
-        this.touchStartX = 0;
-        this.touchStartY = 0;
-        this.lastTouchTime = 0;
-        this.startScrollLeft = 0;
-        this.startScrollTop = 0;
-        
-        // Calidad de renderizado
-        this.renderQuality = window.devicePixelRatio || 1;
+        // IDs para modal (compartidos)
+        this.modalPagesId = options.modalPagesId || 'modalPdfPages';
+        this.modalPageInfoId = options.modalPageInfoId || 'modalPageInfo';
+        this.modalZoomLevelId = options.modalZoomLevelId || 'modalZoomLevel';
+        this.modalPrevPageId = options.modalPrevPageId || 'modalPrevPage';
+        this.modalNextPageId = options.modalNextPageId || 'modalNextPage';
+        this.modalZoomOutId = options.modalZoomOutId || 'modalZoomOut';
+        this.modalZoomInId = options.modalZoomInId || 'modalZoomIn';
+        this.modalFitWidthId = options.modalFitWidthId || 'modalFitWidth';
 
-        // Control para evitar múltiples inicializaciones del modal
-        this.modalInitialized = false;
+        // Variables de estado
+        this.pdfDoc = null;
+        this.currentPage = 1;
+        this.currentScale = 1.0;
+        this.isPreview = options.isPreview || false;
+        this.isModal = options.isModal || false;
+        
+        // ID único para esta instancia
+        this.instanceId = 'pdf-' + Math.random().toString(36).substr(2, 9);
+        
+        console.log('PDFViewer inicializado:', {
+            instanceId: this.instanceId,
+            containerId: this.containerId,
+            isPreview: this.isPreview,
+            isModal: this.isModal
+        });
     }
 
-    // Función para mejorar la calidad del renderizado
-    getOutputScale(ctx) {
-        const devicePixelRatio = window.devicePixelRatio || 1;
-        const backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
-                                ctx.mozBackingStorePixelRatio ||
-                                ctx.msBackingStorePixelRatio ||
-                                ctx.oBackingStorePixelRatio ||
-                                ctx.backingStorePixelRatio || 1;
-        const pixelRatio = devicePixelRatio / backingStoreRatio;
-        
-        return {
-            sx: pixelRatio,
-            sy: pixelRatio,
-            scaled: pixelRatio !== 1
-        };
-    }
-
-    // Función para renderizar una página con alta calidad
-    renderPageWithQuality(page, scale, canvas, isModal = false) {
-        const viewport = page.getViewport({ scale: scale });
-        const context = canvas.getContext('2d', { alpha: false });
-
-        // Mejorar la calidad para todos los dispositivos
-        const outputScale = this.getOutputScale(context);
-        
-        // Calcular dimensiones reales del canvas
-        const actualWidth = Math.floor(viewport.width * outputScale.sx);
-        const actualHeight = Math.floor(viewport.height * outputScale.sy);
-        
-        canvas.width = actualWidth;
-        canvas.height = actualHeight;
-        
-        // Dimensiones de visualización (CSS)
-        const displayWidth = Math.floor(viewport.width);
-        const displayHeight = Math.floor(viewport.height);
-        
-        canvas.style.width = displayWidth + 'px';
-        canvas.style.height = displayHeight + 'px';
-
-        const transform = outputScale.scaled ?
-            [outputScale.sx, 0, 0, outputScale.sy, 0, 0] :
-            null;
-
-        const renderContext = {
-            canvasContext: context,
-            viewport: viewport,
-            transform: transform,
-            intent: 'display'
-        };
-
-        return page.render(renderContext).promise;
-    }
-
-    // Calcular escala para ajustar al ancho del contenedor
-    calculateFitWidthScale(page) {
-        const container = document.getElementById(this.containerId);
-        if (!container) return 1.0;
-        
-        const viewport = page.getViewport({ scale: 1 });
-        const containerWidth = container.clientWidth - 40; // Padding
-        
-        return containerWidth / viewport.width;
-    }
-
-    // Función para renderizar todas las páginas en el visor de la tarjeta
-    renderAllCardPages() {
-        const pagesContainer = document.getElementById(this.pagesId);
-
-        if (!this.cardPdfDoc) return;
-
-        pagesContainer.innerHTML = '';
-
-        // Renderizar todas las páginas
-        for (let pageNum = 1; pageNum <= this.cardPdfDoc.numPages; pageNum++) {
-            this.cardPdfDoc.getPage(pageNum).then((page) => {
-                // Calcular escala para esta página
-                const fitScale = this.calculateFitWidthScale(page);
-                const scale = fitScale * this.cardCurrentScale;
-
-                const canvas = document.createElement('canvas');
-                canvas.className = 'pdf-page-canvas';
-                canvas.setAttribute('data-page-number', pageNum);
-
-                pagesContainer.appendChild(canvas);
-
-                // Renderizar con alta calidad
-                this.renderPageWithQuality(page, scale, canvas, false);
-            }).catch(error => {
-                console.error(`Error rendering page ${pageNum}:`, error);
-            });
-        }
-    }
-
-    // Función para renderizar una página en el modal
-    renderModalPage(pageNum) {
-        const pagesContainer = document.getElementById('modalPdfPages');
-        const pageInfo = document.getElementById('modalPageInfo');
-        const zoomLevel = document.getElementById('modalZoomLevel');
-
-        if (!this.modalPdfDoc) return;
-
-        // Limpiar contenedor antes de renderizar
-        if (pagesContainer) {
-            pagesContainer.innerHTML = '';
-        }
-        
-        if (pageInfo) {
-            pageInfo.textContent = `Página ${pageNum} de ${this.modalPdfDoc.numPages}`;
-        }
-        
-        if (zoomLevel) {
-            zoomLevel.textContent = Math.round(this.modalCurrentScale * 100) + '%';
-        }
-
-        this.modalPdfDoc.getPage(pageNum).then((page) => {
+    // Función para renderizar una página
+    async renderPage(page, scale, container) {
+        try {
+            const viewport = page.getViewport({ scale: scale });
+            
+            // Crear canvas
             const canvas = document.createElement('canvas');
-            canvas.className = 'modal-pdf-canvas';
-            canvas.setAttribute('data-page-number', pageNum);
-
-            if (pagesContainer) {
-                pagesContainer.appendChild(canvas);
-            }
-
-            // Renderizar con alta calidad
-            this.renderPageWithQuality(page, this.modalCurrentScale, canvas, true);
-
-            this.updateModalNavigation();
-        }).catch(error => {
-            console.error(`Error rendering modal page ${pageNum}:`, error);
-            const pagesContainer = document.getElementById('modalPdfPages');
-            if (pagesContainer) {
-                pagesContainer.innerHTML = '<div class="pdf-error-message">Error al renderizar la página</div>';
-            }
-        });
-    }
-
-    // Funciones de navegación para el modal
-    updateModalNavigation() {
-        const prevBtn = document.getElementById('modalPrevPage');
-        const nextBtn = document.getElementById('modalNextPage');
-
-        if (prevBtn && this.modalPdfDoc) {
-            prevBtn.disabled = this.modalCurrentPage <= 1;
-        }
-        if (nextBtn && this.modalPdfDoc) {
-            nextBtn.disabled = this.modalCurrentPage >= this.modalPdfDoc.numPages;
-        }
-    }
-
-    // Ajustar al ancho en la vista previa móvil
-    fitToWidth() {
-        this.cardCurrentScale = 1.0;
-        this.renderAllCardPages();
-        this.showZoomIndicator(Math.round(this.cardCurrentScale * 100) + '%');
-    }
-
-    // Ajustar al ancho en el modal
-    modalFitToWidth() {
-        if (!this.modalPdfDoc) return;
-
-        this.modalPdfDoc.getPage(1).then((page) => {
-            const viewport = page.getViewport({ scale: 1 });
-            const containerWidth = window.innerWidth - 80;
-            this.modalCurrentScale = containerWidth / viewport.width;
-            this.renderModalPage(this.modalCurrentPage);
-        });
-    }
-
-    // Mostrar indicador de zoom
-    showZoomIndicator(text) {
-        const container = document.getElementById(this.containerId);
-        if (!container) return;
-
-        let indicator = container.querySelector('.zoom-indicator');
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.className = 'zoom-indicator';
-            container.appendChild(indicator);
-        }
-        
-        indicator.textContent = text;
-        indicator.classList.add('show');
-        
-        setTimeout(() => {
-            indicator.classList.remove('show');
-        }, 2000);
-    }
-
-    // Manejar gestos táctiles para zoom y pan
-    handleTouchStart(e) {
-        const pdfContainer = document.getElementById(this.containerId);
-        if (!pdfContainer) return;
-        
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            this.isZooming = true;
-            this.isPanning = false;
-            this.initialDistance = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
-            );
-            this.lastScale = this.cardCurrentScale;
-        } else if (e.touches.length === 1 && this.cardCurrentScale > 1.0) {
-            // Solo permitir pan si hay zoom
-            this.isPanning = true;
-            this.isZooming = false;
-            this.touchStartX = e.touches[0].clientX;
-            this.touchStartY = e.touches[0].clientY;
-            this.startScrollLeft = pdfContainer.scrollLeft;
-            this.startScrollTop = pdfContainer.scrollTop;
-        }
-    }
-
-    handleTouchMove(e) {
-        const pdfContainer = document.getElementById(this.containerId);
-        if (!pdfContainer) return;
-        
-        if (e.touches.length === 2 && this.isZooming) {
-            e.preventDefault();
+            const context = canvas.getContext('2d');
             
-            const currentDistance = Math.hypot(
-                e.touches[0].clientX - e.touches[1].clientX,
-                e.touches[0].clientY - e.touches[1].clientY
-            );
-
-            if (this.initialDistance > 0) {
-                const scaleFactor = currentDistance / this.initialDistance;
-                const newScale = this.lastScale * scaleFactor;
-                
-                // Limitar zoom entre 0.5x y 3x
-                this.cardCurrentScale = Math.max(0.5, Math.min(3, newScale));
-                this.renderAllCardPages();
-                
-                // Mostrar indicador de zoom
-                this.showZoomIndicator(Math.round(this.cardCurrentScale * 100) + '%');
-            }
-        } else if (e.touches.length === 1 && this.isPanning && this.cardCurrentScale > 1.0) {
-            e.preventDefault();
+            // Configurar canvas
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            canvas.className = this.isModal ? 'modal-pdf-canvas' : 'pdf-page-canvas';
+            canvas.dataset.instanceId = this.instanceId;
             
-            const deltaX = this.touchStartX - e.touches[0].clientX;
-            const deltaY = this.touchStartY - e.touches[0].clientY;
+            // Estilos
+            canvas.style.display = 'block';
+            canvas.style.margin = '0 auto';
+            canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+            canvas.style.borderRadius = '4px';
+            canvas.style.backgroundColor = 'white';
             
-            pdfContainer.scrollLeft = this.startScrollLeft + deltaX;
-            pdfContainer.scrollTop = this.startScrollTop + deltaY;
-        }
-    }
-
-    handleTouchEnd(e) {
-        if (e.touches.length < 2) {
-            this.isZooming = false;
-            this.initialDistance = null;
-        }
-        if (e.touches.length === 0) {
-            this.isPanning = false;
-        }
-    }
-
-    // Doble tap para resetear zoom
-    handleDoubleTap(e) {
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - this.lastTouchTime;
-        
-        if (tapLength < 300 && tapLength > 0) {
-            e.preventDefault();
-            
-            if (this.cardCurrentScale !== 1.0) {
-                this.cardCurrentScale = 1.0;
-                // Resetear scroll al centro
-                const pdfContainer = document.getElementById(this.containerId);
-                if (pdfContainer) {
-                    pdfContainer.scrollLeft = 0;
-                    pdfContainer.scrollTop = 0;
-                }
-            } else {
-                this.cardCurrentScale = 1.5;
+            if (this.isModal) {
+                canvas.style.marginBottom = '20px';
             }
             
-            this.renderAllCardPages();
-            this.showZoomIndicator(Math.round(this.cardCurrentScale * 100) + '%');
+            console.log(`[${this.instanceId}] Renderizando - Tamaño: ${canvas.width}x${canvas.height}, Escala: ${scale}`);
+            
+            // Renderizar la página
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+            
+            await page.render(renderContext).promise;
+            
+            // Agregar al contenedor
+            if (container) {
+                container.innerHTML = '';
+                container.appendChild(canvas);
+            }
+            
+            return canvas;
+        } catch (error) {
+            console.error(`[${this.instanceId}] Error renderizando página:`, error);
+            throw error;
         }
+    }
+
+    // Cargar PDF para vista previa o modal
+    async loadPDF(isModal = false) {
+        const url = isModal ? this.modalPdfUrl : this.pdfUrl;
+        const pagesId = isModal ? this.modalPagesId : this.pagesId;
+        const containerId = isModal ? null : this.containerId;
         
-        this.lastTouchTime = currentTime;
-    }
-
-    // Redimensionar al cambiar tamaño de ventana
-    handleResize() {
-        clearTimeout(this.resizeTimeout);
-        this.resizeTimeout = setTimeout(() => {
-            if (this.cardPdfDoc) {
-                this.renderAllCardPages();
-            }
-            if (this.modalPdfDoc) {
-                this.renderModalPage(this.modalCurrentPage);
-            }
-        }, 250);
-    }
-
-    // Cargar PDF en la tarjeta principal
-    loadCardPDF() {
-        if (!this.pdfUrl) return;
-
-        // Mostrar indicador de carga
-        const pagesContainer = document.getElementById(this.pagesId);
-        if (pagesContainer) {
-            pagesContainer.innerHTML = '<div class="pdf-loading-message">Cargando PDF...</div>';
-        }
-
-        pdfjsLib.getDocument(this.pdfUrl).promise.then((pdf) => {
-            this.cardPdfDoc = pdf;
-            this.cardCurrentScale = 1.0;
-            this.renderAllCardPages();
-
-            // Configurar eventos táctiles para el contenedor
-            const pdfContainer = document.getElementById(this.containerId);
-            if (pdfContainer) {
-                // Prevenir zoom nativo del navegador durante gestos de pellizco
-                pdfContainer.addEventListener('touchmove', (e) => {
-                    if (e.scale !== 1) {
-                        e.preventDefault();
-                    }
-                }, { passive: false });
-
-                // Doble tap para zoom
-                pdfContainer.addEventListener('touchend', (e) => this.handleDoubleTap(e));
-                
-                // Mejorar la experiencia táctil
-                pdfContainer.style.cursor = 'grab';
-            }
-
-        }).catch((error) => {
-            console.error('Error al cargar el PDF:', error);
-            const pagesContainer = document.getElementById(this.pagesId);
-            if (pagesContainer) {
-                pagesContainer.innerHTML = '<div class="pdf-error-message">Error al cargar el PDF</div>';
-            }
-        });
-    }
-
-    // Manejar el modal - CORREGIDO para evitar múltiples inicializaciones
-    setupModal() {
-        // Si el modal ya fue inicializado, salir
-        if (this.modalInitialized) {
+        if (!url) {
+            console.log(`[${this.instanceId}] No hay URL de PDF`);
             return;
         }
-
-        const pdfModal = document.getElementById('pdfModal');
-        if (!pdfModal) return;
-
-        // Marcar como inicializado
-        this.modalInitialized = true;
-
-        // Usar una closure para mantener la referencia a esta instancia
-        const instance = this;
-
-        // Remover event listeners previos para evitar duplicados
-        pdfModal.removeEventListener('show.bs.modal', this.modalShowHandler);
-        pdfModal.removeEventListener('hidden.bs.modal', this.modalHideHandler);
-
-        // Definir los handlers
-        this.modalShowHandler = function(event) {
-            const button = event.relatedTarget;
-            const pdfUrl = button ? button.getAttribute('data-pdf-url') : instance.modalPdfUrl;
-
-            if (pdfUrl) {
-                // Limpiar PDF anterior
-                if (instance.modalPdfDoc) {
-                    instance.modalPdfDoc.destroy();
-                    instance.modalPdfDoc = null;
-                }
-
-                // Limpiar contenedor
-                const pagesContainer = document.getElementById('modalPdfPages');
-                if (pagesContainer) {
-                    pagesContainer.innerHTML = '<div class="pdf-loading-message">Cargando PDF...</div>';
-                }
-
-                // Cargar PDF para el modal
-                pdfjsLib.getDocument(pdfUrl).promise.then((pdf) => {
-                    instance.modalPdfDoc = pdf;
-                    instance.modalCurrentPage = 1;
-                    instance.modalCurrentScale = 1.0;
-                    instance.renderModalPage(instance.modalCurrentPage);
-                }).catch((error) => {
-                    console.error('Error al cargar el PDF en el modal:', error);
-                    const pagesContainer = document.getElementById('modalPdfPages');
-                    if (pagesContainer) {
-                        pagesContainer.innerHTML = '<div class="pdf-error-message">Error al cargar el PDF</div>';
-                    }
-                });
-            }
-        };
-
-        this.modalHideHandler = function() {
-            // Limpiar cuando se cierre el modal
-            if (instance.modalPdfDoc) {
-                instance.modalPdfDoc.destroy();
-                instance.modalPdfDoc = null;
-            }
-            instance.modalCurrentPage = 1;
-            instance.modalCurrentScale = 1.0;
-            const pagesContainer = document.getElementById('modalPdfPages');
+        
+        console.log(`[${this.instanceId}] Cargando PDF:`, url);
+        
+        try {
+            // Mostrar indicador de carga
+            const pagesContainer = document.getElementById(pagesId);
             if (pagesContainer) {
-                pagesContainer.innerHTML = '';
+                pagesContainer.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Cargando PDF...</p>
+                    </div>
+                `;
             }
-        };
+            
+            // Cargar el documento PDF
+            const loadingTask = pdfjsLib.getDocument({
+                url: url,
+                withCredentials: true
+            });
+            
+            this.pdfDoc = await loadingTask.promise;
+            console.log(`[${this.instanceId}] PDF cargado: ${this.pdfDoc.numPages} páginas`);
+            
+            // Renderizar
+            if (isModal) {
+                await this.renderModalPage(1);
+                if (!this.modalInitialized) {
+                    this.setupModalControls();
+                    this.modalInitialized = true;
+                }
+            } else {
+                await this.renderPreview();
+            }
+            
+        } catch (error) {
+            console.error(`[${this.instanceId}] Error cargando PDF:`, error);
+            const pagesContainer = document.getElementById(pagesId);
+            if (pagesContainer) {
+                pagesContainer.innerHTML = `
+                    <div class="alert alert-danger text-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error al cargar el PDF
+                        <br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+    }
 
-        // Agregar event listeners
-        pdfModal.addEventListener('show.bs.modal', this.modalShowHandler);
-        pdfModal.addEventListener('hidden.bs.modal', this.modalHideHandler);
+    // Renderizar vista previa (solo primera página)
+    async renderPreview() {
+        if (!this.pdfDoc) return;
+        
+        const pagesContainer = document.getElementById(this.pagesId);
+        if (!pagesContainer) return;
+        
+        try {
+            // Obtener primera página
+            const page = await this.pdfDoc.getPage(1);
+            
+            // Calcular escala para vista previa
+            const container = document.getElementById(this.containerId);
+            const containerWidth = container ? container.clientWidth - 40 : 400;
+            const viewport = page.getViewport({ scale: 1 });
+            const scale = Math.min(containerWidth / viewport.width, 1.5);
+            
+            // Renderizar
+            await this.renderPage(page, scale, pagesContainer);
+            
+            // Mostrar información si hay más páginas
+            if (this.pdfDoc.numPages > 1) {
+                const pageInfo = document.createElement('div');
+                pageInfo.className = 'text-center text-muted small mt-2';
+                pageInfo.innerHTML = `<i class="fas fa-file-alt me-1"></i> ${this.pdfDoc.numPages} páginas en total`;
+                pagesContainer.appendChild(pageInfo);
+            }
+            
+        } catch (error) {
+            console.error(`[${this.instanceId}] Error renderizando vista previa:`, error);
+            throw error;
+        }
+    }
 
-        // Event listeners para controles del modal
-        this.setupModalControls();
+    // Renderizar página del modal
+    async renderModalPage(pageNum) {
+        if (!this.pdfDoc) return;
+        
+        const pagesContainer = document.getElementById(this.modalPagesId);
+        const pageInfo = document.getElementById(this.modalPageInfoId);
+        const zoomLevel = document.getElementById(this.modalZoomLevelId);
+        
+        if (!pagesContainer) return;
+        
+        try {
+            // Actualizar información
+            if (pageInfo) {
+                pageInfo.textContent = `Página ${pageNum} de ${this.pdfDoc.numPages}`;
+            }
+            
+            if (zoomLevel) {
+                zoomLevel.textContent = `${Math.round(this.currentScale * 100)}%`;
+            }
+            
+            // Obtener la página
+            const page = await this.pdfDoc.getPage(pageNum);
+            
+            // Renderizar
+            await this.renderPage(page, this.currentScale, pagesContainer);
+            
+            // Actualizar navegación
+            this.updateModalNavigation();
+            
+        } catch (error) {
+            console.error(`[${this.instanceId}] Error renderizando página modal:`, error);
+            throw error;
+        }
+    }
+
+    // Actualizar navegación del modal
+    updateModalNavigation() {
+        const prevBtn = document.getElementById(this.modalPrevPageId);
+        const nextBtn = document.getElementById(this.modalNextPageId);
+
+        if (prevBtn && this.pdfDoc) {
+            prevBtn.disabled = this.currentPage <= 1;
+        }
+        if (nextBtn && this.pdfDoc) {
+            nextBtn.disabled = this.currentPage >= this.pdfDoc.numPages;
+        }
     }
 
     // Configurar controles del modal
     setupModalControls() {
-        const prevBtn = document.getElementById('modalPrevPage');
-        const nextBtn = document.getElementById('modalNextPage');
-        const zoomOutBtn = document.getElementById('modalZoomOut');
-        const zoomInBtn = document.getElementById('modalZoomIn');
-        const fitWidthBtn = document.getElementById('modalFitWidth');
-
-        // Remover event listeners previos
-        if (prevBtn) prevBtn.replaceWith(prevBtn.cloneNode(true));
-        if (nextBtn) nextBtn.replaceWith(nextBtn.cloneNode(true));
-        if (zoomOutBtn) zoomOutBtn.replaceWith(zoomOutBtn.cloneNode(true));
-        if (zoomInBtn) zoomInBtn.replaceWith(zoomInBtn.cloneNode(true));
-        if (fitWidthBtn) fitWidthBtn.replaceWith(fitWidthBtn.cloneNode(true));
-
-        // Obtener referencias frescas después del clone
-        const freshPrevBtn = document.getElementById('modalPrevPage');
-        const freshNextBtn = document.getElementById('modalNextPage');
-        const freshZoomOutBtn = document.getElementById('modalZoomOut');
-        const freshZoomInBtn = document.getElementById('modalZoomIn');
-        const freshFitWidthBtn = document.getElementById('modalFitWidth');
-
-        if (freshPrevBtn) {
-            freshPrevBtn.addEventListener('click', () => {
-                if (this.modalCurrentPage > 1) {
-                    this.modalCurrentPage--;
-                    this.renderModalPage(this.modalCurrentPage);
+        const instance = this;
+        
+        // Botón anterior
+        const prevBtn = document.getElementById(this.modalPrevPageId);
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function() {
+                if (instance.pdfDoc && instance.currentPage > 1) {
+                    instance.currentPage--;
+                    instance.renderModalPage(instance.currentPage);
                 }
             });
         }
 
-        if (freshNextBtn) {
-            freshNextBtn.addEventListener('click', () => {
-                if (this.modalPdfDoc && this.modalCurrentPage < this.modalPdfDoc.numPages) {
-                    this.modalCurrentPage++;
-                    this.renderModalPage(this.modalCurrentPage);
+        // Botón siguiente
+        const nextBtn = document.getElementById(this.modalNextPageId);
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function() {
+                if (instance.pdfDoc && instance.currentPage < instance.pdfDoc.numPages) {
+                    instance.currentPage++;
+                    instance.renderModalPage(instance.currentPage);
                 }
             });
         }
 
-        if (freshZoomOutBtn) {
-            freshZoomOutBtn.addEventListener('click', () => {
-                if (this.modalCurrentScale > 0.5) {
-                    this.modalCurrentScale -= 0.2;
-                    this.renderModalPage(this.modalCurrentPage);
+        // Zoom out
+        const zoomOutBtn = document.getElementById(this.modalZoomOutId);
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener('click', function() {
+                if (instance.currentScale > 0.5) {
+                    instance.currentScale = Math.max(0.5, instance.currentScale - 0.2);
+                    instance.renderModalPage(instance.currentPage);
                 }
             });
         }
 
-        if (freshZoomInBtn) {
-            freshZoomInBtn.addEventListener('click', () => {
-                if (this.modalCurrentScale < 3) {
-                    this.modalCurrentScale += 0.2;
-                    this.renderModalPage(this.modalCurrentPage);
+        // Zoom in
+        const zoomInBtn = document.getElementById(this.modalZoomInId);
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener('click', function() {
+                if (instance.currentScale < 3) {
+                    instance.currentScale = Math.min(3, instance.currentScale + 0.2);
+                    instance.renderModalPage(instance.currentPage);
                 }
             });
         }
 
-        if (freshFitWidthBtn) {
-            freshFitWidthBtn.addEventListener('click', () => this.modalFitToWidth());
+        // Ajustar al ancho
+        const fitWidthBtn = document.getElementById(this.modalFitWidthId);
+        if (fitWidthBtn) {
+            fitWidthBtn.addEventListener('click', async function() {
+                if (instance.pdfDoc) {
+                    try {
+                        const page = await instance.pdfDoc.getPage(1);
+                        const viewport = page.getViewport({ scale: 1 });
+                        const modalWidth = window.innerWidth - 100;
+                        instance.currentScale = modalWidth / viewport.width;
+                        await instance.renderModalPage(instance.currentPage);
+                    } catch (error) {
+                        console.error('Error ajustando al ancho:', error);
+                    }
+                }
+            });
         }
     }
 
-    // Inicializar todo
-    init() {
-        this.loadCardPDF();
-        this.setupModal();
-
-        // Agregar listener para redimensionamiento
-        window.addEventListener('resize', () => this.handleResize());
-
-        // Configurar gestos táctiles globales
-        const pdfContainer = document.getElementById(this.containerId);
-        if (pdfContainer) {
-            // Remover event listeners previos
-            pdfContainer.removeEventListener('touchstart', this.touchStartHandler);
-            pdfContainer.removeEventListener('touchmove', this.touchMoveHandler);
-            pdfContainer.removeEventListener('touchend', this.touchEndHandler);
-
-            // Definir handlers
-            this.touchStartHandler = (e) => this.handleTouchStart(e);
-            this.touchMoveHandler = (e) => this.handleTouchMove(e);
-            this.touchEndHandler = (e) => this.handleTouchEnd(e);
-
-            // Agregar event listeners
-            pdfContainer.addEventListener('touchstart', this.touchStartHandler);
-            pdfContainer.addEventListener('touchmove', this.touchMoveHandler);
-            pdfContainer.addEventListener('touchend', this.touchEndHandler);
+    // Inicializar
+    async init() {
+        console.log(`[${this.instanceId}] Inicializando...`);
+        
+        if (this.isModal) {
+            // Para modal, solo configurar controles
+            this.setupModalControls();
+        } else {
+            // Para vista previa, cargar PDF
+            await this.loadPDF(false);
         }
+    }
+
+    // Cargar nuevo PDF en el modal
+    async loadNewPDF(url, title = 'PDF') {
+        this.modalPdfUrl = url;
+        
+        // Actualizar título del modal
+        const modalTitle = document.getElementById('pdfModalLabel');
+        if (modalTitle) {
+            modalTitle.textContent = title;
+        }
+        
+        // Resetear estado
+        this.currentPage = 1;
+        this.currentScale = 1.5;
+        
+        // Cargar PDF
+        await this.loadPDF(true);
+    }
+
+    // Destruir instancia
+    destroy() {
+        if (this.pdfDoc) {
+            this.pdfDoc.destroy();
+            this.pdfDoc = null;
+        }
+        console.log(`[${this.instanceId}] Instancia destruida`);
     }
 }
 
-// Inicialización global para evitar conflictos
-let globalPDFViewerInitialized = false;
-
-function initializePDFViewers() {
-    // Evitar inicialización múltiple
-    if (globalPDFViewerInitialized) {
-        return;
+// Sistema de gestión de instancias
+class PDFViewerManager {
+    constructor() {
+        this.viewers = {};
+        this.modalViewer = null;
+        this.modalInitialized = false;
     }
-    globalPDFViewerInitialized = true;
-
-    // Inicializar visor principal si existe
-    const mainContainer = document.getElementById('pdfPreviewContainer');
-    if (mainContainer) {
-        const pdfUrl = mainContainer.getAttribute('data-pdf-url') || '';
+    
+    // Crear visor para vista previa
+    createPreviewViewer(containerId, pagesId, pdfUrl, statusId = '') {
         const viewer = new PDFViewer({
             pdfUrl: pdfUrl,
-            modalPdfUrl: pdfUrl
+            containerId: containerId,
+            pagesId: pagesId,
+            statusId: statusId,
+            isPreview: true
         });
-        viewer.init();
-    }
-
-    // Para avisos.html - inicializar múltiples instancias
-    const warningContainers = document.querySelectorAll('[id^="pdfPreviewContainer-"]');
-    warningContainers.forEach(container => {
-        const idSuffix = container.id.replace('pdfPreviewContainer-', '');
-        const pdfUrl = container.getAttribute('data-pdf-url');
         
-        if (pdfUrl) {
-            const warningViewer = new PDFViewer({
-                pdfUrl: pdfUrl,
-                modalPdfUrl: pdfUrl,
-                containerId: `pdfPreviewContainer-${idSuffix}`,
-                pagesId: `pdfPages-${idSuffix}`
+        this.viewers[containerId] = viewer;
+        viewer.init();
+        
+        return viewer;
+    }
+    
+    // Crear o obtener visor para modal
+    getModalViewer() {
+        if (!this.modalViewer) {
+            this.modalViewer = new PDFViewer({
+                isModal: true,
+                modalPagesId: 'modalPdfPages',
+                modalPageInfoId: 'modalPageInfo',
+                modalZoomLevelId: 'modalZoomLevel',
+                modalPrevPageId: 'modalPrevPage',
+                modalNextPageId: 'modalNextPage',
+                modalZoomOutId: 'modalZoomOut',
+                modalZoomInId: 'modalZoomIn',
+                modalFitWidthId: 'modalFitWidth'
             });
-            warningViewer.init();
+            
+            this.modalViewer.init();
+            this.setupModalEvents();
         }
-    });
+        
+        return this.modalViewer;
+    }
+    
+    // Configurar eventos del modal
+    setupModalEvents() {
+        const modal = document.getElementById('pdfModal');
+        if (!modal || this.modalInitialized) return;
+        
+        const manager = this;
+        
+        // Cuando se muestra el modal
+        modal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const pdfUrl = button.getAttribute('data-pdf-url');
+            const pdfTitle = button.getAttribute('data-pdf-title') || 'PDF';
+            
+            if (pdfUrl && manager.modalViewer) {
+                manager.modalViewer.loadNewPDF(pdfUrl, pdfTitle);
+            }
+        });
+        
+        // Cuando se oculta el modal
+        modal.addEventListener('hidden.bs.modal', function() {
+            if (manager.modalViewer && manager.modalViewer.pdfDoc) {
+                manager.modalViewer.destroy();
+            }
+        });
+        
+        this.modalInitialized = true;
+    }
+    
+    // Inicializar todos los visores en la página
+    initializeAll() {
+        console.log('Inicializando todos los visores de PDF...');
+        
+        // Inicializar vista previa principal si existe
+        const mainContainer = document.getElementById('pdfPreviewContainer');
+        if (mainContainer) {
+            const pdfUrl = mainContainer.getAttribute('data-pdf-url') || '';
+            if (pdfUrl) {
+                this.createPreviewViewer('pdfPreviewContainer', 'pdfPages', pdfUrl);
+            }
+        }
+        
+        // Inicializar visores de avisos
+        const warningContainers = document.querySelectorAll('[id^="pdfPreviewContainer-"]');
+        warningContainers.forEach(container => {
+            const id = container.id;
+            const pagesId = id.replace('pdfPreviewContainer', 'pdfPages');
+            const pdfUrl = container.getAttribute('data-pdf-url');
+            
+            if (pdfUrl) {
+                this.createPreviewViewer(id, pagesId, pdfUrl);
+            }
+        });
+        
+        // Inicializar modal
+        this.getModalViewer();
+    }
 }
 
-// Auto-inicialización cuando el DOM esté listo
+// Crear instancia global del manager
+window.pdfViewerManager = new PDFViewerManager();
+
+// Auto-inicialización
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializePDFViewers);
+    document.addEventListener('DOMContentLoaded', () => {
+        window.pdfViewerManager.initializeAll();
+    });
 } else {
-    initializePDFViewers();
+    window.pdfViewerManager.initializeAll();
 }
+
+// Hacer las clases disponibles globalmente
+window.PDFViewer = PDFViewer;
+window.PDFViewerManager = PDFViewerManager;
