@@ -1,64 +1,106 @@
 from django.urls import path
 
 from dashboard.views.avisos.alertas_tempranas.views import (
-    EarlyWarningCreateView, EarlyWarningDeleteView, EarlyWarningDetailView,
-    EarlyWarningListView, EarlyWarningPDFView, EarlyWarningUpdateView)
+    EarlyWarningCreateView,
+    EarlyWarningDeleteView,
+    EarlyWarningListView,
+    EarlyWarningUpdateView,
+)
 from dashboard.views.avisos.ciclones_tropicales.views import (
-    TropicalCycloneCreateView, TropicalCycloneDeleteView,
-    TropicalCycloneDetailView, TropicalCycloneListView, TropicalCyclonePDFView,
-    TropicalCycloneUpdateView)
-from dashboard.views.avisos.tormentas.views import (StormWarningCreateView,
-                                                    StormWarningDeleteView,
-                                                    StormWarningDetailView,
-                                                    StormWarningListView, StormWarningPDFView,
-                                                    StormWarningUpdateView)
-
-from dashboard.views.clientes.views import (CustomerCreateView,
-                                            CustomerDeleteView,
-                                            CustomerListView,
-                                            CustomerUpdateView)
+    TropicalCycloneCreateView,
+    TropicalCycloneDeleteView,
+    TropicalCycloneListView,
+    TropicalCycloneUpdateView,
+)
+from dashboard.views.avisos.tormentas.views import (
+    StormWarningCreateView,
+    StormWarningDeleteView,
+    StormWarningListView,
+    StormWarningUpdateView,
+)
+from dashboard.views.clientes.views import (
+    CustomerCreateView,
+    CustomerDeleteView,
+    CustomerListView,
+    CustomerUpdateView,
+)
 from dashboard.views.comentarios.nota_meteorologica.views import (
-    WeatherNoteCreateView, WeatherNoteDeleteView, WeatherNoteDetailView, WeatherNoteListView, WeatherNotePDFView,
-    WeatherNoteUpdateView)
+    WeatherNoteCreateView,
+    WeatherNoteDeleteView,
+    WeatherNoteListView,
+    WeatherNoteUpdateView,
+)
 from dashboard.views.comentarios.tiempo.views import (
-    WeatherCommentaryCreateView, WeatherCommentaryDeleteView, WeatherCommentaryDetailView,
-    WeatherCommentaryListView, WeatherCommentaryPDFView, WeatherCommentaryUpdateView)
-from dashboard.views.dashboard.views import (DashboardView, ExcelJSONView,
-                                             MaintenanceModeToggleView)
+    WeatherCommentaryCreateView,
+    WeatherCommentaryDeleteView,
+    WeatherCommentaryListView,
+    WeatherCommentaryUpdateView,
+)
+from dashboard.views.dashboard.views import (
+    DashboardView,
+    ExcelJSONView,
+    MaintenanceModeToggleView,
+)
 from dashboard.views.email_recipient.views import (
-    EmailRecipientListCreateView, EmailRecipientListDeleteView,
-    EmailRecipientListListView, EmailRecipientListUpdateView)
-from dashboard.views.estaciones.views import (StationCreateView,
-                                              StationDeleteView,
-                                              StationListView,
-                                              StationUpdateView)
-from dashboard.views.municipios.views import TownCreateView, TownDeleteView, TownListView, TownUpdateView
-from dashboard.views.pronosticos.views import (AllForecastCreateView,
-                                               ForecastDeleteView,
-                                               ForecastsListView,
-                                               ForecastUpdateView)
-from dashboard.views.provincias.views import (ProvinceCreateView,
-                                              ProvinceDeleteView,
-                                              ProvinceListView,
-                                              ProvinceUpdateView)
-from dashboard.views.servicios.views import (ServiceCreateView,
-                                             ServiceDeleteView,
-                                             ServiceListView,
-                                             ServiceUpdateView)
-from dashboard.views.tiempo.hoy.views import (WeatherTodayCreateView,
-                                              WeatherTodayDeleteView, WeatherTodayDetailView,
-                                              WeatherTodayListView, WeatherTodayPDFView,
-                                              WeatherTodayUpdateView)
-from dashboard.views.tiempo.manana.views import (WeatherTomorrowCreateView,
-                                                 WeatherTomorrowDeleteView, WeatherTomorrowDetailView,
-                                                 WeatherTomorrowListView, WeatherTomorrowPDFView,
-                                                 WeatherTomorrowUpdateView)
-from dashboard.views.publicaciones.views import (ScientificPublicationCreateView,
-                                                 ScientificPublicationDeleteView,
-                                                 ScientificPublicationDetailView,
-                                                 ScientificPublicationListView,
-                                                 ScientificPublicationUpdateView,
-                                                 ScientificPublicationPDFView)
+    EmailRecipientListCreateView,
+    EmailRecipientListDeleteView,
+    EmailRecipientListListView,
+    EmailRecipientListUpdateView,
+)
+from dashboard.views.estaciones.views import (
+    StationCreateView,
+    StationDeleteView,
+    StationListView,
+    StationUpdateView,
+)
+from dashboard.views.municipios.views import (
+    TownCreateView,
+    TownDeleteView,
+    TownListView,
+    TownUpdateView,
+)
+from dashboard.views.pronosticos.views import (
+    AllForecastCreateView,
+    ForecastDeleteView,
+    ForecastsListView,
+    ForecastUpdateView,
+)
+from dashboard.views.provincias.views import (
+    ProvinceCreateView,
+    ProvinceDeleteView,
+    ProvinceListView,
+    ProvinceUpdateView,
+)
+from dashboard.views.publicaciones.views import (
+    ScientificPublicationCreateView,
+    ScientificPublicationDeleteView,
+    ScientificPublicationDetailView,
+    ScientificPublicationListView,
+    ScientificPublicationPDFView,
+    ScientificPublicationUpdateView,
+)
+from dashboard.views.servicios.views import (
+    ServiceCreateView,
+    ServiceDeleteView,
+    ServiceListView,
+    ServiceUpdateView,
+)
+from dashboard.views.tiempo.hoy.views import (
+    WeatherTodayCreateView,
+    WeatherTodayDeleteView,
+    WeatherTodayDetailView,
+    WeatherTodayListView,
+    WeatherTodayPDFView,
+    WeatherTodayUpdateView,
+)
+from dashboard.views.tiempo.manana.views import (
+    WeatherTomorrowCreateView,
+    WeatherTomorrowDeleteView,
+    WeatherTomorrowDetailView,
+    WeatherTomorrowListView,
+    WeatherTomorrowPDFView,
+    WeatherTomorrowUpdateView,
+)
 
 urlpatterns = [
     # Dashboard
@@ -88,30 +130,18 @@ urlpatterns = [
     # Aviso Alerta Temprana
     path('avisos/alertas_tempranas/', EarlyWarningListView.as_view(), name='alertas_tempranas'),
     path('crear/aviso/alerta_temprana/', EarlyWarningCreateView.as_view(), name="crear_aviso_alerta_temprana"),
-    path('actualizar/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningUpdateView.as_view(),
-         name='actualizar_aviso_alerta_temprana'),
-    path('eliminar/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningDeleteView.as_view(),
-         name='eliminar_aviso_alerta_temprana'),
-    path('detalle/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningDetailView.as_view(),
-         name='detalle_aviso_alerta_temprana'),
-    path('aviso/alerta_temprana/<uuid:uuid>/pdf/', EarlyWarningPDFView.as_view(), name='aviso_alerta_temprana_pdf'),
+    path('actualizar/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningUpdateView.as_view(), name='actualizar_aviso_alerta_temprana'),
+    path('eliminar/aviso/alerta_temprana/<uuid:uuid>/', EarlyWarningDeleteView.as_view(), name='eliminar_aviso_alerta_temprana'),
     # Aviso Ciclón Tropical
     path('avisos/ciclones_tropicales/', TropicalCycloneListView.as_view(), name='ciclones_tropicales'),
     path('crear/aviso/ciclon_tropical/', TropicalCycloneCreateView.as_view(), name="crear_aviso_ciclon_tropical"),
-    path('actualizar/aviso/ciclon_tropical/<uuid:uuid>/', TropicalCycloneUpdateView.as_view(),
-         name='actualizar_aviso_ciclon_tropical'),
-    path('eliminar/aviso/ciclon_tropical/<uuid:uuid>/', TropicalCycloneDeleteView.as_view(),
-         name='eliminar_aviso_ciclon_tropical'),
-    path('detalle/aviso/ciclon-tropical/<uuid:uuid>/', TropicalCycloneDetailView.as_view(),
-         name='detalle_aviso_ciclon_tropical'),
-    path('aviso/ciclon-tropical/<uuid:uuid>/pdf/', TropicalCyclonePDFView.as_view(), name='aviso_ciclon_tropical_pdf'),
+    path('actualizar/aviso/ciclon_tropical/<uuid:uuid>/', TropicalCycloneUpdateView.as_view(), name='actualizar_aviso_ciclon_tropical'),
+    path('eliminar/aviso/ciclon_tropical/<uuid:uuid>/', TropicalCycloneDeleteView.as_view(), name='eliminar_aviso_ciclon_tropical'),
     # Aviso Tormenta
     path('avisos/tormentas/', StormWarningListView.as_view(), name='avisos_tormentas'),
     path('crear/aviso/tormenta/', StormWarningCreateView.as_view(), name="crear_aviso_tormenta"),
     path('actualizar/aviso/tormenta/<uuid:uuid>/', StormWarningUpdateView.as_view(), name='actualizar_aviso_tormenta'),
     path('eliminar/aviso/tormenta/<uuid:uuid>/', StormWarningDeleteView.as_view(), name='eliminar_aviso_tormenta'),
-    path('detalle/aviso/tormenta/<uuid:uuid>/', StormWarningDetailView.as_view(), name='detalle_aviso_tormenta'),
-    path('aviso/tormenta/<uuid:uuid>/pdf/', StormWarningPDFView.as_view(), name='aviso_tormenta_pdf'),
     # Clientes
     path('clientes/', CustomerListView.as_view(), name='listado_clientes'),
     path('crear/cliente/', CustomerCreateView.as_view(), name='crear_cliente'),
@@ -139,36 +169,24 @@ urlpatterns = [
     # Comentario Tiempo
     path('comentario/tiempo/', WeatherCommentaryListView.as_view(), name='listado_comentarios_tiempo'),
     path('crear/comentario/tiempo/', WeatherCommentaryCreateView.as_view(), name="crear_comentario_tiempo"),
-    path('actualizar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryUpdateView.as_view(),
-         name='actualizar_comentario_tiempo'),
-    path('eliminar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryDeleteView.as_view(),
-         name='eliminar_comentario_tiempo'),
-    path('detalle/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryDetailView.as_view(),
-         name='detalle_comentario_tiempo'),
-    path('comentario/tiempo/<uuid:uuid>/pdf/', WeatherCommentaryPDFView.as_view(), name='comentario_tiempo_pdf'),
+    path('actualizar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryUpdateView.as_view(), name='actualizar_comentario_tiempo'),
+    path('eliminar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryDeleteView.as_view(), name='eliminar_comentario_tiempo'),
     # Nota Meteorológica
     path('nota/meteorologica/', WeatherNoteListView.as_view(), name='listado_notas_meteorologicas'),
     path('crear/nota/meteorologica/', WeatherNoteCreateView.as_view(), name="crear_nota_meteorologica"),
-    path('actualizar/nota/meteorologica/<uuid:uuid>/', WeatherNoteUpdateView.as_view(),
-         name='actualizar_nota_meteorologica'),
-    path('eliminar/nota/meteorologica/<uuid:uuid>/', WeatherNoteDeleteView.as_view(),
-         name='eliminar_nota_meteorologica'),
-    path('detalle/nota/meteorologica/<uuid:uuid>/', WeatherNoteDetailView.as_view(), name='detalle_nota_meteorologica'),
-    path('nota/meteorologica/<uuid:uuid>/pdf/', WeatherNotePDFView.as_view(), name='nota_meteorologica_pdf'),
+    path('actualizar/nota/meteorologica/<uuid:uuid>/', WeatherNoteUpdateView.as_view(), name='actualizar_nota_meteorologica'),
+    path('eliminar/nota/meteorologica/<uuid:uuid>/', WeatherNoteDeleteView.as_view(), name='eliminar_nota_meteorologica'),
     # Listado de Correos
     path('listado/correos/', EmailRecipientListListView.as_view(), name='listado_correos'),
     path('crear/listado/correo/', EmailRecipientListCreateView.as_view(), name='crear_listado_correo'),
-    path('actualizar/listado/correo/<uuid:uuid>/', EmailRecipientListUpdateView.as_view(),
-         name='actualizar_listado_correo'),
-    path('eliminar/listado/correo/<uuid:uuid>/', EmailRecipientListDeleteView.as_view(),
-         name='eliminar_listado_correo'),
+    path('actualizar/listado/correo/<uuid:uuid>/', EmailRecipientListUpdateView.as_view(), name='actualizar_listado_correo'),
+    path('eliminar/listado/correo/<uuid:uuid>/', EmailRecipientListDeleteView.as_view(), name='eliminar_listado_correo'),
     # Modo Mantenimiento
     path('toggle-maintenance/', MaintenanceModeToggleView.as_view(), name='toggle_maintenance_mode'),
     # Publicaciones Científicas (nuevo)
     path('publicaciones/', ScientificPublicationListView.as_view(), name='listado_publicaciones'),
     path('crear/publicacion/', ScientificPublicationCreateView.as_view(), name='crear_publicacion'),
-    path('actualizar/publicacion/<uuid:uuid>/', ScientificPublicationUpdateView.as_view(),
-         name='actualizar_publicacion'),
+    path('actualizar/publicacion/<uuid:uuid>/', ScientificPublicationUpdateView.as_view(), name='actualizar_publicacion'),
     path('eliminar/publicacion/<uuid:uuid>/', ScientificPublicationDeleteView.as_view(), name='eliminar_publicacion'),
     path('detalle/publicacion/<uuid:uuid>/', ScientificPublicationDetailView.as_view(), name='detalle_publicacion'),
     path('publicacion/<uuid:uuid>/pdf/', ScientificPublicationPDFView.as_view(), name='publicacion_pdf'),

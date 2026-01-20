@@ -1,31 +1,19 @@
-from datetime import datetime
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
+
 from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy, reverse
-from django.views.generic import *
-
-from core import settings
-from dashboard.data.mail_send import mail_send
-from dashboard.forms.avisos.ciclones_tropicales.forms import \
-    TropicalCycloneForm
-from dashboard.models import TropicalCyclone
-
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-from common.utils import log_action
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-import os
-import base64
-from django.conf import settings
-from django.http import HttpResponse
-from django.template.loader import get_template
-from io import BytesIO
-from xhtml2pdf import pisa
+from common.utils import log_action
+from dashboard.data.mail_send import mail_send
+from dashboard.forms.avisos.ciclones_tropicales.forms import TropicalCycloneForm
+from dashboard.models import TropicalCyclone
 
 # Create your views here. 
 
@@ -178,91 +166,3 @@ class TropicalCycloneDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Del
         context['segment'] = 'cyclone'
         context['url_list'] = reverse_lazy('ciclones_tropicales')
         return context
-
-class TropicalCycloneDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    model = TropicalCyclone
-    template_name = 'pages/dashboard/avisos/ciclones_tropicales/detalle_aviso_ciclon_tropical.html'
-    permission_required = 'dashboard.view_tropical_cyclone'
-    context_object_name = 'cyclone'  # Nombre del objeto en el contexto
-
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(TropicalCyclone, uuid=uuid)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Detalle del Aviso de Ciclón Tropical'
-        context['parent'] = 'avisos'
-        context['segment'] = 'cyclone'
-        context['url_list'] = reverse_lazy('ciclones_tropicales')
-        return context
-    
-class TropicalCyclonePDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    model = TropicalCyclone
-    permission_required = 'dashboard.view_tropical_cyclone'
-
-    def get(self, request, *args, **kwargs):
-        tropical_cyclone = self.get_object()
-
-        # Obtener imagen del logo en formato Base64
-        logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
-        logo_base64 = self.get_image_base64(logo_path)
-        
-        # Obtener imagen del tropical_cyclone en Base64 si existe
-        image_base64 = None
-        if tropical_cyclone.image:  # Asegúrate de que 'image' es el campo de la imagen en tu modelo
-            try:
-                # Obtener la ruta completa de la imagen
-                image_path = tropical_cyclone.image.path
-                image_base64 = self.get_image_base64(image_path)
-            except Exception as e:
-                # Manejar excepción (puedes loguear el error)
-                print(f"Error al cargar imagen: {e}")
-
-        # Renderizar template HTML
-        template = get_template('pages/dashboard/avisos/ciclones_tropicales/pdf_template.html')
-        context = {
-            'tropical_cyclone': tropical_cyclone,
-            'logo_base64': logo_base64,
-            'image_base64': image_base64,  # Pasamos la imagen en base64 al contexto
-        }
-        html = template.render(context)
-
-        # Crear PDF
-        result = BytesIO()
-        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
-
-        if not pdf.err:
-            response = HttpResponse(result.getvalue(), content_type='application/pdf')
-            filename = f"ciclon_tropical_{tropical_cyclone.date.strftime('%Y-%m-%d')}.pdf"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
-        return HttpResponse("Error al generar el PDF", status=400)
-
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(TropicalCyclone, uuid=uuid)
-
-    @staticmethod
-    def get_image_base64(image_path):
-        """Convierte la imagen en Base64 y detecta su tipo MIME."""
-        try:
-            # Determinar el tipo de imagen por extensión
-            ext = os.path.splitext(image_path)[1].lower()
-            if ext in ['.jpg', '.jpeg']:
-                mime_type = 'image/jpeg'
-            elif ext == '.png':
-                mime_type = 'image/png'
-            elif ext == '.gif':
-                mime_type = 'image/gif'
-            else:
-                # Tipo por defecto si no se reconoce
-                mime_type = 'image/jpeg'
-            
-            with open(image_path, "rb") as image_file:
-                encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
-                # Formato: data:<mime_type>;base64,<encoded_string>
-                return f"data:{mime_type};base64,{encoded_string}"
-        except Exception as e:
-            print(f"Error al convertir imagen a base64: {e}")
-            return None
