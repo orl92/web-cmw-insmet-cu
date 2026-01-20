@@ -32,7 +32,6 @@
                 <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
                 <span>{{ weather_tomorrow.user.get_full_name }}</span>
               </div>
-
               <!-- Botón para ver PDF si existe -->
               {% if weather_tomorrow.file %}
                 <div class="mt-4 text-center">
@@ -69,7 +68,6 @@
       </div>
     </div>
   </div>
-
   <!-- Modal para PDF en pantalla completa -->
   <div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
@@ -97,18 +95,17 @@
       </div>
     </div>
   </div>
+{% endblock %}
 
+{% block extrajs %}
   <!-- Incluir PDF.js local -->
   <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
-
   <!-- Incluir archivos separados -->
   <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}" />
   <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
-
   <script>
     // Configurar PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}"
-    
     // Inicializar el visor de PDF cuando el documento esté listo
     document.addEventListener('DOMContentLoaded', function () {
       const pdfViewer = new PDFViewer({

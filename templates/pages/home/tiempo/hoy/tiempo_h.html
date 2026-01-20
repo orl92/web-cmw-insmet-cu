@@ -20,13 +20,14 @@
               <div class="mt-3">
                 {% if weather_today.file %}
                   <div class="d-flex justify-content-center align-items-center flex-column">
+                    <!-- Contenedor principal para vista previa del PDF -->
                     <div id="pdfPreviewContainer" class="pdf-container-mobile">
                       <div id="pdfPages" class="pdf-pages-container"></div>
                     </div>
                   </div>
                 {% endif %}
               </div>
-              <p class="mt-3">{{ weather_today.detailed_forecast|safe }}</p>
+              <p class="mt-3">{{ weather_today.summary|safe }}</p>
               <div class="d-flex align-items-center mt-3">
                 <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ weather_today.user.profile.get_avatar }})"></span>
                 <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
@@ -36,7 +37,7 @@
               <!-- Botón para ver PDF si existe -->
               {% if weather_today.file %}
                 <div class="mt-4 text-center">
-                  <a href="#" class="btn btn-pill btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pdfModal" data-pdf-url="{{ weather_today.file.url }}">
+                  <a href="#" class="btn btn-pill btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pdfModal" data-pdf-url="{{ weather_today.file.url }}" data-pdf-title="Pronóstico del Tiempo">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                       <path d="M14 3v4a1 1 0 0 0 1 1h4" />
@@ -59,7 +60,7 @@
                   <div class="text-center py-5">
                     <img src="{% static 'dist/img/webp/boy-refresh.webp' %}" class="img-fluid w-25" alt="No hay publicaciones" />
                     <p class="empty-title mt-4">Nada que mostrar...</p>
-                    <p class="empty-subtitle text-secondary">No se han encontrado pronosticos para hoy disponibles en este momento.</p>
+                    <p class="empty-subtitle text-secondary">No se han encontrado pronósticos para hoy disponibles en este momento.</p>
                   </div>
                 </div>
               </div>
@@ -97,23 +98,32 @@
       </div>
     </div>
   </div>
+{% endblock %}
 
+{% block extrajs %}
   <!-- Incluir PDF.js local -->
   <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
-
   <!-- Incluir archivos separados -->
   <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}" />
   <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
-
   <script>
     // Configurar PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}"
-    
     // Inicializar el visor de PDF cuando el documento esté listo
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
       const pdfViewer = new PDFViewer({
         pdfUrl: '{% if weather_today.file %}{{ weather_today.file.url }}{% endif %}',
-        modalPdfUrl: '{% if weather_today.file %}{{ weather_today.file.url }}{% endif %}'
+        modalPdfUrl: '{% if weather_today.file %}{{ weather_today.file.url }}{% endif %}',
+        containerId: 'pdfPreviewContainer',
+        pagesId: 'pdfPages',
+        modalPagesId: 'modalPdfPages',
+        modalPageInfoId: 'modalPageInfo',
+        modalZoomLevelId: 'modalZoomLevel',
+        modalPrevPageId: 'modalPrevPage',
+        modalNextPageId: 'modalNextPage',
+        modalZoomOutId: 'modalZoomOut',
+        modalZoomInId: 'modalZoomIn',
+        modalFitWidthId: 'modalFitWidth'
       })
       pdfViewer.init()
     })
