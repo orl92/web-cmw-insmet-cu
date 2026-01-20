@@ -3,8 +3,7 @@ from django.views.generic import ListView
 
 from dashboard.models import EarlyWarning
 
-# Create your views here.
-    
+
 class EarlyWarningListView(ListView):
     model = EarlyWarning
     template_name = 'pages/home/avisos/alerta_temprana.html'
@@ -17,5 +16,13 @@ class EarlyWarningListView(ListView):
         context['title'] = 'Aviso de Alerta Temprana'
         context['parent'] = 'aviso'
         context['segment'] = 'alerta_temprana'
-        context['objects'] = self.get_queryset()
+        
+        # Obtener objetos y agregar URLs absolutas
+        objects = self.get_queryset()
+        for obj in objects:
+            if obj.file:
+                # Agregar URL absoluta al objeto
+                obj.absolute_file_url = self.request.build_absolute_uri(obj.file.url)
+        
+        context['objects'] = objects
         return context

@@ -3,8 +3,7 @@ from django.views.generic import ListView
 
 from dashboard.models import TropicalCyclone
 
-# Create your views here.
-    
+
 class TropicalCycloneListView(ListView):
     model = TropicalCyclone
     template_name = 'pages/home/avisos/ciclon_tropical.html'
@@ -17,5 +16,13 @@ class TropicalCycloneListView(ListView):
         context['title'] = 'Aviso de Ciclón Tropical'
         context['parent'] = 'aviso'
         context['segment'] = 'ciclon_tropical'
-        context['objects'] = self.get_queryset()
+        
+        # Obtener objetos y agregar URLs absolutas
+        objects = self.get_queryset()
+        for obj in objects:
+            if obj.file:
+                # Agregar URL absoluta al objeto
+                obj.absolute_file_url = self.request.build_absolute_uri(obj.file.url)
+        
+        context['objects'] = objects
         return context
