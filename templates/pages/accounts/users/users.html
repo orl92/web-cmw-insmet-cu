@@ -6,9 +6,12 @@
   <th>Correo</th>
   <th>Rol</th>
   <th>Staff</th>
+  <th>Cliente</th>
+  <th>Empresa</th>
   <th class="text-end">Acciones</th>
 {% endblock %}
 {% block row %}
+  {% with info=users_info|get_item:object.id %}
   <td>
     <img src="{{ object.profile.get_avatar }}" alt="Avatar de {{ object.username }}" class="rounded-circle" width="25" height="25" />
   </td>
@@ -19,17 +22,29 @@
       <span class="badge badge-outline text-green">Superuser</span>
     {% else %}
       {% for group in object.groups.all %}
-        <span class="badge badge-outline text-blue">{{ group.name }}</span>{% if not forloop.last %}
-          ,
-        {% endif %}
+        <span class="badge badge-outline text-blue">{{ group.name }}</span>{% if not forloop.last %}, {% endif %}
       {% endfor %}
     {% endif %}
   </td>
   <td>
     {% if object.is_staff %}
-      <span style="color: green;">✔️</span>
+      <span class="text-success">✔️</span>
     {% else %}
-      <span style="color: red;">❌</span>
+      <span class="text-danger">❌</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if info.is_client %}
+      <span class="text-success">✔️</span>
+    {% else %}
+      <span class="text-danger">❌</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if info.client_info %}
+      <span class="text-muted">{{ info.client_info.company_name }}</span>
+    {% else %}
+      <span class="text-muted">-</span>
     {% endif %}
   </td>
   <td class="text-end">
@@ -51,5 +66,28 @@
         <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
       </svg>
     </a>
+    {% if info.client_info %}
+    <a href="{% url 'actualizar_cliente' info.client_info.uuid %}" type="button" class="btn btn-icon btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Ver cliente" data-bs-original-title="Ver cliente">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-building-store">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M3 21l18 0" />
+        <path d="M3 7v1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1m0 1a3 3 0 0 0 6 0v-1h-18l2 -4h14l2 4" />
+        <path d="M5 21l0 -10.15" />
+        <path d="M19 21l0 -10.15" />
+        <path d="M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4" />
+      </svg>
+    </a>
+    {% endif %}
   </td>
+  {% endwith %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para obtener información de usuario por ID
+function getUserInfo(userId) {
+    const usersInfo = JSON.parse('{{ users_info_json|escapejs }}');
+    return usersInfo.find(u => u.user.id === userId);
+}
+</script>
 {% endblock %}
