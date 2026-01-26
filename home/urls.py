@@ -3,20 +3,23 @@ from django.urls import path
 from home.views.avisos.alertas_tempranas.views import EarlyWarningListView
 from home.views.avisos.ciclones_tropicales.views import TropicalCycloneListView
 from home.views.avisos.tormentas.views import StormListView
-from home.views.comentarios.nota_meteorologica.views import \
-    WeatherNoteDetailView
+from home.views.comentarios.nota_meteorologica.views import WeatherNoteDetailView
 from home.views.comentarios.tiempo.views import WeatherCommentaryDetailView
 from home.views.home.views import IndexView
 from home.views.institucion.publicaciones.views import ScientificPublicationListView
-from home.views.modelos.views import MapaView, MeteogramView, SoundingView, ImageProxyModeloView
+from home.views.modelos.views import (
+    DescargarGifView,
+    ImageProxyModeloView,
+    MapaView,
+    MeteogramView,
+    SoundingView,
+)
+from home.views.pagos.views import PagosView
 from home.views.satelites.views import ProxyImageView, SateliteView
 from home.views.servicios.comerciales.views import CommercialServicesListView
 from home.views.servicios.publicos.views import PublicServicesListView
 from home.views.tiempo.hoy.views import WeatherTodayDetailView
 from home.views.tiempo.manana.views import WeatherTomorrowDetailView
-from home.views.pagos.views import PagosView
-from home.views.modelos.views import DescargarGifView
-from home.views.modelos import views
 
 urlpatterns = [
     # Inicio
