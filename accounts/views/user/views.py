@@ -1,19 +1,20 @@
-from datetime import datetime
-
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
+from django.contrib.auth import login
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.contrib.auth.models import User
-from django.contrib.sessions.models import Session
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-from accounts.forms.user.form import UserForm, UserUpdateForm
+from accounts.forms.user.form import CustomerSignUpForm, UserForm, UserUpdateForm
 from accounts.models import Profile
 from common.utils import log_action
+from dashboard.models import Customer
 
 # Create your views here.
 
@@ -25,15 +26,31 @@ class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # Obtener información adicional para cada usuario
+        users_info = []
+        for user in User.objects.all():
+            is_client = hasattr(user, 'customer') or user.groups.filter(name='clientes').exists()
+            client_info = None
+            if is_client and hasattr(user, 'customer'):
+                client_info = user.customer
+            
+            users_info.append({
+                'user': user,
+                'is_client': is_client,
+                'client_info': client_info
+            })
+        
         context['title'] = 'Listado de Usuarios'
         context['parent'] = 'accounts'
         context['segment'] = 'users'
-        context['btn'] = ('Añadir Usuario')
+        context['btn'] = 'Añadir Usuario'
         context['url_create'] = reverse_lazy('create_user')
         context['url_list'] = reverse_lazy('users')
-        context['objects'] = User.objects.all()
+        context['users_info'] = users_info
         return context
-    
+
+
 class UserCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = User
     form_class = UserForm
@@ -67,6 +84,7 @@ class UserCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         context['segment'] = 'users'
         context['url_list'] = self.success_url
         return context
+
 
 class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = User
@@ -111,6 +129,7 @@ class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTest
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
+
 class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = User
     template_name = 'pages/accounts/users/user_delete.html'
@@ -149,4 +168,56 @@ class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
         context['parent'] = 'accounts'
         context['segment'] = 'users'
         context['url_list'] = reverse_lazy('users')
+        return context
+
+
+class CustomerRegisterView(CreateView):
+    form_class = CustomerSignUpForm
+    template_name = 'pages/accounts/users/customer_register.html'
+    success_url = reverse_lazy('servicios_comerciales')
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Si el usuario ya está autenticado, redirigir
+        if request.user.is_authenticated:
+            messages.info(request, 'Ya tienes una sesión activa.')
+            return redirect('servicios_comerciales')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def form_valid(self, form):
+        # Guardar el usuario
+        user = form.save()
+        
+        # Iniciar sesión automáticamente
+        login(self.request, user)
+        
+        # Obtener el cliente recién creado
+        try:
+            customer = Customer.objects.get(user=user)
+            
+            # Registro de acción
+            log_action(
+                user=user,
+                obj=customer,
+                action_flag=ADDITION,
+                message=f"Cliente registrado desde formulario público: {customer.company_name}."
+            )
+        except Customer.DoesNotExist:
+            pass
+        
+        # Mensaje de éxito
+        messages.success(
+            self.request,
+            f'¡Registro exitoso! Bienvenido/a {form.cleaned_data["company_name"]}. '
+            'Ahora puedes acceder a tus servicios comerciales.',
+            extra_tags='success'
+        )
+        
+        return redirect(self.success_url)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Registro de Cliente'
+        context['parent'] = 'accounts'
+        context['segment'] = 'registro'
+        context['is_registration'] = True
         return context
