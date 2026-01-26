@@ -1,16 +1,21 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-from dashboard.forms.clientes.forms import CustomerForm, CustomerUpdateForm
-from dashboard.models import Customer
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
+from dashboard.forms.clientes.forms import (
+    CustomerForm,
+    CustomerUpdateForm,
+)
+from dashboard.models import Customer
 
 
 class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -29,6 +34,7 @@ class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['objects'] = Customer.objects.all()
         return context
 
+
 class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Customer
     form_class = CustomerForm
@@ -39,6 +45,15 @@ class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
     def form_valid(self, form):
         response = super().form_valid(form)
         customer = self.object
+        
+        # Asignar al grupo "clientes"
+        try:
+            clientes_group = Group.objects.get(name='clientes')
+            customer.user.groups.add(clientes_group)
+        except Group.DoesNotExist:
+            # Si no existe, crear el grupo
+            clientes_group = Group.objects.create(name='clientes')
+            customer.user.groups.add(clientes_group)
         
         # Registro de acción
         log_action(
@@ -51,13 +66,6 @@ class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
         messages.success(self.request, f'Cliente creado con éxito. Nombre de usuario: {customer.user.username}', extra_tags='success')
         return response
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Añadir Cliente'
-        context['parent'] = ''
-        context['segment'] = 'cliente'
-        context['url_list'] = reverse_lazy('listado_clientes')
-        return context
 
 class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Customer
@@ -94,6 +102,7 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user 
+
 
 class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Customer
