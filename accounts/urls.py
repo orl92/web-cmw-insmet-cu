@@ -2,14 +2,25 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from accounts.forms.password.forms import UserPasswordResetForm
-from accounts.views.group.views import (GroupCreateView, GroupDeleteView,
-                                        GroupListView, GroupUpdateView)
-from accounts.views.password.views import (AdminPasswordChangeView,
-                                           PasswordChangeView,
-                                           UserPasswordResetView)
+from accounts.views.group.views import (
+                                        GroupCreateView,
+                                        GroupDeleteView,
+                                        GroupListView,
+                                        GroupUpdateView,
+)
+from accounts.views.password.views import (
+                                        AdminPasswordChangeView,
+                                        PasswordChangeView,
+                                        UserPasswordResetView,
+)
 from accounts.views.profile.views import ProfileDetailView, ProfileUpdateView
-from accounts.views.user.views import (UserCreateView, UserDeleteView,
-                                       UserListView, UserUpdateView)
+from accounts.views.user.views import (
+                                        CustomerRegisterView,
+                                        UserCreateView,
+                                        UserDeleteView,
+                                        UserListView,
+                                        UserUpdateView,
+)
 
 urlpatterns = [
     # Grupos
@@ -22,6 +33,8 @@ urlpatterns = [
     path('user/create/', UserCreateView.as_view(), name='create_user'),
     path('user/update/<uuid:uuid>/', UserUpdateView.as_view(), name='update_user'),
     path('user/delete/<uuid:uuid>', UserDeleteView.as_view(), name='delete_user'),
+    # Registro Clientes
+    path('register/customer/', CustomerRegisterView.as_view(), name='customer_register'),
     # Perfil
     path('user/profile/', ProfileDetailView.as_view(), name='profile'),
     path('user/profile/update/<uuid:uuid>/', ProfileUpdateView.as_view(), name='update_profile'),
