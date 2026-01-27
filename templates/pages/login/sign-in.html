@@ -75,16 +75,16 @@
                     {% endfor %}
                   {% endif %}
                   <div class="mb-3">
-                    <label class="form-label">{{ form.username.label }}</label>
-                    <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="{{ form.username.name }}" placeholder="Usuario" autofocus />
+                    <label class="form-label required">{{ form.username.label }}</label>
+                    <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="{{ form.username.name }}" placeholder="Usuario" autofocus required/>
                     {% if form.username.errors %}
                       <span class="text-danger d-block mb-3">{{ form.username.errors }}</span>
                     {% endif %}
                   </div>
                   <div class="mb-2">
-                    <label class="form-label">{{ form.password.label }}</label>
+                    <label class="form-label required">{{ form.password.label }}</label>
                     <div class="input-group input-group-flat">
-                      <input type="password" class="form-control" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}" placeholder="Contraseña" />
+                      <input type="password" class="form-control" name="{{ form.password.name }}" id="{{ form.password.id_for_label }}" placeholder="Contraseña" required/>
                     </div>
                     {% if form.password.errors %}
                       <span class="text-danger d-block mb-3">{{ form.password.errors }}</span>
