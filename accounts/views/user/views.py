@@ -216,7 +216,7 @@ class CustomerRegisterView(CreateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Registro de Cliente'
+        context['title'] = 'Registro Empresas'
         context['parent'] = 'accounts'
         context['segment'] = 'registro'
         context['is_registration'] = True
