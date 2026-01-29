@@ -5,16 +5,25 @@
 {% block content %}
   <div class="row row-cards">
     <div class="col-12">
-      <form action="." method="post" class="card" enctype="multipart/form-data">
+      <!-- Contenedor de toasts -->
+      <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container" style="z-index: 1060;">
+        <!-- Los toasts se insertarán aquí dinámicamente -->
+      </div>
+
+      <form action="." method="post" class="card needs-validation" enctype="multipart/form-data" novalidate>
         <div class="card-body">
           {% csrf_token %}
+          
           {% if form.non_field_errors %}
-            {% for error in form.non_field_errors %}
-              <span class="text-danger d-block mb-3">{{ error }}</span>
-            {% endfor %}
+            <div class="alert alert-danger">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
           {% endif %}
+          
           {% block form %}
-
+          <!-- Los campos del formulario se definen en los templates hijos -->
           {% endblock %}
         </div>
         <div class="card-footer">
@@ -25,53 +34,189 @@
     </div>
   </div>
 {% endblock %}
+
 {% block extrajs %}
-  <script src="{% static '' %}dist/libs/hugerte/hugerte.min.js" defer></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      let options = {
-        selector: '#hugerte-textarea',
-        height: 410,
-        menubar: false,
-        statusbar: false,
-        license_key: 'gpl',
-        plugins: ['advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen', 'insertdatetime', 'media', 'table', 'help', 'wordcount'],
-        toolbar: 'undo redo | formatselect | ' + 'bold italic underline backcolor | preview help image fullscreen|' + 'alignleft aligncenter alignright alignjustify bullist numlist outdent indent ' + 'removeformat ',
-        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; }',
-        file_picker_types: 'image',
-        automatic_uploads: false,
-        images_dataimg_filter: function (img) {
-          return img.hasAttribute('src')
-        },
-        file_picker_callback: function (callback, value, meta) {
-          let input = document.createElement('input')
-          input.setAttribute('type', 'file')
-          input.setAttribute('accept', 'image/*')
-          input.onchange = function () {
-            let file = input.files[0]
-    
-            // Validar tamaño (por ejemplo, máximo 300KB)
-            if (file.size > 300 * 1024) {
-              alert('La imagen es demasiado grande. Debe ser menor a 300KB.')
-              return
-            }
-    
-            let reader = new FileReader()
-            reader.onload = function (e) {
-              callback(e.target.result, { alt: file.name })
-            }
-            reader.readAsDataURL(file)
+    document.addEventListener('DOMContentLoaded', function() {
+      // Sistema de validación unificado
+      const toastContainer = document.getElementById('toast-container');
+      const form = document.querySelector('.needs-validation');
+      
+      if (form) {
+        // Función para mostrar toast
+        function showToast(message, type = 'danger', duration = 5000) {
+          let bgClass, iconSvg, title;
+          switch(type) {
+            case 'success':
+              bgClass = 'bg-success';
+              iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>';
+              title = 'Éxito';
+              break;
+            case 'warning':
+              bgClass = 'bg-warning';
+              iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v2m0 4v.01" /><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" /></svg>';
+              title = 'Advertencia';
+              break;
+            case 'info':
+              bgClass = 'bg-info';
+              iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12.01" y2="8" /><polyline points="11 12 12 12 12 16 13 16" /></svg>';
+              title = 'Información';
+              break;
+            default:
+              bgClass = 'bg-danger';
+              iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>';
+              title = 'Error';
           }
-          input.click()
+
+          const toastId = 'toast-' + Date.now();
+          const toastHTML = `
+            <div id="${toastId}" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+              <div class="toast-header ${bgClass} text-white">
+                <span class="me-2">${iconSvg}</span>
+                <strong class="me-auto">${title}</strong>
+                <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('${toastId}').remove()"></button>
+              </div>
+              <div class="toast-body">
+                ${message}
+              </div>
+            </div>
+          `;
+          
+          toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+          
+          setTimeout(() => {
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+              toastElement.classList.remove('show');
+              setTimeout(() => {
+                if (toastElement.parentNode) {
+                  toastElement.parentNode.removeChild(toastElement);
+                }
+              }, 300);
+            }
+          }, duration);
         }
+
+        // Función para validar un campo
+        function validateField(field) {
+          let isValid = true;
+          const value = field.value.trim();
+          
+          // Limpiar clases previas
+          field.classList.remove('is-valid', 'is-invalid');
+          
+          // Validar campo requerido
+          if (field.hasAttribute('required') && !value) {
+            isValid = false;
+          }
+          
+          // Validaciones específicas
+          if (value && isValid) {
+            if (field.type === 'email') {
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(value)) {
+                isValid = false;
+              }
+            }
+            
+            if (field.name === 'phone') {
+              const phoneRegex = /^[0-9]{8}$/;
+              if (!phoneRegex.test(value)) {
+                isValid = false;
+              }
+            }
+          }
+          
+          // Aplicar clases según validación
+          if (isValid && value) {
+            field.classList.add('is-valid');
+          } else if (!isValid) {
+            field.classList.add('is-invalid');
+          }
+          
+          return isValid;
+        }
+
+        // Validación en tiempo real
+        form.addEventListener('blur', function(e) {
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            if (e.target.type !== 'checkbox') {
+              validateField(e.target);
+            }
+          }
+        }, true);
+
+        // Limpiar validación cuando el usuario empieza a escribir
+        form.addEventListener('input', function(e) {
+          const target = e.target;
+          
+          if (target.type !== 'checkbox') {
+            target.classList.remove('is-valid', 'is-invalid');
+          }
+          
+          // Validación especial para teléfono en tiempo real
+          if (target.name === 'phone') {
+            const phoneRegex = /^[0-9]{0,8}$/;
+            if (!phoneRegex.test(target.value)) {
+              target.value = target.value.replace(/\D/g, '').slice(0, 8);
+            }
+          }
+        }, true);
+
+        // Validar antes de enviar
+        form.addEventListener('submit', function(e) {
+          const requiredFields = form.querySelectorAll('[required]');
+          let allValid = true;
+          let firstInvalidField = null;
+          let errorMessages = [];
+          
+          requiredFields.forEach(field => {
+            if (field.type === 'checkbox') {
+              if (!field.checked) {
+                field.classList.add('is-invalid');
+                if (!firstInvalidField) firstInvalidField = field;
+                allValid = false;
+                const label = form.querySelector(`label[for="${field.id}"]`);
+                const fieldName = label ? label.textContent.replace('*', '').trim() : 'Este campo';
+                errorMessages.push(`${fieldName} debe ser aceptado`);
+              } else {
+                field.classList.remove('is-invalid');
+              }
+            } else {
+              if (!validateField(field)) {
+                if (!firstInvalidField) firstInvalidField = field;
+                allValid = false;
+                const label = form.querySelector(`label[for="${field.id}"]`) || 
+                             field.closest('.mb-3')?.querySelector('.form-label');
+                const fieldName = label ? label.textContent.replace('*', '').trim() : 'Este campo';
+                
+                if (field.type === 'email' && field.value) {
+                  errorMessages.push('Por favor, ingresa un correo electrónico válido');
+                } else if (field.name === 'phone' && field.value) {
+                  errorMessages.push('El teléfono debe tener 8 dígitos numéricos');
+                } else {
+                  errorMessages.push(`${fieldName} es requerido`);
+                }
+              }
+            }
+          });
+          
+          if (!allValid) {
+            e.preventDefault();
+            const errorMessage = errorMessages[0] || 'Por favor, completa todos los campos requeridos.';
+            showToast(errorMessage, 'danger');
+            
+            if (firstInvalidField) {
+              firstInvalidField.focus();
+              firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            return false;
+          }
+          
+          return true;
+        });
       }
-    
-      if (localStorage.getItem('themeConfig') === 'dark') {
-        options.skin = 'oxide-dark'
-        options.content_css = 'default'
-      }
-    
-      hugeRTE.init(options)
-    })
+    });
   </script>
 {% endblock %}
