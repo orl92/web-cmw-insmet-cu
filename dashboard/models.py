@@ -387,8 +387,15 @@ class StormWarning(BaseWarning):
 class Customer(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     company_name = models.CharField(max_length=100, verbose_name="Nombre de la Empresa")
-    phone = models.CharField(max_length=8, verbose_name="Número de Teléfono")
+    reup = models.CharField(max_length=11, verbose_name="REEUP")
+    address = models.TextField(verbose_name="Dirección")
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
+    ci = models.CharField(max_length=20, verbose_name="Documento de Identidad")
+    phone = models.CharField(max_length=8, verbose_name="Número de Teléfono")
+    
+    # Campos para suscripciones/notificaciones
+    accept_terms = models.BooleanField(default=False, verbose_name="Aceptó Términos")
+    newsletter = models.BooleanField(default=False, verbose_name="Recibe Newsletter")
 
     def __str__(self):
         return self.company_name
