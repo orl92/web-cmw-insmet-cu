@@ -26,28 +26,15 @@ class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Obtener información adicional para cada usuario
-        users_info = []
-        for user in User.objects.all():
-            is_client = hasattr(user, 'customer') or user.groups.filter(name='clientes').exists()
-            client_info = None
-            if is_client and hasattr(user, 'customer'):
-                client_info = user.customer
-            
-            users_info.append({
-                'user': user,
-                'is_client': is_client,
-                'client_info': client_info
-            })
-        
         context['title'] = 'Listado de Usuarios'
         context['parent'] = 'accounts'
         context['segment'] = 'users'
         context['btn'] = 'Añadir Usuario'
         context['url_create'] = reverse_lazy('create_user')
         context['url_list'] = reverse_lazy('users')
-        context['users_info'] = users_info
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
+        context["objects"] = User.objects.all()
         return context
 
 
@@ -217,7 +204,7 @@ class CustomerRegisterView(CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Registro Empresas'
-        context['parent'] = 'accounts'
+        context['parent'] = ''
         context['segment'] = 'registro'
         context['is_registration'] = True
         return context
