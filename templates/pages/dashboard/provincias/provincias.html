@@ -9,6 +9,7 @@
   <td>{{ object.name }}</td>
   <td>{{ object.code }}</td>
   <td class="text-end">
+    {% if is_staff %}
     <a href="{% url 'actualizar_provincia' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -17,6 +18,8 @@
         <path d="M16 5l3 3" />
       </svg>
     </a>
+    {% endif %}
+    {% if is_superuser %}
     <a href="{% url 'eliminar_provincia' object.uuid %}" type="button" class="btn btn-icon btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -27,5 +30,6 @@
         <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
       </svg>
     </a>
+    {% endif %}
   </td>
 {% endblock %}

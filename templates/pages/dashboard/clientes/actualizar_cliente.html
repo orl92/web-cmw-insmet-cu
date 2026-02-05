@@ -3,16 +3,67 @@
 {% block form %}
   <div class="mb-3">
     <label class="form-label required">{{ form.company_name.label }}</label>
-    <input type="text" class="form-control" id="{{ form.company_name.id_for_label }}" name="{{ form.company_name.name }}" placeholder="Nombre de la Empresa" value="{{ form.company_name.value }}" required />
+    <input type="text" class="form-control {% if form.company_name.errors %}is-invalid{% endif %}" 
+           id="{{ form.company_name.id_for_label }}" 
+           name="{{ form.company_name.name }}" 
+           placeholder="Nombre de la Empresa" 
+           value="{{ form.company_name.value|default:'' }}" 
+           required />
     {% if form.company_name.errors %}
-      <span class="text-danger d-block mb-3">{{ form.company_name.errors }}</span>
+      <div class="invalid-feedback">
+        {% for error in form.company_name.errors %}
+          {{ error }}
+        {% endfor %}
+      </div>
     {% endif %}
   </div>
+  
   <div class="mb-3">
     <label class="form-label required">{{ form.phone.label }}</label>
-    <input type="text" class="form-control" id="{{ form.phone.id_for_label }}" name="{{ form.phone.name }}" placeholder="Número de Teléfono" value="{{ form.phone.value }}" required />
+    <input type="text" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
+           id="{{ form.phone.id_for_label }}" 
+           name="{{ form.phone.name }}" 
+           placeholder="12345678" 
+           value="{{ form.phone.value|default:'' }}" 
+           required />
     {% if form.phone.errors %}
-      <span class="text-danger d-block mb-3">{{ form.phone.errors }}</span>
+      <div class="invalid-feedback">
+        {% for error in form.phone.errors %}
+          {{ error }}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  
+  <div class="mb-3">
+    <label class="form-label">{{ form.reup.label }}</label>
+    <input type="text" class="form-control {% if form.reup.errors %}is-invalid{% endif %}" 
+           id="{{ form.reup.id_for_label }}" 
+           name="{{ form.reup.name }}" 
+           placeholder="123456" 
+           value="{{ form.reup.value|default:'' }}" />
+    {% if form.reup.errors %}
+      <div class="invalid-feedback">
+        {% for error in form.reup.errors %}
+          {{ error }}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">{{ form.reup.label }}</label>
+    <input type="text" class="form-control {% if form.reup.errors %}is-invalid{% endif %}" 
+           id="{{ form.reup.id_for_label }}" 
+           name="{{ form.reup.name }}" 
+           placeholder="123456" 
+           value="{{ form.reup.value|default:'' }}" />
+    {% if form.reup.errors %}
+      <div class="invalid-feedback">
+        {% for error in form.reup.errors %}
+          {{ error }}
+        {% endfor %}
+      </div>
     {% endif %}
   </div>
 {% endblock %}
