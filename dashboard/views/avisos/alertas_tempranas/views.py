@@ -30,6 +30,8 @@ class EarlyWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['btn'] = ('Añadir Alerta Temprana')
         context['url_create'] = reverse_lazy('crear_aviso_alerta_temprana')
         context['url_list'] = reverse_lazy('alertas_tempranas')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = EarlyWarning.objects.all()
         return context
 

@@ -31,6 +31,8 @@ class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = 'Añadir Cliente'
         context['url_create'] = reverse_lazy('crear_cliente')
         context['url_list'] = reverse_lazy('listado_clientes')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = Customer.objects.all()
         return context
 
@@ -41,6 +43,7 @@ class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
     template_name = 'pages/dashboard/clientes/crear_cliente.html'
     permission_required = 'dashboard.add_customer'
     success_url = reverse_lazy('listado_clientes')
+    url_redirect = success_url
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -65,6 +68,14 @@ class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
 
         messages.success(self.request, f'Cliente creado con éxito. Nombre de usuario: {customer.user.username}', extra_tags='success')
         return response
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Añadir Cliente'
+        context['parent'] = ''
+        context['segment'] = 'cliente'
+        context['url_list'] = self.success_url
+        return context 
 
 
 class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -73,6 +84,7 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
     template_name = 'pages/dashboard/clientes/actualizar_cliente.html'
     permission_required = 'dashboard.change_customer'
     success_url = reverse_lazy('listado_clientes')
+    url_redirect = success_url
 
     def get_object(self, queryset=None):
         uuid = self.kwargs.get('uuid')
@@ -97,7 +109,7 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         context['title'] = 'Actualizar Cliente'
         context['parent'] = ''
         context['segment'] = 'cliente'
-        context['url_list'] = reverse_lazy('listado_clientes')
+        context['url_list'] = self.success_url
         return context  
 
     def test_func(self):

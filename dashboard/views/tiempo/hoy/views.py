@@ -1,33 +1,33 @@
-from datetime import datetime
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy, reverse
-from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
-
-from core import settings
-from dashboard.forms.tiempo.hoy.forms import WeatherTodayForm
-from dashboard.models import WeatherToday
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-from common.utils import log_action
-
 import base64
 import os
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django.template.loader import get_template
 from io import BytesIO
+
 import xhtml2pdf.pisa as pisa
 from django.conf import settings
-from dashboard.data.mail_send import mail_send
+from django.contrib import messages
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import get_template
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
+from common.utils import log_action
+from dashboard.data.mail_send import mail_send
+from dashboard.forms.tiempo.hoy.forms import WeatherTodayForm
+from dashboard.models import WeatherToday
 
 # Create your views here.
 
@@ -44,6 +44,8 @@ class WeatherTodayListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['btn'] = 'Añadir Tiempo para Hoy'
         context['url_create'] = reverse_lazy('crear_tiempo_h')
         context['url_list'] = reverse_lazy('listado_tiempo_h')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = WeatherToday.objects.all()
         return context
 
@@ -78,7 +80,7 @@ class WeatherTodayCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         messages.success(self.request, 'El pronóstico del tiempo para hoy ha sido creado con éxito.',
                          extra_tags='success')
 
-        subject = f'El Tiempo para Hoy'
+        subject = 'El Tiempo para Hoy'
         mail_send(self.request, self.object, subject, 'tiempo_h')
 
         return response
@@ -136,7 +138,7 @@ class WeatherTodayUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
 
         # Enviar correos solo si hay cambios
         if has_changes:
-            subject = f'El Tiempo para Hoy Actualiozado'
+            subject = 'El Tiempo para Hoy Actualiozado'
             mail_send(self.request, self.object, subject, 'tiempo_h')
 
         # Mensaje de éxito tras la actualización

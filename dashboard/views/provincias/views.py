@@ -27,6 +27,8 @@ class ProvinceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = ('Añadir Provincia')
         context['url_create'] = reverse_lazy('crear_provincia')
         context['url_list'] = reverse_lazy('provincias')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = Province.objects.all()
         return context
 

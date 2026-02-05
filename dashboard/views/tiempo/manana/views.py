@@ -1,34 +1,33 @@
-from datetime import datetime
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from datetime import timedelta
+import base64
+import os
+from io import BytesIO
 
+import xhtml2pdf.pisa as pisa
+from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy, reverse
+from django.template.loader import get_template
+from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 
-from core import settings
+from common.utils import log_action
 from dashboard.data.mail_send import mail_send
 from dashboard.forms.tiempo.manana.forms import WeatherTomorrowForm
 from dashboard.models import WeatherTomorrow
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-from common.utils import log_action
-
-import base64
-import os
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django.template.loader import get_template
-from io import BytesIO
-import xhtml2pdf.pisa as pisa
-from django.conf import settings
 
 # Create your views here. 
 
@@ -45,6 +44,8 @@ class WeatherTomorrowListView(LoginRequiredMixin, PermissionRequiredMixin, ListV
         context['btn'] = 'Añadir Tiempo Mañana'
         context['url_create'] = reverse_lazy('crear_tiempo_m')
         context['url_list'] = reverse_lazy('listado_tiempo_m')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = WeatherTomorrow.objects.all()
         return context 
 
@@ -77,7 +78,7 @@ class WeatherTomorrowCreateView(LoginRequiredMixin, PermissionRequiredMixin, Cre
         
         messages.success(self.request, 'El pronóstico del tiempo para mañana ha sido creado con éxito.', extra_tags='success')
 
-        subject = f'El Tiempo para Mañana'
+        subject = 'El Tiempo para Mañana'
         mail_send(self.request, self.object, subject, 'tiempo_m')
 
         return response
@@ -134,7 +135,7 @@ class WeatherTomorrowUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
 
         # Enviar correos solo si hay cambios
         if has_changes:
-            subject = f'El Tiempo para mañana Actualiozado'
+            subject = 'El Tiempo para mañana Actualiozado'
             mail_send(self.request, self.object, subject, 'tiempo_m')
 
         # Mensaje de éxito tras la actualización

@@ -1,17 +1,21 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
-from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-from core import settings
-from dashboard.forms.email_recipient.forms import EmailRecipientFormSet, EmailRecipientListForm
+from common.utils import log_action
+from dashboard.forms.email_recipient.forms import (
+    EmailRecipientFormSet,
+    EmailRecipientListForm,
+)
 from dashboard.models import EmailRecipientList
 
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-from common.utils import log_action
 
 class EmailRecipientListListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/email_recipient/listado_correos.html'
@@ -26,6 +30,8 @@ class EmailRecipientListListView(LoginRequiredMixin, PermissionRequiredMixin, Li
         context['btn'] = 'Añadir Listado'
         context['url_create'] = reverse_lazy('crear_listado_correo')
         context['url_list'] = reverse_lazy('listado_correos')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = EmailRecipientList.objects.all()
         return context
 

@@ -1,32 +1,34 @@
-from datetime import datetime
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy, reverse
-from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
+import base64
+import os
+from io import BytesIO
 
-from core import settings
+import xhtml2pdf.pisa as pisa
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import get_template
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
+
+from common.utils import log_action
+
 from dashboard.data.mail_send import mail_send
 from dashboard.forms.comentarios.tiempo.forms import WeatherCommentaryForm
 from dashboard.models import WeatherCommentary
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-from common.utils import log_action
-
-import base64
-import os
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django.template.loader import get_template
-from io import BytesIO
-import xhtml2pdf.pisa as pisa
-from django.conf import settings
 
 # Create your views here. 
 
@@ -43,6 +45,8 @@ class WeatherCommentaryListView(LoginRequiredMixin, PermissionRequiredMixin, Lis
         context['btn'] = 'Añadir Comentario del Tiempo'
         context['url_create'] = reverse_lazy('crear_comentario_tiempo')
         context['url_list'] = reverse_lazy('listado_comentarios_tiempo')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = WeatherCommentary.objects.all()
         return context 
 
@@ -75,7 +79,7 @@ class WeatherCommentaryCreateView(LoginRequiredMixin, PermissionRequiredMixin, C
         
         messages.success(self.request, 'El Comentario del Tiempo ha sido creado con éxito.', extra_tags='success')
 
-        subject = f'Comentario del Tiempo'
+        subject = 'Comentario del Tiempo'
         mail_send(self.request, self.object, subject, 'comentario_tiempo')
         
         return response
@@ -132,7 +136,7 @@ class WeatherCommentaryUpdateView(LoginRequiredMixin, PermissionRequiredMixin, U
 
         # Enviar correos solo si hay cambios
         if has_changes:
-            subject = f'Comentario del Tiempo Actualizado'
+            subject = 'Comentario del Tiempo Actualizado'
             mail_send(self.request, self.object, subject, 'comentario_tiempo')
 
         # Mensaje de éxito tras la actualización
@@ -193,11 +197,11 @@ class WeatherCommentaryDeleteView(LoginRequiredMixin, PermissionRequiredMixin, D
     success_url = reverse_lazy('listado_comentarios_tiempo')
     url_redirect = success_url
 
-    def get_object(self, queryset=None):
+    def get_object(self, queryset=None):  # noqa: F811
         uuid = self.kwargs.get('uuid')
         return get_object_or_404(WeatherCommentary, uuid=uuid) 
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):  # noqa: F811
         weather_commentary = self.get_object()
         try:
             weather_commentary.delete()
@@ -206,7 +210,7 @@ class WeatherCommentaryDeleteView(LoginRequiredMixin, PermissionRequiredMixin, D
             messages.error(request, str(e))
         return redirect(self.success_url)
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs):  # noqa: F811
         context = super().get_context_data(**kwargs)
         context['title'] = 'Eliminar Comentario del Tiempo'
         context['parent'] = 'comentario'

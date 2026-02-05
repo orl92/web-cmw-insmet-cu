@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     UserPassesTestMixin,
 )
-from django.contrib.auth.models import Group, Permission, User
+from django.contrib.auth.models import Group, Permission
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
@@ -30,11 +30,9 @@ class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context["btn"] = "Añadir Grupo"
         context["url_create"] = reverse_lazy("create_group")
         context["url_list"] = reverse_lazy("groups")
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context["objects"] = Group.objects.all()
-        context["users"] = (
-            User.objects.all().select_related("profile").prefetch_related("groups")
-        )
-
         return context
 
 
@@ -127,9 +125,7 @@ class GroupCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return context
 
 
-class GroupUpdateView(
-    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
-):
+class GroupUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Group
     form_class = GroupForm
     template_name = "pages/accounts/groups/group_update.html"

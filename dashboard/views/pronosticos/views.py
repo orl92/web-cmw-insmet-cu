@@ -30,6 +30,8 @@ class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = 'Añadir Pronóstico'
         context['url_create'] = reverse_lazy('crear_pronostico')
         context['url_list'] = reverse_lazy('pronosticos')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
 
         # Obtiene la fecha seleccionada por el usuario desde los parámetros GET de la solicitud
         date_string = self.request.GET.get('date')

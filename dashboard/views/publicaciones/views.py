@@ -62,6 +62,8 @@ class ScientificPublicationListView(
         context["btn"] = "Añadir Publicación"
         context["url_create"] = reverse_lazy("crear_publicacion")
         context["url_list"] = reverse_lazy("listado_publicaciones")
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context["objects"] = ScientificPublication.objects.all().prefetch_related(
             "author", "coauthors"
         )

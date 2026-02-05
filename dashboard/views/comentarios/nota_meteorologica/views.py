@@ -1,33 +1,33 @@
-from datetime import datetime
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy, reverse
-from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
-
-from core import settings
-from dashboard.data.mail_send import mail_send
-from dashboard.forms.comentarios.nota_meteorologica.forms import \
-    WeatherNoteForm
-from dashboard.models import WeatherNote
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
-from common.utils import log_action
-
 import base64
 import os
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django.template.loader import get_template
 from io import BytesIO
+
 import xhtml2pdf.pisa as pisa
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import get_template
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
+
+from common.utils import log_action
+from dashboard.data.mail_send import mail_send
+from dashboard.forms.comentarios.nota_meteorologica.forms import WeatherNoteForm
+from dashboard.models import WeatherNote
 
 # Create your views here. 
 
@@ -44,6 +44,8 @@ class WeatherNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView)
         context['btn'] = 'Añadir Nota Meteorológica'
         context['url_create'] = reverse_lazy('crear_nota_meteorologica')
         context['url_list'] = reverse_lazy('listado_notas_meteorologicas')
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = WeatherNote.objects.all()
         return context 
 
@@ -76,7 +78,7 @@ class WeatherNoteCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
         
         messages.success(self.request, 'La Nota Meteorológica ha sido creada con éxito.', extra_tags='success')
 
-        subject = f'Nota Meteorológica'
+        subject = 'Nota Meteorológica'
         mail_send(self.request, self.object, subject, 'nota_meteorologica')
         
         return response
@@ -133,7 +135,7 @@ class WeatherNoteUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPas
         
         # Enviar correos solo si hay cambios
         if has_changes:
-            subject = f'Nota Meteorológica Actualizada'
+            subject = 'Nota Meteorológica Actualizada'
             mail_send(self.request, self.object, subject, 'nota_meteorologica')
         
         messages.success(self.request, 'La Nota Meteorológica ha sido actualizada con éxito.', extra_tags='success')
