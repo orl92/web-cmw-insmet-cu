@@ -387,10 +387,11 @@ class StormWarning(BaseWarning):
 class Customer(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     company_name = models.CharField(max_length=100, verbose_name="Nombre de la Empresa")
-    reup = models.CharField(max_length=11, verbose_name="REEUP")
+    reeup = models.CharField(max_length=11, verbose_name="REEUP")
+    nit = models.CharField(max_length=11, verbose_name="NIT")
+    account = models.CharField(max_length=16, verbose_name="Cuenta Bancaria")
     address = models.TextField(verbose_name="Dirección")
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
-    ci = models.CharField(max_length=20, verbose_name="Documento de Identidad")
     phone = models.CharField(max_length=8, verbose_name="Número de Teléfono")
     
     # Campos para suscripciones/notificaciones
