@@ -1,39 +1,328 @@
 {% extends 'layouts/form.html' %}
 {% load my_filters %}
 {% load static %}
+
 {% block form %}
-  <div class="mb-3">
-    <label class="form-label">{{ form.password.label }}</label>
-    <span class="form-hint mb-3">Las contraseñas no se almacenan en bruto, así que no hay manera de ver la contraseña del usuario, pero se puede cambiar la contraseña mediante<a href="{% url 'password_change' %}">este formulario</a></span>
+  {# Contenedor de pestañas - Siempre visible #}
+  <div class="mb-4">
+    <ul class="nav nav-tabs" role="tablist">
+      {# Pestaña 1: Información Personal - SIEMPRE visible #}
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="personal-tab" data-bs-toggle="tab" data-bs-target="#personal" type="button" role="tab" aria-controls="personal" aria-selected="true">
+          Información Personal
+        </button>
+      </li>
+      
+      {# Pestaña 2: Datos de Empresa - SOLO para clientes #}
+      {% if is_customer %}
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="empresa-tab" data-bs-toggle="tab" data-bs-target="#empresa" type="button" role="tab" aria-controls="empresa" aria-selected="false">
+          Datos de Empresa
+        </button>
+      </li>
+      {% endif %}
+    </ul>
+    
+    <div class="tab-content">
+      {# Pestaña 1: Información Personal - CONTENIDO #}
+      <div class="tab-pane fade show active" id="personal" role="tabpanel" aria-labelledby="personal-tab">
+        <div class="p-3">
+          <div class="mb-3">
+            <label class="form-label required">{{ form.first_name.label }}</label>
+            <input type="text" class="form-control" name="{{ form.first_name.name }}" value="{{ form.first_name.value }}" required />
+            {% if form.first_name.errors %}
+              <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label required">{{ form.last_name.label }}</label>
+            <input type="text" class="form-control" name="{{ form.last_name.name }}" value="{{ form.last_name.value }}" required />
+            {% if form.last_name.errors %}
+              <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label required">{{ form.email.label }}</label>
+            <input type="email" class="form-control" name="{{ form.email.name }}" value="{{ form.email.value }}" required />
+            {% if form.email.errors %}
+              <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">{{ form.avatar.label }}</label>
+            <input type="file" class="form-control" name="{{ form.avatar.name }}" />
+            {% if form.avatar.errors %}
+              <span class="text-danger d-block mb-3">{{ form.avatar.errors }}</span>
+            {% endif %}
+            
+            {% if request.user.profile.avatar %}
+              <div class="mt-2">
+                <img src="{{ request.user.profile.get_avatar }}" alt="Avatar" class="img-thumbnail" style="width: 100px; height: 100px; object-fit: cover;">
+                <button type="submit" name="delete_avatar" class="btn btn-sm btn-outline-danger mt-2">
+                  Eliminar avatar
+                </button>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      {# Pestaña 2: Datos de Empresa - CONTENIDO (solo para clientes) #}
+      {% if is_customer %}
+      <div class="tab-pane fade" id="empresa" role="tabpanel" aria-labelledby="empresa-tab">
+        <div class="p-3">
+          <div class="mb-3">
+            <label class="form-label required">{{ form.company_name.label }}</label>
+            <input type="text" class="form-control" name="{{ form.company_name.name }}" value="{{ form.company_name.value }}" required />
+            {% if form.company_name.errors %}
+              <span class="text-danger d-block mb-3">{{ form.company_name.errors }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required">{{ form.reeup.label }}</label>
+                <input type="text" class="form-control" name="{{ form.reeup.name }}" value="{{ form.reeup.value }}" required />
+                {% if form.reeup.errors %}
+                  <span class="text-danger d-block mb-3">{{ form.reeup.errors }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required">{{ form.nit.label }}</label>
+                <input type="text" class="form-control" name="{{ form.nit.name }}" value="{{ form.nit.value }}" required />
+                {% if form.nit.errors %}
+                  <span class="text-danger d-block mb-3">{{ form.nit.errors }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required">{{ form.account.label }}</label>
+                <input type="text" class="form-control" name="{{ form.account.name }}" value="{{ form.account.value }}" required />
+                {% if form.account.errors %}
+                  <span class="text-danger d-block mb-3">{{ form.account.errors }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required">{{ form.phone.label }}</label>
+                <input type="text" class="form-control" name="{{ form.phone.name }}" value="{{ form.phone.value }}" required />
+                {% if form.phone.errors %}
+                  <span class="text-danger d-block mb-3">{{ form.phone.errors }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label required">{{ form.address.label }}</label>
+            <textarea class="form-control" name="{{ form.address.name }}" rows="3" required>{{ form.address.value }}</textarea>
+            {% if form.address.errors %}
+              <span class="text-danger d-block mb-3">{{ form.address.errors }}</span>
+            {% endif %}
+          </div>
+          
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="{{ form.newsletter.name }}" id="newsletter" {% if form.newsletter.value %}checked{% endif %}>
+              <label class="form-check-label" for="newsletter">
+                {{ form.newsletter.label }}
+              </label>
+            </div>
+            {% if form.newsletter.errors %}
+              <span class="text-danger d-block mb-3">{{ form.newsletter.errors }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
   </div>
-  <hr />
-  <pre>Información Personal</pre>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.first_name.label }}</label>
-    <input type="text" class="form-control" id="{{ form.first_name.id_for_label }}" name="{{ form.first_name.name }}" placeholder="Nombre" value="{{ form.first_name.value }}" required />
-    {% if form.first_name.errors %}
-      <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
-    {% endif %}
-  </div>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.last_name.label }}</label>
-    <input type="text" class="form-control" id="{{ form.last_name.id_for_label }}" name="{{ form.last_name.name }}" placeholder="Apellidos" value="{{ form.last_name.value }}" required />
-    {% if form.last_name.errors %}
-      <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
-    {% endif %}
-  </div>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.email.label }}</label>
-    <input type="email" class="form-control" id="{{ form.email.id_for_label }}" name="{{ form.email.name }}" placeholder="Dirección de correo" value="{{ form.email.value }}" required />
-    {% if form.email.errors %}
-      <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
-    {% endif %}
-  </div>
-  <div class="mb-3">
-    <label class="form-label">{{ form.avatar.label }}</label>
-    <input type="file" class="form-control" id="{{ form.avatar.id_for_label }}" name="{{ form.avatar.name }}" />
-    {% if form.avatar.errors %}
-      <span class="text-danger d-block mb-3">{{ form.avatar.errors }}</span>
-    {% endif %}
-  </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form');
+  const isCustomer = {% if is_customer %}true{% else %}false{% endif %};
+  
+  // Función para validar campos requeridos
+  function validateForm() {
+    let isValid = true;
+    const errorMessages = [];
+    
+    // Validar pestaña de información personal (siempre presente)
+    const personalFields = [
+      { name: '{{ form.first_name.name }}', label: '{{ form.first_name.label }}' },
+      { name: '{{ form.last_name.name }}', label: '{{ form.last_name.label }}' },
+      { name: '{{ form.email.name }}', label: '{{ form.email.label }}' }
+    ];
+    
+    personalFields.forEach(field => {
+      const input = form.querySelector(`[name="${field.name}"]`);
+      if (input && input.required && !input.value.trim()) {
+        isValid = false;
+        errorMessages.push(`El campo "${field.label}" es requerido`);
+        input.classList.add('is-invalid');
+      }
+    });
+    
+    // Si es cliente, validar también los campos de empresa
+    if (isCustomer) {
+      const empresaFields = [
+        { name: '{{ form.company_name.name }}', label: '{{ form.company_name.label }}' },
+        { name: '{{ form.reeup.name }}', label: '{{ form.reeup.label }}' },
+        { name: '{{ form.nit.name }}', label: '{{ form.nit.label }}' },
+        { name: '{{ form.account.name }}', label: '{{ form.account.label }}' },
+        { name: '{{ form.address.name }}', label: '{{ form.address.label }}' },
+        { name: '{{ form.phone.name }}', label: '{{ form.phone.label }}' }
+      ];
+      
+      empresaFields.forEach(field => {
+        const input = form.querySelector(`[name="${field.name}"]`);
+        if (input && input.required && !input.value.trim()) {
+          isValid = false;
+          errorMessages.push(`El campo "${field.label}" es requerido`);
+          input.classList.add('is-invalid');
+          
+          // Si el error está en la pestaña de empresa, activar esa pestaña
+          const empresaTab = document.querySelector('#empresa-tab');
+          if (empresaTab && !empresaTab.classList.contains('active')) {
+            new bootstrap.Tab(empresaTab).show();
+          }
+        }
+      });
+    }
+    
+    return { isValid, errorMessages };
+  }
+  
+  // Validación al enviar el formulario
+  form.addEventListener('submit', function(e) {
+    // Limpiar errores previos
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    
+    const validation = validateForm();
+    
+    if (!validation.isValid) {
+      e.preventDefault();
+      
+      // Mostrar mensaje de error
+      const existingAlert = form.querySelector('.validation-alert');
+      if (existingAlert) existingAlert.remove();
+      
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-danger validation-alert mt-3';
+      alertDiv.innerHTML = `
+        <div class="d-flex">
+          <div class="me-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-alert-circle" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <div>
+            <h4 class="alert-title">Error de validación</h4>
+            <div class="text-secondary">Por favor, corrige los siguientes errores:</div>
+            <ul class="mt-2 mb-0">
+              ${validation.errorMessages.map(msg => `<li>${msg}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+      `;
+      
+      form.insertBefore(alertDiv, form.querySelector('.form-footer'));
+      
+      // Desplazar hacia arriba para ver el mensaje
+      alertDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
+  
+  // Remover clase de error al escribir
+  form.addEventListener('input', function(e) {
+    if (e.target.classList.contains('is-invalid')) {
+      e.target.classList.remove('is-invalid');
+    }
+    
+    // Remover alerta de validación si existe
+    const validationAlert = form.querySelector('.validation-alert');
+    if (validationAlert) {
+      validationAlert.remove();
+    }
+  });
+  
+  // Opcional: Guardar en localStorage la pestaña activa para persistir entre recargas
+  const tabTriggers = document.querySelectorAll('[data-bs-toggle="tab"]');
+  tabTriggers.forEach(trigger => {
+    trigger.addEventListener('shown.bs.tab', function(event) {
+      localStorage.setItem('activeTab', event.target.getAttribute('id'));
+    });
+  });
+  
+  // Recuperar pestaña activa del localStorage
+  const activeTabId = localStorage.getItem('activeTab');
+  if (activeTabId) {
+    const activeTab = document.querySelector(`#${activeTabId}`);
+    if (activeTab) {
+      new bootstrap.Tab(activeTab).show();
+    }
+  }
+});
+</script>
+
+<style>
+/* Estilos para mejorar la apariencia de las pestañas */
+.nav-tabs .nav-link {
+  border-bottom: 2px solid transparent;
+  color: var(--tblr-muted);
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  color: var(--tblr-primary);
+  border-bottom-color: var(--tblr-border-color);
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--tblr-primary);
+  border-bottom-color: var(--tblr-primary);
+  font-weight: 600;
+}
+
+/* Animación suave para cambios de pestaña */
+.tab-pane.fade {
+  transition: opacity 0.15s linear;
+}
+
+/* Estilo para campos con error en pestañas */
+.nav-tabs .nav-link.has-error {
+  color: var(--tblr-danger);
+  border-bottom-color: var(--tblr-danger);
+}
+
+.nav-tabs .nav-link.has-error.active {
+  color: var(--tblr-danger);
+  border-bottom-color: var(--tblr-danger);
+}
+
+/* Estilo para indicar pestañas completadas */
+.nav-tabs .nav-link.completed {
+  color: var(--tblr-success);
+  border-bottom-color: var(--tblr-success);
+}
+</style>
 {% endblock %}
