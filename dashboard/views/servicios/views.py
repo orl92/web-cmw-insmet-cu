@@ -1,35 +1,81 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-from dashboard.forms.servicios.forms import ServiceForm
-from dashboard.models import Service
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
+from dashboard.forms.servicios.forms import ServiceForm
+from dashboard.models import Customer, Service
 
 # Create your views here.
-   
+
 
 class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/servicios/listado_servicios.html'
     model = Service
     permission_required = 'dashboard.view_service'
-
+    context_object_name = 'objects'
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Solo permitir acceso a staff, superuser o clientes
+        if not (request.user.is_staff or 
+                request.user.is_superuser or 
+                request.user.groups.filter(name='Clientes').exists()):
+            raise PermissionDenied("No tienes permiso para acceder a esta página")
+        
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_queryset(self):
+        """
+        Filtra los servicios según el tipo de usuario:
+        - Superusuarios y staff: ven todos los servicios
+        - Clientes: solo ven servicios comerciales asociados a ellos
+        """
+        queryset = super().get_queryset()
+        
+        # Si el usuario es superuser o staff, ve todos los servicios
+        if self.request.user.is_superuser or self.request.user.is_staff:
+            return queryset.all().order_by('-date')
+        
+        # Si el usuario pertenece al grupo 'Clientes'
+        elif self.request.user.groups.filter(name='Clientes').exists():
+            try:
+                # Obtener el cliente asociado al usuario
+                customer = self.request.user.customer
+                # Solo servicios comerciales asociados a este cliente
+                return queryset.filter(
+                    service_type=Service.COMMERCIAL,
+                    target_customer=customer
+                ).order_by('-date')
+            except Customer.DoesNotExist:
+                # Si no tiene perfil de cliente, no ver nada
+                return queryset.none()
+        
+        return queryset.none()
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Listado de Servicios'
         context['parent'] = ''
         context['segment'] = 'servicios'
+        context['url_list'] = reverse_lazy('listado_servicios')
+        
+        # Variables para controlar la visualización en el template
+        context['is_client'] = self.request.user.groups.filter(name='clientes').exists()
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
+        context['is_superuser'] = self.request.user.is_superuser
         context['btn'] = 'Añadir Servicio'
         context['url_create'] = reverse_lazy('crear_servicio')
-        context['url_list'] = reverse_lazy('listado_servicios')
-        context['objects'] = Service.objects.all()
-        return context  
+        
+        return context
+
 
 class ServiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Service
@@ -66,6 +112,7 @@ class ServiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         context['segment'] = 'servicio'
         context['url_list'] = reverse_lazy('listado_servicios')
         return context
+
 
 class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Service
@@ -108,6 +155,7 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
     
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
+
 
 class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Service 
