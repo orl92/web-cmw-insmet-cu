@@ -65,6 +65,8 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         context['parent'] = 'accounts'
         context['segment'] = 'profile'
         context['url_list'] = self.success_url
+        # Añadir variable para saber si es cliente
+        context['is_customer'] = hasattr(self.request.user, 'customer')
         return context
 
     def post(self, request, *args, **kwargs):
@@ -91,5 +93,15 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             action_flag=CHANGE,
             message="El usuario actualizó su perfil."
         )
+        
+        # Registrar también actualización de datos de empresa si es cliente
+        if hasattr(request.user, 'customer'):
+            log_action(
+                user=request.user,
+                obj=request.user.customer,
+                action_flag=CHANGE,
+                message="El cliente actualizó sus datos de empresa."
+            )
+        
         messages.success(self.request, 'El perfil ha sido actualizado con éxito.', extra_tags='warning')
         return response
