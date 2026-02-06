@@ -41,7 +41,7 @@ pycparser==2.23
 pyHanko==0.32.0
 pyhanko-certvalidator==0.29.0
 pyparsing==3.2.5
-pypdf==6.4.0
+pypdf==6.6.2
 pyproj==3.7.2
 python-bidi==0.6.7
 python-dateutil==2.9.0.post0
