@@ -604,9 +604,11 @@ class DescargarGifView(View):
                 return HttpResponse('No se pudieron cargar imágenes para crear el GIF', status=500)
 
         except requests.exceptions.RequestException as e:
-            return HttpResponse(f'Error de conexión: {str(e)}', status=500)
+            logger.exception("Error de conexión al obtener datos para el GIF animado")
+            return HttpResponse('Error de conexión con el servidor remoto. Inténtelo de nuevo más tarde.', status=500)
         except Exception as e:
-            return HttpResponse(f'Error interno del servidor: {str(e)}', status=500)
+            logger.exception("Error interno del servidor al generar el GIF animado")
+            return HttpResponse('Error interno del servidor. Inténtelo de nuevo más tarde.', status=500)
 
     def validar_formato_fecha(self, fecha_str):
         """Valida el formato de fecha YYYYMMDDHH"""
