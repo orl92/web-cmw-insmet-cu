@@ -523,7 +523,8 @@ class DescargarGifView(View):
 
             # Verificar si la solicitud fue exitosa
             if data.get("status") != "success":
-                return HttpResponse(f'Error del servidor meteorológico: {data.get("status")}', status=500)
+                logger.error("Error del servidor meteorológico. Estado devuelto: %r", data.get("status"))
+                return HttpResponse('Error del servidor meteorológico.', status=500)
 
             image_urls = data.get("image_urls", [])
             if not image_urls:
