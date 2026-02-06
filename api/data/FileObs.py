@@ -3,7 +3,7 @@ import shutil
 import subprocess
 import threading
 import time
-
+import re
 
 # from werkzeug.utils import secure_filename
 #
@@ -45,7 +45,6 @@ class FileObs:
             # Normalize and reduce to basename to strip any path components
             filename = os.path.basename(os.path.normpath(str(filename)))
             # Enforce strict expected pattern: prefix SM/SI, then digits, then '.', then valid hour
-            import re
             pattern = r'^(SM|SI)\d+\.(00|03|06|09|12|15|18|21)$'
             if not re.fullmatch(pattern, filename):
                 raise ValueError(f"Nombre de archivo inválido generado: {filename}")
