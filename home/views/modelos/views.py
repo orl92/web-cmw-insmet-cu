@@ -377,8 +377,25 @@ class ImageProxyModeloView(View):
             return HttpResponse('Error interno del servidor', status=500)
 
     def _get_target_url(self, image_url, image_path):
+        """
+        Construye la URL de destino a partir de los parámetros recibidos.
+        Para evitar SSRF, solo se permiten URL con esquemas http/https y
+        cuyo host esté en la lista blanca ALLOWED_DOMAINS.
+        """
         if image_url:
-            return unquote(image_url)
+            # Validar la URL proporcionada directamente
+            parsed = urlparse(unquote(image_url))
+            if parsed.scheme not in ("http", "https"):
+                logger.warning(f"Esquema no permitido en image_url: {parsed.scheme}")
+                return None
+
+            host = parsed.hostname
+            if not host or not hasattr(self, "ALLOWED_DOMAINS") or host not in self.ALLOWED_DOMAINS:
+                logger.warning(f"Host no permitido en image_url: {host}")
+                return None
+
+            # URL válida según las primeras comprobaciones
+            return parsed.geturl()
         elif image_path:
             base_url = getattr(settings, 'IMAGE_SERVER_BASE_URL', 'http://imgwrfserver.cmw.insmet.cu')
             # Limpiar el path para evitar dobles barras
@@ -389,7 +406,8 @@ class ImageProxyModeloView(View):
     def _is_valid_url(self, url):
         """
         Valida que la URL sea segura y esté permitida.
-        CORREGIDO: Ahora bloquea IPs privadas correctamente.
+        Incluye comprobación de esquema, dominio en lista blanca
+        y bloqueo de rangos de IP privadas/internas.
         """
         try:
             parsed_url = urlparse(url)
@@ -398,27 +416,27 @@ class ImageProxyModeloView(View):
             if parsed_url.scheme not in ('http', 'https'):
                 return False
 
-            # Verificar el dominio contra la lista blanca
-            if parsed_url.netloc not in self.ALLOWED_DOMAINS:
-                logger.warning(f"Dominio no permitido: {parsed_url.netloc}")
-                return False
-
-            # Obtener el host sin puerto
+            # Verificar el dominio contra la lista blanca (solo hostname, sin puerto)
             host = parsed_url.hostname
             if not host:
+            if not hasattr(self, "ALLOWED_DOMAINS") or host not in self.ALLOWED_DOMAINS:
+                logger.warning(f"Dominio no permitido: {host}")
+                return False
                 return False
 
-            # Validación de IPs - CORREGIDO: incluye is_private
+            # Validación de IPs: bloquear loopback, privadas, link-local, multicast y reservadas
             try:
                 addrinfos = socket.getaddrinfo(host, None)
                 for info in addrinfos:
                     ip = info[4][0]
                     ip_obj = ipaddress.ip_address(ip)
                     if (
-                            ip_obj.is_loopback or
-                            ip_obj.is_link_local or
-                            ip_obj.is_multicast or
-                            ip_obj.is_reserved):
+                        ip_obj.is_loopback or
+                        ip_obj.is_link_local or
+                        ip_obj.is_multicast or
+                        ip_obj.is_reserved or
+                        ip_obj.is_private
+                    ):
                         logger.warning(f"IP no permitida: {ip}")
                         return False
             except Exception as e:
@@ -434,7 +452,8 @@ class ImageProxyModeloView(View):
     def _fetch_image(self, url):
         """
         Descarga la imagen desde la URL proporcionada.
-        MEJORADO: Agrega verify=False para entornos internos
+        Se realiza la petición solo a URLs previamente validadas
+        y con verificación TLS habilitada.
         """
         headers = {
             'User-Agent': 'MeteoApp/1.0',
@@ -445,7 +464,7 @@ class ImageProxyModeloView(View):
         auth_headers = self._get_auth_headers()
         headers.update(auth_headers)
 
-        return requests.get(url, stream=True, timeout=30, headers=headers, verify=False)
+        return requests.get(url, stream=True, timeout=30, headers=headers, verify=True)
 
     def _get_auth_headers(self):
         return {}
