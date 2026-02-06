@@ -40,9 +40,15 @@ class FileObs:
             else:
                 filename = None
 
-        # Sanitize filename to prevent path traversal or dangerous characters
+        # Sanitize and validate filename to prevent path traversal or dangerous characters
         if filename is not None:
+            # Normalize and reduce to basename to strip any path components
             filename = os.path.basename(os.path.normpath(str(filename)))
+            # Enforce strict expected pattern: prefix SM/SI, then digits, then '.', then valid hour
+            import re
+            pattern = r'^(SM|SI)\d+\.(00|03|06|09|12|15|18|21)$'
+            if not re.fullmatch(pattern, filename):
+                raise ValueError(f"Nombre de archivo inválido generado: {filename}")
 
         # Crear directorios (temp y final)
         os.makedirs(self.TEMP_DIR, exist_ok=True)
