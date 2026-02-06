@@ -419,9 +419,9 @@ class ImageProxyModeloView(View):
             # Verificar el dominio contra la lista blanca (solo hostname, sin puerto)
             host = parsed_url.hostname
             if not host:
-            if not hasattr(self, "ALLOWED_DOMAINS") or host not in self.ALLOWED_DOMAINS:
-                logger.warning(f"Dominio no permitido: {host}")
-                return False
+                if not hasattr(self, "ALLOWED_DOMAINS") or host not in self.ALLOWED_DOMAINS:
+                    logger.warning(f"Dominio no permitido: {host}")
+                    return False
                 return False
 
             # Validación de IPs: bloquear loopback, privadas, link-local, multicast y reservadas
