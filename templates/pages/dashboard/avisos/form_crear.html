@@ -2,36 +2,86 @@
 <div class="row">
     <div class="col-md-8 mb-3">
         <label class="form-label required">{{ form.summary.label }}</label>
-        <input type="text" class="form-control" id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
-               placeholder="Resumen" required>
-        {% if form.title.errors %}
-            <span class="text-danger d-block mb-3">{{ form.summary.errors }}</span>
+        <input type="text" class="form-control {% if form.summary.errors %}is-invalid{% endif %}"
+               id="{{ form.summary.id_for_label }}" 
+               name="{{ form.summary.name }}"
+               placeholder="Resumen" 
+               required>
+        {% if form.summary.errors %}
+            <div class="invalid-feedback">{{ form.summary.errors.0 }}</div>
         {% endif %}
     </div>
 
     <div class="col-md-4 mb-3">
         <label class="form-label required">{{ form.valid_until.label }}</label>
-        <input type="datetime-local" class="form-control" id="{{ form.valid_until.id_for_label }}"
+        <input type="datetime-local" class="form-control {% if form.valid_until.errors %}is-invalid{% endif %}" 
+               id="{{ form.valid_until.id_for_label }}"
                name="{{ form.valid_until.name }}" required>
         {% if form.valid_until.errors %}
-            <span class="text-danger d-block mb-3">{{ form.valid_until.errors }}</span>
+            <div class="invalid-feedback">{{ form.valid_until.errors.0 }}</div>
         {% endif %}
     </div>
+    
     <div class="mb-3">
         <label class="form-label required">{{ form.file.label }}</label>
-        <input type="file" class="form-control" id="{{ form.file.id_for_label }}" name="{{ form.file.name }}"
+        <input type="file" class="form-control {% if form.file.errors %}is-invalid{% endif %}" 
+               id="{{ form.file.id_for_label }}" 
+               name="{{ form.file.name }}"
+               accept=".pdf"
                required>
-        {% if form.image.errors %}
-            <span class="text-danger d-block mb-3">{{ form.file.errors }}</span>
+        {% if form.file.errors %}
+            <div class="invalid-feedback">{{ form.file.errors.0 }}</div>
         {% endif %}
-        <div id="pdfPreview" class="preview-container m-3"></div>
-    
+        
+        <!-- Preview container con clases de Tabler -->
+        <div id="pdfPreview" class="preview-container my-3">
+            <div class="pdf-preview-wrapper">
+                <div class="pdf-preview-container card">
+                    <!-- Estado inicial -->
+                    <div class="pdf-preview-initial-state card-body d-flex flex-column align-items-center justify-content-center text-muted">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-file-text mb-2" width="48" height="48" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                            <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                            <path d="M9 9l1 0" />
+                            <path d="M9 13l6 0" />
+                            <path d="M9 17l6 0" />
+                        </svg>
+                        <span class="h4">Selecciona un archivo PDF para previsualizar</span>
+                    </div>
+                    
+                    <!-- Contenedor de páginas (se llena dinámicamente) -->
+                    <div class="pdf-pages-container d-none"></div>
+                    
+                    <!-- Estado de error -->
+                    <div class="pdf-preview-error card-body d-none">
+                        <div class="alert alert-danger mb-0">
+                            <div class="d-flex">
+                                <div class="me-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                        <path d="M12 9v4" />
+                                        <path d="M12 16v.01" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="alert-title">Error al cargar el PDF</h4>
+                                    <div class="text-secondary">No se pudo cargar el archivo PDF. Asegúrate de que sea un archivo válido.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+    
     <div class="col-md-12 mb-3">
         <label class="form-label required">{{ form.email_recipient_list.label }}</label>
         {{ form.email_recipient_list }}
         {% if form.email_recipient_list.errors %}
-            <span class="text-danger d-block mb-3">{{ form.email_recipient_list.errors }}</span>
+            <div class="invalid-feedback">{{ form.email_recipient_list.errors.0 }}</div>
         {% endif %}
     </div>
 </div>
@@ -43,12 +93,91 @@
      style="display: none;">
 </div>
 
-<!-- En el head -->
-<link rel="stylesheet" href="{% static 'dist/css/pdf-form-preview.css' %}">
-
-<!-- Antes de cerrar el body -->
+<!-- JavaScript -->
 <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
 <script src="{% static 'dist/js/pdf-form-preview.js' %}"></script>
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
+    
+    // Inicialización manual (opcional, si quieres más control)
+    document.addEventListener('DOMContentLoaded', function() {
+        const pdfPreviewElement = document.querySelector('[data-pdf-preview]');
+        if (pdfPreviewElement) {
+            const fileInputId = pdfPreviewElement.dataset.fileInput;
+            const previewContainerId = pdfPreviewElement.dataset.previewContainer;
+            
+            const fileInput = document.getElementById(fileInputId);
+            const previewContainer = document.getElementById(previewContainerId);
+            
+            if (fileInput && previewContainer) {
+                fileInput.addEventListener('change', function(e) {
+                    if (this.files && this.files[0]) {
+                        loadPDFPreview(this.files[0], previewContainer);
+                    }
+                });
+            }
+        }
+    });
+    
+    function loadPDFPreview(file, container) {
+        const fileReader = new FileReader();
+        
+        fileReader.onload = function(e) {
+            const typedArray = new Uint8Array(e.target.result);
+            
+            // Mostrar estado de carga
+            const initialState = container.querySelector('.pdf-preview-initial-state');
+            const pagesContainer = container.querySelector('.pdf-pages-container');
+            const errorState = container.querySelector('.pdf-preview-error');
+            
+            initialState.classList.add('d-none');
+            errorState.classList.add('d-none');
+            pagesContainer.classList.remove('d-none');
+            pagesContainer.innerHTML = '<div class="text-center p-4"><div class="spinner-border"></div><p class="mt-2">Cargando PDF...</p></div>';
+            
+            // Cargar PDF
+            pdfjsLib.getDocument(typedArray).promise.then(function(pdf) {
+                pagesContainer.innerHTML = '';
+                
+                // Renderizar todas las páginas
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    pdf.getPage(pageNum).then(function(page) {
+                        const scale = 1.5;
+                        const viewport = page.getViewport({ scale: scale });
+                        
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+                        
+                        page.render(renderContext).promise.then(function() {
+                            const pageDiv = document.createElement('div');
+                            pageDiv.className = 'pdf-preview-page card mb-3';
+                            pageDiv.innerHTML = `
+                                <div class="card-header">
+                                    <span class="text-muted">Página ${pageNum}</span>
+                                </div>
+                                <div class="card-body p-0">
+                                    <img src="${canvas.toDataURL()}" class="img-fluid" alt="Página ${pageNum}">
+                                </div>
+                            `;
+                            pagesContainer.appendChild(pageDiv);
+                        });
+                    });
+                }
+            }).catch(function(error) {
+                console.error('Error al cargar PDF:', error);
+                initialState.classList.add('d-none');
+                pagesContainer.classList.add('d-none');
+                errorState.classList.remove('d-none');
+            });
+        };
+        
+        fileReader.readAsArrayBuffer(file);
+    }
 </script>
