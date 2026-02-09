@@ -3,34 +3,69 @@
 {% block form %}
   <div class="mb-3">
     <label class="form-label required">{{ form.province.label }}</label>
-    <select class="form-select" id="{{ form.province.id_for_label }}" name="{{ form.province.name }}" value="{{ form.province.value }}" autofocus required>
-      {% for province in form.province.field.choices %}
-        <option value="{{ province.0 }}" {% if province.0 == form.province.value %}selected{% endif %}>{{ province.1 }}</option>
+    <select class="form-select {% if form.province.errors %}is-invalid{% endif %}" 
+            id="{{ form.province.id_for_label }}" 
+            name="{{ form.province.name }}" 
+            autofocus 
+            required>
+      <option value="" disabled>Seleccione una provincia</option>
+      {% for value, text in form.province.field.choices %}
+        {% if value %}
+          <option value="{{ value }}" 
+                  {% if form.province.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+            {{ text }}
+          </option>
+        {% endif %}
       {% endfor %}
     </select>
     {% if form.province.errors %}
-      <span class="text-danger d-block mb-3">{{ form.province.errors }}</span>
+      <div class="invalid-feedback">{{ form.province.errors.0 }}</div>
     {% endif %}
   </div>
+  
   <div class="mb-3">
     <label class="form-label required">{{ form.name.label }}</label>
-    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" value="{{ form.name.value }}" placeholder="Nombre"  required>
+    <input type="text" 
+           class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+           id="{{ form.name.id_for_label }}" 
+           name="{{ form.name.name }}" 
+           value="{{ form.name.value|default:'' }}" 
+           placeholder="Nombre" 
+           required>
     {% if form.name.errors %}
-      <span class="text-danger d-block mb-3">{{ form.name.errors }}</span>
+      <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
     {% endif %}
   </div>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.latitude.label }}</label>
-    <input type="float" class="form-control" id="{{ form.latitude.id_for_label }}" name="{{ form.latitude.name }}" value="{{ form.latitude.value }}" placeholder="Latitud" required>
-    {% if form.latitude.errors %}
-      <span class="text-danger d-block mb-3">{{ form.latitude.errors }}</span>
-    {% endif %}
-  </div>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.longitude.label }}</label>
-    <input type="float" class="form-control" id="{{ form.latitude.id_for_label }}" name="{{ form.longitude.name }}" value="{{ form.longitude.value }}" placeholder="Longitud" required>
-    {% if form.longitude.errors %}
-      <span class="text-danger d-block mb-3">{{ form.longitude.errors }}</span>
-    {% endif %}
+  
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.latitude.label }}</label>
+      <input type="number" 
+             step="any" 
+             class="form-control {% if form.latitude.errors %}is-invalid{% endif %}" 
+             id="{{ form.latitude.id_for_label }}" 
+             name="{{ form.latitude.name }}" 
+             value="{{ form.latitude.value|default:'' }}" 
+             placeholder="Ej: 21.3823" 
+             required>
+      {% if form.latitude.errors %}
+        <div class="invalid-feedback">{{ form.latitude.errors.0 }}</div>
+      {% endif %}
+    </div>
+    
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.longitude.label }}</label>
+      <input type="number" 
+             step="any" 
+             class="form-control {% if form.longitude.errors %}is-invalid{% endif %}" 
+             id="{{ form.longitude.id_for_label }}"
+             name="{{ form.longitude.name }}" 
+             value="{{ form.longitude.value|default:'' }}" 
+             placeholder="Ej: -77.8516" 
+             required>
+      {% if form.longitude.errors %}
+        <div class="invalid-feedback">{{ form.longitude.errors.0 }}</div>
+      {% endif %}
+    </div>
   </div>
 {% endblock form %}
