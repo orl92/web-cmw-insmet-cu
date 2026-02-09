@@ -68,7 +68,7 @@ class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_list'] = reverse_lazy('listado_servicios')
         
         # Variables para controlar la visualización en el template
-        context['is_client'] = self.request.user.groups.filter(name='clientes').exists()
+        context['is_client'] = self.request.user.groups.filter(name='Clientes').exists()
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['btn'] = 'Añadir Servicio'
