@@ -51,11 +51,11 @@ class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
         
         # Asignar al grupo "clientes"
         try:
-            clientes_group = Group.objects.get(name='clientes')
+            clientes_group = Group.objects.get(name='Clientes')
             customer.user.groups.add(clientes_group)
         except Group.DoesNotExist:
             # Si no existe, crear el grupo
-            clientes_group = Group.objects.create(name='clientes')
+            clientes_group = Group.objects.create(name='Clientes')
             customer.user.groups.add(clientes_group)
         
         # Registro de acción
