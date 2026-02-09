@@ -1,5 +1,4 @@
 {% extends 'layouts/form.html' %}
-{#{% load my_filters %}#}
 {% load static %}
 {% block title-actions %}
     <div class="col-12 col-md-auto order-md-last">
@@ -17,523 +16,653 @@
 {% block form %}
     <div class="row">
         <div class="col-lg-6">
-            <label class="form-label required">{{ form.date.label }}</label>
-            <div class="mb-3 d-flex align-items-center">
-                <div class="input-group input-group-flat mb-2">
-                    <span class="input-group-text">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                           stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                           stroke-linejoin="round"><path
-                              stroke="none" d="M0 0h24v24H0z" fill="none"></path><path
-                              d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path><path
-                              d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path><path
-                              d="M11 15h1"></path><path
-                              d="M12 15v3"></path>
-                      </svg>
-                    </span>
-                    <input class="form-control" placeholder="Fecha" id="{{ form.date.id_for_label }}" name="{{ form.date.name }}" value="{{ form.date.value|date:'Y-m-d' }}" required>
+            <div class="mb-3">
+                <label class="form-label required">{{ form.date.label }}</label>
+                <div class="mb-3">
+                    <div class="input-group input-group-flat {% if form.date.errors %}is-invalid{% endif %}">
+                        <span class="input-group-text {% if form.date.errors %}border-danger{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon {% if form.date.errors %}text-danger{% endif %}" 
+                                width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                <path d="M16 3v4"></path>
+                                <path d="M8 3v4"></path>
+                                <path d="M4 11h16"></path>
+                                <path d="M11 15h1"></path>
+                                <path d="M12 15v3"></path>
+                            </svg>
+                        </span>
+                        <input class="form-control {% if form.date.errors %}is-invalid{% endif %}" 
+                               placeholder="aaaa-mm-dd" id="{{ form.date.id_for_label }}" 
+                               name="{{ form.date.name }}" value="{{ form.date.value|date:'Y-m-d'|default:'' }}" required>
+                    </div>
                     {% if form.date.errors %}
-                        <span class="text-danger d-block mb-3">{{ form.date.errors }}</span>
+                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
-    <!-- <hr> -->
-    <pre>Costa Norte</pre>
+
+    <h5>Costa Norte</h5>
     <div class="row">
         <div class="col-lg col-md-4">
-            <pre>Temperatura</pre>
+            <h6>Temperatura</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.ntm.label }}</label>
-                <input type="text" class="form-control" id="{{ form.ntm.id_for_label }}" name="{{ form.ntm.name }}"
-                    value="{{ form.ntm.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.ntm.errors %}is-invalid{% endif %}" 
+                       id="{{ form.ntm.id_for_label }}" name="{{ form.ntm.name }}"
+                       value="{{ form.ntm.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.ntm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.ntm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.ntm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nta.label }}</label>
-                <input type="text" class="form-control" id="{{ form.nta.id_for_label }}" name="{{ form.nta.name }}"
-                    value="{{ form.nta.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.nta.errors %}is-invalid{% endif %}" 
+                       id="{{ form.nta.id_for_label }}" name="{{ form.nta.name }}"
+                       value="{{ form.nta.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.nta.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nta.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nta.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.ntn.label }}</label>
-                <input type="text" class="form-control" id="{{ form.ntn.id_for_label }}" name="{{ form.ntn.name }}"
-                    value="{{ form.ntn.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.ntn.errors %}is-invalid{% endif %}" 
+                       id="{{ form.ntn.id_for_label }}" name="{{ form.ntn.name }}"
+                       value="{{ form.ntn.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.ntn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.ntn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.ntn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
 
         <div class="col-lg col-md-4">
-            <pre>Tiempo</pre>
+            <h6>Tiempo</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwm.label }}</label>
-                <select class="form-select" id="{{ form.nwm.id_for_label }}" name="{{ form.nwm.name }}" required>
-                    {% for nwm in form.nwm.field.choices %}
-                        <option value="{{ nwm.0 }}" {% if nwm.0 == form.nwm.value %}selected{% endif %}>{{ nwm.1 }}</option>
+                <select class="form-select {% if form.nwm.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nwm.id_for_label }}" name="{{ form.nwm.name }}" required>
+                    {% for value, text in form.nwm.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nwm.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nwm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwm.errors.0 }}</div>
                 {% endif %}
             </div>            
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwa.label }}</label>
-                <select class="form-select" id="{{ form.nwa.id_for_label }}" name="{{ form.nwa.name }}" required>
-                    {% for nwa in form.nwa.field.choices %}
-                        <option value="{{ nwa.0 }}" {% if nwa.0 == form.nwa.value %}selected{% endif %}>{{ nwa.1 }}</option>
+                <select class="form-select {% if form.nwa.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nwa.id_for_label }}" name="{{ form.nwa.name }}" required>
+                    {% for value, text in form.nwa.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nwa.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nwa.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwa.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwa.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwn.label }}</label>
-                <select class="form-select" id="{{ form.nwn.id_for_label }}" name="{{ form.nwn.name }}" required>
-                    {% for nwn in form.nwn.field.choices %}
-                        <option value="{{ nwn.0 }}" {% if nwn.0 == form.nwn.value %}selected{% endif %}>{{ nwn.1 }}</option>
+                <select class="form-select {% if form.nwn.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nwn.id_for_label }}" name="{{ form.nwn.name }}" required>
+                    {% for value, text in form.nwn.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nwn.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nwn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
 
         <div class="col-lg col-md-4">
-            <pre>Viento (DD)</pre>
+            <h6>Viento (DD)</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwddm.label }}</label>
-                <select class="form-select" id="{{ form.nwddm.id_for_label }}" name="{{ form.nwddm.name }}" required>
-                    {% for nwddm in form.nwddm.field.choices %}
-                        <option value="{{ nwddm.0 }}" {% if nwddm.0 == form.nwddm.value %}selected{% endif %}>{{ nwddm.1 }}</option>
+                <select class="form-select {% if form.nwddm.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nwddm.id_for_label }}" name="{{ form.nwddm.name }}" required>
+                    {% for value, text in form.nwddm.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nwddm.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nwddm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwddm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwddm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwdda.label }}</label>
-                <select class="form-select" id="{{ form.nwdda.id_for_label }}" name="{{ form.nwdda.name }}" required>
-                    {% for nwdda in form.nwdda.field.choices %}
-                        <option value="{{ nwdda.0 }}" {% if nwdda.0 == form.nwdda.value %}selected{% endif %}>{{ nwdda.1 }}</option>
+                <select class="form-select {% if form.nwdda.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nwdda.id_for_label }}" name="{{ form.nwdda.name }}" required>
+                    {% for value, text in form.nwdda.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nwdda.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nwdda.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwdda.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwdda.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwddn.label }}</label>
-                <select class="form-select" id="{{ form.nwddn.id_for_label }}" name="{{ form.nwddn.name }}" required>
-                    {% for nwddn in form.nwddn.field.choices %}
-                        <option value="{{ nwddn.0 }}" {% if nwddn.0 == form.nwddn.value %}selected{% endif %}>{{ nwddn.1 }}</option>
+                <select class="form-select {% if form.nwddn.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nwddn.id_for_label }}" name="{{ form.nwddn.name }}" required>
+                    {% for value, text in form.nwddn.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nwddn.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nwddn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwddn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwddn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
 
         <div class="col-lg col-md-4">
-            <pre>Viento (FF)</pre>
+            <h6>Viento (FF)</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwdfm.label }}</label>
-                <input type="text" class="form-control" id="{{ form.nwdfm.id_for_label }}" name="{{ form.nwdfm.name }}"
-                    value="{{ form.nwdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.nwdfm.errors %}is-invalid{% endif %}" 
+                       id="{{ form.nwdfm.id_for_label }}" name="{{ form.nwdfm.name }}"
+                       value="{{ form.nwdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.nwdfm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwdfm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwdfm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwdfa.label }}</label>
-                <input type="text" class="form-control" id="{{ form.nwdfa.id_for_label }}" name="{{ form.nwdfa.name }}"
-                    value="{{ form.nwdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.nwdfa.errors %}is-invalid{% endif %}" 
+                       id="{{ form.nwdfa.id_for_label }}" name="{{ form.nwdfa.name }}"
+                       value="{{ form.nwdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.nwdfa.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwdfa.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwdfa.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nwdfn.label }}</label>
-                <input type="text" class="form-control" id="{{ form.nwdfn.id_for_label }}" name="{{ form.nwdfn.name }}"
-                    value="{{ form.nwdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.nwdfn.errors %}is-invalid{% endif %}" 
+                       id="{{ form.nwdfn.id_for_label }}" name="{{ form.nwdfn.name }}"
+                       value="{{ form.nwdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.nwdfn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nwdfn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nwdfn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
 
         <div class="col-lg col-md-4">
-            <pre>Mar</pre>
+            <h6>Mar</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nsm.label }}</label>
-                <select class="form-select" id="{{ form.nsm.id_for_label }}" name="{{ form.nsm.name }}" required>
-                    {% for nsm in form.nsm.field.choices %}
-                        <option value="{{ nsm.0 }}" {% if nsm.0 == form.nsm.value %}selected{% endif %}>{{ nsm.1 }}</option>
+                <select class="form-select {% if form.nsm.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nsm.id_for_label }}" name="{{ form.nsm.name }}" required>
+                    {% for value, text in form.nsm.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nsm.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nsm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nsm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nsm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nsa.label }}</label>
-                <select class="form-select" id="{{ form.nsa.id_for_label }}" name="{{ form.nsa.name }}" required>
-                    {% for nsa in form.nsa.field.choices %}
-                        <option value="{{ nsa.0 }}" {% if nsa.0 == form.nsa.value %}selected{% endif %}>{{ nsa.1 }}</option>
+                <select class="form-select {% if form.nsa.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nsa.id_for_label }}" name="{{ form.nsa.name }}" required>
+                    {% for value, text in form.nsa.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nsa.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nsa.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nsa.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nsa.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.nsn.label }}</label>
-                <select class="form-select" id="{{ form.nsn.id_for_label }}" name="{{ form.nsn.name }}" required>
-                    {% for nsn in form.nsn.field.choices %}
-                        <option value="{{ nsn.0 }}" {% if nsn.0 == form.nsn.value %}selected{% endif %}>{{ nsn.1 }}</option>
+                <select class="form-select {% if form.nsn.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nsn.id_for_label }}" name="{{ form.nsn.name }}" required>
+                    {% for value, text in form.nsn.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nsn.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nsn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nsn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nsn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <pre>Interior</pre>
+    <h5 class="mt-4">Interior</h5>
     <div class="row">
         <div class="col-lg col-md-4">
-            <pre>Temperatura</pre>
+            <h6>Temperatura</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.itm.label }}</label>
-                <input type="text" class="form-control" id="{{ form.itm.id_for_label }}" name="{{ form.itm.name }}"
-                    value="{{ form.itm.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.itm.errors %}is-invalid{% endif %}" 
+                       id="{{ form.itm.id_for_label }}" name="{{ form.itm.name }}"
+                       value="{{ form.itm.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.itm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.itm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.itm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.ita.label }}</label>
-                <input type="text" class="form-control" id="{{ form.ita.id_for_label }}" name="{{ form.ita.name }}"
-                    value="{{ form.ita.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.ita.errors %}is-invalid{% endif %}" 
+                       id="{{ form.ita.id_for_label }}" name="{{ form.ita.name }}"
+                       value="{{ form.ita.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.ita.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.ita.errors }}</span>
+                    <div class="invalid-feedback">{{ form.ita.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.itn.label }}</label>
-                <input type="text" class="form-control" id="{{ form.itn.id_for_label }}" name="{{ form.itn.name }}"
-                    value="{{ form.itn.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.itn.errors %}is-invalid{% endif %}" 
+                       id="{{ form.itn.id_for_label }}" name="{{ form.itn.name }}"
+                       value="{{ form.itn.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.itn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.itn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.itn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
 
         <div class="col-lg col-md-4">
-            <pre>Tiempo</pre>
+            <h6>Tiempo</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwm.label }}</label>
-                <select class="form-select" id="{{ form.iwm.id_for_label }}" name="{{ form.iwm.name }}" required>
-                    {% for iwm in form.iwm.field.choices %}
-                        <option value="{{ iwm.0 }}" {% if iwm.0 == form.iwm.value %}selected{% endif %}>{{ iwm.1 }}</option>
+                <select class="form-select {% if form.iwm.errors %}is-invalid{% endif %}" 
+                        id="{{ form.iwm.id_for_label }}" name="{{ form.iwm.name }}" required>
+                    {% for value, text in form.iwm.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.iwm.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.iwm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwa.label }}</label>
-                <select class="form-select" id="{{ form.iwa.id_for_label }}" name="{{ form.iwa.name }}" required>
-                    {% for iwa in form.iwa.field.choices %}
-                        <option value="{{ iwa.0 }}" {% if iwa.0 == form.iwa.value %}selected{% endif %}>{{ iwa.1 }}</option>
+                <select class="form-select {% if form.iwa.errors %}is-invalid{% endif %}" 
+                        id="{{ form.iwa.id_for_label }}" name="{{ form.iwa.name }}" required>
+                    {% for value, text in form.iwa.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.iwa.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.iwa.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwa.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwa.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwn.label }}</label>
-                <select class="form-select" id="{{ form.iwn.id_for_label }}" name="{{ form.iwn.name }}" required>
-                    {% for iwn in form.iwn.field.choices %}
-                        <option value="{{ iwn.0 }}" {% if iwn.0 == form.iwn.value %}selected{% endif %}>{{ iwn.1 }}</option>
+                <select class="form-select {% if form.iwn.errors %}is-invalid{% endif %}" 
+                        id="{{ form.iwn.id_for_label }}" name="{{ form.iwn.name }}" required>
+                    {% for value, text in form.iwn.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.iwn.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.iwn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
 
         <div class="col-lg col-md-4">
-            <pre>Viento (DD)</pre>
+            <h6>Viento (DD)</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwddm.label }}</label>
-                <select class="form-select" id="{{ form.iwddm.id_for_label }}" name="{{ form.iwddm.name }}" required>
-                    {% for iwddm in form.iwddm.field.choices %}
-                        <option value="{{ iwddm.0 }}" {% if iwddm.0 == form.iwddm.value %}selected{% endif %}>{{ iwddm.1 }}</option>
+                <select class="form-select {% if form.iwddm.errors %}is-invalid{% endif %}" 
+                        id="{{ form.iwddm.id_for_label }}" name="{{ form.iwddm.name }}" required>
+                    {% for value, text in form.iwddm.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.iwddm.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.iwddm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwddm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwddm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwdda.label }}</label>
-                <select class="form-select" id="{{ form.iwdda.id_for_label }}" name="{{ form.iwdda.name }}" required>
-                    {% for iwdda in form.iwdda.field.choices %}
-                        <option value="{{ iwdda.0 }}" {% if iwdda.0 == form.iwdda.value %}selected{% endif %}>{{ iwdda.1 }}</option>
+                <select class="form-select {% if form.iwdda.errors %}is-invalid{% endif %}" 
+                        id="{{ form.iwdda.id_for_label }}" name="{{ form.iwdda.name }}" required>
+                    {% for value, text in form.iwdda.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.iwdda.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.iwdda.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwdda.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwdda.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwddn.label }}</label>
-                <select class="form-select" id="{{ form.iwddn.id_for_label }}" name="{{ form.iwddn.name }}" required>
-                    {% for iwddn in form.iwddn.field.choices %}
-                        <option value="{{ iwddn.0 }}" {% if iwddn.0 == form.iwddn.value %}selected{% endif %}>{{ iwddn.1 }}</option>
+                <select class="form-select {% if form.iwddn.errors %}is-invalid{% endif %}" 
+                        id="{{ form.iwddn.id_for_label }}" name="{{ form.iwddn.name }}" required>
+                    {% for value, text in form.iwddn.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.iwddn.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.iwddn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwddn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwddn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
 
         <div class="col-lg col-md-4">
-            <pre>Viento (FF)</pre>
+            <h6>Viento (FF)</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwdfm.label }}</label>
-                <input type="text" class="form-control" id="{{ form.iwdfm.id_for_label }}" name="{{ form.iwdfm.name }}"
-                    value="{{ form.iwdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.iwdfm.errors %}is-invalid{% endif %}" 
+                       id="{{ form.iwdfm.id_for_label }}" name="{{ form.iwdfm.name }}"
+                       value="{{ form.iwdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.iwdfm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwdfm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwdfm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwdfa.label }}</label>
-                <input type="text" class="form-control" id="{{ form.iwdfa.id_for_label }}" name="{{ form.iwdfa.name }}"
-                    value="{{ form.iwdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.iwdfa.errors %}is-invalid{% endif %}" 
+                       id="{{ form.iwdfa.id_for_label }}" name="{{ form.iwdfa.name }}"
+                       value="{{ form.iwdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.iwdfa.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwdfa.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwdfa.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.iwdfn.label }}</label>
-                <input type="text" class="form-control" id="{{ form.iwdfn.id_for_label }}" name="{{ form.iwdfn.name }}"
-                    value="{{ form.iwdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.iwdfn.errors %}is-invalid{% endif %}" 
+                       id="{{ form.iwdfn.id_for_label }}" name="{{ form.iwdfn.name }}"
+                       value="{{ form.iwdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.iwdfn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.iwdfn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.iwdfn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
+
     <!-- Costa Sur -->
-    <pre>Costa Sur</pre>
+    <h5 class="mt-4">Costa Sur</h5>
     <div class="row">
         <!-- Temperatura -->
         <div class="col-lg col-md-4">
-            <pre>Temperatura</pre>
+            <h6>Temperatura</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.stm.label }}</label>
-                <input type="text" class="form-control" id="{{ form.stm.id_for_label }}" name="{{ form.stm.name }}"
-                    value="{{ form.stm.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.stm.errors %}is-invalid{% endif %}" 
+                       id="{{ form.stm.id_for_label }}" name="{{ form.stm.name }}"
+                       value="{{ form.stm.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.stm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.stm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.stm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.sta.label }}</label>
-                <input type="text" class="form-control" id="{{ form.sta.id_for_label }}" name="{{ form.sta.name }}"
-                    value="{{ form.sta.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.sta.errors %}is-invalid{% endif %}" 
+                       id="{{ form.sta.id_for_label }}" name="{{ form.sta.name }}"
+                       value="{{ form.sta.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.sta.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.sta.errors }}</span>
+                    <div class="invalid-feedback">{{ form.sta.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.stn.label }}</label>
-                <input type="text" class="form-control" id="{{ form.stn.id_for_label }}" name="{{ form.stn.name }}"
-                    value="{{ form.stn.value|default_if_none:'' }}"placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.stn.errors %}is-invalid{% endif %}" 
+                       id="{{ form.stn.id_for_label }}" name="{{ form.stn.name }}"
+                       value="{{ form.stn.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.stn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.stn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.stn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <!-- Tiempo -->
         <div class="col-lg col-md-4">
-            <pre>Tiempo</pre>
+            <h6>Tiempo</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swm.label }}</label>
-                <select class="form-select" id="{{ form.swm.id_for_label }}" name="{{ form.swm.name }}" required>
-                    {% for swm in form.swm.field.choices %}
-                        <option value="{{ swm.0 }}" {% if swm.0 == form.swm.value %}selected{% endif %}>{{ swm.1 }}</option>
+                <select class="form-select {% if form.swm.errors %}is-invalid{% endif %}" 
+                        id="{{ form.swm.id_for_label }}" name="{{ form.swm.name }}" required>
+                    {% for value, text in form.swm.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.swm.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.swm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swa.label }}</label>
-                <select class="form-select" id="{{ form.swa.id_for_label }}" name="{{ form.swa.name }}" required>
-                    {% for swa in form.swa.field.choices %}
-                        <option value="{{ swa.0 }}" {% if swa.0 == form.swa.value %}selected{% endif %}>{{ swa.1 }}</option>
+                <select class="form-select {% if form.swa.errors %}is-invalid{% endif %}" 
+                        id="{{ form.swa.id_for_label }}" name="{{ form.swa.name }}" required>
+                    {% for value, text in form.swa.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.swa.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.swa.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swa.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swa.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swn.label }}</label>
-                <select class="form-select" id="{{ form.swn.id_for_label }}" name="{{ form.swn.name }}" required>
-                    {% for swn in form.swn.field.choices %}
-                        <option value="{{ swn.0 }}" {% if swn.0 == form.swn.value %}selected{% endif %}>{{ swn.1 }}</option>
+                <select class="form-select {% if form.swn.errors %}is-invalid{% endif %}" 
+                        id="{{ form.swn.id_for_label }}" name="{{ form.swn.name }}" required>
+                    {% for value, text in form.swn.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.swn.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.swn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <!-- Viento (DD) -->
         <div class="col-lg col-md-4">
-            <pre>Viento (DD)</pre>
+            <h6>Viento (DD)</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swddm.label }}</label>
-                <select class="form-select" id="{{ form.swddm.id_for_label }}" name="{{ form.swddm.name }}" required>
-                    {% for swddm in form.swddm.field.choices %}
-                        <option value="{{ swddm.0 }}" {% if swddm.0 == form.swddm.value %}selected{% endif %}>{{ swddm.1 }}</option>
+                <select class="form-select {% if form.swddm.errors %}is-invalid{% endif %}" 
+                        id="{{ form.swddm.id_for_label }}" name="{{ form.swddm.name }}" required>
+                    {% for value, text in form.swddm.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.swddm.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.swddm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swddm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swddm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swdda.label }}</label>
-                <select class="form-select" id="{{ form.swdda.id_for_label }}" name="{{ form.swdda.name }}" required>
-                    {% for swdda in form.swdda.field.choices %}
-                        <option value="{{ swdda.0 }}" {% if swdda.0 == form.swdda.value %}selected{% endif %}>{{ swdda.1 }}</option>
+                <select class="form-select {% if form.swdda.errors %}is-invalid{% endif %}" 
+                        id="{{ form.swdda.id_for_label }}" name="{{ form.swdda.name }}" required>
+                    {% for value, text in form.swdda.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.swdda.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.swdda.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swdda.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swdda.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swddn.label }}</label>
-                <select class="form-select" id="{{ form.swddn.id_for_label }}" name="{{ form.swddn.name }}" required>
-                    {% for swddn in form.swddn.field.choices %}
-                        <option value="{{ swddn.0 }}" {% if swddn.0 == form.swddn.value %}selected{% endif %}>{{ swddn.1 }}</option>
+                <select class="form-select {% if form.swddn.errors %}is-invalid{% endif %}" 
+                        id="{{ form.swddn.id_for_label }}" name="{{ form.swddn.name }}" required>
+                    {% for value, text in form.swddn.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.swddn.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.swddn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swddn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swddn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <!-- Viento (FF) -->
         <div class="col-lg col-md-4">
-            <pre>Viento (FF)</pre>
+            <h6>Viento (FF)</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swdfm.label }}</label>
-                <input type="text" class="form-control" id="{{ form.swdfm.id_for_label }}" name="{{ form.swdfm.name }}"
-                    value="{{ form.swdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.swdfm.errors %}is-invalid{% endif %}" 
+                       id="{{ form.swdfm.id_for_label }}" name="{{ form.swdfm.name }}"
+                       value="{{ form.swdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.swdfm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swdfm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swdfm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swdfa.label }}</label>
-                <input type="text" class="form-control" id="{{ form.swdfa.id_for_label }}" name="{{ form.swdfa.name }}"
-                    value="{{ form.swdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.swdfa.errors %}is-invalid{% endif %}" 
+                       id="{{ form.swdfa.id_for_label }}" name="{{ form.swdfa.name }}"
+                       value="{{ form.swdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.swdfa.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swdfa.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swdfa.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.swdfn.label }}</label>
-                <input type="text" class="form-control" id="{{ form.swdfn.id_for_label }}" name="{{ form.swdfn.name }}"
-                    value="{{ form.swdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                <input type="text" class="form-control {% if form.swdfn.errors %}is-invalid{% endif %}" 
+                       id="{{ form.swdfn.id_for_label }}" name="{{ form.swdfn.name }}"
+                       value="{{ form.swdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
                 {% if form.swdfn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.swdfn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.swdfn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <!-- Mar -->
         <div class="col-lg col-md-4">
-            <pre>Mar</pre>
+            <h6>Mar</h6>
             <div class="mb-3">
                 <label class="form-label required">{{ form.ssm.label }}</label>
-                <select class="form-select" id="{{ form.ssm.id_for_label }}" name="{{ form.ssm.name }}" required>
-                    {% for ssm in form.ssm.field.choices %}
-                        <option value="{{ ssm.0 }}" {% if ssm.0 == form.ssm.value %}selected{% endif %}>{{ ssm.1 }}</option>
+                <select class="form-select {% if form.ssm.errors %}is-invalid{% endif %}" 
+                        id="{{ form.ssm.id_for_label }}" name="{{ form.ssm.name }}" required>
+                    {% for value, text in form.ssm.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.ssm.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.ssm.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.ssm.errors }}</span>
+                    <div class="invalid-feedback">{{ form.ssm.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.ssa.label }}</label>
-                <select class="form-select" id="{{ form.ssa.id_for_label }}" name="{{ form.ssa.name }}" required>
-                    {% for ssa in form.ssa.field.choices %}
-                        <option value="{{ ssa.0 }}" {% if ssa.0 == form.ssa.value %}selected{% endif %}>{{ ssa.1 }}</option>
+                <select class="form-select {% if form.ssa.errors %}is-invalid{% endif %}" 
+                        id="{{ form.ssa.id_for_label }}" name="{{ form.ssa.name }}" required>
+                    {% for value, text in form.ssa.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.ssa.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.ssa.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.ssa.errors }}</span>
+                    <div class="invalid-feedback">{{ form.ssa.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="mb-3">
                 <label class="form-label required">{{ form.ssn.label }}</label>
-                <select class="form-select" id="{{ form.ssn.id_for_label }}" name="{{ form.ssn.name }}" required>
-                    {% for ssn in form.ssn.field.choices %}
-                        <option value="{{ ssn.0 }}" {% if ssn.0 == form.ssn.value %}selected{% endif %}>{{ ssn.1 }}</option>
+                <select class="form-select {% if form.ssn.errors %}is-invalid{% endif %}" 
+                        id="{{ form.ssn.id_for_label }}" name="{{ form.ssn.name }}" required>
+                    {% for value, text in form.ssn.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.ssn.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.ssn.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.ssn.errors }}</span>
+                    <div class="invalid-feedback">{{ form.ssn.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
+
     <!-- Pronóstico Extendido -->
-    <pre>Pronóstico Extendido</pre>
+    <h5 class="mt-4 mb-3">Pronóstico Extendido</h5>
+    
+    <!-- Día 1 -->
+    <h6>Día 1</h6>
     <div class="row">
         <div class="col-lg col-md-4">
-            <label class="form-label required">{{ form.day1_date.label }}</label>
-            <div class="mb-3 d-flex align-items-center">
-                <div class="input-group input-group-flat mb-2">
-                    <span class="input-group-text">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                           stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                           stroke-linejoin="round"><path
-                              stroke="none" d="M0 0h24v24H0z" fill="none"></path><path
-                              d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path><path
-                              d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path><path
-                              d="M11 15h1"></path><path
-                              d="M12 15v3"></path>
-                      </svg>
-                    </span>
-                    <input class="form-control" placeholder="aaaa-mm-dd" id="{{ form.day1_date.id_for_label }}" name="{{ form.day1_date.name }}" value="{{ form.day1_date.value|date:'Y-m-d' }}" required>
+            <div class="mb-3">
+                <label class="form-label required">{{ form.day1_date.label }}</label>
+                <div class="mb-3">
+                    <div class="input-group input-group-flat {% if form.day1_date.errors %}is-invalid{% endif %}">
+                        <span class="input-group-text {% if form.day1_date.errors %}border-danger{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon {% if form.day1_date.errors %}text-danger{% endif %}" 
+                                width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                <path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path>
+                                <path d="M11 15h1"></path><path d="M12 15v3"></path>
+                            </svg>
+                        </span>
+                        <input class="form-control {% if form.day1_date.errors %}is-invalid{% endif %}" 
+                               placeholder="aaaa-mm-dd" id="{{ form.day1_date.id_for_label }}" 
+                               name="{{ form.day1_date.name }}" value="{{ form.day1_date.value|date:'Y-m-d'|default:'' }}" required>
+                    </div>
                     {% if form.day1_date.errors %}
-                        <span class="text-danger d-block mb-3">{{ form.day1_date.errors }}</span>
+                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day1_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -541,57 +670,69 @@
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day1_min_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day1_min_temp.id_for_label }}"
-                       name="{{ form.day1_min_temp.name }}" value="{{ form.day1_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day1_min_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day1_min_temp.id_for_label }}" name="{{ form.day1_min_temp.name }}" 
+                       value="{{ form.day1_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day1_min_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day1_min_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day1_min_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day1_max_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day1_max_temp.id_for_label }}"
-                       name="{{ form.day1_max_temp.name }}" value="{{ form.day1_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day1_max_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day1_max_temp.id_for_label }}" name="{{ form.day1_max_temp.name }}" 
+                       value="{{ form.day1_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day1_max_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day1_max_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day1_max_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day1_weather.label }}</label>
-                <select class="form-select" id="{{ form.day1_weather.id_for_label }}"
-                        name="{{ form.day1_weather.name }}" required>
-                    {% for day1_weather in form.day1_weather.field.choices %}
-                        <option value="{{ day1_weather.0 }}" {% if day1_weather.0 == form.day1_weather.value %}selected{% endif %}>{{ day1_weather.1 }}</option>
+                <select class="form-select {% if form.day1_weather.errors %}is-invalid{% endif %}" 
+                        id="{{ form.day1_weather.id_for_label }}" name="{{ form.day1_weather.name }}" required>
+                    {% for value, text in form.day1_weather.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.day1_weather.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.day1_weather.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day1_weather.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day1_weather.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Día 2 -->
+    <h6 class="mt-3">Día 2</h6>
     <div class="row">
         <div class="col-lg col-md-4">
-            <label class="form-label required">{{ form.day2_date.label }}</label>
-            <div class="mb-3 d-flex align-items-center">
-                <div class="input-group input-group-flat mb-2">
-                    <span class="input-group-text">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                           stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                           stroke-linejoin="round"><path
-                              stroke="none" d="M0 0h24v24H0z" fill="none"></path><path
-                              d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path><path
-                              d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path><path
-                              d="M11 15h1"></path><path
-                              d="M12 15v3"></path>
-                      </svg>
-                    </span>
-                    <input class="form-control" placeholder="aaaa-mm-dd" id="{{ form.day2_date.id_for_label }}" name="{{ form.day2_date.name }}" value="{{ form.day2_date.value|date:'Y-m-d' }}" required>
+            <div class="mb-3">
+                <label class="form-label required">{{ form.day2_date.label }}</label>
+                <div class="mb-3">
+                    <div class="input-group input-group-flat {% if form.day2_date.errors %}is-invalid{% endif %}">
+                        <span class="input-group-text {% if form.day2_date.errors %}border-danger{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon {% if form.day2_date.errors %}text-danger{% endif %}" 
+                                width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                <path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path>
+                                <path d="M11 15h1"></path><path d="M12 15v3"></path>
+                            </svg>
+                        </span>
+                        <input class="form-control {% if form.day2_date.errors %}is-invalid{% endif %}" 
+                               placeholder="aaaa-mm-dd" id="{{ form.day2_date.id_for_label }}" 
+                               name="{{ form.day2_date.name }}" value="{{ form.day2_date.value|date:'Y-m-d'|default:'' }}" required>
+                    </div>
                     {% if form.day2_date.errors %}
-                        <span class="text-danger d-block mb-3">{{ form.day2_date.errors }}</span>
+                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day2_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -599,57 +740,69 @@
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day2_min_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day2_min_temp.id_for_label }}"
-                       name="{{ form.day2_min_temp.name }}" value="{{ form.day2_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day2_min_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day2_min_temp.id_for_label }}" name="{{ form.day2_min_temp.name }}" 
+                       value="{{ form.day2_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day2_min_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day2_min_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day2_min_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day2_max_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day2_max_temp.id_for_label }}"
-                       name="{{ form.day2_max_temp.name }}" value="{{ form.day2_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day2_max_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day2_max_temp.id_for_label }}" name="{{ form.day2_max_temp.name }}" 
+                       value="{{ form.day2_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day2_max_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day2_max_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day2_max_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day2_weather.label }}</label>
-                <select class="form-select" id="{{ form.day2_weather.id_for_label }}"
-                        name="{{ form.day2_weather.name }}" required>
-                    {% for day2_weather in form.day2_weather.field.choices %}
-                        <option value="{{ day2_weather.0 }}" {% if day2_weather.0 == form.day2_weather.value %}selected{% endif %}>{{ day2_weather.1 }}</option>
+                <select class="form-select {% if form.day2_weather.errors %}is-invalid{% endif %}" 
+                        id="{{ form.day2_weather.id_for_label }}" name="{{ form.day2_weather.name }}" required>
+                    {% for value, text in form.day2_weather.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.day2_weather.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.day2_weather.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day2_weather.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day2_weather.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Día 3 -->
+    <h6 class="mt-3">Día 3</h6>
     <div class="row">
         <div class="col-lg col-md-4">
-            <label class="form-label required">{{ form.day3_date.label }}</label>
-            <div class="mb-3 d-flex align-items-center">
-                <div class="input-group input-group-flat mb-2">
-                    <span class="input-group-text">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                           stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                           stroke-linejoin="round"><path
-                              stroke="none" d="M0 0h24v24H0z" fill="none"></path><path
-                              d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path><path
-                              d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path><path
-                              d="M11 15h1"></path><path
-                              d="M12 15v3"></path>
-                      </svg>
-                    </span>
-                    <input class="form-control" placeholder="aaaa-mm-dd" id="{{ form.day3_date.id_for_label }}" name="{{ form.day3_date.name }}" value="{{ form.day3_date.value|date:'Y-m-d' }}" required>
+            <div class="mb-3">
+                <label class="form-label required">{{ form.day3_date.label }}</label>
+                <div class="mb-3">
+                    <div class="input-group input-group-flat {% if form.day3_date.errors %}is-invalid{% endif %}">
+                        <span class="input-group-text {% if form.day3_date.errors %}border-danger{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon {% if form.day3_date.errors %}text-danger{% endif %}" 
+                                width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                <path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path>
+                                <path d="M11 15h1"></path><path d="M12 15v3"></path>
+                            </svg>
+                        </span>
+                        <input class="form-control {% if form.day3_date.errors %}is-invalid{% endif %}" 
+                               placeholder="aaaa-mm-dd" id="{{ form.day3_date.id_for_label }}" 
+                               name="{{ form.day3_date.name }}" value="{{ form.day3_date.value|date:'Y-m-d'|default:'' }}" required>
+                    </div>
                     {% if form.day3_date.errors %}
-                        <span class="text-danger d-block mb-3">{{ form.day3_date.errors }}</span>
+                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day3_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -657,57 +810,69 @@
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day3_min_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day3_min_temp.id_for_label }}"
-                       name="{{ form.day3_min_temp.name }}" value="{{ form.day3_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day3_min_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day3_min_temp.id_for_label }}" name="{{ form.day3_min_temp.name }}" 
+                       value="{{ form.day3_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day3_min_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day3_min_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day3_min_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day3_max_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day3_max_temp.id_for_label }}"
-                       name="{{ form.day3_max_temp.name }}" value="{{ form.day3_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day3_max_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day3_max_temp.id_for_label }}" name="{{ form.day3_max_temp.name }}" 
+                       value="{{ form.day3_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day3_max_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day3_max_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day3_max_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day3_weather.label }}</label>
-                <select class="form-select" id="{{ form.day3_weather.id_for_label }}"
-                        name="{{ form.day3_weather.name }}" required>
-                    {% for day3_weather in form.day3_weather.field.choices %}
-                        <option value="{{ day3_weather.0 }}" {% if day3_weather.0 == form.day3_weather.value %}selected{% endif %}>{{ day3_weather.1 }}</option>
+                <select class="form-select {% if form.day3_weather.errors %}is-invalid{% endif %}" 
+                        id="{{ form.day3_weather.id_for_label }}" name="{{ form.day3_weather.name }}" required>
+                    {% for value, text in form.day3_weather.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.day3_weather.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.day3_weather.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day3_weather.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day3_weather.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Día 4 -->
+    <h6 class="mt-3">Día 4</h6>
     <div class="row">
         <div class="col-lg col-md-4">
-            <label class="form-label required">{{ form.day4_date.label }}</label>
-            <div class="mb-3 d-flex align-items-center">
-                <div class="input-group input-group-flat mb-2">
-                    <span class="input-group-text">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                           stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                           stroke-linejoin="round"><path
-                              stroke="none" d="M0 0h24v24H0z" fill="none"></path><path
-                              d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path><path
-                              d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path><path
-                              d="M11 15h1"></path><path
-                              d="M12 15v3"></path>
-                      </svg>
-                    </span>
-                    <input class="form-control" placeholder="aaaa-mm-dd" id="{{ form.day4_date.id_for_label }}" name="{{ form.day4_date.name }}" value="{{ form.day4_date.value|date:'Y-m-d' }}" required>
+            <div class="mb-3">
+                <label class="form-label required">{{ form.day4_date.label }}</label>
+                <div class="mb-3">
+                    <div class="input-group input-group-flat {% if form.day4_date.errors %}is-invalid{% endif %}">
+                        <span class="input-group-text {% if form.day4_date.errors %}border-danger{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon {% if form.day4_date.errors %}text-danger{% endif %}" 
+                                width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                <path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path>
+                                <path d="M11 15h1"></path><path d="M12 15v3"></path>
+                            </svg>
+                        </span>
+                        <input class="form-control {% if form.day4_date.errors %}is-invalid{% endif %}" 
+                               placeholder="aaaa-mm-dd" id="{{ form.day4_date.id_for_label }}" 
+                               name="{{ form.day4_date.name }}" value="{{ form.day4_date.value|date:'Y-m-d'|default:'' }}" required>
+                    </div>
                     {% if form.day4_date.errors %}
-                        <span class="text-danger d-block mb-3">{{ form.day4_date.errors }}</span>
+                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day4_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -715,57 +880,69 @@
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day4_min_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day4_min_temp.id_for_label }}"
-                       name="{{ form.day4_min_temp.name }}" value="{{ form.day4_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day4_min_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day4_min_temp.id_for_label }}" name="{{ form.day4_min_temp.name }}" 
+                       value="{{ form.day4_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day4_min_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day4_min_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day4_min_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day4_max_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day4_max_temp.id_for_label }}"
-                       name="{{ form.day4_max_temp.name }}" value="{{ form.day4_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day4_max_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day4_max_temp.id_for_label }}" name="{{ form.day4_max_temp.name }}" 
+                       value="{{ form.day4_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day4_max_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day4_max_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day4_max_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day4_weather.label }}</label>
-                <select class="form-select" id="{{ form.day4_weather.id_for_label }}"
-                        name="{{ form.day4_weather.name }}" required>
-                    {% for day4_weather in form.day4_weather.field.choices %}
-                        <option value="{{ day4_weather.0 }}" {% if day4_weather.0 == form.day4_weather.value %}selected{% endif %}>{{ day4_weather.1 }}</option>
+                <select class="form-select {% if form.day4_weather.errors %}is-invalid{% endif %}" 
+                        id="{{ form.day4_weather.id_for_label }}" name="{{ form.day4_weather.name }}" required>
+                    {% for value, text in form.day4_weather.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.day4_weather.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.day4_weather.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day4_weather.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day4_weather.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Día 5 -->
+    <h6 class="mt-3">Día 5</h6>
     <div class="row">
         <div class="col-lg col-md-4">
-            <label class="form-label required">{{ form.day5_date.label }}</label>
-            <div class="mb-3 d-flex align-items-center">
-                <div class="input-group input-group-flat mb-2">
-                    <span class="input-group-text">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                           stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                           stroke-linejoin="round"><path
-                              stroke="none" d="M0 0h24v24H0z" fill="none"></path><path
-                              d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path><path
-                              d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path><path
-                              d="M11 15h1"></path><path
-                              d="M12 15v3"></path>
-                      </svg>
-                    </span>
-                    <input class="form-control" placeholder="aaaa-mm-dd" id="{{ form.day5_date.id_for_label }}" name="{{ form.day5_date.name }}" value="{{ form.day5_date.value|date:'Y-m-d' }}" required>
+            <div class="mb-3">
+                <label class="form-label required">{{ form.day5_date.label }}</label>
+                <div class="mb-3">
+                    <div class="input-group input-group-flat {% if form.day5_date.errors %}is-invalid{% endif %}">
+                        <span class="input-group-text {% if form.day5_date.errors %}border-danger{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon {% if form.day5_date.errors %}text-danger{% endif %}" 
+                                width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                <path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path>
+                                <path d="M11 15h1"></path><path d="M12 15v3"></path>
+                            </svg>
+                        </span>
+                        <input class="form-control {% if form.day5_date.errors %}is-invalid{% endif %}" 
+                               placeholder="aaaa-mm-dd" id="{{ form.day5_date.id_for_label }}" 
+                               name="{{ form.day5_date.name }}" value="{{ form.day5_date.value|date:'Y-m-d'|default:'' }}" required>
+                    </div>
                     {% if form.day5_date.errors %}
-                        <span class="text-danger d-block mb-3">{{ form.day5_date.errors }}</span>
+                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day5_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -773,116 +950,138 @@
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day5_min_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day5_min_temp.id_for_label }}"
-                       name="{{ form.day5_min_temp.name }}" value="{{ form.day5_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day5_min_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day5_min_temp.id_for_label }}" name="{{ form.day5_min_temp.name }}" 
+                       value="{{ form.day5_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day5_min_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day5_min_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day5_min_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day5_max_temp.label }}</label>
-                <input type="text" class="form-control" id="{{ form.day5_max_temp.id_for_label }}"
-                       name="{{ form.day5_max_temp.name }}" value="{{ form.day5_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                <input type="text" class="form-control {% if form.day5_max_temp.errors %}is-invalid{% endif %}" 
+                       id="{{ form.day5_max_temp.id_for_label }}" name="{{ form.day5_max_temp.name }}" 
+                       value="{{ form.day5_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
                 {% if form.day5_max_temp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day5_max_temp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day5_max_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.day5_weather.label }}</label>
-                <select class="form-select" id="{{ form.day5_weather.id_for_label }}"
-                        name="{{ form.day5_weather.name }}" required>
-                    {% for day5_weather in form.day5_weather.field.choices %}
-                        <option value="{{ day5_weather.0 }}" {% if day5_weather.0 == form.day5_weather.value %}selected{% endif %}>{{ day5_weather.1 }}</option>
+                <select class="form-select {% if form.day5_weather.errors %}is-invalid{% endif %}" 
+                        id="{{ form.day5_weather.id_for_label }}" name="{{ form.day5_weather.name }}" required>
+                    {% for value, text in form.day5_weather.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.day5_weather.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.day5_weather.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.day5_weather.errors }}</span>
+                    <div class="invalid-feedback">{{ form.day5_weather.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
     </div>
+
     <!-- Datos Astronómicos -->
-    <pre>Datos Astronómicos</pre>
+    <h5 class="mt-4 mb-3">Datos Astronómicos</h5>
     <div class="row">
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.lp.label }}</label>
-                <select class="form-select" id="{{ form.lp.id_for_label }}" name="{{ form.lp.name }}" required>
-                    {% for lp in form.lp.field.choices %}
-                        <option value="{{ lp.0 }}" {% if lp.0 == form.lp.value %}selected{% endif %}>{{ lp.1 }}</option>
+                <select class="form-select {% if form.lp.errors %}is-invalid{% endif %}" 
+                        id="{{ form.lp.id_for_label }}" name="{{ form.lp.name }}" required>
+                    {% for value, text in form.lp.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.lp.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.lp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.lp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.lp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.nlp.label }}</label>
-                <select class="form-select" id="{{ form.nlp.id_for_label }}" name="{{ form.nlp.name }}" required>
-                    {% for nlp in form.nlp.field.choices %}
-                        <option value="{{ nlp.0 }}" {% if nlp.0 == form.nlp.value %}selected{% endif %}>{{ nlp.1 }}</option>
+                <select class="form-select {% if form.nlp.errors %}is-invalid{% endif %}" 
+                        id="{{ form.nlp.id_for_label }}" name="{{ form.nlp.name }}" required>
+                    {% for value, text in form.nlp.field.choices %}
+                        <option value="{{ value }}" 
+                                {% if form.nlp.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ text }}
+                        </option>
                     {% endfor %}
                 </select>
                 {% if form.nlp.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nlp.errors }}</span>
+                    <div class="invalid-feedback">{{ form.nlp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
-            <label class="form-label required">{{ form.nlpd.label }}</label>
-            <div class="mb-3 d-flex align-items-center">
-                <div class="input-group input-group-flat mb-2">
-                    <span class="input-group-text">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                           stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                           stroke-linejoin="round"><path
-                              stroke="none" d="M0 0h24v24H0z" fill="none"></path><path
-                              d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path><path
-                              d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path><path
-                              d="M11 15h1"></path><path
-                              d="M12 15v3"></path>
-                      </svg>
-                    </span>
-                    <input class="form-control" placeholder="aaaa-mm-dd" id="{{ form.nlpd.id_for_label }}" name="{{ form.nlpd.name }}" value="{{ form.nlpd.value|date:'Y-m-d' }}" required>
+            <div class="mb-3">
+                <label class="form-label required">{{ form.nlpd.label }}</label>
+                <div class="mb-3">
+                    <div class="input-group input-group-flat {% if form.nlpd.errors %}is-invalid{% endif %}">
+                        <span class="input-group-text {% if form.nlpd.errors %}border-danger{% endif %}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon {% if form.nlpd.errors %}text-danger{% endif %}" 
+                                width="24" height="24" viewBox="0 0 24 24"
+                                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                                <path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M4 11h16"></path>
+                                <path d="M11 15h1"></path><path d="M12 15v3"></path>
+                            </svg>
+                        </span>
+                        <input class="form-control {% if form.nlpd.errors %}is-invalid{% endif %}" 
+                               placeholder="aaaa-mm-dd" id="{{ form.nlpd.id_for_label }}" 
+                               name="{{ form.nlpd.name }}" value="{{ form.nlpd.value|date:'Y-m-d'|default:'' }}" required>
+                    </div>
                     {% if form.nlpd.errors %}
-                        <span class="text-danger d-block mb-3">{{ form.nlpd.errors }}</span>
+                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.nlpd.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
         </div>
-        <div class="col-lg col-md-4">
+        <!-- Campos de hora con iconos -->
+         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.sunrise.label }}</label>
-                <input type="time" class="form-control" id="{{ form.sunrise.id_for_label }}"
-                       name="{{ form.sunrise.name }}" value="{{ form.sunrise.value|default_if_none:'' }}" required>
+                <input type="time" class="form-control {% if form.sunrise.errors %}is-invalid{% endif %}" 
+                       id="{{ form.sunrise.id_for_label }}" name="{{ form.sunrise.name }}" 
+                       value="{{ form.sunrise.value|default_if_none:'' }}" required>
                 {% if form.sunrise.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.sunrise.errors }}</span>
+                    <div class="invalid-feedback">{{ form.sunrise.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.sunset.label }}</label>
-                <input type="time" class="form-control" id="{{ form.sunset.id_for_label }}"
-                       name="{{ form.sunset.name }}" value="{{ form.sunset.value|default_if_none:'' }}" required>
+                <input type="time" class="form-control {% if form.sunset.errors %}is-invalid{% endif %}" 
+                       id="{{ form.sunset.id_for_label }}" name="{{ form.sunset.name }}" 
+                       value="{{ form.sunset.value|default_if_none:'' }}" required>
                 {% if form.sunset.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.sunset.errors }}</span>
+                    <div class="invalid-feedback">{{ form.sunset.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
         <div class="col-lg col-md-4">
             <div class="mb-3">
                 <label class="form-label required">{{ form.uv_index.label }}</label>
-                <input type="text" class="form-control" id="{{ form.uv_index.id_for_label }}"
-                       name="{{ form.uv_index.name }}" value="{{ form.uv_index.value|default_if_none:'' }}" placeholder="0" required>
+                <input type="text" class="form-control {% if form.uv_index.errors %}is-invalid{% endif %}" 
+                       id="{{ form.uv_index.id_for_label }}" name="{{ form.uv_index.name }}" 
+                       value="{{ form.uv_index.value|default_if_none:'' }}" placeholder="0" required>
                 {% if form.uv_index.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.uv_index.errors }}</span>
+                    <div class="invalid-feedback">{{ form.uv_index.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
