@@ -8,12 +8,12 @@ from dashboard.models import Service
 
 @receiver(post_migrate)
 def create_clientes_group(sender, **kwargs):
-    # Crear grupo "clientes" automáticamente al hacer migraciones
+    # Crear grupo "Clientes" automáticamente al hacer migraciones
     if sender.name == 'accounts':
-        group, created = Group.objects.get_or_create(name='clientes')
+        group, created = Group.objects.get_or_create(name='Clientes')
         
         if created:
-            # Asignar permisos básicos para clientes
+            # Asignar permisos básicos para Clientes
             # Solo permiso para ver servicios
             service_content_type = ContentType.objects.get_for_model(Service)
             
@@ -23,6 +23,6 @@ def create_clientes_group(sender, **kwargs):
                     codename='view_service'
                 )
                 group.permissions.add(view_service_perm)
-                print("✓ Grupo 'clientes' creado con permiso para ver servicios")
+                print("✓ Grupo 'Clientes' creado con permiso para ver servicios")
             except Permission.DoesNotExist:
                 print("⚠ Permiso 'view_service' no encontrado")
