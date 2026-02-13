@@ -331,7 +331,6 @@ class ImageProxyModeloView(View):
     # Lista blanca de dominios permitidos
     ALLOWED_DOMAINS = [
         'apimet.cmw.insmet.cu',
-        'modelo.cmw.insmet.cu',  # ← Agregar este también
         'localhost',
         '127.0.0.1'
     ]
@@ -378,67 +377,77 @@ class ImageProxyModeloView(View):
 
     def _get_target_url(self, image_url, image_path):
         """
-        Construye la URL de destino a partir de los parámetros recibidos.
-        Para evitar SSRF, solo se permiten URL con esquemas http/https y
-        cuyo host esté en la lista blanca ALLOWED_DOMAINS.
+        Construye la URL de destino a partir de image_url o image_path.
+        Si image_path es una URL absoluta, se usa directamente.
         """
         if image_url:
-            # Validar la URL proporcionada directamente
             parsed = urlparse(unquote(image_url))
             if parsed.scheme not in ("http", "https"):
                 logger.warning(f"Esquema no permitido en image_url: {parsed.scheme}")
                 return None
-
             host = parsed.hostname
-            if not host or not hasattr(self, "ALLOWED_DOMAINS") or host not in self.ALLOWED_DOMAINS:
+            if not host or host not in self.ALLOWED_DOMAINS:
                 logger.warning(f"Host no permitido en image_url: {host}")
                 return None
-
-            # URL válida según las primeras comprobaciones
             return parsed.geturl()
+
         elif image_path:
-            base_url = getattr(settings, 'IMAGE_SERVER_BASE_URL', 'http://apimet.cmw.insmet.cu')
-            # Limpiar el path para evitar dobles barras
             clean_path = unquote(image_path).lstrip('/')
-            return f"{base_url.rstrip('/')}/{clean_path}"
+            # Si es una URL absoluta, tratarla como image_url
+            if clean_path.startswith(('http://', 'https://')):
+                parsed = urlparse(clean_path)
+                if parsed.scheme not in ("http", "https"):
+                    logger.warning(f"Esquema no permitido en image_path absoluto: {parsed.scheme}")
+                    return None
+                host = parsed.hostname
+                if not host or host not in self.ALLOWED_DOMAINS:
+                    logger.warning(f"Host no permitido en image_path absoluto: {host}")
+                    return None
+                return clean_path
+            else:
+                base_url = getattr(settings, 'IMAGE_SERVER_BASE_URL', 'http://apimet.cmw.insmet.cu')
+                return f"{base_url.rstrip('/')}/{clean_path}"
+
         return None
 
     def _is_valid_url(self, url):
         """
         Valida que la URL sea segura y esté permitida.
-        Incluye comprobación de esquema, dominio en lista blanca
-        y bloqueo de rangos de IP privadas/internas.
+        - Esquema http/https
+        - Dominio en lista blanca
+        - Si el dominio está en la lista blanca, se permiten IPs privadas
+        - Se bloquean IPs loopback, link-local, multicast y reservadas en cualquier caso
         """
         try:
             parsed_url = urlparse(url)
-
-            # Verificar el esquema
             if parsed_url.scheme not in ('http', 'https'):
                 return False
 
-            # Verificar el dominio contra la lista blanca (solo hostname, sin puerto)
             host = parsed_url.hostname
             if not host:
-                if not hasattr(self, "ALLOWED_DOMAINS") or host not in self.ALLOWED_DOMAINS:
-                    logger.warning(f"Dominio no permitido: {host}")
-                    return False
                 return False
 
-            # Validación de IPs: bloquear loopback, privadas, link-local, multicast y reservadas
+            # Verificar dominio en lista blanca
+            if host not in self.ALLOWED_DOMAINS:
+                logger.warning(f"Dominio no permitido: {host}")
+                return False
+
+            # Resolver IPs del host
             try:
                 addrinfos = socket.getaddrinfo(host, None)
                 for info in addrinfos:
                     ip = info[4][0]
                     ip_obj = ipaddress.ip_address(ip)
+                    # Siempre bloquear direcciones peligrosas
                     if (
-                        ip_obj.is_loopback or
-                        ip_obj.is_link_local or
-                        ip_obj.is_multicast or
-                        ip_obj.is_reserved or
-                        ip_obj.is_private
+                            ip_obj.is_loopback or
+                            ip_obj.is_link_local or
+                            ip_obj.is_multicast or
+                            ip_obj.is_reserved
                     ):
-                        logger.warning(f"IP no permitida: {ip}")
+                        logger.warning(f"IP no permitida (incluso con dominio permitido): {ip}")
                         return False
+                    # IPs privadas se permiten porque el dominio está en la lista blanca
             except Exception as e:
                 logger.warning(f"Error resolviendo IP para {host}: {str(e)}")
                 return False
