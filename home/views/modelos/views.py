@@ -129,7 +129,7 @@ class MapaView(TemplateView):
     def fetch_image_urls(self, datetime_init, var_name):
         """Obtener URLs de imágenes de la nueva API"""
         try:
-            api_url = f"http://imgwrfserver.cmw.insmet.cu/simulations/?datetime_init={datetime_init}&var_name={var_name}"
+            api_url = f"http://apimet.cmw.insmet.cu/simulations/?datetime_init={datetime_init}&var_name={var_name}"
             response = requests.get(api_url, timeout=30, verify=False)
             response.raise_for_status()
             data = response.json()
@@ -330,7 +330,7 @@ class ImageProxyModeloView(View):
 
     # Lista blanca de dominios permitidos
     ALLOWED_DOMAINS = [
-        'imgwrfserver.cmw.insmet.cu',
+        'apimet.cmw.insmet.cu',
         'modelo.cmw.insmet.cu',  # ← Agregar este también
         'localhost',
         '127.0.0.1'
@@ -397,7 +397,7 @@ class ImageProxyModeloView(View):
             # URL válida según las primeras comprobaciones
             return parsed.geturl()
         elif image_path:
-            base_url = getattr(settings, 'IMAGE_SERVER_BASE_URL', 'http://imgwrfserver.cmw.insmet.cu')
+            base_url = getattr(settings, 'IMAGE_SERVER_BASE_URL', 'http://apimet.cmw.insmet.cu')
             # Limpiar el path para evitar dobles barras
             clean_path = unquote(image_path).lstrip('/')
             return f"{base_url.rstrip('/')}/{clean_path}"
@@ -515,7 +515,7 @@ class DescargarGifView(View):
 
         try:
             # Construir la URL del servicio
-            url = f"http://imgwrfserver.cmw.insmet.cu/simulations/?datetime_init={datetime_init}&var_name={var_name}"
+            url = f"http://apimet.cmw.insmet.cu/simulations/?datetime_init={datetime_init}&var_name={var_name}"
 
             response = requests.get(url, timeout=30)
             response.raise_for_status()
