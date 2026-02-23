@@ -23,7 +23,7 @@
   </td>
   <td>{{ object.num_subscriptions }}</td>
   <td class="text-end">
-    <a href="{% url 'actualizar_servicio' object.uuid %}" class="btn btn-icon btn-outline-warning btn-sm">
+    <a href="{% url 'actualizar_servicio' object.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
@@ -32,7 +32,7 @@
         </svg>
     </a>
     {% if is_superuser %}
-      <a href="{% url 'eliminar_servicio' object.uuid %}" class="btn btn-icon btn-outline-danger btn-sm">
+      <a href="{% url 'eliminar_servicio' object.uuid %}" class="btn btn-icon btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
             <path d="M4 7l16 0" />
