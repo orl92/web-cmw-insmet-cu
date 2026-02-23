@@ -1,21 +1,27 @@
 from datetime import timedelta
 from io import BytesIO
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
-from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404, redirect
+
+from dashboard.forms.suscripciones.forms import CertificateUploadForm, SubscriptionForm
+from dashboard.models import Customer, ServiceSubscription
+from django.conf import settings
 from django.contrib import messages
-from django.utils import timezone
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.core.exceptions import PermissionDenied
 from django.core.files.base import ContentFile
 from django.core.mail import EmailMessage
+from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
-from django.conf import settings
-from django.core.exceptions import PermissionDenied
-from reportlab.pdfgen import canvas
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
-from dashboard.models import ServiceSubscription, Customer
-from dashboard.forms.suscripciones.forms import SubscriptionForm, CertificateUploadForm
+from reportlab.pdfgen import canvas
+
 
 class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ServiceSubscription
@@ -196,7 +202,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
         # email.attach_file(sub.invoice.path)
         # email.send()
 
-        messages.success(request, f"Factura generada correctamente.")
+        messages.success(request, "Factura generada correctamente.")
         return redirect('listado_suscripciones')
 
 
