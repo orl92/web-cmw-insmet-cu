@@ -1,0 +1,25 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+
+
+{% block form %}
+<div class="card mb-3">
+  <div class="card-body">
+    <p>Cliente: <strong>{{ object.customer.company_name }}</strong><br>
+    Servicio: <strong>{{ object.service.title }}</strong><br>
+    Período: {{ object.start_date|date:"d/m/Y" }} - {{ object.end_date|date:"d/m/Y" }}</p>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label required">Certificado (PDF)</label>
+    <input type="file" name="certificate" accept=".pdf" required class="form-control">
+    {% if form.certificate.errors %}
+      <span class="text-danger">{{ form.certificate.errors }}</span>
+    {% endif %}
+    <small class="form-hint">Selecciona el archivo PDF del certificado para este cliente.</small>
+  </div>
+</form>
+{% endblock %}

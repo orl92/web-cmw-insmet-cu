@@ -1,28 +1,21 @@
+from dashboard.models import CustomerServiceSubscription
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 
-from dashboard.models import Service
-
 
 @receiver(post_migrate)
 def create_clientes_group(sender, **kwargs):
-    # Crear grupo "Clientes" automáticamente al hacer migraciones
     if sender.name == 'accounts':
         group, created = Group.objects.get_or_create(name='Clientes')
-        
-        if created:
-            # Asignar permisos básicos para Clientes
-            # Solo permiso para ver servicios
-            service_content_type = ContentType.objects.get_for_model(Service)
-            
-            try:
-                view_service_perm = Permission.objects.get(
-                    content_type=service_content_type,
-                    codename='view_service'
-                )
-                group.permissions.add(view_service_perm)
-                print("✓ Grupo 'Clientes' creado con permiso para ver servicios")
-            except Permission.DoesNotExist:
-                print("⚠ Permiso 'view_service' no encontrado")
+        subscription_content_type = ContentType.objects.get_for_model(CustomerServiceSubscription)
+        try:
+            view_subscription_perm = Permission.objects.get(
+                content_type=subscription_content_type,
+                codename='view_subscription'
+            )
+            group.permissions.add(view_subscription_perm)
+            print("✓ Grupo 'Clientes' tiene permiso para ver suscripciones")
+        except Permission.DoesNotExist:
+            print("⚠ Permiso 'view_subscription' no encontrado")

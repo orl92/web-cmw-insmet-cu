@@ -7,7 +7,7 @@ from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
-from dashboard.models import Customer, Service
+from dashboard.models import Customer, CustomerServiceSubscription
 
 # Create your form here.
 
@@ -169,10 +169,10 @@ class CustomerSignUpForm(UserCreationForm):
                 # Crear grupo de Clientes
                 clientes_group = Group.objects.create(name='Clientes')
                 # Dar permiso para ver servicios
-                service_content_type = ContentType.objects.get_for_model(Service)
+                service_content_type = ContentType.objects.get_for_model(CustomerServiceSubscription)
                 view_perm = Permission.objects.get(
                     content_type=service_content_type,
-                    codename='view_service'
+                    codename='view_subscription'
                 )
                 clientes_group.permissions.add(view_perm)
             
