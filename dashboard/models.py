@@ -1,7 +1,6 @@
 import uuid
 from django.utils import timezone
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
@@ -443,20 +442,9 @@ class Service(PDFModel):
         default=PUBLIC,
         verbose_name="Tipo de Servicio",
     )
-    target_customer = models.ForeignKey(
-        Customer,
-        on_delete=models.CASCADE,
-        verbose_name="Cliente Destinatario",
-        null=True,
-        blank=True,
-    )
 
     def __str__(self):
         return self.title
-
-    def clean(self):
-        if self.service_type == Service.COMMERCIAL and not self.target_customer:
-            raise ValidationError("Cliente obligatorio para servicios comerciales.")
 
     class Meta:
         verbose_name = "Servicio"
