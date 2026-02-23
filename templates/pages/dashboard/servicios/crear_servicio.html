@@ -12,15 +12,33 @@
 </div>
 <div class="mb-3">
   <label class="form-label required">{{ form.service_type.label }}</label>
-  <select class="form-control" name="{{ form.service_type.name }}" required>
+  <select class="form-control" name="{{ form.service_type.name }}" id="id_service_type" required>
     {% for choice in form.service_type.field.choices %}
       <option value="{{ choice.0 }}">{{ choice.1 }}</option>
     {% endfor %}
   </select>
 </div>
-<div class="mb-3">
+
+<div class="mb-3" id="field_file">
   <label class="form-label">{{ form.file.label }}</label>
   <input type="file" class="form-control" name="{{ form.file.name }}" accept=".pdf">
-  <small class="form-hint">Obligatorio solo para servicios públicos.</small>
+  <small class="form-hint" id="file_hint">Obligatorio solo para servicios públicos.</small>
 </div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const serviceType = document.getElementById('id_service_type');
+    const fileField = document.getElementById('field_file');
+
+    function toggleFields() {
+      const isCommercial = serviceType.value === 'commercial';
+      fileField.style.display = isCommercial ? 'none' : 'block';
+    }
+
+    toggleFields();
+    serviceType.addEventListener('change', toggleFields);
+  });
+</script>
 {% endblock %}
