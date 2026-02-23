@@ -50,7 +50,7 @@ class PublicCommercialServicesListView(ListView):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Servicios Comerciales'
         context['parent'] = 'servicios'
-        context['segment'] = 'comerciales'
+        context['segment'] = 'comercial_p'
         context['now'] = timezone.now()
         if self.request.user.is_authenticated and hasattr(self.request.user, 'customer'):
             customer = self.request.user.customer

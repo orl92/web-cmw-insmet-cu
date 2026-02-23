@@ -1,4 +1,4 @@
-{% load home_extras %}  <!-- Cargar el filtro has_group (si no lo has hecho) -->
+{% load home_extras %}
 <ul class="navbar-nav">
     <!-- Inicio -->
     <li class="nav-item {% if 'index' in segment %}active{% endif %}">
@@ -153,17 +153,17 @@
             href="{% url 'servicios_publicos' %}" rel="noopener">
             Servicios Públicos
             </a>
-            <!-- Catálogo de Servicios Comerciales (siempre visible) -->
-            <a class="dropdown-item {% if 'public_servicios_comerciales' in segment %}active{% endif %}"
+            <!-- Servicios Comerciales (siempre visible) -->
+            <a class="dropdown-item {% if 'comercial_p' in segment %}active{% endif %}"
             href="{% url 'public_servicios_comerciales' %}" rel="noopener">
             Servicios Comerciales
             </a>
-            <!-- Mis Servicios Comerciales (solo clientes autenticados) -->
+            <!-- Mis Servicios (solo clientes autenticados) -->
             {% if user.is_authenticated and user|has_group:'Clientes' %}
             <div class="dropdown-divider"></div>
             <a class="dropdown-item {% if 'comerciales' in segment %}active{% endif %}"
             href="{% url 'servicios_comerciales' %}" rel="noopener">
-            Mis Servicios Comerciales
+            Mis Servicios
             </a>
             {% endif %}
         </div>
