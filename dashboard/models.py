@@ -1,5 +1,5 @@
 import uuid
-
+from django.utils import timezone
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
@@ -468,6 +468,66 @@ class Service(PDFModel):
             ("change_service", "Editar"),
             ("delete_service", "Eliminar"),
         )
+
+
+class ServiceSubscription(models.Model):
+    PAYMENT_STATUS_CHOICES = [
+        ('requested', 'Solicitado'),
+        ('pending', 'Pendiente de pago'),
+        ('paid', 'Pagado'),
+        ('expired', 'Expirado'),
+    ]
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, verbose_name="Cliente")
+    service = models.ForeignKey('Service', on_delete=models.CASCADE, verbose_name="Servicio")
+    start_date = models.DateTimeField(verbose_name="Fecha de inicio")
+    end_date = models.DateTimeField(verbose_name="Fecha de expiración")
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='requested',
+        verbose_name="Estado de pago"
+    )
+    invoice = models.FileField(
+        upload_to='invoices/',
+        verbose_name="Factura",
+        blank=True, null=True
+    )
+    certificate = models.FileField(
+        upload_to='certificates/',
+        verbose_name="Certificado",
+        blank=True, null=True
+    )
+
+    @property
+    def is_active(self):
+        return self.payment_status == 'paid' and self.end_date > timezone.now()
+
+    @property
+    def status_display(self):
+        if self.payment_status == 'paid' and self.end_date > timezone.now():
+            return 'activo'
+        elif self.payment_status == 'pending':
+            return 'pendiente de pago'
+        elif self.payment_status == 'requested':
+            return 'solicitado'
+        else:
+            return 'expirado'
+
+    class Meta:
+        verbose_name = "Suscripción de servicio"
+        verbose_name_plural = "Suscripciones de servicios"
+        default_permissions = ()
+        permissions = (
+            ("view_subscription", "Ver"),
+            ("add_subscription", "Añadir"),
+            ("change_subscription", "Editar"),
+            ("delete_subscription", "Eliminar"),
+        )
+
+    def __str__(self):
+        return f"{self.customer.company_name} - {self.service.title}"
 
 
 class WeatherToday(PDFModel):

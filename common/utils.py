@@ -58,7 +58,7 @@ class PDFModel(models.Model):
     """
     Modelo abstracto para manejar archivos PDF con eliminación automática.
     """
-    file = models.FileField(upload_to=generic_pdf_path, verbose_name='Archivo PDF')
+    file = models.FileField(upload_to=generic_pdf_path, verbose_name="Archivo PDF", blank=True, null=True)
 
     class Meta:
         abstract = True

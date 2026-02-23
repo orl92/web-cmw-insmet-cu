@@ -5,8 +5,13 @@
     <div class="col-lg-10 col-xl-9">
       <div class="empty">
         <img src="{% static 'dist/img/webp/boy-girl.webp' %}" class="img-fluid w-50" alt="boy-girl" />
-        <h3>Esta acción no tiene vuelta atrás</h3>
-        <p>¿Estás seguro de que deseas eliminar la suscripción de <strong>{{ object.customer.company_name }}</strong> para el servicio <strong>{{ object.service.title }}</strong>?</p>
+        <div class="ms-3">
+          <h3 class="alert-title">¿Está seguro que desea eliminar esta suscripción?</h3>
+          <p class="text-muted mb-0">
+            Esta acción eliminará permanentemente la suscripción de <strong>{{ object.customer.company_name }}</strong> 
+            para el servicio <strong>{{ object.service.title }}</strong>. No se podrá recuperar.
+          </p>
+        </div>
       </div>
       <form method="post" class="text-center">
         {% csrf_token %}

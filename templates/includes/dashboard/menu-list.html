@@ -1,365 +1,295 @@
 {% load my_filters %}
-{% load home_extras %}
-
+{% load home_extras %} <!-- Para el filtro has_group -->
 <ul class="navbar-nav pt-lg-3">
-    <!-- Dashboard / Ver Sitio -->
-    {% if request.user.is_staff %}
-    <li class="nav-item {% if 'dashboard' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'dashboard' %}">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                    stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
-                    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-                    <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-                </svg>
-            </span>
-            <span class="nav-link-title">Dashboard</span>
-        </a>
-    </li>
-    {% else %}
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'index' %}">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                    stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
-                    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-                    <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-                </svg>
-            </span>
-            <span class="nav-link-title">Ver Sitio</span>
-        </a>
-    </li>
-    {% endif %}
+  <!-- Dashboard -->
+  {% if request.user.is_staff %}
+  <li class="nav-item {% if 'dashboard' in segment %}active{% endif %}">
+      <a class="nav-link" href="{% url 'dashboard' %}">
+        <span class="nav-link-icon d-md-none d-lg-inline-block">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+            stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
+            <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+            <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+          </svg>
+        </span>
+        <span class="nav-link-title">
+          Dashboard
+        </span>
+      </a>
+  </li>
+  {% else %}
+    <a class="nav-link" href="{% url 'index' %}">
+        <span class="nav-link-icon d-md-none d-lg-inline-block">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+            stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M5 12l-2 0l9 -9l9 9l-2 0" />
+            <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+            <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+          </svg>
+        </span>
+        <span class="nav-link-title">
+          Ver Sitio
+        </span>
+      </a>
+  {% endif %}
 
-    <!-- Autenticación (solo staff o superuser) -->
-    
-    <li class="nav-item dropdown {% if 'accounts' in parent %}active{% endif %}">
-        <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false"
-            role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-lock">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z" />
-                    <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
-                    <path d="M8 11v-4a4 4 0 1 1 8 0v4" />
-                </svg>
-            </span>
-            <span class="nav-link-title">Autenticación</span>
-        </a>
-        <div class="dropdown-menu {% if 'accounts' in parent %}show{% endif %}">
-            <div class="dropdown-menu-columns">
-                {% if request.user.is_superuser %}
-                <div class="dropdown-menu-column">
-                    <a class="dropdown-item {% if 'groups' in segment %}active{% endif %}" href="{% url 'groups' %}">Grupos</a>
-                    <a class="dropdown-item {% if 'users' in segment %}active{% endif %}" href="{% url 'users' %}">Usuarios</a>
-                </div>
-                {% endif %}
-                <div class="dropdown-menu-column">
-                    <a class="dropdown-item {% if 'profile' in segment %}active{% endif %}" href="{% url 'profile' %}">Perfil</a>
-                    <a class="dropdown-item {% if 'password_change' in segment %}active{% endif %}" href="{% url 'password_change' %}">Cambiar Contraseña</a>
-                </div>
-            </div>
-        </div>
-    </li>
-
-    <!-- SECCIONES PARA STAFF -->
-    {% if request.user.is_staff or request.user.is_superuser %}
-        <!-- Provincias -->
-        {% if request.user|has_permission:'dashboard.view_province' %}
-        <li class="nav-item {% if 'provincia' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'provincias' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-map-2">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v7.5" />
-                        <path d="M9 4v13" />
-                        <path d="M15 7v5.5" />
-                        <path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879z" />
-                        <path d="M19 18v.01" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Provincias</span>
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Municipios -->
-        {% if request.user|has_permission:'dashboard.view_town' %}
-        <li class="nav-item {% if 'town' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'municipios' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-building-community">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M8 9l5 5v7h-5v-4m0 4h-5v-7l5 -5m1 1v-6a1 1 0 0 1 1 -1h10a1 1 0 0 1 1 1v17h-8" />
-                        <path d="M13 7l0 .01" />
-                        <path d="M17 7l0 .01" />
-                        <path d="M17 11l0 .01" />
-                        <path d="M17 15l0 .01" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Municipios</span>
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Estaciones -->
-        {% if request.user|has_permission:'dashboard.view_station' %}
-        <li class="nav-item {% if 'estacion' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'estaciones' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-building-broadcast-tower">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
-                        <path d="M16.616 13.924a5 5 0 1 0 -9.23 0" />
-                        <path d="M20.307 15.469a9 9 0 1 0 -16.615 0" />
-                        <path d="M9 21l3 -9l3 9" />
-                        <path d="M10 19h4" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Estaciones</span>
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Pronósticos -->
-        {% if request.user|has_permission:'dashboard.view_forecast' %}
-        <li class="nav-item {% if 'pronostico' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'pronosticos' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-sun-moon">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" />
-                        <path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" />
-                        <path d="M3 12h1" />
-                        <path d="M12 3v1" />
-                        <path d="M5.6 5.6l.7 .7" />
-                        <path d="M3 21l18 -18" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Pronósticos</span>
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Tiempo -->
-        {% if request.user|has_permission:'dashboard.view_forecast' %}
-        <li class="nav-item dropdown {% if 'tiempo' in parent %}active{% endif %}">
-            <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false"
-                role="button" aria-expanded="false">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-temperature-sun">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M4 13.5a4 4 0 1 0 4 0v-8.5a2 2 0 1 0 -4 0v8.5" />
-                        <path d="M4 9h4" />
-                        <path d="M13 16a4 4 0 1 0 0 -8a4.07 4.07 0 0 0 -1 .124" />
-                        <path d="M13 3v1" />
-                        <path d="M21 12h1" />
-                        <path d="M13 20v1" />
-                        <path d="M19.4 5.6l-.7 .7" />
-                        <path d="M18.7 17.7l.7 .7" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Tiempo</span>
-            </a>
-            <div class="dropdown-menu {% if 'tiempo' in parent %}show{% endif %}">
-                <div class="dropdown-menu-columns">
-                    <div class="dropdown-menu-column">
-                        <a class="dropdown-item {% if 'tiempo_h' in segment %}active{% endif %}" href="{% url 'listado_tiempo_h' %}">Hoy</a>
-                        <a class="dropdown-item {% if 'tiempo_m' in segment %}active{% endif %}" href="{% url 'listado_tiempo_m' %}">Mañana</a>
-                    </div>
-                </div>
-            </div>
-        </li>
-        {% endif %}
-
-        <!-- Comentarios -->
-        {% if request.user|has_permission:'dashboard.view_forecast' %}
-        <li class="nav-item dropdown {% if 'comentario' in parent %}active{% endif %}">
-            <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false"
-                role="button" aria-expanded="false">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-notebook">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-11a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1m3 0v18" />
-                        <path d="M13 8l2 0" />
-                        <path d="M13 12l2 0" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Comentarios</span>
-            </a>
-            <div class="dropdown-menu {% if 'comentario' in parent %}show{% endif %}">
-                <div class="dropdown-menu-columns">
-                    <div class="dropdown-menu-column">
-                        <a class="dropdown-item {% if 'comentario_tiempo' in segment %}active{% endif %}" href="{% url 'listado_comentarios_tiempo' %}">Tiempo</a>
-                        <a class="dropdown-item {% if 'nota_meteorologica' in segment %}active{% endif %}" href="{% url 'listado_notas_meteorologicas' %}">Nota meteorológica</a>
-                    </div>
-                </div>
-            </div>
-        </li>
-        {% endif %}
-
-        <!-- Avisos -->
-        {% if request.user|has_permission:'dashboard.view_early_warning' or request.user|has_permission:'dashboard.view_tropical_cyclone' or request.user|has_permission:'dashboard.view_special_notice' or request.user|has_permission:'dashboard.view_radar_warning' %}
-        <li class="nav-item dropdown {% if 'aviso' in parent %}active{% endif %}">
-            <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false"
-                role="button" aria-expanded="false">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-info-square-rounded">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M12 9h.01"/>
-                        <path d="M11 12h1v4h1"/>
-                        <path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9 -9 9s-9 -1.8 -9 -9s1.8 -9 9 -9z"/>
-                    </svg>
-                </span>
-                <span class="nav-link-title">Avisos</span>
-            </a>
-            <div class="dropdown-menu {% if 'avisos' in parent %}show{% endif %}">
-                <div class="dropdown-menu-columns">
-                    <div class="dropdown-menu-column">
-                        {% if request.user|has_permission:'dashboard.view_early_warning' %}
-                        <a class="dropdown-item {% if 'early' in segment %}active{% endif %}" href="{% url 'alertas_tempranas' %}">Alertas Tempranas</a>
-                        {% endif %}
-                        {% if request.user|has_permission:'dashboard.view_tropical_cyclone' %}
-                        <a class="dropdown-item {% if 'cyclone' in segment %}active{% endif %}" href="{% url 'ciclones_tropicales' %}">Ciclones Tropicales</a>
-                        {% endif %}
-                        {% if request.user|has_permission:'dashboard.view_storm_warning' %}
-                        <a class="dropdown-item {% if 'storm' in segment %}active{% endif %}" href="{% url 'avisos_tormentas' %}">Tormentas</a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </li>
-        {% endif %}
-
-        <!-- Clientes -->
-        {% if request.user|has_permission:'dashboard.view_customer' %}
-        <li class="nav-item {% if 'clientes' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'listado_clientes' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-users">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
-                        <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Clientes</span>
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Servicios -->
-        {% if request.user|has_permission:'dashboard.view_service' %}
-        <li class="nav-item {% if 'servicios' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'listado_servicios' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-server">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/>
-                        <path d="M3 12m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/>
-                        <path d="M7 8l0 .01"/>
-                        <path d="M7 16l0 .01"/>
-                    </svg>
-                </span>
-                <span class="nav-link-title">Servicios</span>
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Suscripciones -->
-        {% if request.user|has_permission:'dashboard.view_subscription' %}
-        <li class="nav-item {% if 'suscripciones' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'listado_suscripciones' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                    <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
-                    <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
-                    <path d="M17 18h2" /><path d="M20 15h-3v6" />
-                    <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
-                  </svg>
-                </span>
-                <span class="nav-link-title">Suscripciones</span>
-                {% if pending_subscriptions_count > 0 %}
-                    <span class="badge bg-red ms-2">{{ pending_subscriptions_count }}</span>
-                {% endif %}
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Publicaciones -->
-        {% if request.user|has_permission:'dashboard.view_scientific_publication' %}
-        <li class="nav-item {% if 'publicaciones' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'listado_publicaciones' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-file-invoice">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M12 2l.117 .007a1 1 0 0 1 .876 .876l.007 .117v4l.005 .15a2 2 0 0 0 1.838 1.844l.157 .006h4l.117 .007a1 1 0 0 1 .876 .876l.007 .117v9a3 3 0 0 1 -2.824 2.995l-.176 .005h-10a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-14a3 3 0 0 1 2.824 -2.995l.176 -.005zm4 15h-2a1 1 0 0 0 0 2h2a1 1 0 0 0 0 -2m0 -4h-8a1 1 0 0 0 0 2h8a1 1 0 0 0 0 -2m-7 -7h-1a1 1 0 1 0 0 2h1a1 1 0 1 0 0 -2" />
-                        <path d="M19 7h-4l-.001 -4.001z" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Publicaciones</span>
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Listados de Correos -->
-        {% if request.user|has_permission:'dashboard.view_email_recipient_list' %}
-        <li class="nav-item {% if 'email' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'listado_correos' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-mail">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" />
-                        <path d="M3 7l9 6l9 -6" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Listados de Correos</span>
-            </a>
-        </li>
-        {% endif %}
-
-        <!-- Modo Mantenimiento (solo superuser) -->
+  <!-- Autenticación -->
+  <li class="nav-item dropdown {% if 'accounts' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false"
+      role="button" aria-expanded="false">
+      <span
+        class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-lock"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6z" /><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" /><path d="M8 11v-4a4 4 0 1 1 8 0v4" /></svg>
+      </span>
+      <span class="nav-link-title">
+        Autenticación
+      </span>
+    </a>
+    <div class="dropdown-menu {% if 'accounts' in parent %}show{% endif %}">
+      <div class="dropdown-menu-columns">
         {% if request.user.is_superuser %}
-        <li class="nav-item {% if 'maintenance' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'toggle_maintenance_mode' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-settings">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" />
-                        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
-                    </svg>
-                </span>
-                <span class="nav-link-title">Mantenimiento</span>
-            </a>
-        </li>
-        {% endif %}
-
-    {% else %}
-        <!-- SECCIONES PARA CLIENTES (no staff) -->
-        <!-- Mis Suscripciones -->
-        {% if request.user|has_group:'Clientes' %}
-        <li class="nav-item {% if 'suscripciones' in segment %}active{% endif %}">
-            <a class="nav-link" href="{% url 'listado_suscripciones' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
+        <div class="dropdown-menu-column">
+          <a class="dropdown-item {% if 'groups' in segment %}active{% endif %}" href="{% url 'groups' %}">
+            Grupos
+          </a>
+          <a class="dropdown-item {% if 'users' in segment %}active{% endif %}" href="{% url 'users' %}">
+            Usuarios
+          </a>
+          {% endif %}
+          <a class="dropdown-item {% if 'profile' in segment %}active{% endif %}" href="{% url 'profile' %}">
+            Perfil
+          </a>
+          <a class="dropdown-item {% if 'password_change' in segment %}active{% endif %}" href="{% url 'password_change' %}">
+            Cambiar Contraseña
+          </a>
+      </div>
+    </div>
+  </li>
+  <!-- Provincias -->
+  {% if request.user|has_permission:'dashboard.view_province' %}
+  <li class="nav-item {% if 'provincia' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'provincias' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-map-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 18.5l-3 -1.5l-6 3v-13l6 -3l6 3l6 -3v7.5" /><path d="M9 4v13" /><path d="M15 7v5.5" /><path d="M21.121 20.121a3 3 0 1 0 -4.242 0c.418 .419 1.125 1.045 2.121 1.879c1.051 -.89 1.759 -1.516 2.121 -1.879z" /><path d="M19 18v.01" /></svg>
+      </span>
+      <span class="nav-link-title">Provincias</span>
+    </a>
+  </li>
+  {% endif %}
+  <!-- Municipios -->
+  {% if request.user|has_permission:'dashboard.view_town' %}
+  <li class="nav-item {% if 'town' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'municipios' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-building-community"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9l5 5v7h-5v-4m0 4h-5v-7l5 -5m1 1v-6a1 1 0 0 1 1 -1h10a1 1 0 0 1 1 1v17h-8" /><path d="M13 7l0 .01" /><path d="M17 7l0 .01" /><path d="M17 11l0 .01" /><path d="M17 15l0 .01" /></svg>
+      </span>
+      <span class="nav-link-title">Municipios</span>
+    </a>
+  </li>
+  {% endif %}
+  <!-- Estaciones -->
+  {% if request.user|has_permission:'dashboard.view_station' %}
+  <li class="nav-item {% if 'estacion' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'estaciones' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-building-broadcast-tower"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M16.616 13.924a5 5 0 1 0 -9.23 0" /><path d="M20.307 15.469a9 9 0 1 0 -16.615 0" /><path d="M9 21l3 -9l3 9" /><path d="M10 19h4" /></svg>
+      </span>
+      <span class="nav-link-title">Estaciones</span>
+    </a>
+  </li>
+  {% endif %}
+  <!-- Pronósticos -->
+  {% if request.user|has_permission:'dashboard.view_forecast' %}
+  <li class="nav-item {% if 'pronostico' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'pronosticos' %}">
+        <span class="nav-link-icon d-md-none d-lg-inline-block">
+          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-sun-moon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" /><path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" /><path d="M3 12h1" /><path d="M12 3v1" /><path d="M5.6 5.6l.7 .7" /><path d="M3 21l18 -18" /></svg>
+        </span>
+        <span class="nav-link-title">Pronósticos</span>
+    </a>
+  </li>
+  {% endif %}
+  <!-- Tiempo -->
+  {% if request.user|has_permission:'dashboard.view_forecast' %}
+  <li class="nav-item dropdown {% if 'tiempo' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false"
+      role="button" aria-expanded="false">
+      <span
+        class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-temperature-sun"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 13.5a4 4 0 1 0 4 0v-8.5a2 2 0 1 0 -4 0v8.5" /><path d="M4 9h4" /><path d="M13 16a4 4 0 1 0 0 -8a4.07 4.07 0 0 0 -1 .124" /><path d="M13 3v1" /><path d="M21 12h1" /><path d="M13 20v1" /><path d="M19.4 5.6l-.7 .7" /><path d="M18.7 17.7l.7 .7" /></svg>
+      </span>
+      <span class="nav-link-title">
+        Tiempo
+      </span>
+    </a>
+    <div class="dropdown-menu {% if 'tiempo' in parent %}show{% endif %}">
+      <div class="dropdown-menu-columns">
+        <div class="dropdown-menu-column">
+          <a class="dropdown-item {% if 'tiempo_h' in segment %}active{% endif %}" href="{% url 'listado_tiempo_h' %}">
+            Hoy
+          </a>
+          <a class="dropdown-item {% if 'tiempo_m' in segment %}active{% endif %}" href="{% url 'listado_tiempo_m' %}">
+            Mañana
+          </a>
+      </div>
+    </div>
+  </li>
+  {% endif %}
+  <!-- Comentarios -->
+  {% if request.user|has_permission:'dashboard.view_forecast' %}
+  <li class="nav-item dropdown {% if 'comentario' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false"
+      role="button" aria-expanded="false">
+      <span
+        class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-notebook"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-11a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1m3 0v18" /><path d="M13 8l2 0" /><path d="M13 12l2 0" /></svg>
+      </span>
+      <span class="nav-link-title">
+        Comentarios
+      </span>
+    </a>
+    <div class="dropdown-menu {% if 'comentario' in parent %}show{% endif %}">
+      <div class="dropdown-menu-columns">
+        <div class="dropdown-menu-column">
+          <a class="dropdown-item {% if 'comentario_tiempo' in segment %}active{% endif %}" href="{% url 'listado_comentarios_tiempo' %}">
+            Tiempo
+          </a>
+          <a class="dropdown-item {% if 'nota_meteorologica' in segment %}active{% endif %}" href="{% url 'listado_notas_meteorologicas' %}">
+            Nota meteorológica
+          </a>
+      </div>
+    </div>
+  </li>
+  {% endif %}
+  <!-- Avisos -->
+  {% if request.user|has_permission:'dashboard.view_early_warning' or request.user|has_permission:'dashboard.view_tropical_cyclone' or request.user|has_permission:'dashboard.view_special_notice' or request.user|has_permission:'dashboard.view_radar_warning' %}
+  <li class="nav-item dropdown {% if 'aviso' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false"
+      role="button" aria-expanded="false">
+      <span
+        class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-info-square-rounded"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/><path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9 -9 9s-9 -1.8 -9 -9s1.8 -9 9 -9z"/></svg>
+      </span>
+      <span class="nav-link-title">
+        Avisos
+      </span>
+    </a>
+    <div class="dropdown-menu {% if 'avisos' in parent %}show{% endif %}">
+      <div class="dropdown-menu-columns">
+        <div class="dropdown-menu-column">
+          {% if request.user|has_permission:'dashboard.view_early_warning' %}
+          <a class="dropdown-item {% if 'early' in segment %}active{% endif %}" href="{% url 'alertas_tempranas' %}">
+            Alertas Tempranas
+          </a>
+          {% endif %}
+          {% if request.user|has_permission:'dashboard.view_tropical_cyclone' %}
+          <a class="dropdown-item {% if 'cyclone' in segment %}active{% endif %}" href="{% url 'ciclones_tropicales' %}">
+            Ciclones Tropicales
+          </a>
+          {% endif %}
+          {% if request.user|has_permission:'dashboard.view_storm_warning' %}
+          <a class="dropdown-item {% if 'storm' in segment %}active{% endif %}" href="{% url 'avisos_tormentas' %}">
+            Tormentas
+          </a>
+          {% endif %}
+      </div>
+    </div>
+  </li>
+  {% endif %}
+    <!-- Clientes (solo staff) -->
+    {% if request.user|has_permission:'dashboard.view_customer' %}
+    <li class="nav-item {% if 'clientes' in segment %}active{% endif %}">
+        <a class="nav-link" href="{% url 'listado_clientes' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-users">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                    <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                </svg>
+            </span>
+            <span class="nav-link-title">Clientes</span>
+        </a>
+    </li>
+    {% endif %}
+    
+    <!-- Servicios (solo staff) -->
+    {% if request.user|has_permission:'dashboard.view_service' %}
+    <li class="nav-item {% if 'servicios' in segment %}active{% endif %}">
+        <a class="nav-link" href="{% url 'listado_servicios' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-server">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/>
+                    <path d="M3 12m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v2a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z"/>
+                    <path d="M7 8l0 .01"/>
+                    <path d="M7 16l0 .01"/>
+                </svg>
+            </span>
+            <span class="nav-link-title">Servicios</span>
+        </a>
+    </li>
+    {% endif %}
+    
+    <!-- Suscripciones (staff y clientes) -->
+    {% if request.user|has_permission:'dashboard.view_subscription' or request.user|has_group:'Clientes' %}
+    <li class="nav-item {% if 'suscripciones' in segment %}active{% endif %}">
+        <a class="nav-link" href="{% url 'listado_suscripciones' %}">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-certificate">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                    <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
-                    <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
-                    <path d="M17 18h2" /><path d="M20 15h-3v6" />
-                    <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
-                  </svg>
-                </span>
-                <span class="nav-link-title">Mis Suscripciones</span>
-            </a>
-        </li>
-        {% endif %}
+                    <path d="M5 8v-3a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5" />
+                    <path d="M6 14m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                    <path d="M4.5 17l-1.5 5l3 -1.5l3 1.5l-1.5 -5" />
+                </svg>
+            </span>
+            <span class="nav-link-title">
+                {% if request.user.is_staff %}Suscripciones{% else %}Mis Suscripciones{% endif %}
+            </span>
+            <!-- Badge opcional con el número de suscripciones pendientes (solo staff) -->
+            {% if request.user.is_staff and pending_subscriptions_count > 0 %}
+                <span class="badge bg-red ms-2">{{ pending_subscriptions_count }}</span>
+            {% endif %}
+        </a>
+    </li>
     {% endif %}
+    <!-- Publicaciones -->
+  {% if request.user|has_permission:'dashboard.view_scientific_publication' %}
+  <li class="nav-item {% if 'publicaciones' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'listado_publicaciones' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="currentColor"  class="icon icon-tabler icons-tabler-filled icon-tabler-file-invoice"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 2l.117 .007a1 1 0 0 1 .876 .876l.007 .117v4l.005 .15a2 2 0 0 0 1.838 1.844l.157 .006h4l.117 .007a1 1 0 0 1 .876 .876l.007 .117v9a3 3 0 0 1 -2.824 2.995l-.176 .005h-10a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-14a3 3 0 0 1 2.824 -2.995l.176 -.005zm4 15h-2a1 1 0 0 0 0 2h2a1 1 0 0 0 0 -2m0 -4h-8a1 1 0 0 0 0 2h8a1 1 0 0 0 0 -2m-7 -7h-1a1 1 0 1 0 0 2h1a1 1 0 1 0 0 -2" /><path d="M19 7h-4l-.001 -4.001z" /></svg>
+      </span>
+      <span class="nav-link-title">Publicaciones</span>
+    </a>
+  </li>
+  {% endif %}
+  <!-- Listados de Correos -->
+  {% if request.user|has_permission:'dashboard.view_email_recipient_list' %}
+  <li class="nav-item {% if 'email' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'listado_correos' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-mail"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z" /><path d="M3 7l9 6l9 -6" /></svg>
+      </span>
+      <span class="nav-link-title">Listados de Correos</span>
+    </a>
+  </li>
+  {% endif %}
+  <!-- Modo Mantenimiento -->
+  {% if request.user.is_superuser %}
+  <li class="nav-item {% if 'maintenance' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'toggle_maintenance_mode' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-settings"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z" /><path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg>
+      </span>
+      <span class="nav-link-title">Mantenimiento</span>
+    </a>
+  </li>
+  {% endif %}
+
 </ul>

@@ -1,0 +1,60 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+{% load home_extras %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>{{ title }}</h2>
+  <div class="row">
+    {% for service in services %}
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ service.title }}</h5>
+          <p class="card-text">{{ service.summary }}</p>
+          <p class="text-muted">Tipo: Comercial</p>
+
+          {% if user.is_authenticated %}
+            {% if user.is_staff %}
+              <!-- Staff: botón para editar servicio (redirige al dashboard) -->
+              <a href="{% url 'actualizar_servicio' service.uuid %}" class="btn btn-outline-warning">
+                Editar
+              </a>
+            {% elif user.customer %}
+              <!-- Cliente: mostrar estado o botón de solicitar -->
+              {% with sub=user_subscriptions|get_item:service.id %}
+                {% if sub %}
+                  {% if sub.payment_status == 'paid' and sub.end_date > now %}
+                    <span class="badge bg-success">Activo</span>
+                  {% elif sub.payment_status == 'pending' %}
+                    <span class="badge bg-warning">Pendiente de pago</span>
+                  {% elif sub.payment_status == 'requested' %}
+                    <span class="badge bg-info">Solicitado</span>
+                  {% else %}
+                    <a href="{% url 'solicitar_suscripcion' service.uuid %}" class="btn btn-outline-primary">Solicitar</a>
+                  {% endif %}
+                {% else %}
+                  <a href="{% url 'solicitar_suscripcion' service.uuid %}" class="btn btn-outline-primary">Solicitar</a>
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              <!-- Usuario autenticado pero no cliente ni staff -->
+              <a href="{% url 'customer_register' %}" class="btn tn-outline-primary">
+                Regístrese
+              </a>
+            {% endif %}
+          {% else %}
+            <!-- Usuario no autenticado -->
+            <a href="{% url 'login' %}?next={% url 'solicitar_suscripcion' service.uuid %}" class="btn btn-outline-primary">
+              Iniciar sesión
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p>No hay servicios comerciales disponibles.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -16,7 +16,8 @@ from home.views.modelos.views import (
 )
 from home.views.pagos.views import PagosView
 from home.views.satelites.views import ProxyImageView, SateliteView
-from home.views.servicios.comerciales.views import CommercialServicesListView
+from home.views.servicios.comerciales.views import CommercialServicesListView, RequestSubscriptionView, \
+    PublicCommercialServicesListView
 from home.views.servicios.publicos.views import PublicServicesListView
 from home.views.tiempo.hoy.views import WeatherTodayDetailView
 from home.views.tiempo.manana.views import WeatherTomorrowDetailView
@@ -42,6 +43,8 @@ urlpatterns = [
     path('servicios/publicos/', PublicServicesListView.as_view(), name='servicios_publicos'),
     # Servicios Comerciales
     path('servicios/comerciales/', CommercialServicesListView.as_view(), name='servicios_comerciales'),
+    path('servicios/comerciales/public/', PublicCommercialServicesListView.as_view(), name='public_servicios_comerciales'),
+    path('solicitar/servicio/comercial/<uuid:uuid>/', RequestSubscriptionView.as_view(), name='solicitar_suscripcion'),
     # Imagen Satélites
     path('imagenes/satelitales/', SateliteView.as_view(), name="satelites"),
     path('proxy_image/', ProxyImageView.as_view(), name='proxy_image'),

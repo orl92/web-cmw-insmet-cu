@@ -19,4 +19,3 @@ class PublicServicesListView(ListView):
         context['parent'] = 'servicios'
         context['segment'] = 'publicos'
         return context
-

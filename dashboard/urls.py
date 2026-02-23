@@ -85,6 +85,8 @@ from dashboard.views.servicios.views import (
     ServiceListView,
     ServiceUpdateView,
 )
+from dashboard.views.suscripciones.views import SubscriptionListView, SubscriptionCreateView, SubscriptionUpdateView, \
+    SubscriptionDeleteView, SubscriptionRenewView, GenerateInvoiceView, ApproveSubscriptionView
 from dashboard.views.tiempo.hoy.views import (
     WeatherTodayCreateView,
     WeatherTodayDeleteView,
@@ -149,9 +151,17 @@ urlpatterns = [
     path('eliminar/cliente/<uuid:uuid>/', CustomerDeleteView.as_view(), name='eliminar_cliente'),
     # Servicios
     path('servicios/', ServiceListView.as_view(), name='listado_servicios'),
-    path('crear/servicio/', ServiceCreateView.as_view(), name="crear_servicio"),
-    path('actualizar/servicio/<uuid:uuid>/', ServiceUpdateView.as_view(), name='actualizar_servicio'),
-    path('eliminar/servicio/<uuid:uuid>/', ServiceDeleteView.as_view(), name='eliminar_servicio'),
+    path('crear/servicios/', ServiceCreateView.as_view(), name='crear_servicio'),
+    path('actualizar/servicios/<uuid:uuid>/', ServiceUpdateView.as_view(), name='actualizar_servicio'),
+    path('eliminar/servicios/<uuid:uuid>/', ServiceDeleteView.as_view(), name='eliminar_servicio'),
+    # Suscripciones
+    path('suscripciones/', SubscriptionListView.as_view(), name='listado_suscripciones'),
+    path('crear/suscripcion', SubscriptionCreateView.as_view(), name='crear_suscripcion'),
+    path('actualizar/suscripcion/<uuid:uuid>/', SubscriptionUpdateView.as_view(), name='editar_suscripcion'),
+    path('eliminar/suscripcion/<uuid:uuid>/', SubscriptionDeleteView.as_view(), name='eliminar_suscripcion'),
+    path('renovar/suscripcion/<uuid:uuid>/', SubscriptionRenewView.as_view(), name='renovar_suscripcion'),
+    path('facturar/suscripcion/<uuid:uuid>/', GenerateInvoiceView.as_view(), name='facturar_suscripcion'),
+    path('aprobar/suscripcion/<uuid:uuid>/', ApproveSubscriptionView.as_view(), name='aprobar_suscripcion'),
     # Tiempo Hoy
     path('tiempo/hoy/', WeatherTodayListView.as_view(), name='listado_tiempo_h'),
     path('crear/tiempo/hoy/', WeatherTodayCreateView.as_view(), name="crear_tiempo_h"),
