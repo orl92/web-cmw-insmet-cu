@@ -1,16 +1,12 @@
 from datetime import timedelta
 
+from dashboard.models import Customer, Service, ServiceSubscription
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import ListView
-from django.views.generic import View
-
-from dashboard.models import Customer
-from dashboard.models import Service, ServiceSubscription
-
+from django.views.generic import ListView, View
 
 # Create your views here.
 
@@ -20,6 +16,13 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
     template_name = 'pages/home/servicios/comerciales/servicios_comerciales.html'
     context_object_name = 'subscriptions'
     paginate_by = 10
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Mis Servicios Comerciales'
+        context['parent'] = 'servicios'
+        context['segment'] = 'comerciales'
+        return context
 
     def get_queryset(self):
         try:
@@ -45,7 +48,9 @@ class PublicCommercialServicesListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Catalogo Servicios Comerciales'
+        context['title'] = 'Servicios Comerciales'
+        context['parent'] = 'servicios'
+        context['segment'] = 'comerciales'
         context['now'] = timezone.now()
         if self.request.user.is_authenticated and hasattr(self.request.user, 'customer'):
             customer = self.request.user.customer
@@ -55,7 +60,16 @@ class PublicCommercialServicesListView(ListView):
             context['user_subscriptions'] = {}
         return context
 
+
 class RequestSubscriptionView(LoginRequiredMixin, UserPassesTestMixin, View):
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Solicitar Servicio Comercial'
+        context['parent'] = 'servicios'
+        context['segment'] = 'comerciales'
+        return context
+    
     def test_func(self):
         return (self.request.user.groups.filter(name='Clientes').exists() and
                 hasattr(self.request.user, 'customer'))
