@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.db.models import Count
 from django.core.exceptions import PermissionDenied
@@ -33,7 +33,7 @@ class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['segment'] = 'servicios'
         context['btn'] = 'Añadir Servicio'
         context['url_create'] = reverse_lazy('crear_servicio')
-        context['is_staff'] = True
+        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         return context
 
