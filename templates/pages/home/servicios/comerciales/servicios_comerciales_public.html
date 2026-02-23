@@ -3,8 +3,6 @@
 {% load home_extras %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2>{{ title }}</h2>
   <div class="row">
     {% for service in services %}
     <div class="col-md-4 mb-4">
@@ -56,5 +54,4 @@
     <p>No hay servicios comerciales disponibles.</p>
     {% endfor %}
   </div>
-</div>
 {% endblock %}
