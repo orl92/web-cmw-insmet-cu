@@ -1,9 +1,8 @@
 import re
 
+from accounts.models import Profile
 from django import forms
 from django.contrib.auth.models import User
-
-from accounts.models import Profile
 
 
 class ProfileForm(forms.ModelForm):
@@ -63,29 +62,30 @@ class ProfileForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Cargar datos iniciales del Customer si existe
-        if hasattr(self.instance.user, 'customer'):
-            customer = self.instance.user.customer
-            self.fields['company_name'].initial = customer.company_name
-            self.fields['reeup'].initial = customer.reeup
-            self.fields['nit'].initial = customer.nit
-            self.fields['account'].initial = customer.account
-            self.fields['address'].initial = customer.address
-            self.fields['phone'].initial = customer.phone
-            self.fields['newsletter'].initial = customer.newsletter
-            
-            # Hacer campos requeridos para clientes
-            self.fields['company_name'].required = True
-            self.fields['reeup'].required = True
-            self.fields['nit'].required = True
-            self.fields['account'].required = True
-            self.fields['address'].required = True
-            self.fields['phone'].required = True
+        # --- CORRECCIÓN: Verificar que el perfil tenga un usuario asociado antes de acceder a customer ---
+        if self.instance.user_id is not None:
+            user = self.instance.user  # ahora es seguro acceder
+            if hasattr(user, 'customer'):
+                customer = user.customer
+                self.fields['company_name'].initial = customer.company_name
+                self.fields['reeup'].initial = customer.reeup
+                self.fields['nit'].initial = customer.nit
+                self.fields['account'].initial = customer.account
+                self.fields['address'].initial = customer.address
+                self.fields['phone'].initial = customer.phone
+                self.fields['newsletter'].initial = customer.newsletter
+                
+                # Hacer campos requeridos para clientes
+                self.fields['company_name'].required = True
+                self.fields['reeup'].required = True
+                self.fields['nit'].required = True
+                self.fields['account'].required = True
+                self.fields['address'].required = True
+                self.fields['phone'].required = True
     
     def clean_email(self):
         email = self.cleaned_data.get('email')
         user = self.instance.user
-        
         # Verificar que el email no esté en uso por otro usuario
         if User.objects.filter(email=email).exclude(pk=user.pk).exists():
             raise forms.ValidationError("Este correo electrónico ya está registrado.")
@@ -117,6 +117,11 @@ class ProfileForm(forms.ModelForm):
     
     def save(self, commit=True):
         profile = super().save(commit=False)
+        
+        # --- CORRECCIÓN: Asegurar que el perfil tiene un usuario antes de continuar ---
+        if profile.user_id is None:
+            raise ValueError("El perfil no tiene un usuario asociado. No se puede guardar.")
+        
         user = profile.user
         
         # Actualizar datos del User
