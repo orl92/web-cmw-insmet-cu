@@ -1,10 +1,11 @@
 import uuid
-from django.utils import timezone
+
+from common.utils import PDFModel, generic_image_path
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
 from django.db import models
-
-from common.utils import PDFModel
+from django.utils import timezone
 
 # Create your models here.
 
@@ -442,9 +443,19 @@ class Service(PDFModel):
         default=PUBLIC,
         verbose_name="Tipo de Servicio",
     )
+    image = models.ImageField(upload_to=generic_image_path, verbose_name='Imágen', blank=True, null=True)
 
     def __str__(self):
         return self.title
+    
+    def delete(self, *args, **kwargs):
+        self.image.delete(save=False)
+        super(Service, self).delete(*args, **kwargs)
+
+    def get_image(self):
+        if self.image:
+            return f'{settings.MEDIA_URL}{self.image}'
+        return f'{settings.STATIC_URL}dist/img/default.svg'
 
     class Meta:
         verbose_name = "Servicio"
