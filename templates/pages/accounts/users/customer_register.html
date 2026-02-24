@@ -3,10 +3,8 @@
 {% block body %}d-flex flex-column{% endblock %}
 {% block content %}
 <div class="page page-center">
-  <!-- Contenedor de toasts fuera del card -->
-  <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container" style="z-index: 1060;">
-    <!-- Los toasts se insertarán aquí dinámicamente -->
-  </div>
+  <!-- Contenedor de toasts -->
+  <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container" style="z-index: 1060;"></div>
 
   <div class="container container-normal py-4">
     <div class="row align-items-center g-4">
@@ -69,98 +67,89 @@
           </div>
           
           <div class="card">
-
             <div class="card-body p-4">
-              <form method="post" id="registration-form" novalidate class="needs-validation">
+              <form method="post" id="registration-form">
                 {% csrf_token %}
                 
                 <!-- Paso 1: Datos Personales -->
-                <div id="step-1" class="wizard-step {% if not form.first_name.errors and not form.last_name.errors and not form.phone.errors %}active{% else %}has-error{% endif %}">
+                <div id="step-1" class="wizard-step {% if form.first_name.errors or form.last_name.errors or form.phone.errors %}has-error{% endif %}">
                   <h3 class="mb-4">Información Personal</h3>
-                  
                   <div class="row">
                     <div class="col-md-6 mb-3">
                       <label class="form-label required">Nombre</label>
-                      <div class="input-group">
-                        <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
-                               name="first_name" placeholder="Juan" value="{{ form.first_name.value|default:'' }}" required>
-                        {% if form.first_name.errors %}
-                          <div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>
-                        {% endif %}
-                      </div>
-                    </div>
-                    
-                    <div class="col-md-6 mb-3">
-                      <label class="form-label required">Apellido</label>
-                      <div class="input-group">
-                        <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
-                               name="last_name" placeholder="Pérez" value="{{ form.last_name.value|default:'' }}" required>
-                        {% if form.last_name.errors %}
-                          <div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>
-                        {% endif %}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <label class="form-label required">Teléfono</label>
-                    <div class="input-group">
-                      <input type="tel" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
-                             name="phone" placeholder="12345678" value="{{ form.phone.value|default:'' }}" required>
-                      {% if form.phone.errors %}
-                        <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
+                      <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                             name="first_name" placeholder="Juan" value="{{ form.first_name.value|default:'' }}" 
+                             required maxlength="30">
+                      {% if form.first_name.errors %}
+                        <div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>
                       {% endif %}
                     </div>
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label required">Apellido</label>
+                      <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                             name="last_name" placeholder="Pérez" value="{{ form.last_name.value|default:'' }}" 
+                             required maxlength="30">
+                      {% if form.last_name.errors %}
+                        <div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label required">Teléfono</label>
+                    <input type="tel" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
+                           name="phone" placeholder="12345678" value="{{ form.phone.value|default:'' }}" 
+                           required maxlength="8" pattern="[0-9]{8}" inputmode="numeric">
+                    {% if form.phone.errors %}
+                      <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
+                    {% else %}
+                      <div class="invalid-feedback">El teléfono debe tener 8 dígitos numéricos.</div>
+                    {% endif %}
                   </div>
                 </div>
 
                 <!-- Paso 2: Credenciales -->
                 <div id="step-2" class="wizard-step {% if form.username.errors or form.email.errors or form.password1.errors or form.password2.errors %}has-error{% endif %}" style="display: none;">
                   <h3 class="mb-4">Credenciales de Acceso</h3>
-                  
                   <div class="mb-3">
                     <label class="form-label required">Usuario</label>
-                    <div class="input-group">
-                      <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
-                             name="username" placeholder="usuario_empresa" value="{{ form.username.value|default:'' }}" required>
-                      {% if form.username.errors %}
-                        <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
-                      {% endif %}
-                    </div>
+                    <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                           name="username" placeholder="usuario_empresa" value="{{ form.username.value|default:'' }}" 
+                           required maxlength="150">
+                    {% if form.username.errors %}
+                      <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
+                    {% endif %}
                   </div>
-                  
                   <div class="mb-3">
                     <label class="form-label required">Correo Electrónico</label>
-                    <div class="input-group">
-                      <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
-                             name="email" placeholder="ejemplo@empresa.com" value="{{ form.email.value|default:'' }}" required>
-                      {% if form.email.errors %}
-                        <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
-                      {% endif %}
-                    </div>
+                    <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                           name="email" placeholder="ejemplo@empresa.com" value="{{ form.email.value|default:'' }}" 
+                           required>
+                    {% if form.email.errors %}
+                      <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
+                    {% else %}
+                      <div class="invalid-feedback">Ingresa un correo electrónico válido.</div>
+                    {% endif %}
                   </div>
-                  
                   <div class="row">
                     <div class="col-md-6 mb-3">
                       <label class="form-label required">Contraseña</label>
-                      <div class="input-group">
-                        <input type="password" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
-                               name="password1" placeholder="********" required>
-                        {% if form.password1.errors %}
-                          <div class="invalid-feedback">{{ form.password1.errors.0 }}</div>
-                        {% endif %}
-                      </div>
+                      <input type="password" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                             name="password1" placeholder="********" required minlength="8">
+                      {% if form.password1.errors %}
+                        <div class="invalid-feedback">{{ form.password1.errors.0 }}</div>
+                      {% else %}
+                        <div class="invalid-feedback">La contraseña debe tener al menos 8 caracteres.</div>
+                      {% endif %}
                     </div>
-                    
                     <div class="col-md-6 mb-3">
                       <label class="form-label required">Confirmar Contraseña</label>
-                      <div class="input-group">
-                        <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
-                               name="password2" placeholder="********" required>
-                        {% if form.password2.errors %}
-                          <div class="invalid-feedback">{{ form.password2.errors.0 }}</div>
-                        {% endif %}
-                      </div>
+                      <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                             name="password2" placeholder="********" required>
+                      {% if form.password2.errors %}
+                        <div class="invalid-feedback">{{ form.password2.errors.0 }}</div>
+                      {% else %}
+                        <div class="invalid-feedback">Las contraseñas no coinciden.</div>
+                      {% endif %}
                     </div>
                   </div>
                 </div>
@@ -168,69 +157,63 @@
                 <!-- Paso 3: Información de la Empresa -->
                 <div id="step-3" class="wizard-step {% if form.company_name.errors or form.reeup.errors or form.nit.errors or form.account.errors or form.address.errors %}has-error{% endif %}" style="display: none;">
                   <h3 class="mb-4">Información de la Empresa</h3>
-                  
                   <div class="mb-3">
                     <label class="form-label required">Nombre de la Empresa</label>
-                    <div class="input-group">
-                      <input type="text" class="form-control {% if form.company_name.errors %}is-invalid{% endif %}" 
-                             name="company_name" placeholder="Mi Empresa S.A.C." value="{{ form.company_name.value|default:'' }}" required>
-                      {% if form.company_name.errors %}
-                        <div class="invalid-feedback">{{ form.company_name.errors.0 }}</div>
-                      {% endif %}
-                    </div>
+                    <input type="text" class="form-control {% if form.company_name.errors %}is-invalid{% endif %}" 
+                           name="company_name" placeholder="Mi Empresa S.A.C." value="{{ form.company_name.value|default:'' }}" 
+                           required maxlength="100">
+                    {% if form.company_name.errors %}
+                      <div class="invalid-feedback">{{ form.company_name.errors.0 }}</div>
+                    {% endif %}
                   </div>
-                  
                   <div class="row">
                     <div class="col-md-6 mb-3">
                       <label class="form-label required">REEUP</label>
-                      <div class="input-group">
-                        <input type="text" class="form-control {% if form.reeup.errors %}is-invalid{% endif %}" 
-                               name="reeup" placeholder="12345678901" value="{{ form.reeup.value|default:'' }}" required>
-                        {% if form.reeup.errors %}
-                          <div class="invalid-feedback">{{ form.reeup.errors.0 }}</div>
-                        {% endif %}
-                      </div>
+                      <input type="text" class="form-control {% if form.reeup.errors %}is-invalid{% endif %}" 
+                             name="reeup" placeholder="12345678901" value="{{ form.reeup.value|default:'' }}" 
+                             required maxlength="11" pattern="[0-9]{11}" inputmode="numeric">
+                      {% if form.reeup.errors %}
+                        <div class="invalid-feedback">{{ form.reeup.errors.0 }}</div>
+                      {% else %}
+                        <div class="invalid-feedback">El REEUP debe tener 11 dígitos numéricos.</div>
+                      {% endif %}
                     </div>
-                    
                     <div class="col-md-6 mb-3">
                       <label class="form-label required">NIT</label>
-                      <div class="input-group">
-                        <input type="text" class="form-control {% if form.nit.errors %}is-invalid{% endif %}" 
-                               name="nit" placeholder="12345678901" value="{{ form.nit.value|default:'' }}" required>
-                        {% if form.nit.errors %}
-                          <div class="invalid-feedback">{{ form.nit.errors.0 }}</div>
-                        {% endif %}
-                      </div>
+                      <input type="text" class="form-control {% if form.nit.errors %}is-invalid{% endif %}" 
+                             name="nit" placeholder="12345678901" value="{{ form.nit.value|default:'' }}" 
+                             required maxlength="11" pattern="[0-9]{11}" inputmode="numeric">
+                      {% if form.nit.errors %}
+                        <div class="invalid-feedback">{{ form.nit.errors.0 }}</div>
+                      {% else %}
+                        <div class="invalid-feedback">El NIT debe tener 11 dígitos numéricos.</div>
+                      {% endif %}
                     </div>
                   </div>
-                  
                   <div class="mb-3">
                     <label class="form-label required">Cuenta Bancaria</label>
-                    <div class="input-group">
-                      <input type="text" class="form-control {% if form.account.errors %}is-invalid{% endif %}" 
-                             name="account" placeholder="1234567890123456" value="{{ form.account.value|default:'' }}" required>
-                      {% if form.account.errors %}
-                        <div class="invalid-feedback">{{ form.account.errors.0 }}</div>
-                      {% endif %}
-                    </div>
+                    <input type="text" class="form-control {% if form.account.errors %}is-invalid{% endif %}" 
+                           name="account" placeholder="1234567890123456" value="{{ form.account.value|default:'' }}" 
+                           required maxlength="16" pattern="[0-9]{16}" inputmode="numeric">
+                    {% if form.account.errors %}
+                      <div class="invalid-feedback">{{ form.account.errors.0 }}</div>
+                    {% else %}
+                      <div class="invalid-feedback">La cuenta bancaria debe tener 16 dígitos numéricos.</div>
+                    {% endif %}
                   </div>
-                  
                   <div class="mb-3">
                     <label class="form-label required">Dirección</label>
-                    <div class="input-group">
-                      <textarea class="form-control {% if form.address.errors %}is-invalid{% endif %}" 
-                                name="address" rows="2" placeholder="Av. Principal 123" required>{{ form.address.value|default:'' }}</textarea>
-                      {% if form.address.errors %}
-                        <div class="invalid-feedback">{{ form.address.errors.0 }}</div>
-                      {% endif %}
-                    </div>
+                    <textarea class="form-control {% if form.address.errors %}is-invalid{% endif %}" 
+                              name="address" rows="2" placeholder="Av. Principal 123" required>{{ form.address.value|default:'' }}</textarea>
+                    {% if form.address.errors %}
+                      <div class="invalid-feedback">{{ form.address.errors.0 }}</div>
+                    {% endif %}
                   </div>
                 </div>
 
                 <!-- Paso 4: Confirmación -->
                 <div id="step-4" class="wizard-step {% if form.accept_terms.errors %}has-error{% endif %}" style="display: none;">
                   <h3 class="mb-4">Términos y Condiciones</h3>
-                  
                   <div class="mb-4">
                     <div class="border rounded p-4">
                       <h5>Política de Privacidad y Términos de Servicio</h5>
@@ -253,11 +236,11 @@
                       </div>
                     </div>
                   </div>
-                  
                   <div class="mb-4">
                     <div class="form-check">
+                      <!-- Sin required, el control es mediante JS -->
                       <input class="form-check-input {% if form.accept_terms.errors %}is-invalid{% endif %}" 
-                             type="checkbox" name="accept_terms" id="accept-terms" required>
+                             type="checkbox" name="accept_terms" id="accept-terms">
                       <label class="form-check-label" for="accept-terms">
                         <strong>Acepto los Términos de Servicio y la Política de Privacidad</strong>
                       </label>
@@ -266,7 +249,6 @@
                       {% endif %}
                     </div>
                   </div>
-                  
                   <div class="mb-3">
                     <div class="form-check">
                       <input class="form-check-input" type="checkbox" name="newsletter" id="newsletter">
@@ -338,50 +320,19 @@
     to { opacity: 1; transform: translateY(0); }
   }
   
-  /* Indica que el paso tiene errores */
   .wizard-step.has-error {
     border-left: 4px solid var(--tblr-danger);
     padding-left: 10px;
   }
   
-  /* Para checkbox */
-  .form-check-input.is-valid {
-    border-color: #198754;
-  }
-  
-  .form-check-input.is-valid:checked {
-    background-color: #198754;
-    border-color: #198754;
-  }
-  
-  .form-check-input.is-invalid {
-    border-color: #dc3545;
-  }
-  
-  /* Feedback con íconos */
-  .valid-feedback {
-    display: block;
-    color: #198754;
-    font-size: 0.875rem;
-  }
-  
-  .invalid-feedback {
-    display: block;
-    color: #dc3545;
-    font-size: 0.875rem;
-  }
-  
-  /* Ajustes responsivos */
   @media (max-width: 768px) {
     .container-normal {
       padding-left: 15px;
       padding-right: 15px;
     }
-    
     .wizard-step {
       padding: 10px 0;
     }
-    
   }
 </style>
 
@@ -399,123 +350,10 @@
     const acceptTerms = document.getElementById('accept-terms');
     const toastContainer = document.getElementById('toast-container');
 
-    // Función para detectar si hay errores en el paso
-    function stepHasErrors(stepNumber) {
-      const step = document.getElementById(`step-${stepNumber}`);
-      if (!step) return false;
-      
-      const invalidFields = step.querySelectorAll('.is-invalid');
-      return invalidFields.length > 0;
-    }
+    let termsToastShown = false; // Control para mostrar el toast solo una vez al entrar al paso 4
 
-    // Función para encontrar el primer paso con errores
-    function findFirstStepWithErrors() {
-      for (let i = 1; i <= totalSteps; i++) {
-        if (stepHasErrors(i)) {
-          return i;
-        }
-      }
-      return 1;
-    }
-
-    // Función para validar un campo individual
-    function validateField(field) {
-      let isValid = true;
-      const value = field.value.trim();
-      
-      // Limpiar clases previas
-      field.classList.remove('is-valid', 'is-invalid');
-      
-      // Validar campo requerido
-      if (field.hasAttribute('required') && !value) {
-        isValid = false;
-      }
-      
-      // Validaciones específicas
-      if (value && isValid) {
-        if (field.type === 'email') {
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(value)) {
-            isValid = false;
-          }
-        }
-        
-        if (field.name === 'phone') {
-          const phoneRegex = /^[0-9]{8}$/;
-          if (!phoneRegex.test(value)) {
-            isValid = false;
-          }
-        }
-        
-        if (field.name === 'reeup') {
-          const reeupRegex = /^[0-9]{11}$/;
-          if (!reeupRegex.test(value)) {
-            isValid = false;
-          }
-        }
-        
-        if (field.name === 'nit') {
-          const nitRegex = /^[0-9]{11}$/;
-          if (!nitRegex.test(value)) {
-            isValid = false;
-          }
-        }
-        
-        if (field.name === 'account') {
-          const accountRegex = /^[0-9]{16}$/;
-          if (!accountRegex.test(value)) {
-            isValid = false;
-          }
-        }
-        
-        if (field.name === 'password2') {
-          const password1 = form.querySelector('input[name="password1"]');
-          if (password1 && password1.value !== value) {
-            isValid = false;
-          }
-        }
-      }
-      
-      // Aplicar clases según validación
-      if (isValid && value) {
-        field.classList.add('is-valid');
-      } else if (!isValid) {
-        field.classList.add('is-invalid');
-      }
-      
-      return isValid;
-    }
-
-    // Función para actualizar el estado del botón de enviar
-    function updateSubmitButtonState() {
-      if (currentStep === totalSteps) {
-        if (acceptTerms && acceptTerms.checked) {
-          submitBtn.disabled = false;
-          submitBtn.classList.remove('btn-disabled');
-          submitBtn.title = 'Haz clic para completar tu registro';
-        } else {
-          submitBtn.disabled = true;
-          submitBtn.classList.add('btn-disabled');
-          submitBtn.title = 'Debes aceptar los términos y condiciones para continuar';
-        }
-      }
-    }
-
-    // Inicializar en el paso correcto
-    function initializeStep() {
-      const firstStepWithErrors = findFirstStepWithErrors();
-      if (firstStepWithErrors > 1) {
-        currentStep = firstStepWithErrors;
-      }
-      updateStepDisplay();
-      
-      if (firstStepWithErrors > 1) {
-        showToast('Por favor, corrige los errores en el formulario antes de continuar.', 'warning');
-      }
-    }
-
-    // Función para crear y mostrar un toast de Tabler
-    function showToast(message, type = 'danger', duration = 5000) {
+    // --- Función para mostrar toast ---
+    function showToast(message, type = 'success', duration = 5000) {
       let bgClass, iconSvg, title;
       switch(type) {
         case 'success':
@@ -523,10 +361,10 @@
           iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l5 5l10 -10" /></svg>';
           title = 'Éxito';
           break;
-        case 'warning':
-          bgClass = 'bg-warning';
-          iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v2m0 4v.01" /><path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" /></svg>';
-          title = 'Advertencia';
+        case 'danger':
+          bgClass = 'bg-danger';
+          iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>';
+          title = 'Error';
           break;
         case 'info':
           bgClass = 'bg-info';
@@ -534,9 +372,9 @@
           title = 'Información';
           break;
         default:
-          bgClass = 'bg-danger';
-          iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>';
-          title = 'Error';
+          bgClass = 'bg-info';
+          iconSvg = '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><circle cx="12" cy="12" r="9" /><line x1="12" y1="8" x2="12.01" y2="8" /><polyline points="11 12 12 12 12 16 13 16" /></svg>';
+          title = 'Información';
       }
 
       const toastId = 'toast-' + Date.now();
@@ -568,10 +406,70 @@
       }, duration);
     }
 
-    // Función para mostrar/ocultar pasos
+    // --- Filtros de entrada para campos numéricos ---
+    form.addEventListener('input', function(e) {
+      const field = e.target;
+      
+      if (field.name === 'phone' || field.name === 'reeup' || field.name === 'nit' || field.name === 'account') {
+        field.value = field.value.replace(/\D/g, '');
+      }
+      
+      // Quitar is-invalid si el campo ahora es válido
+      if (field.classList.contains('is-invalid') && field.checkValidity()) {
+        field.classList.remove('is-invalid');
+      }
+    });
+
+    // --- Validación del paso actual (solo marcar is-invalid, sin is-valid) ---
+    function validateStep(stepNumber) {
+      const step = document.getElementById(`step-${stepNumber}`);
+      const inputs = step.querySelectorAll('input, textarea, select');
+      let firstInvalid = null;
+
+      for (let input of inputs) {
+        input.classList.remove('is-invalid');
+        
+        if (!input.checkValidity()) {
+          input.classList.add('is-invalid');
+          if (!firstInvalid) {
+            firstInvalid = input;
+          }
+        }
+      }
+
+      if (firstInvalid) {
+        firstInvalid.reportValidity();
+        return false;
+      }
+      return true;
+    }
+
+    // --- Detección de errores del servidor (campos con is-invalid ya presentes) ---
+    function stepHasErrors(stepNumber) {
+      const step = document.getElementById(`step-${stepNumber}`);
+      if (!step) return false;
+      return step.querySelectorAll('.is-invalid').length > 0;
+    }
+
+    function findFirstStepWithErrors() {
+      for (let i = 1; i <= totalSteps; i++) {
+        if (stepHasErrors(i)) {
+          return i;
+        }
+      }
+      return 1;
+    }
+
+    // --- Actualizar estado del botón de submit según el checkbox ---
+    function updateSubmitButtonState() {
+      if (currentStep === totalSteps) {
+        submitBtn.disabled = !(acceptTerms && acceptTerms.checked);
+      }
+    }
+
+    // --- Actualizar la UI del wizard ---
     function updateStepDisplay() {
       steps.forEach(step => step.style.display = 'none');
-      
       const currentStepElement = document.getElementById(`step-${currentStep}`);
       if (currentStepElement) {
         currentStepElement.style.display = 'block';
@@ -588,87 +486,21 @@
         nextBtn.style.display = 'none';
         submitBtn.style.display = 'inline-block';
         updateSubmitButtonState();
-        
-        if (acceptTerms && !acceptTerms.checked) {
-          showToast('Para completar el registro, debes aceptar los Términos y Condiciones.', 'info', 3000);
+
+        // Mostrar toast informativo al entrar al paso de términos (solo una vez)
+        if (!termsToastShown) {
+          showToast('Para completar el registro, debes aceptar los Términos y Condiciones.', 'info', 5000);
+          termsToastShown = true;
         }
       } else {
         nextBtn.style.display = 'inline-block';
         submitBtn.style.display = 'none';
       }
       
-      // Desplazar al top del paso actual
-      setTimeout(() => {
-        currentStepElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        const firstInvalidField = currentStepElement?.querySelector('.is-invalid');
-        if (firstInvalidField) {
-          firstInvalidField.focus();
-        }
-      }, 100);
+      currentStepElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // Función para validar paso actual
-    function validateCurrentStep() {
-      const currentStepElement = document.getElementById(`step-${currentStep}`);
-      const inputs = currentStepElement.querySelectorAll('input[required], select[required], textarea[required]');
-      let isValid = true;
-      let firstInvalidField = null;
-      let errorMessages = [];
-      
-      inputs.forEach(input => {
-        if (input.type === 'checkbox') {
-          if (!input.checked) {
-            input.classList.add('is-invalid');
-            if (!firstInvalidField) firstInvalidField = input;
-            isValid = false;
-            const label = currentStepElement.querySelector(`label[for="${input.id}"]`);
-            const fieldName = label ? label.textContent.replace('*', '').trim() : 'Este campo';
-            errorMessages.push(`${fieldName} debe ser aceptado`);
-          } else {
-            input.classList.remove('is-invalid');
-          }
-        } else {
-          if (!validateField(input)) {
-            isValid = false;
-            if (!firstInvalidField) firstInvalidField = input;
-            const label = currentStepElement.querySelector(`label[for="${input.id}"]`) || 
-                         input.closest('.mb-3')?.querySelector('.form-label');
-            const fieldName = label ? label.textContent.replace('*', '').trim() : 'Este campo';
-            
-            if (input.type === 'email' && input.value) {
-              errorMessages.push('Por favor, ingresa un correo electrónico válido');
-            } else if (input.name === 'phone' && input.value) {
-              errorMessages.push('El teléfono debe tener 8 dígitos numéricos');
-            } else if (input.name === 'reeup' && input.value) {
-              errorMessages.push('El REEUP debe tener 11 dígitos numéricos');
-            } else if (input.name === 'nit' && input.value) {
-              errorMessages.push('El NIT debe tener 11 dígitos numéricos');
-            } else if (input.name === 'account' && input.value) {
-              errorMessages.push('La cuenta bancaria debe tener 16 dígitos numéricos');
-            } else if (input.name === 'password2' && input.value) {
-              errorMessages.push('Las contraseñas no coinciden');
-            } else {
-              errorMessages.push(`${fieldName} es requerido`);
-            }
-          }
-        }
-      });
-      
-      if (!isValid) {
-        const errorMessage = errorMessages[0];
-        showToast(errorMessage, 'danger');
-        
-        if (firstInvalidField) {
-          firstInvalidField.focus();
-          firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-      
-      return isValid;
-    }
-
-    // Navegación entre pasos
+    // --- Eventos de navegación ---
     prevBtn.addEventListener('click', function() {
       if (currentStep > 1) {
         currentStep--;
@@ -677,7 +509,7 @@
     });
 
     nextBtn.addEventListener('click', function() {
-      if (validateCurrentStep()) {
+      if (validateStep(currentStep)) {
         if (currentStep < totalSteps) {
           currentStep++;
           updateStepDisplay();
@@ -685,138 +517,72 @@
       }
     });
 
-    // Event listener para el checkbox de términos
+    // --- Manejo del checkbox de términos ---
     if (acceptTerms) {
       acceptTerms.addEventListener('change', function() {
         if (this.checked) {
-          this.classList.add('is-valid');
-          this.classList.remove('is-invalid');
           showToast('¡Gracias por aceptar nuestros términos! Ahora puedes completar tu registro.', 'success', 3000);
-        } else {
-          this.classList.remove('is-valid');
         }
+        // Al desmarcar, el botón se deshabilita automáticamente
         updateSubmitButtonState();
       });
     }
 
-    // Validar en tiempo real cuando el usuario sale del campo
-    form.addEventListener('blur', function(e) {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        if (e.target.type !== 'checkbox') {
-          validateField(e.target);
-        }
-      }
-    }, true);
-
-    // Limpiar validación cuando el usuario empieza a escribir
-    form.addEventListener('input', function(e) {
-      const target = e.target;
-      
-      if (target.type !== 'checkbox') {
-        target.classList.remove('is-valid', 'is-invalid');
-      }
-      
-      // Validación de teléfono en tiempo real
-      if (target.name === 'phone') {
-        const phoneRegex = /^[0-9]{0,8}$/;
-        if (!phoneRegex.test(target.value)) {
-          target.value = target.value.replace(/\D/g, '').slice(0, 8);
-        }
-      }
-      
-      // Validación de REEUP en tiempo real
-      if (target.name === 'reeup') {
-        const reupRegex = /^[0-9]{0,11}$/;
-        if (!reupRegex.test(target.value)) {
-          target.value = target.value.replace(/\D/g, '').slice(0, 11);
-        }
-      }
-      
-      // Validación de NIT en tiempo real
-      if (target.name === 'nit') {
-        const nitRegex = /^[0-9]{0,11}$/;
-        if (!nitRegex.test(target.value)) {
-          target.value = target.value.replace(/\D/g, '').slice(0, 11);
-        }
-      }
-      
-      // Validación de cuenta bancaria en tiempo real
-      if (target.name === 'account') {
-        const accountRegex = /^[0-9]{0,16}$/;
-        if (!accountRegex.test(target.value)) {
-          target.value = target.value.replace(/\D/g, '').slice(0, 16);
-        }
-      }
-      
-      // Validación de contraseñas en tiempo real
-      if (target.name === 'password1' || target.name === 'password2') {
-        const pass1 = form.querySelector('input[name="password1"]');
-        const pass2 = form.querySelector('input[name="password2"]');
-        
-        if (pass1.value && pass2.value && pass1.value !== pass2.value) {
-          pass2.classList.add('is-invalid');
-        } else if (pass2.value) {
-          pass2.classList.remove('is-invalid');
-        }
-      }
-    }, true);
-
-    // Validar términos antes de enviar
+    // --- Validación final antes del envío ---
     form.addEventListener('submit', function(e) {
-      if (currentStep === totalSteps && acceptTerms && !acceptTerms.checked) {
+      // Verificar términos manualmente (ya que no tiene required)
+      if (acceptTerms && !acceptTerms.checked) {
         e.preventDefault();
         acceptTerms.classList.add('is-invalid');
         showToast('Debes aceptar los Términos y Condiciones para completar el registro.', 'danger');
+        
+        // Asegurar que el botón esté deshabilitado
+        submitBtn.disabled = true;
+        
+        if (currentStep !== 4) {
+          currentStep = 4;
+          updateStepDisplay();
+        }
         acceptTerms.focus();
         return false;
       }
-      
-      const requiredFields = form.querySelectorAll('[required]');
-      let allValid = true;
-      let firstInvalidField = null;
-      
-      requiredFields.forEach(field => {
-        if (field.type === 'checkbox') {
-          if (!field.checked) {
-            field.classList.add('is-invalid');
-            if (!firstInvalidField) firstInvalidField = field;
-            allValid = false;
-          }
-        } else {
-          if (!validateField(field)) {
-            if (!firstInvalidField) firstInvalidField = field;
-            allValid = false;
+
+      // Validar todos los campos (incluyendo ocultos)
+      const allInputs = form.querySelectorAll('input, textarea, select');
+      let firstInvalidOverall = null;
+
+      for (let input of allInputs) {
+        input.classList.remove('is-invalid');
+        if (!input.checkValidity()) {
+          input.classList.add('is-invalid');
+          if (!firstInvalidOverall) {
+            firstInvalidOverall = input;
           }
         }
-      });
-      
-      if (!allValid) {
+      }
+
+      if (firstInvalidOverall) {
         e.preventDefault();
-        showToast('Por favor, completa todos los campos requeridos correctamente.', 'danger');
-        
         for (let i = 1; i <= totalSteps; i++) {
-          const step = document.getElementById(`step-${i}`);
-          const invalidInStep = step?.querySelector('.is-invalid');
-          if (invalidInStep) {
+          if (document.getElementById(`step-${i}`).contains(firstInvalidOverall)) {
             currentStep = i;
             updateStepDisplay();
-            invalidInStep.focus();
             break;
           }
         }
-        
-        if (firstInvalidField) {
-          firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        
+        firstInvalidOverall.reportValidity();
         return false;
       }
       
-      return true;
+      // Si todo está bien, el formulario se envía
     });
 
-    // Inicializar el wizard
-    initializeStep();
+    // --- Inicialización: posicionarse en el primer paso con errores del servidor (si los hay) ---
+    const firstStepWithErrors = findFirstStepWithErrors();
+    if (firstStepWithErrors > 1) {
+      currentStep = firstStepWithErrors;
+    }
+    updateStepDisplay();
   });
 </script>
 {% endblock %}
