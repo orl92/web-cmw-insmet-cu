@@ -30,7 +30,7 @@ def generic_pdf_path(instance, filename):
     return 'pdf/{}/{}{}'.format(class_name, random_filename, extension)
 
 class ImageModel(models.Model):
-    image = models.ImageField(upload_to=generic_image_path, verbose_name='Imágen')
+    image = models.ImageField(upload_to=generic_image_path, verbose_name='Imágen', blank=True, null=True)
 
     class Meta:
         abstract = True
