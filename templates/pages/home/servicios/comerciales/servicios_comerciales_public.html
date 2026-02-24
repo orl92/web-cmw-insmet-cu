@@ -14,7 +14,6 @@
               <div class="card-body">
                 <h5 class="card-title">{{ service.title }}</h5>
                 <p class="card-text">{{ service.summary }}</p>
-                <p class="text-muted">Tipo: Comercial</p>
 
                 {% if user.is_authenticated %}
                   {% if user.is_staff %}
@@ -23,11 +22,11 @@
                     {% with sub=user_subscriptions|get_item:service.id %}
                       {% if sub %}
                         {% if sub.payment_status == 'paid' and sub.end_date > now %}
-                          <span class="badge bg-success">Activo</span>
+                          <span class="badge badge-outline text-green">Activo</span>
                         {% elif sub.payment_status == 'pending' %}
-                          <span class="badge bg-warning">Pendiente de pago</span>
+                          <span class="badge badge-outline text-prange">Pendiente de pago</span>
                         {% elif sub.payment_status == 'requested' %}
-                          <span class="badge bg-info">Solicitado</span>
+                          <span class="badge badge-outline text-info">Solicitado</span>
                         {% else %}
                           <a href="{% url 'solicitar_suscripcion' service.uuid %}" class="btn btn-outline-primary">Solicitar</a>
                         {% endif %}
