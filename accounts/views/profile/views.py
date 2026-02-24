@@ -1,16 +1,17 @@
+from accounts.forms.profile.form import ProfileForm
+from accounts.models import Profile
+from common.utils import log_action
 from django.contrib import messages
 from django.contrib.admin.models import CHANGE, LogEntry
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, UpdateView
 
-from accounts.forms.profile.form import ProfileForm
-from accounts.models import Profile
-from common.utils import log_action
-
 # Create your views here.
+
 
 class ProfileDetailView(LoginRequiredMixin, DetailView):
     template_name = 'pages/accounts/profile/profile.html'
@@ -38,6 +39,7 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
 
         return context
 
+
 class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Profile
     form_class = ProfileForm
@@ -57,7 +59,8 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return initial
 
     def test_func(self):
-        return self.get_object().user == self.request.user
+        profile = self.get_object()
+        return profile.user_id is not None and profile.user == self.request.user
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -65,14 +68,13 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         context['parent'] = 'accounts'
         context['segment'] = 'profile'
         context['url_list'] = self.success_url
-        # Añadir variable para saber si es cliente
         context['is_customer'] = hasattr(self.request.user, 'customer')
         return context
 
     def post(self, request, *args, **kwargs):
         profile = self.get_object()
 
-        # Registro de acción para eliminar el avatar
+        # Acción de eliminar avatar (sin pasar por el formulario)
         if 'delete_avatar' in request.POST:
             profile.avatar.delete(save=False)
             profile.save()
@@ -83,9 +85,10 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 message="El usuario eliminó su avatar."
             )
             messages.success(self.request, 'El avatar ha sido eliminado con éxito.', extra_tags='danger')
-            return self.form_valid(self.get_form())
+            # Redirigir a la misma página de edición (o a donde corresponda)
+            return redirect('update_profile', uuid=profile.uuid)  # Ajusta el nombre de la URL si es necesario
 
-        # Registro de acción para actualizar el perfil
+        # Si no es eliminar avatar, procesar el formulario normalmente
         response = super().post(request, *args, **kwargs)
         log_action(
             user=request.user,
@@ -94,7 +97,6 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             message="El usuario actualizó su perfil."
         )
         
-        # Registrar también actualización de datos de empresa si es cliente
         if hasattr(request.user, 'customer'):
             log_action(
                 user=request.user,
@@ -105,3 +107,4 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         
         messages.success(self.request, 'El perfil ha sido actualizado con éxito.', extra_tags='warning')
         return response
+
