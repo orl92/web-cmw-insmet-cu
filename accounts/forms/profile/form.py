@@ -62,7 +62,6 @@ class ProfileForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # --- CORRECCIÓN: Verificar que el perfil tenga un usuario asociado antes de acceder a customer ---
         if self.instance.user_id is not None:
             user = self.instance.user  # ahora es seguro acceder
             if hasattr(user, 'customer'):
