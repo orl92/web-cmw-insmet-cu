@@ -69,13 +69,28 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         context['segment'] = 'profile'
         context['url_list'] = self.success_url
         context['is_customer'] = hasattr(self.request.user, 'customer')
+
+        # --- Lógica para seleccionar la pestaña activa ---
+        active_tab = 'personal'  # valor por defecto
+
+        if self.request.method == 'POST':
+            form = context.get('form')
+            # Solo si hay errores en el formulario
+            if form and form.errors:
+                # Campos que pertenecen a la pestaña "Empresa"
+                campos_empresa = ['company_name', 'reeup', 'nit', 'account', 'address', 'phone', 'newsletter']
+                # Si algún campo de empresa tiene error, activamos esa pestaña
+                if any(campo in form.errors for campo in campos_empresa):
+                    active_tab = 'empresa'
+                # Si no hay errores en empresa, se queda en 'personal' (ya es el default)
+
+        context['active_tab'] = active_tab
         return context
 
     def post(self, request, *args, **kwargs):
-        profile = self.get_object()
-
-        # Acción de eliminar avatar (sin pasar por el formulario)
+        # Manejar eliminación de avatar (no pasa por el formulario)
         if 'delete_avatar' in request.POST:
+            profile = self.get_object()
             profile.avatar.delete(save=False)
             profile.save()
             log_action(
@@ -85,26 +100,30 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 message="El usuario eliminó su avatar."
             )
             messages.success(self.request, 'El avatar ha sido eliminado con éxito.', extra_tags='danger')
-            # Redirigir a la misma página de edición (o a donde corresponda)
-            return redirect('update_profile', uuid=profile.uuid)  # Ajusta el nombre de la URL si es necesario
+            return redirect('update_profile', uuid=profile.uuid)
 
-        # Si no es eliminar avatar, procesar el formulario normalmente
-        response = super().post(request, *args, **kwargs)
+        # Si no es eliminar avatar, procesar normalmente
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        # ... (resto del código igual)
+        response = super().form_valid(form)
+        profile = self.object
+
         log_action(
-            user=request.user,
+            user=self.request.user,
             obj=profile,
             action_flag=CHANGE,
             message="El usuario actualizó su perfil."
         )
-        
-        if hasattr(request.user, 'customer'):
+
+        if hasattr(self.request.user, 'customer'):
             log_action(
-                user=request.user,
-                obj=request.user.customer,
+                user=self.request.user,
+                obj=self.request.user.customer,
                 action_flag=CHANGE,
                 message="El cliente actualizó sus datos de empresa."
             )
-        
+
         messages.success(self.request, 'El perfil ha sido actualizado con éxito.', extra_tags='warning')
         return response
-
