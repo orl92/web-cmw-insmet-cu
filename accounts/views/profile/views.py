@@ -70,19 +70,23 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         context['url_list'] = self.success_url
         context['is_customer'] = hasattr(self.request.user, 'customer')
 
-        # --- Lógica para seleccionar la pestaña activa ---
+        # --- Lógica para seleccionar la pestaña activa según errores ---
         active_tab = 'personal'  # valor por defecto
 
         if self.request.method == 'POST':
             form = context.get('form')
-            # Solo si hay errores en el formulario
             if form and form.errors:
-                # Campos que pertenecen a la pestaña "Empresa"
+                # Definir qué campos pertenecen a cada pestaña
+                campos_personal = ['first_name', 'last_name', 'email', 'avatar']
                 campos_empresa = ['company_name', 'reeup', 'nit', 'account', 'address', 'phone', 'newsletter']
-                # Si algún campo de empresa tiene error, activamos esa pestaña
-                if any(campo in form.errors for campo in campos_empresa):
+                
+                # Prioridad: si hay error en personal, mostramos personal
+                if any(campo in form.errors for campo in campos_personal):
+                    active_tab = 'personal'
+                # Si no hay error en personal pero sí en empresa, mostramos empresa
+                elif any(campo in form.errors for campo in campos_empresa):
                     active_tab = 'empresa'
-                # Si no hay errores en empresa, se queda en 'personal' (ya es el default)
+                # Si no hay errores (caso improbable aquí), se queda 'personal'
 
         context['active_tab'] = active_tab
         return context
@@ -106,10 +110,11 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
-        # ... (resto del código igual)
+        """Este método se llama solo cuando el formulario es válido"""
         response = super().form_valid(form)
-        profile = self.object
+        profile = self.object  # El perfil actualizado
 
+        # Registrar acción de actualización de perfil
         log_action(
             user=self.request.user,
             obj=profile,
@@ -117,6 +122,7 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             message="El usuario actualizó su perfil."
         )
 
+        # Si es cliente, registrar también actualización de datos de empresa
         if hasattr(self.request.user, 'customer'):
             log_action(
                 user=self.request.user,
@@ -125,5 +131,6 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 message="El cliente actualizó sus datos de empresa."
             )
 
+        # Mensaje de éxito (solo cuando todo está bien)
         messages.success(self.request, 'El perfil ha sido actualizado con éxito.', extra_tags='warning')
         return response
