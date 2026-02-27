@@ -99,7 +99,7 @@ $ python manage.py collectstatic --link --no-input
 ### 5. Cargar datos de estaciones
 
 ```bash
-python stations_add.py
+python manage.py add_stations_data
 ```
 
 ### 6. Crear usuario administrador
