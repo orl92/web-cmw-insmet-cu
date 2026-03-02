@@ -63,7 +63,7 @@ def create_default_env(production=False):
                 f.write("# EMAIL_HOST_USER=user@tu-dominio.com\n")
                 f.write("# EMAIL_HOST_PASSWORD=tu_contraseña_segura\n")
                 f.write("# DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
-                f.write("# CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend\n")
+                f.write("# CUSTOM_EMAIL_BACKEND=config.custom_email_backend.CustomSTARTTLSBackend\n")
                 f.write("# EMAIL_USE_SSL=False\n\n")
 
             # 3. Configuración para producción
@@ -89,7 +89,7 @@ def create_default_env(production=False):
                 f.write("EMAIL_HOST_USER=user@tu-dominio.com\n")
                 f.write("EMAIL_HOST_PASSWORD=tu_contraseña_segura\n")
                 f.write("DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
-                f.write("CUSTOM_EMAIL_BACKEND=core.custom_email_backend.CustomSTARTTLSBackend\n")
+                f.write("CUSTOM_EMAIL_BACKEND=config.custom_email_backend.CustomSTARTTLSBackend\n")
                 f.write("EMAIL_USE_SSL=False\n")
 
                 # 3.3 Base de datos
@@ -201,7 +201,7 @@ except Exception as e:
     sys.exit(1)
 
 # =====================
-# 2. CORE SETTINGS
+# 2. SETTINGS
 # =====================
 DEBUG = str2bool(os.getenv('DEBUG', 'False' if IS_PRODUCTION else 'True'))
 
@@ -388,7 +388,7 @@ MIDDLEWARE = [
     'dashboard.middleware.maintenance_mode.MaintenanceModeMiddleware',
 ]
 
-ROOT_URLCONF = 'core.urls'
+ROOT_URLCONF = 'config.urls'
 
 # =====================
 # 6. TEMPLATES
@@ -414,7 +414,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # =====================
