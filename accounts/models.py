@@ -1,92 +1,88 @@
+import logging
 import os
 import uuid
-import logging
+
+from common.utils import FileHandlerMixin, image_upload_path
+from core import settings
 from django.contrib.auth.models import Group, User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from PIL import Image
 
-from common.utils import generic_image_path
-from core import settings
-
 logger = logging.getLogger(__name__)
 
 # Create your models here.
 
-class Profile(models.Model):
-  user = models.OneToOneField(User, on_delete=models.CASCADE)
-  avatar = models.ImageField(null=True, blank=True, upload_to=generic_image_path)
-  uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-  is_ldap = models.BooleanField(default=False)
+class Profile(FileHandlerMixin, models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    avatar = models.ImageField(
+        null=True, blank=True,
+        upload_to=image_upload_path
+    )
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    is_ldap = models.BooleanField(default=False)
 
-  def save(self, *args, **kwargs):
-        try:
-            this = Profile.objects.get(uuid=self.uuid)
-            if this.avatar != self.avatar:
-                this.avatar.delete(save=False)
-        except:
-            pass
-        super(Profile, self).save(*args, **kwargs)
+    # Lista de campos de archivo para que el mixin los gestione
+    file_fields = ['avatar']
 
+    def save(self, *args, **kwargs):
+        # Primero guardamos para tener el archivo en disco
+        super().save(*args, **kwargs)
+
+        # Redimensionar y recortar imagen (solo si hay avatar)
         if self.avatar and os.path.exists(self.avatar.path):
-          # Redimencionar la imagen antes de guardarla
-          with Image.open(self.avatar.path) as img:
-              wide, hide = img.size
-              if wide > hide:
-                 # La imagen es mas ancha(wide) que alta(hide)
-                 new_hide = 300
-                 new_wide = int((wide/hide) * new_hide)
-                 img = img.resize((new_wide, new_hide))
-                 img.save(self.avatar.path)
-              elif hide > wide:
-                 # La imagen es mas alta(hide) que ancha(wide)
-                 new_wide = 300
-                 new_hide = int((hide/wide) * new_wide)
-                 img = img.resize((new_wide, new_hide))
-              else:
-                 # La imagen es cuadrada
-                 img.thumbnail((300, 300))
-                 img.save(self.avatar.path)
+            # Redimensionar manteniendo proporción
+            with Image.open(self.avatar.path) as img:
+                wide, high = img.size
+                if wide > high:
+                    new_high = 300
+                    new_wide = int((wide / high) * new_high)
+                    img = img.resize((new_wide, new_high))
+                elif high > wide:
+                    new_wide = 300
+                    new_high = int((high / wide) * new_wide)
+                    img = img.resize((new_wide, new_high))
+                else:
+                    img.thumbnail((300, 300))
+                img.save(self.avatar.path)
 
-            # Recorte de la imagen final
-          with Image.open(self.avatar.path) as img:
-            wide, hide = img.size
-            if wide > hide:
-               left = (wide - hide) / 2 
-               top = 0  
-               rigth = (wide + hide) / 2
-               bottom = hide
-            else:
-               left = 0
-               top = (hide -wide) / 2
-               rigth = wide
-               bottom = (hide + wide) /2 
-            img = img.crop((left, top, rigth, bottom))
-            img.save(self.avatar.path)  
+            # Recorte cuadrado
+            with Image.open(self.avatar.path) as img:
+                wide, high = img.size
+                if wide > high:
+                    left = (wide - high) / 2
+                    top = 0
+                    right = (wide + high) / 2
+                    bottom = high
+                else:
+                    left = 0
+                    top = (high - wide) / 2
+                    right = wide
+                    bottom = (high + wide) / 2
+                img = img.crop((left, top, right, bottom))
+                img.save(self.avatar.path)
 
-  def delete(self, *args, **kwargs):
-      self.avatar.delete(save=False)
-      super(Profile, self).delete(*args, **kwargs)
 
-  def get_avatar(self):
+    def get_avatar(self):
         if self.avatar:
             return f'{settings.MEDIA_URL}{self.avatar}'
         return f'{settings.STATIC_URL}dist/img/avatar.png'
 
-  class Meta:
-    verbose_name = 'Perfil'
-    verbose_name_plural = 'Perfiles'
-    default_permissions = ()
-    permissions = (
-        ('view_profile', 'Ver'),
-        ('add_profile', 'Añadir'),
-        ('change_profile', 'Editar'),
-        ('delete_profile', 'Eliminar'),
-    )
+    class Meta:
+        verbose_name = 'Perfil'
+        verbose_name_plural = 'Perfiles'
+        default_permissions = ()
+        permissions = (
+            ('view_profile', 'Ver'),
+            ('add_profile', 'Añadir'),
+            ('change_profile', 'Editar'),
+            ('delete_profile', 'Eliminar'),
+        )
 
-  def __str__(self):
-     return self.user.username
+    def __str__(self):
+        return self.user.username
+
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

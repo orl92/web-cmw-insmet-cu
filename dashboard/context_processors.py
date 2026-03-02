@@ -14,8 +14,38 @@ def notification_counts(request):
         'storm_warning_count': storm_warning_count,
     }
 
+
+def client_subscription_notifications(request):
+    context = {}
+    if request.user.is_authenticated and hasattr(request.user, 'customer'):
+        customer = request.user.customer
+        context['client_requested_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='requested').count()
+        context['client_pending_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='pending').count()
+        context['client_expired_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='expired').count()
+        context['client_pending_actions'] = context['client_requested_count'] + context['client_pending_count']
+        context['client_total_notifications'] = context['client_pending_actions'] + context['client_expired_count']
+    return context
+
+
 def pending_subscriptions(request):
+    context = {}
+    
+    # Para staff: conteos separados por estado (solicitudes, pendientes, expiradas)
     if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
-        count = ServiceSubscription.objects.filter(payment_status='pending').count()
-        return {'pending_subscriptions_count': count}
-    return {}
+        context['staff_requested_count'] = ServiceSubscription.objects.filter(payment_status='requested').count()
+        context['staff_pending_count'] = ServiceSubscription.objects.filter(payment_status='pending').count()
+        context['staff_expired_count'] = ServiceSubscription.objects.filter(payment_status='expired').count()
+
+    # Para clientes: suscripciones del cliente en estados pendiente y expirado
+    if request.user.is_authenticated and hasattr(request.user, 'customer'):
+        customer = request.user.customer
+        context['user_pending_count'] = ServiceSubscription.objects.filter(
+            customer=customer,
+            payment_status='pending'
+        ).count()
+        context['user_expired_count'] = ServiceSubscription.objects.filter(
+            customer=customer,
+            payment_status='expired'
+        ).count()
+
+    return context

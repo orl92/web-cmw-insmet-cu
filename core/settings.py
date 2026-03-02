@@ -407,6 +407,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'dashboard.context_processors.notification_counts',
+                'dashboard.context_processors.client_subscription_notifications',
+                'dashboard.context_processors.pending_subscriptions',
             ],
         },
     },

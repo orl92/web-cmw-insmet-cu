@@ -7,44 +7,64 @@
   <div class="row row-cards">
     <div class="space-y">
       {% if services %}
-        <div class="row">
-          {% for service in services %}
-          <div class="col-md-4 mb-4">
-            <div class="card h-100">
-              <div class="card-body">
-                <h5 class="card-title">{{ service.title }}</h5>
-                <p class="card-text">{{ service.summary }}</p>
-
+      <div class="row">
+        {% for service in services %}
+        <div class="col-md-4 mb-4">
+          <div class="card h-100">
+            {% if service.image %}
+              <img src="{{ service.image.url }}" class="card-img-top" alt="{{ service.title }}" style="height: 200px; object-fit: cover;">
+            {% else %}
+              <div class="bg-light text-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo" width="48" height="48" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" fill="none">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <line x1="15" y1="8" x2="15.01" y2="8" />
+                  <rect x="4" y="4" width="16" height="16" rx="3" />
+                  <path d="M4 15l4 -4a3 5 0 0 1 3 0l5 5" />
+                  <path d="M14 14l1 -1a3 5 0 0 1 3 0l2 2" />
+                </svg>
+              </div>
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title">
+                <a href="{% url 'detalle_servicio_comercial' service.uuid %}" class="text-decoration-none text-dark">{{ service.title }}</a>
+              </h5>
+              <p class="card-text">{{ service.summary|truncatechars:100 }}</p>
+              <div class="mt-2">
                 {% if user.is_authenticated %}
                   {% if user.is_staff %}
-                    <a href="{% url 'actualizar_servicio' service.uuid %}" class="btn btn-outline-warning">Editar</a>
+                    <a href="{% url 'actualizar_servicio' service.uuid %}" class="btn btn-outline-warning btn-sm">Editar</a>
                   {% elif user.customer %}
                     {% with sub=user_subscriptions|get_item:service.id %}
                       {% if sub %}
                         {% if sub.payment_status == 'paid' and sub.end_date > now %}
-                          <span class="badge badge-outline text-green">Activo</span>
+                          <span class="btn btn-success btn-sm disabled" style="pointer-events: none;">Activo</span>
                         {% elif sub.payment_status == 'pending' %}
-                          <span class="badge badge-outline text-prange">Pendiente de pago</span>
+                          {% if sub.payment_method == 'qr' %}
+                            <a href="{% url 'pago_qr' %}" class="btn btn-outline-primary btn-sm">Pagar con QR</a>
+                          {% else %}
+                            <span class="btn btn-warning btn-sm disabled" style="pointer-events: none;">Pendiente de pago</span>
+                          {% endif %}
                         {% elif sub.payment_status == 'requested' %}
-                          <span class="badge badge-outline text-info">Solicitado</span>
+                          <span class="btn btn-info btn-sm disabled" style="pointer-events: none;">Solicitado</span>
                         {% else %}
-                          <a href="{% url 'solicitar_suscripcion' service.uuid %}" class="btn btn-outline-primary">Solicitar</a>
+                          <a href="{% url 'detalle_servicio_comercial' service.uuid %}" class="btn btn-outline-primary btn-sm">Solicitar</a>
                         {% endif %}
                       {% else %}
-                        <a href="{% url 'solicitar_suscripcion' service.uuid %}" class="btn btn-outline-primary">Solicitar</a>
+                        <a href="{% url 'detalle_servicio_comercial' service.uuid %}" class="btn btn-outline-primary btn-sm">Solicitar</a>
                       {% endif %}
                     {% endwith %}
                   {% else %}
-                    <a href="{% url 'customer_register' %}" class="btn btn-outline-primary">Regístrese</a>
+                    <a href="{% url 'customer_register' %}" class="btn btn-outline-primary btn-sm">Regístrese</a>
                   {% endif %}
                 {% else %}
-                  <a href="{% url 'login' %}?next={% url 'solicitar_suscripcion' service.uuid %}" class="btn btn-outline-primary">Iniciar sesión</a>
+                  <a href="{% url 'login' %}?next={% url 'detalle_servicio_comercial' service.uuid %}" class="btn btn-outline-primary btn-sm">Iniciar sesión</a>
                 {% endif %}
               </div>
             </div>
           </div>
-          {% endfor %}
         </div>
+        {% endfor %}
+      </div>
       {% else %}
         <div class="row row-cards">
           <div class="col-12">

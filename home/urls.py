@@ -14,10 +14,13 @@ from home.views.modelos.views import (
     MeteogramView,
     SoundingView,
 )
-from home.views.pagos.views import PagosView
+from home.views.pago.views import PagoView
 from home.views.satelites.views import ProxyImageView, SateliteView
-from home.views.servicios.comerciales.views import CommercialServicesListView, RequestSubscriptionView, \
-    PublicCommercialServicesListView
+from home.views.servicios.comerciales.views import (
+    CommercialServicesListView,
+    PublicCommercialServicesListView,
+    ServiceDetailView,
+)
 from home.views.servicios.publicos.views import PublicServicesListView
 from home.views.tiempo.hoy.views import WeatherTodayDetailView
 from home.views.tiempo.manana.views import WeatherTomorrowDetailView
@@ -44,15 +47,16 @@ urlpatterns = [
     # Servicios Comerciales
     path('servicios/comerciales/', CommercialServicesListView.as_view(), name='servicios_comerciales'),
     path('servicios/comerciales/public/', PublicCommercialServicesListView.as_view(), name='public_servicios_comerciales'),
-    path('solicitar/servicio/comercial/<uuid:uuid>/', RequestSubscriptionView.as_view(), name='solicitar_suscripcion'),
+    path('servicio/comercial/<uuid:uuid>/', ServiceDetailView.as_view(), name='detalle_servicio_comercial'),
     # Imagen Satélites
     path('imagenes/satelitales/', SateliteView.as_view(), name="satelites"),
     path('proxy_image/', ProxyImageView.as_view(), name='proxy_image'),
     # Pagos en linea
-    # path('pagos_en_linea/', PagosView.as_view(), name='pagos'),
-    path('proxy_image_modelo/', ImageProxyModeloView.as_view(), name='proxy_image_modelo'),
-    path('modelo/descargar_gif/', DescargarGifView.as_view(), name='descargar_gif'),
+    path('pago_en_linea/', PagoView.as_view(), name='pago_qr'),
     # Institución
     path('institucion/publicaciones_cientificas/', ScientificPublicationListView.as_view(), name='publicaciones_cientificas'),
+    # Otros   
+    path('proxy_image_modelo/', ImageProxyModeloView.as_view(), name='proxy_image_modelo'),
+    path('modelo/descargar_gif/', DescargarGifView.as_view(), name='descargar_gif'),
 
 ]

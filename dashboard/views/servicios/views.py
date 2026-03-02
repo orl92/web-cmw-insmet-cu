@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.db.models import Count
 from django.core.exceptions import PermissionDenied
@@ -88,8 +88,26 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        old_type = self.object.service_type
+        new_type = request.POST.get('service_type')
+
+        # Si cambia el tipo, eliminar el archivo que ya no corresponde (en memoria)
+        if old_type != new_type:
+            if new_type == Service.PUBLIC:
+                self.object.image = None   # Eliminar imagen si existe
+            elif new_type == Service.COMMERCIAL:
+                self.object.pdf = None     # Eliminar PDF si existe
+
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
     def form_valid(self, form):
-        response = super().form_valid(form)
+        self.object = form.save()
         log_action(
             user=self.request.user,
             obj=self.object,
@@ -97,7 +115,7 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
             message=f"Se actualizó el servicio: {self.object.title}"
         )
         messages.success(self.request, 'Servicio actualizado con éxito.')
-        return response
+        return redirect(self.success_url)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

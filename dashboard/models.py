@@ -1,23 +1,17 @@
 import uuid
 
-from common.utils import PDFModel, generic_image_path
+from common.utils import FileHandlerMixin, pdf_upload_path, image_upload_path
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils import timezone
 
-# Create your models here.
-
 
 class SiteConfiguration(models.Model):
-    id = models.AutoField(primary_key=True)  # ID predeterminado de Django
-    uuid = models.UUIDField(
-        default=uuid.uuid4, editable=False, unique=True
-    )  # Identificador único adicional
-    maintenance_mode = models.BooleanField(
-        default=True
-    )  # Modo de mantenimiento activado por defecto
+    id = models.AutoField(primary_key=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    maintenance_mode = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = "Configuración del Sitio"
@@ -32,57 +26,6 @@ class SiteConfiguration(models.Model):
 
     def __str__(self):
         return f"Modo Mantenimiento: {'Activado' if self.maintenance_mode else 'Desactivado'}"
-
-
-TIEMPO_CHOICES = [
-    ("PN", "PN"),  # Poco Nublado
-    ("PARCN", "PARCN"),  # Parcialmente Nublado
-    ("N", "N"),  # Nublado
-    ("AIS CHUB", "AIS CHUB"),  # Aislados Chubascos
-    ("ALG CHUB", "ALG CHUB"),  # Algunos Chubascos
-    ("NUM CHUB", "NUM CHUB"),  # Numerosos Chubascos
-    ("ALG TORM", "ALG TORM"),  # Algunas Tormentas
-    ("NUM TORM", "NUM TORM"),  # Numerosas Tormentas
-]
-
-VIENTO_DIRECCION_CHOICES = [
-    ("VRB", "VRB"),  # Variable Debil
-    ("N", "N"),  # Norte
-    ("NNE", "NNE"),  # Norte Noreste
-    ("NE", "NE"),  # Noreste
-    ("ENE", "ENE"),  # Este Noreste
-    ("E", "E"),  # Este
-    ("ESE", "ESE"),  # Este Sureste
-    ("SE", "SE"),  # Sureste
-    ("SSE", "SSE"),  # Sur Sureste
-    ("S", "S"),  # Sur
-    ("SSW", "SSW"),  # Sur Suroeste
-    ("SW", "SW"),  # Suroeste
-    ("WSW", "WSW"),  # Oeste Suroeste
-    ("W", "W"),  # Oeste
-    ("WNW", "WNW"),  # Oeste Noroeste
-    ("NW", "NW"),  # Noroeste
-    ("NNW", "NNW"),  # Norte Noroeste
-]
-
-LUNA_CHOICES = [
-    ("Luna Nueva", "Luna Nueva"),
-    ("Creciente", "Creciente"),
-    ("Cuarto Creciente", "Cuarto Creciente"),
-    ("Gibosa Creciente", "Gibosa Creciente"),
-    ("Luna Llena", "Luna Llena"),
-    ("Gibosa Menguante", "Gibosa Menguante"),
-    ("Cuarto Menguante", "Cuarto Menguante"),
-    ("Menguante", "Menguante"),
-]
-
-MAR_CHOICES = [
-    ("TQ", "TQ"),  # Tranquila
-    ("PO", "PO"),  # Poco Oleaje
-    ("O", "O"),  # Oleaje
-    ("MRJ", "MRJ"),  # Marejadas
-    ("FMRJ", "FMRJ"),  # Fuertes Marejadas
-]
 
 
 class Province(models.Model):
@@ -107,13 +50,7 @@ class Province(models.Model):
 
 class Town(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    province = models.ForeignKey(
-        Province,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="towns",
-        verbose_name="Provincia",
-    )
+    province = models.ForeignKey(Province, on_delete=models.SET_NULL, null=True, related_name="towns", verbose_name="Provincia")
     name = models.CharField(max_length=25, verbose_name="Nombre")
     latitude = models.FloatField(verbose_name="Latitud")
     longitude = models.FloatField(verbose_name="Longitud")
@@ -135,13 +72,7 @@ class Town(models.Model):
 
 class Station(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    province = models.ForeignKey(
-        Province,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="stations",
-        verbose_name="Provincia",
-    )
+    province = models.ForeignKey(Province, on_delete=models.SET_NULL, null=True, related_name="stations", verbose_name="Provincia")
     name = models.CharField(max_length=15, verbose_name="Nombre")
     number = models.IntegerField(unique=True, verbose_name="Número")
     latitude = models.FloatField(verbose_name="Latitud")
@@ -163,144 +94,122 @@ class Station(models.Model):
 
 
 class Forecasts(models.Model):
+    TIEMPO_CHOICES = [
+        ("PN", "PN"),  # Poco Nublado
+        ("PARCN", "PARCN"),  # Parcialmente Nublado
+        ("N", "N"),  # Nublado
+        ("AIS CHUB", "AIS CHUB"),  # Aislados Chubascos
+        ("ALG CHUB", "ALG CHUB"),  # Algunos Chubascos
+        ("NUM CHUB", "NUM CHUB"),  # Numerosos Chubascos
+        ("ALG TORM", "ALG TORM"),  # Algunas Tormentas
+        ("NUM TORM", "NUM TORM"),  # Numerosas Tormentas
+    ]
+
+    VIENTO_DIRECCION_CHOICES = [
+        ("VRB", "VRB"),  # Variable Debil
+        ("N", "N"),  # Norte
+        ("NNE", "NNE"),  # Norte Noreste
+        ("NE", "NE"),  # Noreste
+        ("ENE", "ENE"),  # Este Noreste
+        ("E", "E"),  # Este
+        ("ESE", "ESE"),  # Este Sureste
+        ("SE", "SE"),  # Sureste
+        ("SSE", "SSE"),  # Sur Sureste
+        ("S", "S"),  # Sur
+        ("SSW", "SSW"),  # Sur Suroeste
+        ("SW", "SW"),  # Suroeste
+        ("WSW", "WSW"),  # Oeste Suroeste
+        ("W", "W"),  # Oeste
+        ("WNW", "WNW"),  # Oeste Noroeste
+        ("NW", "NW"),  # Noroeste
+        ("NNW", "NNW"),  # Norte Noroeste
+    ]
+
+    LUNA_CHOICES = [
+        ("Luna Nueva", "Luna Nueva"),
+        ("Creciente", "Creciente"),
+        ("Cuarto Creciente", "Cuarto Creciente"),
+        ("Gibosa Creciente", "Gibosa Creciente"),
+        ("Luna Llena", "Luna Llena"),
+        ("Gibosa Menguante", "Gibosa Menguante"),
+        ("Cuarto Menguante", "Cuarto Menguante"),
+        ("Menguante", "Menguante"),
+    ]
+
+    MAR_CHOICES = [
+        ("TQ", "TQ"),  # Tranquila
+        ("PO", "PO"),  # Poco Oleaje
+        ("O", "O"),  # Oleaje
+        ("MRJ", "MRJ"),  # Marejadas
+        ("FMRJ", "FMRJ"),  # Fuertes Marejadas
+    ]
+
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     date = models.DateField(verbose_name="Fecha", unique=True, db_index=True)
     ntm = models.IntegerField(verbose_name="Temperatura Mañana")
     nta = models.IntegerField(verbose_name="Temperatura Tarde (Max)")
     ntn = models.IntegerField(verbose_name="Temperatura Noche")
-    nwm = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana"
-    )
-    nwa = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde"
-    )
-    nwn = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche"
-    )
-    nwddm = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Mañana",
-    )
-    nwdda = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Tarde",
-    )
-    nwddn = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Noche",
-    )
+    nwm = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana")
+    nwa = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde")
+    nwn = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche")
+    nwddm = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Mañana")
+    nwdda = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Tarde")
+    nwddn = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Noche")
     nwdfm = models.CharField(max_length=5, verbose_name="Velocidad del Viento Mañana")
     nwdfa = models.CharField(max_length=5, verbose_name="Velocidad del Viento Tarde")
     nwdfn = models.CharField(max_length=5, verbose_name="Velocidad del Viento Noche")
-    nsm = models.CharField(
-        max_length=10, choices=MAR_CHOICES, verbose_name="Mar Mañana"
-    )
+    nsm = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Mañana")
     nsa = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Tarde")
     nsn = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Noche")
     itm = models.IntegerField(verbose_name="Temperatura Mañana")
     ita = models.IntegerField(verbose_name="Temperatura Tarde (Max)")
     itn = models.IntegerField(verbose_name="Temperatura Noche")
-    iwm = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana"
-    )
-    iwa = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde"
-    )
-    iwn = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche"
-    )
-    iwddm = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Mañana",
-    )
-    iwdda = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Tarde",
-    )
-    iwddn = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Noche",
-    )
+    iwm = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana")
+    iwa = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde")
+    iwn = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche")
+    iwddm = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Mañana")
+    iwdda = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Tarde")
+    iwddn = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Noche")
     iwdfm = models.CharField(max_length=5, verbose_name="Velocidad del Viento Mañana")
     iwdfa = models.CharField(max_length=5, verbose_name="Velocidad del Viento Tarde")
     iwdfn = models.CharField(max_length=5, verbose_name="Velocidad del Viento Noche")
     stm = models.IntegerField(verbose_name="Temperatura Mañana")
     sta = models.IntegerField(verbose_name="Temperatura Tarde (Max)")
     stn = models.IntegerField(verbose_name="Temperatura Noche")
-    swm = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana"
-    )
-    swa = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde"
-    )
-    swn = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche"
-    )
-    swddm = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Mañana",
-    )
-    swdda = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Tarde",
-    )
-    swddn = models.CharField(
-        max_length=10,
-        choices=VIENTO_DIRECCION_CHOICES,
-        verbose_name="Dirección del Viento Noche",
-    )
+    swm = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana")
+    swa = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde")
+    swn = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche")
+    swddm = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Mañana")
+    swdda = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Tarde")
+    swddn = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Noche")
     swdfm = models.CharField(max_length=5, verbose_name="Velocidad del Viento Mañana")
     swdfa = models.CharField(max_length=5, verbose_name="Velocidad del Viento Tarde")
     swdfn = models.CharField(max_length=5, verbose_name="Velocidad del Viento Noche")
-    ssm = models.CharField(
-        max_length=10, choices=MAR_CHOICES, verbose_name="Mar Mañana"
-    )
+    ssm = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Mañana")
     ssa = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Tarde")
     ssn = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Noche")
     day1_date = models.DateField(verbose_name="Fecha")
     day1_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
     day1_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day1_weather = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo"
-    )
+    day1_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
     day2_date = models.DateField(verbose_name="Fecha")
     day2_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
     day2_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day2_weather = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo"
-    )
+    day2_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
     day3_date = models.DateField(verbose_name="Fecha")
     day3_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
     day3_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day3_weather = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo"
-    )
+    day3_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
     day4_date = models.DateField(verbose_name="Fecha")
     day4_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
     day4_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day4_weather = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo"
-    )
+    day4_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
     day5_date = models.DateField(verbose_name="Fecha")
     day5_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
     day5_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day5_weather = models.CharField(
-        max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo"
-    )
-    lp = models.CharField(
-        max_length=20, choices=LUNA_CHOICES, verbose_name="Fase Lunar"
-    )
-    nlp = models.CharField(
-        max_length=20, choices=LUNA_CHOICES, verbose_name="Próxima Fase Lunar"
-    )
+    day5_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
+    lp = models.CharField(max_length=20, choices=LUNA_CHOICES, verbose_name="Fase Lunar")
+    nlp = models.CharField(max_length=20, choices=LUNA_CHOICES, verbose_name="Próxima Fase Lunar")
     nlpd = models.DateField(verbose_name="Fecha Próxima Fase")
     sunrise = models.TimeField(verbose_name="Salida Sol")
     sunset = models.TimeField(verbose_name="Puesta Sol")
@@ -321,22 +230,16 @@ class Forecasts(models.Model):
         return f"Pronóstico detallado - {self.date.strftime('%d/%m/%Y')}"
 
 
-class BaseWarning(PDFModel):
+class BaseWarning(FileHandlerMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     summary = models.TextField(max_length=300, verbose_name="Resumen")
-    # El campo 'file' ya está heredado de PDFModel
+    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
     valid_until = models.DateTimeField(verbose_name="Válido Hasta")
-    date = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha y Hora de Creación"
-    )
-    email_recipient_list = models.ForeignKey(
-        "EmailRecipientList",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Lista de Correos",
-    )
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Creación")
+    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
+
+    file_fields = ['file']
 
     class Meta:
         abstract = True
@@ -393,8 +296,6 @@ class Customer(models.Model):
     address = models.TextField(verbose_name="Dirección")
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
     phone = models.CharField(max_length=8, verbose_name="Número de Teléfono")
-    
-    # Campos para suscripciones/notificaciones
     accept_terms = models.BooleanField(default=False, verbose_name="Aceptó Términos")
     newsletter = models.BooleanField(default=False, verbose_name="Recibe Newsletter")
 
@@ -418,86 +319,67 @@ class Customer(models.Model):
         )
 
 
-class Service(PDFModel):
-    PUBLIC = "public"
-    COMMERCIAL = "commercial"
-    SERVICE_TYPE_CHOICES = [
-        (PUBLIC, "Público"),
-        (COMMERCIAL, "Comercial"),
+class Service(FileHandlerMixin, models.Model):
+    PUBLIC = 'public'
+    COMMERCIAL = 'commercial'
+    TYPE_CHOICES = [
+        (PUBLIC, 'Público'), 
+        (COMMERCIAL, 'Comercial')
     ]
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha")
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name="Usuario",
-        related_name="created_services",
-    )
-    title = models.CharField(max_length=100, verbose_name="Título")
-    summary = models.CharField(max_length=300, verbose_name="Resumen")
-    # El campo 'file' ya está heredado de PDFModel
-    service_type = models.CharField(
-        max_length=10,
-        choices=SERVICE_TYPE_CHOICES,
-        default=PUBLIC,
-        verbose_name="Tipo de Servicio",
-    )
-    image = models.ImageField(upload_to=generic_image_path, verbose_name='Imágen', blank=True, null=True)
+    date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Usuario', related_name='created_services')
+    title = models.CharField(max_length=100, verbose_name='Título')
+    summary = models.CharField(max_length=300, verbose_name='Resumen')
+    service_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default=PUBLIC, verbose_name='Tipo de Servicio')
+    pdf = models.FileField(upload_to=pdf_upload_path, blank=True, null=True, verbose_name='Archivo PDF')
+    image = models.ImageField(upload_to=image_upload_path, blank=True, null=True, verbose_name='Imagen')
+
+    file_fields = ['pdf', 'image']
 
     def __str__(self):
         return self.title
-    
-    def delete(self, *args, **kwargs):
-        self.image.delete(save=False)
-        super(Service, self).delete(*args, **kwargs)
 
-    def get_image(self):
+    def get_image_url(self):
         if self.image:
-            return f'{settings.MEDIA_URL}{self.image}'
+            return self.image.url
         return f'{settings.STATIC_URL}dist/img/default.svg'
 
     class Meta:
-        verbose_name = "Servicio"
-        verbose_name_plural = "Servicios"
+        verbose_name = 'Servicio'
+        verbose_name_plural = 'Servicios'
         default_permissions = ()
         permissions = (
-            ("view_service", "Ver"),
-            ("add_service", "Añadir"),
-            ("change_service", "Editar"),
-            ("delete_service", "Eliminar"),
+            ('view_service', 'Ver'),
+            ('add_service', 'Añadir'),
+            ('change_service', 'Editar'),
+            ('delete_service', 'Eliminar'),
         )
 
 
-class ServiceSubscription(models.Model):
+class ServiceSubscription(FileHandlerMixin, models.Model):
     PAYMENT_STATUS_CHOICES = [
         ('requested', 'Solicitado'),
         ('pending', 'Pendiente de pago'),
         ('paid', 'Pagado'),
         ('expired', 'Expirado'),
     ]
+    PAYMENT_METHOD_CHOICES = [
+        ('qr', 'Pago por Código QR'),
+        ('transfer', 'Transferencia Bancaria'),
+        ('presencial', 'Pago Presencial'),
+    ]
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    customer = models.ForeignKey('Customer', on_delete=models.CASCADE, verbose_name="Cliente")
-    service = models.ForeignKey('Service', on_delete=models.CASCADE, verbose_name="Servicio")
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name="Cliente")
+    service = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name="Servicio")
     start_date = models.DateTimeField(verbose_name="Fecha de inicio")
     end_date = models.DateTimeField(verbose_name="Fecha de expiración")
-    payment_status = models.CharField(
-        max_length=20,
-        choices=PAYMENT_STATUS_CHOICES,
-        default='requested',
-        verbose_name="Estado de pago"
-    )
-    invoice = models.FileField(
-        upload_to='invoices/',
-        verbose_name="Factura",
-        blank=True, null=True
-    )
-    certificate = models.FileField(
-        upload_to='certificates/',
-        verbose_name="Certificado",
-        blank=True, null=True
-    )
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='requested', verbose_name="Estado de pago")
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, verbose_name="Método de pago", blank=True, null=True)
+
+    file_fields = []
 
     @property
     def is_active(self):
@@ -529,21 +411,56 @@ class ServiceSubscription(models.Model):
         return f"{self.customer.company_name} - {self.service.title}"
 
 
-class WeatherToday(PDFModel):
+class Invoice(FileHandlerMixin, models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.CASCADE, related_name='invoices', verbose_name="Suscripción")
+    number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
+    issue_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto")
+    pdf = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF", blank=True, null=True)
+
+    file_fields = ['pdf']
+
+    class Meta:
+        verbose_name = "Factura"
+        verbose_name_plural = "Facturas"
+        ordering = ['-issue_date']
+
+    def __str__(self):
+        return f"Factura {self.number} - {self.subscription.customer.company_name}"
+
+    def get_pdf_url(self):
+        if self.pdf:
+            return self.pdf.url
+        return None
+
+
+class Certificate(FileHandlerMixin, models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.CASCADE, related_name='certificates', verbose_name="Suscripción")
+    issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
+    pdf = models.FileField(upload_to=pdf_upload_path, verbose_name="Certificado PDF")
+
+    file_fields = ['pdf']
+
+    class Meta:
+        verbose_name = "Certificado"
+        verbose_name_plural = "Certificados"
+        ordering = ['-issued_date']
+
+    def __str__(self):
+        return f"Certificado de {self.subscription.service.title} - {self.subscription.customer.company_name}"
+
+
+class WeatherToday(FileHandlerMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
-    date = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha y Hora de Creación"
-    )
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Creación")
     summary = models.TextField(max_length=300, verbose_name="Resumen")
-    # El campo 'file' ya está heredado de PDFModel
-    email_recipient_list = models.ForeignKey(
-        "EmailRecipientList",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Lista de Correos",
-    )
+    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF", blank=True, null=True)
+    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
+
+    file_fields = ['file']
 
     def __str__(self):
         return f"Pronóstico del tiempo detallado para {self.date}"
@@ -560,19 +477,15 @@ class WeatherToday(PDFModel):
         )
 
 
-class WeatherTomorrow(PDFModel):
+class WeatherTomorrow(FileHandlerMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
     date = models.DateTimeField(verbose_name="Fecha y Hora de Creación")
     summary = models.CharField(max_length=300, verbose_name="Resumen")
-    # El campo 'file' ya está heredado de PDFModel
-    email_recipient_list = models.ForeignKey(
-        "EmailRecipientList",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Lista de Correos",
-    )
+    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF", blank=True, null=True)
+    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
+
+    file_fields = ['file']
 
     def __str__(self):
         return f"Pronóstico del tiempo detallado para {self.date}"
@@ -589,21 +502,15 @@ class WeatherTomorrow(PDFModel):
         )
 
 
-class WeatherCommentary(PDFModel):
+class WeatherCommentary(FileHandlerMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
-    date = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha y Hora de Creación"
-    )
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Creación")
     summary = models.CharField(max_length=300, verbose_name="Resumen")
-    # El campo 'file' ya está heredado de PDFModel
-    email_recipient_list = models.ForeignKey(
-        "EmailRecipientList",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Lista de Correos",
-    )
+    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF", blank=True, null=True)
+    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
+
+    file_fields = ['file']
 
     def __str__(self):
         return f"Comentario del tiempo detallado para {self.date}"
@@ -620,21 +527,15 @@ class WeatherCommentary(PDFModel):
         )
 
 
-class WeatherNote(PDFModel):
+class WeatherNote(FileHandlerMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
-    date = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha y Hora de Creación"
-    )
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Creación")
     summary = models.CharField(max_length=300, verbose_name="Resumen")
-    # El campo 'file' ya está heredado de PDFModel
-    email_recipient_list = models.ForeignKey(
-        "EmailRecipientList",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Lista de Correos",
-    )
+    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF", blank=True, null=True)
+    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
+
+    file_fields = ['file']
 
     def __str__(self):
         return f"Nota Meteorológica detallada para {self.date}"
@@ -653,9 +554,7 @@ class WeatherNote(PDFModel):
 
 class EmailRecipientList(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    name = models.CharField(
-        max_length=100, unique=True, verbose_name="Nombre de la Lista"
-    )
+    name = models.CharField(max_length=100, unique=True, verbose_name="Nombre de la Lista")
     description = models.TextField(blank=True, verbose_name="Descripción")
 
     def __str__(self):
@@ -676,12 +575,7 @@ class EmailRecipientList(models.Model):
 class EmailRecipient(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     email = models.EmailField(unique=True, verbose_name="Correo Electrónico")
-    recipient_list = models.ForeignKey(
-        EmailRecipientList,
-        on_delete=models.CASCADE,
-        related_name="recipients",
-        verbose_name="Lista de Correo",
-    )
+    recipient_list = models.ForeignKey(EmailRecipientList, on_delete=models.CASCADE, related_name="recipients", verbose_name="Lista de Correo")
 
     def __str__(self):
         return self.email
@@ -698,34 +592,18 @@ class EmailRecipient(models.Model):
         )
 
 
-class ScientificPublication(models.Model):
+class ScientificPublication(FileHandlerMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=200, verbose_name="Título")
-    author = models.ForeignKey(
-        "Author",
-        on_delete=models.CASCADE,
-        related_name="authored_publications",
-        verbose_name="Autor",
-    )
-    coauthors = models.ManyToManyField(
-        "Author",
-        related_name="coauthored_publications",
-        verbose_name="Coautores",
-        blank=True,
-    )
+    author = models.ForeignKey("Author", on_delete=models.CASCADE, related_name="authored_publications", verbose_name="Autor")
+    coauthors = models.ManyToManyField("Author", related_name="coauthored_publications", verbose_name="Coautores", blank=True)
     publication_date = models.DateField(verbose_name="Fecha de Publicación")
     summary = models.TextField(verbose_name="Resumen")
-    pdf_file = models.FileField(
-        upload_to="publications/pdf/",
-        validators=[FileExtensionValidator(["pdf"])],
-        verbose_name="Archivo PDF",
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name="Fecha de Creación"
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True, verbose_name="Fecha de Actualización"
-    )
+    pdf_file = models.FileField(upload_to=pdf_upload_path, validators=[FileExtensionValidator(["pdf"])], verbose_name="Archivo PDF")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
+
+    file_fields = ['pdf_file']
 
     def __str__(self):
         return self.title
@@ -748,9 +626,7 @@ class Author(models.Model):
     first_name = models.CharField(max_length=100, verbose_name="Nombres")
     last_name = models.CharField(max_length=100, verbose_name="Apellidos")
     email = models.EmailField(blank=True, null=True, verbose_name="Correo Electrónico")
-    institution = models.CharField(
-        max_length=200, blank=True, verbose_name="Institución"
-    )
+    institution = models.CharField(max_length=200, blank=True, verbose_name="Institución")
     orcid_id = models.CharField(max_length=19, blank=True, verbose_name="ID ORCID")
 
     def __str__(self):

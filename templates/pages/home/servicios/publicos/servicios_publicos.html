@@ -6,21 +6,21 @@
     <div class="row row-cards">
         <div class="space-y">
             {% if object_list %}
-                {% for pdf in object_list %}
-                    {% if pdf.service_type == 'public' %}
+                {% for service in object_list %}
+                    {% if service.service_type == 'public' %}
                         <div class="card">
                             <div class="row g-0">
                                 <div class="col-auto">
                                     <div class="card-body">
-                                        <span class="avatar avatar-lg rounded-circle" style="background-image: url({{ pdf.user.profile.get_avatar }})"></span>
+                                        <span class="avatar avatar-lg rounded-circle" style="background-image: url({{ service.user.profile.get_avatar }})"></span>
                                     </div>
                                 </div>
                                 <div class="col">
                                     <div class="card-body ps-0">
                                         <div class="row">
                                             <div class="col">
-                                                <h3 class="mb-0"><a>{{ pdf.title }}</a></h3>
-                                                <p class="mb-0 text-secondary"><a>{{ pdf.summary }}</a></p>
+                                                <h3 class="mb-0"><a>{{ service.title }}</a></h3>
+                                                <p class="mb-0 text-secondary"><a>{{ service.summary }}</a></p>
                                             </div>
                                         </div>
                                         <div class="row">
@@ -32,7 +32,7 @@
                                                             <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
                                                             <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
                                                         </svg>
-                                                        {{ pdf.user.get_full_name }}
+                                                        {{ service.user.get_full_name }}
                                                     </div>
                                                     <div class="list-inline-item">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-calendar-month">
@@ -44,7 +44,7 @@
                                                             <path d="M12.02 15a1 1 0 0 1 0 2a1.001 1.001 0 1 1 -.005 -2z" />
                                                             <path d="M9.015 16a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" />
                                                         </svg>
-                                                        {{ pdf.date|date:'j/n/Y' }}
+                                                        {{ service.date|date:'j/n/Y' }}
                                                     </div>
                                                 </div>
                                                 <div class="mt-3 list mb-0 text-secondary d-block d-sm-none">
@@ -54,7 +54,7 @@
                                                             <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
                                                             <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
                                                         </svg>
-                                                        {{ pdf.user.get_full_name }}
+                                                        {{ service.user.get_full_name }}
                                                     </div>
                                                     <div class="list-item">
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="icon icon-tabler icons-tabler-filled icon-tabler-calendar-month">
@@ -66,20 +66,27 @@
                                                             <path d="M12.02 15a1 1 0 0 1 0 2a1.001 1.001 0 1 1 -.005 -2z" />
                                                             <path d="M9.015 16a1 1 0 0 1 -1 1a1.001 1.001 0 1 1 -.005 -2c.557 0 1.005 .448 1.005 1" />
                                                         </svg>
-                                                        {{ pdf.date|date:'j/n/Y' }}
+                                                        {{ service.date|date:'j/n/Y' }}
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-auto">
                                                 <div class="mt-3 badges">
-                                                    <a href="#" class="btn btn-pill btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pdfModal" data-pdf-url="{{ pdf.file.url }}" data-pdf-title="{{ pdf.title }}">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
-                                                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                                                            <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
-                                                            <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
-                                                        </svg>
-                                                         Ver PDF
-                                                    </a>
+                                                    {% if service.pdf %}
+                                                        <a href="#" class="btn btn-pill btn-outline-primary" 
+                                                           data-bs-toggle="modal" data-bs-target="#pdfModal" 
+                                                           data-pdf-url="{{ service.pdf.url }}" 
+                                                           data-pdf-title="{{ service.title }}">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                                                <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                                                                <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+                                                            </svg>
+                                                             Ver PDF
+                                                        </a>
+                                                    {% else %}
+                                                        <span class="text-muted">Sin PDF</span>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                         </div>
@@ -107,6 +114,7 @@
         </div>
     </div>
 </div>
+
 <!-- Paginación -->
 <div class="pagination">
     <span class="step-links">
@@ -123,7 +131,8 @@
         {% endif %}
     </span>
 </div>
-<!-- Modal para PDF en pantalla completa (igual que en el primer template) -->
+
+<!-- Modal para PDF en pantalla completa -->
 <div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
         <div class="modal-content">
@@ -161,14 +170,12 @@
 <script>
     // Configurar PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
-    // Inicializar solo el modal (sin vista previa en tarjeta)
+    
     document.addEventListener('DOMContentLoaded', function() {
-        // Solo inicializar si existe el modal
-        const pdfModal = document.getElementById('pdfModal');
-        if (pdfModal) {
-            const viewer = new PDFViewer({
-                // No pasamos pdfUrl porque no hay vista previa en tarjeta
-                modalPdfUrl: '', // Se establecerá dinámicamente al abrir el modal
+        // Inicializar el visor PDF si la clase existe
+        if (typeof PDFViewer !== 'undefined') {
+            window.viewer = new PDFViewer({
+                modalPdfUrl: '',
                 modalPagesId: 'modalPdfPages',
                 modalPageInfoId: 'modalPageInfo',
                 modalZoomLevelId: 'modalZoomLevel',
@@ -178,8 +185,21 @@
                 modalZoomInId: 'modalZoomIn',
                 modalFitWidthId: 'modalFitWidth'
             });
-            viewer.init();
+            window.viewer.init();
         }
+
+        // Manejar clics en los enlaces que abren el modal
+        document.querySelectorAll('[data-bs-toggle="modal"][data-pdf-url]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.dataset.pdfUrl;
+                const title = this.dataset.pdfTitle;
+                document.getElementById('pdfModalLabel').textContent = title || 'PDF';
+                if (window.viewer && window.viewer.loadPdf) {
+                    window.viewer.loadPdf(url);
+                }
+            });
+        });
     });
 </script>
 {% endblock %}

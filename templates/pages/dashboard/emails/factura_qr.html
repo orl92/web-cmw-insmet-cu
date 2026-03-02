@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Factura y pago QR</title>
+</head>
+<body>
+    <h2>Factura de servicio</h2>
+    <p>Estimado(a) <strong>{{ customer.company_name }}</strong>,</p>
+    <p>Se ha generado la factura para el servicio "{{ subscription.service.title }}".</p>
+    <p><strong>Monto:</strong> {{ invoice.amount }} CUP</p>
+    <p><strong>Método de pago seleccionado:</strong> {{ payment_method }}</p>
+
+    {% if subscription.payment_method == 'qr' %}
+    <p>Puede realizar el pago escaneando el siguiente código QR:</p>
+    <img src="cid:qr_pago.png" alt="Código QR de pago" style="max-width: 200px;">
+    <p>Si tiene problemas, utilice los datos bancarios adjuntos.</p>
+    {% else %}
+    <p>Por favor realice el pago según las instrucciones adjuntas.</p>
+    {% endif %}
+
+    <p>La factura se adjunta en formato PDF.</p>
+    <p>Gracias por confiar en nosotros.</p>
+</body>
+</html>

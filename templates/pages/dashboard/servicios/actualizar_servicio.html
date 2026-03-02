@@ -1,43 +1,168 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
 
-{% block form %}
-<div class="mb-3">
-  <label class="form-label required">{{ form.title.label }}</label>
-  <input type="text" class="form-control" name="{{ form.title.name }}" value="{{ object.title }}" required>
-</div>
-<div class="mb-3">
-  <label class="form-label required">{{ form.summary.label }}</label>
-  <input type="text" class="form-control" name="{{ form.summary.name }}" value="{{ object.summary }}" required>
-</div>
-<div class="mb-3">
-  <label class="form-label required">{{ form.service_type.label }}</label>
-  <select class="form-control" name="{{ form.service_type.name }}" id="id_service_type" required>
-    {% for choice in form.service_type.field.choices %}
-      <option value="{{ choice.0 }}" {% if choice.0 == object.service_type %}selected{% endif %}>{{ choice.1 }}</option>
-    {% endfor %}
-  </select>
-</div>
+{% block form %} 
 
-<div class="mb-3" id="field_file" style="display: {% if object.service_type == 'commercial' %}none{% else %}block{% endif %};">
-  <label class="form-label">{{ form.file.label }}</label>
-  <input type="file" class="form-control" name="{{ form.file.name }}" accept=".pdf">
-  {% if object.file %}
-    <p>Archivo actual: <a href="{{ object.file.url }}" target="_blank">{{ object.file.name }}</a></p>
-  {% endif %}
-  <small class="form-hint" id="file_hint">Obligatorio solo para servicios públicos.</small>
-</div>
+{% if form.errors %}
+  <div class="alert alert-danger">
+    {{ form.errors }}
+  </div>
+{% endif %}
+
+  <div class="mb-3">
+    <label class="form-label required">Título</label>
+    <input type="text" class="form-control" name="title" placeholder="Título del Servicio" value="{{ object.title }}" required>
+    {% if form.title.errors %}
+      <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Resumen</label>
+    <textarea class="form-control {% if form.summary.errors %}is-invalid{% endif %}" 
+              name="summary" value="{{ object.summary }}" rows="2" placeholder="Resumen del Servicio" required>{{ form.summary.value|default:'' }}</textarea>
+    {% if form.summary.errors %}
+      <div class="invalid-feedback">{{ form.summary.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Tipo de Servicio</label>
+    <select class="form-control" name="service_type" id="id_service_type" required>
+      {% for choice_value, choice_label in form.fields.service_type.choices %}
+        <option value="{{ choice_value }}" {% if choice_value == object.service_type %}selected{% endif %}>{{ choice_label }}</option>
+      {% endfor %}
+    </select>
+    {% if form.service_type.errors %}
+      <div class="invalid-feedback d-block">{{ form.service_type.errors.0 }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Campo para PDF (servicios públicos) -->
+  <div class="mb-3" id="field_pdf" style="display: {% if object.service_type == 'public' %}block{% else %}none{% endif %};">
+    <label class="form-label required">Archivo PDF</label>
+    <div class="card">
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="avatar rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                  <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+                  <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
+                  <path d="M17 18h2" />
+                  <path d="M20 15h-3v6" />
+                  <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
+                </svg>
+              </div>
+            </div>
+            <div>
+              <div class="mb-2">
+                <input type="file" class="form-control" name="pdf" accept=".pdf" required>
+              </div>
+              <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
+            </div>
+          </div>
+        </div>
+
+        {% if object.pdf %}
+          <div class="mt-2">
+            <a href="{{ object.pdf.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+                <polyline points="7 11 12 16 17 11" />
+                <line x1="12" y1="4" x2="12" y2="16" />
+              </svg>
+              Ver PDF actual
+            </a>
+          </div>
+        {% endif %}
+
+        {% if form.pdf.errors %}
+          <span class="text-danger d-block mb-3 mt-2">{{ form.pdf.errors }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Campo para Imagen (servicios comerciales) -->
+  <div class="mb-3" id="field_image" style="display: {% if object.service_type == 'commercial' %}block{% else %}none{% endif %};">
+    <label class="form-label required">Imagen</label>
+    <div class="card">
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="avatar rounded-circle" style="width: 64px; height: 64px; overflow: hidden;">
+                <img src="{{ object.get_image_url }}" alt="Imagen" style="width: 100%; height: 100%; object-fit: cover;">
+              </div>
+            </div>
+            <div>
+              <div class="mb-2">
+                <input type="file" class="form-control" name="image" accept="image/*" required>
+              </div>
+              <small class="text-muted">Formatos: JPG, PNG, GIF. Máximo 2MB.</small>
+            </div>
+          </div>
+        </div>
+
+        {% if object.image %}
+          <div class="mt-2">
+            <a href="{{ object.get_image_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <circle cx="12" cy="12" r="2"/>
+                <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7z"/>
+              </svg>
+              Ver imagen
+            </a>
+          </div>
+        {% endif %}
+
+        {% if form.image.errors %}
+          <span class="text-danger d-block mb-3 mt-2">{{ form.image.errors }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block extrajs %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const serviceType = document.getElementById('id_service_type');
-    const fileField = document.getElementById('field_file');
+    const fieldPdf = document.getElementById('field_pdf');
+    const fieldImage = document.getElementById('field_image');
+    const pdfInput = document.querySelector('input[name="pdf"]');
+    const imageInput = document.querySelector('input[name="image"]');
 
     function toggleFields() {
-      const isCommercial = serviceType.value === 'commercial';
-      fileField.style.display = isCommercial ? 'none' : 'block';
+      const type = serviceType.value;
+      if (type === 'public') {
+        fieldPdf.style.display = 'block';
+        fieldImage.style.display = 'none';
+        pdfInput.disabled = false;
+        imageInput.disabled = true;
+        pdfInput.required = true;
+        imageInput.required = false;
+      } else if (type === 'commercial') {
+        fieldPdf.style.display = 'none';
+        fieldImage.style.display = 'block';
+        pdfInput.disabled = true;
+        imageInput.disabled = false;
+        pdfInput.required = false;
+        imageInput.required = true;
+      } else {
+        fieldPdf.style.display = 'none';
+        fieldImage.style.display = 'none';
+        pdfInput.disabled = true;
+        imageInput.disabled = true;
+        pdfInput.required = false;
+        imageInput.required = false;
+      }
     }
 
     toggleFields();

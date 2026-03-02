@@ -1,28 +1,21 @@
 from datetime import timedelta
 
-from dashboard.models import Customer, Service, ServiceSubscription
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views.generic import ListView, View
+from django.views.generic import FormView, ListView
 
-# Create your views here.
+from dashboard.forms.suscripciones.forms import PaymentMethodForm
+from dashboard.models import Customer, Service, ServiceSubscription
 
 
 class CommercialServicesListView(LoginRequiredMixin, ListView):
-    model = ServiceSubscription  # Cambiamos a Suscripción
+    model = ServiceSubscription
     template_name = 'pages/home/servicios/comerciales/servicios_comerciales.html'
     context_object_name = 'subscriptions'
     paginate_by = 10
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Mis Servicios Comerciales'
-        context['parent'] = 'servicios'
-        context['segment'] = 'comerciales'
-        return context
 
     def get_queryset(self):
         try:
@@ -36,7 +29,14 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
             end_date__gt=ahora
         ).select_related('service', 'service__user').order_by('start_date')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Mis Servicios Comerciales'
+        context['parent'] = 'servicios'
+        context['segment'] = 'comerciales'
+        return context
 
+   
 class PublicCommercialServicesListView(ListView):
     model = Service
     template_name = 'pages/home/servicios/comerciales/servicios_comerciales_public.html'
@@ -61,54 +61,61 @@ class PublicCommercialServicesListView(ListView):
         return context
 
 
-class RequestSubscriptionView(LoginRequiredMixin, UserPassesTestMixin, View):
-    
+class ServiceDetailView(FormView):
+    template_name = 'pages/home/servicios/comerciales/detalle_servicio.html'
+    form_class = PaymentMethodForm
+    success_url = reverse_lazy('listado_suscripciones')
+
+    def dispatch(self, request, *args, **kwargs):
+        self.service = get_object_or_404(Service, uuid=kwargs['uuid'], service_type=Service.COMMERCIAL)
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Solicitar Servicio Comercial'
+        context['service'] = self.service
+        context['title'] = self.service.title
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
+        
+        # Si el usuario está autenticado y es cliente, verificar suscripción existente
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'customer'):
+            customer = self.request.user.customer
+            existing = ServiceSubscription.objects.filter(
+                customer=customer,
+                service=self.service
+            ).exclude(payment_status='expired').first()
+            context['existing_subscription'] = existing
         return context
-    
-    def test_func(self):
-        return (self.request.user.groups.filter(name='Clientes').exists() and
-                hasattr(self.request.user, 'customer'))
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            messages.error(self.request, "No tienes un perfil de cliente. Regístrate como empresa.")
-            return redirect('customer_register')
-        else:
-            messages.info(self.request, "Debes iniciar sesión como cliente.")
-            return redirect('{}?next={}'.format(reverse('login'), self.request.path))
 
     def get(self, request, *args, **kwargs):
-        service_uuid = kwargs.get('uuid')
-        service = get_object_or_404(Service, uuid=service_uuid, service_type=Service.COMMERCIAL)
-        customer = request.user.customer
+        # Mostrar el detalle sin restricciones
+        return super().get(request, *args, **kwargs)
 
+    def post(self, request, *args, **kwargs):
+        # Solo permitir POST si el usuario es cliente
+        if not (request.user.is_authenticated and hasattr(request.user, 'customer')):
+            messages.error(request, "Debes ser un cliente registrado para solicitar servicios.")
+            return redirect('{}?next={}'.format(reverse('login'), request.path))
+        return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        customer = self.request.user.customer
+        # Verificar nuevamente que no exista suscripción activa/pendiente
         existing = ServiceSubscription.objects.filter(
             customer=customer,
-            service=service
+            service=self.service
         ).exclude(payment_status='expired').first()
-
         if existing:
-            if existing.payment_status == 'paid' and existing.end_date > timezone.now():
-                messages.warning(request, "Ya tienes una suscripción activa para este servicio.")
-            elif existing.payment_status == 'pending':
-                messages.info(request, "Ya tienes una factura pendiente de pago.")
-            elif existing.payment_status == 'requested':
-                messages.info(request, "Ya has solicitado este servicio.")
-            else:
-                return redirect('renovar_suscripcion', uuid=existing.uuid)
-            return redirect('public_servicios_comerciales')
-
+            messages.warning(self.request, "Ya tienes una solicitud o suscripción para este servicio.")
+            return redirect('detalle_servicio_comercial', uuid=self.service.uuid)
+        
         ServiceSubscription.objects.create(
             customer=customer,
-            service=service,
+            service=self.service,
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
-            payment_status='requested'
+            payment_status='requested',
+            payment_method=form.cleaned_data['payment_method']
         )
-        messages.success(request, "Solicitud enviada. El staff generará una factura.")
-        return redirect('listado_suscripciones')
+        messages.success(self.request, "Solicitud enviada. El staff generará una factura.")
+        return redirect(self.success_url)

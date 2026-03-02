@@ -1,8 +1,12 @@
 from datetime import timedelta
 from io import BytesIO
 
-from dashboard.forms.suscripciones.forms import CertificateUploadForm, SubscriptionForm
-from dashboard.models import Customer, ServiceSubscription
+from dashboard.forms.suscripciones.forms import (
+    CertificateUploadForm,
+    InvoiceAmountForm,
+    SubscriptionForm,
+)
+from dashboard.models import Certificate, Customer, Invoice, ServiceSubscription
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import (
@@ -17,7 +21,13 @@ from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView, View
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    FormView,
+    ListView,
+    UpdateView,
+)
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
@@ -159,51 +169,121 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         return context
 
 
-class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
+    template_name = 'pages/dashboard/suscripciones/generar_factura.html'
+    form_class = InvoiceAmountForm
     permission_required = 'dashboard.change_subscription'
+    success_url = reverse_lazy('listado_suscripciones')
 
-    def get_object(self):
-        return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
-
-    def post(self, request, *args, **kwargs):
-        sub = self.get_object()
-        if sub.payment_status != 'requested':
+    def dispatch(self, request, *args, **kwargs):
+        self.subscription = get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
+        if self.subscription.payment_status != 'requested':
             messages.error(request, "Esta suscripción no está en estado solicitado.")
             return redirect('listado_suscripciones')
+        return super().dispatch(request, *args, **kwargs)
 
-        # Generar PDF de factura
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['subscription'] = self.subscription
+        context['title'] = 'Generar Factura'
+        context['parent'] = 'servicios'
+        context['segment'] = 'suscripciones'
+        return context
+
+    def form_valid(self, form):
+        amount = form.cleaned_data['amount']
+
+        # Crear factura (número único)
+        invoice = Invoice(
+            subscription=self.subscription,
+            amount=amount,
+            number=f"INV-{self.subscription.uuid}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+        )
+
+        # --- Generar PDF de la factura (igual que antes) ---
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
-
         p.setFont("Helvetica-Bold", 16)
         p.drawString(2*cm, height-3*cm, "FACTURA")
         p.setFont("Helvetica", 12)
-        p.drawString(2*cm, height-5*cm, f"Nº: {sub.uuid}")
+        p.drawString(2*cm, height-5*cm, f"Nº: {invoice.number}")
         p.drawString(2*cm, height-6*cm, f"Fecha: {timezone.now().strftime('%d/%m/%Y')}")
-        p.drawString(2*cm, height-7*cm, f"Cliente: {sub.customer.company_name}")
-        p.drawString(2*cm, height-8*cm, f"NIT: {sub.customer.nit}")
-        p.drawString(2*cm, height-9*cm, f"Servicio: {sub.service.title}")
-        p.drawString(2*cm, height-10*cm, f"Período: {sub.start_date.strftime('%d/%m/%Y')} - {sub.end_date.strftime('%d/%m/%Y')}")
-        p.drawString(2*cm, height-11*cm, "Importe: 100.00 CUP")  # Ajustar según lógica
-
+        p.drawString(2*cm, height-7*cm, f"Cliente: {self.subscription.customer.company_name}")
+        p.drawString(2*cm, height-8*cm, f"NIT: {self.subscription.customer.nit}")
+        p.drawString(2*cm, height-9*cm, f"Servicio: {self.subscription.service.title}")
+        p.drawString(2*cm, height-10*cm, f"Período: {self.subscription.start_date.strftime('%d/%m/%Y')} - {self.subscription.end_date.strftime('%d/%m/%Y')}")
+        p.drawString(2*cm, height-11*cm, f"Importe: {amount} CUP")
         p.showPage()
         p.save()
+        # ------------------------------------------------
 
-        filename = f"factura_{sub.uuid}.pdf"
-        sub.invoice.save(filename, ContentFile(buffer.getvalue()))
-        sub.payment_status = 'pending'
-        sub.save()
+        filename = f"factura_{self.subscription.uuid}.pdf"
+        invoice.pdf.save(filename, ContentFile(buffer.getvalue()))
+        invoice.save()
 
-        # Opcional: enviar correo
-        # asunto = f"Factura de servicio: {sub.service.title}"
-        # mensaje = render_to_string('emails/factura_generada.html', {'subscription': sub})
-        # email = EmailMessage(asunto, mensaje, settings.DEFAULT_FROM_EMAIL, [sub.customer.user.email])
-        # email.attach_file(sub.invoice.path)
-        # email.send()
+        # Actualizar estado
+        self.subscription.payment_status = 'pending'
+        self.subscription.save()
 
-        messages.success(request, "Factura generada correctamente.")
-        return redirect('listado_suscripciones')
+        # Enviar correo (con QR si corresponde)
+        self.send_payment_email(self.subscription, invoice)
+
+        messages.success(self.request, "Factura generada y enviada al cliente.")
+        return redirect(self.success_url)
+
+    def send_payment_email(self, subscription, invoice):
+        """Envía correo con factura adjunta y, si el método es QR, incluye la imagen QR estática."""
+        # Determinar asunto y plantilla según método de pago
+        if subscription.payment_method == 'qr':
+            subject = f"Factura y pago QR - {subscription.service.title}"
+            template = 'pages/dashboard/emails/factura_qr.html'
+        else:
+            subject = f"Factura - {subscription.service.title}"
+            template = 'pages/dashboard/emails/factura.html'
+
+        # Renderizar HTML
+        context = {
+            'subscription': subscription,
+            'invoice': invoice,
+            'customer': subscription.customer,
+            'payment_method': subscription.get_payment_method_display(),  # texto legible
+        }
+        html_content = render_to_string(template, context)
+
+        # Crear correo
+        email = EmailMessage(
+            subject=subject,
+            body=html_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[subscription.customer.user.email]
+        )
+        email.content_subtype = "html"
+
+        # Adjuntar factura PDF
+        if invoice.pdf:
+            email.attach_file(invoice.pdf.path)
+
+        # Si el método de pago es QR, adjuntar la imagen estática
+        if subscription.payment_method == 'qr':
+            # Localizar la imagen QR en los archivos estáticos
+            from django.contrib.staticfiles import finders
+            import os
+
+            qr_path = finders.find('dist/img/QR/QR.png')
+            if not qr_path:
+                # Fallback: construir ruta con STATIC_ROOT
+                qr_path = os.path.join(settings.STATIC_ROOT, 'dist/img/QR/QR.png')
+
+            if os.path.exists(qr_path):
+                with open(qr_path, 'rb') as f:
+                    email.attach('qr_pago.png', f.read(), 'image/png')
+            else:
+                # Opcional: loguear error, pero no impedir envío
+                print("No se encontró la imagen QR en", qr_path)
+
+        # Enviar
+        email.send()
 
 
 class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -216,21 +296,53 @@ class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, Updat
     def get_object(self, queryset=None):
         return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # No pasamos instance al formulario porque el modelo del form es Certificate, no Subscription
+        kwargs.pop('instance', None)
+        return kwargs
+
     def form_valid(self, form):
-        sub = self.object
+        sub = self.get_object()
         if sub.payment_status != 'pending':
             messages.error(self.request, "Esta suscripción no está pendiente de pago.")
             return redirect(self.success_url)
-        sub = form.save(commit=False)
+
+        # Crear certificado asociado a la suscripción
+        certificate = Certificate(
+            subscription=sub,
+            pdf=form.cleaned_data['pdf']
+        )
+        certificate.save()
+
+        # Actualizar estado de suscripción
         sub.payment_status = 'paid'
         sub.save()
-        messages.success(self.request, "Pago aprobado y certificado subido.")
-        return super().form_valid(form)
+
+        # Enviar correo al cliente con el certificado
+        self.send_certificate_email(sub, certificate)
+
+        messages.success(self.request, "Pago aprobado y certificado enviado.")
+        return redirect(self.success_url)
+
+    def send_certificate_email(self, subscription, certificate):
+
+        subject = f"Certificado de {subscription.service.title}"
+        message = render_to_string('pages/dashboard/emails/certificado.html', {'subscription': subscription})
+        email = EmailMessage(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [subscription.customer.user.email]
+        )
+        if certificate.pdf:
+            email.attach_file(certificate.pdf.path)
+        email.send()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Subir certificado y aprobar pago'
+        context['title'] = 'Aprobar pago y subir certificado'
         context['parent'] = 'servicios'
         context['segment'] = 'suscripciones'
-        context['url_list'] = reverse_lazy('listado_suscripciones')
+        context['subscription'] = self.get_object()
         return context

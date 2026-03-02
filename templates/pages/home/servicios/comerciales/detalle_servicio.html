@@ -1,0 +1,135 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+
+{% block content %}
+<div class="col-md-8 mx-auto">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">{{ service.title }}</h3>
+    </div>
+    <div class="card-body">
+      <div class="row g-4 align-items-start">
+        <div class="col-md-6 pe-md-4">
+          {% if service.image %}
+            <img src="{{ service.image.url }}" class="img-fluid rounded w-100" alt="{{ service.title }}" style="max-height: 300px; object-fit: cover;">
+          {% else %}
+            <div class="bg-light text-secondary d-flex align-items-center justify-content-center rounded w-100" style="height: 300px;">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-photo" width="48" height="48" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" fill="none">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <line x1="15" y1="8" x2="15.01" y2="8" />
+                <rect x="4" y="4" width="16" height="16" rx="3" />
+                <path d="M4 15l4 -4a3 5 0 0 1 3 0l5 5" />
+                <path d="M14 14l1 -1a3 5 0 0 1 3 0l2 2" />
+              </svg>
+            </div>
+          {% endif %}
+        </div>
+        <div class="col-md-6">
+          <h4 class="mb-3">{{ service.title }}</h4>
+          <p class="text-muted mb-2">Publicado por: {{ service.user.get_full_name }}</p>
+          <p class="text-muted mb-3">Período del servicio: 30 días</p>
+          <p>{{ service.summary }}</p>
+        </div>
+      </div>
+      <hr class="my-4">
+      
+      {% if user.is_authenticated and user.customer %}
+        {% if existing_subscription %}
+          <div class="alert alert-info d-flex align-items-center" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              {% if existing_subscription.payment_status == 'paid' and existing_subscription.is_active %}
+                Ya tienes una suscripción activa a este servicio.
+              {% elif existing_subscription.payment_status == 'pending' %}
+                Tienes una factura pendiente de pago.
+              {% elif existing_subscription.payment_status == 'requested' %}
+                Ya has solicitado este servicio. Estamos procesando tu solicitud.
+              {% endif %}
+            </div>
+          </div>
+          <a href="{% url 'public_servicios_comerciales' %}" class="btn btn-secondary">Volver a servicios</a>
+        {% else %}
+          <form method="post" class="mt-3">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label required">Método de pago</label>
+              {{ form.payment_method }}
+              <small class="form-hint">Elige cómo deseas realizar el pago.</small>
+            </div>
+            <div id="qr-info" style="display: none;" class="mb-3 p-3 bg-light rounded">
+              <p class="mb-0"><strong>Pago por QR:</strong> Escanea el código QR desde la Web. Recibirás el enlace por correo.</p>
+            </div>
+            <div id="transfer-info" style="display: none;" class="mb-3 p-3 bg-light rounded">
+              <p class="mb-0"><strong>Transferencia bancaria:</strong> Recibirás los datos de la cuenta en la factura.</p>
+            </div>
+            <div id="presencial-info" style="display: none;" class="mb-3 p-3 bg-light rounded">
+              <p class="mb-0"><strong>Pago presencial:</strong> Acude a nuestras oficinas.</p>
+            </div>
+            <button type="submit" class="btn btn-primary">Solicitar servicio</button>
+            <a href="{% url 'public_servicios_comerciales' %}" class="btn btn-outline-secondary">Cancelar</a>
+          </form>
+        {% endif %}
+      {% elif user.is_authenticated %}
+        <div class="alert alert-warning d-flex align-items-center" role="alert">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <div>
+            Necesitas ser un cliente registrado para solicitar servicios comerciales.
+            <a href="{% url 'customer_register' %}" class="alert-link">Regístrate como empresa</a>
+          </div>
+        </div>
+      {% else %}
+        <div class="alert alert-info d-flex align-items-center" role="alert">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <circle cx="12" cy="12" r="9" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <div>
+            Para solicitar este servicio, debes <a href="{% url 'login' %}?next={{ request.path }}" class="alert-link">iniciar sesión</a> o <a href="{% url 'customer_register' %}" class="alert-link">registrarte como cliente</a>.
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const methodSelect = document.querySelector('select[name="payment_method"]');
+    if (methodSelect) {
+      const qrInfo = document.getElementById('qr-info');
+      const transferInfo = document.getElementById('transfer-info');
+      const presencialInfo = document.getElementById('presencial-info');
+
+      function toggleInfo() {
+        const method = methodSelect.value;
+        qrInfo.style.display = 'none';
+        transferInfo.style.display = 'none';
+        presencialInfo.style.display = 'none';
+        if (method === 'qr') {
+          qrInfo.style.display = 'block';
+        } else if (method === 'transfer') {
+          transferInfo.style.display = 'block';
+        } else if (method === 'presencial') {
+          presencialInfo.style.display = 'block';
+        }
+      }
+      methodSelect.addEventListener('change', toggleInfo);
+      toggleInfo();
+    }
+  });
+</script>
+{% endblock %}

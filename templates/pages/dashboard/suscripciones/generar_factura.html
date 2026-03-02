@@ -1,0 +1,37 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+
+{% block form %}
+  <!-- Información de la suscripción -->
+  <div class="alert alert-info">
+    <strong>Cliente:</strong> {{ subscription.customer.company_name }}<br>
+    <strong>Servicio:</strong> {{ subscription.service.title }}<br>
+    <strong>Período:</strong> {{ subscription.start_date|date:"d/m/Y" }} - {{ subscription.end_date|date:"d/m/Y" }}
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label required">Monto (CUP)</label>
+    <div class="input-group">
+      <span class="input-group-text">$</span>
+      <input type="number" step="0.01" class="form-control" name="amount" required value="{{ form.amount.value|default:'' }}">
+    </div>
+    {% if form.amount.errors %}
+      <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
+    {% endif %}
+    <small class="text-muted">Introduce el importe de la factura.</small>
+  </div>
+
+  <!-- Información adicional sobre el pago (opcional, según método) -->
+  {% if subscription.payment_method %}
+  <div class="mb-3">
+    <label class="form-label">Método de pago</label>
+    <input type="text" class="form-control" value="{{ subscription.get_payment_method_display }}" readonly disabled>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  // Si quisieras algún comportamiento dinámico (ej. cambiar algo según el método), lo pondrías aquí.
+</script>
+{% endblock %}
