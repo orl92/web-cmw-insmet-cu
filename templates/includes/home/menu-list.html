@@ -155,22 +155,27 @@
             href="{% url 'servicios_publicos' %}" rel="noopener">
                 Servicios Públicos
             </a>
-            <!-- Servicios Comerciales (público) con badge de acciones pendientes -->
+            <!-- Servicios Comerciales con badges individuales -->
             <a class="dropdown-item {% if 'comercial_p' in segment %}active{% endif %}"
             href="{% url 'public_servicios_comerciales' %}" rel="noopener">
                 Servicios Comerciales
-                {% if user.is_authenticated and user.customer and client_pending_actions > 0 %}
-                    <span class="badge bg-orange ms-2">{{ client_pending_actions }}</span>
+                {% if user.is_authenticated and user.customer %}
+                    {% if client_requested_count > 0 %}
+                        <span class="badge bg-blue-lt ms-1">{{ client_requested_count }}</span>
+                    {% endif %}
+                    {% if client_pending_count > 0 %}
+                        <span class="badge bg-orange-lt ms-1">{{ client_pending_count }}</span>
+                    {% endif %}
                 {% endif %}
             </a>
-            <!-- Mis Servicios (solo clientes autenticados) con badge de expiradas -->
+            <!-- Mis Servicios (solo clientes) con badge de expiradas -->
             {% if user.is_authenticated and user.customer %}
             <div class="dropdown-divider"></div>
             <a class="dropdown-item {% if 'comerciales' in segment %}active{% endif %}"
             href="{% url 'servicios_comerciales' %}" rel="noopener">
                 Mis Servicios
                 {% if client_expired_count > 0 %}
-                    <span class="badge bg-red ms-2">{{ client_expired_count }}</span>
+                    <span class="badge bg-red-lt ms-2">{{ client_expired_count }}</span>
                 {% endif %}
             </a>
             {% endif %}

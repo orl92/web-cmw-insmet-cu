@@ -252,23 +252,23 @@
           <!-- Badges para staff -->
           {% if request.user.is_staff %}
               {% if staff_requested_count > 0 %}
-                  <span class="badge bg-blue ms-1">{{ staff_requested_count }}</span>
+                  <span class="badge bg-blue-lt ms-1">{{ staff_requested_count }}</span>
               {% endif %}
               {% if staff_pending_count > 0 %}
-                  <span class="badge bg-orange ms-1">{{ staff_pending_count }}</span>
+                  <span class="badge bg-orange-lt ms-1">{{ staff_pending_count }}</span>
               {% endif %}
               {% if staff_expired_count > 0 %}
-                  <span class="badge bg-red ms-1">{{ staff_expired_count }}</span>
+                  <span class="badge bg-red-lt ms-1">{{ staff_expired_count }}</span>
               {% endif %}
           {% endif %}
 
           <!-- Badges para clientes -->
           {% if not request.user.is_staff %}
               {% if user_pending_count > 0 %}
-                  <span class="badge bg-orange ms-1">{{ user_pending_count }}</span>
+                  <span class="badge bg-orange-lt ms-1">{{ user_pending_count }}</span>
               {% endif %}
               {% if user_expired_count > 0 %}
-                  <span class="badge bg-red ms-1">{{ user_expired_count }}</span>
+                  <span class="badge bg-red-lt ms-1">{{ user_expired_count }}</span>
               {% endif %}
           {% endif %}
       </a>

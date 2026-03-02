@@ -22,8 +22,7 @@ def client_subscription_notifications(request):
         context['client_requested_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='requested').count()
         context['client_pending_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='pending').count()
         context['client_expired_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='expired').count()
-        context['client_pending_actions'] = context['client_requested_count'] + context['client_pending_count']
-        context['client_total_notifications'] = context['client_pending_actions'] + context['client_expired_count']
+        context['client_total_notifications'] = context['client_requested_count'] + context['client_pending_count'] + context['client_expired_count']
     return context
 
 

@@ -2,11 +2,7 @@
 {% load static %}
 
 {% block content %}
-<div class="col-md-8 mx-auto">
   <div class="card">
-    <div class="card-header">
-      <h3 class="card-title">{{ service.title }}</h3>
-    </div>
     <div class="card-body">
       <div class="row g-4 align-items-start">
         <div class="col-md-6 pe-md-4">
@@ -26,9 +22,9 @@
         </div>
         <div class="col-md-6">
           <h4 class="mb-3">{{ service.title }}</h4>
-          <p class="text-muted mb-2">Publicado por: {{ service.user.get_full_name }}</p>
           <p class="text-muted mb-3">Período del servicio: 30 días</p>
           <p>{{ service.summary }}</p>
+          <p class="text-muted mb-2">Publicado por: {{ service.user.get_full_name }}</p>
         </div>
       </div>
       <hr class="my-4">
@@ -102,7 +98,6 @@
       {% endif %}
     </div>
   </div>
-</div>
 {% endblock %}
 
 {% block extrajs %}
