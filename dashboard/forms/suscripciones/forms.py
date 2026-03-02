@@ -1,6 +1,6 @@
 from django import forms
 
-from dashboard.models import Certificate, ServiceSubscription
+from dashboard.models import Certificate, Service, ServiceSubscription
 
 
 class SubscriptionForm(forms.ModelForm):
@@ -17,7 +17,9 @@ class SubscriptionForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Si es una instancia existente (edición), deshabilitar el campo payment_status
+        # Filtrar servicios: solo comerciales
+        self.fields['service'].queryset = Service.objects.filter(service_type=Service.COMMERCIAL)
+        # Si es edición, deshabilitar el campo payment_status (como ya tenías)
         if self.instance and self.instance.pk:
             self.fields['payment_status'].disabled = True
             self.fields['payment_status'].help_text = "El estado solo puede modificarse mediante acciones específicas (facturar, aprobar, regenerar)."
