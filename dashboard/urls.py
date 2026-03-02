@@ -85,7 +85,7 @@ from dashboard.views.servicios.views import (
     ServiceListView,
     ServiceUpdateView,
 )
-from dashboard.views.suscripciones.views import SubscriptionListView, SubscriptionCreateView, SubscriptionUpdateView, \
+from dashboard.views.suscripciones.views import RegenerateInvoiceView, SubscriptionListView, SubscriptionCreateView, SubscriptionUpdateView, \
     SubscriptionDeleteView, SubscriptionRenewView, GenerateInvoiceView, ApproveSubscriptionView
 from dashboard.views.tiempo.hoy.views import (
     WeatherTodayCreateView,
@@ -161,6 +161,7 @@ urlpatterns = [
     path('eliminar/suscripcion/<uuid:uuid>/', SubscriptionDeleteView.as_view(), name='eliminar_suscripcion'),
     path('renovar/suscripcion/<uuid:uuid>/', SubscriptionRenewView.as_view(), name='renovar_suscripcion'),
     path('facturar/suscripcion/<uuid:uuid>/', GenerateInvoiceView.as_view(), name='facturar_suscripcion'),
+    path('regenerar-factura/suscripcion/<uuid:uuid>/', RegenerateInvoiceView.as_view(), name='regenerar_factura'),
     path('aprobar/suscripcion/<uuid:uuid>/', ApproveSubscriptionView.as_view(), name='aprobar_suscripcion'),
     # Tiempo Hoy
     path('tiempo/hoy/', WeatherTodayListView.as_view(), name='listado_tiempo_h'),

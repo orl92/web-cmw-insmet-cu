@@ -1,14 +1,10 @@
-from datetime import timedelta
+import os
+from datetime import datetime, timedelta
 from io import BytesIO
 
-from dashboard.forms.suscripciones.forms import (
-    CertificateUploadForm,
-    InvoiceAmountForm,
-    SubscriptionForm,
-)
-from dashboard.models import Certificate, Customer, Invoice, ServiceSubscription
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
@@ -27,10 +23,19 @@ from django.views.generic import (
     FormView,
     ListView,
     UpdateView,
+    View,
 )
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
+
+from common.utils import log_action
+from dashboard.forms.suscripciones.forms import (
+    CertificateUploadForm,
+    InvoiceAmountForm,
+    SubscriptionForm,
+)
+from dashboard.models import Certificate, Customer, Invoice, ServiceSubscription
 
 
 class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -83,13 +88,20 @@ class SubscriptionCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         return context
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+        log_action(
+            user=self.request.user,
+            obj=self.object,
+            action_flag=ADDITION,
+            message=f"Suscripción creada para {self.object.customer.company_name} - {self.object.service.title}"
+        )
         messages.success(self.request, 'Suscripción creada con éxito.')
-        return super().form_valid(form)
+        return response
 
 
 class SubscriptionUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = ServiceSubscription
-    form_class = SubscriptionForm
+    form_class = SubscriptionForm  # Ya incluye el campo deshabilitado
     template_name = 'pages/dashboard/suscripciones/actualizar_suscripcion.html'
     permission_required = 'dashboard.change_subscription'
     success_url = reverse_lazy('listado_suscripciones')
@@ -106,30 +118,43 @@ class SubscriptionUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Update
         return context
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+        log_action(
+            user=self.request.user,
+            obj=self.object,
+            action_flag=CHANGE,
+            message=f"Suscripción actualizada (campos no estado): {self.object.customer.company_name} - {self.object.service.title}"
+        )
         messages.success(self.request, 'Suscripción actualizada con éxito.')
-        return super().form_valid(form)
+        return response
 
 
-class SubscriptionDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = ServiceSubscription
-    template_name = 'pages/dashboard/suscripciones/eliminar_suscripcion.html'
-    permission_required = 'dashboard.delete_subscription'
-    success_url = reverse_lazy('listado_suscripciones')
-
-    def get_object(self, queryset=None):
-        return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
+class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'dashboard.change_subscription'
 
     def post(self, request, *args, **kwargs):
-        messages.success(request, 'Suscripción eliminada con éxito.')
-        return super().post(request, *args, **kwargs)
+        subscription = get_object_or_404(ServiceSubscription, uuid=kwargs['uuid'])
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Suscripción'
-        context['parent'] = 'servicios'
-        context['segment'] = 'suscripciones'
-        context['url_list'] = reverse_lazy('listado_suscripciones')
-        return context
+        if not subscription.invoices.exists():
+            messages.error(request, "Esta suscripción no tiene facturas para regenerar.")
+            return redirect('listado_suscripciones')
+
+        # NUEVO: Eliminar facturas y certificados existentes (el mixin borrará los PDFs automáticamente)
+        subscription.invoices.all().delete()
+        subscription.certificates.all().delete()
+
+        subscription.payment_status = 'requested'
+        subscription.save()
+
+        log_action(
+            user=request.user,
+            obj=subscription,
+            action_flag=CHANGE,
+            message="Facturas y certificados eliminados, estado revertido a solicitado para regenerar"
+        )
+
+        messages.success(request, "Factura y certificado eliminados. Ahora puede generar una nueva.")
+        return redirect('facturar_suscripcion', uuid=subscription.uuid)
 
 
 class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -149,12 +174,18 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 
     def form_valid(self, form):
         old = self.object
-        ServiceSubscription.objects.create(
+        new_sub = ServiceSubscription.objects.create(
             customer=old.customer,
             service=old.service,
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
             payment_status='requested'
+        )
+        log_action(
+            user=self.request.user,
+            obj=new_sub,
+            action_flag=ADDITION,
+            message=f"Suscripción renovada desde {old.uuid}"
         )
         messages.success(self.request, 'Solicitud de renovación enviada. El staff generará una factura.')
         return redirect(self.success_url)
@@ -166,6 +197,35 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         context['segment'] = 'suscripciones'
         context['url_list'] = reverse_lazy('listado_suscripciones')
         context['subscription'] = self.get_object()
+        return context
+
+
+class SubscriptionDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    model = ServiceSubscription
+    template_name = 'pages/dashboard/suscripciones/eliminar_suscripcion.html'
+    permission_required = 'dashboard.delete_subscription'
+    success_url = reverse_lazy('listado_suscripciones')
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        log_action(
+            user=request.user,
+            obj=self.object,
+            action_flag=DELETION,
+            message=f"Suscripción eliminada: {self.object.customer.company_name} - {self.object.service.title}"
+        )
+        messages.success(request, 'Suscripción eliminada con éxito.')
+        return super().post(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Eliminar Suscripción'
+        context['parent'] = 'servicios'
+        context['segment'] = 'suscripciones'
+        context['url_list'] = reverse_lazy('listado_suscripciones')
         return context
 
 
@@ -182,6 +242,12 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
             return redirect('listado_suscripciones')
         return super().dispatch(request, *args, **kwargs)
 
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['start_date'] = self.subscription.start_date.date()
+        initial['end_date'] = self.subscription.end_date.date()
+        return initial
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['subscription'] = self.subscription
@@ -192,15 +258,22 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
 
     def form_valid(self, form):
         amount = form.cleaned_data['amount']
+        start_date = form.cleaned_data['start_date']
+        end_date = form.cleaned_data['end_date']
 
-        # Crear factura (número único)
+        start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
+        end_datetime = timezone.make_aware(datetime.combine(end_date, datetime.min.time()))
+
+        self.subscription.start_date = start_datetime
+        self.subscription.end_date = end_datetime
+        self.subscription.save()
+
         invoice = Invoice(
             subscription=self.subscription,
             amount=amount,
             number=f"INV-{self.subscription.uuid}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
         )
 
-        # --- Generar PDF de la factura (igual que antes) ---
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
@@ -212,29 +285,39 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         p.drawString(2*cm, height-7*cm, f"Cliente: {self.subscription.customer.company_name}")
         p.drawString(2*cm, height-8*cm, f"NIT: {self.subscription.customer.nit}")
         p.drawString(2*cm, height-9*cm, f"Servicio: {self.subscription.service.title}")
-        p.drawString(2*cm, height-10*cm, f"Período: {self.subscription.start_date.strftime('%d/%m/%Y')} - {self.subscription.end_date.strftime('%d/%m/%Y')}")
+        p.drawString(2*cm, height-10*cm, f"Período: {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}")
         p.drawString(2*cm, height-11*cm, f"Importe: {amount} CUP")
         p.showPage()
         p.save()
-        # ------------------------------------------------
 
         filename = f"factura_{self.subscription.uuid}.pdf"
         invoice.pdf.save(filename, ContentFile(buffer.getvalue()))
         invoice.save()
 
-        # Actualizar estado
         self.subscription.payment_status = 'pending'
         self.subscription.save()
 
-        # Enviar correo (con QR si corresponde)
         self.send_payment_email(self.subscription, invoice)
 
-        messages.success(self.request, "Factura generada y enviada al cliente.")
+        # Registro de auditoría: cambio en la suscripción
+        log_action(
+            user=self.request.user,
+            obj=self.subscription,
+            action_flag=CHANGE,
+            message=f"Factura {invoice.number} generada, estado cambiado a pendiente"
+        )
+        # Opcional: registrar la creación de la factura
+        log_action(
+            user=self.request.user,
+            obj=invoice,
+            action_flag=ADDITION,
+            message=f"Factura creada por {amount} CUP"
+        )
+
+        messages.success(self.request, "Factura generada, período actualizado y correo enviado.")
         return redirect(self.success_url)
 
     def send_payment_email(self, subscription, invoice):
-        """Envía correo con factura adjunta y, si el método es QR, incluye la imagen QR estática."""
-        # Determinar asunto y plantilla según método de pago
         if subscription.payment_method == 'qr':
             subject = f"Factura y pago QR - {subscription.service.title}"
             template = 'pages/dashboard/emails/factura_qr.html'
@@ -242,16 +325,14 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
             subject = f"Factura - {subscription.service.title}"
             template = 'pages/dashboard/emails/factura.html'
 
-        # Renderizar HTML
         context = {
             'subscription': subscription,
             'invoice': invoice,
             'customer': subscription.customer,
-            'payment_method': subscription.get_payment_method_display(),  # texto legible
+            'payment_method': subscription.get_payment_method_display(),
         }
         html_content = render_to_string(template, context)
 
-        # Crear correo
         email = EmailMessage(
             subject=subject,
             body=html_content,
@@ -260,30 +341,23 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         )
         email.content_subtype = "html"
 
-        # Adjuntar factura PDF
         if invoice.pdf:
             email.attach_file(invoice.pdf.path)
 
-        # Si el método de pago es QR, adjuntar la imagen estática
         if subscription.payment_method == 'qr':
-            # Localizar la imagen QR en los archivos estáticos
             from django.contrib.staticfiles import finders
-            import os
-
             qr_path = finders.find('dist/img/QR/QR.png')
             if not qr_path:
-                # Fallback: construir ruta con STATIC_ROOT
                 qr_path = os.path.join(settings.STATIC_ROOT, 'dist/img/QR/QR.png')
-
             if os.path.exists(qr_path):
                 with open(qr_path, 'rb') as f:
                     email.attach('qr_pago.png', f.read(), 'image/png')
-            else:
-                # Opcional: loguear error, pero no impedir envío
-                print("No se encontró la imagen QR en", qr_path)
 
-        # Enviar
         email.send()
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Corrige los errores del formulario.")
+        return super().form_invalid(form)
 
 
 class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -298,7 +372,6 @@ class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, Updat
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        # No pasamos instance al formulario porque el modelo del form es Certificate, no Subscription
         kwargs.pop('instance', None)
         return kwargs
 
@@ -308,25 +381,36 @@ class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, Updat
             messages.error(self.request, "Esta suscripción no está pendiente de pago.")
             return redirect(self.success_url)
 
-        # Crear certificado asociado a la suscripción
         certificate = Certificate(
             subscription=sub,
             pdf=form.cleaned_data['pdf']
         )
         certificate.save()
 
-        # Actualizar estado de suscripción
         sub.payment_status = 'paid'
         sub.save()
 
-        # Enviar correo al cliente con el certificado
         self.send_certificate_email(sub, certificate)
+
+        # Registro de cambio en la suscripción
+        log_action(
+            user=self.request.user,
+            obj=sub,
+            action_flag=CHANGE,
+            message=f"Pago aprobado, certificado {certificate.pk} subido"
+        )
+        # Registro de creación del certificado
+        log_action(
+            user=self.request.user,
+            obj=certificate,
+            action_flag=ADDITION,
+            message=f"Certificado generado para suscripción {sub.uuid}"
+        )
 
         messages.success(self.request, "Pago aprobado y certificado enviado.")
         return redirect(self.success_url)
 
     def send_certificate_email(self, subscription, certificate):
-
         subject = f"Certificado de {subscription.service.title}"
         message = render_to_string('pages/dashboard/emails/certificado.html', {'subscription': subscription})
         email = EmailMessage(

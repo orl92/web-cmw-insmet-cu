@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block form %}
-  <!-- Cliente (solo lectura opcional, o editable) -->
+  <!-- Cliente -->
   <div class="mb-3">
     <label class="form-label required">{{ form.customer.label }}</label>
     <select name="{{ form.customer.name }}" class="form-control" required>
@@ -46,14 +46,17 @@
     {% endif %}
   </div>
 
-  <!-- Estado de pago -->
+  <!-- Estado de pago (deshabilitado en edición) -->
   <div class="mb-3">
     <label class="form-label required">{{ form.payment_status.label }}</label>
-    <select name="{{ form.payment_status.name }}" class="form-control" required>
+    <select name="{{ form.payment_status.name }}" class="form-control" {% if form.payment_status.field.disabled %}disabled{% endif %}>
       {% for choice in form.payment_status.field.choices %}
         <option value="{{ choice.0 }}" {% if choice.0 == form.payment_status.value %}selected{% endif %}>{{ choice.1 }}</option>
       {% endfor %}
     </select>
+    {% if form.payment_status.help_text %}
+      <small class="form-hint">{{ form.payment_status.help_text }}</small>
+    {% endif %}
     {% if form.payment_status.errors %}
       <span class="text-danger">{{ form.payment_status.errors }}</span>
     {% endif %}

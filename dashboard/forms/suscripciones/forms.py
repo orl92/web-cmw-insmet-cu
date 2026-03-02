@@ -1,5 +1,6 @@
-from dashboard.models import Certificate, ServiceSubscription
 from django import forms
+
+from dashboard.models import Certificate, ServiceSubscription
 
 
 class SubscriptionForm(forms.ModelForm):
@@ -7,9 +8,19 @@ class SubscriptionForm(forms.ModelForm):
         model = ServiceSubscription
         fields = ['customer', 'service', 'start_date', 'end_date', 'payment_status']
         widgets = {
-            'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+            'customer': forms.Select(attrs={'class': 'form-control'}),
+            'service': forms.Select(attrs={'class': 'form-control'}),
+            'payment_status': forms.Select(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Si es una instancia existente (edición), deshabilitar el campo payment_status
+        if self.instance and self.instance.pk:
+            self.fields['payment_status'].disabled = True
+            self.fields['payment_status'].help_text = "El estado solo puede modificarse mediante acciones específicas (facturar, aprobar, regenerar)."
 
 
 class CertificateUploadForm(forms.ModelForm):
@@ -23,12 +34,19 @@ class CertificateUploadForm(forms.ModelForm):
 
 
 class InvoiceAmountForm(forms.Form):
-    """Formulario para que el staff ingrese el monto de la factura"""
     amount = forms.DecimalField(
         max_digits=10,
         decimal_places=2,
         label="Monto de la factura",
         widget=forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'form-control'})
+    )
+    start_date = forms.DateField(
+        label="Fecha de inicio",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    end_date = forms.DateField(
+        label="Fecha de expiración",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
 
     def clean_amount(self):
@@ -36,6 +54,14 @@ class InvoiceAmountForm(forms.Form):
         if amount <= 0:
             raise forms.ValidationError("El monto debe ser mayor que cero.")
         return amount
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start = cleaned_data.get('start_date')
+        end = cleaned_data.get('end_date')
+        if start and end and start >= end:
+            raise forms.ValidationError("La fecha de inicio debe ser anterior a la fecha de expiración.")
+        return cleaned_data
 
 
 class PaymentMethodForm(forms.Form):

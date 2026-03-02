@@ -6,7 +6,7 @@
   <div class="alert alert-info">
     <strong>Cliente:</strong> {{ subscription.customer.company_name }}<br>
     <strong>Servicio:</strong> {{ subscription.service.title }}<br>
-    <strong>Período:</strong> {{ subscription.start_date|date:"d/m/Y" }} - {{ subscription.end_date|date:"d/m/Y" }}
+    <strong>Período actual:</strong> {{ subscription.start_date|date:"d/m/Y" }} - {{ subscription.end_date|date:"d/m/Y" }}
   </div>
 
   <div class="mb-3">
@@ -18,10 +18,31 @@
     {% if form.amount.errors %}
       <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
     {% endif %}
-    <small class="text-muted">Introduce el importe de la factura.</small>
+    <small class="text-muted">Importe de la factura.</small>
   </div>
 
-  <!-- Información adicional sobre el pago (opcional, según método) -->
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">Fecha de inicio</label>
+      <input type="date" class="form-control" name="start_date" required value="{{ form.start_date.value|default:'' }}">
+      {% if form.start_date.errors %}
+        <div class="invalid-feedback d-block">{{ form.start_date.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">Fecha de expiración</label>
+      <input type="date" class="form-control" name="end_date" required value="{{ form.end_date.value|default:'' }}">
+      {% if form.end_date.errors %}
+        <div class="invalid-feedback d-block">{{ form.end_date.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors.0 }}</div>
+  {% endif %}
+
+  <!-- Método de pago (solo lectura) -->
   {% if subscription.payment_method %}
   <div class="mb-3">
     <label class="form-label">Método de pago</label>
@@ -32,6 +53,53 @@
 
 {% block extrajs %}
 <script>
-  // Si quisieras algún comportamiento dinámico (ej. cambiar algo según el método), lo pondrías aquí.
+  document.addEventListener('DOMContentLoaded', function() {
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    const amountInput = document.querySelector('input[name="amount"]');
+    const submitBtn = document.querySelector('button[type="submit"]');
+    
+    // Crear elemento para mostrar resumen
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'alert alert-info mt-3';
+    summaryDiv.id = 'period-summary';
+    endDateInput.closest('.row').after(summaryDiv);
+
+    function updateSummary() {
+      const start = startDateInput.value;
+      const end = endDateInput.value;
+      const amount = amountInput.value;
+
+      if (start && end && amount) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        const diffTime = endDate - startDate;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 0) {
+          summaryDiv.innerHTML = `<strong>Período:</strong> ${diffDays} días (${start} al ${end})<br>
+                                  <strong>Monto total:</strong> $${amount} CUP`;
+          summaryDiv.classList.remove('alert-danger');
+          summaryDiv.classList.add('alert-info');
+          submitBtn.disabled = false;
+        } else {
+          summaryDiv.innerHTML = '<strong class="text-danger">Error:</strong> La fecha de fin debe ser posterior a la de inicio.';
+          summaryDiv.classList.remove('alert-info');
+          summaryDiv.classList.add('alert-danger');
+          submitBtn.disabled = true;
+        }
+      } else {
+        summaryDiv.innerHTML = 'Complete todos los campos para ver el resumen.';
+        summaryDiv.classList.remove('alert-danger', 'alert-info');
+        summaryDiv.classList.add('alert-secondary');
+        submitBtn.disabled = true;
+      }
+    }
+
+    startDateInput.addEventListener('change', updateSummary);
+    endDateInput.addEventListener('change', updateSummary);
+    amountInput.addEventListener('input', updateSummary);
+    updateSummary(); // Llamada inicial
+  });
 </script>
 {% endblock %}
