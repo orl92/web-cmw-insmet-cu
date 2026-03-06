@@ -1,6 +1,15 @@
 from django.contrib import admin
 
-from dashboard.models import *
+from dashboard.models import (
+    EarlyWarning,
+    EmailRecipient,
+    EmailRecipientList,
+    Forecasts,
+    Service,
+    StormWarning,
+    TropicalCyclone,
+)
+from dashboard.tests import Province, Station
 
 # Register your models here.
 

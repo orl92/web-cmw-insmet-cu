@@ -25,7 +25,6 @@ from django.views.generic import (
 )
 
 from common.utils import log_action
-
 from dashboard.data.mail_send import mail_send
 from dashboard.forms.comentarios.tiempo.forms import WeatherCommentaryForm
 from dashboard.models import WeatherCommentary

@@ -1,5 +1,6 @@
-from dashboard.models import Service
 from django import forms
+
+from dashboard.models import Service
 
 
 class ServiceForm(forms.ModelForm):

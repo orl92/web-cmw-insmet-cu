@@ -120,7 +120,7 @@ class ScientificPublicationForm(forms.ModelForm):
         }
 
         # Eliminar campos vacíos para búsqueda
-        search_data = {k: v for k, v in author_data.items() if v}
+        {k: v for k, v in author_data.items() if v}
 
         if author_email:
             author, created = Author.objects.get_or_create(

@@ -1,19 +1,20 @@
 from datetime import datetime, timedelta
 
 from django.contrib import messages
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin,
-                                        UserPassesTestMixin)
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-from dashboard.forms.datos.pronosticos.forms import ForecastsForm
-from dashboard.models import Forecasts
-
-from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from common.utils import log_action
+from dashboard.forms.pronosticos.forms import ForecastsForm
+from dashboard.models import Forecasts
 
 # Create your views here.
 

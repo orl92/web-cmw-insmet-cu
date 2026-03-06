@@ -1,11 +1,12 @@
 import uuid
 
-from common.utils import FileHandlerMixin, pdf_upload_path, image_upload_path
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils import timezone
+
+from common.utils import FileHandlerMixin, image_upload_path, pdf_upload_path
 
 
 class SiteConfiguration(models.Model):

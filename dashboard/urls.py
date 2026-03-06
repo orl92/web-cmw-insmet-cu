@@ -85,8 +85,16 @@ from dashboard.views.servicios.views import (
     ServiceListView,
     ServiceUpdateView,
 )
-from dashboard.views.suscripciones.views import RegenerateInvoiceView, SubscriptionListView, SubscriptionCreateView, SubscriptionUpdateView, \
-    SubscriptionDeleteView, SubscriptionRenewView, GenerateInvoiceView, ApproveSubscriptionView
+from dashboard.views.suscripciones.views import (
+    ApproveSubscriptionView,
+    GenerateInvoiceView,
+    RegenerateInvoiceView,
+    SubscriptionCreateView,
+    SubscriptionDeleteView,
+    SubscriptionListView,
+    SubscriptionRenewView,
+    SubscriptionUpdateView,
+)
 from dashboard.views.tiempo.hoy.views import (
     WeatherTodayCreateView,
     WeatherTodayDeleteView,

@@ -1,14 +1,20 @@
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
-from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
-from django.db.models import Count
-from django.core.exceptions import PermissionDenied
-from dashboard.models import Service
-from dashboard.forms.servicios.forms import ServiceForm
-from common.utils import log_action
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
+from django.core.exceptions import PermissionDenied
+from django.db.models import Count
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+
+from common.utils import log_action
+from dashboard.forms.servicios.forms import ServiceForm
+from dashboard.models import Service
+
 
 class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/servicios/listado_servicios.html'

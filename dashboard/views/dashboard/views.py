@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import Group, User
 from django.contrib.sessions.models import Session
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import FieldError, ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.http import JsonResponse
@@ -244,7 +244,6 @@ class MaintenanceModeToggleView(UserPassesTestMixin, TemplateView):
         if config:
             # Actualizar el estado del modo de mantenimiento
             maintenance_mode = 'maintenance_mode' in request.POST
-            previous_state = config.maintenance_mode
             config.maintenance_mode = maintenance_mode
             config.save()
 
