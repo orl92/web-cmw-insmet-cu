@@ -54,9 +54,13 @@ def pending_subscriptions(request):
         context['staff_pending_count'] = ServiceSubscription.objects.filter(payment_status='pending').count()
         context['staff_expired_count'] = ServiceSubscription.objects.filter(payment_status='expired').count()
 
-    # Para clientes: suscripciones del cliente en estados pendiente y expirado
+    # Para clientes: suscripciones del cliente en estados solicitado, pendiente y expirado
     if request.user.is_authenticated and hasattr(request.user, 'customer'):
         customer = request.user.customer
+        context['user_requested_count'] = ServiceSubscription.objects.filter(
+            customer=customer,
+            payment_status='requested'
+        ).count()
         context['user_pending_count'] = ServiceSubscription.objects.filter(
             customer=customer,
             payment_status='pending'
