@@ -8,7 +8,7 @@
       <img src="{% static 'dist/img/webp/boy-girl.webp' %}" class="img-fluid w-50" alt="boy-girl" />
       <div class="ms-3">
         {% if request.user.is_superuser %}
-          <h3 class="alert-title">¿Está seguro que desea ELIMINAR PERMANENTEMENTE esta suscripción?</h3>
+          <h3 class="alert-title">¿Está seguro que desea eliminar esta suscripción?</h3>
           <p class="text-muted mb-0">
             Esta acción eliminará físicamente la suscripción de <strong>{{ object.customer.company_name }}</strong> 
             para el servicio <strong>{{ object.service.title }}</strong>, junto con todas sus facturas y certificados asociados.
@@ -20,14 +20,12 @@
             Esta acción desactivará la suscripción de <strong>{{ object.customer.company_name }}</strong> 
             para el servicio <strong>{{ object.service.title }}</strong>. 
             El registro se mantendrá en la base de datos pero no será visible para el cliente.
-            Puede reactivarse si es necesario.
           </p>
         {% endif %}
       </div>
     </div>
     <form method="post" class="text-center">
       {% csrf_token %}
-      
       {# Checkbox solo para superusuarios: permite elegir hard delete #}
       {% if request.user.is_superuser %}
         <div class="form-check mb-3">
@@ -37,9 +35,8 @@
           </label>
         </div>
       {% endif %}
-      
       <button type="submit" class="btn btn-danger mr-2">
-        {% if request.user.is_superuser %}Eliminar Permanentemente{% else %}Desactivar{% endif %}
+        {% if request.user.is_superuser %}Eliminar{% else %}Desactivar{% endif %}
       </button>
       <a href="{{ url_list }}" class="btn btn-secondary ml-2">Cancelar</a>
     </form>
