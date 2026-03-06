@@ -129,7 +129,7 @@ class MapaView(TemplateView):
     def fetch_image_urls(self, datetime_init, var_name):
         """Obtener URLs de imágenes de la nueva API"""
         try:
-            api_url = f"http://apimet.cmw.insmet.cu/simulations/?datetime_init={datetime_init}&var_name={var_name}"
+            api_url = f"http://apimet.cmw.insmet.cu/api/simulations/?datetime_init={datetime_init}&var_name={var_name}"
             response = requests.get(api_url, timeout=30, verify=False)
             response.raise_for_status()
             data = response.json()
@@ -524,7 +524,7 @@ class DescargarGifView(View):
 
         try:
             # Construir la URL del servicio
-            url = f"http://apimet.cmw.insmet.cu/simulations/?datetime_init={datetime_init}&var_name={var_name}"
+            url = f"http://apimet.cmw.insmet.cu/api/simulations/?datetime_init={datetime_init}&var_name={var_name}"
 
             response = requests.get(url, timeout=30)
             response.raise_for_status()
