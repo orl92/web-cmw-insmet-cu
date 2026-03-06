@@ -6,14 +6,17 @@
   <div class="alert alert-info">
     <strong>Cliente:</strong> {{ subscription.customer.company_name }}<br>
     <strong>Servicio:</strong> {{ subscription.service.title }}<br>
-    <strong>Período actual:</strong> {{ subscription.start_date|date:"d/m/Y" }} - {{ subscription.end_date|date:"d/m/Y" }}
+    <strong>Método de pago solicitado:</strong> {{ subscription.get_payment_method_display }}<br>
+    <strong>Fecha de solicitud:</strong> {{ subscription.start_date|default:"No asignada aún" }}
   </div>
 
+  <!-- Campo de monto -->
   <div class="mb-3">
     <label class="form-label required">Monto (CUP)</label>
     <div class="input-group">
       <span class="input-group-text">$</span>
-      <input type="number" step="0.01" class="form-control" name="amount" required value="{{ form.amount.value|default:'' }}">
+      <input type="number" step="0.01" class="form-control" name="amount" required 
+             value="{{ form.amount.value|default:form.initial.amount }}">
     </div>
     {% if form.amount.errors %}
       <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
@@ -21,20 +24,25 @@
     <small class="text-muted">Importe de la factura.</small>
   </div>
 
+  <!-- Fechas (se asignan por primera vez aquí) -->
   <div class="row">
     <div class="col-md-6 mb-3">
       <label class="form-label required">Fecha de inicio</label>
-      <input type="date" class="form-control" name="start_date" required value="{{ form.start_date.value|default:'' }}">
+      <input type="date" class="form-control" name="start_date" required 
+             value="{{ form.start_date.value|default:form.initial.start_date }}">
       {% if form.start_date.errors %}
         <div class="invalid-feedback d-block">{{ form.start_date.errors.0 }}</div>
       {% endif %}
+      <small class="text-muted">Fecha en que comienza el servicio</small>
     </div>
     <div class="col-md-6 mb-3">
       <label class="form-label required">Fecha de expiración</label>
-      <input type="date" class="form-control" name="end_date" required value="{{ form.end_date.value|default:'' }}">
+      <input type="date" class="form-control" name="end_date" required 
+             value="{{ form.end_date.value|default:form.initial.end_date }}">
       {% if form.end_date.errors %}
         <div class="invalid-feedback d-block">{{ form.end_date.errors.0 }}</div>
       {% endif %}
+      <small class="text-muted">Fecha en que finaliza el servicio</small>
     </div>
   </div>
 

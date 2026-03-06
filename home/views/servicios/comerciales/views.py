@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
@@ -109,11 +107,12 @@ class ServiceDetailView(FormView):
             messages.warning(self.request, "Ya tienes una solicitud o suscripción para este servicio.")
             return redirect('detalle_servicio_comercial', uuid=self.service.uuid)
         
+        # Crear suscripción SIN fechas (start_date y end_date NULL)
         ServiceSubscription.objects.create(
             customer=customer,
             service=self.service,
-            start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
+            start_date=None,                          # ← Cambiado a None
+            end_date=None,                            # ← Cambiado a None
             payment_status='requested',
             payment_method=form.cleaned_data['payment_method']
         )
