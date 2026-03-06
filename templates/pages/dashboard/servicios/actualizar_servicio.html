@@ -2,13 +2,6 @@
 {% load static %}
 
 {% block form %} 
-
-{% if form.errors %}
-  <div class="alert alert-danger">
-    {{ form.errors }}
-  </div>
-{% endif %}
-
   <div class="mb-3">
     <label class="form-label required">Título</label>
     <input type="text" class="form-control" name="title" placeholder="Título del Servicio" value="{{ object.title }}" required>
