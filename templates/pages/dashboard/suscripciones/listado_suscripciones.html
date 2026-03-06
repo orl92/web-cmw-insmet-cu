@@ -11,6 +11,9 @@
   <th>Expiración</th>
   <th>Estado</th>
   <th>Pago</th>
+  {% if is_staff %}
+    <th>Registro</th>
+  {% endif %}
   <th class="text-end">Acciones</th>
 {% endblock %}
 
@@ -56,6 +59,16 @@
         <span class="badge badge-outline text-red">Expirado</span>
       {% endif %}
     </td>
+    
+    {% if is_staff %}
+    <td>
+      {% if subscription.record_active %}
+        <span class="badge badge-outline text-green">Activa</span>
+      {% else %}
+        <span class="badge badge-outline text-secondary">Desactivada</span>
+      {% endif %}
+    </td>
+    {% endif %}
     
     <td class="text-end">
       {% if is_staff %}
