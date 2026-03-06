@@ -25,11 +25,10 @@
         {% endif %}
       </div>
     </div>
-
     <form method="post" class="text-center">
       {% csrf_token %}
-
-      {# Para superusuarios: checkbox que permite elegir hard delete #}
+      
+      {# Checkbox solo para superusuarios: permite elegir hard delete #}
       {% if request.user.is_superuser %}
         <div class="form-check mb-3">
           <input class="form-check-input" type="checkbox" name="hard_delete" id="hardDelete" value="true">
@@ -38,7 +37,7 @@
           </label>
         </div>
       {% endif %}
-
+      
       <button type="submit" class="btn btn-danger mr-2">
         {% if request.user.is_superuser %}Eliminar Permanentemente{% else %}Desactivar{% endif %}
       </button>
