@@ -145,7 +145,7 @@
                 </svg>
             </span>
             <span class="nav-link-title">Servicios</span>
-            {% if user.is_authenticated and user.customer and client_total_notifications > 0 %}
+            {% if user.is_authenticated and user.customer and client_pending_actions > 0 %}
                 <span class="status-dot status-dot-animated bg-red d-block ms-2"></span>
             {% endif %}
         </a>
@@ -168,8 +168,8 @@
                     {% endif %}
                 {% endif %}
             </a>
-            <!-- Mis Servicios (solo clientes) con badge de expiradas -->
-            {% if user.is_authenticated and user.customer %}
+            <!-- Mis Servicios (solo clientes con servicios activos) -->
+            {% if user.is_authenticated and user.customer and client_active_count > 0 %}
             <div class="dropdown-divider"></div>
             <a class="dropdown-item {% if 'comerciales' in segment %}active{% endif %}"
             href="{% url 'servicios_comerciales' %}" rel="noopener">
