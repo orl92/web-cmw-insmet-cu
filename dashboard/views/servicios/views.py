@@ -50,6 +50,7 @@ class ServiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
     template_name = 'pages/dashboard/servicios/crear_servicio.html'
     permission_required = 'dashboard.add_service'
     success_url = reverse_lazy('listado_servicios')
+    url_redirect = success_url
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -82,6 +83,7 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
     template_name = 'pages/dashboard/servicios/actualizar_servicio.html'
     permission_required = 'dashboard.change_service'
     success_url = reverse_lazy('listado_servicios')
+    url_redirect = success_url
 
     def get_object(self, queryset=None):
         return get_object_or_404(Service, uuid=self.kwargs['uuid'])
@@ -137,6 +139,7 @@ class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
     template_name = 'pages/dashboard/servicios/eliminar_servicio.html'
     permission_required = 'dashboard.delete_service'
     success_url = reverse_lazy('listado_servicios')
+    url_redirect = success_url
 
     def get_object(self, queryset=None):
         return get_object_or_404(Service, uuid=self.kwargs['uuid'])

@@ -78,6 +78,7 @@ class SubscriptionCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
     template_name = 'pages/dashboard/suscripciones/crear_suscripcion.html'
     permission_required = 'dashboard.add_subscription'
     success_url = reverse_lazy('listado_suscripciones')
+    url_redirect = success_url
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -93,7 +94,7 @@ class SubscriptionCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Suscripción creada para {self.object.customer.company_name} - {self.object.service.title}"
+            message=f"Suscripción creada para: {self.object.customer.company_name} - {self.object.service.title}"
         )
         messages.success(self.request, 'Suscripción creada con éxito.')
         return response
@@ -105,6 +106,7 @@ class SubscriptionUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Update
     template_name = 'pages/dashboard/suscripciones/actualizar_suscripcion.html'
     permission_required = 'dashboard.change_subscription'
     success_url = reverse_lazy('listado_suscripciones')
+    url_redirect = success_url
 
     def get_object(self, queryset=None):
         return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
@@ -123,7 +125,7 @@ class SubscriptionUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Update
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Suscripción actualizada (campos no estado): {self.object.customer.company_name} - {self.object.service.title}"
+            message=f"Suscripción actualizada para: {self.object.customer.company_name} - {self.object.service.title}"
         )
         messages.success(self.request, 'Suscripción actualizada con éxito.')
         return response
@@ -134,6 +136,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
     form_class = InvoiceForm
     permission_required = 'dashboard.change_subscription'
     success_url = reverse_lazy('listado_suscripciones')
+    url_redirect = success_url
 
     def dispatch(self, request, *args, **kwargs):
         self.subscription = get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
@@ -303,6 +306,7 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
     fields = []
     template_name = 'pages/dashboard/suscripciones/renovar_suscripcion.html'
     success_url = reverse_lazy('listado_suscripciones')
+    url_redirect = success_url
 
     def get_object(self, queryset=None):
         return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
@@ -376,6 +380,7 @@ class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, Updat
     template_name = 'pages/dashboard/suscripciones/subir_certificado.html'
     permission_required = 'dashboard.change_subscription'
     success_url = reverse_lazy('listado_suscripciones')
+    url_redirect = success_url
 
     def get_object(self, queryset=None):
         return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
