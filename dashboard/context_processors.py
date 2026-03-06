@@ -1,7 +1,11 @@
 from django.utils import timezone
 
-from dashboard.models import (EarlyWarning, StormWarning,
-                              TropicalCyclone, ServiceSubscription)
+from dashboard.models import (
+    EarlyWarning,
+    ServiceSubscription,
+    StormWarning,
+    TropicalCyclone,
+)
 
 
 def notification_counts(request):
@@ -19,10 +23,25 @@ def client_subscription_notifications(request):
     context = {}
     if request.user.is_authenticated and hasattr(request.user, 'customer'):
         customer = request.user.customer
-        context['client_requested_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='requested').count()
-        context['client_pending_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='pending').count()
-        context['client_expired_count'] = ServiceSubscription.objects.filter(customer=customer, payment_status='expired').count()
-        context['client_total_notifications'] = context['client_requested_count'] + context['client_pending_count'] + context['client_expired_count']
+        ahora = timezone.now()
+        # Suscripciones activas (pagadas y no expiradas)
+        context['client_active_count'] = ServiceSubscription.objects.filter(
+            customer=customer,
+            payment_status='paid',
+            end_date__gt=ahora
+        ).count()
+        # Otros contadores
+        context['client_requested_count'] = ServiceSubscription.objects.filter(
+            customer=customer, payment_status='requested'
+        ).count()
+        context['client_pending_count'] = ServiceSubscription.objects.filter(
+            customer=customer, payment_status='pending'
+        ).count()
+        context['client_expired_count'] = ServiceSubscription.objects.filter(
+            customer=customer, payment_status='expired'
+        ).count()
+        context['client_pending_actions'] = context['client_requested_count'] + context['client_pending_count']
+        context['client_total_notifications'] = context['client_pending_actions'] + context['client_expired_count']
     return context
 
 
