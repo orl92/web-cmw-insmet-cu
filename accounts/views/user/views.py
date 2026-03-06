@@ -161,13 +161,13 @@ class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 class CustomerRegisterView(CreateView):
     form_class = CustomerSignUpForm
     template_name = 'pages/accounts/users/customer_register.html'
-    success_url = reverse_lazy('servicios_comerciales')
+    success_url = reverse_lazy('public_servicios_comerciales')
     
     def dispatch(self, request, *args, **kwargs):
         # Si el usuario ya está autenticado, redirigir
         if request.user.is_authenticated:
             messages.info(request, 'Ya tienes una sesión activa.')
-            return redirect('servicios_comerciales')
+            return redirect('public_servicios_comerciales')
         return super().dispatch(request, *args, **kwargs)
     
     def form_valid(self, form):
