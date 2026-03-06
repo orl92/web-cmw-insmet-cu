@@ -49,11 +49,13 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         user = self.request.user
         qs = super().get_queryset().select_related('customer', 'service')
         if user.is_superuser or user.is_staff:
+            # Staff ve todas, incluyendo desactivadas (record_active=False)
             return qs.order_by('-start_date')
         elif user.groups.filter(name='Clientes').exists():
             try:
                 customer = user.customer
-                return qs.filter(customer=customer).order_by('-start_date')
+                # Clientes solo ven registros activos (record_active=True)
+                return qs.filter(customer=customer, record_active=True).order_by('-start_date')
             except Customer.DoesNotExist:
                 return qs.none()
         raise PermissionDenied
@@ -89,6 +91,8 @@ class SubscriptionCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
         return context
 
     def form_valid(self, form):
+        # Aseguramos que la nueva suscripción tenga record_active=True
+        form.instance.record_active = True
         response = super().form_valid(form)
         log_action(
             user=self.request.user,
@@ -147,7 +151,6 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
 
     def get_initial(self):
         initial = super().get_initial()
-        # Valores por defecto: hoy y hoy+30 días (el staff puede modificarlos)
         today = timezone.now().date()
         initial['start_date'] = today.isoformat()
         initial['end_date'] = (today + timedelta(days=30)).isoformat()
@@ -168,24 +171,20 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         start_date = form.cleaned_data['start_date']
         end_date = form.cleaned_data['end_date']
 
-        # Convertir a datetime con hora 00:00:00
         start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
         end_datetime = timezone.make_aware(datetime.combine(end_date, datetime.min.time()))
 
-        # ASIGNAR LAS FECHAS A LA SUSCRIPCIÓN (por primera vez)
         self.subscription.start_date = start_datetime
         self.subscription.end_date = end_datetime
         self.subscription.payment_status = 'pending'
         self.subscription.save()
 
-        # Crear factura
         invoice = Invoice(
             subscription=self.subscription,
             amount=amount,
             number=f"INV-{self.subscription.uuid}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
         )
 
-        # Generar PDF
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
@@ -202,15 +201,12 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         p.showPage()
         p.save()
 
-        # Guardar PDF
         filename = f"factura_{self.subscription.uuid}.pdf"
         invoice.pdf.save(filename, ContentFile(buffer.getvalue()))
         invoice.save()
 
-        # Enviar correo
         self.send_payment_email(self.request, self.subscription, invoice)
 
-        # Logs
         log_action(
             user=self.request.user,
             obj=self.subscription,
@@ -280,13 +276,25 @@ class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         subscription = get_object_or_404(ServiceSubscription, uuid=kwargs['uuid'])
 
+        if subscription.payment_status == 'paid':
+            messages.error(request, "No se puede regenerar una factura de una suscripción ya pagada.")
+            return redirect('listado_suscripciones')
+
         if not subscription.invoices.exists():
             messages.error(request, "Esta suscripción no tiene facturas para regenerar.")
             return redirect('listado_suscripciones')
 
-        subscription.invoices.all().delete()
-        subscription.certificates.all().delete()
+        for invoice in subscription.invoices.all():
+            invoice.is_cancelled = True
+            invoice.save()
+            log_action(
+                user=request.user,
+                obj=invoice,
+                action_flag=CHANGE,
+                message=f"Factura {invoice.number} anulada por regeneración"
+            )
 
+        subscription.certificates.all().delete()
         subscription.payment_status = 'requested'
         subscription.save()
 
@@ -294,10 +302,10 @@ class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=request.user,
             obj=subscription,
             action_flag=CHANGE,
-            message="Facturas y certificados eliminados, estado revertido a solicitado para regenerar"
+            message="Facturas anuladas, estado revertido a solicitado para regenerar"
         )
 
-        messages.success(request, "Factura y certificado eliminados. Ahora puede generar una nueva.")
+        messages.success(request, "Factura anterior anulada. Ahora puede generar una nueva.")
         return redirect('facturar_suscripcion', uuid=subscription.uuid)
 
 
@@ -315,7 +323,8 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
         sub = self.get_object()
         return (self.request.user.groups.filter(name='Clientes').exists() and
                 hasattr(self.request.user, 'customer') and
-                sub.customer == self.request.user.customer)
+                sub.customer == self.request.user.customer and
+                sub.is_active)  # Propiedad de vigencia (pagada y no expirada)
 
     def form_valid(self, form):
         old = self.object
@@ -324,7 +333,8 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
             service=old.service,
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
-            payment_status='requested'
+            payment_status='requested',
+            record_active=True
         )
         log_action(
             user=self.request.user,
@@ -350,27 +360,42 @@ class SubscriptionDeleteView(LoginRequiredMixin, PermissionRequiredMixin, Delete
     template_name = 'pages/dashboard/suscripciones/eliminar_suscripcion.html'
     permission_required = 'dashboard.delete_subscription'
     success_url = reverse_lazy('listado_suscripciones')
+    url_redirect = success_url
 
     def get_object(self, queryset=None):
         return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-        log_action(
-            user=request.user,
-            obj=self.object,
-            action_flag=DELETION,
-            message=f"Suscripción eliminada: {self.object.customer.company_name} - {self.object.service.title}"
-        )
-        messages.success(request, 'Suscripción eliminada con éxito.')
-        return super().post(request, *args, **kwargs)
+        
+        if request.user.is_superuser and request.POST.get('hard_delete') == 'true':
+            self.object.hard_delete()
+            log_action(
+                user=request.user,
+                obj=self.object,
+                action_flag=DELETION,
+                message=f"Suscripción eliminada físicamente: {self.object.customer.company_name} - {self.object.service.title}"
+            )
+            messages.success(request, 'Suscripción eliminada permanentemente.')
+        else:
+            self.object.delete()  # Soft delete (marca record_active=False)
+            log_action(
+                user=request.user,
+                obj=self.object,
+                action_flag=DELETION,
+                message=f"Suscripción desactivada: {self.object.customer.company_name} - {self.object.service.title}"
+            )
+            messages.success(request, 'Suscripción desactivada con éxito.')
+
+        return redirect(self.success_url)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Suscripción'
+        context['title'] = 'Desactivar Suscripción'
         context['parent'] = 'servicios'
         context['segment'] = 'suscripciones'
         context['url_list'] = reverse_lazy('listado_suscripciones')
+        context['is_superuser'] = self.request.user.is_superuser
         return context
 
 
@@ -453,4 +478,5 @@ class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, Updat
         context['parent'] = 'servicios'
         context['segment'] = 'suscripciones'
         context['subscription'] = self.get_object()
+        context['url_list'] = reverse_lazy('listado_suscripciones')
         return context
