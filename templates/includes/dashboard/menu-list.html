@@ -262,7 +262,7 @@
               {% endif %}
           {% endif %}
 
-          <!-- Badges para clientes (usando variables de client_subscription_notifications) -->
+          <!-- Badges para clientes -->
           {% if not request.user.is_staff %}
               {% if client_requested_count > 0 %}
                   <span class="badge bg-blue-lt ms-1">{{ client_requested_count }}</span>
