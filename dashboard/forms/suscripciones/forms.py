@@ -35,20 +35,33 @@ class CertificateUploadForm(forms.ModelForm):
         }
 
 
-class InvoiceAmountForm(forms.Form):
+class InvoiceForm(forms.Form):
     amount = forms.DecimalField(
         max_digits=10,
         decimal_places=2,
         label="Monto de la factura",
-        widget=forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'form-control'})
+        widget=forms.NumberInput(attrs={
+            'step': '0.01', 
+            'min': '0', 
+            'class': 'form-control',
+            'placeholder': '0.00'
+        })
     )
+    
     start_date = forms.DateField(
         label="Fecha de inicio",
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.DateInput(attrs={
+            'type': 'date', 
+            'class': 'form-control'
+        })
     )
+    
     end_date = forms.DateField(
         label="Fecha de expiración",
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.DateInput(attrs={
+            'type': 'date', 
+            'class': 'form-control'
+        })
     )
 
     def clean_amount(self):
@@ -61,8 +74,20 @@ class InvoiceAmountForm(forms.Form):
         cleaned_data = super().clean()
         start = cleaned_data.get('start_date')
         end = cleaned_data.get('end_date')
-        if start and end and start >= end:
-            raise forms.ValidationError("La fecha de inicio debe ser anterior a la fecha de expiración.")
+        
+        if start and end:
+            if start >= end:
+                raise forms.ValidationError(
+                    "La fecha de inicio debe ser anterior a la fecha de expiración."
+                )
+            
+            # Validación opcional: no permitir períodos demasiado largos
+            days_diff = (end - start).days
+            if days_diff > 365:  # Máximo 1 año
+                raise forms.ValidationError(
+                    "El período no puede ser mayor a 365 días."
+                )
+        
         return cleaned_data
 
 
