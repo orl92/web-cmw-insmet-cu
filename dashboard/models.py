@@ -380,15 +380,20 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='requested', verbose_name="Estado de pago")
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, verbose_name="Método de pago", blank=True, null=True)
 
+    # Campo para soft delete (activo en el sistema)
+    record_active = models.BooleanField(default=True, verbose_name="Registro activo")
+    deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de eliminación")
+
     file_fields = []
 
     @property
     def is_active(self):
-        return self.payment_status == 'paid' and self.end_date > timezone.now()
+        """Indica si la suscripción está vigente (pagada y no expirada)"""
+        return self.payment_status == 'paid' and self.end_date and self.end_date > timezone.now()
 
     @property
     def status_display(self):
-        if self.payment_status == 'paid' and self.end_date > timezone.now():
+        if self.payment_status == 'paid' and self.end_date and self.end_date > timezone.now():
             return 'activo'
         elif self.payment_status == 'pending':
             return 'pendiente de pago'
@@ -396,6 +401,16 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
             return 'solicitado'
         else:
             return 'expirado'
+
+    def delete(self, using=None, keep_parents=False):
+        """Soft delete: marca como inactivo en lugar de borrar"""
+        self.record_active = False
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def hard_delete(self):
+        """Eliminación física real (solo para superusuarios)"""
+        super().delete()
 
     class Meta:
         verbose_name = "Suscripción de servicio"
@@ -413,12 +428,17 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
 
 
 class Invoice(FileHandlerMixin, models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.CASCADE, related_name='invoices', verbose_name="Suscripción")
+    subscription = models.ForeignKey(
+        ServiceSubscription, 
+        on_delete=models.PROTECT,  # Evita borrar si tiene facturas
+        related_name='invoices', 
+        verbose_name="Suscripción"
+    )
     number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
     issue_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto")
     pdf = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF", blank=True, null=True)
+    is_cancelled = models.BooleanField(default=False, verbose_name="¿Anulada?")
 
     file_fields = ['pdf']
 
@@ -430,15 +450,14 @@ class Invoice(FileHandlerMixin, models.Model):
     def __str__(self):
         return f"Factura {self.number} - {self.subscription.customer.company_name}"
 
-    def get_pdf_url(self):
-        if self.pdf:
-            return self.pdf.url
-        return None
-
 
 class Certificate(FileHandlerMixin, models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.CASCADE, related_name='certificates', verbose_name="Suscripción")
+    subscription = models.ForeignKey(
+        ServiceSubscription, 
+        on_delete=models.PROTECT,  # Evita borrar si tiene certificados
+        related_name='certificates', 
+        verbose_name="Suscripción"
+    )
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     pdf = models.FileField(upload_to=pdf_upload_path, verbose_name="Certificado PDF")
 
