@@ -1,9 +1,9 @@
 import os
+import re
 import shutil
 import subprocess
 import threading
 import time
-import re
 
 # from werkzeug.utils import secure_filename
 #

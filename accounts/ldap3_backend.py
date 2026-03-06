@@ -1,10 +1,12 @@
-import os
 import logging
+import os
+
 import ldap3
-from ldap3.core.exceptions import LDAPException
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import BaseBackend
 from django.core.exceptions import ObjectDoesNotExist
+from ldap3.core.exceptions import LDAPException
+
 from accounts.models import Profile
 
 logger = logging.getLogger(__name__)

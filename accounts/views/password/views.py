@@ -1,16 +1,17 @@
 from django.contrib import messages
 from django.contrib.admin.models import CHANGE
 from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.mixins import (LoginRequiredMixin,
-                                        PermissionRequiredMixin)
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.views import PasswordResetView
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
 
-from accounts.forms.password.forms import (AdminPasswordChangeForm,
-                                           UserPasswordChangeForm)
+from accounts.forms.password.forms import (
+    AdminPasswordChangeForm,
+    UserPasswordChangeForm,
+)
 from common.utils import log_action
 
 # Create your views here.

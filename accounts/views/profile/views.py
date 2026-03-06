@@ -1,6 +1,3 @@
-from accounts.forms.profile.form import ProfileForm
-from accounts.models import Profile
-from common.utils import log_action
 from django.contrib import messages
 from django.contrib.admin.models import CHANGE, LogEntry
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -9,6 +6,10 @@ from django.core.paginator import Paginator
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, UpdateView
+
+from accounts.forms.profile.form import ProfileForm
+from accounts.models import Profile
+from common.utils import log_action
 
 # Create your views here.
 

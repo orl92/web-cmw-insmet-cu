@@ -1,11 +1,12 @@
 import re
 
-from dashboard.models import Customer, ServiceSubscription
 from django import forms
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+
+from dashboard.models import Customer, ServiceSubscription
 
 # Create your form here.
 

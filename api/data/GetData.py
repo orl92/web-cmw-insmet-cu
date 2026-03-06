@@ -1,6 +1,7 @@
+from datetime import datetime
+
 from api.data.Descodificador import Descodificador
 from api.data.OpenFileObs import OpenFileObs
-from datetime import datetime
 
 
 class GetData:

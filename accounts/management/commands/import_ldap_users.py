@@ -1,7 +1,8 @@
 import os
-from django.core.management.base import BaseCommand
+
 from django.contrib.auth import get_user_model
-from ldap3 import Server, Connection, SUBTREE, ALL
+from django.core.management.base import BaseCommand
+from ldap3 import ALL, SUBTREE, Connection, Server
 from ldap3.core.exceptions import LDAPException
 
 

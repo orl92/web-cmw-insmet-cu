@@ -1,6 +1,7 @@
-from django import forms
 from datetime import datetime
-from django.core.validators import MinValueValidator, MaxValueValidator
+
+from django import forms
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 from dashboard.models import Town
 
@@ -34,7 +35,7 @@ class MeteoDataForm(forms.Form):
         label='Fecha y hora inicial (YYYYMMDDHH)',
         widget=forms.TextInput(attrs={
             'placeholder': 'Ej. 2025071006',
-            'pattern': '\d{10}',
+            'pattern': r'\d{10}',
             'title': 'Ingrese fecha en formato YYYYMMDDHH'
         })
     )
@@ -70,7 +71,7 @@ class MeteogramForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'YYYYMMDDHH',
-            'pattern': '\d{10}'
+            'pattern': r'\d{10}'
         }),
         help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)'
     )
@@ -98,7 +99,7 @@ class SoundingForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'YYYYMMDDHH',
-            'pattern': '\d{10}'
+            'pattern': r'\d{10}'
         }),
         help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)'
     )
@@ -149,7 +150,7 @@ class GifDownloadForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej. 2025102900',
-            'pattern': '\d{10}',
+            'pattern': r'\d{10}',
             'title': 'Ingrese fecha en formato YYYYMMDDHH'
         }),
         required=True
@@ -160,7 +161,7 @@ class GifDownloadForm(forms.Form):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Ej. 2025102918',
-            'pattern': '\d{10}',
+            'pattern': r'\d{10}',
             'title': 'Ingrese fecha en formato YYYYMMDDHH'
         }),
         required=True

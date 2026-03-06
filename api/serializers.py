@@ -1,7 +1,9 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
+
 from common.utils import get_img_path, get_moon_img_path, get_sun_img_path
 from dashboard.models import Forecasts, Station
+
 
 class StationSerializer(serializers.ModelSerializer):
     province_code = serializers.CharField(source='province.code', read_only=True)
