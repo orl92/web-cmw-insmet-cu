@@ -164,7 +164,7 @@ urlpatterns = [
     path('eliminar/servicios/<uuid:uuid>/', ServiceDeleteView.as_view(), name='eliminar_servicio'),
     # Suscripciones
     path('suscripciones/', SubscriptionListView.as_view(), name='listado_suscripciones'),
-    path('crear/suscripcion', SubscriptionCreateView.as_view(), name='crear_suscripcion'),
+    path('crear/suscripcion/', SubscriptionCreateView.as_view(), name='crear_suscripcion'),
     path('actualizar/suscripcion/<uuid:uuid>/', SubscriptionUpdateView.as_view(), name='editar_suscripcion'),
     path('eliminar/suscripcion/<uuid:uuid>/', SubscriptionDeleteView.as_view(), name='eliminar_suscripcion'),
     path('renovar/suscripcion/<uuid:uuid>/', SubscriptionRenewView.as_view(), name='renovar_suscripcion'),
