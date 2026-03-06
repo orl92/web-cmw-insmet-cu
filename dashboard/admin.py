@@ -5,11 +5,12 @@ from dashboard.models import (
     EmailRecipient,
     EmailRecipientList,
     Forecasts,
+    Province,
     Service,
+    Station,
     StormWarning,
     TropicalCyclone,
 )
-from dashboard.tests import Province, Station
 
 # Register your models here.
 
