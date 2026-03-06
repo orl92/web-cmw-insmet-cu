@@ -375,8 +375,8 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name="Cliente")
     service = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name="Servicio")
-    start_date = models.DateTimeField(verbose_name="Fecha de inicio")
-    end_date = models.DateTimeField(verbose_name="Fecha de expiración")
+    start_date = models.DateTimeField(verbose_name="Fecha de inicio", null=True, blank=True)
+    end_date = models.DateTimeField(verbose_name="Fecha de expiración", null=True, blank=True)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='requested', verbose_name="Estado de pago")
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, verbose_name="Método de pago", blank=True, null=True)
 
