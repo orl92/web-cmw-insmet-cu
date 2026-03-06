@@ -21,13 +21,16 @@
   {% with subscription=object %}
     {% if is_staff %}
     <td>
-      <a href="{% url 'actualizar_cliente' subscription.customer.uuid %}" class="text-primary">
-        {{ subscription.customer.company_name }}
+      <a href="{% url 'actualizar_cliente' subscription.customer.uuid %}" class="text-primary" 
+         title="{{ subscription.customer.company_name }}">
+        {{ subscription.customer.company_name|truncatechars:30 }}
       </a>
     </td>
     {% endif %}
     
-    <td>{{ subscription.service.title }}</td>
+    <td title="{{ subscription.service.title }}">
+      {{ subscription.service.title|truncatechars:30 }}
+    </td>
     <td>{{ subscription.start_date|date:"d/m/Y H:i" }}</td>
     <td>
       {{ subscription.end_date|date:"d/m/Y H:i" }}
