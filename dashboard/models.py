@@ -332,7 +332,7 @@ class Service(FileHandlerMixin, models.Model):
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Usuario', related_name='created_services')
     title = models.CharField(max_length=100, verbose_name='Título')
-    summary = models.CharField(max_length=300, verbose_name='Resumen')
+    summary = models.CharField(max_length=500, verbose_name='Resumen')
     service_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default=PUBLIC, verbose_name='Tipo de Servicio')
     pdf = models.FileField(upload_to=pdf_upload_path, blank=True, null=True, verbose_name='Archivo PDF')
     image = models.ImageField(upload_to=image_upload_path, blank=True, null=True, verbose_name='Imagen')
