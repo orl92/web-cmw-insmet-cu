@@ -4,7 +4,8 @@
   <div class="mb-3">
     <label class="form-label required">Nombre de la Empresa</label>
     <input type="text" class="form-control {% if form.company_name.errors %}is-invalid{% endif %}" 
-           name="company_name" placeholder="Mi Empresa S.A.C." value="{{ form.company_name.value|default:'' }}" required>
+           id="{{ form.company_name.id_for_label }}" name="{{ form.company_name.name }}" 
+           placeholder="Mi Empresa S.A.C." value="{{ form.company_name.value }}" required>
     {% if form.company_name.errors %}
       <div class="invalid-feedback">{{ form.company_name.errors.0 }}</div>
     {% endif %}
@@ -12,18 +13,20 @@
   
   <div class="row">
     <div class="col-md-6 mb-3">
-      <label class="form-label required">REEUP</label>
-      <input type="text" class="form-control {% if form.reeup.errors %}is-invalid{% endif %}" 
-             name="reeup" placeholder="XXX.X.XXXXX" value="{{ form.reeup.value|default:'' }}" required>
+      <label class="form-label required">{{ form.reeup.label }}</label>
+      <input type="text" class="form-control {% if form.reeup.errors %}is-invalid{% endif %}"
+            id="{{ form.reeup.id_for_label }}" name="{{ form.reeup.name }}"
+            placeholder="XXX.X.XXXXX" value="{{ form.reeup.value }}" required>
       {% if form.reeup.errors %}
         <div class="invalid-feedback">{{ form.reeup.errors.0 }}</div>
       {% endif %}
     </div>
     
     <div class="col-md-6 mb-3">
-      <label class="form-label required">NIT</label>
-      <input type="text" class="form-control {% if form.nit.errors %}is-invalid{% endif %}" 
-             name="nit" placeholder="12345678901" value="{{ form.nit.value|default:'' }}" required>
+      <label class="form-label required">{{ form.nit.label }}</label>
+      <input type="text" class="form-control {% if form.nit.errors %}is-invalid{% endif %}"
+            id="{{ form.nit.id_for_label }}" name="{{ form.nit.name }}"
+            placeholder="12345678901" value="{{ form.nit.value }}" required>
       {% if form.nit.errors %}
         <div class="invalid-feedback">{{ form.nit.errors.0 }}</div>
       {% endif %}
@@ -31,36 +34,41 @@
   </div>
   
   <div class="mb-3">
-    <label class="form-label required">Cuenta Bancaria</label>
-    <input type="text" class="form-control {% if form.account.errors %}is-invalid{% endif %}" 
-           name="account" placeholder="1234567890123456" value="{{ form.account.value|default:'' }}" required>
+    <label class="form-label required">{{ form.account.label }}</label>
+    <input type="text" class="form-control {% if form.account.errors %}is-invalid{% endif %}"
+            id="{{ form.account.id_for_label }}" name="{{ form.account.name }}"
+            placeholder="1234567890123456" value="{{ form.account.value }}" required>
     {% if form.account.errors %}
       <div class="invalid-feedback">{{ form.account.errors.0 }}</div>
     {% endif %}
   </div>
   
   <div class="mb-3">
-    <label class="form-label required">Dirección</label>
-    <textarea class="form-control {% if form.address.errors %}is-invalid{% endif %}" 
-              name="address" rows="2" placeholder="Av. Principal 123" required>{{ form.address.value|default:'' }}</textarea>
+    <label class="form-label required">{{ form.address.label }}</label>
+    <textarea class="form-control {% if form.address.errors %}is-invalid{% endif %}"
+            id="{{ form.address.id_for_label }}" name="{{ form.address.name }}"
+            placeholder="Av. Principal 123" value="{{ form.address.value }}" required>
+    </textarea>
     {% if form.address.errors %}
       <div class="invalid-feedback">{{ form.address.errors.0 }}</div>
     {% endif %}
   </div>
   
   <div class="mb-3">
-    <label class="form-label required">Teléfono</label>
-    <input type="text" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
-           name="phone" placeholder="12345678" value="{{ form.phone.value|default:'' }}" required>
+    <label class="form-label required">{{ form.phone.label }}</label>
+    <input type="text" class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
+            id="{{ form.phone.id_for_label }}" name="{{ form.phone.name }}"
+            placeholder="55455676" value="{{ form.phone.value }}" required> 
     {% if form.phone.errors %}
       <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
     {% endif %}
   </div>
   
   <div class="mb-3">
-    <label class="form-label required">Correo Electrónico</label>
-    <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
-           name="email" placeholder="ejemplo@empresa.com" value="{{ form.email.value|default:'' }}" required>
+    <label class="form-label required">{{ form.email.label }}</label>
+    <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+            id="{{ form.email.id_for_label }}" name="{{ form.email.name }}"
+            placeholder="ejemplo@empresa.com" value="{{ form.email.value }}" required>
     {% if form.email.errors %}
       <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
     {% endif %}
