@@ -428,12 +428,7 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
 
 
 class Invoice(FileHandlerMixin, models.Model):
-    subscription = models.ForeignKey(
-        ServiceSubscription, 
-        on_delete=models.PROTECT,  # Evita borrar si tiene facturas
-        related_name='invoices', 
-        verbose_name="Suscripción"
-    )
+    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.CASCADE, related_name='invoices', verbose_name="Suscripción")
     number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
     issue_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto")
@@ -446,18 +441,20 @@ class Invoice(FileHandlerMixin, models.Model):
         verbose_name = "Factura"
         verbose_name_plural = "Facturas"
         ordering = ['-issue_date']
+        default_permissions = ()
+        permissions = (
+            ("view_invoice", "Ver"),
+            ("add_invoice", "Añadir"),
+            ("change_invoice", "Editar"),
+            ("delete_invoice", "Eliminar"),
+        )
 
     def __str__(self):
         return f"Factura {self.number} - {self.subscription.customer.company_name}"
 
 
 class Certificate(FileHandlerMixin, models.Model):
-    subscription = models.ForeignKey(
-        ServiceSubscription, 
-        on_delete=models.PROTECT,  # Evita borrar si tiene certificados
-        related_name='certificates', 
-        verbose_name="Suscripción"
-    )
+    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.CASCADE, related_name='certificates', verbose_name="Suscripción")
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     pdf = models.FileField(upload_to=pdf_upload_path, verbose_name="Certificado PDF")
 
@@ -467,6 +464,13 @@ class Certificate(FileHandlerMixin, models.Model):
         verbose_name = "Certificado"
         verbose_name_plural = "Certificados"
         ordering = ['-issued_date']
+        default_permissions = ()
+        permissions = (
+            ("view_certificate", "Ver"),
+            ("add_certificate", "Añadir"),
+            ("change_certificate", "Editar"),
+            ("delete_certificate", "Eliminar"),
+        )
 
     def __str__(self):
         return f"Certificado de {self.subscription.service.title} - {self.subscription.customer.company_name}"
