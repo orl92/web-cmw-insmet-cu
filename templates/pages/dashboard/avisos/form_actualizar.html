@@ -2,51 +2,75 @@
 <div class="row">
     <div class="col-md-8 mb-3">
         <label class="form-label required">{{ form.summary.label }}</label>
-        <input type="text" class="form-control" id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
-               value="{{ form.summary.value }}" placeholder="Título" required>
-        {% if form.title.errors %}
-            <span class="text-danger d-block mb-3">{{ form.summary.errors }}</span>
+        <input type="text" class="form-control {% if form.summary.errors %}is-invalid{% endif %}"
+            id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
+            value="{{ form.summary.value }}" placeholder="Título" required>
+        {% if form.summary.errors %}
+            <span class="invalid-feedback">{{ form.summary.errors.0 }}</span>
         {% endif %}
     </div>
     <div class="col-md-4 mb-3">
         <label class="form-label required">{{ form.valid_until.label }}</label>
-        <input type="datetime-local" class="form-control" id="{{ form.valid_until.id_for_label }}"
-               name="{{ form.valid_until.name }}" value="{{ form.valid_until.value|date:"Y-m-d\TH:i" }}" required>
+        <input type="datetime-local" class="form-control {% if form.alid_until.errors %}is-invalid{% endif %}" 
+            id="{{ form.valid_until.id_for_label }}" name="{{ form.valid_until.name }}" 
+            value="{{ form.valid_until.value|date:"Y-m-d\TH:i" }}" required>
         {% if form.valid_until.errors %}
-            <span class="text-danger d-block mb-3">{{ form.valid_until.errors }}</span>
+            <span class="invalid-feedback">{{ form.valid_until.errors.0 }}</span>
         {% endif %}
     </div>
     <div class="mb-3">
         <label class="form-label required">{{ form.file.label }}</label>
-        <input type="file" class="form-control" id="{{ form.file.id_for_label }}" name="{{ form.file.name }}"
-               {% if not form.file.value %}required{% endif %}>
-        {% if form.image.errors %}
-            <span class="text-danger d-block mb-3">{{ form.file.errors }}</span>
-        {% endif %}
-        <div id="pdfPreview" class="preview-container m-3"></div>
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="avatar rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                    <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+                                    <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
+                                    <path d="M17 18h2" />
+                                    <path d="M20 15h-3v6" />
+                                    <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="mb-2">
+                                <input type="file" class="form-control {% if form.file.errors %}is-invalid{% endif %}" 
+                                    id="{{ form.file.id_for_label }}" name="{{ form.file.name }}" accept=".pdf" required>
+                            </div>
+                            <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
+                        </div>
+                    </div>
+                </div>
+
+                {% if object.file %}
+                <div class="mt-2">
+                    <a href="{{ object.file.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                            <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+                        </svg>
+                        Ver PDF
+                    </a>
+                </div>
+                {% endif %}
+
+                {% if form.file.errors %}
+                    <span class="invalid-feedback">{{ form.file.errors.0 }}</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
     <div class="col-md-12 mb-3">
         <label class="form-label required">{{ form.email_recipient_list.label }}</label>
         {{ form.email_recipient_list }}
         {% if form.email_recipient_list.errors %}
-            <span class="text-danger d-block mb-3">{{ form.email_recipient_list.errors }}</span>
+            <span class="invalid-feedback">{{ form.email_recipient_list.errors.0 }}</span>
         {% endif %}
     </div>
 </div>
-
-<!-- Elemento de inicialización automática -->
-<div data-pdf-preview
-     data-file-input="{{ form.file.id_for_label }}"
-     data-preview-container="pdfPreview"
-     style="display: none;">
-</div>
-
-<!-- En el head -->
-<link rel="stylesheet" href="{% static 'dist/css/pdf-form-preview.css' %}">
-
-<!-- Antes de cerrar el body -->
-<script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
-<script src="{% static 'dist/js/pdf-form-preview.js' %}"></script>
-<script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
-</script>
