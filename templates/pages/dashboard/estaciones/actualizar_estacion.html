@@ -19,7 +19,7 @@
       {% endfor %}
     </select>
     {% if form.province.errors %}
-      <span class="invalid-feedback">{{ form.province.errors.0 }}</span>
+      <div class="invalid-feedback">{{ form.province.errors.0 }}</div>
     {% endif %}
   </div>
   <div class="mb-3">
@@ -27,7 +27,7 @@
     <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
       id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" value="{{ form.name.value }}" placeholder="Nombre"  required>
     {% if form.name.errors %}
-      <span class="invalid-feedback">{{ form.name.errors.0 }}</span>
+      <div class="invalid-feedback">{{ form.name.errors.0 }}</div>
     {% endif %}
   </div>
   <div class="mb-3">
@@ -35,7 +35,7 @@
     <input type="number" class="form-control {% if form.number.errors %}is-invalid{% endif %}" 
       id="{{ form.number.id_for_label }}" name="{{ form.number.name }}" value="{{ form.number.value }}" placeholder="Número" required>
     {% if form.number.errors %}
-      <span class="invalid-feedback">{{ form.number.errors.0 }}</span>
+      <div class="invalid-feedback">{{ form.number.errors.0 }}</div>
     {% endif %}
   </div>
   <div class="mb-3">
@@ -43,7 +43,7 @@
     <input type="float" class="form-control {% if form.latitude.errors %}is-invalid{% endif %}" 
       id="{{ form.latitude.id_for_label }}" name="{{ form.latitude.name }}" value="{{ form.latitude.value }}" placeholder="Latitud" required>
     {% if form.latitude.errors %}
-      <span class="invalid-feedback">{{ form.latitude.errors.0 }}</span>
+      <div class="invalid-feedback">{{ form.latitude.errors.0 }}</div>
     {% endif %}
   </div>
   <div class="mb-3">
@@ -51,7 +51,7 @@
     <input type="float" class="form-control {% if form.longitude.errors %}is-invalid{% endif %}" 
       id="{{ form.latitude.id_for_label }}" name="{{ form.longitude.name }}" value="{{ form.longitude.value }}" placeholder="Longitud" required>
     {% if form.longitude.errors %}
-      <span class="invalid-feedback">{{ form.longitude.errors.0 }}</span>
+      <div class="invalid-feedback">{{ form.longitude.errors.0 }}</div>
     {% endif %}
   </div>
 {% endblock form %}

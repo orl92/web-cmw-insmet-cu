@@ -36,10 +36,10 @@
                         </span>
                         <input class="form-control {% if form.date.errors %}is-invalid{% endif %}" 
                                placeholder="aaaa-mm-dd" id="{{ form.date.id_for_label }}" 
-                               name="{{ form.date.name }}" value="{{ form.date.value|date:'Y-m-d'|default:'' }}" required>
+                               name="{{ form.date.name }}" value="{{ form.date.value|date:'Y-m-d' }}" required>
                     </div>
                     {% if form.date.errors %}
-                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.date.errors.0 }}</div>
+                        <div class="invalid-feedback " data-server-error="true">{{ form.date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -54,7 +54,7 @@
                 <label class="form-label required">{{ form.ntm.label }}</label>
                 <input type="text" class="form-control {% if form.ntm.errors %}is-invalid{% endif %}" 
                        id="{{ form.ntm.id_for_label }}" name="{{ form.ntm.name }}"
-                       value="{{ form.ntm.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.ntm.value }}" placeholder="0 °C" required>
                 {% if form.ntm.errors %}
                     <div class="invalid-feedback">{{ form.ntm.errors.0 }}</div>
                 {% endif %}
@@ -63,7 +63,7 @@
                 <label class="form-label required">{{ form.nta.label }}</label>
                 <input type="text" class="form-control {% if form.nta.errors %}is-invalid{% endif %}" 
                        id="{{ form.nta.id_for_label }}" name="{{ form.nta.name }}"
-                       value="{{ form.nta.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.nta.value }}" placeholder="0 °C" required>
                 {% if form.nta.errors %}
                     <div class="invalid-feedback">{{ form.nta.errors.0 }}</div>
                 {% endif %}
@@ -72,7 +72,7 @@
                 <label class="form-label required">{{ form.ntn.label }}</label>
                 <input type="text" class="form-control {% if form.ntn.errors %}is-invalid{% endif %}" 
                        id="{{ form.ntn.id_for_label }}" name="{{ form.ntn.name }}"
-                       value="{{ form.ntn.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.ntn.value }}" placeholder="0 °C" required>
                 {% if form.ntn.errors %}
                     <div class="invalid-feedback">{{ form.ntn.errors.0 }}</div>
                 {% endif %}
@@ -183,7 +183,7 @@
                 <label class="form-label required">{{ form.nwdfm.label }}</label>
                 <input type="text" class="form-control {% if form.nwdfm.errors %}is-invalid{% endif %}" 
                        id="{{ form.nwdfm.id_for_label }}" name="{{ form.nwdfm.name }}"
-                       value="{{ form.nwdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.nwdfm.value }}" placeholder="0-0 km/h" required>
                 {% if form.nwdfm.errors %}
                     <div class="invalid-feedback">{{ form.nwdfm.errors.0 }}</div>
                 {% endif %}
@@ -192,7 +192,7 @@
                 <label class="form-label required">{{ form.nwdfa.label }}</label>
                 <input type="text" class="form-control {% if form.nwdfa.errors %}is-invalid{% endif %}" 
                        id="{{ form.nwdfa.id_for_label }}" name="{{ form.nwdfa.name }}"
-                       value="{{ form.nwdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.nwdfa.value }}" placeholder="0-0 km/h" required>
                 {% if form.nwdfa.errors %}
                     <div class="invalid-feedback">{{ form.nwdfa.errors.0 }}</div>
                 {% endif %}
@@ -201,7 +201,7 @@
                 <label class="form-label required">{{ form.nwdfn.label }}</label>
                 <input type="text" class="form-control {% if form.nwdfn.errors %}is-invalid{% endif %}" 
                        id="{{ form.nwdfn.id_for_label }}" name="{{ form.nwdfn.name }}"
-                       value="{{ form.nwdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.nwdfn.value }}" placeholder="0-0 km/h" required>
                 {% if form.nwdfn.errors %}
                     <div class="invalid-feedback">{{ form.nwdfn.errors.0 }}</div>
                 {% endif %}
@@ -266,7 +266,7 @@
                 <label class="form-label required">{{ form.itm.label }}</label>
                 <input type="text" class="form-control {% if form.itm.errors %}is-invalid{% endif %}" 
                        id="{{ form.itm.id_for_label }}" name="{{ form.itm.name }}"
-                       value="{{ form.itm.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.itm.value }}" placeholder="0 °C" required>
                 {% if form.itm.errors %}
                     <div class="invalid-feedback">{{ form.itm.errors.0 }}</div>
                 {% endif %}
@@ -275,7 +275,7 @@
                 <label class="form-label required">{{ form.ita.label }}</label>
                 <input type="text" class="form-control {% if form.ita.errors %}is-invalid{% endif %}" 
                        id="{{ form.ita.id_for_label }}" name="{{ form.ita.name }}"
-                       value="{{ form.ita.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.ita.value }}" placeholder="0 °C" required>
                 {% if form.ita.errors %}
                     <div class="invalid-feedback">{{ form.ita.errors.0 }}</div>
                 {% endif %}
@@ -284,7 +284,7 @@
                 <label class="form-label required">{{ form.itn.label }}</label>
                 <input type="text" class="form-control {% if form.itn.errors %}is-invalid{% endif %}" 
                        id="{{ form.itn.id_for_label }}" name="{{ form.itn.name }}"
-                       value="{{ form.itn.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.itn.value }}" placeholder="0 °C" required>
                 {% if form.itn.errors %}
                     <div class="invalid-feedback">{{ form.itn.errors.0 }}</div>
                 {% endif %}
@@ -395,7 +395,7 @@
                 <label class="form-label required">{{ form.iwdfm.label }}</label>
                 <input type="text" class="form-control {% if form.iwdfm.errors %}is-invalid{% endif %}" 
                        id="{{ form.iwdfm.id_for_label }}" name="{{ form.iwdfm.name }}"
-                       value="{{ form.iwdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.iwdfm.value }}" placeholder="0-0 km/h" required>
                 {% if form.iwdfm.errors %}
                     <div class="invalid-feedback">{{ form.iwdfm.errors.0 }}</div>
                 {% endif %}
@@ -404,7 +404,7 @@
                 <label class="form-label required">{{ form.iwdfa.label }}</label>
                 <input type="text" class="form-control {% if form.iwdfa.errors %}is-invalid{% endif %}" 
                        id="{{ form.iwdfa.id_for_label }}" name="{{ form.iwdfa.name }}"
-                       value="{{ form.iwdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.iwdfa.value }}" placeholder="0-0 km/h" required>
                 {% if form.iwdfa.errors %}
                     <div class="invalid-feedback">{{ form.iwdfa.errors.0 }}</div>
                 {% endif %}
@@ -413,7 +413,7 @@
                 <label class="form-label required">{{ form.iwdfn.label }}</label>
                 <input type="text" class="form-control {% if form.iwdfn.errors %}is-invalid{% endif %}" 
                        id="{{ form.iwdfn.id_for_label }}" name="{{ form.iwdfn.name }}"
-                       value="{{ form.iwdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.iwdfn.value }}" placeholder="0-0 km/h" required>
                 {% if form.iwdfn.errors %}
                     <div class="invalid-feedback">{{ form.iwdfn.errors.0 }}</div>
                 {% endif %}
@@ -431,7 +431,7 @@
                 <label class="form-label required">{{ form.stm.label }}</label>
                 <input type="text" class="form-control {% if form.stm.errors %}is-invalid{% endif %}" 
                        id="{{ form.stm.id_for_label }}" name="{{ form.stm.name }}"
-                       value="{{ form.stm.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.stm.value }}" placeholder="0 °C" required>
                 {% if form.stm.errors %}
                     <div class="invalid-feedback">{{ form.stm.errors.0 }}</div>
                 {% endif %}
@@ -440,7 +440,7 @@
                 <label class="form-label required">{{ form.sta.label }}</label>
                 <input type="text" class="form-control {% if form.sta.errors %}is-invalid{% endif %}" 
                        id="{{ form.sta.id_for_label }}" name="{{ form.sta.name }}"
-                       value="{{ form.sta.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.sta.value }}" placeholder="0 °C" required>
                 {% if form.sta.errors %}
                     <div class="invalid-feedback">{{ form.sta.errors.0 }}</div>
                 {% endif %}
@@ -449,7 +449,7 @@
                 <label class="form-label required">{{ form.stn.label }}</label>
                 <input type="text" class="form-control {% if form.stn.errors %}is-invalid{% endif %}" 
                        id="{{ form.stn.id_for_label }}" name="{{ form.stn.name }}"
-                       value="{{ form.stn.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.stn.value }}" placeholder="0 °C" required>
                 {% if form.stn.errors %}
                     <div class="invalid-feedback">{{ form.stn.errors.0 }}</div>
                 {% endif %}
@@ -560,7 +560,7 @@
                 <label class="form-label required">{{ form.swdfm.label }}</label>
                 <input type="text" class="form-control {% if form.swdfm.errors %}is-invalid{% endif %}" 
                        id="{{ form.swdfm.id_for_label }}" name="{{ form.swdfm.name }}"
-                       value="{{ form.swdfm.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.swdfm.value }}" placeholder="0-0 km/h" required>
                 {% if form.swdfm.errors %}
                     <div class="invalid-feedback">{{ form.swdfm.errors.0 }}</div>
                 {% endif %}
@@ -569,7 +569,7 @@
                 <label class="form-label required">{{ form.swdfa.label }}</label>
                 <input type="text" class="form-control {% if form.swdfa.errors %}is-invalid{% endif %}" 
                        id="{{ form.swdfa.id_for_label }}" name="{{ form.swdfa.name }}"
-                       value="{{ form.swdfa.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.swdfa.value }}" placeholder="0-0 km/h" required>
                 {% if form.swdfa.errors %}
                     <div class="invalid-feedback">{{ form.swdfa.errors.0 }}</div>
                 {% endif %}
@@ -578,7 +578,7 @@
                 <label class="form-label required">{{ form.swdfn.label }}</label>
                 <input type="text" class="form-control {% if form.swdfn.errors %}is-invalid{% endif %}" 
                        id="{{ form.swdfn.id_for_label }}" name="{{ form.swdfn.name }}"
-                       value="{{ form.swdfn.value|default_if_none:'' }}" placeholder="0-0 km/h" required>
+                       value="{{ form.swdfn.value }}" placeholder="0-0 km/h" required>
                 {% if form.swdfn.errors %}
                     <div class="invalid-feedback">{{ form.swdfn.errors.0 }}</div>
                 {% endif %}
@@ -659,10 +659,10 @@
                         </span>
                         <input class="form-control {% if form.day1_date.errors %}is-invalid{% endif %}" 
                                placeholder="aaaa-mm-dd" id="{{ form.day1_date.id_for_label }}" 
-                               name="{{ form.day1_date.name }}" value="{{ form.day1_date.value|date:'Y-m-d'|default:'' }}" required>
+                               name="{{ form.day1_date.name }}" value="{{ form.day1_date.value|date:'Y-m-d' }}" required>
                     </div>
                     {% if form.day1_date.errors %}
-                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day1_date.errors.0 }}</div>
+                        <div class="invalid-feedback" data-server-error="true">{{ form.day1_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -672,7 +672,7 @@
                 <label class="form-label required">{{ form.day1_min_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day1_min_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day1_min_temp.id_for_label }}" name="{{ form.day1_min_temp.name }}" 
-                       value="{{ form.day1_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day1_min_temp.value }}" placeholder="0 °C" required>
                 {% if form.day1_min_temp.errors %}
                     <div class="invalid-feedback">{{ form.day1_min_temp.errors.0 }}</div>
                 {% endif %}
@@ -683,7 +683,7 @@
                 <label class="form-label required">{{ form.day1_max_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day1_max_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day1_max_temp.id_for_label }}" name="{{ form.day1_max_temp.name }}" 
-                       value="{{ form.day1_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day1_max_temp.value }}" placeholder="0 °C" required>
                 {% if form.day1_max_temp.errors %}
                     <div class="invalid-feedback">{{ form.day1_max_temp.errors.0 }}</div>
                 {% endif %}
@@ -729,10 +729,10 @@
                         </span>
                         <input class="form-control {% if form.day2_date.errors %}is-invalid{% endif %}" 
                                placeholder="aaaa-mm-dd" id="{{ form.day2_date.id_for_label }}" 
-                               name="{{ form.day2_date.name }}" value="{{ form.day2_date.value|date:'Y-m-d'|default:'' }}" required>
+                               name="{{ form.day2_date.name }}" value="{{ form.day2_date.value|date:'Y-m-d' }}" required>
                     </div>
                     {% if form.day2_date.errors %}
-                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day2_date.errors.0 }}</div>
+                        <div class="invalid-feedback" data-server-error="true">{{ form.day2_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -742,7 +742,7 @@
                 <label class="form-label required">{{ form.day2_min_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day2_min_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day2_min_temp.id_for_label }}" name="{{ form.day2_min_temp.name }}" 
-                       value="{{ form.day2_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day2_min_temp.value }}" placeholder="0 °C" required>
                 {% if form.day2_min_temp.errors %}
                     <div class="invalid-feedback">{{ form.day2_min_temp.errors.0 }}</div>
                 {% endif %}
@@ -753,7 +753,7 @@
                 <label class="form-label required">{{ form.day2_max_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day2_max_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day2_max_temp.id_for_label }}" name="{{ form.day2_max_temp.name }}" 
-                       value="{{ form.day2_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day2_max_temp.value }}" placeholder="0 °C" required>
                 {% if form.day2_max_temp.errors %}
                     <div class="invalid-feedback">{{ form.day2_max_temp.errors.0 }}</div>
                 {% endif %}
@@ -799,10 +799,10 @@
                         </span>
                         <input class="form-control {% if form.day3_date.errors %}is-invalid{% endif %}" 
                                placeholder="aaaa-mm-dd" id="{{ form.day3_date.id_for_label }}" 
-                               name="{{ form.day3_date.name }}" value="{{ form.day3_date.value|date:'Y-m-d'|default:'' }}" required>
+                               name="{{ form.day3_date.name }}" value="{{ form.day3_date.value|date:'Y-m-d' }}" required>
                     </div>
                     {% if form.day3_date.errors %}
-                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day3_date.errors.0 }}</div>
+                        <div class="invalid-feedback " data-server-error="true">{{ form.day3_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -812,9 +812,9 @@
                 <label class="form-label required">{{ form.day3_min_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day3_min_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day3_min_temp.id_for_label }}" name="{{ form.day3_min_temp.name }}" 
-                       value="{{ form.day3_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day3_min_temp.value }}" placeholder="0 °C" required>
                 {% if form.day3_min_temp.errors %}
-                    <div class="invalid-feedback">{{ form.day3_min_temp.errors.0 }}</div>
+                    <div class="invalid-feedback ">{{ form.day3_min_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
@@ -823,9 +823,9 @@
                 <label class="form-label required">{{ form.day3_max_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day3_max_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day3_max_temp.id_for_label }}" name="{{ form.day3_max_temp.name }}" 
-                       value="{{ form.day3_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day3_max_temp.value }}" placeholder="0 °C" required>
                 {% if form.day3_max_temp.errors %}
-                    <div class="invalid-feedback">{{ form.day3_max_temp.errors.0 }}</div>
+                    <div class="invalid-feedback ">{{ form.day3_max_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
@@ -842,7 +842,7 @@
                     {% endfor %}
                 </select>
                 {% if form.day3_weather.errors %}
-                    <div class="invalid-feedback">{{ form.day3_weather.errors.0 }}</div>
+                    <div class="invalid-feedback ">{{ form.day3_weather.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
@@ -869,10 +869,10 @@
                         </span>
                         <input class="form-control {% if form.day4_date.errors %}is-invalid{% endif %}" 
                                placeholder="aaaa-mm-dd" id="{{ form.day4_date.id_for_label }}" 
-                               name="{{ form.day4_date.name }}" value="{{ form.day4_date.value|date:'Y-m-d'|default:'' }}" required>
+                               name="{{ form.day4_date.name }}" value="{{ form.day4_date.value|date:'Y-m-d' }}" required>
                     </div>
                     {% if form.day4_date.errors %}
-                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day4_date.errors.0 }}</div>
+                        <div class="invalid-feedback " data-server-error="true">{{ form.day4_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -882,9 +882,9 @@
                 <label class="form-label required">{{ form.day4_min_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day4_min_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day4_min_temp.id_for_label }}" name="{{ form.day4_min_temp.name }}" 
-                       value="{{ form.day4_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day4_min_temp.value }}" placeholder="0 °C" required>
                 {% if form.day4_min_temp.errors %}
-                    <div class="invalid-feedback">{{ form.day4_min_temp.errors.0 }}</div>
+                    <div class="invalid-feedback ">{{ form.day4_min_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
@@ -893,9 +893,9 @@
                 <label class="form-label required">{{ form.day4_max_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day4_max_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day4_max_temp.id_for_label }}" name="{{ form.day4_max_temp.name }}" 
-                       value="{{ form.day4_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day4_max_temp.value }}" placeholder="0 °C" required>
                 {% if form.day4_max_temp.errors %}
-                    <div class="invalid-feedback">{{ form.day4_max_temp.errors.0 }}</div>
+                    <div class="invalid-feedback ">{{ form.day4_max_temp.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
@@ -912,7 +912,7 @@
                     {% endfor %}
                 </select>
                 {% if form.day4_weather.errors %}
-                    <div class="invalid-feedback">{{ form.day4_weather.errors.0 }}</div>
+                    <div class="invalid-feedback ">{{ form.day4_weather.errors.0 }}</div>
                 {% endif %}
             </div>
         </div>
@@ -939,10 +939,10 @@
                         </span>
                         <input class="form-control {% if form.day5_date.errors %}is-invalid{% endif %}" 
                                placeholder="aaaa-mm-dd" id="{{ form.day5_date.id_for_label }}" 
-                               name="{{ form.day5_date.name }}" value="{{ form.day5_date.value|date:'Y-m-d'|default:'' }}" required>
+                               name="{{ form.day5_date.name }}" value="{{ form.day5_date.value|date:'Y-m-d' }}" required>
                     </div>
                     {% if form.day5_date.errors %}
-                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.day5_date.errors.0 }}</div>
+                        <div class="invalid-feedback " data-server-error="true">{{ form.day5_date.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -952,7 +952,7 @@
                 <label class="form-label required">{{ form.day5_min_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day5_min_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day5_min_temp.id_for_label }}" name="{{ form.day5_min_temp.name }}" 
-                       value="{{ form.day5_min_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day5_min_temp.value }}" placeholder="0 °C" required>
                 {% if form.day5_min_temp.errors %}
                     <div class="invalid-feedback">{{ form.day5_min_temp.errors.0 }}</div>
                 {% endif %}
@@ -963,7 +963,7 @@
                 <label class="form-label required">{{ form.day5_max_temp.label }}</label>
                 <input type="text" class="form-control {% if form.day5_max_temp.errors %}is-invalid{% endif %}" 
                        id="{{ form.day5_max_temp.id_for_label }}" name="{{ form.day5_max_temp.name }}" 
-                       value="{{ form.day5_max_temp.value|default_if_none:'' }}" placeholder="0 °C" required>
+                       value="{{ form.day5_max_temp.value }}" placeholder="0 °C" required>
                 {% if form.day5_max_temp.errors %}
                     <div class="invalid-feedback">{{ form.day5_max_temp.errors.0 }}</div>
                 {% endif %}
@@ -1043,10 +1043,10 @@
                         </span>
                         <input class="form-control {% if form.nlpd.errors %}is-invalid{% endif %}" 
                                placeholder="aaaa-mm-dd" id="{{ form.nlpd.id_for_label }}" 
-                               name="{{ form.nlpd.name }}" value="{{ form.nlpd.value|date:'Y-m-d'|default:'' }}" required>
+                               name="{{ form.nlpd.name }}" value="{{ form.nlpd.value|date:'Y-m-d' }}" required>
                     </div>
                     {% if form.nlpd.errors %}
-                        <div class="invalid-feedback d-block mt-1" data-server-error="true">{{ form.nlpd.errors.0 }}</div>
+                        <div class="invalid-feedback " data-server-error="true">{{ form.nlpd.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
@@ -1057,7 +1057,7 @@
                 <label class="form-label required">{{ form.sunrise.label }}</label>
                 <input type="time" class="form-control {% if form.sunrise.errors %}is-invalid{% endif %}" 
                        id="{{ form.sunrise.id_for_label }}" name="{{ form.sunrise.name }}" 
-                       value="{{ form.sunrise.value|default_if_none:'' }}" required>
+                       value="{{ form.sunrise.value }}" required>
                 {% if form.sunrise.errors %}
                     <div class="invalid-feedback">{{ form.sunrise.errors.0 }}</div>
                 {% endif %}
@@ -1068,7 +1068,7 @@
                 <label class="form-label required">{{ form.sunset.label }}</label>
                 <input type="time" class="form-control {% if form.sunset.errors %}is-invalid{% endif %}" 
                        id="{{ form.sunset.id_for_label }}" name="{{ form.sunset.name }}" 
-                       value="{{ form.sunset.value|default_if_none:'' }}" required>
+                       value="{{ form.sunset.value }}" required>
                 {% if form.sunset.errors %}
                     <div class="invalid-feedback">{{ form.sunset.errors.0 }}</div>
                 {% endif %}
@@ -1079,7 +1079,7 @@
                 <label class="form-label required">{{ form.uv_index.label }}</label>
                 <input type="text" class="form-control {% if form.uv_index.errors %}is-invalid{% endif %}" 
                        id="{{ form.uv_index.id_for_label }}" name="{{ form.uv_index.name }}" 
-                       value="{{ form.uv_index.value|default_if_none:'' }}" placeholder="0" required>
+                       value="{{ form.uv_index.value }}" placeholder="0" required>
                 {% if form.uv_index.errors %}
                     <div class="invalid-feedback">{{ form.uv_index.errors.0 }}</div>
                 {% endif %}
