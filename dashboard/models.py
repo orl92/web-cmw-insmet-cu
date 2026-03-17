@@ -428,7 +428,12 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
 
 
 class Invoice(FileHandlerMixin, models.Model):
-    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.CASCADE, related_name='invoices', verbose_name="Suscripción")
+    subscription = models.ForeignKey(
+        ServiceSubscription, 
+        on_delete=models.CASCADE,  # Evita borrar si tiene facturas
+        related_name='invoices', 
+        verbose_name="Suscripción"
+    )
     number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
     issue_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto")
@@ -454,7 +459,12 @@ class Invoice(FileHandlerMixin, models.Model):
 
 
 class Certificate(FileHandlerMixin, models.Model):
-    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.CASCADE, related_name='certificates', verbose_name="Suscripción")
+    subscription = models.ForeignKey(
+        ServiceSubscription, 
+        on_delete=models.CASCADE,  # Evita borrar si tiene certificados
+        related_name='certificates', 
+        verbose_name="Suscripción"
+    )
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     pdf = models.FileField(upload_to=pdf_upload_path, verbose_name="Certificado PDF")
 
