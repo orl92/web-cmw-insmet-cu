@@ -430,7 +430,7 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
 class Invoice(FileHandlerMixin, models.Model):
     subscription = models.ForeignKey(
         ServiceSubscription, 
-        on_delete=models.CASCADE,  # Evita borrar si tiene facturas
+        on_delete=models.CASCADE,
         related_name='invoices', 
         verbose_name="Suscripción"
     )
@@ -461,7 +461,7 @@ class Invoice(FileHandlerMixin, models.Model):
 class Certificate(FileHandlerMixin, models.Model):
     subscription = models.ForeignKey(
         ServiceSubscription, 
-        on_delete=models.CASCADE,  # Evita borrar si tiene certificados
+        on_delete=models.CASCADE,
         related_name='certificates', 
         verbose_name="Suscripción"
     )
