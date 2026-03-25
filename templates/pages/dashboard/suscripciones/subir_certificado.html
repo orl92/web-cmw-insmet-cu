@@ -21,15 +21,6 @@
     </div>
   </div>
 </div>
-    
-<div class="mb-3">
-  <label class="form-label required">Certificado (PDF)</label>
-  <input type="file" name="pdf" accept=".pdf" required class="form-control">
-  {% if form.pdf.errors %}
-    <span class="text-danger">{{ form.pdf.errors }}</span>
-  {% endif %}
-  <small class="form-hint">Selecciona el archivo PDF del certificado para este cliente.</small>
-</div>
 
 <div class="mb-3">
   <label class="form-label required">Archivo PDF</label>
@@ -54,7 +45,6 @@
             <div class="mb-2">
               <input type="file" class="form-control" name="pdf" accept=".pdf" required>
             </div>
-            <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
             <small class="form-hint">Selecciona el archivo PDF del certificado para este cliente.</small>
           </div>
         </div>
