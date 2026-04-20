@@ -2,44 +2,205 @@
 {% load static %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-10 col-xl-9">
-    <div class="empty">
-      <img src="{% static 'dist/img/webp/boy-girl.webp' %}" class="img-fluid w-50" alt="boy-girl" />
-      <div class="ms-3">
-        {% if request.user.is_superuser %}
-          <h3 class="alert-title">¿Está seguro que desea eliminar esta suscripción?</h3>
-          <p class="text-muted mb-0">
-            Esta acción eliminará físicamente la suscripción de <strong>{{ object.customer.company_name }}</strong> 
-            para el servicio <strong>{{ object.service.title }}</strong>, junto con todas sus facturas y certificados asociados.
-            <br><span class="text-danger">¡No se podrá recuperar!</span>
-          </p>
-        {% else %}
-          <h3 class="alert-title">¿Está seguro que desea desactivar esta suscripción?</h3>
-          <p class="text-muted mb-0">
-            Esta acción desactivará la suscripción de <strong>{{ object.customer.company_name }}</strong> 
-            para el servicio <strong>{{ object.service.title }}</strong>. 
-            El registro se mantendrá en la base de datos pero no será visible para el cliente.
-          </p>
-        {% endif %}
-      </div>
-    </div>
-    <form method="post" class="text-center">
+<div class="row justify-content-center pb-5">
+  <div class="col-lg-10 col-xl-9 text-center">   <!-- ← text-center centra todo -->
+    <img src="{% static 'dist/img/webp/boy-girl.webp' %}" class="img-fluid w-50 mb-3" alt="boy-girl" />
+
+    {% if request.user.is_superuser %}
+      <h3 class="alert-title">¿Está seguro que desea eliminar esta suscripción?</h3>
+      <p class="text-muted">
+        Esta acción eliminará físicamente la suscripción de <strong>{{ object.customer.company_name }}</strong> 
+        para el servicio <strong>{{ object.service.title }}</strong>, junto con todas sus facturas y certificados asociados.
+        <br><span class="text-danger">¡No se podrá recuperar!</span>
+      </p>
+    {% else %}
+      <h3 class="alert-title">¿Está seguro que desea desactivar esta suscripción?</h3>
+      <p class="text-muted">
+        Esta acción desactivará la suscripción de <strong>{{ object.customer.company_name }}</strong> 
+        para el servicio <strong>{{ object.service.title }}</strong>. 
+        <br>El registro se mantendrá en la base de datos pero no será visible para el cliente.
+      </p>
+    {% endif %}
+
+    <form method="post" id="deleteForm" class="text-center">
       {% csrf_token %}
       {% if request.user.is_superuser %}
-        <!-- Checkbox con espacio mínimo arriba (mt-0) -->
-        <div class="d-flex justify-content-center align-items-center gap-2 mt-0">
+        <div class="d-flex justify-content-center align-items-center gap-2 mt-2">
           <input class="form-check-input" type="checkbox" name="hard_delete" id="hardDelete" value="true">
           <label class="form-check-label text-danger" for="hardDelete">
             Eliminar físicamente (no se podrá recuperar)
           </label>
         </div>
       {% endif %}
-      <button type="submit" class="btn btn-danger mr-2 mt-3">
-        {% if request.user.is_superuser %}Eliminar{% else %}Desactivar{% endif %}
-      </button>
-      <a href="{{ url_list }}" class="btn btn-secondary ml-2 mt-3">Cancelar</a>
+      <div class="mt-3">
+        <button type="button" class="btn btn-danger me-2" id="actionBtn">
+          {% if request.user.is_superuser %}Eliminar{% else %}Desactivar{% endif %}
+        </button>
+        <a href="{{ url_list }}" class="btn btn-secondary">Cancelar</a>
+      </div>
     </form>
   </div>
 </div>
+
+<!-- Modal para HARD DELETE (eliminación permanente) -->
+<div class="modal fade" id="hardDeleteModal" tabindex="-1" aria-labelledby="hardDeleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="hardDeleteModalLabel">
+          <i class="fas fa-exclamation-triangle me-2"></i>Confirmar eliminación permanente
+        </h5>
+        <button type="button" class="btn-close btn-close-white" id="closeHardModalBtn" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas <strong class="text-danger">eliminar permanentemente</strong> la suscripción de <strong>{{ object.customer.company_name }}</strong>?</p>
+        <p class="text-danger mb-0">⚠️ Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelHardModalBtn">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmHardDeleteBtn">Sí, eliminar permanentemente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para SOFT DELETE (desactivación) -->
+<div class="modal fade" id="softDeleteModal" tabindex="-1" aria-labelledby="softDeleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="softDeleteModalLabel">
+          <i class="fas fa-info-circle me-2"></i>Confirmar desactivación
+        </h5>
+        <button type="button" class="btn-close" id="closeSoftModalBtn" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas <strong>desactivar</strong> la suscripción de <strong>{{ object.customer.company_name }}</strong>?</p>
+        <p class="text-muted mb-0">El cliente ya no verá este servicio activo en su panel, pero los datos se conservarán.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelSoftModalBtn">Cancelar</button>
+        <button type="button" class="btn btn-warning" id="confirmSoftDeleteBtn">Sí, desactivar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const actionBtn = document.getElementById('actionBtn');
+    const deleteForm = document.getElementById('deleteForm');
+    const hardDeleteCheckbox = document.getElementById('hardDelete');
+
+    // Elementos del modal hard delete
+    const hardModal = document.getElementById('hardDeleteModal');
+    const closeHardModalBtn = document.getElementById('closeHardModalBtn');
+    const cancelHardModalBtn = document.getElementById('cancelHardModalBtn');
+    const confirmHardDeleteBtn = document.getElementById('confirmHardDeleteBtn');
+
+    // Elementos del modal soft delete
+    const softModal = document.getElementById('softDeleteModal');
+    const closeSoftModalBtn = document.getElementById('closeSoftModalBtn');
+    const cancelSoftModalBtn = document.getElementById('cancelSoftModalBtn');
+    const confirmSoftDeleteBtn = document.getElementById('confirmSoftDeleteBtn');
+
+    // Función para mostrar un modal (sin depender de bootstrap.Modal)
+    function showModal(modalElement) {
+      if (!modalElement) return;
+      modalElement.classList.add('show');
+      modalElement.style.display = 'block';
+      modalElement.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('modal-open');
+      // Crear backdrop si no existe
+      let backdrop = document.querySelector('.modal-backdrop');
+      if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+      }
+    }
+
+    // Función para ocultar un modal
+    function hideModal(modalElement) {
+      if (!modalElement) return;
+      modalElement.classList.remove('show');
+      modalElement.style.display = 'none';
+      modalElement.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+      // Eliminar backdrop
+      const backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.remove();
+    }
+
+    // Envío del formulario
+    function submitForm() {
+      deleteForm.submit();
+    }
+
+    // Evento del botón principal
+    if (actionBtn) {
+      actionBtn.addEventListener('click', function() {
+        {% if request.user.is_superuser %}
+          // Superusuario: evaluar checkbox
+          if (hardDeleteCheckbox && hardDeleteCheckbox.checked) {
+            showModal(hardModal);  // Modal de eliminación permanente
+          } else {
+            showModal(softModal);  // Modal de desactivación
+          }
+        {% else %}
+          // Usuario normal: directamente soft delete con modal
+          showModal(softModal);
+        {% endif %}
+      });
+    }
+
+    // ----- Lógica para cerrar modales (hard) -----
+    if (closeHardModalBtn) {
+      closeHardModalBtn.addEventListener('click', function() {
+        hideModal(hardModal);
+      });
+    }
+    if (cancelHardModalBtn) {
+      cancelHardModalBtn.addEventListener('click', function() {
+        hideModal(hardModal);
+      });
+    }
+    // Confirmar hard delete
+    if (confirmHardDeleteBtn) {
+      confirmHardDeleteBtn.addEventListener('click', function() {
+        hideModal(hardModal);
+        submitForm();
+      });
+    }
+
+    // ----- Lógica para cerrar modales (soft) -----
+    if (closeSoftModalBtn) {
+      closeSoftModalBtn.addEventListener('click', function() {
+        hideModal(softModal);
+      });
+    }
+    if (cancelSoftModalBtn) {
+      cancelSoftModalBtn.addEventListener('click', function() {
+        hideModal(softModal);
+      });
+    }
+    // Confirmar soft delete
+    if (confirmSoftDeleteBtn) {
+      confirmSoftDeleteBtn.addEventListener('click', function() {
+        hideModal(softModal);
+        submitForm();
+      });
+    }
+
+    // Opcional: cerrar modal al hacer clic fuera del contenido (backdrop)
+    window.addEventListener('click', function(event) {
+      if (event.target === hardModal) {
+        hideModal(hardModal);
+      }
+      if (event.target === softModal) {
+        hideModal(softModal);
+      }
+    });
+  })();
+</script>
 {% endblock %}
