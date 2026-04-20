@@ -26,19 +26,19 @@
     </div>
     <form method="post" class="text-center">
       {% csrf_token %}
-      {# Checkbox solo para superusuarios: permite elegir hard delete #}
       {% if request.user.is_superuser %}
-        <div class="form-check mb-3">
+        <!-- Checkbox con espacio mínimo arriba (mt-0) -->
+        <div class="d-flex justify-content-center align-items-center gap-2 mt-0">
           <input class="form-check-input" type="checkbox" name="hard_delete" id="hardDelete" value="true">
           <label class="form-check-label text-danger" for="hardDelete">
             Eliminar físicamente (no se podrá recuperar)
           </label>
         </div>
       {% endif %}
-      <button type="submit" class="btn btn-danger mr-2">
+      <button type="submit" class="btn btn-danger mr-2 mt-3">
         {% if request.user.is_superuser %}Eliminar{% else %}Desactivar{% endif %}
       </button>
-      <a href="{{ url_list }}" class="btn btn-secondary ml-2">Cancelar</a>
+      <a href="{{ url_list }}" class="btn btn-secondary ml-2 mt-3">Cancelar</a>
     </form>
   </div>
 </div>
