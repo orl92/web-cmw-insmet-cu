@@ -1,6 +1,7 @@
+import pdfkit 
+import base64
 import os
 from datetime import datetime, timedelta
-from io import BytesIO
 
 from django.conf import settings
 from django.contrib import messages
@@ -25,9 +26,6 @@ from django.views.generic import (
     UpdateView,
     View,
 )
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.pdfgen import canvas
 
 from common.utils import log_action
 from dashboard.forms.suscripciones.forms import (
@@ -35,7 +33,7 @@ from dashboard.forms.suscripciones.forms import (
     InvoiceForm,
     SubscriptionForm,
 )
-from dashboard.models import Certificate, Customer, Invoice, ServiceSubscription
+from dashboard.models import Certificate, Contract, Customer, Invoice, ServiceSubscription
 
 
 class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -140,7 +138,6 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
     form_class = InvoiceForm
     permission_required = 'dashboard.change_subscription'
     success_url = reverse_lazy('listado_suscripciones')
-    url_redirect = success_url
 
     def dispatch(self, request, *args, **kwargs):
         self.subscription = get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
@@ -170,6 +167,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         amount = form.cleaned_data['amount']
         start_date = form.cleaned_data['start_date']
         end_date = form.cleaned_data['end_date']
+        commercial_registry = form.cleaned_data['commercial_registry']  # Campo obligatorio
 
         start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
         end_datetime = timezone.make_aware(datetime.combine(end_date, datetime.min.time()))
@@ -179,34 +177,50 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         self.subscription.payment_status = 'pending'
         self.subscription.save()
 
+        # Crear o actualizar contrato con el registro comercial ingresado
+        contract, created = Contract.objects.get_or_create(
+            subscription=self.subscription,
+            defaults={
+                'number': self.generate_contract_number(),
+                'date': timezone.now().date(),
+                'commercial_registry': commercial_registry,
+            }
+        )
+
+        # Si el contrato ya existía, actualizar su registro comercial (útil para regeneración)
+        if not created:
+            contract.commercial_registry = commercial_registry
+            contract.save(update_fields=['commercial_registry'])
+
+        # Número de factura secuencial
+        invoice_number = self.generate_invoice_number()
         invoice = Invoice(
             subscription=self.subscription,
             amount=amount,
-            number=f"INV-{self.subscription.uuid}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            number=invoice_number,
         )
+        invoice.save()  # Guardamos para que se asigne issue_date
 
-        buffer = BytesIO()
-        p = canvas.Canvas(buffer, pagesize=A4)
-        width, height = A4
-        p.setFont("Helvetica-Bold", 16)
-        p.drawString(2*cm, height-3*cm, "FACTURA")
-        p.setFont("Helvetica", 12)
-        p.drawString(2*cm, height-5*cm, f"Nº: {invoice.number}")
-        p.drawString(2*cm, height-6*cm, f"Fecha: {timezone.now().strftime('%d/%m/%Y')}")
-        p.drawString(2*cm, height-7*cm, f"Cliente: {self.subscription.customer.company_name}")
-        p.drawString(2*cm, height-8*cm, f"NIT: {self.subscription.customer.nit}")
-        p.drawString(2*cm, height-9*cm, f"Servicio: {self.subscription.service.title}")
-        p.drawString(2*cm, height-10*cm, f"Período: {start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}")
-        p.drawString(2*cm, height-11*cm, f"Importe: {amount} CUP")
-        p.showPage()
-        p.save()
+        # Generar PDF
+        context = self.get_invoice_context(invoice, start_date, end_date, contract)
+        html_string = render_to_string('pages/dashboard/suscripciones/factura_template.html', context)
+
+        options = {
+            'page-size': 'A4',
+            'margin-top': '10mm',
+            'margin-bottom': '10mm',
+            'margin-left': '10mm',
+            'margin-right': '10mm',
+            'encoding': 'UTF-8',
+            'no-outline': None,
+            'enable-local-file-access': None,
+        }
+        pdf_bytes = pdfkit.from_string(html_string, False, options=options)
 
         filename = f"factura_{self.subscription.uuid}.pdf"
-        invoice.pdf.save(filename, ContentFile(buffer.getvalue()))
-        invoice.save()
+        invoice.pdf.save(filename, ContentFile(pdf_bytes))
 
-        self.send_payment_email(self.request, self.subscription, invoice)
-
+        # Logs
         log_action(
             user=self.request.user,
             obj=self.subscription,
@@ -220,8 +234,96 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
             message=f"Factura creada por {amount} CUP"
         )
 
+        # Enviar correo
+        self.send_payment_email(self.request, self.subscription, invoice)
+
         messages.success(self.request, "Factura generada, período asignado y correo enviado.")
         return redirect(self.success_url)
+
+    def generate_invoice_number(self):
+        year = timezone.now().year
+        last_invoice = Invoice.objects.filter(issue_date__year=year).order_by('-issue_date').first()
+        if last_invoice and last_invoice.number:
+            try:
+                last_num = int(last_invoice.number.split('-')[-1])
+                new_num = last_num + 1
+            except (ValueError, IndexError):
+                new_num = 1
+        else:
+            new_num = 1
+        return f"{year}-{new_num:04d}"
+
+    def generate_contract_number(self):
+        year = timezone.now().year
+        last_contract = Contract.objects.filter(date__year=year).order_by('-date').first()
+        if last_contract and last_contract.number:
+            try:
+                last_num = int(last_contract.number.split('-')[-1])
+                new_num = last_num + 1
+            except (ValueError, IndexError):
+                new_num = 1
+        else:
+            new_num = 1
+        return f"{year}-{new_num:04d}"
+
+    def get_invoice_context(self, invoice, start_date, end_date, contract):
+        subscription = self.subscription
+        customer = subscription.customer
+        service = subscription.service
+        proveedor = settings.PROVEEDOR_FACTURA
+
+        periodo = f"Desde {start_date.strftime('%d/%m/%Y')} hasta {end_date.strftime('%d/%m/%Y')}"
+
+        items = [{
+            'codigo': service.uuid.hex[:15].upper(),
+            'descripcion': service.title,
+            'cantidad': 1,
+            'unidad_medida': 'U',
+            'precio': float(invoice.amount),
+            'importe': float(invoice.amount),
+        }]
+
+        # Logo a base64
+        logo_path = os.path.join(settings.BASE_DIR, 'static', 'dist', 'img', 'logo.png')
+        logo_base64 = ''
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as f:
+                logo_base64 = base64.b64encode(f.read()).decode('utf-8')
+
+        fecha_facturacion = invoice.issue_date.strftime('%d de %B del %Y') if invoice.issue_date else timezone.now().strftime('%d de %B del %Y')
+        contract_date_str = contract.date.strftime('%d/%m/%Y') if contract.date else ''
+
+        context = {
+            'numero_factura': invoice.number,
+            'fecha_facturacion': fecha_facturacion,
+            'periodo_facturacion': periodo,
+            'cliente': {
+                'nombre': customer.company_name,
+                'direccion': customer.address,
+                'codigo_reeup': customer.reeup or '',
+                'nit': customer.nit or '',
+                'cuenta_bancaria': customer.account or '',
+                'agencia_bancaria': getattr(customer, 'agency_bank', '') or '',
+                'telefonos': customer.phone or '',
+            },
+            'proveedor': {
+                'nombre': proveedor['nombre'],
+                'direccion': proveedor['direccion'],
+                'codigo_reeup': proveedor['codigo_reeup'],
+                'nit': proveedor['nit'],
+                'cuenta_bancaria': proveedor['cuenta_bancaria'],
+                'agencia_bancaria': proveedor['agencia_bancaria'],
+                'telefonos': proveedor['telefonos'],
+                'registro_comercial': contract.commercial_registry,
+                'no_contrato': contract.number,
+                'fecha_contrato': contract_date_str,
+            },
+            'items': items,
+            'total': float(invoice.amount),
+            'logo_base64': logo_base64,
+            'current_year': timezone.now().year,
+        }
+        return context
 
     def send_payment_email(self, request, subscription, invoice):
         if subscription.payment_method == 'qr':
@@ -251,8 +353,9 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         )
         email.content_subtype = "html"
 
-        if invoice.pdf:
-            email.attach_file(invoice.pdf.path)
+        if invoice.pdf and invoice.pdf.storage.exists(invoice.pdf.name):
+            with invoice.pdf.storage.open(invoice.pdf.name, 'rb') as f:
+                email.attach(f'factura_{invoice.number}.pdf', f.read(), 'application/pdf')
 
         if subscription.payment_method == 'qr':
             from django.contrib.staticfiles import finders

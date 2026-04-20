@@ -12,33 +12,40 @@
 
   <!-- Campo de monto -->
   <div class="mb-3">
-    <label class="form-label required">Monto (CUP)</label>
+    <label class="form-label required">{{ form.amount.label }}</label>
     <div class="input-group">
       <span class="input-group-text">$</span>
-      <input type="number" step="0.01" class="form-control" name="amount" required 
-             value="{{ form.amount.value|default:form.initial.amount }}">
+      {{ form.amount }}
     </div>
     {% if form.amount.errors %}
       <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
     {% endif %}
-    <small class="text-muted">Importe de la factura.</small>
+    <small class="text-muted">Importe de la factura en CUP.</small>
   </div>
 
-  <!-- Fechas (se asignan por primera vez aquí) -->
+  <!-- Campo Registro Comercial (obligatorio) -->
+  <div class="mb-3">
+    <label class="form-label required">{{ form.commercial_registry.label }}</label>
+    {{ form.commercial_registry }}
+    {% if form.commercial_registry.errors %}
+      <div class="invalid-feedback d-block">{{ form.commercial_registry.errors.0 }}</div>
+    {% endif %}
+    <small class="text-muted">{{ form.commercial_registry.help_text }}</small>
+  </div>
+
+  <!-- Fechas -->
   <div class="row">
     <div class="col-md-6 mb-3">
-      <label class="form-label required">Fecha de inicio</label>
-      <input type="date" class="form-control" name="start_date" required 
-             value="{{ form.start_date.value|default:form.initial.start_date }}">
+      <label class="form-label required">{{ form.start_date.label }}</label>
+      {{ form.start_date }}
       {% if form.start_date.errors %}
         <div class="invalid-feedback d-block">{{ form.start_date.errors.0 }}</div>
       {% endif %}
       <small class="text-muted">Fecha en que comienza el servicio</small>
     </div>
     <div class="col-md-6 mb-3">
-      <label class="form-label required">Fecha de expiración</label>
-      <input type="date" class="form-control" name="end_date" required 
-             value="{{ form.end_date.value|default:form.initial.end_date }}">
+      <label class="form-label required">{{ form.end_date.label }}</label>
+      {{ form.end_date }}
       {% if form.end_date.errors %}
         <div class="invalid-feedback d-block">{{ form.end_date.errors.0 }}</div>
       {% endif %}
@@ -71,14 +78,20 @@
     const summaryDiv = document.createElement('div');
     summaryDiv.className = 'alert alert-info mt-3';
     summaryDiv.id = 'period-summary';
-    endDateInput.closest('.row').after(summaryDiv);
+    const form = document.querySelector('form');
+    const buttonsDiv = document.querySelector('.form-footer') || document.querySelector('.card-footer');
+    if (buttonsDiv) {
+      form.insertBefore(summaryDiv, buttonsDiv);
+    } else {
+      form.appendChild(summaryDiv);
+    }
 
     function updateSummary() {
       const start = startDateInput.value;
       const end = endDateInput.value;
       const amount = amountInput.value;
 
-      if (start && end && amount) {
+      if (start && end && amount && parseFloat(amount) > 0) {
         const startDate = new Date(start);
         const endDate = new Date(end);
         const diffTime = endDate - startDate;
@@ -86,7 +99,7 @@
 
         if (diffDays > 0) {
           summaryDiv.innerHTML = `<strong>Período:</strong> ${diffDays} días (${start} al ${end})<br>
-                                  <strong>Monto total:</strong> $${amount} CUP`;
+                                  <strong>Monto total:</strong> $${parseFloat(amount).toFixed(2)} CUP`;
           summaryDiv.classList.remove('alert-danger');
           summaryDiv.classList.add('alert-info');
           submitBtn.disabled = false;
@@ -97,7 +110,7 @@
           submitBtn.disabled = true;
         }
       } else {
-        summaryDiv.innerHTML = 'Complete todos los campos para ver el resumen.';
+        summaryDiv.innerHTML = 'Complete todos los campos y asegúrese de que el monto sea mayor a cero para ver el resumen.';
         summaryDiv.classList.remove('alert-danger', 'alert-info');
         summaryDiv.classList.add('alert-secondary');
         submitBtn.disabled = true;
@@ -107,7 +120,7 @@
     startDateInput.addEventListener('change', updateSummary);
     endDateInput.addEventListener('change', updateSummary);
     amountInput.addEventListener('input', updateSummary);
-    updateSummary(); // Llamada inicial
+    updateSummary();
   });
 </script>
 {% endblock %}

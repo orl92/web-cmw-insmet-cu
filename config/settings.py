@@ -683,3 +683,13 @@ LOGGING = {
         },
     },
 }
+
+PROVEEDOR_FACTURA = {
+    'nombre': 'UPR Centro Meteorológico Provincial Camagüey.',
+    'direccion': 'Avenida Finlay Km 7 vz. Camagüey',
+    'codigo_reeup': '211.0.6749',
+    'nit': '11009444483',
+    'cuenta_bancaria': '0659641302450111',
+    'agencia_bancaria': 'BANDEC 5961',
+    'telefonos': '32 261284 y 32 263354',
+}

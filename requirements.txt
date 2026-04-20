@@ -71,3 +71,4 @@ xarray==2025.12.0
 xhtml2pdf==0.2.17
 xlrd==2.0.2 # Librería necesaria para que pandas lea los *.xls
 ldap3==2.9.1      # Para usuarios del DC
+pdfkit

@@ -294,6 +294,7 @@ class Customer(models.Model):
     reeup = models.CharField(max_length=11, verbose_name="REEUP")
     nit = models.CharField(max_length=11, verbose_name="NIT")
     account = models.CharField(max_length=16, verbose_name="Cuenta Bancaria")
+    agency_bank = models.CharField(max_length=100, blank=True, null=True, verbose_name="Agencia Bancaria")
     address = models.TextField(verbose_name="Dirección")
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
     phone = models.CharField(max_length=8, verbose_name="Número de Teléfono")
@@ -427,20 +428,37 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
         return f"{self.customer.company_name} - {self.service.title}"
 
 
-class Invoice(FileHandlerMixin, models.Model):
-    subscription = models.ForeignKey(
-        ServiceSubscription, 
+class Contract(models.Model):
+    subscription = models.OneToOneField(
+        ServiceSubscription,
         on_delete=models.CASCADE,
-        related_name='invoices', 
+        related_name='contract',
+        verbose_name="Contrato"
+    )
+    number = models.CharField(max_length=50, verbose_name="Número de contrato")
+    date = models.DateField(verbose_name="Fecha del contrato")
+    commercial_registry = models.CharField(max_length=50, verbose_name="Registro Comercial")
+
+    class Meta:
+        verbose_name = "Contrato"
+        verbose_name_plural = "Contratos"
+
+    def __str__(self):
+        return f"Contrato {self.number} - {self.subscription.customer.company_name}"
+
+
+class Invoice(models.Model):
+    subscription = models.ForeignKey(
+        ServiceSubscription,
+        on_delete=models.CASCADE,
+        related_name='invoices',
         verbose_name="Suscripción"
     )
     number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
     issue_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto")
-    pdf = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF", blank=True, null=True)
+    pdf = models.FileField(upload_to='invoices/pdfs/', verbose_name="Archivo PDF", blank=True, null=True)
     is_cancelled = models.BooleanField(default=False, verbose_name="¿Anulada?")
-
-    file_fields = ['pdf']
 
     class Meta:
         verbose_name = "Factura"
@@ -458,17 +476,15 @@ class Invoice(FileHandlerMixin, models.Model):
         return f"Factura {self.number} - {self.subscription.customer.company_name}"
 
 
-class Certificate(FileHandlerMixin, models.Model):
+class Certificate(models.Model):
     subscription = models.ForeignKey(
-        ServiceSubscription, 
+        ServiceSubscription,
         on_delete=models.CASCADE,
-        related_name='certificates', 
+        related_name='certificates',
         verbose_name="Suscripción"
     )
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
-    pdf = models.FileField(upload_to=pdf_upload_path, verbose_name="Certificado PDF")
-
-    file_fields = ['pdf']
+    pdf = models.FileField(upload_to='certificates/pdfs/', verbose_name="Certificado PDF")
 
     class Meta:
         verbose_name = "Certificado"

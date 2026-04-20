@@ -56,7 +56,7 @@ El sistema detecta automáticamente el entorno (development/production) y config
 - virtualenv (recomendado)
 - Instalar dependencias necesarias 
 ```bash
-sudo apt install libcairo2-dev pkg-config python3-dev
+sudo apt install libcairo2-dev pkg-config python3-dev wkhtmltopdf
 ```
 
 ### 1. Clonar el repositorio
