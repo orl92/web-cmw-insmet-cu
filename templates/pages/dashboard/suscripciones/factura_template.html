@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Factura {{ numero_factura }} - Centro Meteorológico Camagüey</title>
     <style>
-        /* ===== ESTILOS MEJORADOS PARA LEGIBILIDAD ===== */
+        /* ===== ESTILOS MEJORADOS - FUENTES MÁS GRANDES ===== */
         * {
             margin: 0;
             padding: 0;
@@ -12,7 +12,7 @@
         }
         @page {
             size: A4;
-            margin: 1.2cm;  /* Márgenes amplios */
+            margin: 0.8cm;  /* Márgenes reducidos para aprovechar espacio */
         }
         html, body {
             height: 100%;
@@ -21,26 +21,31 @@
         }
         body {
             font-family: 'Arial', 'Helvetica', sans-serif;
-            font-size: 11px;   /* Tamaño base aumentado */
+            font-size: 12px;   /* Base más grande */
             line-height: 1.4;
             color: #000;
             background: #fff;
+            display: flex;
+            flex-direction: column;
         }
         .factura-container {
             width: 100%;
+            max-width: 100%;
             margin: 0 auto;
             padding: 5px;
-            position: relative;
-            min-height: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
+        /* El contenido principal ocupa el espacio disponible */
         .main-content {
-            width: 100%;
+            flex: 1;
         }
         /* ===== ENCABEZADO ===== */
         .header {
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             border-bottom: 2px solid #000;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
         }
         .header-container {
             display: flex;
@@ -53,7 +58,7 @@
             align-items: flex-start;
         }
         .logo-container {
-            width: 90px;
+            width: 100px;
             margin-bottom: 5px;
         }
         .logo-img {
@@ -61,35 +66,35 @@
             height: auto;
         }
         .centro-title {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
         }
         .right-section {
             text-align: right;
         }
         .meteoservice {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: bold;
             color: #FF0000;
             line-height: 1;
         }
         .servicios-especializados {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             color: #0000FF;
         }
         /* ===== GENERALES ===== */
         .generales {
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
         .titulo-generales {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 5px;
         }
         .generales-line {
             border-top: 1px solid #000;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         .info-columns {
             display: flex;
@@ -99,15 +104,15 @@
             flex: 1;
         }
         .info-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
             border-bottom: 1px solid #000;
-            margin-bottom: 6px;
-            padding-bottom: 2px;
+            margin-bottom: 8px;
+            padding-bottom: 3px;
         }
         .info-item {
-            font-size: 10px;
-            margin-bottom: 5px;
+            font-size: 11px;
+            margin-bottom: 6px;
         }
         .info-label {
             font-weight: bold;
@@ -115,31 +120,31 @@
         /* ===== INSTRUCCIÓN DE PAGO ===== */
         .pago-instruccion {
             text-align: center;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
-            margin: 12px 0;
+            margin: 15px 0;
             background: #f9f9f9;
-            padding: 6px;
+            padding: 8px;
         }
         /* ===== TABLA DE SERVICIOS ===== */
         .tabla-servicios {
             width: 100%;
             border-collapse: collapse;
-            margin: 12px 0;
-            font-size: 10px;
+            margin: 15px 0;
+            font-size: 11px;
             table-layout: fixed;
         }
         .tabla-servicios th, 
         .tabla-servicios td {
             border: 1px solid #000;
-            padding: 6px 4px;
+            padding: 8px 5px;
             vertical-align: top;
         }
         .tabla-servicios th {
             background: #f0f0f0;
             font-weight: bold;
         }
-        /* Anchos de columnas */
+        /* Anchos de columnas ajustados */
         .tabla-servicios th:nth-child(1) { width: 15%; }  /* Código */
         .tabla-servicios th:nth-child(2) { width: 8%; }   /* Cant */
         .tabla-servicios th:nth-child(3) { width: 38%; }  /* Descripción */
@@ -153,43 +158,39 @@
         .centro-costo {
             font-weight: normal;
         }
-        /* ===== FIRMAS Y PIE (fijos al final) ===== */
+        /* ===== FIRMAS Y PIE (flex: se pegan al final) ===== */
         .signatures-footer {
-            position: absolute;
-            bottom: 0;
-            left: 5px;
-            right: 5px;
-            width: calc(100% - 10px);
-            background: white;
+            margin-top: 20px;
             padding-top: 10px;
+            border-top: 1px solid #ccc;
         }
         .firmas-container {
             display: flex;
             justify-content: space-between;
-            font-size: 9px;
+            font-size: 10px;
         }
         .firma-col {
             width: 45%;
         }
         .firma-item {
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
         .firma-label {
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
         .firma-line {
             border-bottom: 1px solid #000;
-            height: 18px;
+            height: 20px;
             margin-top: 4px;
         }
         .footer {
             margin-top: 20px;
-            font-size: 8px;
+            font-size: 9px;
             color: #555;
         }
         .fecha-generacion {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .notas {
             font-style: italic;
@@ -207,7 +208,6 @@
                         <div class="logo-container">
                             <img src="data:image/png;base64,{{ logo_base64 }}" alt="Logo" class="logo-img">
                         </div>
-                        <div class="centro-title">Centro Meteorológico Provincial Camagüey</div>
                     </div>
                     <div class="right-section">
                         <div class="meteoservice">MeteoService®</div>
