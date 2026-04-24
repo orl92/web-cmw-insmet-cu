@@ -1,5 +1,4 @@
 import pdfkit 
-import base64
 import os
 from datetime import datetime, timedelta
 
@@ -152,6 +151,12 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         initial['start_date'] = today.isoformat()
         initial['end_date'] = (today + timedelta(days=30)).isoformat()
         initial['amount'] = 0
+        initial['quantity'] = 1
+        # Si el servicio tiene código propio, se usa; si no, se sugiere desde UUID
+        if hasattr(self.subscription.service, 'code') and self.subscription.service.code:
+            initial['service_code'] = self.subscription.service.code
+        else:
+            initial['service_code'] = self.subscription.service.uuid.hex[:15].upper()
         return initial
 
     def get_context_data(self, **kwargs):
@@ -167,7 +172,9 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         amount = form.cleaned_data['amount']
         start_date = form.cleaned_data['start_date']
         end_date = form.cleaned_data['end_date']
-        commercial_registry = form.cleaned_data['commercial_registry']  # Campo obligatorio
+        commercial_registry = form.cleaned_data['commercial_registry']
+        quantity = form.cleaned_data['quantity']
+        service_code = form.cleaned_data['service_code']
 
         start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
         end_datetime = timezone.make_aware(datetime.combine(end_date, datetime.min.time()))
@@ -177,7 +184,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         self.subscription.payment_status = 'pending'
         self.subscription.save()
 
-        # Crear o actualizar contrato con el registro comercial ingresado
+        # Contrato asociado (con número secuencial)
         contract, created = Contract.objects.get_or_create(
             subscription=self.subscription,
             defaults={
@@ -186,25 +193,24 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
                 'commercial_registry': commercial_registry,
             }
         )
-
-        # Si el contrato ya existía, actualizar su registro comercial (útil para regeneración)
         if not created:
             contract.commercial_registry = commercial_registry
             contract.save(update_fields=['commercial_registry'])
 
-        # Número de factura secuencial
+        # Crear factura (sin PDF aún)
         invoice_number = self.generate_invoice_number()
         invoice = Invoice(
             subscription=self.subscription,
             amount=amount,
             number=invoice_number,
         )
-        invoice.save()  # Guardamos para que se asigne issue_date
+        invoice.save()  # asigna issue_date
 
-        # Generar PDF
-        context = self.get_invoice_context(invoice, start_date, end_date, contract)
+        # Generar contexto y HTML para el PDF
+        context = self.get_invoice_context(invoice, start_date, end_date, contract, quantity, service_code)
         html_string = render_to_string('pages/dashboard/suscripciones/factura_template.html', context)
 
+        # Configuración de pdfkit
         options = {
             'page-size': 'A4',
             'margin-top': '10mm',
@@ -217,6 +223,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         }
         pdf_bytes = pdfkit.from_string(html_string, False, options=options)
 
+        # Guardar PDF
         filename = f"factura_{self.subscription.uuid}.pdf"
         invoice.pdf.save(filename, ContentFile(pdf_bytes))
 
@@ -231,7 +238,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
             user=self.request.user,
             obj=invoice,
             action_flag=ADDITION,
-            message=f"Factura creada por {amount} CUP"
+            message=f"Factura creada por {amount} CUP (cantidad: {quantity}, código: {service_code})"
         )
 
         # Enviar correo
@@ -266,7 +273,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
             new_num = 1
         return f"{year}-{new_num:04d}"
 
-    def get_invoice_context(self, invoice, start_date, end_date, contract):
+    def get_invoice_context(self, invoice, start_date, end_date, contract, quantity, service_code):
         subscription = self.subscription
         customer = subscription.customer
         service = subscription.service
@@ -274,21 +281,17 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
 
         periodo = f"Desde {start_date.strftime('%d/%m/%Y')} hasta {end_date.strftime('%d/%m/%Y')}"
 
+        # Precio unitario = total / cantidad
+        unit_price = float(invoice.amount) / quantity if quantity > 0 else 0
+
         items = [{
-            'codigo': service.uuid.hex[:15].upper(),
+            'codigo': service_code,
             'descripcion': service.title,
-            'cantidad': 1,
+            'cantidad': quantity,
             'unidad_medida': 'U',
-            'precio': float(invoice.amount),
+            'precio': unit_price,
             'importe': float(invoice.amount),
         }]
-
-        # Logo a base64
-        logo_path = os.path.join(settings.BASE_DIR, 'static', 'dist', 'img', 'logo.png')
-        logo_base64 = ''
-        if os.path.exists(logo_path):
-            with open(logo_path, 'rb') as f:
-                logo_base64 = base64.b64encode(f.read()).decode('utf-8')
 
         fecha_facturacion = invoice.issue_date.strftime('%d de %B del %Y') if invoice.issue_date else timezone.now().strftime('%d de %B del %Y')
         contract_date_str = contract.date.strftime('%d/%m/%Y') if contract.date else ''
@@ -320,7 +323,6 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
             },
             'items': items,
             'total': float(invoice.amount),
-            'logo_base64': logo_base64,
             'current_year': timezone.now().year,
         }
         return context
