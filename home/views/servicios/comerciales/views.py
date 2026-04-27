@@ -74,7 +74,10 @@ class ServiceDetailView(FormView):
         context['title'] = self.service.title
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
-        
+
+        # Calcular total estimado para 30 días
+        context['estimated_total'] = self.service.price * 30 if self.service.price else 0
+
         # Si el usuario está autenticado y es cliente, verificar suscripción existente
         if self.request.user.is_authenticated and hasattr(self.request.user, 'customer'):
             customer = self.request.user.customer
