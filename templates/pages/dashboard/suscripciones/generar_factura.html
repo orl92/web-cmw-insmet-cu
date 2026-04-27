@@ -2,28 +2,17 @@
 {% load static %}
 
 {% block form %}
-  <!-- Información de la suscripción -->
+  <!-- Información de la suscripción (mismo estilo) -->
   <div class="alert alert-info">
     <strong>Cliente:</strong> {{ subscription.customer.company_name }}<br>
     <strong>Servicio:</strong> {{ subscription.service.title }}<br>
-    <strong>Método de pago solicitado:</strong> {{ subscription.get_payment_method_display }}<br>
-    <strong>Fecha de solicitud:</strong> {{ subscription.start_date|default:"No asignada aún" }}
+    <strong>Código:</strong> {{ subscription.service.code }}<br>
+    <strong>Precio:</strong> ${{ subscription.service.price }} CUP<br>
+    <strong>Método de pago:</strong> {{ subscription.get_payment_method_display|default:"No especificado" }}<br>
+    <strong>Fecha de solicitud:</strong> {{ subscription.start_date|date:"d \d\e F \d\e Y \a \l\a\s H:i"|default:"No asignada aún" }}
   </div>
 
-  <!-- Campo de monto -->
-  <div class="mb-3">
-    <label class="form-label required">{{ form.amount.label }}</label>
-    <div class="input-group">
-      <span class="input-group-text">$</span>
-      {{ form.amount }}
-    </div>
-    {% if form.amount.errors %}
-      <div class="invalid-feedback d-block">{{ form.amount.errors.0 }}</div>
-    {% endif %}
-    <small class="text-muted">Importe de la factura en CUP.</small>
-  </div>
-
-  <!-- Campo Registro Comercial (obligatorio) -->
+  <!-- Campo Registro Comercial -->
   <div class="mb-3">
     <label class="form-label required">{{ form.commercial_registry.label }}</label>
     {{ form.commercial_registry }}
@@ -53,6 +42,11 @@
     </div>
   </div>
 
+  <!-- Resumen dinámico (con el mismo estilo y alineación) -->
+  <div id="period-summary" class="alert alert-secondary">
+    Seleccione las fechas para ver el resumen de la factura.
+  </div>
+
   {% if form.non_field_errors %}
     <div class="alert alert-danger">{{ form.non_field_errors.0 }}</div>
   {% endif %}
@@ -71,47 +65,37 @@
   document.addEventListener('DOMContentLoaded', function() {
     const startDateInput = document.querySelector('input[name="start_date"]');
     const endDateInput = document.querySelector('input[name="end_date"]');
-    const amountInput = document.querySelector('input[name="amount"]');
     const submitBtn = document.querySelector('button[type="submit"]');
-    
-    // Crear elemento para mostrar resumen
-    const summaryDiv = document.createElement('div');
-    summaryDiv.className = 'alert alert-info mt-3';
-    summaryDiv.id = 'period-summary';
-    const form = document.querySelector('form');
-    const buttonsDiv = document.querySelector('.form-footer') || document.querySelector('.card-footer');
-    if (buttonsDiv) {
-      form.insertBefore(summaryDiv, buttonsDiv);
-    } else {
-      form.appendChild(summaryDiv);
-    }
+    const price = {{ subscription.service.price|stringformat:"f" }};
+    const summaryDiv = document.getElementById('period-summary');
 
     function updateSummary() {
       const start = startDateInput.value;
       const end = endDateInput.value;
-      const amount = amountInput.value;
 
-      if (start && end && amount && parseFloat(amount) > 0) {
+      if (start && end) {
         const startDate = new Date(start);
         const endDate = new Date(end);
         const diffTime = endDate - startDate;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays > 0) {
-          summaryDiv.innerHTML = `<strong>Período:</strong> ${diffDays} días (${start} al ${end})<br>
-                                  <strong>Monto total:</strong> $${parseFloat(amount).toFixed(2)} CUP`;
-          summaryDiv.classList.remove('alert-danger');
+          const total = price * diffDays;
+          summaryDiv.innerHTML = `<strong>Cantidad:</strong> ${diffDays}<br>
+                                  <strong>Precio:</strong> $${price.toFixed(2)} CUP<br>
+                                  <strong>Monto total:</strong> $${total.toFixed(2)} CUP`;
+          summaryDiv.classList.remove('alert-secondary', 'alert-danger');
           summaryDiv.classList.add('alert-info');
           submitBtn.disabled = false;
         } else {
           summaryDiv.innerHTML = '<strong class="text-danger">Error:</strong> La fecha de fin debe ser posterior a la de inicio.';
-          summaryDiv.classList.remove('alert-info');
+          summaryDiv.classList.remove('alert-secondary', 'alert-info');
           summaryDiv.classList.add('alert-danger');
           submitBtn.disabled = true;
         }
       } else {
-        summaryDiv.innerHTML = 'Complete todos los campos y asegúrese de que el monto sea mayor a cero para ver el resumen.';
-        summaryDiv.classList.remove('alert-danger', 'alert-info');
+        summaryDiv.innerHTML = 'Seleccione las fechas para ver el resumen de la factura.';
+        summaryDiv.classList.remove('alert-info', 'alert-danger');
         summaryDiv.classList.add('alert-secondary');
         submitBtn.disabled = true;
       }
@@ -119,7 +103,6 @@
 
     startDateInput.addEventListener('change', updateSummary);
     endDateInput.addEventListener('change', updateSummary);
-    amountInput.addEventListener('input', updateSummary);
     updateSummary();
   });
 </script>

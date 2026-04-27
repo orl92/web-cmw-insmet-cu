@@ -36,12 +36,6 @@ class CertificateUploadForm(forms.ModelForm):
 
 
 class InvoiceForm(forms.Form):
-    amount = forms.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        label="Monto de la factura",
-        widget=forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': 'form-control', 'placeholder': '0.00'})
-    )
     start_date = forms.DateField(
         label="Fecha de inicio",
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
@@ -57,12 +51,6 @@ class InvoiceForm(forms.Form):
         help_text="Ej: A09404",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'A09404'})
     )
-
-    def clean_amount(self):
-        amount = self.cleaned_data['amount']
-        if amount <= 0:
-            raise forms.ValidationError("El monto debe ser mayor que cero.")
-        return amount
 
     def clean(self):
         cleaned_data = super().clean()

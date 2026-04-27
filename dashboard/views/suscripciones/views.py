@@ -150,13 +150,6 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         today = timezone.now().date()
         initial['start_date'] = today.isoformat()
         initial['end_date'] = (today + timedelta(days=30)).isoformat()
-        initial['amount'] = 0
-        initial['quantity'] = 1
-        # Si el servicio tiene código propio, se usa; si no, se sugiere desde UUID
-        if hasattr(self.subscription.service, 'code') and self.subscription.service.code:
-            initial['service_code'] = self.subscription.service.code
-        else:
-            initial['service_code'] = self.subscription.service.uuid.hex[:15].upper()
         return initial
 
     def get_context_data(self, **kwargs):
@@ -166,15 +159,22 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         context['parent'] = 'servicios'
         context['segment'] = 'suscripciones'
         context['url_list'] = reverse_lazy('listado_suscripciones')
+        # Precio del servicio para mostrar en el template
+        context['service_price'] = self.subscription.service.price
         return context
 
     def form_valid(self, form):
-        amount = form.cleaned_data['amount']
         start_date = form.cleaned_data['start_date']
         end_date = form.cleaned_data['end_date']
         commercial_registry = form.cleaned_data['commercial_registry']
-        quantity = form.cleaned_data['quantity']
-        service_code = form.cleaned_data['service_code']
+
+        # Calcular cantidad de días
+        days_count = (end_date - start_date).days 
+
+        # Obtener precio por día del servicio
+        unit_price = self.subscription.service.price
+        # Calcular monto total
+        amount = unit_price * days_count
 
         start_datetime = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
         end_datetime = timezone.make_aware(datetime.combine(end_date, datetime.min.time()))
@@ -184,7 +184,10 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         self.subscription.payment_status = 'pending'
         self.subscription.save()
 
-        # Contrato asociado (con número secuencial)
+        # Obtener código del servicio desde el modelo
+        service_code = self.subscription.service.code
+
+        # Contrato
         contract, created = Contract.objects.get_or_create(
             subscription=self.subscription,
             defaults={
@@ -206,8 +209,8 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         )
         invoice.save()  # asigna issue_date
 
-        # Generar contexto y HTML para el PDF
-        context = self.get_invoice_context(invoice, start_date, end_date, contract, quantity, service_code)
+        # Contexto para el PDF
+        context = self.get_invoice_context(invoice, start_date, end_date, contract, days_count, service_code, unit_price)
         html_string = render_to_string('pages/dashboard/suscripciones/factura_template.html', context)
 
         # Configuración de pdfkit
@@ -223,7 +226,6 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         }
         pdf_bytes = pdfkit.from_string(html_string, False, options=options)
 
-        # Guardar PDF
         filename = f"factura_{self.subscription.uuid}.pdf"
         invoice.pdf.save(filename, ContentFile(pdf_bytes))
 
@@ -238,7 +240,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
             user=self.request.user,
             obj=invoice,
             action_flag=ADDITION,
-            message=f"Factura creada por {amount} CUP (cantidad: {quantity}, código: {service_code})"
+            message=f"Factura creada por {amount} CUP (días: {days_count}, precio unitario: {unit_price})"
         )
 
         # Enviar correo
@@ -273,7 +275,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
             new_num = 1
         return f"{year}-{new_num:04d}"
 
-    def get_invoice_context(self, invoice, start_date, end_date, contract, quantity, service_code):
+    def get_invoice_context(self, invoice, start_date, end_date, contract, days_count, service_code, unit_price):
         subscription = self.subscription
         customer = subscription.customer
         service = subscription.service
@@ -281,13 +283,10 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
 
         periodo = f"Desde {start_date.strftime('%d/%m/%Y')} hasta {end_date.strftime('%d/%m/%Y')}"
 
-        # Precio unitario = total / cantidad
-        unit_price = float(invoice.amount) / quantity if quantity > 0 else 0
-
         items = [{
             'codigo': service_code,
             'descripcion': service.title,
-            'cantidad': quantity,
+            'cantidad': days_count,
             'unidad_medida': 'U',
             'precio': unit_price,
             'importe': float(invoice.amount),
@@ -328,6 +327,7 @@ class GenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, FormView)
         return context
 
     def send_payment_email(self, request, subscription, invoice):
+        # ... (igual que antes, sin cambios)
         if subscription.payment_method == 'qr':
             subject = f"Factura y pago QR - {subscription.service.title}"
             template = 'pages/dashboard/emails/factura_qr.html'

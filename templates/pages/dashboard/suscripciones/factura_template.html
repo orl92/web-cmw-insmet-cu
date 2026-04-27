@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Factura {{ numero_factura }} - Centro Meteorológico Camagüey</title>
     <style>
-        /* ===== ESTILOS MEJORADOS - FUENTES MÁS GRANDES ===== */
         * {
             margin: 0;
             padding: 0;
@@ -57,7 +56,7 @@
             align-items: flex-start;
         }
         .logo-container {
-            width: 180px;  /* Tamaño ajustado al SVG original */
+            width: 180px;
             margin-bottom: 5px;
         }
         .logo-container svg {
@@ -125,7 +124,7 @@
             background: #f9f9f9;
             padding: 8px;
         }
-        /* ===== TABLA DE SERVICIOS ===== */
+        /* ===== TABLA DE SERVICIOS (CONTENIDO CENTRADO) ===== */
         .tabla-servicios {
             width: 100%;
             border-collapse: collapse;
@@ -137,7 +136,8 @@
         .tabla-servicios td {
             border: 1px solid #000;
             padding: 8px 5px;
-            vertical-align: top;
+            vertical-align: middle;
+            text-align: center;
         }
         .tabla-servicios th {
             background: #f0f0f0;
@@ -150,9 +150,17 @@
         .tabla-servicios th:nth-child(4) { width: 7%; }   /* UM */
         .tabla-servicios th:nth-child(5) { width: 15%; }  /* Precio */
         .tabla-servicios th:nth-child(6) { width: 17%; }  /* Importe */
+        /* Fila de total general (resaltado) */
         .total-row {
             font-weight: bold;
             background-color: #f9f9f9;
+        }
+        .total-row .importe {
+            font-size: 14px;   /* Tamaño más grande para el importe total */
+            font-weight: bold;
+        }
+        .total-row strong {
+            font-size: 14px;   /* Para la palabra TOTAL */
         }
         .centro-costo {
             font-weight: normal;
@@ -205,6 +213,7 @@
                 <div class="header-container">
                     <div class="left-section">
                         <div class="logo-container">
+                            <!-- SVG oficial del Centro Meteorológico -->
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 514.9 158.95" width="100%" height="auto">
                                 <path fill="#2b4b9b" d="M513.01,127.55L345.16,18.72C324.4,6.32,304.68,0,283.19,0c-39.42,0-75.04,16.22-100.6,42.34h52.15c14.44-19.82,37.82-32.71,64.21-32.71c43.86,0,79.42,35.56,79.42,79.42c0,13.8-3.53,26.77-9.72,38.08l0.64,0.42H513.01z"/>
                                 <path fill="#e5201e" d="M238.59,42.34c-6.6,8.6-11.41,18.62-13.86,29.56h148.44c-2.45-10.94-7.26-20.96-13.86-29.56H238.59z"/>
@@ -318,27 +327,27 @@
                     {% for item in items %}
                     <tr>
                         <td>{{ item.codigo }}</td>
-                        <td class="cantidad">{{ item.cantidad|floatformat:"g" }}</td>
+                        <td>{{ item.cantidad|floatformat:"g" }}</td>
                         <td>{{ item.descripcion }}</td>
-                        <td class="um">{{ item.unidad_medida }}</td>
-                        <td class="precio">$ {{ item.precio|floatformat:2 }}</td>
-                        <td class="importe">$ {{ item.importe|floatformat:2 }}</td>
+                        <td>{{ item.unidad_medida }}</td>
+                        <td>$ {{ item.precio|floatformat:2 }}</td>
+                        <td>$ {{ item.importe|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                     <tr class="total-row">
                         <td colspan="3">Centro de Costo 700.50107 100 %</td>
                         <td colspan="2"></td>
-                        <td class="importe">$ {{ total|floatformat:2 }}</td>
+                        <td>$ {{ total|floatformat:2 }}</td>
                     </tr>
                     <tr class="total-row">
                         <td colspan="5" style="text-align: right;"><strong>TOTAL</strong></td>
-                        <td class="importe"><strong>$ {{ total|floatformat:2 }}</strong></td>
+                        <td><strong>$ {{ total|floatformat:2 }}</strong></td>
                     </tr>
                 </tbody>
             </table>
         </div> <!-- fin .main-content -->
 
-        <!-- SECCIÓN DE FIRMAS Y PIE (SIEMPRE AL FINAL) -->
+        <!-- SECCIÓN DE FIRMAS Y PIE -->
         <div class="signatures-footer">
             <div class="firmas-container">
                 <div class="firma-col">
