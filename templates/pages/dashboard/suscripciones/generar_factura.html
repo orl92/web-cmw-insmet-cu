@@ -9,7 +9,6 @@
     <strong>Código:</strong> {{ subscription.service.code }}<br>
     <strong>Precio:</strong> ${{ subscription.service.price }} CUP<br>
     <strong>Método de pago:</strong> {{ subscription.get_payment_method_display|default:"No especificado" }}<br>
-    <strong>Fecha de solicitud:</strong> {{ subscription.start_date|date:"d \d\e F \d\e Y \a \l\a\s H:i"|default:"No asignada aún" }}
   </div>
 
   <!-- Campo Registro Comercial -->
