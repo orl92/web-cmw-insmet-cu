@@ -337,9 +337,9 @@ class Service(FileHandlerMixin, models.Model):
     service_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default=PUBLIC, verbose_name='Tipo de Servicio')
     pdf = models.FileField(upload_to=pdf_upload_path, blank=True, null=True, verbose_name='Archivo PDF')
     image = models.ImageField(upload_to=image_upload_path, blank=True, null=True, verbose_name='Imagen')
-    code = models.CharField( max_length=50, unique=True, verbose_name="Código del servicio")
-    price = models.DecimalField( max_digits=10, decimal_places=2, verbose_name="Precio (CUP)", help_text="Precio unitario del servicio")
-
+    code = models.CharField(max_length=50, unique=True, null=True, blank=True, verbose_name="Código del servicio")
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Precio (CUP)", help_text="Precio unitario del servicio")
+    
     file_fields = ['pdf', 'image']
 
     def __str__(self):
