@@ -1,0 +1,79 @@
+{% extends 'layouts/list.html' %}
+{% load static %}
+
+{% block columns %}
+  <th>Número</th>
+  <th>Fecha</th>
+  <th>Cliente</th>
+  <th>Servicio(s)</th>
+  <th>Monto</th>
+  <th>Estado</th>
+  <th class="text-end">Acciones</th>
+{% endblock %}
+
+{% block row %}
+  {% with invoice=object %}
+    <td><span class="text-muted">{{ invoice.number }}</span></td>
+    <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
+    <td>
+      {% if invoice.subscription %}
+        <span data-bs-toggle="tooltip" title="{{ invoice.subscription.customer.company_name }}">
+          {{ invoice.subscription.customer.company_name|truncatechars:30 }}
+        </span>
+      {% else %}
+        <span class="text-muted">—</span>
+      {% endif %}
+    </td>
+    <td>
+      {% if invoice.subscription %}
+        <span data-bs-toggle="tooltip" title="{{ invoice.subscription.service.title }}">
+          {{ invoice.subscription.service.title|truncatechars:40 }}
+        </span>
+      {% else %}
+        {% for item in invoice.items.all %}
+          <span data-bs-toggle="tooltip" title="{{ item.descripcion }}">
+            {{ item.descripcion|truncatechars:40 }}
+          </span>
+          {% if not forloop.last %}, {% endif %}
+        {% empty %}
+          <span class="text-muted">—</span>
+        {% endfor %}
+      {% endif %}
+    </td>
+    <td>$ {{ invoice.amount|floatformat:2 }}</td>
+    <td>
+      {% if invoice.is_cancelled %}
+        <span class="badge badge-outline text-secondary">Anulada</span>
+      {% else %}
+        <span class="badge badge-outline text-green">Activa</span>
+      {% endif %}
+    </td>
+    <td class="text-end">
+      <!-- Descargar PDF -->
+      {% if invoice.pdf %}
+        <a href="{{ invoice.pdf.url }}" target="_blank" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Descargar Factura" download>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-download">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+            <polyline points="7 11 12 16 17 11" />
+            <line x1="12" y1="4" x2="12" y2="16" />
+          </svg>
+        </a>
+      {% endif %}
+
+      <!-- Anular (pendiente de implementar) -->
+      {% if not invoice.is_cancelled and perms.dashboard.delete_invoice %}
+        <a href="#" class="btn btn-icon btn-outline-danger btn-sm" data-bs-toggle="tooltip" title="Anular factura">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 7l16 0" />
+            <path d="M10 11l0 6" />
+            <path d="M14 11l0 6" />
+            <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+            <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+          </svg>
+        </a>
+      {% endif %}
+    </td>
+  {% endwith %}
+{% endblock %}

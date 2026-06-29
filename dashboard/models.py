@@ -29,6 +29,34 @@ class SiteConfiguration(models.Model):
         return f"Modo Mantenimiento: {'Activado' if self.maintenance_mode else 'Desactivado'}"
 
 
+class CompanySettings(models.Model):
+    """
+    Configuración única de la empresa emisora de facturas.
+    Solo debe existir una instancia (pk=1).
+    """
+    nombre = models.CharField(max_length=200)
+    direccion = models.CharField(max_length=200)
+    codigo_reeup = models.CharField(max_length=20)
+    nit = models.CharField(max_length=20)
+    cuenta_bancaria = models.CharField(max_length=30)
+    agencia_bancaria = models.CharField(max_length=100)
+    telefonos = models.CharField(max_length=100)
+    registro_comercial = models.CharField(max_length=50)
+
+    class Meta:
+        verbose_name = 'Configuración de la empresa'
+        verbose_name_plural = 'Configuración de la empresa'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # fuerza que siempre se edite el mismo registro
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_instance(cls):
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+
 class Province(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=15, verbose_name="Nombre")
@@ -452,7 +480,8 @@ class Contract(models.Model):
 class Invoice(models.Model):
     subscription = models.ForeignKey(
         ServiceSubscription,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
         related_name='invoices',
         verbose_name="Suscripción"
     )
@@ -475,7 +504,35 @@ class Invoice(models.Model):
         )
 
     def __str__(self):
-        return f"Factura {self.number} - {self.subscription.customer.company_name}"
+        if self.subscription:
+            return f"Factura {self.number} - {self.subscription.customer.company_name}"
+        return f"Factura {self.number} (manual)"
+
+
+class InvoiceItem(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
+    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.SET_NULL, null=True, blank=True)
+    codigo = models.CharField(max_length=50, blank=True)
+    descripcion = models.TextField()
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2)
+    unidad_medida = models.CharField(max_length=5, default='U')
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    importe = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def save(self, *args, **kwargs):
+        self.importe = self.cantidad * self.precio
+        super().save(*args, **kwargs)
+
+    class Meta:
+        verbose_name = "Item"
+        verbose_name_plural = "Items"
+        default_permissions = ()
+        permissions = (
+            ("view_invoice_item", "Ver"),
+            ("add_invoice_item", "Añadir"),
+            ("change_invoice_item", "Editar"),
+            ("delete_invoice_item", "Eliminar"),
+        )
 
 
 class Certificate(models.Model):

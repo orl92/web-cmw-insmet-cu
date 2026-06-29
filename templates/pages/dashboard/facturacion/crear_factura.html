@@ -1,0 +1,302 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+
+{% block form %}
+  <div class="row">
+    <!-- 1. Cliente -->
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.customer.label }}</label>
+      {{ form.customer }}
+      {% if form.customer.errors %}
+        <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <!-- 2. Registro Comercial -->
+    <div class="col-md-6 mb-3">
+      <label class="form-label">{{ form.commercial_registry.label }}</label>
+      {{ form.commercial_registry }}
+      {% if form.commercial_registry.errors %}
+        <div class="invalid-feedback d-block">{{ form.commercial_registry.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- 3. Fechas -->
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">{{ form.start_date.label }}</label>
+      {{ form.start_date }}
+      {% if form.start_date.errors %}
+        <div class="invalid-feedback d-block">{{ form.start_date.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">{{ form.end_date.label }}</label>
+      {{ form.end_date }}
+      {% if form.end_date.errors %}
+        <div class="invalid-feedback d-block">{{ form.end_date.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 4. Bloque dinámico mejorado -->
+  <div id="dynamic-fields">
+    <!-- Contenedor de suscripciones (visible solo si hay pendientes) -->
+    <div id="subscriptions-container" style="display: none;">
+      <div class="card bg-success-lt mb-3">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="card-title mb-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M9 12l2 2l4 -4" />
+                <path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9 -9 9s-9 -1.8 -9 -9s1.8 -9 9 -9z" />
+              </svg>
+              Suscripciones pendientes de facturación
+            </h5>
+            <span id="pending-count-badge" class="badge bg-green text-white fs-6">0</span>
+          </div>
+          <p class="text-muted mb-2" id="subscriptions-info-text">Selecciona las suscripciones que deseas incluir en la factura por lote.</p>
+          <div class="d-flex gap-2 mb-2">
+            <button type="button" id="select-all-subs" class="btn btn-sm btn-outline-success">Seleccionar todas</button>
+            <button type="button" id="deselect-all-subs" class="btn btn-sm btn-outline-danger">Deseleccionar todas</button>
+          </div>
+          <div id="id_subscriptions_list" class="mt-2">
+            {{ form.subscriptions }}
+          </div>
+          <div id="no-subscriptions-msg" class="text-muted" style="display: none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenedor de facturación manual (visible si NO hay suscripciones) -->
+    <div id="manual-container" style="display: none;">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title">
+              Añadir servicios manualmente
+            </h5>
+            <button type="button" id="add-item" class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Añadir servicio">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+          {{ items_formset.management_form }}
+          <div id="items-container">
+            {% for item_form in items_formset %}
+              <div class="item-row card mb-3">
+                <div class="card-body d-flex align-items-end">
+                  <div class="flex-grow-1 row g-3">
+                    <div class="col-md-5">
+                      <label class="form-label">{{ item_form.service.label }}</label>
+                      {{ item_form.service }}
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">{{ item_form.codigo.label }}</label>
+                      {{ item_form.codigo }}
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">{{ item_form.cantidad.label }}</label>
+                      {{ item_form.cantidad }}
+                    </div>
+                    <div class="col-md-1">
+                      <label class="form-label">{{ item_form.unidad_medida.label }}</label>
+                      {{ item_form.unidad_medida }}
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">{{ item_form.precio.label }}</label>
+                      {{ item_form.precio }}
+                    </div>
+                  </div>
+                  <div class="ms-3">
+                    <button type="button" class="btn btn-sm btn-icon btn-outline-danger remove-row" data-bs-toggle="tooltip" title="Eliminar servicio">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M4 7l16 0" />
+                        <path d="M10 11l0 6" />
+                        <path d="M14 11l0 6" />
+                        <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                        <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  // Datos de servicios inyectados directamente
+  const servicesData = {{ commercial_services_json|safe }};
+  const servicesMap = {};
+  servicesData.forEach(s => {
+    servicesMap[s.id] = {
+      code: s.code,
+      price: s.price,
+      unit: "U"
+    };
+  });
+
+  const ajaxUrl = "{% url 'ajax_pending_subscriptions' %}";
+  const customerSelect = document.getElementById('id_customer');
+  const subscriptionsContainer = document.getElementById('subscriptions-container');
+  const manualContainer = document.getElementById('manual-container');
+  const pendingCountBadge = document.getElementById('pending-count-badge');
+  const noSubsMsg = document.getElementById('no-subscriptions-msg');
+  const selectAllBtn = document.getElementById('select-all-subs');
+  const deselectAllBtn = document.getElementById('deselect-all-subs');
+
+  // Actualizar contador de suscripciones pendientes
+  function updatePendingCount() {
+    const checkboxes = document.querySelectorAll('#id_subscriptions_list input[type="checkbox"]');
+    const count = checkboxes.length;
+    pendingCountBadge.textContent = count;
+    if (count === 0) {
+      subscriptionsContainer.style.display = 'none';
+      manualContainer.style.display = 'block';
+    } else {
+      subscriptionsContainer.style.display = 'block';
+      manualContainer.style.display = 'none';
+    }
+  }
+
+  // Cargar suscripciones vía AJAX
+  function loadSubscriptions(customerId) {
+    if (!customerId) {
+      subscriptionsContainer.style.display = 'none';
+      manualContainer.style.display = 'none';
+      pendingCountBadge.textContent = '0';
+      return;
+    }
+    fetch(`${ajaxUrl}?customer=${customerId}`)
+      .then(response => response.text())
+      .then(html => {
+        const listDiv = document.getElementById('id_subscriptions_list');
+        if (html.includes('No hay suscripciones')) {
+          listDiv.innerHTML = '';
+          noSubsMsg.style.display = 'block';
+          noSubsMsg.innerHTML = html;
+          subscriptionsContainer.style.display = 'block';
+          manualContainer.style.display = 'block';
+          pendingCountBadge.textContent = '0';
+          document.querySelectorAll('input[name="subscriptions"]').forEach(el => el.remove());
+        } else if (html.trim() === '') {
+          subscriptionsContainer.style.display = 'none';
+          manualContainer.style.display = 'block';
+          pendingCountBadge.textContent = '0';
+        } else {
+          listDiv.innerHTML = html;
+          noSubsMsg.style.display = 'none';
+          subscriptionsContainer.style.display = 'block';
+          manualContainer.style.display = 'none';
+          const checkboxes = listDiv.querySelectorAll('input[type="checkbox"]');
+          pendingCountBadge.textContent = checkboxes.length;
+          // Limpiar líneas manuales al haber suscripciones
+          document.querySelectorAll('#items-container .item-row').forEach(row => row.remove());
+          document.getElementById('id_items-TOTAL_FORMS').value = 0;
+        }
+      });
+  }
+
+  // Cambio de cliente
+  customerSelect.addEventListener('change', function() {
+    loadSubscriptions(this.value);
+  });
+
+  // Botones de selección masiva
+  selectAllBtn.addEventListener('click', function() {
+    const checkboxes = document.querySelectorAll('#id_subscriptions_list input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = true);
+  });
+
+  deselectAllBtn.addEventListener('click', function() {
+    const checkboxes = document.querySelectorAll('#id_subscriptions_list input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+  });
+
+  // ------------------- Lógica de filas manuales -------------------
+  function updateRowFromService(row) {
+    const serviceSelect = row.querySelector('select[id$="-service"]');
+    const codeInput = row.querySelector('input[id$="-codigo"]');
+    const priceInput = row.querySelector('input[id$="-precio"]');
+    const unitInput = row.querySelector('input[id$="-unidad_medida"]');
+    const selectedId = serviceSelect.value;
+    if (selectedId && servicesMap[selectedId]) {
+      const data = servicesMap[selectedId];
+      codeInput.value = data.code;
+      priceInput.value = data.price;
+      unitInput.value = data.unit;
+    } else {
+      codeInput.value = '';
+      priceInput.value = '';
+      unitInput.value = 'U';
+    }
+  }
+
+  function bindRowEvents(row) {
+    const select = row.querySelector('select[id$="-service"]');
+    if (select) {
+      select.addEventListener('change', () => updateRowFromService(row));
+    }
+    const removeBtn = row.querySelector('.remove-row');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function() {
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        const currentCount = parseInt(totalForms.value);
+        if (currentCount <= 1) {
+          row.querySelectorAll('input:not([type="hidden"]), textarea').forEach(el => el.value = '');
+          row.querySelector('select').selectedIndex = 0;
+          updateRowFromService(row);
+          return;
+        }
+        row.remove();
+        const container = document.getElementById('items-container');
+        const rows = container.querySelectorAll('.item-row');
+        totalForms.value = rows.length;
+        rows.forEach((r, index) => {
+          r.querySelectorAll('input, textarea, select').forEach(input => {
+            const name = input.name;
+            if (name) {
+              input.name = name.replace(/items-\d+-/, `items-${index}-`);
+              input.id = input.name;
+            }
+          });
+        });
+      });
+    }
+  }
+
+  document.querySelectorAll('.item-row').forEach(row => bindRowEvents(row));
+
+  document.getElementById('add-item').addEventListener('click', function() {
+    const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+    const currentCount = parseInt(totalForms.value);
+    const container = document.getElementById('items-container');
+    const lastRow = container.querySelector('.item-row:last-child');
+    if (!lastRow) return;
+    const newRow = lastRow.cloneNode(true);
+    const regex = new RegExp(`items-${currentCount-1}-`, 'g');
+    newRow.innerHTML = newRow.innerHTML.replace(regex, `items-${currentCount}-`);
+    newRow.querySelectorAll('input, textarea, select').forEach(input => {
+      if (input.type !== 'hidden') {
+        if (input.tagName === 'SELECT') input.selectedIndex = 0;
+        else input.value = '';
+      }
+    });
+    container.appendChild(newRow);
+    totalForms.value = currentCount + 1;
+    bindRowEvents(newRow);
+    updateRowFromService(newRow);
+  });
+</script>
+{% endblock %}

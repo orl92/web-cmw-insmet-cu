@@ -173,7 +173,11 @@
                                                         <tr>
                                                             <td class="content text-center pt-sm" style="font-family: Inter, -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; padding: 8px 48px 48px;" align="center">
                                                                 <p>Estimado(a) <strong>{{ customer.company_name }}</strong>,</p>
+                                                                {% if subscription %}
                                                                 <p>Se ha generado la factura para el servicio <strong>"{{ subscription.service.title }}"</strong>.</p>
+                                                                {% else %}
+                                                                <p>Se ha generado una factura con los servicios solicitados.</p>
+                                                                {% endif %}
                                                                 <p style="font-size: 24px; font-weight: 600; color: #111827;">{{ invoice.amount }} CUP</p>
                                                                 <p>Por favor realice el pago según las instrucciones adjuntas.</p>
                                                                 <p>La factura se adjunta en formato PDF.</p>

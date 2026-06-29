@@ -2,61 +2,91 @@
 {% load static %}
 
 {% block form %}
-  <!-- Cliente -->
   <div class="mb-3">
     <label class="form-label required">{{ form.customer.label }}</label>
-    <select name="{{ form.customer.name }}" class="form-control" required>
-      {% for choice in form.customer.field.choices %}
-        <option value="{{ choice.0 }}" {% if choice.0 == form.customer.value %}selected{% endif %}>{{ choice.1 }}</option>
-      {% endfor %}
-    </select>
+    {{ form.customer }}
     {% if form.customer.errors %}
-      <span class="text-danger">{{ form.customer.errors }}</span>
+      <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
     {% endif %}
   </div>
-
-  <!-- Servicio -->
   <div class="mb-3">
     <label class="form-label required">{{ form.service.label }}</label>
-    <select name="{{ form.service.name }}" class="form-control" required>
-      {% for choice in form.service.field.choices %}
-        <option value="{{ choice.0 }}" {% if choice.0 == form.service.value %}selected{% endif %}>{{ choice.1 }}</option>
-      {% endfor %}
-    </select>
+    {{ form.service }}
     {% if form.service.errors %}
-      <span class="text-danger">{{ form.service.errors }}</span>
+      <div class="invalid-feedback d-block">{{ form.service.errors.0 }}</div>
     {% endif %}
   </div>
-
-  <!-- Fecha de inicio -->
-  <!-- <div class="mb-3">
-    <label class="form-label">{{ form.start_date.label }}</label>
-    <input type="datetime-local" name="{{ form.start_date.name }}" class="form-control" value="{{ form.start_date.value|date:'Y-m-d\TH:i' }}">
-    {% if form.start_date.errors %}
-      <span class="text-danger">{{ form.start_date.errors }}</span>
-    {% endif %}
-  </div> -->
-
-  <!-- Fecha de expiración -->
-  <!-- <div class="mb-3">
-    <label class="form-label">{{ form.end_date.label }}</label>
-    <input type="datetime-local" name="{{ form.end_date.name }}" class="form-control" value="{{ form.end_date.value|date:'Y-m-d\TH:i' }}">
-    {% if form.end_date.errors %}
-      <span class="text-danger">{{ form.end_date.errors }}</span>
-    {% endif %}
-  </div> -->
-
-  <!-- Estado de pago -->
   <div class="mb-3">
-    <label class="form-label required">{{ form.payment_status.label }}</label>
-    <select name="{{ form.payment_status.name }}" class="form-control" required>
-      {% for choice in form.payment_status.field.choices %}
-        <option value="{{ choice.0 }}" {% if choice.0 == form.payment_status.value %}selected{% endif %}>{{ choice.1 }}</option>
-      {% endfor %}
-    </select>
-    {% if form.payment_status.errors %}
-      <span class="text-danger">{{ form.payment_status.errors }}</span>
+    <label class="form-label required">{{ form.period.label }}</label>
+    {{ form.period }}
+    {% if form.period.errors %}
+      <div class="invalid-feedback d-block">{{ form.period.errors.0 }}</div>
     {% endif %}
   </div>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">{{ form.start_date.label }}</label>
+      {{ form.start_date }}
+      {% if form.start_date.errors %}
+        <div class="invalid-feedback d-block">{{ form.start_date.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">{{ form.end_date.label }}</label>
+      {{ form.end_date }}
+      {% if form.end_date.errors %}
+        <div class="invalid-feedback d-block">{{ form.end_date.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">{{ form.payment_status.label }}</label>
+    {{ form.payment_status }}
+    {% if form.payment_status.errors %}
+      <div class="invalid-feedback d-block">{{ form.payment_status.errors.0 }}</div>
+    {% endif %}
+    <small class="text-muted">{{ form.payment_status.help_text }}</small>
+  </div>
+{% endblock %}
 
+{% block extrajs %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const periodSelect = document.getElementById('id_period');
+    const startInput = document.getElementById('id_start_date');
+    const endInput = document.getElementById('id_end_date');
+
+    function updateFields() {
+      const val = periodSelect.value;
+      const now = new Date();
+      const startLocal = now.toISOString().slice(0, 16);
+      if (val === 'custom') {
+        startInput.disabled = false;
+        endInput.disabled = false;
+      } else {
+        startInput.disabled = true;
+        endInput.disabled = true;
+        if (val === '1m') {
+          startInput.value = startLocal;
+          now.setDate(now.getDate() + 30);
+        } else if (val === '3m') {
+          startInput.value = startLocal;
+          now.setDate(now.getDate() + 90);
+        } else if (val === '6m') {
+          startInput.value = startLocal;
+          now.setDate(now.getDate() + 180);
+        } else if (val === '1y') {
+          startInput.value = startLocal;
+          now.setDate(now.getDate() + 365);
+        }
+        if (val !== 'custom') {
+          endInput.value = now.toISOString().slice(0, 16);
+        }
+      }
+    }
+
+    periodSelect.addEventListener('change', updateFields);
+    updateFields();
+  });
+</script>
 {% endblock %}

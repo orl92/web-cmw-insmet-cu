@@ -53,6 +53,11 @@ from dashboard.views.estaciones.views import (
     StationListView,
     StationUpdateView,
 )
+from dashboard.views.facturacion.views import (
+    InvoiceCreateView,
+    InvoiceListView,
+    ajax_pending_subscriptions,
+)
 from dashboard.views.municipios.views import (
     TownCreateView,
     TownDeleteView,
@@ -169,8 +174,12 @@ urlpatterns = [
     path('eliminar/suscripcion/<uuid:uuid>/', SubscriptionDeleteView.as_view(), name='eliminar_suscripcion'),
     path('renovar/suscripcion/<uuid:uuid>/', SubscriptionRenewView.as_view(), name='renovar_suscripcion'),
     path('facturar/suscripcion/<uuid:uuid>/', GenerateInvoiceView.as_view(), name='facturar_suscripcion'),
-    path('regenerar-factura/suscripcion/<uuid:uuid>/', RegenerateInvoiceView.as_view(), name='regenerar_factura'),
+    path('regenerar-factura/<uuid:uuid>/', RegenerateInvoiceView.as_view(), name='regenerar_factura'),
     path('aprobar/suscripcion/<uuid:uuid>/', ApproveSubscriptionView.as_view(), name='aprobar_suscripcion'),
+    # Facturación
+    path('facturacion/', InvoiceListView.as_view(), name='listado_facturas'),
+    path('crear/factura/', InvoiceCreateView.as_view(), name='crear_factura'),
+    path('ajax/suscripciones-pendientes/', ajax_pending_subscriptions, name='ajax_pending_subscriptions'),
     # Tiempo Hoy
     path('tiempo/hoy/', WeatherTodayListView.as_view(), name='listado_tiempo_h'),
     path('crear/tiempo/hoy/', WeatherTodayCreateView.as_view(), name="crear_tiempo_h"),
