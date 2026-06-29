@@ -55,6 +55,7 @@ from dashboard.views.estaciones.views import (
     StationUpdateView,
 )
 from dashboard.views.facturacion.views import (
+    CompanySettingsAjaxUpdateView,
     InvoiceCreateView,
     InvoiceListView,
     ajax_pending_subscriptions,
@@ -212,6 +213,7 @@ urlpatterns = [
     path('eliminar/listado/correo/<uuid:uuid>/', EmailRecipientListDeleteView.as_view(), name='eliminar_listado_correo'),
     # Configuracion Empresa
     path('configuracion/empresa/', CompanySettingsUpdateView.as_view(), name='company_settings'),
+    path('configuracion/empresa/ajax/', CompanySettingsAjaxUpdateView.as_view(), name='company_settings_ajax'),
     # Modo Mantenimiento
     path('toggle-maintenance/', MaintenanceModeToggleView.as_view(), name='toggle_maintenance_mode'),
     # Publicaciones Científicas (nuevo)

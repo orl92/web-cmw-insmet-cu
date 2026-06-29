@@ -2,7 +2,6 @@
 import json
 import os
 from datetime import datetime, timedelta
-from django.core.mail import EmailMessage
 
 import pdfkit
 from django.conf import settings
@@ -10,15 +9,18 @@ from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.files.base import ContentFile
+from django.core.mail import EmailMessage
 from django.core.serializers.json import DjangoJSONEncoder
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, reverse
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.views import View
 from django.views.generic import FormView, ListView
 
 from common.utils import log_action
+from dashboard.forms.company.forms import CompanySettingsForm
 from dashboard.forms.facturacion.forms import InvoiceForm, InvoiceItemFormSet
 from dashboard.models import (
     CompanySettings,
@@ -79,6 +81,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             list(commercial_services.values('id', 'code', 'title', 'price')),
             cls=DjangoJSONEncoder
         )
+        context['company'] = CompanySettings.get_instance()
         return context
 
     def form_valid(self, form):
@@ -328,3 +331,15 @@ def ajax_pending_subscriptions(request):
     for sub in subs:
         html += f'<div class="form-check"><input class="form-check-input" type="checkbox" name="subscriptions" value="{sub.pk}" id="sub_{sub.pk}"><label class="form-check-label" for="sub_{sub.pk}">{sub.service.title} ({sub.status_display})</label></div>'
     return HttpResponse(html)
+
+
+class CompanySettingsAjaxUpdateView(View):
+    def post(self, request, *args, **kwargs):
+        instance = CompanySettings.get_instance()
+        form = CompanySettingsForm(request.POST, instance=instance)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors})
+

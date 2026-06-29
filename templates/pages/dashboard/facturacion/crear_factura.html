@@ -2,6 +2,9 @@
 {% load static %}
 
 {% block form %}
+  <!-- Contenedor de mensajes (mismo estilo que los mensajes de Django) -->
+  <div id="form-messages"></div>
+
   <div class="row">
     <!-- 1. Cliente -->
     <div class="col-md-6 mb-3">
@@ -11,10 +14,22 @@
         <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
       {% endif %}
     </div>
-    <!-- 2. Registro Comercial -->
+    <!-- 2. Registro Comercial (deshabilitado + modal) -->
     <div class="col-md-6 mb-3">
       <label class="form-label">{{ form.commercial_registry.label }}</label>
-      {{ form.commercial_registry }}
+      <div class="input-group">
+        <input type="text" class="form-control" value="{{ form.commercial_registry.value|default:'' }}" disabled />
+        <input type="hidden" name="{{ form.commercial_registry.html_name }}" value="{{ form.commercial_registry.value|default:'' }}" />
+        <button type="button" class="btn btn-outline-secondary" id="btn-open-modal" title="Editar datos de la empresa">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+            <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+            <path d="M16 5l3 3" />
+          </svg>
+          Editar
+        </button>
+      </div>
       {% if form.commercial_registry.errors %}
         <div class="invalid-feedback d-block">{{ form.commercial_registry.errors.0 }}</div>
       {% endif %}
@@ -41,7 +56,7 @@
 
   <!-- 4. Bloque dinámico mejorado -->
   <div id="dynamic-fields">
-    <!-- Contenedor de suscripciones (visible solo si hay pendientes) -->
+    <!-- Contenedor de suscripciones -->
     <div id="subscriptions-container" style="display: none;">
       <div class="card bg-success-lt mb-3">
         <div class="card-body">
@@ -69,14 +84,12 @@
       </div>
     </div>
 
-    <!-- Contenedor de facturación manual (visible si NO hay suscripciones) -->
+    <!-- Contenedor de facturación manual -->
     <div id="manual-container" style="display: none;">
       <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title">
-              Añadir servicios manualmente
-            </h5>
+            <h5 class="card-title">Añadir servicios manualmente</h5>
             <button type="button" id="add-item" class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Añadir servicio">
               <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -134,9 +147,179 @@
   </div>
 {% endblock %}
 
+{% block modal %}
+  <!-- Modal para editar Datos de la Empresa -->
+  <div class="modal modal-blur fade" id="modal-company-settings" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Datos de la Empresa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="company-settings-form" novalidate>
+            {% csrf_token %}
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" name="nombre" class="form-control" value="{{ company.nombre }}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Dirección</label>
+                <input type="text" name="direccion" class="form-control" value="{{ company.direccion }}">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Código REEUP</label>
+                <input type="text" name="codigo_reeup" class="form-control" value="{{ company.codigo_reeup }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">NIT</label>
+                <input type="text" name="nit" class="form-control" value="{{ company.nit }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Registro Comercial</label>
+                <input type="text" name="registro_comercial" class="form-control" value="{{ company.registro_comercial }}">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Cuenta Bancaria</label>
+                <input type="text" name="cuenta_bancaria" class="form-control" value="{{ company.cuenta_bancaria }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Agencia Bancaria</label>
+                <input type="text" name="agencia_bancaria" class="form-control" value="{{ company.agencia_bancaria }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Teléfonos</label>
+                <input type="text" name="telefonos" class="form-control" value="{{ company.telefonos }}">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary ms-auto">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
 {% block extrajs %}
 <script>
-  // Datos de servicios inyectados directamente
+  // ============================================================
+  // Gestión del modal de empresa (AJAX + estilos de mensaje de Tabler)
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('modal-company-settings');
+    if (!modal) return;
+
+    var openBtn = document.getElementById('btn-open-modal');
+    var closeBtn = modal.querySelector('.btn-close');
+    var cancelBtn = modal.querySelector('[data-bs-dismiss="modal"]');
+    var form = document.getElementById('company-settings-form');
+
+    if (!openBtn || !form) return;
+
+    function showModal() {
+      modal.classList.add('show');
+      modal.style.display = 'block';
+      document.body.classList.add('modal-open');
+      if (!document.querySelector('.modal-backdrop')) {
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+      }
+    }
+
+    function hideModal() {
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+      var backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.remove();
+    }
+
+    openBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      showModal();
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', hideModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
+
+    window.addEventListener('click', function(e) {
+      if (e.target === modal) hideModal();
+    });
+
+    // Envío AJAX del formulario del modal
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var formData = new FormData(form);
+      var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+      if (!csrfToken) {
+        alert('Error: token CSRF no encontrado');
+        return;
+      }
+
+      fetch("{% url 'company_settings_ajax' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': csrfToken.value
+        }
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.success) {
+          var registroComercial = formData.get('registro_comercial');
+          var hiddenInput = document.querySelector('input[name="commercial_registry"]');
+          if (hiddenInput) {
+            var inputGroup = hiddenInput.closest('.input-group');
+            var visibleInput = inputGroup.querySelector('input[disabled]');
+            if (visibleInput) visibleInput.value = registroComercial;
+            hiddenInput.value = registroComercial;
+          }
+          hideModal();
+
+          // Mostrar mensaje de éxito con el mismo estilo que las alertas de Tabler
+          var messagesContainer = document.getElementById('form-messages');
+          if (messagesContainer) {
+            var alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = 'Datos actualizados correctamente. ' +
+              '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+            messagesContainer.appendChild(alertDiv);
+
+            // Opcional: eliminar automáticamente después de 4 segundos
+            setTimeout(function() {
+              alertDiv.remove();
+            }, 4000);
+          }
+        } else {
+          var errorMsg = '';
+          for (var field in data.errors) {
+            if (data.errors.hasOwnProperty(field)) {
+              errorMsg += field + ': ' + data.errors[field].join(', ') + '\n';
+            }
+          }
+          alert('Error al guardar:\n' + errorMsg);
+        }
+      })
+      .catch(function(error) {
+        console.error('Error en la petición:', error);
+        alert('Error de red o servidor.');
+      });
+    });
+  });
+
+  // ================================
+  // Lógica de servicios y suscripciones (sin cambios)
+  // ================================
   const servicesData = {{ commercial_services_json|safe }};
   const servicesMap = {};
   servicesData.forEach(s => {
@@ -156,7 +339,6 @@
   const selectAllBtn = document.getElementById('select-all-subs');
   const deselectAllBtn = document.getElementById('deselect-all-subs');
 
-  // Actualizar contador de suscripciones pendientes
   function updatePendingCount() {
     const checkboxes = document.querySelectorAll('#id_subscriptions_list input[type="checkbox"]');
     const count = checkboxes.length;
@@ -170,7 +352,6 @@
     }
   }
 
-  // Cargar suscripciones vía AJAX
   function loadSubscriptions(customerId) {
     if (!customerId) {
       subscriptionsContainer.style.display = 'none';
@@ -201,19 +382,16 @@
           manualContainer.style.display = 'none';
           const checkboxes = listDiv.querySelectorAll('input[type="checkbox"]');
           pendingCountBadge.textContent = checkboxes.length;
-          // Limpiar líneas manuales al haber suscripciones
           document.querySelectorAll('#items-container .item-row').forEach(row => row.remove());
           document.getElementById('id_items-TOTAL_FORMS').value = 0;
         }
       });
   }
 
-  // Cambio de cliente
   customerSelect.addEventListener('change', function() {
     loadSubscriptions(this.value);
   });
 
-  // Botones de selección masiva
   selectAllBtn.addEventListener('click', function() {
     const checkboxes = document.querySelectorAll('#id_subscriptions_list input[type="checkbox"]');
     checkboxes.forEach(cb => cb.checked = true);
@@ -224,7 +402,7 @@
     checkboxes.forEach(cb => cb.checked = false);
   });
 
-  // ------------------- Lógica de filas manuales -------------------
+  // Lógica de filas manuales
   function updateRowFromService(row) {
     const serviceSelect = row.querySelector('select[id$="-service"]');
     const codeInput = row.querySelector('input[id$="-codigo"]');
