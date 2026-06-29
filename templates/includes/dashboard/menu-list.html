@@ -318,6 +318,25 @@
     </a>
   </li>
   {% endif %}
+  <!-- Configuración de la empresa -->
+  {% if request.user|has_permission:'dashboard.change_companysettings' %}
+  <li class="nav-item {% if 'company_settings' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'company_settings' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3 21l18 0" />
+          <path d="M3 10l18 0" />
+          <path d="M3 7l18 0" />
+          <path d="M4 4l16 0" />
+          <path d="M3 14l6 0" />
+          <path d="M3 17l4 0" />
+        </svg>
+      </span>
+      <span class="nav-link-title">Empresa</span>
+    </a>
+  </li>
+  {% endif %}
   <!-- Modo Mantenimiento -->
   {% if request.user.is_superuser %}
   <li class="nav-item {% if 'maintenance' in segment %}active{% endif %}">

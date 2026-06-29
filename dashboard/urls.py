@@ -36,6 +36,7 @@ from dashboard.views.comentarios.tiempo.views import (
     WeatherCommentaryListView,
     WeatherCommentaryUpdateView,
 )
+from dashboard.views.company.views import CompanySettingsUpdateView
 from dashboard.views.dashboard.views import (
     DashboardView,
     ExcelJSONView,
@@ -209,6 +210,8 @@ urlpatterns = [
     path('crear/listado/correo/', EmailRecipientListCreateView.as_view(), name='crear_listado_correo'),
     path('actualizar/listado/correo/<uuid:uuid>/', EmailRecipientListUpdateView.as_view(), name='actualizar_listado_correo'),
     path('eliminar/listado/correo/<uuid:uuid>/', EmailRecipientListDeleteView.as_view(), name='eliminar_listado_correo'),
+    # Configuracion Empresa
+    path('configuracion/empresa/', CompanySettingsUpdateView.as_view(), name='company_settings'),
     # Modo Mantenimiento
     path('toggle-maintenance/', MaintenanceModeToggleView.as_view(), name='toggle_maintenance_mode'),
     # Publicaciones Científicas (nuevo)
