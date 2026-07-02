@@ -22,7 +22,6 @@
       </div>
       <div class="col-md-6">
         <h4 class="mb-3">{{ service.title }}</h4>
-        <!-- Información de precio y período -->
         <div class="mb-3 text-muted">
           <div class="mb-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none">
@@ -91,6 +90,28 @@
       {% else %}
         <form method="post" id="subscription-form">
           {% csrf_token %}
+
+          <!-- Fecha de inicio -->
+          <div class="mb-3">
+            <label class="form-label required">{{ form.start_date.label }}</label>
+            {{ form.start_date }}
+            {% if form.start_date.errors %}
+              <div class="invalid-feedback d-block">{{ form.start_date.errors.0 }}</div>
+            {% endif %}
+            <small class="form-hint">{{ form.start_date.help_text }}</small>
+          </div>
+
+          <!-- Fecha de fin -->
+          <div class="mb-3">
+            <label class="form-label required">{{ form.end_date.label }}</label>
+            {{ form.end_date }}
+            {% if form.end_date.errors %}
+              <div class="invalid-feedback d-block">{{ form.end_date.errors.0 }}</div>
+            {% endif %}
+            <small class="form-hint">{{ form.end_date.help_text }}</small>
+          </div>
+
+          <!-- Método de pago -->
           <div class="mb-3">
             <label class="form-label required">Método de pago</label>
             {{ form.payment_method }}
@@ -138,7 +159,7 @@
   <div class="card-footer">
     {% if user.is_authenticated and user.customer and not existing_subscription %}
       {% if service.service_type == 'commercial' %}
-        <button type="submit" form="subscription-form" class="btn btn-primary">Solicitar servicio ({{ service.price|floatformat:2 }} CUP/día)</button>
+        <button type="submit" form="subscription-form" class="btn btn-primary">Aceptar</button>
       {% else %}
         <button type="submit" form="subscription-form" class="btn btn-success">Solicitar servicio público</button>
       {% endif %}

@@ -127,9 +127,20 @@ class PaymentMethodForm(forms.Form):
         ('transfer', 'Transferencia Bancaria'),
         ('presencial', 'Pago Presencial'),
     ]
-
     payment_method = forms.ChoiceField(
         choices=PAYMENT_METHOD_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=forms.RadioSelect,
         label="Método de pago"
+    )
+    start_date = forms.DateField(
+        label="Fecha de inicio del servicio",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        required=True,
+        help_text="Fecha desde la cual necesita el servicio."
+    )
+    end_date = forms.DateField(
+        label="Fecha de fin del servicio",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        required=True,
+        help_text="Fecha hasta la cual necesita el servicio."
     )

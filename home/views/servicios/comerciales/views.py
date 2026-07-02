@@ -34,7 +34,7 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
         context['segment'] = 'comerciales'
         return context
 
-   
+
 class PublicCommercialServicesListView(ListView):
     model = Service
     template_name = 'pages/home/servicios/comerciales/servicios_comerciales_public.html'
@@ -74,11 +74,8 @@ class ServiceDetailView(FormView):
         context['title'] = self.service.title
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
-
-        # Calcular total estimado para 30 días
         context['estimated_total'] = self.service.price * 30 if self.service.price else 0
 
-        # Si el usuario está autenticado y es cliente, verificar suscripción existente
         if self.request.user.is_authenticated and hasattr(self.request.user, 'customer'):
             customer = self.request.user.customer
             existing = ServiceSubscription.objects.filter(
@@ -89,11 +86,9 @@ class ServiceDetailView(FormView):
         return context
 
     def get(self, request, *args, **kwargs):
-        # Mostrar el detalle sin restricciones
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        # Solo permitir POST si el usuario es cliente
         if not (request.user.is_authenticated and hasattr(request.user, 'customer')):
             messages.error(request, "Debes ser un cliente registrado para solicitar servicios.")
             return redirect('{}?next={}'.format(reverse('login'), request.path))
@@ -101,7 +96,6 @@ class ServiceDetailView(FormView):
 
     def form_valid(self, form):
         customer = self.request.user.customer
-        # Verificar nuevamente que no exista suscripción activa/pendiente
         existing = ServiceSubscription.objects.filter(
             customer=customer,
             service=self.service
@@ -109,13 +103,19 @@ class ServiceDetailView(FormView):
         if existing:
             messages.warning(self.request, "Ya tienes una solicitud o suscripción para este servicio.")
             return redirect('detalle_servicio_comercial', uuid=self.service.uuid)
-        
-        # Crear suscripción SIN fechas (start_date y end_date NULL)
+
+        start_date = form.cleaned_data['start_date']
+        end_date = form.cleaned_data['end_date']
+
+        if end_date < start_date:
+            messages.error(self.request, "La fecha de fin no puede ser anterior a la de inicio.")
+            return self.form_invalid(form)
+
         ServiceSubscription.objects.create(
             customer=customer,
             service=self.service,
-            start_date=None,                          # ← Cambiado a None
-            end_date=None,                            # ← Cambiado a None
+            start_date=start_date,
+            end_date=end_date,
             payment_status='requested',
             payment_method=form.cleaned_data['payment_method']
         )

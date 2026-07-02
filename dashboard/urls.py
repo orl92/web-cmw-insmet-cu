@@ -55,9 +55,12 @@ from dashboard.views.estaciones.views import (
     StationUpdateView,
 )
 from dashboard.views.facturacion.views import (
+    CancelInvoiceView,
     CompanySettingsAjaxUpdateView,
     InvoiceCreateView,
+    InvoiceHardDeleteView,
     InvoiceListView,
+    ResendInvoiceEmailView,
     ajax_pending_subscriptions,
 )
 from dashboard.views.municipios.views import (
@@ -94,10 +97,11 @@ from dashboard.views.servicios.views import (
 )
 from dashboard.views.suscripciones.views import (
     ApproveSubscriptionView,
-    GenerateInvoiceView,
     RegenerateInvoiceView,
+    ResendCertificateEmailView,
+    SubscriptionCancelView,
     SubscriptionCreateView,
-    SubscriptionDeleteView,
+    SubscriptionHardDeleteView,
     SubscriptionListView,
     SubscriptionRenewView,
     SubscriptionUpdateView,
@@ -173,14 +177,18 @@ urlpatterns = [
     path('suscripciones/', SubscriptionListView.as_view(), name='listado_suscripciones'),
     path('crear/suscripcion/', SubscriptionCreateView.as_view(), name='crear_suscripcion'),
     path('actualizar/suscripcion/<uuid:uuid>/', SubscriptionUpdateView.as_view(), name='editar_suscripcion'),
-    path('eliminar/suscripcion/<uuid:uuid>/', SubscriptionDeleteView.as_view(), name='eliminar_suscripcion'),
+    path('anular/suscripcion/<uuid:uuid>/', SubscriptionCancelView.as_view(), name='anular_suscripcion'),
+    path('eliminar/suscripcion/<uuid:uuid>/', SubscriptionHardDeleteView.as_view(), name='eliminar_suscripcion'),
     path('renovar/suscripcion/<uuid:uuid>/', SubscriptionRenewView.as_view(), name='renovar_suscripcion'),
-    path('facturar/suscripcion/<uuid:uuid>/', GenerateInvoiceView.as_view(), name='facturar_suscripcion'),
     path('regenerar-factura/<uuid:uuid>/', RegenerateInvoiceView.as_view(), name='regenerar_factura'),
     path('aprobar/suscripcion/<uuid:uuid>/', ApproveSubscriptionView.as_view(), name='aprobar_suscripcion'),
+    path('reenviar/certificado/<uuid:uuid>/', ResendCertificateEmailView.as_view(), name='reenviar_certificado'),
     # Facturación
     path('facturacion/', InvoiceListView.as_view(), name='listado_facturas'),
     path('crear/factura/', InvoiceCreateView.as_view(), name='crear_factura'),
+    path('anular/factura/<uuid:uuid>/', CancelInvoiceView.as_view(), name='anular_factura'),
+    path('eliminar/factura/<uuid:uuid>/', InvoiceHardDeleteView.as_view(), name='eliminar_factura'),
+    path('reenviar/correo/factura/<uuid:uuid>/', ResendInvoiceEmailView.as_view(), name='reenviar_correo_factura'),
     path('ajax/suscripciones-pendientes/', ajax_pending_subscriptions, name='ajax_pending_subscriptions'),
     # Tiempo Hoy
     path('tiempo/hoy/', WeatherTodayListView.as_view(), name='listado_tiempo_h'),

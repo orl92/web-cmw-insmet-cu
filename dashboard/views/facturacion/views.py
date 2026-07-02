@@ -1,34 +1,40 @@
-
 import json
-import os
+import logging
 from datetime import datetime, timedelta
 
 import pdfkit
-from django.conf import settings
 from django.contrib import messages
-from django.contrib.admin.models import ADDITION, CHANGE
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.core.files.base import ContentFile
-from django.core.mail import EmailMessage
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, reverse
+from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views import View
-from django.views.generic import FormView, ListView
+from django.views.generic import FormView, ListView, View
 
 from common.utils import log_action
 from dashboard.forms.company.forms import CompanySettingsForm
 from dashboard.forms.facturacion.forms import InvoiceForm, InvoiceItemFormSet
 from dashboard.models import (
     CompanySettings,
+    Contract,
+    Customer,
     Invoice,
     InvoiceItem,
     Service,
     ServiceSubscription,
 )
+
+from .utils import enviar_correo_factura
+
+logger = logging.getLogger(__name__)
 
 
 class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -65,8 +71,28 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def get_initial(self):
         initial = super().get_initial()
         today = timezone.now().date()
-        initial['start_date'] = today.isoformat()
-        initial['end_date'] = (today + timedelta(days=30)).isoformat()
+        customer_uuid = self.request.GET.get('customer_uuid')
+        if customer_uuid:
+            try:
+                customer = Customer.objects.get(uuid=customer_uuid)
+                initial['customer'] = customer
+                pending_sub = ServiceSubscription.objects.filter(
+                    customer=customer,
+                    payment_status__in=['requested', 'pending'],
+                    start_date__isnull=False,
+                    end_date__isnull=False
+                ).first()
+                if pending_sub:
+                    initial['start_date'] = pending_sub.start_date.date() if pending_sub.start_date else today
+                    initial['end_date'] = pending_sub.end_date.date() if pending_sub.end_date else today + timedelta(days=30)
+                else:
+                    initial['start_date'] = today.isoformat()
+                    initial['end_date'] = (today + timedelta(days=30)).isoformat()
+            except Customer.DoesNotExist:
+                pass
+        else:
+            initial['start_date'] = today.isoformat()
+            initial['end_date'] = (today + timedelta(days=30)).isoformat()
         return initial
 
     def get_context_data(self, **kwargs):
@@ -92,14 +118,27 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         subscriptions = form.cleaned_data.get('subscriptions')
 
         if subscriptions and subscriptions.exists():
-            return self.process_batch_invoice(form, customer, start_date, end_date, commercial_registry, subscriptions)
+            # Agrupar por período propio de cada suscripción
+            groups = {}
+            for sub in subscriptions:
+                sub_start = sub.start_date.date() if sub.start_date else start_date
+                sub_end = sub.end_date.date() if sub.end_date else end_date
+                key = (sub_start, sub_end)
+                groups.setdefault(key, []).append(sub)
+
+            for (sub_start, sub_end), subs in groups.items():
+                self.process_batch_invoice(customer, sub_start, sub_end, commercial_registry, subs)
+
+            messages.success(self.request, f"Se generaron {len(groups)} factura(s) según los períodos de las suscripciones.")
+            return redirect(self.success_url)
         else:
             return self.process_manual_invoice(form, customer, start_date, end_date, commercial_registry)
 
-    def process_batch_invoice(self, form, customer, start_date, end_date, commercial_registry, subscriptions):
+    def process_batch_invoice(self, customer, start_date, end_date, commercial_registry, subscriptions):
         days_count = (end_date - start_date).days
         invoice = Invoice.objects.create(
             subscription=None,
+            customer=customer,
             amount=0,
             number=self.generate_invoice_number()
         )
@@ -119,10 +158,25 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             )
             items.append(item)
             total += amount
+
+            # Actualizar suscripción con las fechas del grupo
             sub.start_date = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
             sub.end_date = timezone.make_aware(datetime.combine(end_date, datetime.min.time()))
             sub.payment_status = 'pending'
             sub.save()
+
+            # Contrato
+            contract, created = Contract.objects.get_or_create(
+                subscription=sub,
+                defaults={
+                    'number': self.generate_contract_number(),
+                    'date': timezone.now().date(),
+                    'commercial_registry': commercial_registry,
+                }
+            )
+            if not created:
+                contract.commercial_registry = commercial_registry
+                contract.save(update_fields=['commercial_registry'])
 
             log_action(
                 user=self.request.user,
@@ -142,9 +196,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         )
 
         self.generate_pdf(invoice, customer, start_date, end_date, commercial_registry, items)
-        self.send_invoice_email(invoice, customer)  # Envío de correo
-        messages.success(self.request, "Factura por lote generada.")
-        return redirect(self.success_url)
+        self.send_invoice_email(invoice, customer)
 
     def process_manual_invoice(self, form, customer, start_date, end_date, commercial_registry):
         items_formset = InvoiceItemFormSet(self.request.POST, prefix='items')
@@ -154,28 +206,58 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             context['items_formset'] = items_formset
             return self.render_to_response(context)
 
+        days_count = (end_date - start_date).days
+
         invoice = Invoice.objects.create(
             subscription=None,
+            customer=customer,
             amount=0,
             number=self.generate_invoice_number()
         )
         total = 0
         items = []
+        first_sub = None
+
         for item_form in items_formset:
             if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
                 cd = item_form.cleaned_data
+                service = cd['service']
+
+                sub = ServiceSubscription.objects.create(
+                    customer=customer,
+                    service=service,
+                    start_date=timezone.make_aware(datetime.combine(start_date, datetime.min.time())),
+                    end_date=timezone.make_aware(datetime.combine(end_date, datetime.min.time())),
+                    payment_status='pending',
+                    record_active=True
+                )
+
+                if first_sub is None:
+                    first_sub = sub
+
                 item = InvoiceItem.objects.create(
                     invoice=invoice,
-                    codigo=cd.get('codigo', ''),
-                    descripcion=cd['service'].title,
-                    cantidad=cd['cantidad'],
+                    subscription=sub,
+                    codigo=cd.get('codigo', service.code or ''),
+                    descripcion=service.title,
+                    cantidad=days_count,
                     unidad_medida=cd.get('unidad_medida', 'U'),
                     precio=cd['precio'],
-                    importe=cd['cantidad'] * cd['precio'],
+                    importe=days_count * cd['precio'],
                 )
                 items.append(item)
-                total += cd['cantidad'] * cd['precio']
+                total += days_count * cd['precio']
+
+                log_action(
+                    user=self.request.user,
+                    obj=sub,
+                    action_flag=ADDITION,
+                    message=f"Suscripción creada manualmente: {customer.company_name} - {service.title}"
+                )
+
         invoice.amount = total
+        if first_sub:
+            invoice.subscription = first_sub
         invoice.save()
 
         log_action(
@@ -186,69 +268,12 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         )
 
         self.generate_pdf(invoice, customer, start_date, end_date, commercial_registry, items)
-        self.send_invoice_email(invoice, customer)  # Envío de correo
-        messages.success(self.request, "Factura manual generada.")
+        self.send_invoice_email(invoice, customer)
+        messages.success(self.request, "Factura manual generada (con suscripciones creadas).")
         return redirect(self.success_url)
 
     def send_invoice_email(self, invoice, customer):
-        """
-        Envía la factura en PDF al correo del cliente.
-        Reutiliza factura_qr.html si hay suscripción con pago QR;
-        en caso contrario, factura.html (que ahora soporta subscription=None).
-        """
-        if not customer.user or not customer.user.email:
-            return
-
-        # Obtener la primera suscripción asociada a algún item de la factura (si existe)
-        first_item = invoice.items.first()
-        subscription = first_item.subscription if first_item else None
-
-        # Seleccionar plantilla según método de pago
-        if subscription and subscription.payment_method == 'qr':
-            template = 'pages/dashboard/emails/factura_qr.html'
-        else:
-            template = 'pages/dashboard/emails/factura.html'
-
-        company = CompanySettings.get_instance()
-        base_url = self.request.build_absolute_uri('/')
-        context = {
-            'invoice': invoice,
-            'customer': customer,
-            'subscription': subscription,          # Puede ser None
-            'payment_method': subscription.get_payment_method_display() if subscription else '',
-            'company': company,
-            'index_url': base_url,
-            'listado_url': self.request.build_absolute_uri(reverse('listado_facturas')),
-            'current_year': timezone.now().year,
-        }
-
-        html_content = render_to_string(template, context)
-        subject = f"Factura {invoice.number} - {customer.company_name}"
-
-        email = EmailMessage(
-            subject=subject,
-            body=html_content,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            to=[customer.user.email],
-        )
-        email.content_subtype = "html"
-
-        # Adjuntar PDF
-        if invoice.pdf and invoice.pdf.storage.exists(invoice.pdf.name):
-            with invoice.pdf.storage.open(invoice.pdf.name, 'rb') as f:
-                email.attach(f'factura_{invoice.number}.pdf', f.read(), 'application/pdf')
-
-        # Adjuntar QR si corresponde
-        if subscription and subscription.payment_method == 'qr':
-            from django.contrib.staticfiles import finders
-            qr_path = finders.find('dist/img/QR/QR.png')
-            if not qr_path:
-                qr_path = os.path.join(settings.STATIC_ROOT, 'dist/img/QR/QR.png')
-            if os.path.exists(qr_path):
-                with open(qr_path, 'rb') as f:
-                    email.attach('qr_pago.png', f.read(), 'image/png')
-
-        email.send()
+        enviar_correo_factura(invoice, customer, request=self.request)
 
     def generate_pdf(self, invoice, customer, start_date, end_date, commercial_registry, items):
         company = CompanySettings.get_instance()
@@ -315,6 +340,99 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 pass
         return f"{year}-0001"
 
+    def generate_contract_number(self):
+        year = timezone.now().year
+        last_contract = Contract.objects.filter(date__year=year).order_by('-date').first()
+        if last_contract and last_contract.number:
+            try:
+                num = int(last_contract.number.split('-')[-1])
+                return f"{year}-{num+1:04d}"
+            except (ValueError, IndexError):
+                pass
+        return f"{year}-0001"
+
+
+class CancelInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'dashboard.delete_invoice'
+
+    def post(self, request, uuid):
+        invoice = get_object_or_404(Invoice, uuid=uuid)
+
+        if invoice.is_cancelled:
+            messages.warning(request, f"La factura {invoice.number} ya estaba anulada.")
+            return redirect('listado_facturas')
+
+        invoice.is_cancelled = True
+        invoice.save()
+
+        items_with_subs = invoice.items.filter(subscription__isnull=False).select_related('subscription')
+        for item in items_with_subs:
+            sub = item.subscription
+            if sub.payment_status in ['pending', 'requested']:
+                sub.payment_status = 'requested'
+                sub.save()
+                log_action(
+                    user=request.user,
+                    obj=sub,
+                    action_flag=CHANGE,
+                    message=f"Estado revertido a 'solicitado' por anulación de factura {invoice.number}"
+                )
+
+        log_action(
+            user=request.user,
+            obj=invoice,
+            action_flag=CHANGE,
+            message=f"Factura {invoice.number} anulada"
+        )
+        messages.success(request, f"Factura {invoice.number} anulada correctamente.")
+        return redirect('listado_facturas')
+
+
+class InvoiceHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def post(self, request, uuid):
+        invoice = get_object_or_404(Invoice, uuid=uuid)
+        invoice_number = invoice.number
+        log_action(
+            user=request.user,
+            obj=invoice,
+            action_flag=DELETION,
+            message=f"Factura {invoice.number} eliminada permanentemente"
+        )
+        invoice.delete()
+        messages.success(request, f"Factura {invoice_number} eliminada permanentemente.")
+        return redirect('listado_facturas')
+
+
+class ResendInvoiceEmailView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'dashboard.change_invoice'
+
+    def get(self, request, uuid):
+        invoice = get_object_or_404(Invoice, uuid=uuid)
+
+        customer = None
+        if invoice.subscription:
+            customer = invoice.subscription.customer
+        elif invoice.customer:
+            customer = invoice.customer
+        else:
+            first_item = invoice.items.first()
+            if first_item and first_item.subscription:
+                customer = first_item.subscription.customer
+
+        if not customer or not customer.user or not customer.user.email:
+            messages.error(request, "No se pudo determinar el cliente o no tiene correo electrónico.")
+            return redirect('listado_facturas')
+
+        exito = enviar_correo_factura(invoice, customer, request=request)
+        if exito:
+            messages.success(request, f"Correo de la factura {invoice.number} reenviado correctamente.")
+        else:
+            messages.error(request, f"No se pudo reenviar el correo de la factura {invoice.number}. Revise los logs.")
+        return redirect('listado_facturas')
+
 
 def ajax_pending_subscriptions(request):
     customer_id = request.GET.get('customer')
@@ -324,12 +442,26 @@ def ajax_pending_subscriptions(request):
         customer_id=customer_id,
         payment_status__in=['requested', 'pending'],
         record_active=True
-    )
+    ).select_related('service')
     if not subs.exists():
-        return HttpResponse('<p class="text-muted">No hay suscripciones pendientes para este cliente.</p>')
+        return HttpResponse('<p class="text-muted">No hay suscripciones pendientes.</p>')
     html = ''
     for sub in subs:
-        html += f'<div class="form-check"><input class="form-check-input" type="checkbox" name="subscriptions" value="{sub.pk}" id="sub_{sub.pk}"><label class="form-check-label" for="sub_{sub.pk}">{sub.service.title} ({sub.status_display})</label></div>'
+        start_str = sub.start_date.strftime('%Y-%m-%d') if sub.start_date else ''
+        end_str = sub.end_date.strftime('%Y-%m-%d') if sub.end_date else ''
+        days = (sub.end_date - sub.start_date).days if sub.start_date and sub.end_date else 0
+        summary = sub.service.summary or ''
+        html += f'''
+        <div class="form-check">
+          <input class="form-check-input subscription-check" type="checkbox" name="subscriptions" value="{sub.pk}" 
+                 id="sub_{sub.pk}" data-start="{start_str}" data-end="{end_str}" 
+                 data-service="{sub.service.title}" data-days="{days}" data-summary="{summary}">
+          <label class="form-check-label" for="sub_{sub.pk}">
+            <strong>{sub.service.title}</strong>
+            <br><small class="text-muted">{summary}</small>
+          </label>
+        </div>
+        '''
     return HttpResponse(html)
 
 
@@ -342,4 +474,3 @@ class CompanySettingsAjaxUpdateView(View):
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'success': False, 'errors': form.errors})
-

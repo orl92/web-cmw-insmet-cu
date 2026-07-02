@@ -459,6 +459,7 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
 
 
 class Contract(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.OneToOneField(
         ServiceSubscription,
         on_delete=models.CASCADE,
@@ -478,6 +479,7 @@ class Contract(models.Model):
 
 
 class Invoice(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.ForeignKey(
         ServiceSubscription,
         on_delete=models.SET_NULL,
@@ -485,11 +487,20 @@ class Invoice(models.Model):
         related_name='invoices',
         verbose_name="Suscripción"
     )
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='invoices',
+        verbose_name="Cliente"
+    )
     number = models.CharField(max_length=50, unique=True, verbose_name="Número de factura")
     issue_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto")
     pdf = models.FileField(upload_to='invoices/pdfs/', verbose_name="Archivo PDF", blank=True, null=True)
     is_cancelled = models.BooleanField(default=False, verbose_name="¿Anulada?")
+    email_sent = models.BooleanField(default=False, verbose_name='Correo enviado')
+    email_error = models.TextField(blank=True, null=True, verbose_name='Error al enviar')
 
     class Meta:
         verbose_name = "Factura"
@@ -510,6 +521,7 @@ class Invoice(models.Model):
 
 
 class InvoiceItem(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
     subscription = models.ForeignKey(ServiceSubscription, on_delete=models.SET_NULL, null=True, blank=True)
     codigo = models.CharField(max_length=50, blank=True)
