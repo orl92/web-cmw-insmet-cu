@@ -319,6 +319,16 @@
     });
   }
 
+  // *** MEJORA: actualización en tiempo real al cambiar fechas (input + change para máxima compatibilidad e inmediatez) ***
+  if (startDateInput && endDateInput) {
+    startDateInput.addEventListener('change', updateDaysFromInputs);
+    startDateInput.addEventListener('input', updateDaysFromInputs);
+    endDateInput.addEventListener('change', updateDaysFromInputs);
+    endDateInput.addEventListener('input', updateDaysFromInputs);
+    updateDaysFromInputs(); // valor inicial
+  }
+  // ***********************************************************************************************************************
+
   function setPeriodFields(start, end) {
     startDateInput.value = start;
     endDateInput.value = end;
