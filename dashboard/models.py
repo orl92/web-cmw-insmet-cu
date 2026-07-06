@@ -361,10 +361,10 @@ class StormWarning(BaseWarning):
 
 
 class Customer(models.Model):
-    # --- Validadores ---
+    # Validadores
     reeup_validator = RegexValidator(
         regex=r'^\d{3}\.\d{1,2}\.\d{4,5}$',
-        message='El REEUP debe tener el formato ###.#.####, ###.#.#####, ###.##.#### o ###.##.#####.'
+        message='El REEUP debe tener el formato ###.#.####, ###.#.#####, ###.##.#### o ###.##.#####'
     )
     nit_validator = RegexValidator(
         regex=r'^\d{11}$',
@@ -379,10 +379,8 @@ class Customer(models.Model):
         message='El número de teléfono debe tener 8 dígitos (sin espacios ni guiones).'
     )
 
-    # --- Campos ---
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     company_name = models.CharField(max_length=100, verbose_name="Nombre de la Empresa")
-
     reeup = models.CharField(
         max_length=12,
         validators=[reeup_validator],
@@ -429,11 +427,6 @@ class Customer(models.Model):
     def __str__(self):
         return self.company_name
 
-    def delete(self, *args, **kwargs):
-        user = self.user
-        super().delete(*args, **kwargs)
-        user.delete()
-
     class Meta:
         verbose_name = "Cliente"
         verbose_name_plural = "Clientes"
@@ -444,7 +437,6 @@ class Customer(models.Model):
             ("change_customer", "Editar"),
             ("delete_customer", "Eliminar"),
         )
-
 
 class Service(FileHandlerMixin, models.Model):
     PUBLIC = 'public'

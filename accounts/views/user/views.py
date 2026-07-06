@@ -7,6 +7,7 @@ from django.contrib.auth.mixins import (
     UserPassesTestMixin,
 )
 from django.contrib.auth.models import User
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
@@ -50,7 +51,7 @@ class UserCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         user = form.save(commit=False)
         user.is_active = True
         user.save()
-        profile = Profile.objects.get(user=user)  # Crear o asegurar que el perfil existe
+        profile, created = Profile.objects.get_or_create(user=user)
         profile.save()
         
         # Registro de acción
@@ -114,7 +115,8 @@ class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTest
         return context
 
     def test_func(self):
-        return self.request.user.is_superuser or self.get_object().user == self.request.user
+        user = self.get_object()
+        return self.request.user.is_superuser or user == self.request.user
 
 
 class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
@@ -162,26 +164,27 @@ class CustomerRegisterView(CreateView):
     form_class = CustomerSignUpForm
     template_name = 'pages/accounts/users/customer_register.html'
     success_url = reverse_lazy('public_servicios_comerciales')
-    
+
     def dispatch(self, request, *args, **kwargs):
-        # Si el usuario ya está autenticado, redirigir
         if request.user.is_authenticated:
             messages.info(request, 'Ya tienes una sesión activa.')
             return redirect('public_servicios_comerciales')
         return super().dispatch(request, *args, **kwargs)
-    
+
     def form_valid(self, form):
-        # Guardar el usuario
-        user = form.save()
-        
-        # Iniciar sesión automáticamente
+        try:
+            user = form.save()
+        except IntegrityError:
+            messages.error(
+                self.request,
+                'El código REEUP o NIT ya existe. Por favor, verifique los datos.'
+            )
+            return redirect(self.request.path)
+
         login(self.request, user)
-        
-        # Obtener el cliente recién creado
+
         try:
             customer = Customer.objects.get(user=user)
-            
-            # Registro de acción
             log_action(
                 user=user,
                 obj=customer,
@@ -190,17 +193,15 @@ class CustomerRegisterView(CreateView):
             )
         except Customer.DoesNotExist:
             pass
-        
-        # Mensaje de éxito
+
         messages.success(
             self.request,
             f'¡Registro exitoso! Bienvenido/a {form.cleaned_data["company_name"]}. '
             'Ahora puedes acceder a tus servicios comerciales.',
             extra_tags='success'
         )
-        
         return redirect(self.success_url)
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Registro Empresas'

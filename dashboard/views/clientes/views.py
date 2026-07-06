@@ -136,20 +136,25 @@ class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView
             user=self.request.user,
             obj=customer,
             action_flag=DELETION,
-            message=f"Se eliminó el cliente y el usuario asociado: {customer.user.username}."
+            message=f"Se eliminó el cliente y el usuario asociado: {user.username}."
         )
         
         try:
-            response = super().delete(request, *args, **kwargs)
-            user.delete()  # Eliminar el usuario asociado
-            messages.success(self.request, 'El cliente y el usuario asociado han sido eliminados con éxito.', extra_tags='danger')
-            return response
-        except Customer.DoesNotExist:
-            messages.error(self.request, 'El cliente no existe o ya ha sido eliminado.', extra_tags='danger')
-            return redirect(self.success_url)
+            # Eliminar el usuario -> la cascada borra el cliente automáticamente
+            user.delete()
+            messages.success(
+                self.request,
+                'El cliente y el usuario asociado han sido eliminados con éxito.',
+                extra_tags='danger'
+            )
         except Exception as e:
-            messages.error(self.request, f'Error al eliminar el cliente: {str(e)}', extra_tags='danger')
-            return redirect(self.success_url)
+            messages.error(
+                self.request,
+                f'Error al eliminar el cliente: {str(e)}',
+                extra_tags='danger'
+            )
+        
+        return redirect(self.success_url)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

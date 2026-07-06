@@ -3,7 +3,7 @@ from django.contrib.admin.models import CHANGE, LogEntry
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, UpdateView
 
@@ -48,8 +48,9 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     success_url = reverse_lazy('profile')
     url_redirect = success_url
 
+
     def get_object(self, **kwargs):
-        return Profile.objects.get(uuid=self.kwargs['uuid'])
+        return get_object_or_404(Profile, uuid=self.kwargs['uuid'])
 
     def get_initial(self):
         initial = super().get_initial()
