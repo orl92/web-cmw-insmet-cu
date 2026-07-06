@@ -274,9 +274,6 @@ class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return redirect(f"{reverse('crear_factura')}?customer_uuid={subscription.customer.uuid}")
 
 
-# ================================================================
-# NUEVAS VISTAS DE CANCELACIÓN Y ELIMINACIÓN
-# ================================================================
 class SubscriptionCancelView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """Anula (soft delete) una suscripción."""
     permission_required = 'dashboard.delete_subscription'
@@ -322,9 +319,6 @@ class SubscriptionHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         return redirect('listado_suscripciones')
 
 
-# ================================================================
-# FUNCIÓN AUXILIAR DE CORREO PARA CERTIFICADOS
-# ================================================================
 def enviar_correo_certificado(subscription, request=None):
     """
     Envía el certificado de una suscripción por correo.

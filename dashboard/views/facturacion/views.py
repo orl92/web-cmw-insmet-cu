@@ -314,7 +314,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             'total': float(invoice.amount),
             'current_year': timezone.now().year,
         }
-        html_string = render_to_string('pages/dashboard/suscripciones/factura_template.html', context)
+        html_string = render_to_string('pages/dashboard/facturacion/factura_template.html', context)
         options = {
             'page-size': 'A4',
             'margin-top': '10mm',
