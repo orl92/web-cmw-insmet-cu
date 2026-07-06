@@ -12,6 +12,7 @@
         <div class="container-tight">
           <div class="text-center mb-4">
             <a href="{% url 'index' %}">
+              <!-- SVG del logo (se mantiene igual que antes) -->
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 514.9 158.95" class="login-image" style="max-width: 300px; height: auto;">
                 <path fill="#2b4b9b" d="M513.01,127.55L345.16,18.72C324.4,6.32,304.68,0,283.19,0c-39.42,0-75.04,16.22-100.6,42.34h52.15c14.44-19.82,37.82-32.71,64.21-32.71c43.86,0,79.42,35.56,79.42,79.42c0,13.8-3.53,26.77-9.72,38.08l0.64,0.42H513.01z"/>
                 <path fill="#e5201e" d="M238.59,42.34c-6.6,8.6-11.41,18.62-13.86,29.56h148.44c-2.45-10.94-7.26-20.96-13.86-29.56H238.59z"/>
@@ -97,7 +98,7 @@
                   <div class="mb-3">
                     <label class="form-label required">Teléfono</label>
                     <input type="tel" class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
-                           name="phone" placeholder="12345678" value="{{ form.phone.value|default:'' }}" 
+                           name="phone" placeholder="51234567" value="{{ form.phone.value|default:'' }}" 
                            required maxlength="8" pattern="[0-9]{8}" inputmode="numeric">
                     {% if form.phone.errors %}
                       <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
@@ -155,33 +156,37 @@
                 </div>
 
                 <!-- Paso 3: Información de la Empresa -->
-                <div id="step-3" class="wizard-step {% if form.company_name.errors or form.reeup.errors or form.nit.errors or form.account.errors or form.address.errors %}has-error{% endif %}" style="display: none;">
+                <div id="step-3" class="wizard-step {% if form.company_name.errors or form.reeup.errors or form.nit.errors or form.account.errors or form.agency_bank.errors or form.address.errors %}has-error{% endif %}" style="display: none;">
                   <h3 class="mb-4">Información de la Empresa</h3>
+
                   <div class="mb-3">
                     <label class="form-label required">Nombre de la Empresa</label>
-                    <input type="text" class="form-control {% if form.company_name.errors %}is-invalid{% endif %}" 
-                           name="company_name" placeholder="Mi Empresa S.A.C." value="{{ form.company_name.value|default:'' }}" 
+                    <input type="text" class="form-control {% if form.company_name.errors %}is-invalid{% endif %}"
+                           name="company_name" placeholder="Mi Empresa S.A." value="{{ form.company_name.value|default:'' }}"
                            required maxlength="100">
                     {% if form.company_name.errors %}
                       <div class="invalid-feedback">{{ form.company_name.errors.0 }}</div>
                     {% endif %}
                   </div>
+
                   <div class="row">
                     <div class="col-md-6 mb-3">
                       <label class="form-label required">REEUP</label>
-                      <input type="text" class="form-control {% if form.reeup.errors %}is-invalid{% endif %}" 
-                             name="reeup" placeholder="12345678901" value="{{ form.reeup.value|default:'' }}" 
-                             required maxlength="11" pattern="[0-9]{11}" inputmode="numeric">
+                      <input type="text" class="form-control {% if form.reeup.errors %}is-invalid{% endif %}"
+                             name="reeup" placeholder="211.0.6749" value="{{ form.reeup.value|default:'' }}"
+                             required maxlength="12" inputmode="numeric" autocomplete="off"
+                             pattern="\d{3}\.\d{1,2}\.\d{4,5}"
+                             title="Formato: 3 dígitos, punto, 1 ó 2 dígitos, punto, 4 ó 5 dígitos">
                       {% if form.reeup.errors %}
                         <div class="invalid-feedback">{{ form.reeup.errors.0 }}</div>
                       {% else %}
-                        <div class="invalid-feedback">El REEUP debe tener 11 dígitos numéricos.</div>
+                        <div class="invalid-feedback">Formato: 3 dígitos, punto, 1 ó 2 dígitos, punto, 4 ó 5 dígitos (ej. 211.0.6749)</div>
                       {% endif %}
                     </div>
                     <div class="col-md-6 mb-3">
                       <label class="form-label required">NIT</label>
-                      <input type="text" class="form-control {% if form.nit.errors %}is-invalid{% endif %}" 
-                             name="nit" placeholder="12345678901" value="{{ form.nit.value|default:'' }}" 
+                      <input type="text" class="form-control {% if form.nit.errors %}is-invalid{% endif %}"
+                             name="nit" placeholder="12345678901" value="{{ form.nit.value|default:'' }}"
                              required maxlength="11" pattern="[0-9]{11}" inputmode="numeric">
                       {% if form.nit.errors %}
                         <div class="invalid-feedback">{{ form.nit.errors.0 }}</div>
@@ -190,20 +195,33 @@
                       {% endif %}
                     </div>
                   </div>
-                  <div class="mb-3">
-                    <label class="form-label required">Cuenta Bancaria</label>
-                    <input type="text" class="form-control {% if form.account.errors %}is-invalid{% endif %}" 
-                           name="account" placeholder="1234567890123456" value="{{ form.account.value|default:'' }}" 
-                           required maxlength="16" pattern="[0-9]{16}" inputmode="numeric">
-                    {% if form.account.errors %}
-                      <div class="invalid-feedback">{{ form.account.errors.0 }}</div>
-                    {% else %}
-                      <div class="invalid-feedback">La cuenta bancaria debe tener 16 dígitos numéricos.</div>
-                    {% endif %}
+
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label required">Cuenta Bancaria</label>
+                      <input type="text" class="form-control {% if form.account.errors %}is-invalid{% endif %}"
+                             name="account" placeholder="1234567890123456" value="{{ form.account.value|default:'' }}"
+                             required maxlength="16" pattern="[0-9]{16}" inputmode="numeric">
+                      {% if form.account.errors %}
+                        <div class="invalid-feedback">{{ form.account.errors.0 }}</div>
+                      {% else %}
+                        <div class="invalid-feedback">La cuenta bancaria debe tener 16 dígitos numéricos.</div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label">Agencia Bancaria</label>
+                      <input type="text" class="form-control {% if form.agency_bank.errors %}is-invalid{% endif %}"
+                             name="agency_bank" placeholder="BPA, BFI, etc." value="{{ form.agency_bank.value|default:'' }}"
+                             maxlength="100">
+                      {% if form.agency_bank.errors %}
+                        <div class="invalid-feedback">{{ form.agency_bank.errors.0 }}</div>
+                      {% endif %}
+                    </div>
                   </div>
+
                   <div class="mb-3">
                     <label class="form-label required">Dirección</label>
-                    <textarea class="form-control {% if form.address.errors %}is-invalid{% endif %}" 
+                    <textarea class="form-control {% if form.address.errors %}is-invalid{% endif %}"
                               name="address" rows="2" placeholder="Av. Principal 123" required>{{ form.address.value|default:'' }}</textarea>
                     {% if form.address.errors %}
                       <div class="invalid-feedback">{{ form.address.errors.0 }}</div>
@@ -238,7 +256,6 @@
                   </div>
                   <div class="mb-4">
                     <div class="form-check">
-                      <!-- Sin required, el control es mediante JS -->
                       <input class="form-check-input {% if form.accept_terms.errors %}is-invalid{% endif %}" 
                              type="checkbox" name="accept_terms" id="accept-terms">
                       <label class="form-check-label" for="accept-terms">
@@ -350,9 +367,9 @@
     const acceptTerms = document.getElementById('accept-terms');
     const toastContainer = document.getElementById('toast-container');
 
-    let termsToastShown = false; // Control para mostrar el toast solo una vez al entrar al paso 4
+    let termsToastShown = false;
 
-    // --- Función para mostrar toast ---
+    // Toast de notificaciones
     function showToast(message, type = 'success', duration = 5000) {
       let bgClass, iconSvg, title;
       switch(type) {
@@ -385,99 +402,70 @@
             <strong class="me-auto">${title}</strong>
             <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('${toastId}').remove()"></button>
           </div>
-          <div class="toast-body">
-            ${message}
-          </div>
+          <div class="toast-body">${message}</div>
         </div>
       `;
-      
       toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-      
       setTimeout(() => {
         const toastElement = document.getElementById(toastId);
         if (toastElement) {
           toastElement.classList.remove('show');
-          setTimeout(() => {
-            if (toastElement.parentNode) {
-              toastElement.parentNode.removeChild(toastElement);
-            }
-          }, 300);
+          setTimeout(() => toastElement?.parentNode?.removeChild(toastElement), 300);
         }
       }, duration);
     }
 
-    // --- Filtros de entrada para campos numéricos ---
+    // Solo filtra dígitos para phone, nit, account; NO modifica REEUP
     form.addEventListener('input', function(e) {
       const field = e.target;
-      
-      if (field.name === 'phone' || field.name === 'reeup' || field.name === 'nit' || field.name === 'account') {
+      if (['phone', 'nit', 'account'].includes(field.name)) {
         field.value = field.value.replace(/\D/g, '');
       }
-      
-      // Quitar is-invalid si el campo ahora es válido
       if (field.classList.contains('is-invalid') && field.checkValidity()) {
         field.classList.remove('is-invalid');
       }
     });
 
-    // --- Validación del paso actual (solo marcar is-invalid, sin is-valid) ---
     function validateStep(stepNumber) {
       const step = document.getElementById(`step-${stepNumber}`);
       const inputs = step.querySelectorAll('input, textarea, select');
       let firstInvalid = null;
-
       for (let input of inputs) {
         input.classList.remove('is-invalid');
-        
         if (!input.checkValidity()) {
           input.classList.add('is-invalid');
-          if (!firstInvalid) {
-            firstInvalid = input;
-          }
+          if (!firstInvalid) firstInvalid = input;
         }
       }
-
-      if (firstInvalid) {
-        firstInvalid.reportValidity();
-        return false;
-      }
+      if (firstInvalid) { firstInvalid.reportValidity(); return false; }
       return true;
     }
 
-    // --- Detección de errores del servidor (campos con is-invalid ya presentes) ---
     function stepHasErrors(stepNumber) {
       const step = document.getElementById(`step-${stepNumber}`);
-      if (!step) return false;
-      return step.querySelectorAll('.is-invalid').length > 0;
+      return step ? step.querySelectorAll('.is-invalid').length > 0 : false;
     }
 
     function findFirstStepWithErrors() {
       for (let i = 1; i <= totalSteps; i++) {
-        if (stepHasErrors(i)) {
-          return i;
-        }
+        if (stepHasErrors(i)) return i;
       }
       return 1;
     }
 
-    // --- Actualizar estado del botón de submit según el checkbox ---
     function updateSubmitButtonState() {
       if (currentStep === totalSteps) {
         submitBtn.disabled = !(acceptTerms && acceptTerms.checked);
       }
     }
 
-    // --- Actualizar la UI del wizard ---
     function updateStepDisplay() {
       steps.forEach(step => step.style.display = 'none');
       const currentStepElement = document.getElementById(`step-${currentStep}`);
-      if (currentStepElement) {
-        currentStepElement.style.display = 'block';
-      }
+      if (currentStepElement) currentStepElement.style.display = 'block';
       
-      const progressPercentage = (currentStep / totalSteps) * 100;
-      progressBar.style.width = `${progressPercentage}%`;
-      progressBar.setAttribute('aria-valuenow', progressPercentage);
+      progressBar.style.width = (currentStep / totalSteps) * 100 + '%';
+      progressBar.setAttribute('aria-valuenow', (currentStep / totalSteps) * 100);
       currentStepSpan.textContent = currentStep;
       
       prevBtn.disabled = currentStep === 1;
@@ -486,8 +474,6 @@
         nextBtn.style.display = 'none';
         submitBtn.style.display = 'inline-block';
         updateSubmitButtonState();
-
-        // Mostrar toast informativo al entrar al paso de términos (solo una vez)
         if (!termsToastShown) {
           showToast('Para completar el registro, debes aceptar los Términos y Condiciones.', 'info', 5000);
           termsToastShown = true;
@@ -496,68 +482,46 @@
         nextBtn.style.display = 'inline-block';
         submitBtn.style.display = 'none';
       }
-      
       currentStepElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // --- Eventos de navegación ---
-    prevBtn.addEventListener('click', function() {
-      if (currentStep > 1) {
-        currentStep--;
-        updateStepDisplay();
-      }
+    prevBtn.addEventListener('click', () => {
+      if (currentStep > 1) { currentStep--; updateStepDisplay(); }
     });
 
-    nextBtn.addEventListener('click', function() {
+    nextBtn.addEventListener('click', () => {
       if (validateStep(currentStep)) {
-        if (currentStep < totalSteps) {
-          currentStep++;
-          updateStepDisplay();
-        }
+        if (currentStep < totalSteps) { currentStep++; updateStepDisplay(); }
       }
     });
 
-    // --- Manejo del checkbox de términos ---
     if (acceptTerms) {
       acceptTerms.addEventListener('change', function() {
         if (this.checked) {
-          showToast('¡Gracias por aceptar nuestros términos! Ahora puedes completar tu registro.', 'success', 3000);
+          showToast('¡Gracias por aceptar nuestros términos!', 'success', 3000);
         }
-        // Al desmarcar, el botón se deshabilita automáticamente
         updateSubmitButtonState();
       });
     }
 
-    // --- Validación final antes del envío ---
     form.addEventListener('submit', function(e) {
-      // Verificar términos manualmente (ya que no tiene required)
       if (acceptTerms && !acceptTerms.checked) {
         e.preventDefault();
         acceptTerms.classList.add('is-invalid');
-        showToast('Debes aceptar los Términos y Condiciones para completar el registro.', 'danger');
-        
-        // Asegurar que el botón esté deshabilitado
+        showToast('Debes aceptar los Términos y Condiciones.', 'danger');
         submitBtn.disabled = true;
-        
-        if (currentStep !== 4) {
-          currentStep = 4;
-          updateStepDisplay();
-        }
+        if (currentStep !== 4) { currentStep = 4; updateStepDisplay(); }
         acceptTerms.focus();
         return false;
       }
 
-      // Validar todos los campos (incluyendo ocultos)
       const allInputs = form.querySelectorAll('input, textarea, select');
       let firstInvalidOverall = null;
-
       for (let input of allInputs) {
         input.classList.remove('is-invalid');
         if (!input.checkValidity()) {
           input.classList.add('is-invalid');
-          if (!firstInvalidOverall) {
-            firstInvalidOverall = input;
-          }
+          if (!firstInvalidOverall) firstInvalidOverall = input;
         }
       }
 
@@ -573,15 +537,10 @@
         firstInvalidOverall.reportValidity();
         return false;
       }
-      
-      // Si todo está bien, el formulario se envía
     });
 
-    // --- Inicialización: posicionarse en el primer paso con errores del servidor (si los hay) ---
     const firstStepWithErrors = findFirstStepWithErrors();
-    if (firstStepWithErrors > 1) {
-      currentStep = firstStepWithErrors;
-    }
+    if (firstStepWithErrors > 1) currentStep = firstStepWithErrors;
     updateStepDisplay();
   });
 </script>

@@ -1,8 +1,10 @@
+import re
 import uuid
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 
@@ -29,26 +31,68 @@ class SiteConfiguration(models.Model):
         return f"Modo Mantenimiento: {'Activado' if self.maintenance_mode else 'Desactivado'}"
 
 
+def validate_telefonos(value):
+    """Valida que el campo contenga una lista de números de 8 dígitos separados por comas."""
+    if not value.strip():
+        return  # permitir vacío si se desea, o puedes lanzar error si es obligatorio
+    numeros = [num.strip() for num in value.split(',') if num.strip()]
+    for num in numeros:
+        if not re.match(r'^\d{8}$', num):
+            raise ValidationError(
+                'Cada número de teléfono debe tener 8 dígitos. Separe varios números con comas.'
+            )
+
+
 class CompanySettings(models.Model):
-    """
-    Configuración única de la empresa emisora de facturas.
-    Solo debe existir una instancia (pk=1).
-    """
-    nombre = models.CharField(max_length=200)
-    direccion = models.CharField(max_length=200)
-    codigo_reeup = models.CharField(max_length=20)
-    nit = models.CharField(max_length=20)
-    cuenta_bancaria = models.CharField(max_length=30)
-    agencia_bancaria = models.CharField(max_length=100)
-    telefonos = models.CharField(max_length=100)
-    registro_comercial = models.CharField(max_length=50)
+    # --- Validadores ---
+    reeup_validator = RegexValidator(
+        regex=r'^\d{3}\.\d{1,2}\.\d{4,5}$',
+        message='El REEUP debe tener el formato ###.#.####, ###.#.#####, ###.##.#### o ###.##.#####.'
+    )
+    nit_validator = RegexValidator(
+        regex=r'^\d{11}$',
+        message='El NIT debe estar compuesto por 11 dígitos numéricos.'
+    )
+    cuenta_validator = RegexValidator(
+        regex=r'^\d{16}$',
+        message='La cuenta bancaria debe tener 16 dígitos numéricos.'
+    )
+
+    # --- Campos ---
+    nombre = models.CharField(max_length=200, verbose_name="Nombre de la empresa")
+    direccion = models.CharField(max_length=200, verbose_name="Dirección")
+    codigo_reeup = models.CharField(
+        max_length=12,
+        validators=[reeup_validator],
+        unique=True,
+        verbose_name="Código REEUP"
+    )
+    nit = models.CharField(
+        max_length=11,
+        validators=[nit_validator],
+        unique=True,
+        verbose_name="NIT"
+    )
+    cuenta_bancaria = models.CharField(
+        max_length=16,
+        validators=[cuenta_validator],
+        verbose_name="Cuenta bancaria"
+    )
+    agencia_bancaria = models.CharField(max_length=100, verbose_name="Agencia bancaria")
+    telefonos = models.CharField(
+        max_length=100,
+        validators=[validate_telefonos],
+        verbose_name="Teléfonos",
+        help_text="Ingrese uno o más números de 8 dígitos separados por comas."
+    )
+    registro_comercial = models.CharField(max_length=50, verbose_name="Registro comercial")
 
     class Meta:
         verbose_name = 'Configuración de la empresa'
-        verbose_name_plural = 'Configuración de la empresa'
+        verbose_name_plural = verbose_name
 
     def save(self, *args, **kwargs):
-        self.pk = 1  # fuerza que siempre se edite el mismo registro
+        self.pk = 1  # garantiza que siempre se edite el único registro
         super().save(*args, **kwargs)
 
     @classmethod
@@ -317,17 +361,70 @@ class StormWarning(BaseWarning):
 
 
 class Customer(models.Model):
+    # --- Validadores ---
+    reeup_validator = RegexValidator(
+        regex=r'^\d{3}\.\d{1,2}\.\d{4,5}$',
+        message='El REEUP debe tener el formato ###.#.####, ###.#.#####, ###.##.#### o ###.##.#####.'
+    )
+    nit_validator = RegexValidator(
+        regex=r'^\d{11}$',
+        message='El NIT debe estar compuesto por 11 dígitos numéricos.'
+    )
+    account_validator = RegexValidator(
+        regex=r'^\d{16}$',
+        message='La cuenta bancaria debe tener 16 dígitos numéricos.'
+    )
+    phone_validator = RegexValidator(
+        regex=r'^\d{8}$',
+        message='El número de teléfono debe tener 8 dígitos (sin espacios ni guiones).'
+    )
+
+    # --- Campos ---
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     company_name = models.CharField(max_length=100, verbose_name="Nombre de la Empresa")
-    reeup = models.CharField(max_length=11, verbose_name="REEUP")
-    nit = models.CharField(max_length=11, verbose_name="NIT")
-    account = models.CharField(max_length=16, verbose_name="Cuenta Bancaria")
-    agency_bank = models.CharField(max_length=100, blank=True, null=True, verbose_name="Agencia Bancaria")
+
+    reeup = models.CharField(
+        max_length=12,
+        validators=[reeup_validator],
+        unique=True,
+        verbose_name="REEUP"
+    )
+    nit = models.CharField(
+        max_length=11,
+        validators=[nit_validator],
+        unique=True,
+        verbose_name="NIT"
+    )
+    account = models.CharField(
+        max_length=16,
+        validators=[account_validator],
+        verbose_name="Cuenta Bancaria"
+    )
+    agency_bank = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Agencia Bancaria"
+    )
     address = models.TextField(verbose_name="Dirección")
-    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Usuario")
-    phone = models.CharField(max_length=8, verbose_name="Número de Teléfono")
-    accept_terms = models.BooleanField(default=False, verbose_name="Aceptó Términos")
-    newsletter = models.BooleanField(default=False, verbose_name="Recibe Newsletter")
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Usuario"
+    )
+    phone = models.CharField(
+        max_length=8,
+        validators=[phone_validator],
+        verbose_name="Número de Teléfono"
+    )
+    accept_terms = models.BooleanField(
+        default=False,
+        verbose_name="Aceptó Términos"
+    )
+    newsletter = models.BooleanField(
+        default=False,
+        verbose_name="Recibe Newsletter"
+    )
 
     def __str__(self):
         return self.company_name
