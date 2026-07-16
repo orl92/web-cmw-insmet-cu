@@ -14,44 +14,43 @@
         <div class="card-body">
           <h3 class="subheader text-muted fw-medium">Costa Norte</h3>
           {% if latest_forecast %}
+            {% with m=latest_forecast.north.morning a=latest_forecast.north.afternoon n=latest_forecast.north.night %}
             <div class="row">
-              <!-- Mañana -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Mañana</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.nwm|get_weather_img_morning }}" alt="{{ latest_forecast.nwm|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.nwm|get_tiempo_description }}" />
+                  <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntm }}°C">{{ latest_forecast.ntm }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfm }} km/h Dirección: {{ latest_forecast.nwddm }}">{{ latest_forecast.nwddm }} {{ latest_forecast.nwdfm }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsm|get_mar_description }}">
-                  <strong>Mar:</strong> {{ latest_forecast.nsm }}
+                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ m.sea|get_mar_description }}">
+                  <strong>Mar:</strong> {{ m.sea }}
                 </p>
               </div>
-              <!-- Tarde -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Tarde (Max)</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.nwa|get_weather_img_afternoon }}" alt="{{ latest_forecast.nwa|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.nwa|get_tiempo_description }}" />
+                  <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.nta }}°C">{{ latest_forecast.nta }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfa }} km/h Dirección: {{ latest_forecast.nwdda }}">{{ latest_forecast.nwdda }} {{ latest_forecast.nwdfa }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsa|get_mar_description }}">
-                  <strong>Mar:</strong> {{ latest_forecast.nsa }}
+                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ a.sea|get_mar_description }}">
+                  <strong>Mar:</strong> {{ a.sea }}
                 </p>
               </div>
-              <!-- Noche -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Noche</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.nwn|get_weather_img_night }}" alt="{{ latest_forecast.nwn|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.nwn|get_tiempo_description }}" />
+                  <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ntn }}°C">{{ latest_forecast.ntn }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.nwdfn }} km/h Dirección: {{ latest_forecast.nwddn }}">{{ latest_forecast.nwddn }} {{ latest_forecast.nwdfn }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ latest_forecast.nsn|get_mar_description }}">
-                  <strong>Mar:</strong> {{ latest_forecast.nsn }}
+                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ n.sea|get_mar_description }}">
+                  <strong>Mar:</strong> {{ n.sea }}
                 </p>
               </div>
             </div>
+            {% endwith %}
           {% else %}
           <div class="text-center text-muted py-3">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
@@ -77,44 +76,43 @@
         <div class="card-body">
           <h3 class="subheader text-muted fw-medium">Interior</h3>
           {% if latest_forecast %}
+            {% with m=latest_forecast.interior.morning a=latest_forecast.interior.afternoon n=latest_forecast.interior.night %}
             <div class="row">
-              <!-- Mañana -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Mañana</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.iwm|get_weather_img_morning }}" alt="{{ latest_forecast.iwm|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.iwm|get_tiempo_description }}" />
+                  <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itm }}°C">{{ latest_forecast.itm }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfm }} km/h Dirección: {{ latest_forecast.iwddm }}">{{ latest_forecast.iwddm }} {{ latest_forecast.iwdfm }} km/h</p>
+                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
                 <p class="mb-1 invisible">
                   <strong>Mar:</strong>
                 </p>
               </div>
-              <!-- Tarde -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Tarde (Max)</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.iwa|get_weather_img_afternoon }}" alt="{{ latest_forecast.iwa|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.iwa|get_tiempo_description }}" />
+                  <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.ita }}°C">{{ latest_forecast.ita }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfa }} km/h Dirección: {{ latest_forecast.iwdda }}">{{ latest_forecast.iwdda }} {{ latest_forecast.iwdfa }} km/h</p>
+                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
                 <p class="mb-1 invisible">
                   <strong>Mar:</strong>
                 </p>
               </div>
-              <!-- Noche -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Noche</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.iwn|get_weather_img_night }}" alt="{{ latest_forecast.iwn|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.iwn|get_tiempo_description }}" />
+                  <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.itn }}°C">{{ latest_forecast.itn }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.iwdfn }} km/h Dirección: {{ latest_forecast.iwddn }}">{{ latest_forecast.iwddn }} {{ latest_forecast.iwdfn }} km/h</p>
+                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
                 <p class="mb-1 invisible">
                   <strong>Mar:</strong>
                 </p>
               </div>
             </div>
+            {% endwith %}
           {% else %}
           <div class="text-center text-muted py-3">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
@@ -140,44 +138,43 @@
         <div class="card-body">
           <h3 class="subheader text-muted fw-medium">Costa Sur</h3>
           {% if latest_forecast %}
+            {% with m=latest_forecast.south.morning a=latest_forecast.south.afternoon n=latest_forecast.south.night %}
             <div class="row">
-              <!-- Mañana -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Mañana</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.swm|get_weather_img_morning }}" alt="{{ latest_forecast.swm|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.swm|get_tiempo_description }}" />
+                  <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stm }}°C">{{ latest_forecast.stm }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfm }} km/h Dirección: {{ latest_forecast.swddm }}">{{ latest_forecast.swddm }} {{ latest_forecast.swdfm }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssm|get_mar_description }}">
-                  <strong>Mar:</strong> {{ latest_forecast.ssm }}
+                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="{{ m.sea|get_mar_description }}">
+                  <strong>Mar:</strong> {{ m.sea }}
                 </p>
               </div>
-              <!-- Tarde -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Tarde (Max)</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.swa|get_weather_img_afternoon }}" alt="{{ latest_forecast.swa|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.swa|get_tiempo_description }}" />
+                  <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.sta }}°C">{{ latest_forecast.sta }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfa }} km/h Dirección: {{ latest_forecast.swdda }}">{{ latest_forecast.swdda }} {{ latest_forecast.swdfa }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssa|get_mar_description }}">
-                  <strong>Mar:</strong> {{ latest_forecast.ssa }}
+                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="{{ a.sea|get_mar_description }}">
+                  <strong>Mar:</strong> {{ a.sea }}
                 </p>
               </div>
-              <!-- Noche -->
               <div class="col-4 text-center">
                 <p class="text-muted small">Noche</p>
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast.swn|get_weather_img_night }}" alt="{{ latest_forecast.swn|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ latest_forecast.swn|get_tiempo_description }}" />
+                  <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
                 </div>
-                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ latest_forecast.stn }}°C">{{ latest_forecast.stn }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ latest_forecast.swdfn }} km/h Dirección: {{ latest_forecast.swddn }}">{{ latest_forecast.swddn }} {{ latest_forecast.swdfn }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="{{ latest_forecast.ssn|get_mar_description }}">
-                  <strong>Mar:</strong> {{ latest_forecast.ssn }}
+                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
+                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
+                <p class="mb-1" data-bs-toggle="tooltip" title="{{ n.sea|get_mar_description }}">
+                  <strong>Mar:</strong> {{ n.sea }}
                 </p>
               </div>
             </div>
+            {% endwith %}
           {% else %}
           <div class="text-center text-muted py-3">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"

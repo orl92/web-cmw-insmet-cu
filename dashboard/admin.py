@@ -10,6 +10,7 @@ from dashboard.models import (
     Station,
     StormWarning,
     TropicalCyclone,
+    WeatherReport,
 )
 
 # Register your models here.
@@ -54,3 +55,9 @@ class EmailRecipientListAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
     search_fields = ('name',)
     inlines = [EmailRecipientInline]
+
+@admin.register(WeatherReport)
+class WeatherReportAdmin(admin.ModelAdmin):
+    list_display = ('type', 'summary', 'date', 'user')
+    list_filter = ('type', 'date')
+    search_fields = ('summary',)

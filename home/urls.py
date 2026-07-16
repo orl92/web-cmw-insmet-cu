@@ -3,9 +3,8 @@ from django.urls import path
 from home.views.avisos.alertas_tempranas.views import EarlyWarningListView
 from home.views.avisos.ciclones_tropicales.views import TropicalCycloneListView
 from home.views.avisos.tormentas.views import StormListView
-from home.views.comentarios.nota_meteorologica.views import WeatherNoteDetailView
-from home.views.comentarios.tiempo.views import WeatherCommentaryDetailView
 from home.views.home.views import IndexView
+from home.views.tiempo.views import WeatherReportDetailView
 from home.views.institucion.publicaciones.views import ScientificPublicationListView
 from home.views.modelos.views import (
     DescargarGifView,
@@ -22,18 +21,16 @@ from home.views.servicios.comerciales.views import (
     ServiceDetailView,
 )
 from home.views.servicios.publicos.views import PublicServicesListView
-from home.views.tiempo.hoy.views import WeatherTodayDetailView
-from home.views.tiempo.manana.views import WeatherTomorrowDetailView
 
 urlpatterns = [
     # Inicio
     path('', IndexView.as_view(), name="index"),
     # Tiempo
-    path('tiempo/hoy/', WeatherTodayDetailView.as_view(), name="tiempo_h"),
-    path('tiempo/manana/', WeatherTomorrowDetailView.as_view(), name="tiempo_m"),
+    path('tiempo/hoy/', WeatherReportDetailView.as_view(), {'report_type': 'today'}, name="tiempo_h"),
+    path('tiempo/manana/', WeatherReportDetailView.as_view(), {'report_type': 'tomorrow'}, name="tiempo_m"),
     # Comentario
-    path('comentario/tiempo/', WeatherCommentaryDetailView.as_view(), name="comentario_tiempo"),
-    path('nota/meteorologica/', WeatherNoteDetailView.as_view(), name="nota_meteorologica"),
+    path('comentario/tiempo/', WeatherReportDetailView.as_view(), {'report_type': 'commentary'}, name="comentario_tiempo"),
+    path('nota/meteorologica/', WeatherReportDetailView.as_view(), {'report_type': 'note'}, name="nota_meteorologica"),
     # Avisos
     path('aviso/alerta_temprana/', EarlyWarningListView.as_view(), name="alerta_temprana"),
     path('aviso/ciclon_tropical/', TropicalCycloneListView.as_view(), name="ciclon_tropical"),

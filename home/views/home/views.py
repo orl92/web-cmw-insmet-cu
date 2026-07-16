@@ -16,7 +16,7 @@ class IndexView(TemplateView):
         
         # Datos meteorológicos comunes
         try:
-            context['latest_forecast'] = Forecasts.objects.latest('date')
+            context['latest_forecast'] = Forecasts.objects.prefetch_related('regions', 'extended_days').latest('date')
         except ObjectDoesNotExist:
             context['latest_forecast'] = None
             
