@@ -1,0 +1,9 @@
+- [ ] Crear `includes/dashboard/pronosticos/region_fields.html`
+- [ ] Crear `includes/dashboard/pronosticos/extended_day.html`
+- [ ] Crear `includes/dashboard/pronosticos/astro_fields.html`
+- [ ] Refactor `crear_pronostico.html` (usar partials)
+- [ ] Refactor `actualizar_pronostico.html` (usar partials)
+- [ ] Opcional: unificar en un template
+- [ ] Verificar LitePicker IDs siguen iguales
+- [ ] Verificar forecast.js Excel upload sigue funcionando
+- [ ] `python manage.py check`

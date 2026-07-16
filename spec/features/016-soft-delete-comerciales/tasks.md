@@ -1,0 +1,14 @@
+- [ ] Crear `SoftDeleteModel(FileHandlerMixin, models.Model)` abstracto en common/utils.py
+- [ ] Crear `SoftDeleteManager` que filtre `record_active=True` por defecto
+- [ ] Aplicar a Customer (heredar SoftDeleteModel, migración)
+- [ ] Aplicar a Service (heredar SoftDeleteModel, migración)
+- [ ] Aplicar a Invoice (heredar SoftDeleteModel, migración)
+- [ ] Aplicar a Contract (heredar SoftDeleteModel, migración)
+- [ ] Aplicar a Certificate (heredar SoftDeleteModel, migración)
+- [ ] Actualizar vistas Customer para filtrar record_active=True
+- [ ] Actualizar vistas Service para filtrar record_active=True
+- [ ] Actualizar vistas Invoice para filtrar record_active=True
+- [ ] Actualizar sidebar/context_processors
+- [ ] HardDeleteViews para cada modelo
+- [ ] Tests
+- [ ] `python manage.py check && python manage.py test`

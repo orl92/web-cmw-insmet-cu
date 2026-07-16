@@ -1,0 +1,11 @@
+- [ ] Crear ContractListView, ContractCreateView, ContractDetailView, ContractDeleteView
+- [ ] Crear templates `pages/dashboard/contratos/listado.html`, `crear.html`, `detalle.html`
+- [ ] Crear URL patterns
+- [ ] Agregar entrada en sidebar (menú)
+- [ ] Crear CertificateListView, CertificateDetailView, CertificateDeleteView
+- [ ] Crear templates `pages/dashboard/certificados/listado.html`, `detalle.html`
+- [ ] Crear URL patterns
+- [ ] Agregar entrada en sidebar
+- [ ] Verificar InvoiceCreateView y ApproveSubscriptionView siguen funcionando
+- [ ] Tests
+- [ ] `python manage.py check && python manage.py test`

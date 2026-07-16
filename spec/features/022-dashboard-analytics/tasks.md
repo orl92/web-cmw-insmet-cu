@@ -1,0 +1,10 @@
+- [ ] Query ingresos mensuales en DashboardView
+- [ ] Query suscripciones activas
+- [ ] Query avisos activos por tipo
+- [ ] Query clientes nuevos
+- [ ] Pasar datos al template como JSON
+- [ ] Crear chart de ingresos (ApexCharts)
+- [ ] Crear chart de suscripciones (ApexCharts)
+- [ ] Mostrar contadores en dashboard
+- [ ] Verificar rendimiento (evitar N+1)
+- [ ] `python manage.py check`

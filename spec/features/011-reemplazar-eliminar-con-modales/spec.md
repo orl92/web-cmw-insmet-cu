@@ -1,6 +1,6 @@
 # 011 · Reemplazar páginas de eliminación por modales
 
-**Estado:** propuesta
+**Estado:** implementado
 
 ## Qué hace
 

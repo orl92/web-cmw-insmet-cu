@@ -1,0 +1,10 @@
+- [ ] Marcar campos planos como `editable=False` o eliminarlos en models.py
+- [ ] Migración
+- [ ] Actualizar ForecastsForm
+- [ ] Actualizar AllForecastCreateView y ForecastUpdateView
+- [ ] Actualizar templates crear/actualizar
+- [ ] Actualizar DashboardView charts
+- [ ] Verificar API serializer (ForecastSerializer)
+- [ ] Verificar command migrate_forecast_data
+- [ ] Tests
+- [ ] `python manage.py check && python manage.py test`

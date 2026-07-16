@@ -1,0 +1,8 @@
+- [ ] Evaluar Huey vs Celery para el proyecto
+- [ ] Agregar dependencia a requirements.txt
+- [ ] Configurar Huey en settings.py
+- [ ] Crear `dashboard/tasks.py`: send_email_task, generate_pdf_task
+- [ ] Reemplazar `mail_send()` por task asíncrona
+- [ ] Reemplazar PDF en facturación por task asíncrona
+- [ ] Tests
+- [ ] `python manage.py check`

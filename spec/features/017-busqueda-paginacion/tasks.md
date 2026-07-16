@@ -1,0 +1,14 @@
+- [ ] Crear `SearchMixin` en common/utils.py
+- [ ] Aplicar a CustomerListView
+- [ ] Aplicar a ServiceListView
+- [ ] Aplicar a InvoiceListView
+- [ ] Aplicar a ForecastsListView
+- [ ] Aplicar a WeatherReportListView
+- [ ] Aplicar a WarningListViews (Early, Tropical, Storm)
+- [ ] Aplicar a ScientificPublicationListView
+- [ ] Aplicar a EmailRecipientListView
+- [ ] Agregar paginate_by=20 a todos
+- [ ] Crear `includes/dashboard/search_bar.html`
+- [ ] Incluir search bar en layouts/list.html
+- [ ] Tests
+- [ ] `python manage.py check && python manage.py test`
