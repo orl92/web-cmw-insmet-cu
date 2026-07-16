@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .header { text-align: center; margin-bottom: 30px; }
+      .logo { max-width: 150px; }
+      .title { font-size: 24px; font-weight: bold; margin: 20px 0; text-align: center; }
+      .section { margin: 20px 0; }
+      .summary { text-align: justify; line-height: 1.6; }
+      table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background-color: #f2f2f2; }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      {% if logo_base64 %}
+        <img src="data:image/png;base64,{{ logo_base64 }}" class="logo" alt="Logo" />
+      {% endif %}
+      <h1>Nota Meteorológica</h1>
+    </div>
+
+    <div class="section">
+      <strong>Fecha:</strong> {{ weather_note.date|date:'j \d\e F \d\e Y' }}<br />
+      <strong>Hora:</strong> {{ weather_note.date|time:'h:i A' }}<br />
+      <strong>Autor:</strong> {{ weather_note.user.get_full_name|default:weather_note.user.username }}
+    </div>
+
+    <div class="section">
+      <strong>Nota:</strong>
+      <div class="summary">{{ weather_note.summary|linebreaks }}</div>
+    </div>
+
+    {% if weather_note.file %}
+    <div class="section">
+      <strong>Archivo:</strong> {{ weather_note.file.name }}
+    </div>
+    {% endif %}
+  </body>
+</html>
