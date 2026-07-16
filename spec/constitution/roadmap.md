@@ -13,13 +13,30 @@
 9. **009 · Configuración del sitio** — modo mantenimiento (bloquea no-superusers), configuración de empresa (datos fiscales singleton), listas de correo.
 10. **010 · Infraestructura y deploy** — Nginx + Gunicorn + Supervisor, WhiteNoise para estáticos, entorno dual dev/prod con `.env` auto-generado.
 11. **011 · Reemplazar páginas de eliminación por modales** — modal Bootstrap reutilizable en vez de 17 templates de confirmación independientes; vistas DeleteView convertidas a View (POST-only).
+12. **012 · Tests automatizados** — 116 tests unitarios y de integración en 6 apps (common, accounts, dashboard, api, home, login) con cobertura de modelos, vistas, formularios, API REST y utilities.
+13. **013 · Normalizar pronósticos** — modelos `ForecastRegions` y `ForecastExtendedDay` normalizados; bridge properties/methods en `Forecasts`; comando `migrate_forecast_data`; API y vistas actualizadas; 89 tests total.
+14. **014 · Refactor reportes tiempo** — modelo único `WeatherReport` con campo `type`; forms/vistas/URLs genéricas parametrizadas por tipo; 4 templates de detalle creados; URLs detail/PDF para todos los tipos.
+15. **015 · PDF templates para reportes** — 4 templates PDF creadas (hoy, mañana, comentario, nota meteorológica) con logo + fecha + resumen + autor.
 
 ## Siguiente 🔜
 
-*Sin definir.*
+16. **016 · Soft delete para modelos comerciales** — `SoftDeleteModel` abstracto + aplicar a Customer, Service, Invoice, Contract, Certificate.
+17. **017 · Búsqueda y paginación** — search bar + paginate_by en todos los list views.
+18. **018 · Vistas de Certificados y Contratos** — CRUD + menú sidebar para Contract y Certificate.
+19. **019 · Exportación CSV/Excel** — botón de exportar en list views.
+20. **020 · Refactor templates de pronósticos** — descomponer templates de 1,100 líneas en partials reutilizables.
+21. **021 · Eliminar campos planos de Forecasts** — migración para dropear ~60 columnas redundantes.
+22. **022 · Dashboard analytics** — gráficos de ingresos, suscripciones, avisos con ApexCharts.
+23. **023 · Model validation** — métodos `clean()` y validadores para modelos clave.
+24. **024 · API expansion** — endpoints para avisos, weather reports, publicaciones, servicios.
+25. **025 · Tareas asíncronas** — Huey/Celery para email y PDF generation.
 
 ## Backlog / ideas 💡
 
-*Sin definir.*
+- Frontend build pipeline (package.json, bundler, Sass)
+- Auth API (JWT, tokens de acceso)
+- Traducción EN del portal público
+- PWA / service worker
+- Notificaciones en tiempo real (WebSockets)
 
 > Cada feature nueva se crea como `features/NNN-nombre-feature/` con `spec.md`, `plan.md` y `tasks.md` antes de tocar código.
