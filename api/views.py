@@ -97,7 +97,7 @@ class ForecastAPIView(GenericAPIView):
     - `404 Not Found`: Devuelve un mensaje si los pronósticos no se han actualizado.
     """
     permission_classes = [AllowAny]
-    queryset = Forecasts.objects.all()
+    queryset = Forecasts.objects.prefetch_related('regions', 'extended_days').all()
     serializer_class = ForecastSerializer
 
     def get(self, request, date=None):

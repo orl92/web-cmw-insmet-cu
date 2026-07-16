@@ -1,8 +1,8 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from common.utils import get_img_path, get_moon_img_path, get_sun_img_path
-from dashboard.models import Forecasts, Station
+from common.utils import get_moon_img_path, get_sun_img_path
+from dashboard.models import ForecastExtendedDay, ForecastRegions, Forecasts, Station
 
 
 class StationSerializer(serializers.ModelSerializer):
@@ -22,6 +22,7 @@ class StationObservationAllSerializer(serializers.Serializer):
     hour = serializers.CharField()
     data = serializers.JSONField()
 
+
 class ForecastSerializer(serializers.ModelSerializer):
     north = serializers.SerializerMethodField()
     interior = serializers.SerializerMethodField()
@@ -33,129 +34,44 @@ class ForecastSerializer(serializers.ModelSerializer):
         model = Forecasts
         fields = ['date', 'north', 'interior', 'south', 'extended_forecast', 'astronomical_data']
 
+    def _region_periods(self, obj, region_name, has_sea=False):
+        result = {}
+        for r in obj.regions.filter(region=region_name).order_by('period_order'):
+            entry = {
+                'temp': r.temp,
+                'weather': r.weather,
+                'weather_icon': r.weather_icon,
+                'wind_dir': r.wind_dir,
+                'wind_speed': r.wind_speed,
+            }
+            if has_sea:
+                entry['sea'] = r.sea_note
+            result[r.period] = entry
+        return result
+
     @extend_schema_field(serializers.JSONField)
     def get_north(self, obj):
-        return {
-            "morning": {
-                "temp": obj.ntm,
-                "weather": obj.nwm,
-                "weather_icon": get_img_path(obj.nwm, 'morning'),
-                "wind_dir": obj.nwddm,
-                "wind_speed": obj.nwdfm,
-                "sea": obj.nsm
-            },
-            "afternoon": {
-                "temp": obj.nta,
-                "weather": obj.nwa,
-                "weather_icon": get_img_path(obj.nwa, 'afternoon'),
-                "wind_dir": obj.nwdda,
-                "wind_speed": obj.nwdfa,
-                "sea": obj.nsa
-            },
-            "night": {
-                "temp": obj.ntn,
-                "weather": obj.nwn,
-                "weather_icon": get_img_path(obj.nwn, 'night'),
-                "wind_dir": obj.nwddn,
-                "wind_speed": obj.nwdfn,
-                "sea": obj.nsn
-            }
-        }
+        return self._region_periods(obj, 'north', has_sea=True)
 
     @extend_schema_field(serializers.JSONField)
     def get_interior(self, obj):
-        return {
-            "morning": {
-                "temp": obj.itm,
-                "weather": obj.iwm,
-                "weather_icon": get_img_path(obj.iwm, 'morning'),
-                "wind_dir": obj.iwddm,
-                "wind_speed": obj.iwdfm
-            },
-            "afternoon": {
-                "temp": obj.ita,
-                "weather": obj.iwa,
-                "weather_icon": get_img_path(obj.iwa, 'afternoon'),
-                "wind_dir": obj.iwdda,
-                "wind_speed": obj.iwdfa
-            },
-            "night": {
-                "temp": obj.itn,
-                "weather": obj.iwn,
-                "weather_icon": get_img_path(obj.iwn, 'night'),
-                "wind_dir": obj.iwddn,
-                "wind_speed": obj.iwdfn
-            }
-        }
+        return self._region_periods(obj, 'interior')
 
     @extend_schema_field(serializers.JSONField)
     def get_south(self, obj):
-        return {
-            "morning": {
-                "temp": obj.stm,
-                "weather": obj.swm,
-                "weather_icon": get_img_path(obj.swm, 'morning'),
-                "wind_dir": obj.swddm,
-                "wind_speed": obj.swdfm,
-                "sea": obj.ssm
-            },
-            "afternoon": {
-                "temp": obj.sta,
-                "weather": obj.swa,
-                "weather_icon": get_img_path(obj.swa, 'afternoon'),
-                "wind_dir": obj.swdda,
-                "wind_speed": obj.swdfa,
-                "sea": obj.ssa
-            },
-            "night": {
-                "temp": obj.stn,
-                "weather": obj.swn,
-                "weather_icon": get_img_path(obj.swn, 'night'),
-                "wind_dir": obj.swddn,
-                "wind_speed": obj.swdfn,
-                "sea": obj.ssn
-            }
-        }
+        return self._region_periods(obj, 'south', has_sea=True)
 
     @extend_schema_field(serializers.JSONField)
     def get_extended_forecast(self, obj):
-        # Para el pronóstico extendido, usamos el período de la Tarde
         return {
-            "day1": {
-                "date": obj.day1_date,
-                "min_temp": obj.day1_min_temp,
-                "max_temp": obj.day1_max_temp,
-                "weather": obj.day1_weather,
-                "weather_icon": get_img_path(obj.day1_weather, 'afternoon')
-            },
-            "day2": {
-                "date": obj.day2_date,
-                "min_temp": obj.day2_min_temp,
-                "max_temp": obj.day2_max_temp,
-                "weather": obj.day2_weather,
-                "weather_icon": get_img_path(obj.day2_weather, 'afternoon')
-            },
-            "day3": {
-                "date": obj.day3_date,
-                "min_temp": obj.day3_min_temp,
-                "max_temp": obj.day3_max_temp,
-                "weather": obj.day3_weather,
-                "weather_icon": get_img_path(obj.day3_weather, 'afternoon')
-            },
-            "day4": {
-                "date": obj.day4_date,
-                "min_temp": obj.day4_min_temp,
-                "max_temp": obj.day4_max_temp,
-                "weather": obj.day4_weather,
-                "weather_icon": get_img_path(obj.day4_weather, 'afternoon')
-            },
-            "day5": {
-                "date": obj.day5_date,
-                "min_temp": obj.day5_min_temp,
-                "max_temp": obj.day5_max_temp,
-                "weather": obj.day5_weather,
-                "weather_icon": get_img_path(obj.day5_weather, 'afternoon')
+            f'day{d.day_number}': {
+                'date': d.date,
+                'min_temp': d.min_temp,
+                'max_temp': d.max_temp,
+                'weather': d.weather,
+                'weather_icon': d.weather_icon,
             }
+            for d in obj.extended_days.order_by('day_number').all()
         }
 
     @extend_schema_field(serializers.JSONField)
