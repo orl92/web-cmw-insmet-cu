@@ -19,7 +19,7 @@
             <path d="M16 5l3 3" />
           </svg>
         </a>
-        <a href="{% url 'eliminar_pronostico' forecast.uuid %}" type="button" class="btn btn-icon btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
+                <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-uuid="{{ forecast.uuid }}" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar" data-bs-original-title="Eliminar">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
             <path d="M4 7l16 0" />
@@ -28,7 +28,7 @@
             <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
             <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
           </svg>
-        </a>
+        </button>
       </div>
     </div>
   {% endfor %}
@@ -259,6 +259,8 @@
 {% endblock %}
 
 {% block extrajs %}
+  {{ block.super }}
+  {% include 'includes/dashboard/modal_delete_js.html' with delete_url_name='eliminar_pronostico' %}
   <!-- Libs JS -->
   <script src="{% static '' %}dist/libs/datatables/datatables.min.js"></script>
   <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062" defer></script>
@@ -288,4 +290,7 @@
         })
     })
   </script>
+{% endblock %}
+{% block modal %}
+  {% include 'includes/dashboard/modal_delete.html' %}
 {% endblock %}

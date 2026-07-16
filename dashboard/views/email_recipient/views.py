@@ -3,17 +3,15 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.forms.email_recipient.forms import (
     EmailRecipientFormSet,
-    EmailRecipientListForm,
-)
+    EmailRecipientListForm)
 from dashboard.models import EmailRecipientList
 
 
@@ -134,38 +132,20 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
         listado = self.get_object()
         return self.request.user.is_superuser or listado.user == self.request.user
 
-class EmailRecipientListDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = EmailRecipientList
-    template_name = 'pages/dashboard/email_recipient/eliminar_listado_correo.html'
+class EmailRecipientListDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_email_recipient_list'
-    success_url = reverse_lazy('listado_correos')
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(EmailRecipientList, uuid=uuid)
-
-    def post(self, request, *args, **kwargs):
-        listado = self.get_object()
-        
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        email_list = get_object_or_404(EmailRecipientList, uuid=uuid)
         log_action(
             user=self.request.user,
-            obj=listado,
+            obj=email_list,
             action_flag=DELETION,
-            message=f"Se eliminó el listado de correo: {listado.name}."
+            message=f"Se eliminó el listado de correo {email_list.name}."
         )
-        
         try:
-            listado.delete()
-            messages.success(request, 'El listado de correos ha sido eliminado con éxito.', extra_tags='danger')
+            email_list.delete()
+            messages.success(request, 'El listado de correo ha sido eliminado con éxito.')
         except Exception as e:
-            messages.error(request, f'Error al eliminar el listado de correos: {str(e)}', extra_tags='danger')
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Listado de Correos'
-        context['parent'] = ''
-        context['segment'] = 'email'
-        context['url_list'] = reverse_lazy('listado_correos')
-        return context
+            messages.error(request, str(e))
+        return redirect('listado_correos')

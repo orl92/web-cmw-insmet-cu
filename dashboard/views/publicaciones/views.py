@@ -9,8 +9,7 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.db import transaction
 from django.forms import modelformset_factory
 from django.http import HttpResponse
@@ -19,17 +18,16 @@ from django.template.loader import get_template
 from django.urls import reverse_lazy
 from django.views.generic import (
     CreateView,
-    DeleteView,
     DetailView,
     ListView,
     UpdateView,
+    View,
 )
 
 from common.utils import log_action
 from dashboard.forms.publicaciones.forms import (
     CoauthorForm,
-    ScientificPublicationForm,
-)
+    ScientificPublicationForm)
 from dashboard.models import Author, ScientificPublication
 
 
@@ -39,8 +37,7 @@ def get_coauthor_formset(queryset=None, data=None, prefix="coauthors"):
         Author,
         form=CoauthorForm,
         extra=0,
-        can_delete=True,
-    )
+        can_delete=True)
 
     if data is not None:
         return FormSet(data=data, queryset=queryset, prefix=prefix)
@@ -92,8 +89,7 @@ class ScientificPublicationCreateView(
             context["formset"] = get_coauthor_formset(
                 data=self.request.POST,
                 queryset=Author.objects.none(),
-                prefix="coauthors",
-            )
+                prefix="coauthors")
         else:
             context["formset"] = get_coauthor_formset(
                 queryset=Author.objects.none(), prefix="coauthors"
@@ -142,14 +138,12 @@ class ScientificPublicationCreateView(
                         user=self.request.user,
                         obj=self.object,
                         action_flag=ADDITION,
-                        message=f"Se creó una nueva publicación científica: {self.object.title}.",
-                    )
+                        message=f"Se creó una nueva publicación científica: {self.object.title}.")
 
                     messages.success(
                         self.request,
                         "La publicación científica se ha creado con éxito.",
-                        extra_tags="success",
-                    )
+                        extra_tags="success")
 
                     return super().form_valid(form)
 
@@ -157,8 +151,7 @@ class ScientificPublicationCreateView(
                 messages.error(
                     self.request,
                     f"Error al guardar: {str(e)}",
-                    extra_tags="danger",
-                )
+                    extra_tags="danger")
                 return self.render_to_response(
                     self.get_context_data(form=form, formset=formset)
                 )
@@ -167,8 +160,7 @@ class ScientificPublicationCreateView(
             messages.error(
                 self.request,
                 "Por favor, corrige los errores en el formulario.",
-                extra_tags="danger",
-            )
+                extra_tags="danger")
             return self.render_to_response(
                 self.get_context_data(form=form, formset=formset)
             )
@@ -206,8 +198,7 @@ class ScientificPublicationUpdateView(
             formset = get_coauthor_formset(
                 data=self.request.POST,
                 queryset=coauthors_queryset,
-                prefix="coauthors",
-            )
+                prefix="coauthors")
         else:
             formset = get_coauthor_formset(
                 queryset=coauthors_queryset, prefix="coauthors"
@@ -255,13 +246,11 @@ class ScientificPublicationUpdateView(
                         user=self.request.user,
                         obj=self.object,
                         action_flag=CHANGE,
-                        message=f"Se actualizó la publicación científica: {self.object.title}.",
-                    )
+                        message=f"Se actualizó la publicación científica: {self.object.title}.")
 
                     messages.success(
                         self.request,
-                        "La publicación científica ha sido actualizada con éxito.",
-                    )
+                        "La publicación científica ha sido actualizada con éxito.")
 
                     return super().form_valid(form)
 
@@ -269,8 +258,7 @@ class ScientificPublicationUpdateView(
                 messages.error(
                     self.request,
                     f"Error al guardar: {str(e)}",
-                    extra_tags="danger",
-                )
+                    extra_tags="danger")
                 return self.render_to_response(
                     self.get_context_data(form=form, formset=formset)
                 )
@@ -284,14 +272,12 @@ class ScientificPublicationUpdateView(
                                 messages.error(
                                     self.request,
                                     f"Error en coautor: {error}",
-                                    extra_tags="danger",
-                                )
+                                    extra_tags="danger")
 
             messages.error(
                 self.request,
                 "Por favor, corrige los errores en el formulario.",
-                extra_tags="danger",
-            )
+                extra_tags="danger")
             return self.render_to_response(
                 self.get_context_data(form=form, formset=formset)
             )
@@ -303,53 +289,23 @@ class ScientificPublicationUpdateView(
         return self.request.user.is_superuser
 
 
-class ScientificPublicationDeleteView(
-    LoginRequiredMixin, PermissionRequiredMixin, DeleteView
-):
-    model = ScientificPublication
-    template_name = "pages/dashboard/publicaciones/eliminar_publicacion.html"
-    permission_required = "dashboard.delete_scientific_publication"
-    success_url = reverse_lazy("listado_publicaciones")
-    url_redirect = success_url
+class ScientificPublicationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'dashboard.delete_scientific_publication'
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get("uuid")
-        return get_object_or_404(ScientificPublication, uuid=uuid)
-
-    def post(self, request, *args, **kwargs):
-        publicacion = self.get_object()
-
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        publicacion = get_object_or_404(ScientificPublication, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=publicacion,
             action_flag=DELETION,
-            message=f"Se eliminó la publicación científica: {publicacion.title}.",
+            message=f"Se eliminó la publicación científica: {publicacion.title}."
         )
-
         try:
             publicacion.delete()
-            messages.success(
-                request,
-                "La publicación científica ha sido eliminada con éxito.",
-                extra_tags="danger",
-            )
+            messages.success(request, 'La publicación científica ha sido eliminada con éxito.')
         except Exception as e:
-            messages.error(
-                request,
-                f"Error al eliminar la publicación científica: {str(e)}",
-                extra_tags="danger",
-            )
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["title"] = "Eliminar Publicación Científica"
-        context["parent"] = ""
-        context["segment"] = "publicaciones"
-        context["url_list"] = reverse_lazy("listado_publicaciones")
-        return context
-
+            messages.error(request, f'Error al eliminar la publicación científica: {str(e)}')
+        return redirect('listado_publicaciones')
 
 class ScientificPublicationDetailView(
     LoginRequiredMixin, PermissionRequiredMixin, DetailView

@@ -3,12 +3,11 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.contrib.auth.models import Group, Permission
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from accounts.forms.group.form import GroupForm
 from accounts.models import GroupProfile
@@ -53,8 +52,7 @@ class GroupCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             user=self.request.user,
             obj=group,
             action_flag=ADDITION,
-            message=f"Se creó un nuevo grupo {group.name}.",
-        )
+            message=f"Se creó un nuevo grupo {group.name}.")
 
         messages.success(
             self.request, "El grupo ha sido creado con éxito.", extra_tags="success"
@@ -145,14 +143,12 @@ class GroupUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTes
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó el grupo {self.object.name}.",
-        )
+            message=f"Se actualizó el grupo {self.object.name}.")
 
         messages.success(
             self.request,
             "El grupo ha sido actualizado con éxito.",
-            extra_tags="warning",
-        )
+            extra_tags="warning")
         return response
 
     def get_context_data(self, **kwargs):
@@ -231,41 +227,21 @@ class GroupUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTes
         )
 
 
-class GroupDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = Group
-    template_name = "pages/accounts/groups/group_delete.html"
-    permission_required = "auth.delete_group"
-    success_url = reverse_lazy("groups")
+class GroupDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'auth.delete_group'
 
-    def get_object(self):
-        uuid = self.kwargs.get("uuid")
-        group_profile = get_object_or_404(GroupProfile, uuid=uuid)
-        return group_profile.group
-
-    def post(self, request, *args, **kwargs):
-        group = self.get_object()
-
-        # Registro de acción antes de eliminar el grupo
+    def post(self, request, uuid):
+        groupprofile = get_object_or_404(GroupProfile, uuid=uuid)
+        group = groupprofile.group
         log_action(
             user=self.request.user,
             obj=group,
             action_flag=DELETION,
-            message=f"Se eliminó el grupo {group.name}.",
+            message=f"Se eliminó al grupo {group.name}."
         )
-
         try:
             group.delete()
-            messages.success(
-                request, "El grupo ha sido eliminado con éxito.", extra_tags="danger"
-            )
+            messages.success(request, f'Grupo {group.name} eliminado correctamente.')
         except Exception as e:
             messages.error(request, str(e))
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["title"] = "Eliminar Grupo"
-        context["parent"] = "accounts"
-        context["segment"] = "groups"
-        context["url_list"] = reverse_lazy("groups")
-        return context
+        return redirect('groups')

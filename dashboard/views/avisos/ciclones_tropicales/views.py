@@ -4,11 +4,10 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.data.mail_send import mail_send
@@ -132,39 +131,20 @@ class TropicalCycloneUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
-class TropicalCycloneDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = TropicalCyclone
-    template_name = 'pages/dashboard/avisos/ciclones_tropicales/eliminar_aviso_ciclon_tropical.html'
+class TropicalCycloneDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_tropical_cyclone'
-    success_url = reverse_lazy('ciclones_tropicales')
-    url_redirect = success_url
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(TropicalCyclone, uuid=uuid)
-
-    def post(self, request, *args, **kwargs):
-        tropical_cyclone = self.get_object()
-
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        tropical_cyclone = get_object_or_404(TropicalCyclone, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=tropical_cyclone,
             action_flag=DELETION,
             message=f"Se eliminó el aviso de ciclón tropical del: {tropical_cyclone.date.strftime('%d-%m-%Y')}."
         )
-
         try:
             tropical_cyclone.delete()
-            messages.success(request, 'El aviso de ciclón tropical ha sido eliminada con éxito.', extra_tags='danger')
+            messages.success(request, 'El aviso de ciclón tropical ha sido eliminado con éxito.')
         except Exception as e:
             messages.error(request, str(e))
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Aviso Ciclón Tropical'
-        context['parent'] = 'avisos'
-        context['segment'] = 'cyclone'
-        context['url_list'] = reverse_lazy('ciclones_tropicales')
-        return context
+        return redirect('ciclones_tropicales')

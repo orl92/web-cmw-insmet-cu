@@ -4,11 +4,10 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.data.mail_send import mail_send
@@ -135,39 +134,20 @@ class EarlyWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
 
-class EarlyWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = EarlyWarning
-    template_name = 'pages/dashboard/avisos/alertas_tempranas/eliminar_aviso_alerta_temprana.html'
+class EarlyWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_early_warning'
-    success_url = reverse_lazy('alertas_tempranas')
-    url_redirect = success_url
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(EarlyWarning, uuid=uuid)
-
-    def post(self, request, *args, **kwargs):
-        early_warning = self.get_object()
-
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        early_warning = get_object_or_404(EarlyWarning, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=early_warning,
             action_flag=DELETION,
             message=f"Se eliminó la alerta temprana del: {early_warning.date.strftime('%d-%m-%Y')}."
         )
-
         try:
             early_warning.delete()
-            messages.success(request, 'El aviso de alerta temprana ha sido eliminada con éxito.', extra_tags='danger')
+            messages.success(request, 'El aviso de alerta temprana ha sido eliminada con éxito.')
         except Exception as e:
             messages.error(request, str(e))
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Aviso Alerta Temprana'
-        context['parent'] = 'avisos'
-        context['segment'] = 'early'
-        context['url_list'] = reverse_lazy('alertas_tempranas')
-        return context
+        return redirect('alertas_tempranas')

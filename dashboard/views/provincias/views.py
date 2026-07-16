@@ -3,11 +3,10 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.forms.provincias.forms import ProvinceForm
@@ -100,39 +99,20 @@ class ProvinceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
-class ProvinceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = Province
-    template_name = 'pages/dashboard/provincias/eliminar_provincia.html'
+class ProvinceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_province'
-    success_url = reverse_lazy('provincias')
-    url_redirect = success_url
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(Province, uuid=uuid)
-    
-    def post(self, request, *args, **kwargs):
-        province = self.get_object()
-        
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        province = get_object_or_404(Province, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=province,
             action_flag=DELETION,
-            message=f"Se eliminó la provincia: {province.name}."
+            message=f"Se eliminó la provincia {province.name}."
         )
-        
         try:
             province.delete()
-            messages.success(request, 'La provincia ha sido eliminada con éxito.', extra_tags='danger')
+            messages.success(request, 'Provincia eliminada con éxito.')
         except Exception as e:
             messages.error(request, str(e))
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Provincia'
-        context['parent'] = ''
-        context['segment'] = 'provincia'
-        context['url_list'] = reverse_lazy('provincias')
-        return context
+        return redirect('provincias')

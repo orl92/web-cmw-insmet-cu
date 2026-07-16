@@ -9,8 +9,7 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import get_template
@@ -18,10 +17,10 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
     CreateView,
-    DeleteView,
     DetailView,
     ListView,
     UpdateView,
+    View,
 )
 
 from common.utils import log_action
@@ -152,42 +151,23 @@ class WeatherNoteUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPas
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
-class WeatherNoteDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = WeatherNote
-    template_name = 'pages/dashboard/comentarios/nota_meteorologica/eliminar_nota_meteorologica.html'
+class WeatherNoteDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_weather_note'
-    success_url = reverse_lazy('listado_notas_meteorologicas')
-    url_redirect = success_url
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(WeatherNote, uuid=uuid) 
-
-    def post(self, request, *args, **kwargs):
-        weather_note = self.get_object()
-        
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        weather_note = get_object_or_404(WeatherNote, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=weather_note,
             action_flag=DELETION,
-            message=f"Se eliminó la Nota Meteorológica: {weather_note.date}."
+            message=f"Se eliminó la nota meteorológica del: {weather_note.date.strftime('%d-%m-%Y')}."
         )
-        
         try:
             weather_note.delete()
-            messages.success(request, 'La nota meteorologica ha sido eliminada con éxito.', extra_tags='danger')
+            messages.success(request, 'La nota meteorológica ha sido eliminada con éxito.')
         except Exception as e:
             messages.error(request, str(e))
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Nota Meteorológica'
-        context['parent'] = 'comentario'
-        context['segment'] = 'nota_meteorologica'
-        context['url_list'] = reverse_lazy('listado_notas_meteorologicas')
-        return context
+        return redirect('listado_notas_meteorologicas')
 
 class WeatherNoteDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = WeatherNote

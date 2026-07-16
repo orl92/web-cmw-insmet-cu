@@ -5,12 +5,11 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.forms.pronosticos.forms import ForecastsForm
@@ -135,39 +134,20 @@ class ForecastUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
-class ForecastDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = Forecasts
-    template_name = 'pages/dashboard/pronosticos/eliminar_pronostico.html'
+class ForecastDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_forecasts'
-    success_url = reverse_lazy('pronosticos')
-    url_redirect = success_url
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(Forecasts, uuid=uuid)
-
-    def post(self, request, *args, **kwargs):
-        forecast = self.get_object()
-        
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        forecast = get_object_or_404(Forecasts, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=forecast,
             action_flag=DELETION,
             message=f"Se eliminó el pronóstico del: {forecast.date.strftime('%d-%m-%Y')}."
         )
-        
         try:
             forecast.delete()
-            messages.success(request, 'El pronóstico ha sido eliminado con éxito.', extra_tags='danger')
+            messages.success(request, 'El pronóstico ha sido eliminado con éxito.')
         except Exception as e:
             messages.error(request, str(e))
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Pronóstico'
-        context['parent'] = 'pronosticos'
-        context['segment'] = 'pronostico'
-        context['url_list'] = self.success_url
-        return context
+        return redirect('pronosticos')

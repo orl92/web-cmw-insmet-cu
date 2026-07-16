@@ -3,13 +3,12 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.forms.servicios.forms import ServiceForm
@@ -134,31 +133,20 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
         return context
 
 
-class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = Service
-    template_name = 'pages/dashboard/servicios/eliminar_servicio.html'
+class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_service'
-    success_url = reverse_lazy('listado_servicios')
-    url_redirect = success_url
 
-    def get_object(self, queryset=None):
-        return get_object_or_404(Service, uuid=self.kwargs['uuid'])
-
-    def post(self, request, *args, **kwargs):
-        service = self.get_object()
+    def post(self, request, uuid):
+        service = get_object_or_404(Service, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=service,
             action_flag=DELETION,
-            message=f"Se eliminó el servicio: {service.title}"
+            message=f"Se eliminó el servicio {service.title}."
         )
-        messages.success(request, 'Servicio eliminado con éxito.')
-        return super().post(request, *args, **kwargs)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Servicio'
-        context['parent'] = ''
-        context['segment'] = 'servicio'
-        context['url_list'] = reverse_lazy('listado_servicios')
-        return context
+        try:
+            service.delete()
+            messages.success(request, 'El servicio ha sido eliminado con éxito.')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar el servicio: {str(e)}')
+        return redirect('listado_servicios')

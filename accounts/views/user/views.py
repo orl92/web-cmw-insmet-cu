@@ -4,13 +4,12 @@ from django.contrib.auth import login
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from accounts.forms.user.form import CustomerSignUpForm, UserForm, UserUpdateForm
 from accounts.models import Profile
@@ -119,46 +118,24 @@ class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTest
         return self.request.user.is_superuser or user == self.request.user
 
 
-class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = User
-    template_name = 'pages/accounts/users/user_delete.html'
+class UserDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'auth.delete_user'
-    success_url = reverse_lazy('users')
-    url_redirect = success_url
 
-    def get_object(self):
-        uuid = self.kwargs.get('uuid')
+    def post(self, request, uuid):
         profile = get_object_or_404(Profile, uuid=uuid)
-        return profile.user
-
-    def post(self, request, *args, **kwargs):
-        user = self.get_object()
+        user = profile.user
         if user.is_superuser and User.objects.filter(is_superuser=True).count() == 1:
             messages.error(request, f'No se puede eliminar el usuario {user.username} si es el único superusuario.')
-            return redirect(self.success_url)
-        else:
-            # Registro de acción antes de eliminar
-            log_action(
-                user=self.request.user,
-                obj=user,
-                action_flag=DELETION,
-                message=f"Se eliminó al usuario {user.username}."
-            )
-            
-            user.delete()
-            messages.success(request, f'Usuario {user.username} se ha eliminado correctamente.')
-            return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Usuario'
-        context['message'] = f'¿Estás seguro de que deseas eliminar al usuario {self.object.username}?'
-        context['button_text'] = 'Eliminar'
-        context['parent'] = 'accounts'
-        context['segment'] = 'users'
-        context['url_list'] = reverse_lazy('users')
-        return context
-
+            return redirect('users')
+        log_action(
+            user=self.request.user,
+            obj=user,
+            action_flag=DELETION,
+            message=f"Se eliminó al usuario {user.username}."
+        )
+        user.delete()
+        messages.success(request, f'Usuario {user.username} se ha eliminado correctamente.')
+        return redirect('users')
 
 class CustomerRegisterView(CreateView):
     form_class = CustomerSignUpForm

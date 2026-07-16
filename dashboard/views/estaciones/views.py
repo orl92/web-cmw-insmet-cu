@@ -3,11 +3,10 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.forms.estaciones.forms import StationForm
@@ -102,39 +101,20 @@ class StationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
         station = self.get_object()
         return self.request.user.is_superuser or station.user == self.request.user
 
-class StationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = Station
-    template_name = 'pages/dashboard/estaciones/eliminar_estacion.html'
-    permission_required = 'dashboard.delete_station'  # Permiso requerido para eliminar una estación
-    success_url = reverse_lazy('estaciones')
-    url_redirect = success_url
+class StationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'dashboard.delete_station'
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(Station, uuid=uuid)
-
-    def post(self, request, *args, **kwargs):
-        station = self.get_object()
-        
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        station = get_object_or_404(Station, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=station,
             action_flag=DELETION,
-            message=f"Se eliminó la estación: {station.name}."
+            message=f"Se eliminó la estación {station.name}."
         )
-        
         try:
             station.delete()
-            messages.success(request, 'La estación ha sido eliminada con éxito.', extra_tags='danger')
+            messages.success(request, 'Estación eliminada con éxito.')
         except Exception as e:
-            messages.error(request, f'Error al eliminar la estación: {str(e)}', extra_tags='danger')
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Estación'
-        context['parent'] = ''
-        context['segment'] = 'estacion'
-        context['url_list'] = reverse_lazy('estaciones')
-        return context
+            messages.error(request, str(e))
+        return redirect('estaciones')

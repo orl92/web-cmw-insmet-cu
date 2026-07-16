@@ -9,8 +9,7 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import get_template
@@ -18,10 +17,10 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
     CreateView,
-    DeleteView,
     DetailView,
     ListView,
     UpdateView,
+    View,
 )
 
 from common.utils import log_action
@@ -154,43 +153,24 @@ class WeatherTomorrowUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Use
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
-class WeatherTomorrowDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = WeatherTomorrow
-    template_name = 'pages/dashboard/tiempo/manana/eliminar_tiempo_m.html'
+class WeatherTomorrowDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_weather_tomorrow'
-    success_url = reverse_lazy('listado_tiempo_m')
-    url_redirect = success_url
-    
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(WeatherTomorrow, uuid=uuid)
 
-    def post(self, request, *args, **kwargs):
-        weather_tomorrow = self.get_object()
-        
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        weather_tomorrow = get_object_or_404(WeatherTomorrow, uuid=uuid)
         log_action(
             user=self.request.user,
             obj=weather_tomorrow,
             action_flag=DELETION,
-            message=f"Se eliminó el pronóstico del tiempo para mañana: {weather_tomorrow.date}."
+            message=f"Se eliminó el tiempo de mañana del: {weather_tomorrow.date.strftime('%d-%m-%Y')}."
         )
-        
         try:
             weather_tomorrow.delete()
-            messages.success(request, 'El tiempo para mañana ha sido eliminado con éxito.', extra_tags='danger')
+            messages.success(request, 'El tiempo de mañana ha sido eliminado con éxito.')
         except Exception as e:
             messages.error(request, str(e))
-        return redirect(self.success_url)
+        return redirect('listado_tiempo_m')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Tiempo para Mañana'
-        context['parent'] = 'tiempo'
-        context['segment'] = 'tiempo_m'
-        context['url_list'] = reverse_lazy('listado_tiempo_m')
-        return context
-    
 class WeatherTomorrowDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = WeatherTomorrow
     template_name = 'pages/dashboard/tiempo/manana/detalle_tiempo_m.html'

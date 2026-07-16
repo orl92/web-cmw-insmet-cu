@@ -4,11 +4,10 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.data.mail_send import mail_send
@@ -135,39 +134,20 @@ class StormWarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPa
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
 
-class StormWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = StormWarning
-    template_name = 'pages/dashboard/avisos/tormentas/eliminar_aviso_tormenta.html'
+class StormWarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_storm_warning'
-    success_url = reverse_lazy('avisos_tormentas')
-    url_redirect = success_url
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(StormWarning, uuid=uuid)
-
-    def post(self, request, *args, **kwargs):
-        special_notice = self.get_object()
-
-        # Registro de acción antes de eliminar
+    def post(self, request, uuid):
+        storm_warning = get_object_or_404(StormWarning, uuid=uuid)
         log_action(
             user=self.request.user,
-            obj=special_notice,
+            obj=storm_warning,
             action_flag=DELETION,
-            message=f"Se eliminó el aviso de tormenta del: {special_notice.date.strftime('%d-%m-%Y')}."
+            message=f"Se eliminó el aviso de tormenta del: {storm_warning.date.strftime('%d-%m-%Y')}."
         )
-
         try:
-            special_notice.delete()
-            messages.success(request, 'El aviso de tormenta ha sido eliminada con éxito.', extra_tags='danger')
+            storm_warning.delete()
+            messages.success(request, 'El aviso de tormenta ha sido eliminado con éxito.')
         except Exception as e:
             messages.error(request, str(e))
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Aviso de Tormenta'
-        context['parent'] = 'avisos'
-        context['segment'] = 'storm'
-        context['url_list'] = reverse_lazy('avisos_tormentas')
-        return context
+        return redirect('avisos_tormentas')

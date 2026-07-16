@@ -3,18 +3,16 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin,
-)
+    UserPassesTestMixin)
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, ListView, UpdateView, View
 
 from common.utils import log_action
 from dashboard.forms.clientes.forms import (
     CustomerForm,
-    CustomerUpdateForm,
-)
+    CustomerUpdateForm)
 from dashboard.models import Customer
 
 
@@ -116,50 +114,21 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return self.request.user.is_superuser or self.get_object().user == self.request.user 
 
 
-class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
-    model = Customer
-    template_name = 'pages/dashboard/clientes/eliminar_cliente.html'
+class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_customer'
-    success_url = reverse_lazy('listado_clientes')
-    url_redirect = success_url
 
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(Customer, uuid=uuid)
-
-    def delete(self, request, *args, **kwargs):
-        customer = self.get_object()
+    def post(self, request, uuid):
+        customer = get_object_or_404(Customer, uuid=uuid)
         user = customer.user
-
-        # Registro de acción antes de eliminar
         log_action(
             user=self.request.user,
             obj=customer,
             action_flag=DELETION,
-            message=f"Se eliminó el cliente y el usuario asociado: {user.username}."
+            message=f"Se eliminó al cliente {customer.company_name} y su usuario asociado."
         )
-        
         try:
-            # Eliminar el usuario -> la cascada borra el cliente automáticamente
             user.delete()
-            messages.success(
-                self.request,
-                'El cliente y el usuario asociado han sido eliminados con éxito.',
-                extra_tags='danger'
-            )
+            messages.success(request, 'Cliente y usuario eliminados con éxito.')
         except Exception as e:
-            messages.error(
-                self.request,
-                f'Error al eliminar el cliente: {str(e)}',
-                extra_tags='danger'
-            )
-        
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Eliminar Cliente'
-        context['parent'] = ''
-        context['segment'] = 'cliente'
-        context['url_list'] = reverse_lazy('listado_clientes')
-        return context
+            messages.error(request, str(e))
+        return redirect('listado_clientes')
