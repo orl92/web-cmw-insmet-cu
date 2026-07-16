@@ -6,7 +6,7 @@ LOGDIR=${DJANGODIR}/logs/gunicorn.log
 USER=root
 GROUP=root
 NUM_WORKERS=5
-DJANGO_WSGI_MODULE=core.wsgi
+DJANGO_WSGI_MODULE=config.wsgi
 
 rm -frv $SOCKFILE
 
