@@ -1,6 +1,6 @@
 # 021 · Eliminar campos planos de Forecasts
 
-**Estado:** planificado
+**Estado:** implementado
 
 ## Qué hace
 
@@ -8,9 +8,9 @@ Elimina los ~60 campos planos del modelo Forecasts que ya están normalizados en
 
 ## Criterios de aceptación
 
-- [ ] Migración elimina columnas planas
-- [ ] ForecastsForm actualizado (solo campos astronómicos + date)
-- [ ] Templates crear/actualizar actualizados
-- [ ] DashboardView charts leen de ForecastRegions
-- [ ] API serializer no referencia campos planos
-- [ ] `python manage.py test` — todos pasan
+- [x] Migración elimina columnas planas
+- [x] ForecastsForm actualizado (solo campos astronómicos + date)
+- [x] Templates crear/actualizar actualizados
+- [x] DashboardView charts leen de ForecastRegions
+- [x] API serializer no referencia campos planos
+- [x] `python manage.py test` — todos pasan

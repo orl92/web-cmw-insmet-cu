@@ -1,10 +1,10 @@
-- [ ] Marcar campos planos como `editable=False` o eliminarlos en models.py
-- [ ] Migración
-- [ ] Actualizar ForecastsForm
-- [ ] Actualizar AllForecastCreateView y ForecastUpdateView
-- [ ] Actualizar templates crear/actualizar
-- [ ] Actualizar DashboardView charts
-- [ ] Verificar API serializer (ForecastSerializer)
-- [ ] Verificar command migrate_forecast_data
-- [ ] Tests
-- [ ] `python manage.py check && python manage.py test`
+- [x] Marcar campos planos como `editable=False` o eliminarlos en models.py
+- [x] Migración
+- [x] Actualizar ForecastsForm
+- [x] Actualizar AllForecastCreateView y ForecastUpdateView
+- [x] Actualizar templates crear/actualizar
+- [x] Actualizar DashboardView charts
+- [x] Verificar API serializer (ForecastSerializer)
+- [x] Verificar command migrate_forecast_data
+- [x] Tests
+- [x] `python manage.py check && python manage.py test`
