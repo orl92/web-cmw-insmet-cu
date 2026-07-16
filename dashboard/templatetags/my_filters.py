@@ -3,6 +3,7 @@ import re
 from collections import defaultdict
 
 from django import template
+from django.core.exceptions import ObjectDoesNotExist
 from django.templatetags.static import static
 from django.utils.timesince import timesince
 from django.utils.translation import gettext as _
@@ -448,7 +449,7 @@ def get_forecast_day(obj, day_number):
     Extrae los datos de pronóstico para un día específico.
 
     Args:
-        obj: Objeto de pronóstico con campos dayX_*
+        obj: Objeto de pronóstico (Forecasts con extended_days o con campos dayX_*)
         day_number (int): Número del día (1-5)
 
     Returns:
@@ -456,12 +457,25 @@ def get_forecast_day(obj, day_number):
 
     Uso en plantilla: {{ forecast|get_forecast_day:1 }}
     """
-    day_number = str(day_number)
+    # Intentar desde el modelo normalizado primero
+    if hasattr(obj, 'extended_days'):
+        try:
+            day = obj.extended_days.get(day_number=day_number)
+            return {
+                "date": day.date,
+                "weather": day.weather,
+                "max_temp": day.max_temp,
+                "min_temp": day.min_temp,
+            }
+        except (ObjectDoesNotExist, AttributeError):
+            pass
+    # Fallback a campos planos
+    day_str = str(day_number)
     return {
-        "date": getattr(obj, f"day{day_number}_date", "--"),
-        "weather": getattr(obj, f"day{day_number}_weather", "--"),
-        "max_temp": getattr(obj, f"day{day_number}_max_temp", "--"),
-        "min_temp": getattr(obj, f"day{day_number}_min_temp", "--"),
+        "date": getattr(obj, f"day{day_str}_date", "--"),
+        "weather": getattr(obj, f"day{day_str}_weather", "--"),
+        "max_temp": getattr(obj, f"day{day_str}_max_temp", "--"),
+        "min_temp": getattr(obj, f"day{day_str}_min_temp", "--"),
     }
 
 
@@ -681,3 +695,9 @@ def get_permission_checkbox_class(perm_type):
         "other": "checkbox-other",
     }
     return classes.get(perm_type, "checkbox-other")
+
+
+@register.filter
+def period_display(value):
+    mapping = {'morning': 'Mañana', 'afternoon': 'Tarde', 'night': 'Noche'}
+    return mapping.get(value, value or '')

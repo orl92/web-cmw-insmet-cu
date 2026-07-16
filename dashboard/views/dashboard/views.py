@@ -30,73 +30,58 @@ class ExcelJSONView(View):
         excel_file = self.request.FILES['excelFile']
         df = pd.read_excel(excel_file)
 
-        forecats = {
-            'ntm': df.values[2][1],
-            'nta': df.values[2][2],
-            'ntn': df.values[2][3],
-            'nwm': df.values[2][4],
-            'nwa': df.values[2][5],
-            'nwn': df.values[2][6],
-            'nwddm': df.values[2][7],
-            'nwdda': df.values[2][8],
-            'nwddn': df.values[2][9],
-            'nwdfm': df.values[2][10],
-            'nwdfa': df.values[2][11],
-            'nwdfn': df.values[2][12],
-            'nsm': df.values[2][13],
-            'nsa': df.values[2][14],
-            'nsn': df.values[2][15],
-            'itm': df.values[3][1],
-            'ita': df.values[3][2],
-            'itn': df.values[3][3],
-            'iwm': df.values[3][4],
-            'iwa': df.values[3][5],
-            'iwn': df.values[3][6],
-            'iwddm': df.values[3][7],
-            'iwdda': df.values[3][8],
-            'iwddn': df.values[3][9],
-            'iwdfm': df.values[3][10],
-            'iwdfa': df.values[3][11],
-            'iwdfn': df.values[3][12],
-            'stm': df.values[4][1],
-            'sta': df.values[4][2],
-            'stn': df.values[4][3],
-            'swm': df.values[4][4],
-            'swa': df.values[4][5],
-            'swn': df.values[4][6],
-            'swddm': df.values[4][7],
-            'swdda': df.values[4][8],
-            'swddn': df.values[4][9],
-            'swdfm': df.values[4][10],
-            'swdfa': df.values[4][11],
-            'swdfn': df.values[4][12],
-            'ssm': df.values[4][13],
-            'ssa': df.values[4][14],
-            'ssn': df.values[4][15],
-            'day1_min_temp': df.values[8][2],
-            'day1_max_temp': df.values[8][3],
-            'day1_weather': df.values[8][4],
-            'day2_min_temp': df.values[9][2],
-            'day2_max_temp': df.values[9][3],
-            'day2_weather': df.values[9][4],
-            'day3_min_temp': df.values[10][2],
-            'day3_max_temp': df.values[10][3],
-            'day3_weather': df.values[10][4],
-            'day4_min_temp': df.values[11][2],
-            'day4_max_temp': df.values[11][3],
-            'day4_weather': df.values[11][4],
-            'day5_min_temp': df.values[12][2],
-            'day5_max_temp': df.values[12][3],
-            'day5_weather': df.values[12][4],
-            'lp': df.values[14][1],
-            'nlp': df.values[14][2],
-            'nlpd': df.values[14][3].strftime("%Y-%m-%d"),
-            'sunrise': df.values[15][1].strftime("%H:%M"),
-            'sunset': (dt.datetime.combine(dt.date(1, 1, 1), df.values[16][1]) + dt.timedelta(hours=12)).strftime("%H:%M"),
-            'uv_index': df.values[17][1],
-        }
+        def _val(r, c):
+            v = df.values[r][c]
+            try:
+                return int(v) if pd.notna(v) else ''
+            except (ValueError, TypeError):
+                return str(v) if pd.notna(v) else ''
 
-        return JsonResponse(forecats)
+        # Rows: 2=north, 3=interior, 4=south
+        # Cols: 1-3=temp, 4-6=weather, 7-9=wind_dir, 10-12=wind_speed, 13-15=sea
+        # Extended: rows 8-12, cols 2-4 = min_temp, max_temp, weather
+        rows_map = {'north': 2, 'interior': 3, 'south': 4}
+        periods = ['morning', 'afternoon', 'night']
+        regions = []
+        for region, row in rows_map.items():
+            for i, period in enumerate(periods):
+                regions.append({
+                    'temp': _val(row, 1 + i),
+                    'weather': _val(row, 4 + i),
+                    'wind_dir': _val(row, 7 + i),
+                    'wind_speed': _val(row, 10 + i),
+                    'sea_note': _val(row, 13 + i) if region != 'interior' else '',
+                })
+        extended = []
+        for day_row in range(8, 13):
+            extended.append({
+                'min_temp': _val(day_row, 2),
+                'max_temp': _val(day_row, 3),
+                'weather': _val(day_row, 4),
+            })
+        try:
+            sunset_val = df.values[16][1]
+            if hasattr(sunset_val, 'strftime'):
+                sunset_str = sunset_val.strftime("%H:%M")
+            else:
+                try:
+                    sunset_str = (dt.datetime.combine(dt.date(1, 1, 1), sunset_val) + dt.timedelta(hours=12)).strftime("%H:%M")
+                except Exception:
+                    sunset_str = str(sunset_val)
+        except Exception:
+            sunset_str = ''
+
+        data = {
+            'regions': regions,
+            'extended': extended,
+            'lp': _val(14, 1),
+            'nlp': _val(14, 2),
+            'nlpd': _val(14, 3),
+            'sunrise': _val(15, 1),
+            'sunset': sunset_str,
+            'uv_index': _val(17, 1),
+        }
+        return JsonResponse(data)
 
 
 class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -138,7 +123,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         # Datos meteorológicos comunes
         try:
-            context['latest_forecast'] = Forecasts.objects.latest('date')
+            context['latest_forecast'] = Forecasts.objects.prefetch_related('regions', 'extended_days').latest('date')
         except ObjectDoesNotExist:
             context['latest_forecast'] = None
         
@@ -159,14 +144,18 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         if context['has_forecasts']:
             forecasts_list = list(forecasts)
-            
+
+            def _region_temp(f, region_key, period):
+                data = getattr(f, region_key)
+                return float(data[period]['temp']) if data and data.get(period) and data[period].get('temp') else 0.0
+
             context['temperature_labels'] = [f.date.strftime('%d/%m') for f in forecasts_list]
-            context['max_temperatures_north'] = [float(f.nta) for f in forecasts_list]
-            context['min_temperatures_north'] = [float(f.ntn) for f in forecasts_list]
-            context['max_temperatures_south'] = [float(f.sta) for f in forecasts_list]
-            context['min_temperatures_south'] = [float(f.stn) for f in forecasts_list]
-            context['max_temperatures_inland'] = [float(f.ita) for f in forecasts_list]
-            context['min_temperatures_inland'] = [float(f.itn) for f in forecasts_list]
+            context['max_temperatures_north'] = [_region_temp(f, 'north', 'afternoon') for f in forecasts_list]
+            context['min_temperatures_north'] = [_region_temp(f, 'north', 'night') for f in forecasts_list]
+            context['max_temperatures_south'] = [_region_temp(f, 'south', 'afternoon') for f in forecasts_list]
+            context['min_temperatures_south'] = [_region_temp(f, 'south', 'night') for f in forecasts_list]
+            context['max_temperatures_inland'] = [_region_temp(f, 'interior', 'afternoon') for f in forecasts_list]
+            context['min_temperatures_inland'] = [_region_temp(f, 'interior', 'night') for f in forecasts_list]
 
         # Última alerta activa de cada tipo (SOLO UNA)
         now = timezone.now()

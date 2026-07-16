@@ -70,9 +70,10 @@
         </div>
       </div>
       <hr />
-      <div class="row">
+      {% for forecast in forecasts %}
+      <div class="row mb-4">
         <div class="col-lg-12">
-          <label class="form-label">Pronostico:</label>
+          <label class="form-label">Pronostico del {{ forecast.date|date:'d/m/Y' }}:</label>
           <table id="" class="display table table-hover table-striped" style="width:100%">
             <thead>
               <tr>
@@ -85,83 +86,79 @@
               </tr>
               <tr>
                 <th>Mañana</th>
-                <th>Tarde (Máx)</th>
+                <th>Tarde</th>
                 <th>Noche</th>
                 <th>Mañana</th>
-                <th>Tarde (Máx)</th>
+                <th>Tarde</th>
                 <th>Noche</th>
                 <th>Mañana</th>
-                <th>Tarde (Máx)</th>
+                <th>Tarde</th>
                 <th>Noche</th>
                 <th>Mañana</th>
-                <th>Tarde (Máx)</th>
+                <th>Tarde</th>
                 <th>Noche</th>
                 <th>Mañana</th>
-                <th>Tarde (Máx)</th>
+                <th>Tarde</th>
                 <th>Noche</th>
               </tr>
             </thead>
             <tbody>
-              {% for forecast in forecasts %}
-                <tr>
-                  <td>Costa Norte</td>
-                  <td>{{ forecast.ntm }}</td>
-                  <td>{{ forecast.nta }}</td>
-                  <td>{{ forecast.ntn }}</td>
-                  <td>{{ forecast.nwm }}</td>
-                  <td>{{ forecast.nwa }}</td>
-                  <td>{{ forecast.nwn }}</td>
-                  <td>{{ forecast.nwddm }}</td>
-                  <td>{{ forecast.nwdda }}</td>
-                  <td>{{ forecast.nwddn }}</td>
-                  <td>{{ forecast.nwdfm }}</td>
-                  <td>{{ forecast.nwdfa }}</td>
-                  <td>{{ forecast.nwdfn }}</td>
-                  <td>{{ forecast.nsm }}</td>
-                  <td>{{ forecast.nsa }}</td>
-                  <td>{{ forecast.nsn }}</td>
-                </tr>
-              {% endfor %}
-              {% for forecast in forecasts %}
-                <tr>
-                  <td>Interior</td>
-                  <td>{{ forecast.itm }}</td>
-                  <td>{{ forecast.ita }}</td>
-                  <td>{{ forecast.itn }}</td>
-                  <td>{{ forecast.iwm }}</td>
-                  <td>{{ forecast.iwa }}</td>
-                  <td>{{ forecast.iwn }}</td>
-                  <td>{{ forecast.iwddm }}</td>
-                  <td>{{ forecast.iwdda }}</td>
-                  <td>{{ forecast.iwddn }}</td>
-                  <td>{{ forecast.iwdfm }}</td>
-                  <td>{{ forecast.iwdfa }}</td>
-                  <td>{{ forecast.iwdfn }}</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-              {% endfor %}
-              {% for forecast in forecasts %}
-                <tr>
-                  <td>Costa Sur</td>
-                  <td>{{ forecast.stm }}</td>
-                  <td>{{ forecast.sta }}</td>
-                  <td>{{ forecast.stn }}</td>
-                  <td>{{ forecast.swm }}</td>
-                  <td>{{ forecast.swa }}</td>
-                  <td>{{ forecast.swn }}</td>
-                  <td>{{ forecast.swddm }}</td>
-                  <td>{{ forecast.swdda }}</td>
-                  <td>{{ forecast.swddn }}</td>
-                  <td>{{ forecast.swdfm }}</td>
-                  <td>{{ forecast.swdfa }}</td>
-                  <td>{{ forecast.swdfn }}</td>
-                  <td>{{ forecast.ssm }}</td>
-                  <td>{{ forecast.ssa }}</td>
-                  <td>{{ forecast.ssn }}</td>
-                </tr>
-              {% endfor %}
+              {% with north=forecast.north interior=forecast.interior south=forecast.south %}
+              <tr>
+                <td>Costa Norte</td>
+                <td>{{ north.morning.temp }}</td>
+                <td>{{ north.afternoon.temp }}</td>
+                <td>{{ north.night.temp }}</td>
+                <td>{{ north.morning.weather }}</td>
+                <td>{{ north.afternoon.weather }}</td>
+                <td>{{ north.night.weather }}</td>
+                <td>{{ north.morning.wind_dir }}</td>
+                <td>{{ north.afternoon.wind_dir }}</td>
+                <td>{{ north.night.wind_dir }}</td>
+                <td>{{ north.morning.wind_speed }}</td>
+                <td>{{ north.afternoon.wind_speed }}</td>
+                <td>{{ north.night.wind_speed }}</td>
+                <td>{{ north.morning.sea }}</td>
+                <td>{{ north.afternoon.sea }}</td>
+                <td>{{ north.night.sea }}</td>
+              </tr>
+              <tr>
+                <td>Interior</td>
+                <td>{{ interior.morning.temp }}</td>
+                <td>{{ interior.afternoon.temp }}</td>
+                <td>{{ interior.night.temp }}</td>
+                <td>{{ interior.morning.weather }}</td>
+                <td>{{ interior.afternoon.weather }}</td>
+                <td>{{ interior.night.weather }}</td>
+                <td>{{ interior.morning.wind_dir }}</td>
+                <td>{{ interior.afternoon.wind_dir }}</td>
+                <td>{{ interior.night.wind_dir }}</td>
+                <td>{{ interior.morning.wind_speed }}</td>
+                <td>{{ interior.afternoon.wind_speed }}</td>
+                <td>{{ interior.night.wind_speed }}</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+              <tr>
+                <td>Costa Sur</td>
+                <td>{{ south.morning.temp }}</td>
+                <td>{{ south.afternoon.temp }}</td>
+                <td>{{ south.night.temp }}</td>
+                <td>{{ south.morning.weather }}</td>
+                <td>{{ south.afternoon.weather }}</td>
+                <td>{{ south.night.weather }}</td>
+                <td>{{ south.morning.wind_dir }}</td>
+                <td>{{ south.afternoon.wind_dir }}</td>
+                <td>{{ south.night.wind_dir }}</td>
+                <td>{{ south.morning.wind_speed }}</td>
+                <td>{{ south.afternoon.wind_speed }}</td>
+                <td>{{ south.night.wind_speed }}</td>
+                <td>{{ south.morning.sea }}</td>
+                <td>{{ south.afternoon.sea }}</td>
+                <td>{{ south.night.sea }}</td>
+              </tr>
+              {% endwith %}
             </tbody>
           </table>
         </div>
@@ -177,37 +174,13 @@
               </tr>
             </thead>
             <tbody>
-              {% for forecast in forecasts %}
-                <tr>
-                  <td>{{ forecast.day1_date }}</td>
-                  <td>{{ forecast.day1_min_temp }}</td>
-                  <td>{{ forecast.day1_max_temp }}</td>
-                  <td>{{ forecast.day1_weather }}</td>
-                </tr>
-                <tr>
-                  <td>{{ forecast.day2_date }}</td>
-                  <td>{{ forecast.day2_min_temp }}</td>
-                  <td>{{ forecast.day2_max_temp }}</td>
-                  <td>{{ forecast.day2_weather }}</td>
-                </tr>
-                <tr>
-                  <td>{{ forecast.day3_date }}</td>
-                  <td>{{ forecast.day3_min_temp }}</td>
-                  <td>{{ forecast.day3_max_temp }}</td>
-                  <td>{{ forecast.day3_weather }}</td>
-                </tr>
-                <tr>
-                  <td>{{ forecast.day4_date }}</td>
-                  <td>{{ forecast.day4_min_temp }}</td>
-                  <td>{{ forecast.day4_max_temp }}</td>
-                  <td>{{ forecast.day4_weather }}</td>
-                </tr>
-                <tr>
-                  <td>{{ forecast.day5_date }}</td>
-                  <td>{{ forecast.day5_min_temp }}</td>
-                  <td>{{ forecast.day5_max_temp }}</td>
-                  <td>{{ forecast.day5_weather }}</td>
-                </tr>
+              {% for day in forecast.extended_forecast %}
+              <tr>
+                <td>{{ day.date }}</td>
+                <td>{{ day.min_temp }}</td>
+                <td>{{ day.max_temp }}</td>
+                <td>{{ day.weather }}</td>
+              </tr>
               {% endfor %}
             </tbody>
           </table>
@@ -224,36 +197,35 @@
               </tr>
             </thead>
             <tbody>
-              {% for forecast in forecasts %}
-                <tr>
-                  <td>Fase Lunar</td>
-                  <td>{{ forecast.lp }}</td>
-                  <td>{{ forecast.nlp }}</td>
-                  <td>{{ forecast.nlpd }}</td>
-                </tr>
-                <tr>
-                  <td>Salida Sol</td>
-                  <td>{{ forecast.sunrise }}</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-                <tr>
-                  <td>Puesta Sol</td>
-                  <td>{{ forecast.sunset }}</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-                <tr>
-                  <td>Indice UV</td>
-                  <td>{{ forecast.uv_index }}</td>
-                  <td>&nbsp;</td>
-                  <td>&nbsp;</td>
-                </tr>
-              {% endfor %}
+              <tr>
+                <td>Fase Lunar</td>
+                <td>{{ forecast.lp }}</td>
+                <td>{{ forecast.nlp }}</td>
+                <td>{{ forecast.nlpd }}</td>
+              </tr>
+              <tr>
+                <td>Salida Sol</td>
+                <td>{{ forecast.sunrise }}</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+              <tr>
+                <td>Puesta Sol</td>
+                <td>{{ forecast.sunset }}</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+              <tr>
+                <td>Indice UV</td>
+                <td>{{ forecast.uv_index }}</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
+      {% endfor %}
     </div>
   </div>
 {% endblock %}
@@ -261,7 +233,6 @@
 {% block extrajs %}
   {{ block.super }}
   {% include 'includes/dashboard/modal_delete_js.html' with delete_url_name='eliminar_pronostico' %}
-  <!-- Libs JS -->
   <script src="{% static '' %}dist/libs/datatables/datatables.min.js"></script>
   <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062" defer></script>
   <script>
@@ -281,10 +252,8 @@
         new Litepicker({
           element: document.getElementById('datepicker-icon'),
           buttonText: {
-            previousMonth: `<!-- Download SVG icon from http://tabler.io/icons/icon/chevron-left -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M15 6l-6 6l6 6" /></svg>`,
-            nextMonth: `<!-- Download SVG icon from http://tabler.io/icons/icon/chevron-right -->
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M9 6l6 6l-6 6" /></svg>`
+            previousMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M15 6l-6 6l6 6" /></svg>`,
+            nextMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M9 6l6 6l-6 6" /></svg>`
           },
           format: 'YYYY-MM-DD'
         })

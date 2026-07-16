@@ -219,68 +219,6 @@ class Forecasts(models.Model):
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     date = models.DateField(verbose_name="Fecha", unique=True, db_index=True)
-    ntm = models.IntegerField(verbose_name="Temperatura Mañana")
-    nta = models.IntegerField(verbose_name="Temperatura Tarde (Max)")
-    ntn = models.IntegerField(verbose_name="Temperatura Noche")
-    nwm = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana")
-    nwa = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde")
-    nwn = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche")
-    nwddm = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Mañana")
-    nwdda = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Tarde")
-    nwddn = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Noche")
-    nwdfm = models.CharField(max_length=5, verbose_name="Velocidad del Viento Mañana")
-    nwdfa = models.CharField(max_length=5, verbose_name="Velocidad del Viento Tarde")
-    nwdfn = models.CharField(max_length=5, verbose_name="Velocidad del Viento Noche")
-    nsm = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Mañana")
-    nsa = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Tarde")
-    nsn = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Noche")
-    itm = models.IntegerField(verbose_name="Temperatura Mañana")
-    ita = models.IntegerField(verbose_name="Temperatura Tarde (Max)")
-    itn = models.IntegerField(verbose_name="Temperatura Noche")
-    iwm = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana")
-    iwa = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde")
-    iwn = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche")
-    iwddm = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Mañana")
-    iwdda = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Tarde")
-    iwddn = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Noche")
-    iwdfm = models.CharField(max_length=5, verbose_name="Velocidad del Viento Mañana")
-    iwdfa = models.CharField(max_length=5, verbose_name="Velocidad del Viento Tarde")
-    iwdfn = models.CharField(max_length=5, verbose_name="Velocidad del Viento Noche")
-    stm = models.IntegerField(verbose_name="Temperatura Mañana")
-    sta = models.IntegerField(verbose_name="Temperatura Tarde (Max)")
-    stn = models.IntegerField(verbose_name="Temperatura Noche")
-    swm = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Mañana")
-    swa = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Tarde")
-    swn = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo Noche")
-    swddm = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Mañana")
-    swdda = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Tarde")
-    swddn = models.CharField(max_length=10, choices=VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento Noche")
-    swdfm = models.CharField(max_length=5, verbose_name="Velocidad del Viento Mañana")
-    swdfa = models.CharField(max_length=5, verbose_name="Velocidad del Viento Tarde")
-    swdfn = models.CharField(max_length=5, verbose_name="Velocidad del Viento Noche")
-    ssm = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Mañana")
-    ssa = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Tarde")
-    ssn = models.CharField(max_length=10, choices=MAR_CHOICES, verbose_name="Mar Noche")
-    day1_date = models.DateField(verbose_name="Fecha")
-    day1_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
-    day1_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day1_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
-    day2_date = models.DateField(verbose_name="Fecha")
-    day2_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
-    day2_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day2_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
-    day3_date = models.DateField(verbose_name="Fecha")
-    day3_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
-    day3_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day3_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
-    day4_date = models.DateField(verbose_name="Fecha")
-    day4_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
-    day4_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day4_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
-    day5_date = models.DateField(verbose_name="Fecha")
-    day5_min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
-    day5_max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
-    day5_weather = models.CharField(max_length=10, choices=TIEMPO_CHOICES, verbose_name="Tiempo")
     lp = models.CharField(max_length=20, choices=LUNA_CHOICES, verbose_name="Fase Lunar")
     nlp = models.CharField(max_length=20, choices=LUNA_CHOICES, verbose_name="Próxima Fase Lunar")
     nlpd = models.DateField(verbose_name="Fecha Próxima Fase")
@@ -301,6 +239,110 @@ class Forecasts(models.Model):
 
     def __str__(self):
         return f"Pronóstico detallado - {self.date.strftime('%d/%m/%Y')}"
+
+    # ---- Bridge properties para modelos normalizados ----
+
+    def get_region_data(self, region):
+        """Retorna dict con los 3 períodos de una región."""
+        periods = {}
+        for p in self.regions.filter(region=region).order_by('period_order'):
+            periods[p.period] = {
+                'temp': p.temp,
+                'weather': p.weather,
+                'weather_icon': p.weather_icon,
+                'wind_dir': p.wind_dir,
+                'wind_speed': p.wind_speed,
+                'sea': p.sea_note,
+            }
+        return periods
+
+    def get_extended_days(self):
+        """Retorna lista de días extendidos ordenados."""
+        return self.extended_days.order_by('day_number').all()
+
+    @property
+    def north(self):
+        return self.get_region_data('north')
+
+    @property
+    def interior(self):
+        return self.get_region_data('interior')
+
+    @property
+    def south(self):
+        return self.get_region_data('south')
+
+    @property
+    def extended_forecast(self):
+        return self.get_extended_days()
+
+class ForecastRegions(models.Model):
+    REGION_CHOICES = [
+        ('north', 'Costa Norte'),
+        ('interior', 'Interior'),
+        ('south', 'Costa Sur'),
+    ]
+    PERIOD_CHOICES = [
+        ('morning', 'Mañana'),
+        ('afternoon', 'Tarde'),
+        ('night', 'Noche'),
+    ]
+
+    forecast = models.ForeignKey(
+        Forecasts, on_delete=models.CASCADE, related_name='regions'
+    )
+    region = models.CharField(max_length=10, choices=REGION_CHOICES)
+    period = models.CharField(max_length=10, choices=PERIOD_CHOICES)
+    period_order = models.IntegerField(default=0, editable=False)
+    temp = models.IntegerField(verbose_name="Temperatura")
+    weather = models.CharField(max_length=10, choices=Forecasts.TIEMPO_CHOICES, verbose_name="Tiempo")
+    wind_dir = models.CharField(max_length=10, choices=Forecasts.VIENTO_DIRECCION_CHOICES, verbose_name="Dirección del Viento")
+    wind_speed = models.CharField(max_length=5, verbose_name="Velocidad del Viento")
+    sea_note = models.CharField(max_length=10, choices=Forecasts.MAR_CHOICES, blank=True, null=True, verbose_name="Mar")
+
+    class Meta:
+        verbose_name = "Pronóstico por Región"
+        verbose_name_plural = "Pronósticos por Región"
+        unique_together = ['forecast', 'region', 'period']
+        ordering = ['forecast', 'region', 'period_order']
+
+    def __str__(self):
+        return f"{self.get_region_display()} - {self.get_period_display()}"
+
+    def save(self, *args, **kwargs):
+        period_order_map = {'morning': 1, 'afternoon': 2, 'night': 3}
+        self.period_order = period_order_map.get(self.period, 0)
+        super().save(*args, **kwargs)
+
+    @property
+    def weather_icon(self):
+        from common.utils import get_img_path
+        return get_img_path(self.weather, self.period)
+
+
+class ForecastExtendedDay(models.Model):
+    forecast = models.ForeignKey(
+        Forecasts, on_delete=models.CASCADE, related_name='extended_days'
+    )
+    day_number = models.IntegerField(verbose_name="Día")
+    date = models.DateField(verbose_name="Fecha")
+    min_temp = models.IntegerField(verbose_name="Temperatura Mínima")
+    max_temp = models.IntegerField(verbose_name="Temperatura Máxima")
+    weather = models.CharField(max_length=10, choices=Forecasts.TIEMPO_CHOICES, verbose_name="Tiempo")
+
+    class Meta:
+        verbose_name = "Día Extendido"
+        verbose_name_plural = "Días Extendidos"
+        unique_together = ['forecast', 'day_number']
+        ordering = ['forecast', 'day_number']
+
+    def __str__(self):
+        return f"Día {self.day_number} - {self.date}"
+
+    @property
+    def weather_icon(self):
+        from common.utils import get_img_path
+        return get_img_path(self.weather, 'afternoon')
 
 
 class BaseWarning(FileHandlerMixin, models.Model):
@@ -437,6 +479,7 @@ class Customer(models.Model):
             ("change_customer", "Editar"),
             ("delete_customer", "Eliminar"),
         )
+
 
 class Service(FileHandlerMixin, models.Model):
     PUBLIC = 'public'
@@ -660,6 +703,52 @@ class Certificate(models.Model):
 
     def __str__(self):
         return f"Certificado de {self.subscription.service.title} - {self.subscription.customer.company_name}"
+
+
+class WeatherReport(FileHandlerMixin, models.Model):
+    TYPE_CHOICES = [
+        ('today', 'Hoy'),
+        ('tomorrow', 'Mañana'),
+        ('commentary', 'Comentario'),
+        ('note', 'Nota'),
+    ]
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
+    date = models.DateTimeField(verbose_name="Fecha y Hora de Creación")
+    summary = models.TextField(max_length=300, verbose_name="Resumen")
+    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
+    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Tipo")
+
+    file_fields = ['file']
+
+    def __str__(self):
+        labels = dict(self.TYPE_CHOICES)
+        return f"{labels.get(self.type, self.type)} - {self.date}"
+
+    class Meta:
+        verbose_name = "Reporte Meteorológico"
+        verbose_name_plural = "Reportes Meteorológicos"
+        default_permissions = ()
+        permissions = (
+            ("view_weather_report", "Ver reportes meteorológicos"),
+            ("view_weather_today", "Ver Tiempo Hoy"),
+            ("add_weather_today", "Añadir Tiempo Hoy"),
+            ("change_weather_today", "Editar Tiempo Hoy"),
+            ("delete_weather_today", "Eliminar Tiempo Hoy"),
+            ("view_weather_tomorrow", "Ver Tiempo Mañana"),
+            ("add_weather_tomorrow", "Añadir Tiempo Mañana"),
+            ("change_weather_tomorrow", "Editar Tiempo Mañana"),
+            ("delete_weather_tomorrow", "Eliminar Tiempo Mañana"),
+            ("view_weather_commentary", "Ver Comentario del Tiempo"),
+            ("add_weather_commentary", "Añadir Comentario del Tiempo"),
+            ("change_weather_commentary", "Editar Comentario del Tiempo"),
+            ("delete_weather_commentary", "Eliminar Comentario del Tiempo"),
+            ("view_weather_note", "Ver Nota Meteorológica"),
+            ("add_weather_note", "Añadir Nota Meteorológica"),
+            ("change_weather_note", "Editar Nota Meteorológica"),
+            ("delete_weather_note", "Eliminar Nota Meteorológica"),
+        )
 
 
 class WeatherToday(FileHandlerMixin, models.Model):

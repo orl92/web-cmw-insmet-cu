@@ -24,18 +24,6 @@ from dashboard.views.clientes.views import (
     CustomerListView,
     CustomerUpdateView,
 )
-from dashboard.views.comentarios.nota_meteorologica.views import (
-    WeatherNoteCreateView,
-    WeatherNoteDeleteView,
-    WeatherNoteListView,
-    WeatherNoteUpdateView,
-)
-from dashboard.views.comentarios.tiempo.views import (
-    WeatherCommentaryCreateView,
-    WeatherCommentaryDeleteView,
-    WeatherCommentaryListView,
-    WeatherCommentaryUpdateView,
-)
 from dashboard.views.company.views import CompanySettingsUpdateView
 from dashboard.views.dashboard.views import (
     DashboardView,
@@ -106,21 +94,13 @@ from dashboard.views.suscripciones.views import (
     SubscriptionRenewView,
     SubscriptionUpdateView,
 )
-from dashboard.views.tiempo.hoy.views import (
-    WeatherTodayCreateView,
-    WeatherTodayDeleteView,
-    WeatherTodayDetailView,
-    WeatherTodayListView,
-    WeatherTodayPDFView,
-    WeatherTodayUpdateView,
-)
-from dashboard.views.tiempo.manana.views import (
-    WeatherTomorrowCreateView,
-    WeatherTomorrowDeleteView,
-    WeatherTomorrowDetailView,
-    WeatherTomorrowListView,
-    WeatherTomorrowPDFView,
-    WeatherTomorrowUpdateView,
+from dashboard.views.tiempo.views import (
+    WeatherReportCreateView,
+    WeatherReportDeleteView,
+    WeatherReportDetailView,
+    WeatherReportListView,
+    WeatherReportPDFView,
+    WeatherReportUpdateView,
 )
 
 urlpatterns = [
@@ -191,29 +171,33 @@ urlpatterns = [
     path('reenviar/correo/factura/<uuid:uuid>/', ResendInvoiceEmailView.as_view(), name='reenviar_correo_factura'),
     path('ajax/suscripciones-pendientes/', ajax_pending_subscriptions, name='ajax_pending_subscriptions'),
     # Tiempo Hoy
-    path('tiempo/hoy/', WeatherTodayListView.as_view(), name='listado_tiempo_h'),
-    path('crear/tiempo/hoy/', WeatherTodayCreateView.as_view(), name="crear_tiempo_h"),
-    path('actualizar/tiempo/hoy/<uuid:uuid>/', WeatherTodayUpdateView.as_view(), name='actualizar_tiempo_h'),
-    path('eliminar/tiempo/hoy/<uuid:uuid>/', WeatherTodayDeleteView.as_view(), name='eliminar_tiempo_h'),
-    path('detalle/tiempo/hoy/<uuid:uuid>/', WeatherTodayDetailView.as_view(), name='detalle_tiempo_h'),
-    path('tiempo/hoy/<uuid:uuid>/pdf/', WeatherTodayPDFView.as_view(), name='tiempo_h_pdf'),
+    path('tiempo/hoy/', WeatherReportListView.as_view(), {'report_type': 'today'}, name='listado_tiempo_h'),
+    path('crear/tiempo/hoy/', WeatherReportCreateView.as_view(), {'report_type': 'today'}, name="crear_tiempo_h"),
+    path('actualizar/tiempo/hoy/<uuid:uuid>/', WeatherReportUpdateView.as_view(), {'report_type': 'today'}, name='actualizar_tiempo_h'),
+    path('eliminar/tiempo/hoy/<uuid:uuid>/', WeatherReportDeleteView.as_view(), {'report_type': 'today'}, name='eliminar_tiempo_h'),
+    path('detalle/tiempo/hoy/<uuid:uuid>/', WeatherReportDetailView.as_view(), {'report_type': 'today'}, name='detalle_tiempo_h'),
+    path('tiempo/hoy/<uuid:uuid>/pdf/', WeatherReportPDFView.as_view(), {'report_type': 'today'}, name='tiempo_h_pdf'),
     # Tiempo Mañana
-    path('tiempo/manana/', WeatherTomorrowListView.as_view(), name='listado_tiempo_m'),
-    path('crear/tiempo/manana/', WeatherTomorrowCreateView.as_view(), name="crear_tiempo_m"),
-    path('actualizar/tiempo/manana/<uuid:uuid>/', WeatherTomorrowUpdateView.as_view(), name='actualizar_tiempo_m'),
-    path('eliminar/tiempo/manana/<uuid:uuid>/', WeatherTomorrowDeleteView.as_view(), name='eliminar_tiempo_m'),
-    path('detalle/tiempo/manana/<uuid:uuid>/', WeatherTomorrowDetailView.as_view(), name='detalle_tiempo_m'),
-    path('tiempo/manana/<uuid:uuid>/pdf/', WeatherTomorrowPDFView.as_view(), name='tiempo_m_pdf'),
+    path('tiempo/manana/', WeatherReportListView.as_view(), {'report_type': 'tomorrow'}, name='listado_tiempo_m'),
+    path('crear/tiempo/manana/', WeatherReportCreateView.as_view(), {'report_type': 'tomorrow'}, name="crear_tiempo_m"),
+    path('actualizar/tiempo/manana/<uuid:uuid>/', WeatherReportUpdateView.as_view(), {'report_type': 'tomorrow'}, name='actualizar_tiempo_m'),
+    path('eliminar/tiempo/manana/<uuid:uuid>/', WeatherReportDeleteView.as_view(), {'report_type': 'tomorrow'}, name='eliminar_tiempo_m'),
+    path('detalle/tiempo/manana/<uuid:uuid>/', WeatherReportDetailView.as_view(), {'report_type': 'tomorrow'}, name='detalle_tiempo_m'),
+    path('tiempo/manana/<uuid:uuid>/pdf/', WeatherReportPDFView.as_view(), {'report_type': 'tomorrow'}, name='tiempo_m_pdf'),
     # Comentario Tiempo
-    path('comentario/tiempo/', WeatherCommentaryListView.as_view(), name='listado_comentarios_tiempo'),
-    path('crear/comentario/tiempo/', WeatherCommentaryCreateView.as_view(), name="crear_comentario_tiempo"),
-    path('actualizar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryUpdateView.as_view(), name='actualizar_comentario_tiempo'),
-    path('eliminar/comentario/tiempo/<uuid:uuid>/', WeatherCommentaryDeleteView.as_view(), name='eliminar_comentario_tiempo'),
+    path('comentario/tiempo/', WeatherReportListView.as_view(), {'report_type': 'commentary'}, name='listado_comentarios_tiempo'),
+    path('crear/comentario/tiempo/', WeatherReportCreateView.as_view(), {'report_type': 'commentary'}, name="crear_comentario_tiempo"),
+    path('actualizar/comentario/tiempo/<uuid:uuid>/', WeatherReportUpdateView.as_view(), {'report_type': 'commentary'}, name='actualizar_comentario_tiempo'),
+    path('eliminar/comentario/tiempo/<uuid:uuid>/', WeatherReportDeleteView.as_view(), {'report_type': 'commentary'}, name='eliminar_comentario_tiempo'),
+    path('detalle/comentario/tiempo/<uuid:uuid>/', WeatherReportDetailView.as_view(), {'report_type': 'commentary'}, name='detalle_comentario_tiempo'),
+    path('comentario/tiempo/<uuid:uuid>/pdf/', WeatherReportPDFView.as_view(), {'report_type': 'commentary'}, name='comentario_tiempo_pdf'),
     # Nota Meteorológica
-    path('nota/meteorologica/', WeatherNoteListView.as_view(), name='listado_notas_meteorologicas'),
-    path('crear/nota/meteorologica/', WeatherNoteCreateView.as_view(), name="crear_nota_meteorologica"),
-    path('actualizar/nota/meteorologica/<uuid:uuid>/', WeatherNoteUpdateView.as_view(), name='actualizar_nota_meteorologica'),
-    path('eliminar/nota/meteorologica/<uuid:uuid>/', WeatherNoteDeleteView.as_view(), name='eliminar_nota_meteorologica'),
+    path('nota/meteorologica/', WeatherReportListView.as_view(), {'report_type': 'note'}, name='listado_notas_meteorologicas'),
+    path('crear/nota/meteorologica/', WeatherReportCreateView.as_view(), {'report_type': 'note'}, name="crear_nota_meteorologica"),
+    path('actualizar/nota/meteorologica/<uuid:uuid>/', WeatherReportUpdateView.as_view(), {'report_type': 'note'}, name='actualizar_nota_meteorologica'),
+    path('eliminar/nota/meteorologica/<uuid:uuid>/', WeatherReportDeleteView.as_view(), {'report_type': 'note'}, name='eliminar_nota_meteorologica'),
+    path('detalle/nota/meteorologica/<uuid:uuid>/', WeatherReportDetailView.as_view(), {'report_type': 'note'}, name='detalle_nota_meteorologica'),
+    path('nota/meteorologica/<uuid:uuid>/pdf/', WeatherReportPDFView.as_view(), {'report_type': 'note'}, name='nota_meteorologica_pdf'),
     # Listado de Correos
     path('listado/correos/', EmailRecipientListListView.as_view(), name='listado_correos'),
     path('crear/listado/correo/', EmailRecipientListCreateView.as_view(), name='crear_listado_correo'),
