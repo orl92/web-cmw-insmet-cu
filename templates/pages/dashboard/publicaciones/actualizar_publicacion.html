@@ -89,16 +89,51 @@
     <!-- Campo para el Archivo PDF -->
     <div class="mb-3">
         <label class="form-label">{{ form.pdf_file.label }}</label>
-        <input type="file" class="form-control" name="{{ form.pdf_file.name }}"
-               accept=".pdf">
-        {% if form.instance.pdf_file %}
-            <small class="form-text text-muted">
-                Archivo actual: <a href="{{ form.instance.pdf_file.url }}" target="_blank">{{ form.instance.pdf_file.name }}</a>
-            </small>
-        {% endif %}
-        {% if form.pdf_file.errors %}
-            <span class="text-danger d-block mb-3">{{ form.pdf_file.errors }}</span>
-        {% endif %}
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="avatar rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                    <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+                                    <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
+                                    <path d="M17 18h2" />
+                                    <path d="M20 15h-3v6" />
+                                    <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="mb-2">
+                                <input type="file" class="form-control {% if form.pdf_file.errors %}is-invalid{% endif %}"
+                                       id="{{ form.pdf_file.id_for_label }}" name="{{ form.pdf_file.name }}"
+                                       accept=".pdf">
+                            </div>
+                            <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
+                        </div>
+                    </div>
+                </div>
+                {% if form.instance.pdf_file %}
+                    <div class="mt-2">
+                        <a href="{{ form.instance.pdf_file.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+                                <polyline points="7 11 12 16 17 11" />
+                                <line x1="12" y1="4" x2="12" y2="16" />
+                            </svg>
+                            Ver PDF actual
+                        </a>
+                    </div>
+                {% endif %}
+                {% if form.pdf_file.errors %}
+                    <span class="invalid-feedback">{{ form.pdf_file.errors.0 }}</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     <!-- Sección para Coautores -->
