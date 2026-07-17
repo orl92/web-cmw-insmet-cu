@@ -113,18 +113,6 @@
       {% endif %}
     </div>
 
-    <!-- Aceptó Términos -->
-    <div class="mb-3 form-check">
-      <input type="checkbox" class="form-check-input {% if form.accept_terms.errors %}is-invalid{% endif %}"
-             id="{{ form.accept_terms.id_for_label }}" name="{{ form.accept_terms.name }}">
-      <label class="form-check-label" for="{{ form.accept_terms.id_for_label }}">
-        {{ form.accept_terms.label }}
-      </label>
-      {% if form.accept_terms.errors %}
-        <div class="invalid-feedback d-block">{{ form.accept_terms.errors.0 }}</div>
-      {% endif %}
-    </div>
-
     <!-- Recibe Newsletter -->
     <div class="mb-3 form-check">
       <input type="checkbox" class="form-check-input {% if form.newsletter.errors %}is-invalid{% endif %}"

@@ -16,14 +16,13 @@ class CustomerForm(forms.ModelForm):
         model = Customer
         fields = [
             'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone', 'accept_terms', 'newsletter',
+            'address', 'phone', 'newsletter',
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['accept_terms'].required = True
         for field_name, field in self.fields.items():
-            if field_name not in ['username', 'password', 'email', 'accept_terms', 'newsletter']:
+            if field_name not in ['username', 'password', 'email', 'newsletter']:
                 field.widget.attrs.update({'class': 'form-control'})
 
     # --- Validaciones igual que antes ---
@@ -77,16 +76,15 @@ class CustomerUpdateForm(forms.ModelForm):
         model = Customer
         fields = [
             'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone', 'accept_terms', 'newsletter',
+            'address', 'phone', 'newsletter',
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.user:
             self.fields['email'].initial = self.instance.user.email
-        self.fields['accept_terms'].required = True
         for field_name, field in self.fields.items():
-            if field_name not in ['email', 'accept_terms', 'newsletter']:
+            if field_name not in ['email', 'newsletter']:
                 field.widget.attrs.update({'class': 'form-control'})
 
     # Validaciones (idénticas a las de CustomerForm)
@@ -131,7 +129,7 @@ class CustomerForUserForm(forms.ModelForm):
         model = Customer
         fields = [
             'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone', 'accept_terms', 'newsletter',
+            'address', 'phone', 'newsletter',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -139,9 +137,8 @@ class CustomerForUserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.user:
             self.fields['email'].initial = self.user.email
-        self.fields['accept_terms'].required = True
         for field_name, field in self.fields.items():
-            if field_name not in ['email', 'accept_terms', 'newsletter']:
+            if field_name not in ['email', 'newsletter']:
                 field.widget.attrs.update({'class': 'form-control'})
 
     def clean_reeup(self):
