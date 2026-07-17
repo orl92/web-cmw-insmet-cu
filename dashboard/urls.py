@@ -44,6 +44,17 @@ from dashboard.views.dashboard.views import (
     ExcelJSONView,
     MaintenanceModeToggleView,
 )
+from dashboard.views.exports import (
+    CustomerCSVExportView,
+    EarlyWarningCSVExportView,
+    ForecastsCSVExportView,
+    InvoiceCSVExportView,
+    ServiceCSVExportView,
+    ServiceSubscriptionCSVExportView,
+    StormWarningCSVExportView,
+    TropicalCycloneCSVExportView,
+    WeatherReportCSVExportView,
+)
 from dashboard.views.email_recipient.views import (
     EmailRecipientListCreateView,
     EmailRecipientListDeleteView,
@@ -166,12 +177,14 @@ urlpatterns = [
     path('actualizar/cliente/<uuid:uuid>/', CustomerUpdateView.as_view(), name='actualizar_cliente'),
     path('eliminar/cliente/<uuid:uuid>/', CustomerDeleteView.as_view(), name='eliminar_cliente'),
     path('eliminar/cliente/<uuid:uuid>/permanente/', CustomerHardDeleteView.as_view(), name='eliminar_cliente_permanente'),
+    path('clientes/exportar/csv/', CustomerCSVExportView.as_view(), name='exportar_csv_clientes'),
     # Servicios
     path('servicios/', ServiceListView.as_view(), name='listado_servicios'),
     path('crear/servicios/', ServiceCreateView.as_view(), name='crear_servicio'),
     path('actualizar/servicios/<uuid:uuid>/', ServiceUpdateView.as_view(), name='actualizar_servicio'),
     path('eliminar/servicios/<uuid:uuid>/', ServiceDeleteView.as_view(), name='eliminar_servicio'),
     path('eliminar/servicios/<uuid:uuid>/permanente/', ServiceHardDeleteView.as_view(), name='eliminar_servicio_permanente'),
+    path('servicios/exportar/csv/', ServiceCSVExportView.as_view(), name='exportar_csv_servicios'),
     # Suscripciones
     path('suscripciones/', SubscriptionListView.as_view(), name='listado_suscripciones'),
     path('crear/suscripcion/', SubscriptionCreateView.as_view(), name='crear_suscripcion'),
@@ -189,6 +202,7 @@ urlpatterns = [
     path('certificado/<uuid:uuid>/pdf/', CertificatePDFView.as_view(), name='certificado_pdf'),
     path('eliminar/certificado/<uuid:uuid>/', CertificateDeleteView.as_view(), name='eliminar_certificado'),
     path('eliminar/certificado/<uuid:uuid>/permanente/', CertificateHardDeleteView.as_view(), name='eliminar_certificado_permanente'),
+    path('suscripciones/exportar/csv/', ServiceSubscriptionCSVExportView.as_view(), name='exportar_csv_suscripciones'),
     # Facturación
     path('facturacion/', InvoiceListView.as_view(), name='listado_facturas'),
     path('crear/factura/', InvoiceCreateView.as_view(), name='crear_factura'),
@@ -202,6 +216,12 @@ urlpatterns = [
     path('detalle/contrato/<uuid:uuid>/', ContractDetailView.as_view(), name='detalle_contrato'),
     path('eliminar/contrato/<uuid:uuid>/', ContractDeleteView.as_view(), name='eliminar_contrato'),
     path('eliminar/contrato/<uuid:uuid>/permanente/', ContractHardDeleteView.as_view(), name='eliminar_contrato_permanente'),
+    path('facturacion/exportar/csv/', InvoiceCSVExportView.as_view(), name='exportar_csv_facturas'),
+    path('pronosticos/exportar/csv/', ForecastsCSVExportView.as_view(), name='exportar_csv_pronosticos'),
+    path('tiempo/exportar/csv/', WeatherReportCSVExportView.as_view(), name='exportar_csv_tiempo'),
+    path('avisos/alertas/exportar/csv/', EarlyWarningCSVExportView.as_view(), name='exportar_csv_alertas'),
+    path('avisos/ciclones/exportar/csv/', TropicalCycloneCSVExportView.as_view(), name='exportar_csv_ciclones'),
+    path('avisos/tormentas/exportar/csv/', StormWarningCSVExportView.as_view(), name='exportar_csv_tormentas'),
     # Tiempo Hoy
     path('tiempo/hoy/', WeatherReportListView.as_view(), {'report_type': 'today'}, name='listado_tiempo_h'),
     path('crear/tiempo/hoy/', WeatherReportCreateView.as_view(), {'report_type': 'today'}, name="crear_tiempo_h"),

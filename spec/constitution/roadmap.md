@@ -20,10 +20,11 @@
 16. **021 · Eliminar campos planos de Forecasts** — ~60 columnas redundantes eliminadas del modelo Forecasts; forms, vistas, templates, API y dashboard actualizados para usar ForecastRegions y ForecastExtendedDay.
 17. **016 · Soft delete para modelos comerciales** — `SoftDeleteModel` abstracto en `common/utils.py` con `record_active`, `deleted_at`; aplicado a Customer, Service, Invoice, Contract y Certificate; ServiceSubscription refactorizado para heredar del mixin; vistas de borrado con soft/hard delete dual; modales actualizados.
 18. **018 · Vistas de Certificados y Contratos** — vistas CRUD (ListView, CreateView, DetailView, DeleteView), templates con DataTable y modal de borrado, entradas en el menú lateral, URLs en `/dashboard/contratos/` y `/dashboard/certificados/`.
+19. **019 · Exportación CSV/Excel** — `CSVExportView` genérico en `common/views.py`, export views para Customer, Service, ServiceSubscription, Invoice, Forecasts, WeatherReport, EarlyWarning, TropicalCyclone, StormWarning; botón "Exportar CSV" en list.html y pronósticos.
 
 ## Siguiente 🔜
 
-19. **019 · Exportación CSV/Excel** — botón de exportar en list views.
+20. **023 · Model validation** — métodos `clean()` y validadores para modelos clave.
 20. **023 · Model validation** — métodos `clean()` y validadores para modelos clave.
 21. **024 · API expansion** — endpoints para avisos, weather reports, publicaciones, servicios.
 22. **022 · Dashboard analytics** — gráficos de ingresos, suscripciones, avisos con ApexCharts.

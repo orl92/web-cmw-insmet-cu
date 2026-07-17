@@ -57,6 +57,7 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = ('Añadir Factura')
         context['url_create'] = reverse_lazy('crear_factura')
         context['url_list'] = reverse_lazy('listado_facturas')
+        context['url_export'] = reverse_lazy('exportar_csv_facturas')
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         return context

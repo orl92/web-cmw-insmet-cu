@@ -68,6 +68,7 @@ class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_list'] = reverse_lazy('pronosticos')
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
+        context['url_export'] = reverse_lazy('exportar_csv_pronosticos')
 
         date_string = self.request.GET.get('date')
         if date_string:
