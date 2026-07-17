@@ -256,6 +256,35 @@ stderr_logfile=/var/log/webcmp.err.log
 stdout_logfile=/var/log/webcmp.out.log
 ```
 
+### 4. Configurar Huey Worker
+
+El worker de Huey procesa las tareas asíncronas (envío de correos y generación de PDFs). Se ejecuta como un proceso separado de Gunicorn.
+
+```bash
+huey_consumer.py config.huey.huey
+```
+
+#### Supervisor (recomendado)
+
+Agregar un segundo programa en `/etc/supervisor/conf.d/webcmp.conf`:
+
+```ini
+[program:webcmp-huey]
+command=/var/www/web-cmw-insmet-cu/.venv/bin/huey_consumer.py config.huey.huey
+directory=/var/www/web-cmw-insmet-cu
+user=root
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/webcmp-huey.err.log
+stdout_logfile=/var/log/webcmp-huey.out.log
+```
+
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start webcmp-huey
+```
+
 ## 🤝 Cómo Contribuir
 
 - Haz un fork del proyecto
