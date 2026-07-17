@@ -9,15 +9,14 @@ from openpyxl.styles import Alignment, Border, Font, Side
 
 from common.views import CSVExportView
 from dashboard.models import (
+    Certificate,
+    Contract,
     Customer,
-    EarlyWarning,
+    EmailRecipientList,
     Forecasts,
     Invoice,
     Service,
     ServiceSubscription,
-    StormWarning,
-    TropicalCyclone,
-    WeatherReport,
 )
 
 
@@ -157,52 +156,40 @@ class ForecastsCSVExportView(CSVExportView):
         return columns
 
 
-class WeatherReportCSVExportView(CSVExportView):
-    model = WeatherReport
-    permission_required = 'dashboard.view_forecast'
-    filename = 'reportes_tiempo.csv'
+class ContractCSVExportView(CSVExportView):
+    model = Contract
+    permission_required = 'dashboard.view_contract'
+    filename = 'contratos.csv'
     columns = [
-        ('Tipo', lambda o: o.get_type_display()),
+        ('Número', 'number'),
+        ('Cliente', lambda o: o.subscription.customer.company_name if o.subscription and o.subscription.customer else ''),
+        ('Servicio', lambda o: o.subscription.service.title if o.subscription and o.subscription.service else ''),
         ('Fecha', lambda o: o.date.isoformat() if o.date else ''),
-        ('Hora', lambda o: o.time.isoformat() if hasattr(o, 'time') and o.time else ''),
-        ('Autor', lambda o: o.author.username if o.author else ''),
-        ('Creado', lambda o: o.created_at.isoformat() if hasattr(o, 'created_at') and o.created_at else ''),
+        ('Registro Comercial', 'commercial_registry'),
+        ('Activo', lambda o: 'Sí' if o.record_active else 'No'),
     ]
 
 
-class EarlyWarningCSVExportView(CSVExportView):
-    model = EarlyWarning
-    permission_required = 'dashboard.view_early_warning'
-    filename = 'alertas_tempranas.csv'
+class CertificateCSVExportView(CSVExportView):
+    model = Certificate
+    permission_required = 'dashboard.view_certificate'
+    filename = 'certificados.csv'
     columns = [
-        ('Resumen', 'summary'),
-        ('Fecha', lambda o: o.date.isoformat() if o.date else ''),
-        ('Válido Hasta', lambda o: o.valid_until.isoformat() if hasattr(o, 'valid_until') and o.valid_until else ''),
-        ('Usuario', lambda o: o.user.username if o.user else ''),
+        ('Cliente', lambda o: o.subscription.customer.company_name if o.subscription and o.subscription.customer else ''),
+        ('Servicio', lambda o: o.subscription.service.title if o.subscription and o.subscription.service else ''),
+        ('Fecha Emisión', lambda o: o.issued_date.isoformat() if o.issued_date else ''),
+        ('Activo', lambda o: 'Sí' if o.record_active else 'No'),
     ]
 
 
-class TropicalCycloneCSVExportView(CSVExportView):
-    model = TropicalCyclone
-    permission_required = 'dashboard.view_tropical_cyclone'
-    filename = 'ciclones_tropicales.csv'
+class EmailRecipientListCSVExportView(CSVExportView):
+    model = EmailRecipientList
+    permission_required = 'dashboard.view_email_recipient_list'
+    filename = 'listas_correo.csv'
     columns = [
-        ('Resumen', 'summary'),
-        ('Fecha', lambda o: o.date.isoformat() if o.date else ''),
-        ('Válido Hasta', lambda o: o.valid_until.isoformat() if hasattr(o, 'valid_until') and o.valid_until else ''),
-        ('Usuario', lambda o: o.user.username if o.user else ''),
-    ]
-
-
-class StormWarningCSVExportView(CSVExportView):
-    model = StormWarning
-    permission_required = 'dashboard.view_storm_warning'
-    filename = 'avisos_tormentas.csv'
-    columns = [
-        ('Resumen', 'summary'),
-        ('Fecha', lambda o: o.date.isoformat() if o.date else ''),
-        ('Válido Hasta', lambda o: o.valid_until.isoformat() if hasattr(o, 'valid_until') and o.valid_until else ''),
-        ('Usuario', lambda o: o.user.username if o.user else ''),
+        ('Nombre', 'name'),
+        ('Descripción', 'description'),
+        ('Cantidad Destinatarios', lambda o: str(o.recipients.count())),
     ]
 
 

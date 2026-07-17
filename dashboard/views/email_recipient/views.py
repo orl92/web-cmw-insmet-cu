@@ -30,6 +30,7 @@ class EmailRecipientListListView(LoginRequiredMixin, PermissionRequiredMixin, Li
         context['url_list'] = reverse_lazy('listado_correos')
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
+        context['url_export'] = reverse_lazy('exportar_csv_listas_correo')
         context['objects'] = EmailRecipientList.objects.all()
         return context
 

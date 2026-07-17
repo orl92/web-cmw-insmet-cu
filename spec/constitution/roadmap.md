@@ -28,6 +28,7 @@
 24. **026 · Mejoras UI pronósticos** — tablas vacías con headers y mensaje "No hay datos" cuando no hay pronósticos; botones de acción (CSV, Excel, Editar, Eliminar) como `btn-icon` cuadrados solo icono con tooltips; botones editar/eliminar movidos a header; "Añadir" solo cuando no hay datos; layout responsivo para móvil en formulario de pronóstico extendido.
 25. **025 · Tareas asíncronas** — Huey + SqliteHuey configurado; `send_email_task` para envío de correos asíncrono; `generate_invoice_pdf_and_email_task` para generación de PDF de factura + email; `mail_send()` refactorizado manteniendo mensajes UI sincrónicos; PDF de facturación extraído a función standalone en `utils.py`.
 26. **027 · Limpieza de código (hallazgos de revisión)** — `huey.db` agregado a `.gitignore`; imports no usados (`Invoice`, `Service`, `ServiceSubscription`, `StormWarning`) removidos de `dashboard/tests/test_views.py`; 10 llamadas `.filter(pk=1).update(maintenance_mode=False)` redundantes removidas en 3 archivos de test.
+27. **028 · Refactor CSV exports** — botón CSV en `list.html` unificado a `btn-icon btn-outline-success btn-sm` con tooltip; eliminados 4 CSV exports de metadatos (WeatherReport, EarlyWarning, TropicalCyclone, StormWarning); agregados 3 CSV exports con valor real (Contract, Certificate, EmailRecipientList) con sus URLs y contextos en ListViews.
 
 ## Siguiente 🔜
 

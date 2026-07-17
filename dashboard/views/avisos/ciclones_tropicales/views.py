@@ -29,7 +29,6 @@ class TropicalCycloneListView(LoginRequiredMixin, PermissionRequiredMixin, ListV
         context['btn'] = ('Añadir Aviso Ciclón Tropical')
         context['url_create'] = reverse_lazy('crear_aviso_ciclon_tropical')
         context['url_list'] = reverse_lazy('ciclones_tropicales')
-        context['url_export'] = reverse_lazy('exportar_csv_ciclones')
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = TropicalCyclone.objects.all()

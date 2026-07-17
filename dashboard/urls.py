@@ -45,16 +45,15 @@ from dashboard.views.dashboard.views import (
     MaintenanceModeToggleView,
 )
 from dashboard.views.exports import (
+    CertificateCSVExportView,
+    ContractCSVExportView,
     CustomerCSVExportView,
-    EarlyWarningCSVExportView,
+    EmailRecipientListCSVExportView,
     ForecastsCSVExportView,
     ForecastsExcelExportView,
     InvoiceCSVExportView,
     ServiceCSVExportView,
     ServiceSubscriptionCSVExportView,
-    StormWarningCSVExportView,
-    TropicalCycloneCSVExportView,
-    WeatherReportCSVExportView,
 )
 from dashboard.views.email_recipient.views import (
     EmailRecipientListCreateView,
@@ -220,10 +219,9 @@ urlpatterns = [
     path('facturacion/exportar/csv/', InvoiceCSVExportView.as_view(), name='exportar_csv_facturas'),
     path('pronosticos/exportar/csv/', ForecastsCSVExportView.as_view(), name='exportar_csv_pronosticos'),
     path('pronosticos/exportar/excel/', ForecastsExcelExportView.as_view(), name='exportar_excel_pronosticos'),
-    path('tiempo/exportar/csv/', WeatherReportCSVExportView.as_view(), name='exportar_csv_tiempo'),
-    path('avisos/alertas/exportar/csv/', EarlyWarningCSVExportView.as_view(), name='exportar_csv_alertas'),
-    path('avisos/ciclones/exportar/csv/', TropicalCycloneCSVExportView.as_view(), name='exportar_csv_ciclones'),
-    path('avisos/tormentas/exportar/csv/', StormWarningCSVExportView.as_view(), name='exportar_csv_tormentas'),
+    path('contratos/exportar/csv/', ContractCSVExportView.as_view(), name='exportar_csv_contratos'),
+    path('certificados/exportar/csv/', CertificateCSVExportView.as_view(), name='exportar_csv_certificados'),
+    path('listas-correo/exportar/csv/', EmailRecipientListCSVExportView.as_view(), name='exportar_csv_listas_correo'),
     # Tiempo Hoy
     path('tiempo/hoy/', WeatherReportListView.as_view(), {'report_type': 'today'}, name='listado_tiempo_h'),
     path('crear/tiempo/hoy/', WeatherReportCreateView.as_view(), {'report_type': 'today'}, name="crear_tiempo_h"),
