@@ -4,7 +4,14 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from dashboard.models import Province, SiteConfiguration, WeatherReport
+from dashboard.models import (
+    Customer,
+    EarlyWarning,
+    Province,
+    SiteConfiguration,
+    TropicalCyclone,
+    WeatherReport,
+)
 
 
 def _make_admin(username='admin', **kwargs):
@@ -16,7 +23,6 @@ def _make_admin(username='admin', **kwargs):
 
 def _disable_maintenance():
     SiteConfiguration.objects.get_or_create(pk=1, defaults={'maintenance_mode': False})
-    SiteConfiguration.objects.filter(pk=1).update(maintenance_mode=False)
 
 
 class DashboardViewTests(TestCase):
@@ -35,6 +41,38 @@ class DashboardViewTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
+
+    def test_analytics_context_variables_exist(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertIn('income_months', response.context)
+        self.assertIn('income_data', response.context)
+        self.assertIn('active_subs', response.context)
+        self.assertIn('expired_subs', response.context)
+        self.assertIn('alert_counts', response.context)
+        self.assertIn('new_customers', response.context)
+        self.assertIn('total_active_alerts', response.context)
+
+    def test_new_customers_count(self):
+        user = User.objects.create_user('cust1', date_joined=timezone.now())
+        Customer.objects.create(
+            company_name='Test Corp', reeup='123.1.12345', nit='12345678901',
+            account='1234567890123456', address='Calle 123', phone='12345678',
+            user=user, accept_terms=True,
+        )
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.context['new_customers'], 1)
+
+    def test_alert_counts(self):
+        user = User.objects.create_user('alertuser')
+        EarlyWarning.objects.create(user=user, summary='Test', valid_until=timezone.now() + timezone.timedelta(days=1))
+        TropicalCyclone.objects.create(user=user, summary='Test', valid_until=timezone.now() + timezone.timedelta(days=1))
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.context['alert_counts']['early_warnings'], 1)
+        self.assertEqual(response.context['alert_counts']['tropical_cyclones'], 1)
+        self.assertEqual(response.context['total_active_alerts'], 2)
 
 
 class ProvinceCRUDTests(TestCase):

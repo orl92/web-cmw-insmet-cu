@@ -20,7 +20,6 @@ def _make_user(username, **kwargs):
 
 def disable_maintenance_mode():
     SiteConfiguration.objects.get_or_create(pk=1, defaults={'maintenance_mode': False})
-    SiteConfiguration.objects.filter(pk=1).update(maintenance_mode=False)
 
 
 class UserListViewTests(TestCase):
