@@ -29,26 +29,32 @@ class CustomerForm(forms.ModelForm):
     # --- Validaciones igual que antes ---
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup')
-        if reeup and not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
-            raise ValidationError("Formato inválido. Use ###.#.#### o ###.##.#####")
+        if reeup:
+            if not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
+                raise ValidationError("El REEUP debe tener el formato ###.#.#### o ###.##.#####")
+            if Customer.objects.filter(reeup=reeup).exists():
+                raise ValidationError("Este código REEUP ya está registrado.")
         return reeup
 
     def clean_nit(self):
-        nit = self.cleaned_data.get('nit', '')
-        validator = Customer._meta.get_field('nit').validators[0]
-        validator(nit)
+        nit = self.cleaned_data.get('nit')
+        if nit:
+            if not re.match(r'^\d{11}$', nit):
+                raise ValidationError("El NIT debe tener exactamente 11 dígitos numéricos.")
+            if Customer.objects.filter(nit=nit).exists():
+                raise ValidationError("Este NIT ya está registrado.")
         return nit
 
     def clean_account(self):
-        account = self.cleaned_data.get('account', '')
-        validator = Customer._meta.get_field('account').validators[0]
-        validator(account)
+        account = self.cleaned_data.get('account')
+        if not re.match(r'^\d{16}$', account):
+            raise ValidationError("La cuenta bancaria debe tener exactamente 16 dígitos numéricos.")
         return account
 
     def clean_phone(self):
-        phone = self.cleaned_data.get('phone', '')
-        validator = Customer._meta.get_field('phone').validators[0]
-        validator(phone)
+        phone = self.cleaned_data.get('phone')
+        if not re.match(r'^\d{8}$', phone):
+            raise ValidationError("El teléfono debe tener exactamente 8 dígitos numéricos.")
         return phone
 
     def save(self, commit=True):
