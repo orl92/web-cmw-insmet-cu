@@ -336,6 +336,14 @@ class ForecastExtendedDay(models.Model):
         unique_together = ['forecast', 'day_number']
         ordering = ['forecast', 'day_number']
 
+    def clean(self):
+        if self.min_temp is not None and self.max_temp is not None and self.min_temp >= self.max_temp:
+            raise ValidationError('La temperatura mínima debe ser menor que la máxima.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Día {self.day_number} - {self.date}"
 
@@ -545,6 +553,10 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
 
     file_fields = []
 
+    def clean(self):
+        if self.start_date and self.end_date and self.start_date >= self.end_date:
+            raise ValidationError('La fecha de inicio debe ser anterior a la fecha de expiración.')
+
     @property
     def is_active(self):
         """Indica si la suscripción está vigente (pagada y no expirada)"""
@@ -632,6 +644,10 @@ class Invoice(SoftDeleteModel):
             ("delete_invoice", "Eliminar"),
         )
 
+    def clean(self):
+        if self.amount is not None and self.amount <= 0:
+            raise ValidationError('El monto de la factura debe ser mayor que cero.')
+
     def __str__(self):
         if self.subscription:
             return f"Factura {self.number} - {self.subscription.customer.company_name}"
@@ -649,8 +665,15 @@ class InvoiceItem(models.Model):
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     importe = models.DecimalField(max_digits=10, decimal_places=2)
 
+    def clean(self):
+        if self.cantidad is not None and self.cantidad <= 0:
+            raise ValidationError('La cantidad debe ser mayor que cero.')
+        if self.precio is not None and self.precio <= 0:
+            raise ValidationError('El precio debe ser mayor que cero.')
+
     def save(self, *args, **kwargs):
         self.importe = self.cantidad * self.precio
+        self.full_clean()
         super().save(*args, **kwargs)
 
     class Meta:

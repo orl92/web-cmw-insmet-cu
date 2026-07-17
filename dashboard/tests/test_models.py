@@ -176,6 +176,17 @@ class ForecastExtendedDayTests(TestCase):
         self.assertEqual(day.day_number, 1)
         self.assertIsNotNone(day.weather_icon)
 
+    def test_min_temp_less_than_max_temp(self):
+        from dashboard.models import ForecastExtendedDay
+        f = Forecasts.objects.create(date=date.today(), lp='Luna Nueva',
+                                      sunrise=time(6, 30), sunset=time(18, 30), uv_index=5,
+                                      nlp='Cuarto Creciente', nlpd=date.today())
+        with self.assertRaises(ValidationError):
+            ForecastExtendedDay.objects.create(
+                forecast=f, day_number=1, date=date.today(),
+                min_temp=30, max_temp=20, weather='PN'
+            )
+
 
 class CustomerTests(TestCase):
     @classmethod
@@ -271,6 +282,15 @@ class ServiceSubscriptionTests(TestCase):
             payment_status='paid', end_date=past)
         self.assertFalse(sub.is_active)
 
+    def test_start_date_before_end_date(self):
+        sub = ServiceSubscription(
+            customer=self.customer, service=self.service,
+            start_date=timezone.now() + timedelta(days=5),
+            end_date=timezone.now(),
+        )
+        with self.assertRaises(ValidationError):
+            sub.full_clean()
+
 
 class InvoiceAndItemTests(TestCase):
     @classmethod
@@ -298,6 +318,31 @@ class InvoiceAndItemTests(TestCase):
             invoice=invoice, subscription=self.subscription,
             descripcion='Test item', cantidad=5, precio=10.00)
         self.assertEqual(item.importe, 50.00)
+
+    def test_invoice_amount_must_be_positive(self):
+        invoice = Invoice(
+            subscription=self.subscription, customer=self.customer,
+            number='INV-BAD', amount=0)
+        with self.assertRaises(ValidationError):
+            invoice.full_clean()
+
+    def test_invoice_item_cantidad_must_be_positive(self):
+        invoice = Invoice.objects.create(
+            subscription=self.subscription, customer=self.customer,
+            number='INV-003', amount=100.00)
+        with self.assertRaises(ValidationError):
+            InvoiceItem.objects.create(
+                invoice=invoice, descripcion='Bad item',
+                cantidad=0, precio=10.00)
+
+    def test_invoice_item_precio_must_be_positive(self):
+        invoice = Invoice.objects.create(
+            subscription=self.subscription, customer=self.customer,
+            number='INV-004', amount=100.00)
+        with self.assertRaises(ValidationError):
+            InvoiceItem.objects.create(
+                invoice=invoice, descripcion='Bad item',
+                cantidad=5, precio=0)
 
 
 class EarlyWarningTests(TestCase):

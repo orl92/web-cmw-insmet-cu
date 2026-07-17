@@ -78,7 +78,6 @@ class ForecastsCSVExportView(CSVExportView):
     filename = 'pronosticos.csv'
     columns = [
         ('Fecha', lambda o: o.date.isoformat() if o.date else ''),
-        ('Usuario', lambda o: o.user.username if o.user else ''),
         ('Creado', lambda o: o.created_at.isoformat() if hasattr(o, 'created_at') and o.created_at else ''),
     ]
 
