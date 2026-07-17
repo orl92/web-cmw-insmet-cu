@@ -134,19 +134,39 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
 
 
 class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Soft delete: desactiva el servicio."""
     permission_required = 'dashboard.delete_service'
 
     def post(self, request, uuid):
         service = get_object_or_404(Service, uuid=uuid)
+        if not service.record_active:
+            messages.warning(request, 'El servicio ya estaba desactivado.')
+            return redirect('listado_servicios')
+        service.delete()
         log_action(
             user=self.request.user,
             obj=service,
             action_flag=DELETION,
-            message=f"Se eliminó el servicio {service.title}."
+            message=f"Servicio desactivado: {service.title}."
         )
-        try:
-            service.delete()
-            messages.success(request, 'El servicio ha sido eliminado con éxito.')
-        except Exception as e:
-            messages.error(request, f'Error al eliminar el servicio: {str(e)}')
+        messages.success(request, 'Servicio desactivado con éxito.')
+        return redirect('listado_servicios')
+
+
+class ServiceHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Eliminación física permanente (solo superusuarios)."""
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def post(self, request, uuid):
+        service = get_object_or_404(Service, uuid=uuid)
+        service_title = service.title
+        service.hard_delete()
+        log_action(
+            user=self.request.user,
+            obj=service,
+            action_flag=DELETION,
+            message=f"Servicio eliminado físicamente: {service_title}."
+        )
+        messages.success(request, f'Servicio {service_title} eliminado permanentemente.')
         return redirect('listado_servicios')

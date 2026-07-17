@@ -8,7 +8,7 @@ from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 
-from common.utils import FileHandlerMixin, image_upload_path, pdf_upload_path
+from common.utils import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
 
 
 class SiteConfiguration(models.Model):
@@ -402,7 +402,7 @@ class StormWarning(BaseWarning):
         )
 
 
-class Customer(models.Model):
+class Customer(SoftDeleteModel):
     # Validadores
     reeup_validator = RegexValidator(
         regex=r'^\d{3}\.\d{1,2}\.\d{4,5}$',
@@ -481,7 +481,7 @@ class Customer(models.Model):
         )
 
 
-class Service(FileHandlerMixin, models.Model):
+class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
     PUBLIC = 'public'
     COMMERCIAL = 'commercial'
     TYPE_CHOICES = [
@@ -522,7 +522,7 @@ class Service(FileHandlerMixin, models.Model):
         )
 
 
-class ServiceSubscription(FileHandlerMixin, models.Model):
+class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
     PAYMENT_STATUS_CHOICES = [
         ('requested', 'Solicitado'),
         ('pending', 'Pendiente de pago'),
@@ -543,10 +543,6 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='requested', verbose_name="Estado de pago")
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, verbose_name="Método de pago", blank=True, null=True)
 
-    # Campo para soft delete (activo en el sistema)
-    record_active = models.BooleanField(default=True, verbose_name="Registro activo")
-    deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de eliminación")
-
     file_fields = []
 
     @property
@@ -565,16 +561,6 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
         else:
             return 'expirado'
 
-    def delete(self, using=None, keep_parents=False):
-        """Soft delete: marca como inactivo en lugar de borrar"""
-        self.record_active = False
-        self.deleted_at = timezone.now()
-        self.save()
-
-    def hard_delete(self):
-        """Eliminación física real (solo para superusuarios)"""
-        super().delete()
-
     class Meta:
         verbose_name = "Suscripción de servicio"
         verbose_name_plural = "Suscripciones de servicios"
@@ -590,7 +576,7 @@ class ServiceSubscription(FileHandlerMixin, models.Model):
         return f"{self.customer.company_name} - {self.service.title}"
 
 
-class Contract(models.Model):
+class Contract(SoftDeleteModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.OneToOneField(
         ServiceSubscription,
@@ -610,7 +596,7 @@ class Contract(models.Model):
         return f"Contrato {self.number} - {self.subscription.customer.company_name}"
 
 
-class Invoice(models.Model):
+class Invoice(SoftDeleteModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.ForeignKey(
         ServiceSubscription,
@@ -679,7 +665,8 @@ class InvoiceItem(models.Model):
         )
 
 
-class Certificate(models.Model):
+class Certificate(SoftDeleteModel):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.ForeignKey(
         ServiceSubscription,
         on_delete=models.CASCADE,

@@ -115,20 +115,44 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
 
 class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Soft delete: desactiva el cliente sin borrar su usuario."""
     permission_required = 'dashboard.delete_customer'
 
     def post(self, request, uuid):
         customer = get_object_or_404(Customer, uuid=uuid)
-        user = customer.user
+        if not customer.record_active:
+            messages.warning(request, 'El cliente ya estaba desactivado.')
+            return redirect('listado_clientes')
+        customer.delete()
         log_action(
             user=self.request.user,
             obj=customer,
             action_flag=DELETION,
-            message=f"Se eliminó al cliente {customer.company_name} y su usuario asociado."
+            message=f"Cliente desactivado: {customer.company_name}."
         )
+        messages.success(request, 'Cliente desactivado con éxito.')
+        return redirect('listado_clientes')
+
+
+class CustomerHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Eliminación física permanente (solo superusuarios)."""
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def post(self, request, uuid):
+        customer = get_object_or_404(Customer, uuid=uuid)
+        company_name = customer.company_name
+        user = customer.user
+        customer.hard_delete()
         try:
             user.delete()
-            messages.success(request, 'Cliente y usuario eliminados con éxito.')
-        except Exception as e:
-            messages.error(request, str(e))
+        except Exception:
+            pass
+        log_action(
+            user=self.request.user,
+            obj=customer,
+            action_flag=DELETION,
+            message=f"Cliente eliminado físicamente: {company_name}."
+        )
+        messages.success(request, f'Cliente {company_name} eliminado permanentemente.')
         return redirect('listado_clientes')

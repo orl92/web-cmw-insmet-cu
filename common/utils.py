@@ -7,6 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.shortcuts import render
 from django.templatetags.static import static
+from django.utils import timezone
 from django.views import View
 
 
@@ -71,6 +72,31 @@ class FileHandlerMixin(models.Model):
             if file:
                 file.delete(save=False)
         super().delete(*args, **kwargs)
+
+
+class SoftDeleteModel(models.Model):
+    """
+    Mixin para borrado lógico (soft delete).
+    Agrega campos `record_active` y `deleted_at`.
+    Sobrescribe `delete()` para hacer soft delete; provee `hard_delete()` para borrado físico.
+    Debe ir antes que FileHandlerMixin en la herencia cuando ambos se usen:
+        class MiModelo(SoftDeleteModel, FileHandlerMixin, models.Model):
+    """
+    record_active = models.BooleanField(default=True, verbose_name="Registro activo")
+    deleted_at = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de eliminación")
+
+    class Meta:
+        abstract = True
+
+    def delete(self, using=None, keep_parents=False):
+        """Soft delete: marca como inactivo en lugar de borrar"""
+        self.record_active = False
+        self.deleted_at = timezone.now()
+        self.save()
+
+    def hard_delete(self):
+        """Eliminación física real (solo para superusuarios)"""
+        super().delete()
 
 
 # Mapa de códigos meteorológicos a nombres base de archivos

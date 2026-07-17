@@ -91,6 +91,7 @@ Todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos cus
   4. Desglosar en `tasks.md` con referencias a archivos concretos.
   5. Solo entonces escribir código.
   6. Actualizar `constitution/roadmap.md` moviendo la feature a "Hecho".
+  7. Hacer commit con mensaje descriptivo (incluir número y nombre de la feature).
 
   Si el plan crea una app nueva, seguir el patrón de apps existentes (ver tabla).
 

@@ -380,3 +380,21 @@ class ResendCertificateEmailView(LoginRequiredMixin, PermissionRequiredMixin, Vi
         else:
             messages.error(request, "No se pudo reenviar el certificado. Revise los logs.")
         return redirect('listado_suscripciones')
+
+
+class CertificateHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Eliminación física de certificado (solo superusuarios)."""
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def post(self, request, uuid):
+        certificate = get_object_or_404(Certificate, uuid=uuid)
+        certificate.hard_delete()
+        log_action(
+            user=request.user,
+            obj=certificate,
+            action_flag=DELETION,
+            message=f"Certificado {certificate.pk} eliminado físicamente."
+        )
+        messages.success(request, "Certificado eliminado permanentemente.")
+        return redirect('listado_suscripciones')
