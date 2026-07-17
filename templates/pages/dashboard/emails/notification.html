@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" style="color-scheme: light dark; supported-color-schemes: light dark;">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Restablecimiento de Contraseña</title>
+    <title>{{ title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta content="telephone=no" name="format-detection" />
     <meta name="x-apple-disable-message-reformatting" />
@@ -92,7 +92,7 @@
       <table class="main bg-body" width="100%" cellspacing="0" cellpadding="0" role="presentation" style="font-family: Inter, -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; border-collapse: collapse; width: 100%; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;" bgcolor="#f9fafb">
         <tr>
           <td align="center" valign="top" style="font-family: Inter, -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif;">
-            <span class="preheader" style="font-size: 0; display: none; max-height: 0; mso-hide: all; line-height: 0; color: transparent; height: 0; max-width: 0; opacity: 0; overflow: hidden; visibility: hidden; width: 0; padding: 0;">Has solicitado restablecer tu contraseña.</span>
+            <span class="preheader" style="font-size: 0; display: none; max-height: 0; mso-hide: all; line-height: 0; color: transparent; height: 0; max-width: 0; opacity: 0; overflow: hidden; visibility: hidden; width: 0; padding: 0;">{{ title }} — Centro Meteorológico Provincial de Camagüey</span>
 
             <table class="wrap" cellspacing="0" cellpadding="0" role="presentation" style="font-family: Inter, -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; border-collapse: collapse; width: 100%; max-width: 640px; text-align: left;">
               <tr>
@@ -178,7 +178,7 @@
                               <!-- Título del aviso -->
                               <tr>
                                 <td class="content pb-0" align="center" style="font-family: Inter, -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; padding: 48px 48px 0;">
-                                  <h1 class="text-center m-0 font-strong" style="font-family: Inter, -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; font-weight: 600; mso-line-height-rule: exactly; color: #111827; font-size: 30px; line-height: 126%; margin: 0;" align="center">{{ alert.title }}</h1>
+                                  <h1 class="text-center m-0 font-strong" style="font-family: Inter, -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; font-weight: 600; mso-line-height-rule: exactly; color: #111827; font-size: 30px; line-height: 126%; margin: 0;" align="center">{{ title }}</h1>
                                 </td>
                               </tr>
 
@@ -202,7 +202,7 @@
                                     <strong>Autor:</strong> {{ alert.user.get_full_name }}
                                   </p>
                                   {# <img src="{{ image_url }}" alt="" height="200" width="266" class="img-illustration" style="display: inline-block; line-height: 100%; outline: none; text-decoration: none; vertical-align: bottom; font-size: 0; max-width: 320px; max-height: 200px; width: auto; height: auto; border-style: none; border-width: 0;" /> #}
-                                  <p>{{ alert.description|safe }}</p>
+                                  <p>{{ alert.summary }}</p>
                                   {% if alert.valid_until %}
                                     <p>
                                       <strong>Válido hasta:</strong> {{ alert.valid_until }}

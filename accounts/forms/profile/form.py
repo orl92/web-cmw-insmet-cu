@@ -40,6 +40,7 @@ class ProfileForm(forms.ModelForm):
         
         if self.instance.user_id is not None:
             user = self.instance.user
+            self.fields['newsletter'].initial = self.instance.newsletter
             if hasattr(user, 'customer'):
                 customer = user.customer
                 self.fields['company_name'].initial = customer.company_name
@@ -49,7 +50,6 @@ class ProfileForm(forms.ModelForm):
                 self.fields['agency_bank'].initial = customer.agency_bank
                 self.fields['address'].initial = customer.address
                 self.fields['phone'].initial = customer.phone
-                self.fields['newsletter'].initial = profile.newsletter
                 
                 # Campos obligatorios para clientes
                 for field_name in ['company_name', 'reeup', 'nit', 'account',
