@@ -113,15 +113,4 @@
       {% endif %}
     </div>
 
-    <!-- Recibe Newsletter -->
-    <div class="mb-3 form-check">
-      <input type="checkbox" class="form-check-input {% if form.newsletter.errors %}is-invalid{% endif %}"
-             id="{{ form.newsletter.id_for_label }}" name="{{ form.newsletter.name }}">
-      <label class="form-check-label" for="{{ form.newsletter.id_for_label }}">
-        {{ form.newsletter.label }}
-      </label>
-      {% if form.newsletter.errors %}
-        <div class="invalid-feedback d-block">{{ form.newsletter.errors.0 }}</div>
-      {% endif %}
-    </div>
 {% endblock %}

@@ -16,13 +16,13 @@ class CustomerForm(forms.ModelForm):
         model = Customer
         fields = [
             'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone', 'newsletter',
+            'address', 'phone',
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
-            if field_name not in ['username', 'password', 'email', 'newsletter']:
+            if field_name not in ['username', 'password', 'email']:
                 field.widget.attrs.update({'class': 'form-control'})
 
     # --- Validaciones igual que antes ---
@@ -76,7 +76,7 @@ class CustomerUpdateForm(forms.ModelForm):
         model = Customer
         fields = [
             'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone', 'newsletter',
+            'address', 'phone',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -84,7 +84,7 @@ class CustomerUpdateForm(forms.ModelForm):
         if self.instance and self.instance.user:
             self.fields['email'].initial = self.instance.user.email
         for field_name, field in self.fields.items():
-            if field_name not in ['email', 'newsletter']:
+            if field_name not in ['email']:
                 field.widget.attrs.update({'class': 'form-control'})
 
     # Validaciones (idénticas a las de CustomerForm)
@@ -129,7 +129,7 @@ class CustomerForUserForm(forms.ModelForm):
         model = Customer
         fields = [
             'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone', 'newsletter',
+            'address', 'phone',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -138,7 +138,7 @@ class CustomerForUserForm(forms.ModelForm):
         if self.user:
             self.fields['email'].initial = self.user.email
         for field_name, field in self.fields.items():
-            if field_name not in ['email', 'newsletter']:
+            if field_name not in ['email']:
                 field.widget.attrs.update({'class': 'form-control'})
 
     def clean_reeup(self):
