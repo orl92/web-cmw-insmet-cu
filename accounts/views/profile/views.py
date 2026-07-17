@@ -79,8 +79,8 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             form = context.get('form')
             if form and form.errors:
                 # Definir qué campos pertenecen a cada pestaña
-                campos_personal = ['first_name', 'last_name', 'email', 'avatar']
-                campos_empresa = ['company_name', 'reeup', 'nit', 'account', 'address', 'phone', 'newsletter']
+                campos_personal = ['first_name', 'last_name', 'email', 'newsletter', 'avatar']
+                campos_empresa = ['company_name', 'reeup', 'nit', 'account', 'address', 'phone']
                 
                 # Prioridad: si hay error en personal, mostramos personal
                 if any(campo in form.errors for campo in campos_personal):

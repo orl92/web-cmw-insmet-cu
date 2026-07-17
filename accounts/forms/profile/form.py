@@ -49,7 +49,7 @@ class ProfileForm(forms.ModelForm):
                 self.fields['agency_bank'].initial = customer.agency_bank
                 self.fields['address'].initial = customer.address
                 self.fields['phone'].initial = customer.phone
-                self.fields['newsletter'].initial = customer.newsletter
+                self.fields['newsletter'].initial = profile.newsletter
                 
                 # Campos obligatorios para clientes
                 for field_name in ['company_name', 'reeup', 'nit', 'account',
@@ -101,6 +101,7 @@ class ProfileForm(forms.ModelForm):
         user.first_name = self.cleaned_data['first_name']
         user.last_name = self.cleaned_data['last_name']
         user.email = self.cleaned_data['email']
+        profile.newsletter = self.cleaned_data.get('newsletter', False)
         
         if commit:
             user.save()
@@ -115,7 +116,6 @@ class ProfileForm(forms.ModelForm):
                 customer.agency_bank = self.cleaned_data.get('agency_bank', '')
                 customer.address = self.cleaned_data.get('address', '')
                 customer.phone = self.cleaned_data.get('phone', '')
-                customer.newsletter = self.cleaned_data.get('newsletter', False)
                 customer.save()
         
         return profile

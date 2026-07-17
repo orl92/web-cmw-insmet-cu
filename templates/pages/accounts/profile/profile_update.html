@@ -44,22 +44,27 @@
              role="tabpanel" 
              aria-labelledby="personal-tab">
           <div class="p-3">
-            <div class="mb-3">
-              <label class="form-label required">{{ form.first_name.label }}</label>
-              <input type="text" class="form-control" name="{{ form.first_name.name }}" value="{{ form.first_name.value|default:'' }}" required />
-              {% if form.first_name.errors %}
-                <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
-              {% endif %}
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label required">{{ form.first_name.label }}</label>
+                  <input type="text" class="form-control" name="{{ form.first_name.name }}" value="{{ form.first_name.value|default:'' }}" required />
+                  {% if form.first_name.errors %}
+                    <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label required">{{ form.last_name.label }}</label>
+                  <input type="text" class="form-control" name="{{ form.last_name.name }}" value="{{ form.last_name.value|default:'' }}" required />
+                  {% if form.last_name.errors %}
+                    <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
+                  {% endif %}
+                </div>
+              </div>
             </div>
-            
-            <div class="mb-3">
-              <label class="form-label required">{{ form.last_name.label }}</label>
-              <input type="text" class="form-control" name="{{ form.last_name.name }}" value="{{ form.last_name.value|default:'' }}" required />
-              {% if form.last_name.errors %}
-                <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
-              {% endif %}
-            </div>
-            
+
             <div class="mb-3">
               <label class="form-label required">{{ form.email.label }}</label>
               <input type="email" class="form-control" name="{{ form.email.name }}" value="{{ form.email.value|default:'' }}" required />
@@ -67,7 +72,23 @@
                 <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
               {% endif %}
             </div>
-            
+
+            <div class="mb-3">
+              <label class="form-check form-switch">
+                <input class="form-check-input" type="checkbox"
+                       name="{{ form.newsletter.name }}"
+                       id="id_newsletter"
+                       {% if form.newsletter.value %}checked{% endif %}>
+                <span class="form-check-label">{{ form.newsletter.label }}</span>
+                <span class="form-check-description">
+                  Recibe novedades y noticias por correo electrónico.
+                </span>
+              </label>
+              {% if form.newsletter.errors %}
+                <span class="text-danger d-block mb-3">{{ form.newsletter.errors }}</span>
+              {% endif %}
+            </div>
+
             <div class="mb-3">
               <label class="form-label">{{ form.avatar.label }}</label>
               <div class="card">
@@ -184,18 +205,6 @@
               <textarea class="form-control" name="{{ form.address.name }}" rows="3" required>{{ form.address.value|default:'' }}</textarea>
               {% if form.address.errors %}
                 <span class="text-danger d-block mb-3">{{ form.address.errors }}</span>
-              {% endif %}
-            </div>
-            
-            <div class="mb-3">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="{{ form.newsletter.name }}" id="newsletter" {% if form.newsletter.value %}checked{% endif %}>
-                <label class="form-check-label" for="newsletter">
-                  {{ form.newsletter.label }}
-                </label>
-              </div>
-              {% if form.newsletter.errors %}
-                <span class="text-danger d-block mb-3">{{ form.newsletter.errors }}</span>
               {% endif %}
             </div>
           </div>
