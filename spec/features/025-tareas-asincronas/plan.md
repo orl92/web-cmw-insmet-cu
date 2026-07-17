@@ -2,13 +2,27 @@
 
 ## Enfoque
 
-Usar Huey (más simple que Celery, soporta SQLite como broker). No requiere Redis.
+Usar Huey + SQLite (archivo `huey.db`) como broker. No requiere Redis ni servicios externos.
 
-## Implementación
+## Decisión de diseño
 
-1. Agregar `huey` a requirements.txt
-2. Configurar Huey en settings.py (usar SQLite como broker para dev)
-3. Crear `dashboard/tasks.py` con tareas
-4. Reemplazar `mail_send()` por task
-5. Reemplazar PDF generation en facturación por task
-6. Tests básicos
+- `mail_send()` mantiene la validación y mensajes UI sincrónicamente; solo el envío SMTP se delega a la tarea. Esto preserva los mensajes de éxito/error en la interfaz.
+- La generación de PDF de facturación (wkhtmltopdf) se extrae a función standalone y se ejecuta como tarea, junto con el envío del email.
+
+## Archivos a modificar/crear
+
+| Archivo | Acción |
+|---|---|
+| `requirements.txt` | + `huey` |
+| `config/huey.py` | Crear — instancia `SqliteHuey` |
+| `config/settings.py` | + `HUEY_DB_PATH` |
+| `dashboard/tasks.py` | Crear — `send_email_task`, `generate_invoice_pdf_and_email_task` |
+| `dashboard/data/mail_send.py` | Refactor — delegar `email.send()` a task |
+| `dashboard/views/facturacion/views.py` | Refactor — llamar task en vez de inline PDF+email |
+| `dashboard/views/facturacion/utils.py` | + `generate_invoice_pdf_standalone()` extraída de `InvoiceCreateView` |
+
+## Ejecución del worker
+
+```bash
+huey_consumer.py config.huey.huey
+```

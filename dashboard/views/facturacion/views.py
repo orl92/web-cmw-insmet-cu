@@ -2,7 +2,6 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-import pdfkit
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
@@ -10,11 +9,9 @@ from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     UserPassesTestMixin,
 )
-from django.core.files.base import ContentFile
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import FormView, ListView, View
@@ -31,8 +28,7 @@ from dashboard.models import (
     Service,
     ServiceSubscription,
 )
-
-from .utils import enviar_correo_factura
+from dashboard.tasks import generate_invoice_pdf_and_email_task
 
 logger = logging.getLogger(__name__)
 
@@ -196,8 +192,8 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             message=f"Factura por lote {invoice.number} - Cliente: {customer.company_name} - Monto: ${total:.2f}"
         )
 
-        self.generate_pdf(invoice, customer, start_date, end_date, commercial_registry, items)
-        self.send_invoice_email(invoice, customer)
+        site_url = self.request.build_absolute_uri('/')
+        generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
 
     def process_manual_invoice(self, form, customer, start_date, end_date, commercial_registry):
         items_formset = InvoiceItemFormSet(self.request.POST, prefix='items')
@@ -268,67 +264,10 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             message=f"Factura manual {invoice.number} - Cliente: {customer.company_name} - Monto: ${total:.2f}"
         )
 
-        self.generate_pdf(invoice, customer, start_date, end_date, commercial_registry, items)
-        self.send_invoice_email(invoice, customer)
+        site_url = self.request.build_absolute_uri('/')
+        generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
         messages.success(self.request, "Factura manual generada (con suscripciones creadas).")
         return redirect(self.success_url)
-
-    def send_invoice_email(self, invoice, customer):
-        enviar_correo_factura(invoice, customer, request=self.request)
-
-    def generate_pdf(self, invoice, customer, start_date, end_date, commercial_registry, items):
-        company = CompanySettings.get_instance()
-        periodo = f"Desde {start_date.strftime('%d/%m/%Y')} hasta {end_date.strftime('%d/%m/%Y')}"
-        context = {
-            'numero_factura': invoice.number,
-            'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
-            'periodo_facturacion': periodo,
-            'cliente': {
-                'nombre': customer.company_name,
-                'direccion': customer.address,
-                'codigo_reeup': customer.reeup or '',
-                'nit': customer.nit or '',
-                'cuenta_bancaria': customer.account or '',
-                'agencia_bancaria': customer.agency_bank or '',
-                'telefonos': customer.phone or '',
-            },
-            'proveedor': {
-                'nombre': company.nombre,
-                'direccion': company.direccion,
-                'codigo_reeup': company.codigo_reeup,
-                'nit': company.nit,
-                'cuenta_bancaria': company.cuenta_bancaria,
-                'agencia_bancaria': company.agencia_bancaria,
-                'telefonos': company.telefonos,
-                'registro_comercial': commercial_registry,
-                'no_contrato': '',
-                'fecha_contrato': '',
-            },
-            'items': [{
-                'codigo': item.codigo,
-                'descripcion': item.descripcion,
-                'cantidad': item.cantidad,
-                'unidad_medida': item.unidad_medida,
-                'precio': item.precio,
-                'importe': item.importe,
-            } for item in items],
-            'total': float(invoice.amount),
-            'current_year': timezone.now().year,
-        }
-        html_string = render_to_string('pages/dashboard/facturacion/factura_template.html', context)
-        options = {
-            'page-size': 'A4',
-            'margin-top': '10mm',
-            'margin-bottom': '10mm',
-            'margin-left': '10mm',
-            'margin-right': '10mm',
-            'encoding': 'UTF-8',
-            'no-outline': None,
-            'enable-local-file-access': None,
-        }
-        pdf_bytes = pdfkit.from_string(html_string, False, options=options)
-        filename = f"factura_{invoice.id}.pdf"
-        invoice.pdf.save(filename, ContentFile(pdf_bytes))
 
     def generate_invoice_number(self):
         year = timezone.now().year

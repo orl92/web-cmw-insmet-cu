@@ -1,13 +1,72 @@
 import logging
 import os
+
+import pdfkit
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+
 from dashboard.models import CompanySettings
 
 logger = logging.getLogger(__name__)
+
+
+def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, commercial_registry, items):
+    company = CompanySettings.get_instance()
+    periodo = f"Desde {start_date.strftime('%d/%m/%Y')} hasta {end_date.strftime('%d/%m/%Y')}"
+    context = {
+        'numero_factura': invoice.number,
+        'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
+        'periodo_facturacion': periodo,
+        'cliente': {
+            'nombre': customer.company_name,
+            'direccion': customer.address,
+            'codigo_reeup': customer.reeup or '',
+            'nit': customer.nit or '',
+            'cuenta_bancaria': customer.account or '',
+            'agencia_bancaria': customer.agency_bank or '',
+            'telefonos': customer.phone or '',
+        },
+        'proveedor': {
+            'nombre': company.nombre,
+            'direccion': company.direccion,
+            'codigo_reeup': company.codigo_reeup,
+            'nit': company.nit,
+            'cuenta_bancaria': company.cuenta_bancaria,
+            'agencia_bancaria': company.agencia_bancaria,
+            'telefonos': company.telefonos,
+            'registro_comercial': commercial_registry,
+            'no_contrato': '',
+            'fecha_contrato': '',
+        },
+        'items': [{
+            'codigo': item.codigo,
+            'descripcion': item.descripcion,
+            'cantidad': item.cantidad,
+            'unidad_medida': item.unidad_medida,
+            'precio': item.precio,
+            'importe': item.importe,
+        } for item in items],
+        'total': float(invoice.amount),
+        'current_year': timezone.now().year,
+    }
+    html_string = render_to_string('pages/dashboard/facturacion/factura_template.html', context)
+    options = {
+        'page-size': 'A4',
+        'margin-top': '10mm',
+        'margin-bottom': '10mm',
+        'margin-left': '10mm',
+        'margin-right': '10mm',
+        'encoding': 'UTF-8',
+        'no-outline': None,
+        'enable-local-file-access': None,
+    }
+    pdf_bytes = pdfkit.from_string(html_string, False, options=options)
+    filename = f"factura_{invoice.id}.pdf"
+    invoice.pdf.save(filename, ContentFile(pdf_bytes))
 
 def enviar_correo_factura(invoice, customer, request=None, base_url=None):
     """

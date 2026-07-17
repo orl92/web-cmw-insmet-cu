@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.urls import reverse
 from django.conf import settings
 
+from dashboard.tasks import send_email_task
+
 
 def mail_send(request, object, subject, url):
     # Construir la URL dinámica
@@ -30,39 +32,31 @@ def mail_send(request, object, subject, url):
                         'current_year': datetime.now().year
                     }
                 )
-                plain_message = strip_tags(html_message)
 
-                email = EmailMessage(
-                    subject=subject,
-                    body=html_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=list(recipients),
-                )
-                email.content_subtype = 'html'
-
-                # ADJUNTAR ARCHIVO PDF
+                attachment_name = None
+                attachment_content = None
+                attachment_mime = None
                 if object.file:
                     try:
-                        # Obtener el nombre del archivo
-                        file_name = object.file.name.split('/')[-1]  # Solo el nombre del archivo, no la ruta completa
-
-                        # Leer el contenido del archivo
+                        file_name = object.file.name.split('/')[-1]
                         file_content = object.file.read()
-
-                        # Adjuntar el archivo PDF con el tipo MIME correcto
-                        email.attach(file_name, file_content, 'application/pdf')
-
+                        attachment_name = file_name
+                        attachment_content = file_content
+                        attachment_mime = 'application/pdf'
                     except Exception as file_error:
-                        # Manejar error específico del archivo sin interrumpir el envío del correo
                         messages.warning(request, f'El archivo no pudo ser adjuntado: {str(file_error)}',
                                          extra_tags='warning')
-                try:
-                    email.send()
-                except Exception as send_error:
-                    print(send_error)
-                    messages.warning(request, f'Ocurrió un error al enviar el correo: {str(send_error)}',
-                                     extra_tags='warning')
 
+                recipients_list = list(recipients)
+                send_email_task(
+                    subject,
+                    html_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    recipients_list,
+                    attachment_name=attachment_name,
+                    attachment_content=attachment_content,
+                    attachment_mime=attachment_mime,
+                )
                 messages.success(request, 'El correo de notificación ha sido enviado con éxito.',
                                  extra_tags='success')
             except Exception as e:

@@ -21,6 +21,7 @@ import logging
 # 1. INITIAL SETUP
 # =====================
 BASE_DIR = Path(__file__).resolve().parent.parent
+HUEY_DB_PATH = BASE_DIR / 'huey.db'
 
 # Detectar entorno al inicio
 IS_PRODUCTION = 'PRODUCTION' in os.environ or '--production' in sys.argv
