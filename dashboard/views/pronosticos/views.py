@@ -86,7 +86,7 @@ class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Forecasts
     form_class = ForecastsForm
-    template_name = 'pages/dashboard/pronosticos/crear_pronostico.html'
+    template_name = 'pages/dashboard/pronosticos/form_pronostico.html'
     permission_required = 'dashboard.add_forecast'
     success_url = reverse_lazy('pronosticos')
 
@@ -144,7 +144,7 @@ class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
 class ForecastUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Forecasts
     form_class = ForecastsForm
-    template_name = 'pages/dashboard/pronosticos/actualizar_pronostico.html'
+    template_name = 'pages/dashboard/pronosticos/form_pronostico.html'
     permission_required = 'dashboard.change_forecast'
     success_url = reverse_lazy('pronosticos')
 

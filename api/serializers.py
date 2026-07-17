@@ -2,7 +2,18 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from common.utils import get_moon_img_path, get_sun_img_path
-from dashboard.models import ForecastExtendedDay, ForecastRegions, Forecasts, Station
+from dashboard.models import (
+    EarlyWarning,
+    ForecastExtendedDay,
+    ForecastRegions,
+    Forecasts,
+    ScientificPublication,
+    Service,
+    Station,
+    StormWarning,
+    TropicalCyclone,
+    WeatherReport,
+)
 
 
 class StationSerializer(serializers.ModelSerializer):
@@ -88,3 +99,50 @@ class ForecastSerializer(serializers.ModelSerializer):
             "sunset_icon": get_sun_img_path('sunset'),
             "uv_index": obj.uv_index
         }
+
+
+class EarlyWarningSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = EarlyWarning
+        fields = ['uuid', 'date', 'valid_until', 'summary', 'user']
+
+
+class TropicalCycloneSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = TropicalCyclone
+        fields = ['uuid', 'date', 'valid_until', 'summary', 'user']
+
+
+class StormWarningSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = StormWarning
+        fields = ['uuid', 'date', 'valid_until', 'summary', 'user']
+
+
+class WeatherReportSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = WeatherReport
+        fields = ['uuid', 'type', 'date', 'summary', 'user']
+
+
+class ScientificPublicationSerializer(serializers.ModelSerializer):
+    author = serializers.CharField(source='author.__str__', read_only=True)
+    coauthors = serializers.StringRelatedField(many=True, read_only=True)
+
+    class Meta:
+        model = ScientificPublication
+        fields = ['uuid', 'title', 'summary', 'publication_date', 'author', 'coauthors']
+
+
+class ServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service
+        fields = ['uuid', 'title', 'summary', 'service_type', 'price', 'code']

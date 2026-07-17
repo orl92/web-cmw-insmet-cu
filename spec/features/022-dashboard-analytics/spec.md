@@ -8,8 +8,10 @@ Expande el dashboard principal con más gráficos y estadísticas. Actualmente s
 
 ## Criterios de aceptación
 
-- [ ] Gráfico de ingresos mensuales (barras, ApexCharts)
-- [ ] Gráfico de suscripciones activas vs expiradas (pastel)
-- [ ] Contador de avisos activos por tipo
-- [ ] Clientes nuevos este mes
-- [ ] `python manage.py check` — sin errores
+- [x] Gráfico de ingresos mensuales (barras, ApexCharts)
+- [x] Gráfico de suscripciones activas vs expiradas (pastel)
+- [x] Contador de avisos activos por tipo
+- [x] Clientes nuevos este mes
+- [x] `python manage.py check` — sin errores
+- [x] `python manage.py test` — 136/136 tests pasan
+- [x] KPIs visibles para todo staff (no solo superuser)

@@ -6,7 +6,17 @@ from drf_spectacular.views import (
 )
 from rest_framework.routers import DefaultRouter
 
-from api.views import ForecastAPIView, StationListAPIView, StationObservationView
+from api.views import (
+    EarlyWarningListAPIView,
+    ForecastAPIView,
+    ScientificPublicationListAPIView,
+    ServiceListAPIView,
+    StationListAPIView,
+    StationObservationView,
+    StormWarningListAPIView,
+    TropicalCycloneListAPIView,
+    WeatherReportListAPIView,
+)
 
 router = DefaultRouter()
 
@@ -22,4 +32,14 @@ urlpatterns = router.urls + [
     path('station/observation/<str:hour>/<int:station_number>/', StationObservationView.as_view(), name='station-observation'),
     # Pronosticos
     path('forecast/<str:date>/', ForecastAPIView.as_view(), name='forecast'),
+    # Avisos
+    path('early-warnings/', EarlyWarningListAPIView.as_view(), name='early-warning-list'),
+    path('tropical-cyclones/', TropicalCycloneListAPIView.as_view(), name='tropical-cyclone-list'),
+    path('storm-warnings/', StormWarningListAPIView.as_view(), name='storm-warning-list'),
+    # Reportes Meteorologicos
+    path('weather-reports/<str:type>/', WeatherReportListAPIView.as_view(), name='weather-report-list'),
+    # Publicaciones
+    path('publications/', ScientificPublicationListAPIView.as_view(), name='publication-list'),
+    # Servicios
+    path('services/', ServiceListAPIView.as_view(), name='service-list'),
 ]

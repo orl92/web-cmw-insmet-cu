@@ -6,13 +6,28 @@ from rest_framework.response import Response
 
 from api.data.GetData import GetData
 from api.serializers import (
+    EarlyWarningSerializer,
     ForecastSerializer,
+    ScientificPublicationSerializer,
+    ServiceSerializer,
     StationObservationSerializer,
     StationSerializer,
+    StormWarningSerializer,
+    TropicalCycloneSerializer,
+    WeatherReportSerializer,
 )
-from dashboard.models import Forecasts, Station
+from dashboard.models import (
+    EarlyWarning,
+    Forecasts,
+    ScientificPublication,
+    Service,
+    Station,
+    StormWarning,
+    TropicalCyclone,
+    WeatherReport,
+)
 
-# Create your views here.
+ALLOWED_REPORT_TYPES = {'today', 'tomorrow', 'commentary', 'note'}
     
 class StationObservationView(GenericAPIView):
     """
@@ -114,7 +129,52 @@ class ForecastAPIView(GenericAPIView):
         serializer = self.get_serializer(forecasts)
         return Response(serializer.data)
 
-    
+
+class EarlyWarningListAPIView(ListAPIView):
+    serializer_class = EarlyWarningSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return EarlyWarning.objects.filter(valid_until__gte=timezone.now())
+
+
+class TropicalCycloneListAPIView(ListAPIView):
+    serializer_class = TropicalCycloneSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return TropicalCyclone.objects.filter(valid_until__gte=timezone.now())
+
+
+class StormWarningListAPIView(ListAPIView):
+    serializer_class = StormWarningSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return StormWarning.objects.filter(valid_until__gte=timezone.now())
+
+
+class WeatherReportListAPIView(ListAPIView):
+    serializer_class = WeatherReportSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        report_type = self.kwargs.get('type')
+        if report_type not in ALLOWED_REPORT_TYPES:
+            return WeatherReport.objects.none()
+        return WeatherReport.objects.filter(type=report_type)
+
+
+class ScientificPublicationListAPIView(ListAPIView):
+    queryset = ScientificPublication.objects.all()
+    serializer_class = ScientificPublicationSerializer
+    permission_classes = [AllowAny]
+
+
+class ServiceListAPIView(ListAPIView):
+    queryset = Service.objects.filter(service_type='public')
+    serializer_class = ServiceSerializer
+    permission_classes = [AllowAny]
 
 
 

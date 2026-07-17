@@ -724,6 +724,71 @@
     </div>
   </div>
 </div>
+<!-- KPI Analytics -->
+<div class="row row-deck row-cards mt-3">
+  <div class="col-12">
+    <h3 class="card-title">Resumen Comercial</h3>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="subheader text-muted">Clientes Nuevos (este mes)</div>
+        </div>
+        <div class="h1 mb-0 text-primary">{{ new_customers }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="subheader text-muted">Alertas Activas</div>
+        </div>
+        <div class="h1 mb-0 text-warning">{{ total_active_alerts }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="subheader text-muted">Suscripciones Activas</div>
+        </div>
+        <div class="h1 mb-0 text-green">{{ active_subs }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="subheader text-muted">Suscripciones Expiradas</div>
+        </div>
+        <div class="h1 mb-0 text-muted">{{ expired_subs }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Gráficos Comerciales -->
+<div class="row row-deck row-cards mt-3">
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="subheader text-muted fw-medium">Ingresos Mensuales</h3>
+        <div id="incomeChart" class="chart-lg"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="subheader text-muted fw-medium">Suscripciones</h3>
+        <div id="subscriptionsChart" class="chart-lg"></div>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Sección: Pronósticos -->
 <div class="row row-deck row-cards mt-3">
   <div class="col-12">
@@ -1118,6 +1183,127 @@
   }
         }).render();
   {% endif %}
+
+    // ===== GRÁFICO: INGRESOS MENSUALES =====
+    new ApexCharts(document.getElementById("incomeChart"), {
+      chart: {
+        type: "bar",
+        fontFamily: "inherit",
+        height: 320,
+        parentHeightOffset: 0,
+        toolbar: { show: false },
+        animations: { enabled: false }
+      },
+      stroke: {
+        width: 2,
+        lineCap: "round"
+      },
+      series: [
+        { name: "Ingresos", data: {{ income_data|safe }} }
+      ],
+      tooltip: {
+        theme: currentTheme,
+        y: {
+          formatter: function (value) {
+            return value.toLocaleString('es-CU', { style: 'currency', currency: 'CUP', minimumFractionDigits: 0 });
+          }
+        }
+      },
+      grid: {
+        padding: { top: -20, right: 0, left: -4, bottom: -4 },
+        strokeDashArray: 4,
+        borderColor: 'transparent'
+      },
+      dataLabels: { enabled: false },
+      xaxis: {
+        categories: {{ income_months|safe }},
+        labels: {
+          padding: 0,
+          style: {
+            colors: 'var(--tblr-body-color)',
+            fontSize: '12px',
+            fontFamily: 'inherit'
+          }
+        },
+        tooltip: { enabled: false },
+        axisBorder: { show: false },
+        axisTicks: { show: false }
+      },
+      yaxis: {
+        labels: {
+          padding: 4,
+          style: {
+            colors: 'var(--tblr-body-color)',
+            fontSize: '12px',
+            fontFamily: 'inherit'
+          },
+          formatter: function (val) {
+            return val.toLocaleString('es-CU', { style: 'currency', currency: 'CUP', minimumFractionDigits: 0 });
+          }
+        },
+        axisBorder: { show: false }
+      },
+      colors: ["#206bc4"],
+      plotOptions: {
+        bar: {
+          borderRadius: 4,
+          columnWidth: '60%',
+        }
+      },
+      legend: { show: false }
+    }).render();
+
+    // ===== GRÁFICO: SUSCRIPCIONES =====
+    new ApexCharts(document.getElementById("subscriptionsChart"), {
+      chart: {
+        type: "donut",
+        fontFamily: "inherit",
+        height: 320,
+        parentHeightOffset: 0,
+        toolbar: { show: false },
+        animations: { enabled: false }
+      },
+      series: [{{ active_subs }}, {{ expired_subs }}],
+      labels: ["Activas", "Expiradas"],
+      tooltip: { theme: currentTheme },
+      colors: ["#2fb344", "#d63939"],
+      stroke: { width: 0 },
+      dataLabels: {
+        enabled: true,
+        formatter: function (val) {
+          return Math.round(val) + "%";
+        }
+      },
+      legend: {
+        show: true,
+        position: "bottom",
+        offsetY: 12,
+        markers: { width: 10, height: 10, radius: 100 },
+        itemMargin: { horizontal: 8, vertical: 8 },
+        labels: {
+          colors: 'var(--tblr-body-color)',
+          useSeriesColors: false,
+          style: { fontSize: '13px', fontFamily: 'inherit', fontWeight: 400 }
+        }
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            labels: {
+              show: true,
+              total: {
+                show: true,
+                label: "Total",
+                color: 'var(--tblr-body-color)',
+                formatter: function (w) {
+                  return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                }
+              }
+            }
+          }
+        }
+      }
+    }).render();
     });
 </script>
 <style>

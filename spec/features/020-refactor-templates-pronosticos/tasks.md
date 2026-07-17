@@ -6,4 +6,5 @@
 - [ ] Opcional: unificar en un template
 - [ ] Verificar LitePicker IDs siguen iguales
 - [ ] Verificar forecast.js Excel upload sigue funcionando
+- [x] Reordenar dashboard template — Gráficos Comerciales después de Resumen Comercial
 - [ ] `python manage.py check`

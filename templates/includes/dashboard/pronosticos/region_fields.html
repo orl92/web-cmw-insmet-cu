@@ -1,0 +1,24 @@
+{% if form.instance.pk %}<input type="hidden" name="{{ form.id.html_name }}" value="{{ form.instance.pk }}">{% endif %}
+<div class="mb-3">
+    <label class="form-label">Temperatura</label>
+    {{ form.temp }}
+    {% if form.temp.errors %}<div class="invalid-feedback d-block">{{ form.temp.errors.0 }}</div>{% endif %}
+</div>
+<div class="mb-3">
+    <label class="form-label">Tiempo</label>
+    {{ form.weather }}
+</div>
+<div class="mb-3">
+    <label class="form-label">Dirección del Viento</label>
+    {{ form.wind_dir }}
+</div>
+<div class="mb-3">
+    <label class="form-label">Velocidad del Viento</label>
+    {{ form.wind_speed }}
+</div>
+{% if has_sea %}
+<div class="mb-3">
+    <label class="form-label">Mar</label>
+    {{ form.sea_note }}
+</div>
+{% endif %}

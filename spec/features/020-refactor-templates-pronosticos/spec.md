@@ -13,4 +13,5 @@ Descompone los templates `crear_pronostico.html` (1,091 líneas) y `actualizar_p
 - [ ] Partial `astro_fields.html` — datos astronómicos
 - [ ] Crear y actualizar templates usan los partials
 - [ ] Litepicker y forecast.js siguen funcionando
+- [ ] Reordenar dashboard template — Gráficos Comerciales inmediatamente después de Resumen Comercial (agrupar widgets por tipo)
 - [ ] `python manage.py test` — todos pasan

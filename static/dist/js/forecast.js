@@ -1,8 +1,9 @@
 $(document).ready(function () {
     $('#excelFile').on('change', function (e) {
         var formData = new FormData($('#uploadForm')[0]);
+        var uploadUrl = $(this).data('upload-url');
         $.ajax({
-            url: '/dashboard/excel/json/',
+            url: uploadUrl,
             type: 'POST',
             data: formData,
             processData: false,
