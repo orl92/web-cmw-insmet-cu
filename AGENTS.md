@@ -27,6 +27,12 @@ python manage.py add_stations_data
 python manage.py createsuperuser
 ```
 
+- Iniciar el worker de correos (Huey):
+  ```bash
+  ./run_huey.sh &
+  ```
+  Sin este worker los correos se encolan pero nunca se envían.
+
 ## Comandos custom
 
 - `python manage.py add_stations_data` — carga inicial de estaciones
