@@ -11,7 +11,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, ListView, UpdateView, View
 
-from common.utils import log_action
+from common.utils import SearchMixin, log_action
 from dashboard.forms.pronosticos.forms import (
     ForecastExtendedDayFormSet,
     ForecastRegionsFormSet,
@@ -53,10 +53,11 @@ def _build_extended_initial(date_value):
     return initial
 
 
-class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
     model = Forecasts
     template_name = 'pages/dashboard/pronosticos/pronosticos.html'
     permission_required = 'dashboard.view_forecast'
+    search_fields = ['lp', 'nlp']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

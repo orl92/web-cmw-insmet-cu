@@ -14,7 +14,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
-from common.utils import log_action
+from common.utils import SearchMixin, log_action
 from dashboard.data.mail_send import mail_send
 from dashboard.forms.tiempo.forms import WeatherReportForm
 from dashboard.models import WeatherReport
@@ -127,8 +127,10 @@ REPORT_CONFIG = {
 }
 
 
-class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
     model = WeatherReport
+    context_object_name = 'objects'
+    search_fields = ['summary']
 
     def get_report_type(self):
         return self.kwargs.get('report_type', 'today')
@@ -145,7 +147,8 @@ class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         return [self.get_config()['template_list']]
 
     def get_queryset(self):
-        return WeatherReport.objects.filter(type=self.get_report_type())
+        qs = super().get_queryset()
+        return qs.filter(type=self.get_report_type())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -158,7 +161,6 @@ class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         context['url_list'] = reverse_lazy(cfg['url_list'])
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = self.get_queryset()
         return context
 
 

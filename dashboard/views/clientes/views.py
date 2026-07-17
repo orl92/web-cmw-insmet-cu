@@ -9,17 +9,19 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
-from common.utils import log_action
+from common.utils import SearchMixin, log_action
 from dashboard.forms.clientes.forms import (
     CustomerForm,
     CustomerUpdateForm)
 from dashboard.models import Customer
 
 
-class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
     template_name = 'pages/dashboard/clientes/listado_clientes.html'
     model = Customer
+    context_object_name = 'objects'
     permission_required = 'dashboard.view_customer'
+    search_fields = ['company_name', 'reeup', 'nit', 'address', 'phone']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -31,7 +33,6 @@ class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_list'] = reverse_lazy('listado_clientes')
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = Customer.objects.all()
         return context
 
 

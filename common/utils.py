@@ -5,6 +5,7 @@ import uuid
 from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models import Q
 from django.shortcuts import render
 from django.templatetags.static import static
 from django.utils import timezone
@@ -97,6 +98,27 @@ class SoftDeleteModel(models.Model):
     def hard_delete(self):
         """Eliminación física real (solo para superusuarios)"""
         super().delete()
+
+
+class SearchMixin:
+    """
+    Mixin para búsqueda en ListViews.
+    La clase hija debe definir `search_fields` como lista de nombres de campos.
+    Filtra por `?q=` usando `icontains` sobre todos los campos listados.
+    Compatible con vistas que ya sobrescriben `get_queryset()` (usa super()).
+    """
+    search_fields = []
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        q = self.request.GET.get('q', '').strip()
+        if q and self.search_fields:
+            query = Q()
+            for field in self.search_fields:
+                query |= Q(**{f'{field}__icontains': q})
+            qs = qs.filter(query)
+        return qs
 
 
 # Mapa de códigos meteorológicos a nombres base de archivos

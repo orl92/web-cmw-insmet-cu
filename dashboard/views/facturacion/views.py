@@ -19,7 +19,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import FormView, ListView, View
 
-from common.utils import log_action
+from common.utils import SearchMixin, log_action
 from dashboard.forms.company.forms import CompanySettingsForm
 from dashboard.forms.facturacion.forms import InvoiceForm, InvoiceItemFormSet
 from dashboard.models import (
@@ -37,15 +37,16 @@ from .utils import enviar_correo_factura
 logger = logging.getLogger(__name__)
 
 
-class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
     model = Invoice
     template_name = 'pages/dashboard/facturacion/listado_facturas.html'
     context_object_name = 'objects'
-    paginate_by = 20
     permission_required = 'dashboard.view_invoice'
+    search_fields = ['number', 'subscription__customer__company_name', 'subscription__service__title']
 
     def get_queryset(self):
-        return Invoice.objects.select_related(
+        qs = super().get_queryset()
+        return qs.select_related(
             'subscription__customer', 'subscription__service'
         ).prefetch_related('items').order_by('-issue_date')
 

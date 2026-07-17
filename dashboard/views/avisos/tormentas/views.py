@@ -9,17 +9,19 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
-from common.utils import log_action
+from common.utils import SearchMixin, log_action
 from dashboard.data.mail_send import mail_send
 from dashboard.forms.avisos.tormentas.forms import StormWarningForm
 from dashboard.models import StormWarning
 
 # Create your views here.
 
-class StormWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class StormWarningListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
     template_name = 'pages/dashboard/avisos/tormentas/avisos_tormentas.html'
     model = StormWarning
+    context_object_name = 'objects'
     permission_required = 'dashboard.view_storm_warning'
+    search_fields = ['summary']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -31,7 +33,6 @@ class StormWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['url_list'] = reverse_lazy('avisos_tormentas')
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = StormWarning.objects.all()
         return context
 
 

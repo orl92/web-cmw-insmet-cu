@@ -9,17 +9,19 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
-from common.utils import log_action
+from common.utils import SearchMixin, log_action
 from dashboard.data.mail_send import mail_send
 from dashboard.forms.avisos.ciclones_tropicales.forms import TropicalCycloneForm
 from dashboard.models import TropicalCyclone
 
 # Create your views here. 
 
-class TropicalCycloneListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class TropicalCycloneListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
     template_name = 'pages/dashboard/avisos/ciclones_tropicales/avisos_ciclones_tropicales.html'
     model = TropicalCyclone
+    context_object_name = 'objects'
     permission_required = 'dashboard.view_tropical_cyclone'
+    search_fields = ['summary']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -31,7 +33,6 @@ class TropicalCycloneListView(LoginRequiredMixin, PermissionRequiredMixin, ListV
         context['url_list'] = reverse_lazy('ciclones_tropicales')
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = TropicalCyclone.objects.all()
         return context
 
 class TropicalCycloneCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

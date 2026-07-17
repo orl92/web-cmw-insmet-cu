@@ -3,7 +3,8 @@
 {% block title_actions %}
 {% if is_staff %}
 <div class="col-auto ms-auto d-print-none">
-  <div class="d-flex">
+  <div class="d-flex gap-2 align-items-center">
+    {% include 'includes/dashboard/search_bar.html' %}
     <a href="{{ url_create }}" class="btn btn-primary">{{ btn }}</a>
   </div>
 </div>

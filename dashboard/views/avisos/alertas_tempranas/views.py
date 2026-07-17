@@ -9,17 +9,19 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
-from common.utils import log_action
+from common.utils import SearchMixin, log_action
 from dashboard.data.mail_send import mail_send
 from dashboard.forms.avisos.alertas_tempranas.forms import EarlyWarningForm
 from dashboard.models import EarlyWarning
 
 # Create your views here.
 
-class EarlyWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class EarlyWarningListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
     template_name = 'pages/dashboard/avisos/alertas_tempranas/alertas_tempranas.html'
     model = EarlyWarning
+    context_object_name = 'objects'
     permission_required = 'dashboard.view_early_warning'
+    search_fields = ['summary']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -31,7 +33,6 @@ class EarlyWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['url_list'] = reverse_lazy('alertas_tempranas')
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = EarlyWarning.objects.all()
         return context
 
 
