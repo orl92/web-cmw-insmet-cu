@@ -22,14 +22,13 @@
 18. **018 · Vistas de Certificados y Contratos** — vistas CRUD (ListView, CreateView, DetailView, DeleteView), templates con DataTable y modal de borrado, entradas en el menú lateral, URLs en `/dashboard/contratos/` y `/dashboard/certificados/`.
 19. **019 · Exportación CSV/Excel** — `CSVExportView` genérico en `common/views.py`, export views para Customer, Service, ServiceSubscription, Invoice, Forecasts, WeatherReport, EarlyWarning, TropicalCyclone, StormWarning; botón "Exportar CSV" en list.html y pronósticos.
 20. **023 · Model validation** — `clean()` en ForecastExtendedDay (min_temp < max_temp), ServiceSubscription (start_date < end_date), Invoice (amount > 0), InvoiceItem (cantidad > 0, precio > 0); `full_clean()` en save() de ForecastExtendedDay e InvoiceItem; 5 tests nuevos.
+21. **024 · API expansion** — 6 nuevos endpoints públicos (avisos, weather reports, publicaciones, servicios); filtros por activos/vigentes; serializers, views y tests (133 total).
+22. **022 · Dashboard analytics** — 2 charts (ingresos + suscripciones), KPIs (clientes nuevos, avisos activos), queries optimizadas en DashboardView, 136 tests.
+23. **020 · Refactor templates de pronósticos** — templates crear/actualizar unificados en `form_pronostico.html` con 3 partials reutilizables (`region_fields.html`, `extended_day.html`, `astro_fields.html`). Fix de Excel upload: se agregaron `region`, `period`, `day_number`, `date` faltantes en JSON. URL dinámica vía `data-upload-url`. Bugs corregidos: `timezone.now()` en class-level `queryset` de API (→ `get_queryset()`), conteo de suscripciones expiradas (query explícita en vez de `total - active`), ventana de ingresos (días → meses calendario). Flujo SDD mejorado con checklist de revisión en AGENTS.md.
+24. **026 · Mejoras UI pronósticos** — tablas vacías con headers y mensaje "No hay datos" cuando no hay pronósticos; botones de acción (CSV, Excel, Editar, Eliminar) como `btn-icon` cuadrados solo icono con tooltips; botones editar/eliminar movidos a header; "Añadir" solo cuando no hay datos; layout responsivo para móvil en formulario de pronóstico extendido.
 
 ## Siguiente 🔜
 
-21. **024 · API expansion** — endpoints para avisos, weather reports, publicaciones, servicios.
-20. **023 · Model validation** — métodos `clean()` y validadores para modelos clave.
-21. **024 · API expansion** — endpoints para avisos, weather reports, publicaciones, servicios.
-22. **022 · Dashboard analytics** — gráficos de ingresos, suscripciones, avisos con ApexCharts.
-23. **020 · Refactor templates de pronósticos** — descomponer templates en partials reutilizables.
 24. **025 · Tareas asíncronas** — Huey/Celery para email y PDF generation.
 
 ## Backlog / ideas 💡

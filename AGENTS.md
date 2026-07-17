@@ -34,7 +34,7 @@ python manage.py createsuperuser
 
 ## Testing
 
-Todos los `tests.py` son stubs (solo `from django.test import TestCase`). Ejecutar con:
+136 tests en 6 apps (common, accounts, dashboard, api, home, login). Ejecutar con:
 ```bash
 python manage.py test
 ```
@@ -84,14 +84,24 @@ Todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos cus
 - **Archivos**: `FileHandlerMixin` para limpieza automática al actualizar/eliminar; rutas `pdf_upload_path` / `image_upload_path`
 - **Estáticos**: `static/` (desarrollo), `staticfiles/` (producción con WhiteNoise `CompressedManifestStaticFilesStorage`)
 - **Migrations**: NO están en el repo (excluidas en `.gitignore`); ejecutar `makemigrations` siempre en setup
-- **Spec-Driven Development**: toda modificación (nueva app, corrección, adición, refactor a apps existentes) sigue el mismo flujo:
+- **Spec-Driven Development**: toda modificación (nueva app, corrección, adición, refactor, UI, infraestructura) sigue este flujo sin excepción. Si el usuario pide un cambio sin pasar por este flujo, completar las preguntas de la sección "Si el usuario pide un cambio..." antes de escribir código.
+
   1. Crear `spec/features/NNN-nombre/` (siguiente número libre).
   2. Escribir `spec.md`: qué hace la feature y criterios de aceptación.
   3. Escribir `plan.md`: enfoque técnico, detallando qué app(s) crea o modifica.
   4. Desglosar en `tasks.md` con referencias a archivos concretos.
-  5. Solo entonces escribir código.
-  6. Actualizar `constitution/roadmap.md` moviendo la feature a "Hecho".
-  7. Hacer commit con mensaje descriptivo (incluir número y nombre de la feature).
+  5. **Escribir código** siguiendo el plan.
+  6. **Migraciones** — si hay cambios de modelo:
+     ```bash
+     python manage.py makemigrations
+     ```
+  7. **Verificar** siempre:
+     ```bash
+     python manage.py check && python manage.py test
+     ```
+  8. **Revisar código** — aplicar items del checklist según lo modificado (ver más abajo).
+  9. **Actualizar** `constitution/roadmap.md` moviendo la feature a "Hecho".
+  10. **Commit** con mensaje descriptivo (incluir número y nombre de la feature).
 
   Si el plan crea una app nueva, seguir el patrón de apps existentes (ver tabla).
 
@@ -110,6 +120,51 @@ Todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos cus
   ```
 
   Completar spec.md / plan.md / tasks.md con esas respuestas antes de tocar código.
+
+## Checklist de revisión
+
+  Aplicar solo los items relevantes al tipo de cambio realizado:
+
+### Modelos
+- [ ] `__str__` y `Meta.ordering` definidos
+- [ ] `Meta.permissions` idioma español (`view_*`, `add_*`, `change_*`, `delete_*`)
+- [ ] `unique_together` / `constraints` si hay relaciones 1-1
+- [ ] Soft delete: filtrar `record_active` en queries internas
+- [ ] FileField/ImageField: `upload_to` con `pdf_upload_path`/`image_upload_path`
+
+### Vistas (Dashboard)
+- [ ] `LoginRequiredMixin` + `PermissionRequiredMixin` con permiso correcto
+- [ ] `queryset` a nivel de clase con `timezone.now()`? → usar `get_queryset()`
+- [ ] `select_related`/`prefetch_related` para evitar N+1 en list/detail
+- [ ] Conteos derivados con resta (`total - activo = expirado`)? → query explícita
+- [ ] Ventanas de tiempo consistentes (días sueltos vs meses calendario)
+- [ ] `paginate_by = 20` en ListViews
+
+### API
+- [ ] `get_queryset()` filtra por vigencia con `timezone.now()` (no class attr)
+- [ ] Sin `__all__` ni `fields` que expongan campos sensibles
+- [ ] Paginación y rate limiting aplican automáticamente
+
+### Templates
+- [ ] `csrf_token` en todo `<form>` (excepto GET)
+- [ ] `enctype="multipart/form-data"` si hay input type=file
+- [ ] IDs de campos únicos si JS (Litepicker, forecast.js) depende de ellos
+- [ ] Sin `|safe` en datos ingresados por usuarios no confiables
+- [ ] URLs generadas con `{% url %}` (no hardcodeadas)
+
+### JavaScript / Estáticos
+- [ ] URLs obtenidas de atributos `data-*` (no hardcodeadas en JS)
+- [ ] Manejo de errores en llamadas AJAX (callback error/fail)
+- [ ] `python manage.py collectstatic --link --no-input` si se agregó/modificó archivo en `static/`
+
+### URLs
+- [ ] Kwarg `uuid` (no `pk`) para modelos con UUIDField
+- [ ] Nombres de ruta únicos y descriptivos
+
+### Seguridad
+- [ ] Vistas requieren permiso específico (no solo login)
+- [ ] Formularios: `fields` explícito (no `exclude` ni `__all__` si hay campos sensibles)
+- [ ] Mass assignment prevenido: ModelForms listan campos permitidos
 
 ## API
 
