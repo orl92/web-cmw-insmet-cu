@@ -469,10 +469,6 @@ class Customer(SoftDeleteModel):
         default=False,
         verbose_name="Aceptó Términos"
     )
-    newsletter = models.BooleanField(
-        default=False,
-        verbose_name="Recibe Newsletter"
-    )
 
     def __str__(self):
         return self.company_name

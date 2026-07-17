@@ -71,6 +71,29 @@
   <hr>
   
   <div class="mb-3">
+    <h5>Preferencias</h5>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-check form-switch">
+      <input class="form-check-input {% if form.newsletter.errors %}is-invalid{% endif %}"
+             type="checkbox"
+             id="id_newsletter"
+             name="newsletter"
+             {% if form.newsletter.value %}checked{% endif %}>
+      <span class="form-check-label">{{ form.newsletter.label }}</span>
+      <span class="form-check-description">
+        Recibe novedades y noticias por correo electrónico.
+      </span>
+    </label>
+    {% if form.newsletter.errors %}
+      <div class="invalid-feedback d-block">{{ form.newsletter.errors.0 }}</div>
+    {% endif %}
+  </div>
+  
+  <hr>
+  
+  <div class="mb-3">
     <h5>Permisos</h5>
   </div>
   

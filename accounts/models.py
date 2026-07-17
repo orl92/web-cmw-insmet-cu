@@ -23,6 +23,7 @@ class Profile(FileHandlerMixin, models.Model):
     )
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     is_ldap = models.BooleanField(default=False)
+    newsletter = models.BooleanField(default=False, verbose_name="Recibe novedades por correo")
 
     # Lista de campos de archivo para que el mixin los gestione
     file_fields = ['avatar']

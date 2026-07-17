@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
+from accounts.models import Profile
 from dashboard.models import Customer, ServiceSubscription
 
 # Create your form here.
@@ -19,11 +20,29 @@ class UserForm(UserCreationForm):
     
 class UserUpdateForm(UserChangeForm):
     password = forms.CharField(widget=forms.PasswordInput(), required=False)
-    
+    newsletter = forms.BooleanField(
+        required=False, label="Recibe novedades por correo",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active', 'is_superuser', 'groups']
         exclude = ['password', 'user_permissions']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            profile, _ = Profile.objects.get_or_create(user=self.instance)
+            self.fields['newsletter'].initial = profile.newsletter
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        if commit:
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.newsletter = self.cleaned_data.get('newsletter', False)
+            profile.save()
+        return user
 
 
 class CustomerSignUpForm(UserCreationForm):
@@ -179,7 +198,11 @@ class CustomerSignUpForm(UserCreationForm):
                 address=self.cleaned_data['address'],
                 phone=self.cleaned_data['phone'],
                 accept_terms=self.cleaned_data['accept_terms'],
-                newsletter=self.cleaned_data.get('newsletter', False)
             )
+
+            # Sincronizar newsletter al profile (dispara señal a EmailRecipientList)
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.newsletter = self.cleaned_data.get('newsletter', False)
+            profile.save()
 
         return user
