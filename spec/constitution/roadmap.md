@@ -19,17 +19,16 @@
 15. **015 · PDF templates para reportes** — 4 templates PDF creadas (hoy, mañana, comentario, nota meteorológica) con logo + fecha + resumen + autor.
 16. **021 · Eliminar campos planos de Forecasts** — ~60 columnas redundantes eliminadas del modelo Forecasts; forms, vistas, templates, API y dashboard actualizados para usar ForecastRegions y ForecastExtendedDay.
 17. **016 · Soft delete para modelos comerciales** — `SoftDeleteModel` abstracto en `common/utils.py` con `record_active`, `deleted_at`; aplicado a Customer, Service, Invoice, Contract y Certificate; ServiceSubscription refactorizado para heredar del mixin; vistas de borrado con soft/hard delete dual; modales actualizados.
+18. **018 · Vistas de Certificados y Contratos** — vistas CRUD (ListView, CreateView, DetailView, DeleteView), templates con DataTable y modal de borrado, entradas en el menú lateral, URLs en `/dashboard/contratos/` y `/dashboard/certificados/`.
 
 ## Siguiente 🔜
 
-18. **017 · Búsqueda y paginación** — search bar + paginate_by en todos los list views.
-19. **018 · Vistas de Certificados y Contratos** — CRUD + menú sidebar para Contract y Certificate.
-20. **019 · Exportación CSV/Excel** — botón de exportar en list views.
-21. **020 · Refactor templates de pronósticos** — descomponer templates de 1,100 líneas en partials reutilizables.
+19. **019 · Exportación CSV/Excel** — botón de exportar en list views.
+20. **023 · Model validation** — métodos `clean()` y validadores para modelos clave.
+21. **024 · API expansion** — endpoints para avisos, weather reports, publicaciones, servicios.
 22. **022 · Dashboard analytics** — gráficos de ingresos, suscripciones, avisos con ApexCharts.
-23. **023 · Model validation** — métodos `clean()` y validadores para modelos clave.
-24. **024 · API expansion** — endpoints para avisos, weather reports, publicaciones, servicios.
-25. **025 · Tareas asíncronas** — Huey/Celery para email y PDF generation.
+23. **020 · Refactor templates de pronósticos** — descomponer templates en partials reutilizables.
+24. **025 · Tareas asíncronas** — Huey/Celery para email y PDF generation.
 
 ## Backlog / ideas 💡
 

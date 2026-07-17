@@ -18,12 +18,25 @@ from dashboard.views.avisos.tormentas.views import (
     StormWarningListView,
     StormWarningUpdateView,
 )
+from dashboard.views.certificados.views import (
+    CertificateCreateView,
+    CertificateDeleteView,
+    CertificateDetailView,
+    CertificateListView,
+    CertificatePDFView,
+)
 from dashboard.views.clientes.views import (
     CustomerCreateView,
     CustomerDeleteView,
     CustomerHardDeleteView,
     CustomerListView,
     CustomerUpdateView,
+)
+from dashboard.views.contratos.views import (
+    ContractCreateView,
+    ContractDeleteView,
+    ContractDetailView,
+    ContractListView,
 )
 from dashboard.views.company.views import CompanySettingsUpdateView
 from dashboard.views.dashboard.views import (
@@ -169,7 +182,13 @@ urlpatterns = [
     path('regenerar-factura/<uuid:uuid>/', RegenerateInvoiceView.as_view(), name='regenerar_factura'),
     path('aprobar/suscripcion/<uuid:uuid>/', ApproveSubscriptionView.as_view(), name='aprobar_suscripcion'),
     path('reenviar/certificado/<uuid:uuid>/', ResendCertificateEmailView.as_view(), name='reenviar_certificado'),
-    path('eliminar/certificado/<uuid:uuid>/', CertificateHardDeleteView.as_view(), name='eliminar_certificado'),
+    # Certificados
+    path('certificados/', CertificateListView.as_view(), name='listado_certificados'),
+    path('crear/certificado/', CertificateCreateView.as_view(), name='crear_certificado'),
+    path('detalle/certificado/<uuid:uuid>/', CertificateDetailView.as_view(), name='detalle_certificado'),
+    path('certificado/<uuid:uuid>/pdf/', CertificatePDFView.as_view(), name='certificado_pdf'),
+    path('eliminar/certificado/<uuid:uuid>/', CertificateDeleteView.as_view(), name='eliminar_certificado'),
+    path('eliminar/certificado/<uuid:uuid>/permanente/', CertificateHardDeleteView.as_view(), name='eliminar_certificado_permanente'),
     # Facturación
     path('facturacion/', InvoiceListView.as_view(), name='listado_facturas'),
     path('crear/factura/', InvoiceCreateView.as_view(), name='crear_factura'),
@@ -177,7 +196,12 @@ urlpatterns = [
     path('eliminar/factura/<uuid:uuid>/', InvoiceHardDeleteView.as_view(), name='eliminar_factura'),
     path('reenviar/correo/factura/<uuid:uuid>/', ResendInvoiceEmailView.as_view(), name='reenviar_correo_factura'),
     path('ajax/suscripciones-pendientes/', ajax_pending_subscriptions, name='ajax_pending_subscriptions'),
-    path('eliminar/contrato/<uuid:uuid>/', ContractHardDeleteView.as_view(), name='eliminar_contrato'),
+    # Contratos
+    path('contratos/', ContractListView.as_view(), name='listado_contratos'),
+    path('crear/contrato/', ContractCreateView.as_view(), name='crear_contrato'),
+    path('detalle/contrato/<uuid:uuid>/', ContractDetailView.as_view(), name='detalle_contrato'),
+    path('eliminar/contrato/<uuid:uuid>/', ContractDeleteView.as_view(), name='eliminar_contrato'),
+    path('eliminar/contrato/<uuid:uuid>/permanente/', ContractHardDeleteView.as_view(), name='eliminar_contrato_permanente'),
     # Tiempo Hoy
     path('tiempo/hoy/', WeatherReportListView.as_view(), {'report_type': 'today'}, name='listado_tiempo_h'),
     path('crear/tiempo/hoy/', WeatherReportCreateView.as_view(), {'report_type': 'today'}, name="crear_tiempo_h"),

@@ -1,0 +1,68 @@
+{% extends 'layouts/dashboard.html' %}
+{% load static %}
+{% block content %}
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Detalle del Contrato</h3>
+          <div class="card-actions">
+            <a href="{% url 'listado_contratos' %}" class="btn btn-secondary btn-icon">Volver al Listado</a>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h4>Información del Contrato</h4>
+              <table class="table table-bordered">
+                <tr>
+                  <th>Número:</th>
+                  <td>{{ object.number }}</td>
+                </tr>
+                <tr>
+                  <th>Fecha:</th>
+                  <td>{{ object.date }}</td>
+                </tr>
+                <tr>
+                  <th>Registro Comercial:</th>
+                  <td>{{ object.commercial_registry }}</td>
+                </tr>
+                <tr>
+                  <th>Estado:</th>
+                  <td>
+                    {% if object.record_active %}
+                      <span class="badge badge-outline text-green">Activo</span>
+                    {% else %}
+                      <span class="badge badge-outline text-secondary">Desactivado</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h4>Suscripción</h4>
+              <table class="table table-bordered">
+                <tr>
+                  <th>Cliente:</th>
+                  <td>{{ object.subscription.customer.company_name }}</td>
+                </tr>
+                <tr>
+                  <th>Servicio:</th>
+                  <td>{{ object.subscription.service.title }}</td>
+                </tr>
+                <tr>
+                  <th>Inicio:</th>
+                  <td>{{ object.subscription.start_date|date:"d/m/Y" }}</td>
+                </tr>
+                <tr>
+                  <th>Fin:</th>
+                  <td>{{ object.subscription.end_date|date:"d/m/Y" }}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

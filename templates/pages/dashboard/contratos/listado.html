@@ -1,0 +1,146 @@
+{% extends 'layouts/list.html' %}
+{% load static %}
+{% block columns %}
+  <th>Número</th>
+  <th>Cliente</th>
+  <th>Servicio</th>
+  <th>Fecha</th>
+  <th>Registro Comercial</th>
+  <th>Estado</th>
+  <th class="text-end">Acciones</th>
+{% endblock %}
+
+{% block row %}
+  <td>{{ object.number }}</td>
+  <td>{{ object.subscription.customer.company_name }}</td>
+  <td>{{ object.subscription.service.title }}</td>
+  <td>{{ object.date }}</td>
+  <td>{{ object.commercial_registry }}</td>
+  <td>
+    {% if object.record_active %}
+      <span class="badge badge-outline text-green">Activo</span>
+    {% else %}
+      <span class="badge badge-outline text-secondary">Desactivado</span>
+    {% endif %}
+  </td>
+  <td class="text-end">
+    <a href="{% url 'detalle_contrato' object.uuid %}" type="button" class="btn btn-icon btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+      </svg>
+    </a>
+    {% if object.record_active and perms.dashboard.delete_contract %}
+      <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-action="desactivar" data-uuid="{{ object.uuid }}" data-name="{{ object.number }}" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Desactivar" data-bs-original-title="Desactivar contrato">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M4 7l16 0" />
+          <path d="M10 11l0 6" />
+          <path d="M14 11l0 6" />
+          <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+          <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+        </svg>
+      </button>
+    {% endif %}
+    {% if is_superuser and not object.record_active %}
+      <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-action="eliminar" data-uuid="{{ object.uuid }}" data-name="{{ object.number }}" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Eliminar permanentemente" data-bs-original-title="Eliminar permanentemente">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash-x">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M4 7l16 0" />
+          <path d="M10 11l0 6" />
+          <path d="M14 11l0 6" />
+          <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+          <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+          <path d="M17 17l4 4m0 -4l-4 4" />
+        </svg>
+      </button>
+    {% endif %}
+  </td>
+{% endblock %}
+{% block modal %}
+  <div class="modal modal-blur fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="modalTitle"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirmar</button>
+        </div>
+        <form id="deleteForm" method="post" style="display: none;">{% csrf_token %}</form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extrajs %}
+  {{ block.super }}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const confirmModal = document.getElementById('confirmDeleteModal');
+      if (!confirmModal) return;
+
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+      const confirmBtn = document.getElementById('confirmDeleteBtn');
+      const form = document.getElementById('deleteForm');
+
+      function showModal(modal) {
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        if (!document.querySelector('.modal-backdrop')) {
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop fade show';
+          document.body.appendChild(backdrop);
+        }
+      }
+
+      function hideModal(modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.remove();
+      }
+
+      document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.action-btn');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const uuid = btn.dataset.uuid;
+        const name = btn.dataset.name;
+
+        if (action === 'desactivar') {
+          modalTitle.textContent = 'Desactivar contrato';
+          modalBody.innerHTML = `<p>¿Está seguro de desactivar el contrato <strong>${name}</strong>?</p><p class="text-muted">El registro se desactivará pero se conservará en la base de datos.</p>`;
+          form.action = '{% url "eliminar_contrato" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+        } else if (action === 'eliminar') {
+          modalTitle.textContent = 'Eliminar permanentemente';
+          modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> el contrato <strong>${name}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
+          form.action = '{% url "eliminar_contrato_permanente" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+        }
+
+        showModal(confirmModal);
+      });
+
+      document.querySelectorAll('[data-bs-dismiss="modal"]').forEach(function (el) {
+        el.addEventListener('click', function () { hideModal(confirmModal); });
+      });
+
+      window.addEventListener('click', function (e) {
+        if (e.target === confirmModal) hideModal(confirmModal);
+      });
+
+      confirmBtn.addEventListener('click', function () {
+        form.submit();
+      });
+    });
+  </script>
+{% endblock %}

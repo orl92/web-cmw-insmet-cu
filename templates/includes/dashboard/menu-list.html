@@ -296,6 +296,42 @@
     </a>
   </li>
   {% endif %}
+  <!-- Contratos -->
+  {% if request.user|has_permission:'dashboard.view_contract' %}
+  <li class="nav-item {% if 'contratos' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'listado_contratos' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-signature">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M5 8v-3a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5" />
+          <path d="M8 17a2 2 0 1 0 0 -4a2 2 0 0 0 0 4" />
+          <path d="M10 17l-3 4" />
+        </svg>
+      </span>
+      <span class="nav-link-title">Contratos</span>
+    </a>
+  </li>
+  {% endif %}
+  <!-- Certificados -->
+  {% if request.user|has_permission:'dashboard.view_certificate' %}
+  <li class="nav-item {% if 'certificados' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'listado_certificados' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-certificate">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M15 15m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+          <path d="M13 17.5v4.5l2 -1.5l2 1.5v-4.5" />
+          <path d="M10 19h-5a2 2 0 0 1 -2 -2v-10c0 -1.1 .9 -2 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -1 1.73" />
+          <path d="M6 9l12 0" />
+          <path d="M6 12l3 0" />
+          <path d="M6 15l2 0" />
+        </svg>
+      </span>
+      <span class="nav-link-title">Certificados</span>
+    </a>
+  </li>
+  {% endif %}
   <!-- Publicaciones -->
   {% if request.user|has_permission:'dashboard.view_scientific_publication' %}
   <li class="nav-item {% if 'publicaciones' in segment %}active{% endif %}">
