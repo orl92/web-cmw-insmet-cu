@@ -1,10 +1,11 @@
 from datetime import datetime
+
+from django.conf import settings
+from django.contrib import messages
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-from django.contrib import messages
 from django.urls import reverse
-from django.conf import settings
+from django.utils.html import strip_tags
 
 from dashboard.models import EmailRecipientList
 from dashboard.tasks import send_email_task
@@ -60,7 +61,7 @@ def mail_send(request, object, subject, url):
                 attachment_content=attachment_content,
                 attachment_mime=attachment_mime,
             )
-            messages.success(request, 'El correo de notificación ha sido enviado con éxito.',
+            messages.success(request, 'Notificación encolada para enviarse por correo.',
                              extra_tags='success')
         except Exception as e:
             messages.error(request, f'Ocurrió un error al enviar el correo: {str(e)}', extra_tags='danger')
