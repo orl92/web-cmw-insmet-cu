@@ -22,7 +22,7 @@ from django.views.generic import (
     View,
 )
 
-from common.utils import SearchMixin, log_action
+from common.utils import log_action
 from dashboard.forms.suscripciones.forms import (
     CertificateUploadForm,
     SubscriptionForm,
@@ -32,12 +32,12 @@ from dashboard.models import Certificate, Customer, ServiceSubscription
 logger = logging.getLogger(__name__)
 
 
-class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
+class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ServiceSubscription
     template_name = 'pages/dashboard/suscripciones/listado_suscripciones.html'
     context_object_name = 'objects'
+    paginate_by = 20
     permission_required = 'dashboard.view_subscription'
-    search_fields = ['customer__company_name', 'service__title', 'payment_status']
 
     def get_queryset(self):
         user = self.request.user

@@ -1,14 +1,14 @@
-- [x] Crear `SearchMixin` en common/utils.py
-- [x] Aplicar a CustomerListView
-- [x] Aplicar a ServiceListView
-- [x] Aplicar a InvoiceListView
-- [x] Aplicar a ForecastsListView
-- [x] Aplicar a WeatherReportListView
-- [x] Aplicar a WarningListViews (Early, Tropical, Storm)
-- [x] Aplicar a ScientificPublicationListView
-- [x] Aplicar a EmailRecipientListView
-- [x] Aplicar a SubscriptionListView
-- [x] Agregar paginate_by=20 a todos (via SearchMixin)
-- [x] Crear `includes/dashboard/search_bar.html`
-- [x] Incluir search bar en layouts/list.html
-- [x] `python manage.py check && python manage.py test` — 114 tests OK
+- [ ] Crear `SearchMixin` en common/utils.py
+- [ ] Aplicar a CustomerListView
+- [ ] Aplicar a ServiceListView
+- [ ] Aplicar a InvoiceListView
+- [ ] Aplicar a ForecastsListView
+- [ ] Aplicar a WeatherReportListView
+- [ ] Aplicar a WarningListViews (Early, Tropical, Storm)
+- [ ] Aplicar a ScientificPublicationListView
+- [ ] Aplicar a EmailRecipientListView
+- [ ] Agregar paginate_by=20 a todos
+- [ ] Crear `includes/dashboard/search_bar.html`
+- [ ] Incluir search bar en layouts/list.html
+- [ ] Tests
+- [ ] `python manage.py check && python manage.py test`

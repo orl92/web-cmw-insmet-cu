@@ -10,17 +10,16 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
-from common.utils import SearchMixin, log_action
+from common.utils import log_action
 from dashboard.forms.servicios.forms import ServiceForm
 from dashboard.models import Service
 
 
-class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView):
+class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/servicios/listado_servicios.html'
     model = Service
-    context_object_name = 'objects'
     permission_required = 'dashboard.view_service'
-    search_fields = ['title', 'summary', 'code']
+    context_object_name = 'objects'
 
     def dispatch(self, request, *args, **kwargs):
         if not (request.user.is_staff or request.user.is_superuser):
@@ -28,8 +27,7 @@ class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, 
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.select_related('user').annotate(
+        return Service.objects.select_related('user').annotate(
             num_subscriptions=Count('servicesubscription')
         ).order_by('-date')
 

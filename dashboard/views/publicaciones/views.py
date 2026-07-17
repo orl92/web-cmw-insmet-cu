@@ -24,7 +24,7 @@ from django.views.generic import (
     View,
 )
 
-from common.utils import SearchMixin, log_action
+from common.utils import log_action
 from dashboard.forms.publicaciones.forms import (
     CoauthorForm,
     ScientificPublicationForm)
@@ -45,17 +45,11 @@ def get_coauthor_formset(queryset=None, data=None, prefix="coauthors"):
 
 
 class ScientificPublicationListView(
-    LoginRequiredMixin, PermissionRequiredMixin, SearchMixin, ListView
+    LoginRequiredMixin, PermissionRequiredMixin, ListView
 ):
     template_name = "pages/dashboard/publicaciones/listado_publicaciones.html"
     model = ScientificPublication
-    context_object_name = "objects"
     permission_required = "dashboard.view_scientific_publication"
-    search_fields = ['title', 'summary', 'author__first_name', 'author__last_name']
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.prefetch_related("author", "coauthors")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -67,6 +61,9 @@ class ScientificPublicationListView(
         context["url_list"] = reverse_lazy("listado_publicaciones")
         context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
+        context["objects"] = ScientificPublication.objects.all().prefetch_related(
+            "author", "coauthors"
+        )
         return context
 
 
