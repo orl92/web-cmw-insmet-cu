@@ -4,13 +4,15 @@ from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
     UserPassesTestMixin)
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
+from accounts.models import Profile
 from common.utils import log_action
 from dashboard.forms.clientes.forms import (
+    CustomerForUserForm,
     CustomerForm,
     CustomerUpdateForm)
 from dashboard.models import Customer
@@ -157,3 +159,59 @@ class CustomerHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         )
         messages.success(request, f'Cliente {company_name} eliminado permanentemente.')
         return redirect('listado_clientes')
+
+
+class CustomerCreateForUserView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = Customer
+    form_class = CustomerForUserForm
+    template_name = 'pages/dashboard/clientes/crear_cliente_para_usuario.html'
+    permission_required = 'dashboard.add_customer'
+    success_url = reverse_lazy('listado_clientes')
+    url_redirect = success_url
+
+    def dispatch(self, request, *args, **kwargs):
+        uuid = self.kwargs.get('user_uuid')
+        self.user = get_object_or_404(Profile, uuid=uuid).user
+        if hasattr(self.user, 'customer'):
+            messages.warning(request, 'Este usuario ya tiene un perfil de cliente.')
+            return redirect('listado_clientes')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.user
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        customer = self.object
+
+        try:
+            clientes_group = Group.objects.get(name='Clientes')
+            customer.user.groups.add(clientes_group)
+        except Group.DoesNotExist:
+            clientes_group = Group.objects.create(name='Clientes')
+            customer.user.groups.add(clientes_group)
+
+        log_action(
+            user=self.request.user,
+            obj=customer,
+            action_flag=ADDITION,
+            message=f"Cliente creado desde usuario existente: {customer.user.username}."
+        )
+
+        messages.success(
+            self.request,
+            f'Datos de cliente completados para {customer.user.username}.',
+            extra_tags='success'
+        )
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Completar Datos del Cliente'
+        context['parent'] = ''
+        context['segment'] = 'clientes'
+        context['url_list'] = self.success_url
+        context['customer_user'] = self.user
+        return context

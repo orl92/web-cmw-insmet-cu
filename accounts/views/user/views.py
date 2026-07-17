@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
     UserPassesTestMixin)
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -92,16 +92,42 @@ class UserUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTest
         return kwargs
 
     def form_valid(self, form):
+        user = self.get_object()
+        old_group_names = {g.name for g in user.groups.all()}
+        new_group_names = {g.name for g in form.cleaned_data.get('groups', [])}
+
+        if 'Clientes' in old_group_names and 'Clientes' not in new_group_names and hasattr(user, 'customer'):
+            form.add_error(
+                'groups',
+                'No puede quitar el grupo "Clientes" a un usuario que tiene perfil de cliente. '
+                'Desactive el cliente desde el listado de clientes si es necesario.'
+            )
+            return self.form_invalid(form)
+
         response = super().form_valid(form)
-        
-        # Registro de acción
+        user = self.object
+
+        if 'Clientes' not in old_group_names and 'Clientes' in new_group_names and not hasattr(user, 'customer'):
+            log_action(
+                user=self.request.user,
+                obj=user,
+                action_flag=CHANGE,
+                message=f"Se asignó el grupo Clientes a {user.username}. Redirigiendo a completar datos."
+            )
+            messages.info(
+                self.request,
+                'Complete los datos del cliente para este usuario.',
+                extra_tags='info'
+            )
+            return redirect('crear_cliente_para_usuario', user_uuid=user.profile.uuid)
+
         log_action(
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
             message=f"Se editó el perfil de {self.object.username}."
         )
-        
+
         messages.success(self.request, 'El usuario ha sido actualizado con éxito.', extra_tags='warning')
         return response
 

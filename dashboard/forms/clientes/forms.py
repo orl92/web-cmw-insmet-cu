@@ -21,7 +21,7 @@ class CustomerForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Iterar correctamente sobre items() para obtener el nombre del campo
+        self.fields['accept_terms'].required = True
         for field_name, field in self.fields.items():
             if field_name not in ['username', 'password', 'email', 'accept_terms', 'newsletter']:
                 field.widget.attrs.update({'class': 'form-control'})
@@ -78,6 +78,7 @@ class CustomerUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.user:
             self.fields['email'].initial = self.instance.user.email
+        self.fields['accept_terms'].required = True
         for field_name, field in self.fields.items():
             if field_name not in ['email', 'accept_terms', 'newsletter']:
                 field.widget.attrs.update({'class': 'form-control'})
@@ -114,4 +115,59 @@ class CustomerUpdateForm(forms.ModelForm):
             if customer.user and 'email' in self.cleaned_data:
                 customer.user.email = self.cleaned_data['email']
                 customer.user.save()
+        return customer
+
+
+class CustomerForUserForm(forms.ModelForm):
+    email = forms.EmailField(required=True, label='Correo Electrónico')
+
+    class Meta:
+        model = Customer
+        fields = [
+            'company_name', 'reeup', 'nit', 'account', 'agency_bank',
+            'address', 'phone', 'accept_terms', 'newsletter',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user:
+            self.fields['email'].initial = self.user.email
+        self.fields['accept_terms'].required = True
+        for field_name, field in self.fields.items():
+            if field_name not in ['email', 'accept_terms', 'newsletter']:
+                field.widget.attrs.update({'class': 'form-control'})
+
+    def clean_reeup(self):
+        reeup = self.cleaned_data.get('reeup', '')
+        validator = Customer._meta.get_field('reeup').validators[0]
+        validator(reeup)
+        return reeup
+
+    def clean_nit(self):
+        nit = self.cleaned_data.get('nit', '')
+        validator = Customer._meta.get_field('nit').validators[0]
+        validator(nit)
+        return nit
+
+    def clean_account(self):
+        account = self.cleaned_data.get('account', '')
+        validator = Customer._meta.get_field('account').validators[0]
+        validator(account)
+        return account
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get('phone', '')
+        validator = Customer._meta.get_field('phone').validators[0]
+        validator(phone)
+        return phone
+
+    def save(self, commit=True):
+        customer = super().save(commit=False)
+        customer.user = self.user
+        if commit:
+            customer.save()
+            if self.user and 'email' in self.cleaned_data:
+                self.user.email = self.cleaned_data['email']
+                self.user.save()
         return customer

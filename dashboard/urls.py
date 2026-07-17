@@ -26,6 +26,7 @@ from dashboard.views.certificados.views import (
     CertificatePDFView,
 )
 from dashboard.views.clientes.views import (
+    CustomerCreateForUserView,
     CustomerCreateView,
     CustomerDeleteView,
     CustomerHardDeleteView,
@@ -174,6 +175,7 @@ urlpatterns = [
     # Clientes
     path('clientes/', CustomerListView.as_view(), name='listado_clientes'),
     path('crear/cliente/', CustomerCreateView.as_view(), name='crear_cliente'),
+    path('crear/cliente/usuario/<uuid:user_uuid>/', CustomerCreateForUserView.as_view(), name='crear_cliente_para_usuario'),
     path('actualizar/cliente/<uuid:uuid>/', CustomerUpdateView.as_view(), name='actualizar_cliente'),
     path('eliminar/cliente/<uuid:uuid>/', CustomerDeleteView.as_view(), name='eliminar_cliente'),
     path('eliminar/cliente/<uuid:uuid>/permanente/', CustomerHardDeleteView.as_view(), name='eliminar_cliente_permanente'),
