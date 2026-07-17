@@ -7,7 +7,7 @@ from django.contrib.auth.models import Group, User
 from django.contrib.sessions.models import Session
 from django.core.exceptions import FieldError, ObjectDoesNotExist
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.utils import timezone
@@ -16,8 +16,11 @@ from django.views.generic import TemplateView
 
 from common.utils import log_action
 from dashboard.models import (
+    Customer,
     EarlyWarning,
     Forecasts,
+    Invoice,
+    ServiceSubscription,
     SiteConfiguration,
     StormWarning,
     TropicalCyclone,
@@ -46,6 +49,8 @@ class ExcelJSONView(View):
         for region, row in rows_map.items():
             for i, period in enumerate(periods):
                 regions.append({
+                    'region': region,
+                    'period': period,
                     'temp': _val(row, 1 + i),
                     'weather': _val(row, 4 + i),
                     'wind_dir': _val(row, 7 + i),
@@ -55,6 +60,8 @@ class ExcelJSONView(View):
         extended = []
         for day_row in range(8, 13):
             extended.append({
+                'day_number': day_row - 7,
+                'date': _val(day_row, 1),
                 'min_temp': _val(day_row, 2),
                 'max_temp': _val(day_row, 3),
                 'weather': _val(day_row, 4),
@@ -74,6 +81,7 @@ class ExcelJSONView(View):
         data = {
             'regions': regions,
             'extended': extended,
+            'date': _val(0, 1),
             'lp': _val(14, 1),
             'nlp': _val(14, 2),
             'nlpd': _val(14, 3),
@@ -185,6 +193,64 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'tropical_cyclones': [latest_tropical_cyclone] if latest_tropical_cyclone else [],
             'storm_warnings': [latest_storm_warning] if latest_storm_warning else [],
         }
+
+        # === ANALYTICS ===
+
+        # Ingresos mensuales (últimos 12 meses calendario, desde el día 1)
+        analytics_now = now
+        month_start = analytics_now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        twelve_months_ago = month_start - timezone.timedelta(days=365)
+        income_qs = Invoice.objects.filter(
+            is_cancelled=False,
+            issue_date__gte=twelve_months_ago
+        ).values('issue_date__year', 'issue_date__month').annotate(
+            total=Sum('amount')
+        ).order_by('issue_date__year', 'issue_date__month')
+
+        income_map = {}
+        for entry in income_qs:
+            key = (entry['issue_date__year'], entry['issue_date__month'])
+            income_map[key] = float(entry['total'])
+
+        months_labels = []
+        income_data = []
+        for i in range(11, -1, -1):
+            m = analytics_now.month - i
+            y = analytics_now.year
+            while m < 1:
+                m += 12
+                y -= 1
+            months_labels.append(f"{m:02d}/{y}")
+            income_data.append(income_map.get((y, m), 0))
+
+        context['income_months'] = months_labels
+        context['income_data'] = income_data
+
+        # Suscripciones activas vs expiradas
+        active_subs = ServiceSubscription.objects.filter(
+            payment_status='paid', end_date__gt=now, record_active=True
+        ).count()
+        expired_subs = ServiceSubscription.objects.filter(
+            payment_status='paid', end_date__lte=now, record_active=True
+        ).count()
+        context['active_subs'] = active_subs
+        context['expired_subs'] = expired_subs
+
+        # Avisos activos por tipo
+        context['alert_counts'] = {
+            'early_warnings': EarlyWarning.objects.filter(valid_until__gte=now).count(),
+            'tropical_cyclones': TropicalCyclone.objects.filter(valid_until__gte=now).count(),
+            'storm_warnings': StormWarning.objects.filter(valid_until__gte=now).count(),
+        }
+
+        # Clientes nuevos este mes
+        first_of_month = month_start
+        context['new_customers'] = Customer.objects.filter(
+            user__date_joined__gte=first_of_month
+        ).count()
+
+        # Total de avisos activos
+        context['total_active_alerts'] = sum(context['alert_counts'].values())
 
         # Datos exclusivos para superusuarios
         if user.is_superuser:
