@@ -26,10 +26,10 @@ class SiteConfiguration(models.Model):
             ("change_site_configuration", "Editar"),
             ("delete_site_configuration", "Eliminar"),
         )
+        ordering = ('-id',)
 
     def __str__(self):
         return f"Modo Mantenimiento: {'Activado' if self.maintenance_mode else 'Desactivado'}"
-
 
 def validate_telefonos(value):
     """Valida que el campo contenga una lista de números de 8 dígitos separados por comas."""
@@ -90,9 +90,10 @@ class CompanySettings(models.Model):
     class Meta:
         verbose_name = 'Configuración de la empresa'
         verbose_name_plural = verbose_name
+        ordering = ('-id',)
 
     def save(self, *args, **kwargs):
-        self.pk = 1  # garantiza que siempre se edite el único registro
+        self.pk = 1
         super().save(*args, **kwargs)
 
     @classmethod
@@ -109,6 +110,7 @@ class Province(models.Model):
     class Meta:
         verbose_name = "Provincia"
         verbose_name_plural = "Provincias"
+        ordering = ('name',)
         default_permissions = ()
         permissions = (
             ("view_province", "Ver"),
@@ -131,6 +133,7 @@ class Town(models.Model):
     class Meta:
         verbose_name = "Municipio"
         verbose_name_plural = "Municipios"
+        ordering = ('name',)
         default_permissions = ()
         permissions = (
             ("view_town", "Ver"),
@@ -154,6 +157,7 @@ class Station(models.Model):
     class Meta:
         verbose_name = "Estación"
         verbose_name_plural = "Estaciones"
+        ordering = ('name',)
         default_permissions = ()
         permissions = (
             ("view_station", "Ver"),
@@ -229,6 +233,7 @@ class Forecasts(models.Model):
     class Meta:
         verbose_name = "Pronóstico"
         verbose_name_plural = "Pronósticos"
+        ordering = ('-date',)
         default_permissions = ()
         permissions = (
             ("view_forecast", "Ver"),
@@ -599,10 +604,17 @@ class Contract(SoftDeleteModel):
     class Meta:
         verbose_name = "Contrato"
         verbose_name_plural = "Contratos"
+        default_permissions = ()
+        permissions = (
+            ("view_contract", "Ver Contrato"),
+            ("add_contract", "Añadir Contrato"),
+            ("change_contract", "Editar Contrato"),
+            ("delete_contract", "Eliminar Contrato"),
+        )
+        ordering = ('-date',)
 
     def __str__(self):
         return f"Contrato {self.number} - {self.subscription.customer.company_name}"
-
 
 class Invoice(SoftDeleteModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -868,6 +880,7 @@ class EmailRecipientList(models.Model):
     class Meta:
         verbose_name = "Lista de Correo"
         verbose_name_plural = "Listas de Correo"
+        ordering = ('name',)
         default_permissions = ()
         permissions = (
             ("view_email_recipient_list", "Ver"),
@@ -888,6 +901,7 @@ class EmailRecipient(models.Model):
     class Meta:
         verbose_name = "Destinatario de Correo"
         verbose_name_plural = "Destinatarios de Correo"
+        ordering = ('email',)
         default_permissions = ()
         permissions = (
             ("view_email_recipient", "Ver"),

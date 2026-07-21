@@ -191,7 +191,7 @@ class ForecastUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         return redirect(self.success_url)
 
     def test_func(self):
-        return self.request.user.is_superuser or self.get_object().user == self.request.user
+        return self.request.user.is_superuser
 
 
 class ForecastDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):

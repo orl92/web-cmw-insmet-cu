@@ -220,10 +220,7 @@ class GroupUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTes
         return context
 
     def test_func(self):
-        return (
-            self.request.user.is_superuser
-            or self.get_object().user == self.request.user
-        )
+        return self.request.user.is_superuser
 
 
 class GroupDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):

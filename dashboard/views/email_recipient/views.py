@@ -128,9 +128,7 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
         return context
 
     def test_func(self):
-        # Verifica si el usuario es superusuario o si es el creador del listado
-        listado = self.get_object()
-        return self.request.user.is_superuser or listado.user == self.request.user
+        return self.request.user.is_superuser
 
 class EmailRecipientListDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'dashboard.delete_email_recipient_list'
