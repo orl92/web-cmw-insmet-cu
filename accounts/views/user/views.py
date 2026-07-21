@@ -191,14 +191,14 @@ class CustomerRegisterView(CreateView):
                 user=user,
                 obj=customer,
                 action_flag=ADDITION,
-                message=f"Cliente registrado desde formulario público: {customer.company_name}."
+                message=f"Cliente registrado desde formulario público: {customer}."
             )
         except Customer.DoesNotExist:
             pass
 
         messages.success(
             self.request,
-            f'¡Registro exitoso! Bienvenido/a {form.cleaned_data["company_name"]}. '
+            f'¡Registro exitoso! Bienvenido/a {customer}. '
             'Ahora puedes acceder a tus servicios comerciales.',
             extra_tags='success'
         )
@@ -206,7 +206,7 @@ class CustomerRegisterView(CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Registro Empresas'
+        context['title'] = 'Registro Clientes'
         context['parent'] = ''
         context['segment'] = 'registro'
         context['is_registration'] = True

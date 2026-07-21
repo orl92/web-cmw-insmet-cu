@@ -289,7 +289,7 @@
   // ============================================================
   // Lógica de suscripciones, agrupación y facturación manual
   // ============================================================
-  const servicesData = {{ commercial_services_json|safe }};
+  const servicesData = JSON.parse('{{ commercial_services_json|escapejs }}');
   const servicesMap = {};
   servicesData.forEach(s => { servicesMap[s.id] = { code: s.code, price: s.price, unit: "U" }; });
 

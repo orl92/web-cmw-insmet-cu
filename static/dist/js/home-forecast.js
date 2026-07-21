@@ -160,21 +160,7 @@ function getWeatherConditionTitle(weatherValue) {
     }
 }  
 
-// Función para obtener el título completo de la condición del mar basado en su abreviatura
-function getSeaConditionTitle(weatherValue) {
-    switch (weatherValue) {
-        case 'TQ':
-            return 'Tranquila';
-        case 'PO':
-            return 'Poco Oleaje';
-        case 'O':
-            return 'Oleaje';
-        case 'MRJ':
-            return 'Marejadas';
-        case 'FMRJ':
-            return 'Fuertes Marejadas';
-    }
-} 
+
 
 // Función para mostrar el pronóstico por regiones
 function displayForecast(region, forecast) {

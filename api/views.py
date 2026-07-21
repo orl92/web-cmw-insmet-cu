@@ -85,7 +85,8 @@ class StationObservationView(GenericAPIView):
         if serializer.is_valid():
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class StationListAPIView(ListAPIView):
     """
     ### Vista de Listado de Estaciones
@@ -97,6 +98,7 @@ class StationListAPIView(ListAPIView):
     queryset = Station.objects.all()
     serializer_class = StationSerializer
     permission_classes = [AllowAny]
+
 
 class ForecastAPIView(GenericAPIView):
     """
@@ -162,7 +164,7 @@ class WeatherReportListAPIView(ListAPIView):
         report_type = self.kwargs.get('type')
         if report_type not in ALLOWED_REPORT_TYPES:
             return WeatherReport.objects.none()
-        return WeatherReport.objects.filter(type=report_type)
+        return WeatherReport.objects.filter(report_type=report_type)
 
 
 class ScientificPublicationListAPIView(ListAPIView):
@@ -175,6 +177,3 @@ class ServiceListAPIView(ListAPIView):
     queryset = Service.objects.filter(service_type='public')
     serializer_class = ServiceSerializer
     permission_classes = [AllowAny]
-
-
-

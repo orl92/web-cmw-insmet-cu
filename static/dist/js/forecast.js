@@ -1,21 +1,19 @@
-$(document).ready(function () {
-    $('#excelFile').on('change', function (e) {
-        var formData = new FormData($('#uploadForm')[0]);
-        var uploadUrl = $(this).data('upload-url');
-        $.ajax({
-            url: uploadUrl,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (data) {
-                updateForm(data);
-            },
-            error: function () {
-                console.log("it didn't work");
-            }
+document.addEventListener('DOMContentLoaded', function () {
+    var excelFile = document.getElementById('excelFile');
+    if (excelFile) {
+        var uploadUrl = excelFile.getAttribute('data-upload-url');
+        excelFile.addEventListener('change', function () {
+            var formData = new FormData(document.getElementById('uploadForm'));
+            fetch(uploadUrl, {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+            })
+            .then(function (response) { return response.json(); })
+            .then(function (data) { updateForm(data); })
+            .catch(function () { console.log("it didn't work"); });
         });
-    });
+    }
 });
 
 function updateForm(data) {

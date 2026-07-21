@@ -15,20 +15,37 @@ class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
         fields = [
-            'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone',
+            'client_type', 'company_name', 'reeup', 'nit', 'account',
+            'agency_bank', 'address', 'phone',
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             if field_name not in ['username', 'password', 'email']:
-                field.widget.attrs.update({'class': 'form-control'})
+                if field_name == 'client_type':
+                    field.widget.attrs.update({'class': 'form-check-input'})
+                else:
+                    field.widget.attrs.update({'class': 'form-control'})
+        self._set_juridica_required()
 
-    # --- Validaciones igual que antes ---
+    def _set_juridica_required(self):
+        client_type = self.data.get('client_type') or self.initial.get('client_type') or Customer.ClientType.JURIDICA
+        if client_type == Customer.ClientType.JURIDICA:
+            self.fields['company_name'].required = True
+            self.fields['reeup'].required = True
+            self.fields['nit'].required = True
+        else:
+            self.fields['company_name'].required = False
+            self.fields['reeup'].required = False
+            self.fields['nit'].required = False
+
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup')
-        if reeup:
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.JURIDICA:
+            if not reeup:
+                raise ValidationError("El REEUP es obligatorio para personas jurídicas.")
             if not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
                 raise ValidationError("El REEUP debe tener el formato ###.#.#### o ###.##.#####")
             if Customer.objects.filter(reeup=reeup).exists():
@@ -37,7 +54,10 @@ class CustomerForm(forms.ModelForm):
 
     def clean_nit(self):
         nit = self.cleaned_data.get('nit')
-        if nit:
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.JURIDICA:
+            if not nit:
+                raise ValidationError("El NIT es obligatorio para personas jurídicas.")
             if not re.match(r'^\d{11}$', nit):
                 raise ValidationError("El NIT debe tener exactamente 11 dígitos numéricos.")
             if Customer.objects.filter(nit=nit).exists():
@@ -77,8 +97,8 @@ class CustomerUpdateForm(forms.ModelForm):
     class Meta:
         model = Customer
         fields = [
-            'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone',
+            'client_type', 'company_name', 'reeup', 'nit', 'account',
+            'agency_bank', 'address', 'phone',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -87,23 +107,45 @@ class CustomerUpdateForm(forms.ModelForm):
             self.fields['email'].initial = self.instance.user.email
         for field_name, field in self.fields.items():
             if field_name not in ['email']:
-                field.widget.attrs.update({'class': 'form-control'})
+                if field_name == 'client_type':
+                    field.widget.attrs.update({'class': 'form-check-input'})
+                else:
+                    field.widget.attrs.update({'class': 'form-control'})
+        self._set_juridica_required()
 
-    # Validaciones (idénticas a las de CustomerForm)
+    def _set_juridica_required(self):
+        client_type = self.data.get('client_type') or self.initial.get('client_type') or (self.instance.client_type if self.instance.pk else Customer.ClientType.JURIDICA)
+        if client_type == Customer.ClientType.JURIDICA:
+            self.fields['company_name'].required = True
+            self.fields['reeup'].required = True
+            self.fields['nit'].required = True
+        else:
+            self.fields['company_name'].required = False
+            self.fields['reeup'].required = False
+            self.fields['nit'].required = False
+
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup', '')
-        validator = Customer._meta.get_field('reeup').validators[0]
-        validator(reeup)
-        if Customer.objects.filter(reeup=reeup).exclude(pk=self.instance.pk).exists():
-            raise ValidationError("Este código REEUP ya está registrado.")
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.JURIDICA:
+            if not reeup:
+                raise ValidationError("El REEUP es obligatorio para personas jurídicas.")
+            validator = Customer._meta.get_field('reeup').validators[0]
+            validator(reeup)
+            if Customer.objects.filter(reeup=reeup).exclude(pk=self.instance.pk).exists():
+                raise ValidationError("Este código REEUP ya está registrado.")
         return reeup
 
     def clean_nit(self):
         nit = self.cleaned_data.get('nit', '')
-        validator = Customer._meta.get_field('nit').validators[0]
-        validator(nit)
-        if Customer.objects.filter(nit=nit).exclude(pk=self.instance.pk).exists():
-            raise ValidationError("Este NIT ya está registrado.")
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.JURIDICA:
+            if not nit:
+                raise ValidationError("El NIT es obligatorio para personas jurídicas.")
+            validator = Customer._meta.get_field('nit').validators[0]
+            validator(nit)
+            if Customer.objects.filter(nit=nit).exclude(pk=self.instance.pk).exists():
+                raise ValidationError("Este NIT ya está registrado.")
         return nit
 
     def clean_account(self):
@@ -136,8 +178,8 @@ class CustomerForUserForm(forms.ModelForm):
     class Meta:
         model = Customer
         fields = [
-            'company_name', 'reeup', 'nit', 'account', 'agency_bank',
-            'address', 'phone',
+            'client_type', 'company_name', 'reeup', 'nit', 'account',
+            'agency_bank', 'address', 'phone',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -147,28 +189,51 @@ class CustomerForUserForm(forms.ModelForm):
             self.fields['email'].initial = self.user.email
         for field_name, field in self.fields.items():
             if field_name not in ['email']:
-                field.widget.attrs.update({'class': 'form-control'})
+                if field_name == 'client_type':
+                    field.widget.attrs.update({'class': 'form-check-input'})
+                else:
+                    field.widget.attrs.update({'class': 'form-control'})
+        self._set_juridica_required()
+
+    def _set_juridica_required(self):
+        client_type = self.data.get('client_type') or self.initial.get('client_type') or (self.instance.client_type if self.instance and self.instance.pk else Customer.ClientType.JURIDICA)
+        if client_type == Customer.ClientType.JURIDICA:
+            self.fields['company_name'].required = True
+            self.fields['reeup'].required = True
+            self.fields['nit'].required = True
+        else:
+            self.fields['company_name'].required = False
+            self.fields['reeup'].required = False
+            self.fields['nit'].required = False
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup', '')
-        validator = Customer._meta.get_field('reeup').validators[0]
-        validator(reeup)
-        if self.instance and self.instance.pk:
-            if Customer.objects.filter(reeup=reeup).exclude(pk=self.instance.pk).exists():
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.JURIDICA:
+            if not reeup:
+                raise ValidationError("El REEUP es obligatorio para personas jurídicas.")
+            validator = Customer._meta.get_field('reeup').validators[0]
+            validator(reeup)
+            if self.instance and self.instance.pk:
+                if Customer.objects.filter(reeup=reeup).exclude(pk=self.instance.pk).exists():
+                    raise ValidationError("Este código REEUP ya está registrado.")
+            elif Customer.objects.filter(reeup=reeup).exists():
                 raise ValidationError("Este código REEUP ya está registrado.")
-        elif Customer.objects.filter(reeup=reeup).exists():
-            raise ValidationError("Este código REEUP ya está registrado.")
         return reeup
 
     def clean_nit(self):
         nit = self.cleaned_data.get('nit', '')
-        validator = Customer._meta.get_field('nit').validators[0]
-        validator(nit)
-        if self.instance and self.instance.pk:
-            if Customer.objects.filter(nit=nit).exclude(pk=self.instance.pk).exists():
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.JURIDICA:
+            if not nit:
+                raise ValidationError("El NIT es obligatorio para personas jurídicas.")
+            validator = Customer._meta.get_field('nit').validators[0]
+            validator(nit)
+            if self.instance and self.instance.pk:
+                if Customer.objects.filter(nit=nit).exclude(pk=self.instance.pk).exists():
+                    raise ValidationError("Este NIT ya está registrado.")
+            elif Customer.objects.filter(nit=nit).exists():
                 raise ValidationError("Este NIT ya está registrado.")
-        elif Customer.objects.filter(nit=nit).exists():
-            raise ValidationError("Este NIT ya está registrado.")
         return nit
 
     def clean_account(self):

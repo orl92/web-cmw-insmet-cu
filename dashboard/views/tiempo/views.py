@@ -145,7 +145,7 @@ class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         return [self.get_config()['template_list']]
 
     def get_queryset(self):
-        return WeatherReport.objects.filter(type=self.get_report_type())
+        return WeatherReport.objects.filter(report_type=self.get_report_type())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -189,10 +189,8 @@ class WeatherReportCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
         return kwargs
 
     def form_valid(self, form):
-        instance = form.save(commit=False)
-        instance.date = timezone.now()
-        instance.save()
-        response = super().form_valid(form)
+        form.instance.date = timezone.now()
+        self.object = form.save()
         cfg = self.get_config()
 
         log_action(
@@ -205,7 +203,7 @@ class WeatherReportCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
         messages.success(self.request, f'{cfg["title_create"]} ha sido creado con éxito.', extra_tags='success')
         mail_send(self.request, self.object, cfg['subject_create'], cfg['mail_url'])
 
-        return response
+        return redirect(self.get_success_url())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -257,10 +255,8 @@ class WeatherReportUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
         )
         cfg = self.get_config()
 
-        instance = form.save(commit=False)
-        instance.date = timezone.now()
-        instance.save()
-        response = super().form_valid(form)
+        form.instance.date = timezone.now()
+        self.object = form.save()
 
         log_action(
             user=self.request.user,
@@ -273,7 +269,7 @@ class WeatherReportUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
             mail_send(self.request, self.object, cfg['subject_update'], cfg['mail_url'])
 
         messages.success(self.request, f'{cfg["title_update"]} ha sido actualizado con éxito.', extra_tags='success')
-        return response
+        return redirect(self.get_success_url())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

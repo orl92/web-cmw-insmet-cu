@@ -8,7 +8,12 @@ from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 
-from common.utils import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
+from common.utils import (
+    FileHandlerMixin,
+    SoftDeleteModel,
+    image_upload_path,
+    pdf_upload_path,
+)
 
 
 class SiteConfiguration(models.Model):
@@ -30,6 +35,7 @@ class SiteConfiguration(models.Model):
 
     def __str__(self):
         return f"Modo Mantenimiento: {'Activado' if self.maintenance_mode else 'Desactivado'}"
+
 
 def validate_telefonos(value):
     """Valida que el campo contenga una lista de números de 8 dígitos separados por comas."""
@@ -281,6 +287,7 @@ class Forecasts(models.Model):
     def extended_forecast(self):
         return self.get_extended_days()
 
+
 class ForecastRegions(models.Model):
     REGION_CHOICES = [
         ('north', 'Costa Norte'),
@@ -416,6 +423,10 @@ class StormWarning(BaseWarning):
 
 
 class Customer(SoftDeleteModel):
+    class ClientType(models.TextChoices):
+        NATURAL = 'natural', 'Persona Natural'
+        JURIDICA = 'juridica', 'Persona Jurídica'
+
     # Validadores
     reeup_validator = RegexValidator(
         regex=r'^\d{3}\.\d{1,2}\.\d{4,5}$',
@@ -435,17 +446,30 @@ class Customer(SoftDeleteModel):
     )
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    company_name = models.CharField(max_length=100, verbose_name="Nombre de la Empresa")
+    client_type = models.CharField(
+        max_length=8,
+        choices=ClientType.choices,
+        default=ClientType.JURIDICA,
+        verbose_name="Tipo de Cliente"
+    )
+    company_name = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Nombre de la Empresa"
+    )
     reeup = models.CharField(
         max_length=12,
         validators=[reeup_validator],
-        unique=True,
+        blank=True,
+        null=True,
         verbose_name="REEUP"
     )
     nit = models.CharField(
         max_length=11,
         validators=[nit_validator],
-        unique=True,
+        blank=True,
+        null=True,
         verbose_name="NIT"
     )
     account = models.CharField(
@@ -476,7 +500,9 @@ class Customer(SoftDeleteModel):
     )
 
     def __str__(self):
-        return self.company_name
+        if self.client_type == self.ClientType.NATURAL:
+            return f"{self.user.get_full_name() or self.user.username}"
+        return self.company_name or self.user.get_full_name() or self.user.username
 
     class Meta:
         verbose_name = "Cliente"
@@ -616,6 +642,7 @@ class Contract(SoftDeleteModel):
     def __str__(self):
         return f"Contrato {self.number} - {self.subscription.customer.company_name}"
 
+
 class Invoice(SoftDeleteModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.ForeignKey(
@@ -736,13 +763,13 @@ class WeatherReport(FileHandlerMixin, models.Model):
     summary = models.TextField(max_length=300, verbose_name="Resumen")
     file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
     email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Tipo")
+    report_type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Tipo")
 
     file_fields = ['file']
 
     def __str__(self):
         labels = dict(self.TYPE_CHOICES)
-        return f"{labels.get(self.type, self.type)} - {self.date}"
+        return f"{labels.get(self.report_type, self.report_type)} - {self.date}"
 
     class Meta:
         verbose_name = "Reporte Meteorológico"
@@ -766,106 +793,6 @@ class WeatherReport(FileHandlerMixin, models.Model):
             ("add_weather_note", "Añadir Nota Meteorológica"),
             ("change_weather_note", "Editar Nota Meteorológica"),
             ("delete_weather_note", "Eliminar Nota Meteorológica"),
-        )
-
-
-class WeatherToday(FileHandlerMixin, models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
-    date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Creación")
-    summary = models.TextField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
-    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
-
-    file_fields = ['file']
-
-    def __str__(self):
-        return f"Pronóstico del tiempo detallado para {self.date}"
-
-    class Meta:
-        verbose_name = "Tiempo Hoy"
-        verbose_name_plural = "Tiempo Hoy"
-        default_permissions = ()
-        permissions = (
-            ("view_weather_today", "Ver"),
-            ("add_weather_today", "Añadir"),
-            ("change_weather_today", "Editar"),
-            ("delete_weather_today", "Eliminar"),
-        )
-
-
-class WeatherTomorrow(FileHandlerMixin, models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
-    date = models.DateTimeField(verbose_name="Fecha y Hora de Creación")
-    summary = models.CharField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
-    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
-
-    file_fields = ['file']
-
-    def __str__(self):
-        return f"Pronóstico del tiempo detallado para {self.date}"
-
-    class Meta:
-        verbose_name = "Tiempo Mañana"
-        verbose_name_plural = "Tiempo Mañana"
-        default_permissions = ()
-        permissions = (
-            ("view_weather_tomorrow", "Ver"),
-            ("add_weather_tomorrow", "Añadir"),
-            ("change_weather_tomorrow", "Editar"),
-            ("delete_weather_tomorrow", "Eliminar"),
-        )
-
-
-class WeatherCommentary(FileHandlerMixin, models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
-    date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Creación")
-    summary = models.CharField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
-    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
-
-    file_fields = ['file']
-
-    def __str__(self):
-        return f"Comentario del tiempo detallado para {self.date}"
-
-    class Meta:
-        verbose_name = "Comentario del Tiempo"
-        verbose_name_plural = "Comentarios del Tiempo"
-        default_permissions = ()
-        permissions = (
-            ("view_weather_commentary", "Ver"),
-            ("add_weather_commentary", "Añadir"),
-            ("change_weather_commentary", "Editar"),
-            ("delete_weather_commentary", "Eliminar"),
-        )
-
-
-class WeatherNote(FileHandlerMixin, models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
-    date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Creación")
-    summary = models.CharField(max_length=300, verbose_name="Resumen")
-    file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
-    email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
-
-    file_fields = ['file']
-
-    def __str__(self):
-        return f"Nota Meteorológica detallada para {self.date}"
-
-    class Meta:
-        verbose_name = "Nota Meteorológica"
-        verbose_name_plural = "Notas Meteorológicas"
-        default_permissions = ()
-        permissions = (
-            ("view_weather_note", "Ver"),
-            ("add_weather_note", "Añadir"),
-            ("change_weather_note", "Editar"),
-            ("delete_weather_note", "Eliminar"),
         )
 
 

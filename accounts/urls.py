@@ -27,12 +27,12 @@ urlpatterns = [
     path('groups/', GroupListView.as_view(), name='groups'),
     path('group/create/', GroupCreateView.as_view(), name='create_group'),
     path('group/update/<uuid:uuid>/', GroupUpdateView.as_view(), name='update_group'),
-    path('group/delete/<uuid:uuid>', GroupDeleteView.as_view(), name='delete_group'),
+    path('group/delete/<uuid:uuid>/', GroupDeleteView.as_view(), name='delete_group'),
     # Usuarios
     path('users/', UserListView.as_view(), name='users'),
     path('user/create/', UserCreateView.as_view(), name='create_user'),
     path('user/update/<uuid:uuid>/', UserUpdateView.as_view(), name='update_user'),
-    path('user/delete/<uuid:uuid>', UserDeleteView.as_view(), name='delete_user'),
+    path('user/delete/<uuid:uuid>/', UserDeleteView.as_view(), name='delete_user'),
     # Registro Clientes
     path('register/customer/', CustomerRegisterView.as_view(), name='customer_register'),
     # Perfil

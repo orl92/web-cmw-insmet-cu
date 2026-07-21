@@ -227,7 +227,7 @@ class WeatherReportCRUDTests(TestCase):
         pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
         data = {'summary': 'Soleado', 'file': pdf}
         response = self.client.post(reverse('crear_tiempo_h'), data, follow=True)
-        self.assertTrue(WeatherReport.objects.filter(type='today', summary='Soleado').exists())
+        self.assertTrue(WeatherReport.objects.filter(report_type='today', summary='Soleado').exists())
         self.assertRedirects(response, reverse('listado_tiempo_h'))
 
     def test_create_tomorrow(self):
@@ -235,7 +235,7 @@ class WeatherReportCRUDTests(TestCase):
         pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
         data = {'summary': 'Lluvioso', 'file': pdf}
         response = self.client.post(reverse('crear_tiempo_m'), data, follow=True)
-        self.assertTrue(WeatherReport.objects.filter(type='tomorrow', summary='Lluvioso').exists())
+        self.assertTrue(WeatherReport.objects.filter(report_type='tomorrow', summary='Lluvioso').exists())
         self.assertRedirects(response, reverse('listado_tiempo_m'))
 
     def test_create_commentary(self):
@@ -243,7 +243,7 @@ class WeatherReportCRUDTests(TestCase):
         pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
         data = {'summary': 'Comentario', 'file': pdf}
         response = self.client.post(reverse('crear_comentario_tiempo'), data, follow=True)
-        self.assertTrue(WeatherReport.objects.filter(type='commentary', summary='Comentario').exists())
+        self.assertTrue(WeatherReport.objects.filter(report_type='commentary', summary='Comentario').exists())
         self.assertRedirects(response, reverse('listado_comentarios_tiempo'))
 
     def test_create_note(self):
@@ -251,13 +251,13 @@ class WeatherReportCRUDTests(TestCase):
         pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
         data = {'summary': 'Nota', 'file': pdf}
         response = self.client.post(reverse('crear_nota_meteorologica'), data, follow=True)
-        self.assertTrue(WeatherReport.objects.filter(type='note', summary='Nota').exists())
+        self.assertTrue(WeatherReport.objects.filter(report_type='note', summary='Nota').exists())
         self.assertRedirects(response, reverse('listado_notas_meteorologicas'))
 
     def test_update_today(self):
         self.client.force_login(self.admin)
         pdf = SimpleUploadedFile('orig.pdf', b'%PDF-1.4 orig', content_type='application/pdf')
-        r = WeatherReport.objects.create(user=self.admin, date=timezone.now(), summary='Original', type='today', file=pdf)
+        r = WeatherReport.objects.create(user=self.admin, date=timezone.now(), summary='Original', report_type='today', file=pdf)
         url = reverse('actualizar_tiempo_h', args=[r.uuid])
         pdf2 = SimpleUploadedFile('new.pdf', b'%PDF-1.4 new', content_type='application/pdf')
         response = self.client.post(url, {'summary': 'Actualizado', 'file': pdf2}, follow=True)
@@ -268,7 +268,7 @@ class WeatherReportCRUDTests(TestCase):
     def test_delete_today(self):
         self.client.force_login(self.admin)
         pdf = SimpleUploadedFile('del.pdf', b'%PDF-1.4 del', content_type='application/pdf')
-        r = WeatherReport.objects.create(user=self.admin, date=timezone.now(), summary='Del', type='today', file=pdf)
+        r = WeatherReport.objects.create(user=self.admin, date=timezone.now(), summary='Del', report_type='today', file=pdf)
         url = reverse('eliminar_tiempo_h', args=[r.uuid])
         response = self.client.post(url, follow=True)
         self.assertFalse(WeatherReport.objects.filter(pk=r.pk).exists())

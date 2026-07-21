@@ -30,7 +30,7 @@ class WeatherReportDetailView(DetailView):
 
     def get_object(self):
         return WeatherReport.objects.filter(
-            type=self.get_report_type(),
+            report_type=self.get_report_type(),
             date__date=timezone.now().date()
         ).first()
 

@@ -23,7 +23,6 @@ from dashboard.models import (
     Station,
     Town,
     WeatherReport,
-    WeatherToday,
 )
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -394,7 +393,7 @@ class WeatherReportTests(TestCase):
     def _make_report(self, report_type='today'):
         return WeatherReport.objects.create(
             user=self.user, date=timezone.now(),
-            summary=f'Test {report_type}', type=report_type,
+            summary=f'Test {report_type}', report_type=report_type,
         )
 
     def test_create_report_today(self):

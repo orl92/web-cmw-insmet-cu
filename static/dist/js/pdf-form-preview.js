@@ -4,6 +4,7 @@ class PDFFormPreview {
         this.fileInput = document.getElementById(fileInputId);
         this.previewContainer = document.getElementById(previewContainerId);
         this.currentPdfDoc = null;
+        this.handleFileSelectBound = (e) => this.handleFileSelect(e);
 
         this.init();
     }
@@ -14,7 +15,7 @@ class PDFFormPreview {
             return;
         }
 
-        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        this.fileInput.addEventListener('change', this.handleFileSelectBound);
 
         // Mostrar estado inicial
         this.showInitialState();
@@ -38,6 +39,10 @@ class PDFFormPreview {
         const fileReader = new FileReader();
 
         fileReader.onload = () => {
+            if (typeof pdfjsLib === 'undefined') {
+                this.showError('La librería PDF no está disponible. Recarga la página.');
+                return;
+            }
             const typedarray = new Uint8Array(fileReader.result);
 
             pdfjsLib.getDocument(typedarray).promise.then((pdf) => {
@@ -149,7 +154,7 @@ class PDFFormPreview {
     destroy() {
         this.cleanupPreviousPdf();
         if (this.fileInput) {
-            this.fileInput.removeEventListener('change', this.handleFileSelect);
+            this.fileInput.removeEventListener('change', this.handleFileSelectBound);
         }
     }
 }

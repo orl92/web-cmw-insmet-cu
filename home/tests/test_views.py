@@ -42,7 +42,7 @@ class ScientificPublicationListViewTests(TestCase):
 class WeatherReportHomeTests(TestCase):
     def test_today_returns_200_when_exists(self):
         user = User.objects.create_user('test', 't@t.com', 'pass', first_name='T', last_name='U')
-        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', type='today')
+        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', report_type='today')
         response = self.client.get(reverse('tiempo_h'))
         self.assertEqual(response.status_code, 200)
 
@@ -52,7 +52,7 @@ class WeatherReportHomeTests(TestCase):
 
     def test_tomorrow_returns_200_when_exists(self):
         user = User.objects.create_user('test2', 't2@t.com', 'pass', first_name='T', last_name='U')
-        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', type='tomorrow')
+        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', report_type='tomorrow')
         response = self.client.get(reverse('tiempo_m'))
         self.assertEqual(response.status_code, 200)
 
@@ -62,7 +62,7 @@ class WeatherReportHomeTests(TestCase):
 
     def test_commentary_returns_200_when_exists(self):
         user = User.objects.create_user('test3', 't3@t.com', 'pass', first_name='T', last_name='U')
-        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', type='commentary')
+        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', report_type='commentary')
         response = self.client.get(reverse('comentario_tiempo'))
         self.assertEqual(response.status_code, 200)
 
@@ -72,7 +72,7 @@ class WeatherReportHomeTests(TestCase):
 
     def test_note_returns_200_when_exists(self):
         user = User.objects.create_user('test4', 't4@t.com', 'pass', first_name='T', last_name='U')
-        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', type='note')
+        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', report_type='note')
         response = self.client.get(reverse('nota_meteorologica'))
         self.assertEqual(response.status_code, 200)
 

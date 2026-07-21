@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from accounts.models import Profile
 from dashboard.models import Customer, ServiceSubscription
@@ -67,18 +68,26 @@ class CustomerSignUpForm(UserCreationForm):
         widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@empresa.com'})
     )
 
-    # Paso 3: Datos de la Empresa
+    # Paso 3: Tipo de Cliente
+    client_type = forms.ChoiceField(
+        choices=Customer.ClientType.choices,
+        initial=Customer.ClientType.JURIDICA,
+        required=True, label="Tipo de Cliente",
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
+    )
+
+    # Paso 3: Datos del Cliente (persona jurídica obliga reempresa/REEUP/NIT)
     company_name = forms.CharField(
-        max_length=100, required=True, label="Nombre de la Empresa",
+        max_length=100, required=False, label="Nombre de la Empresa o Razón Social",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mi Empresa S.A.'})
     )
     reeup = forms.CharField(
-        max_length=12,  # 3 + 1 + 2 + 1 + 5 = 12 caracteres como máximo
-        required=True, label="REEUP",
+        max_length=12,
+        required=False, label="REEUP",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '211.0.6749'})
     )
     nit = forms.CharField(
-        max_length=11, required=True, label="NIT",
+        max_length=11, required=False, label="NIT",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '12345678901'})
     )
     account = forms.CharField(
@@ -115,12 +124,18 @@ class CustomerSignUpForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Hacer requeridos explícitamente algunos campos (ya lo son por defecto)
         self.fields['accept_terms'].required = True
-        self.fields['reeup'].required = True
-        self.fields['nit'].required = True
         self.fields['account'].required = True
         self.fields['address'].required = True
+        self.fields['client_type'].widget.attrs.update({'class': 'form-check-input'})
+
+        client_type = self.initial.get('client_type') or Customer.ClientType.JURIDICA
+        if self.data.get('client_type'):
+            client_type = self.data['client_type']
+        if client_type == Customer.ClientType.JURIDICA:
+            self.fields['company_name'].required = True
+            self.fields['reeup'].required = True
+            self.fields['nit'].required = True
 
     # --- Validaciones personalizadas (mismas reglas que el modelo Customer) ---
     def clean_email(self):
@@ -143,18 +158,22 @@ class CustomerSignUpForm(UserCreationForm):
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup')
-        if reeup:
-            # Validar formato
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.JURIDICA:
+            if not reeup:
+                raise ValidationError("El REEUP es obligatorio para personas jurídicas.")
             if not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
                 raise ValidationError("El REEUP debe tener el formato ###.#.#### o ###.##.#####")
-            # Validar unicidad
             if Customer.objects.filter(reeup=reeup).exists():
                 raise ValidationError("Este código REEUP ya está registrado.")
         return reeup
 
     def clean_nit(self):
         nit = self.cleaned_data.get('nit')
-        if nit:
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.JURIDICA:
+            if not nit:
+                raise ValidationError("El NIT es obligatorio para personas jurídicas.")
             if not re.match(r'^\d{11}$', nit):
                 raise ValidationError("El NIT debe tener exactamente 11 dígitos numéricos.")
             if Customer.objects.filter(nit=nit).exists():
@@ -196,11 +215,12 @@ class CustomerSignUpForm(UserCreationForm):
             # Crear el perfil de cliente (Customer)
             Customer.objects.create(
                 user=user,
-                company_name=self.cleaned_data['company_name'],
-                reeup=self.cleaned_data['reeup'],
-                nit=self.cleaned_data['nit'],
+                client_type=self.cleaned_data['client_type'],
+                company_name=self.cleaned_data.get('company_name') or None,
+                reeup=self.cleaned_data.get('reeup') or None,
+                nit=self.cleaned_data.get('nit') or None,
                 account=self.cleaned_data['account'],
-                agency_bank=self.cleaned_data.get('agency_bank', ''),  # opcional
+                agency_bank=self.cleaned_data.get('agency_bank') or '',
                 address=self.cleaned_data['address'],
                 phone=self.cleaned_data['phone'],
                 accept_terms=self.cleaned_data['accept_terms'],

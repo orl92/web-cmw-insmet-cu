@@ -4,9 +4,9 @@
         <label class="form-label required">{{ form.summary.label }}</label>
         <input type="text" class="form-control {% if form.summary.errors %}is-invalid{% endif %}"
             id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
-            placeholder="Resumen" value="{{ form.summary.value }}" required>
-        {% if form.sumary.errors %}
-            <span class="invalid-feedback">{{ form.sumary.errors.0 }}</span>
+            placeholder="Resumen" value="{{ form.summary.value|default:'' }}" required>
+        {% if form.summary.errors %}
+            <span class="invalid-feedback">{{ form.summary.errors.0 }}</span>
         {% endif %}
     </div>
     <div class="mb-3">
@@ -30,15 +30,15 @@
                         </div>
                         <div>
                             <div class="mb-2">
-                                <input type="file" class="form-control {% if form.file.errors %}is-invalid{% endif %}" 
-                                    id="{{ form.file.id_for_label }}" name="{{ form.file.name }}" accept=".pdf" required>
+                                <input type="file" class="form-control {% if form.file.errors %}is-invalid{% endif %}"
+                                    id="{{ form.file.id_for_label }}" name="{{ form.file.name }}" accept=".pdf"{% if not object %} required{% endif %}>
                             </div>
                             <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
                         </div>
                     </div>
                 </div>
 
-                {% if object.file %}
+                {% if object and object.file %}
                 <div class="mt-2">
                     <a href="{{ object.file.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
@@ -57,11 +57,11 @@
             </div>
         </div>
     </div>
-    <div class="col-md-12 mb-3">
+    <div class="mb-3">
         <label class="form-label required">{{ form.email_recipient_list.label }}</label>
         {{ form.email_recipient_list }}
         {% if form.email_recipient_list.errors %}
-            <span class="invalid-feedback">{{ form.email_recipient_list.errors.0 }}</span>
+            <span class="invalid-feedback">{{ form.email_recipient_list.errors }}</span>
         {% endif %}
     </div>
 </div>

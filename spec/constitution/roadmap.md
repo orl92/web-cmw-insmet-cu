@@ -40,6 +40,15 @@
 36. **037 · Serialización consistente de charts** — todas las series de datos ApexCharts envueltas con `json.dumps()` en lugar de `str()` para consistencia y prevención de bugs con strings.
 37. **038 · Anidar bloque duplicado** — los dos `{% if show_commercial and not is_client %}` unificados en `resumen_comercial.html`, modal anidado dentro del primer bloque.
 38. **039 · Remover load sin usar** — `{% load my_filters %}` eliminado de `alertas_activas.html` (no usaba ningún filtro).
+39. **040 · Fix test_func crashes** — 3 vistas con `test_func` crash corregidas (CustomerRegisterView, ServiceDetailView, InvoiceDetailView).
+40. **041 · Model Meta fixes** — `ordering` añadido a modelos faltantes, permisos de Contract corregidos, singletons con `unique` constraint.
+41. **042 · Form validation fixes** — unicidad en Customer forms + `record_active` filters en Invoice forms.
+42. **043 · Cleanup dead code** — modelos WeatherToday, WeatherCommentary, WeatherNote eliminados; forms, vistas y templates obsoletos limpiados.
+43. **044 · Template fixes** — `lang="en"` → `lang="es"` en base.html; rutas estáticas corregidas.
+44. **045 · JS fixes** — guard para pdfjsLib, removeEventListener corregido, jQuery `$(document).ready()` reemplazado por DOMContentLoaded.
+45. **046 · WeatherReport refactor** — campo `type` renombrado a `report_type`; forms, vistas, templates actualizados.
+46. **047 · URL consistency** — trailing slashes añadidos a 2 patrones de delete en accounts/urls.py.
+47. **048 · Client type (Persona Natural)** — modelo Customer con campo `client_type` (natural/jurídica); campos company_name/reeup/nit opcionales para persona natural; validación condicional en forms público y dashboard; radio toggle + JS en template de registro.
 
 ## Siguiente 🔜
 

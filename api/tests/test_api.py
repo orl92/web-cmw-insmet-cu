@@ -186,7 +186,7 @@ class WeatherReportAPITests(APITestCase):
         cls.user = User.objects.create_user('testuser')
         for rtype in ('today', 'tomorrow', 'commentary', 'note'):
             WeatherReport.objects.create(
-                user=cls.user, type=rtype, date=timezone.now(),
+                user=cls.user, report_type=rtype, date=timezone.now(),
                 summary=f'Reporte {rtype}',
             )
         cls.valid_url = reverse('weather-report-list', args=['today'])
@@ -207,14 +207,14 @@ class WeatherReportAPITests(APITestCase):
         tomorrow = self.client.get(reverse('weather-report-list', args=['tomorrow'])).data
         self.assertEqual(len(today), 1)
         self.assertEqual(len(tomorrow), 1)
-        self.assertEqual(today[0]['type'], 'today')
-        self.assertEqual(tomorrow[0]['type'], 'tomorrow')
+        self.assertEqual(today[0]['report_type'], 'today')
+        self.assertEqual(tomorrow[0]['report_type'], 'tomorrow')
 
     def test_has_expected_fields(self):
         response = self.client.get(reverse('weather-report-list', args=['today']))
         item = response.data[0]
         self.assertIn('uuid', item)
-        self.assertIn('type', item)
+        self.assertIn('report_type', item)
         self.assertIn('summary', item)
 
 

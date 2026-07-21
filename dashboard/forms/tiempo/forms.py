@@ -21,7 +21,7 @@ class WeatherReportForm(forms.ModelForm):
         if self.user:
             instance.user = self.user
         if self.report_type:
-            instance.type = self.report_type
+            instance.report_type = self.report_type
         if commit:
             instance.save()
         return instance

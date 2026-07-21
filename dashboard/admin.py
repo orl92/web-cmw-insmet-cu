@@ -58,6 +58,21 @@ class EmailRecipientListAdmin(admin.ModelAdmin):
 
 @admin.register(WeatherReport)
 class WeatherReportAdmin(admin.ModelAdmin):
-    list_display = ('type', 'summary', 'date', 'user')
-    list_filter = ('type', 'date')
+    list_display = ('report_type', 'summary', 'date', 'user', 'email_recipient_list')
+    list_filter = ('report_type', 'date')
     search_fields = ('summary',)
+    date_hierarchy = 'date'
+    radio_fields = {'report_type': admin.VERTICAL}
+    autocomplete_fields = ['user', 'email_recipient_list']
+    fieldsets = (
+        (None, {
+            'fields': ('report_type', 'user', 'date')
+        }),
+        ('Contenido', {
+            'fields': ('summary', 'file')
+        }),
+        ('Distribución', {
+            'fields': ('email_recipient_list',),
+            'classes': ('collapse',)
+        }),
+    )

@@ -6,4 +6,4 @@ from dashboard.models import Station
 class StationForm(forms.ModelForm):
     class Meta:
         model = Station
-        fields = '__all__'
+        fields = ['province', 'name', 'number', 'latitude', 'longitude']
