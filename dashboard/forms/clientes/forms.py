@@ -48,6 +48,8 @@ class CustomerForm(forms.ModelForm):
         account = self.cleaned_data.get('account')
         if not re.match(r'^\d{16}$', account):
             raise ValidationError("La cuenta bancaria debe tener exactamente 16 dígitos numéricos.")
+        if Customer.objects.filter(account=account).exists():
+            raise ValidationError("Esta cuenta bancaria ya está registrada.")
         return account
 
     def clean_phone(self):
@@ -92,18 +94,24 @@ class CustomerUpdateForm(forms.ModelForm):
         reeup = self.cleaned_data.get('reeup', '')
         validator = Customer._meta.get_field('reeup').validators[0]
         validator(reeup)
+        if Customer.objects.filter(reeup=reeup).exclude(pk=self.instance.pk).exists():
+            raise ValidationError("Este código REEUP ya está registrado.")
         return reeup
 
     def clean_nit(self):
         nit = self.cleaned_data.get('nit', '')
         validator = Customer._meta.get_field('nit').validators[0]
         validator(nit)
+        if Customer.objects.filter(nit=nit).exclude(pk=self.instance.pk).exists():
+            raise ValidationError("Este NIT ya está registrado.")
         return nit
 
     def clean_account(self):
         account = self.cleaned_data.get('account', '')
         validator = Customer._meta.get_field('account').validators[0]
         validator(account)
+        if Customer.objects.filter(account=account).exclude(pk=self.instance.pk).exists():
+            raise ValidationError("Esta cuenta bancaria ya está registrada.")
         return account
 
     def clean_phone(self):
@@ -145,18 +153,33 @@ class CustomerForUserForm(forms.ModelForm):
         reeup = self.cleaned_data.get('reeup', '')
         validator = Customer._meta.get_field('reeup').validators[0]
         validator(reeup)
+        if self.instance and self.instance.pk:
+            if Customer.objects.filter(reeup=reeup).exclude(pk=self.instance.pk).exists():
+                raise ValidationError("Este código REEUP ya está registrado.")
+        elif Customer.objects.filter(reeup=reeup).exists():
+            raise ValidationError("Este código REEUP ya está registrado.")
         return reeup
 
     def clean_nit(self):
         nit = self.cleaned_data.get('nit', '')
         validator = Customer._meta.get_field('nit').validators[0]
         validator(nit)
+        if self.instance and self.instance.pk:
+            if Customer.objects.filter(nit=nit).exclude(pk=self.instance.pk).exists():
+                raise ValidationError("Este NIT ya está registrado.")
+        elif Customer.objects.filter(nit=nit).exists():
+            raise ValidationError("Este NIT ya está registrado.")
         return nit
 
     def clean_account(self):
         account = self.cleaned_data.get('account', '')
         validator = Customer._meta.get_field('account').validators[0]
         validator(account)
+        if self.instance and self.instance.pk:
+            if Customer.objects.filter(account=account).exclude(pk=self.instance.pk).exists():
+                raise ValidationError("Esta cuenta bancaria ya está registrada.")
+        elif Customer.objects.filter(account=account).exists():
+            raise ValidationError("Esta cuenta bancaria ya está registrada.")
         return account
 
     def clean_phone(self):

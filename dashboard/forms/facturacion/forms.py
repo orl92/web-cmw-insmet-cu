@@ -5,7 +5,7 @@ from dashboard.models import Customer, Service, ServiceSubscription, CompanySett
 
 class InvoiceItemForm(forms.Form):
     service = forms.ModelChoiceField(
-        queryset=Service.objects.filter(service_type=Service.COMMERCIAL),
+        queryset=Service.objects.filter(service_type=Service.COMMERCIAL, record_active=True),
         required=True,
         label="Servicio",
         widget=forms.Select(attrs={'class': 'form-control'})
@@ -33,7 +33,7 @@ InvoiceItemFormSet = formset_factory(InvoiceItemForm, extra=1, can_delete=True)
 
 class InvoiceForm(forms.Form):
     customer = forms.ModelChoiceField(
-        queryset=Customer.objects.all(),
+        queryset=Customer.objects.filter(record_active=True),
         label="Cliente",
         widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_customer'})
     )
