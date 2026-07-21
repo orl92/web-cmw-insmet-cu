@@ -1,0 +1,3 @@
+- [ ] Cambiar lang="en" → lang="es" en base.html
+- [ ] Corregir static path en base.html
+- [ ] `python manage.py test`

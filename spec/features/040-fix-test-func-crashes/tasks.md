@@ -1,0 +1,5 @@
+- [ ] Leer las 3 vistas para confirmar el bug
+- [ ] Corregir ForecastUpdateView.test_func()
+- [ ] Corregir EmailRecipientListUpdateView.test_func()
+- [ ] Corregir GroupUpdateView.test_func()
+- [ ] `python manage.py test`

@@ -1,0 +1,3 @@
+- [ ] Agregar trailing slash a group/delete/<uuid:uuid>/
+- [ ] Agregar trailing slash a user/delete/<uuid:uuid>/
+- [ ] `python manage.py test`

@@ -1,0 +1,4 @@
+- [ ] Agregar guard para pdfjsLib en pdf-form-preview.js
+- [ ] Corregir removeEventListener guardando referencia de función
+- [ ] Cambiar jQuery ready por DOMContentLoaded en forecast.js
+- [ ] `python manage.py collectstatic --link --no-input`
