@@ -32,7 +32,6 @@ class UserListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = 'Añadir Usuario'
         context['url_create'] = reverse_lazy('create_user')
         context['url_list'] = reverse_lazy('users')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context["objects"] = User.objects.all()
         return context

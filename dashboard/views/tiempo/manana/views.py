@@ -43,7 +43,6 @@ class WeatherTomorrowListView(LoginRequiredMixin, PermissionRequiredMixin, ListV
         context['btn'] = 'Añadir Tiempo Mañana'
         context['url_create'] = reverse_lazy('crear_tiempo_m')
         context['url_list'] = reverse_lazy('listado_tiempo_m')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = WeatherTomorrow.objects.all()
         return context 

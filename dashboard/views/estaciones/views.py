@@ -27,7 +27,6 @@ class StationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = ('Añadir Estación')
         context['url_create'] = reverse_lazy('crear_estacion')
         context['url_list'] = reverse_lazy('estaciones')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = Station.objects.all()
         return context

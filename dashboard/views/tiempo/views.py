@@ -156,7 +156,6 @@ class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         context['btn'] = cfg['btn']
         context['url_create'] = reverse_lazy(cfg['url_create'])
         context['url_list'] = reverse_lazy(cfg['url_list'])
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = self.get_queryset()
         return context

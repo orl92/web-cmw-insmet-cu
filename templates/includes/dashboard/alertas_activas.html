@@ -1,0 +1,274 @@
+{% load static %}
+
+{% if show_alerts %}
+<!-- Sección: Alertas Activas -->
+<div class="row row-deck row-cards mt-3">
+  <div class="col-12">
+    <h3 class="card-title">Alertas Activas</h3>
+  </div>
+<!-- Alertas Tempranas -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <h3 class="subheader text-muted fw-medium">Alertas Tempranas</h3>
+          <div class="ms-auto">
+            {% if latest_alerts.early_warnings %}
+            <span class="badge bg-yellow-lt">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-check me-1" width="12"
+                height="12" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                <path d="M9 12l2 2l4 -4" />
+              </svg>
+              Activo
+            </span>
+            {% else %}
+            <span class="badge bg-secondary-lt">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-dashed me-1" width="12"
+                height="12" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8.56 3.69a9 9 0 0 0 -2.92 1.95" />
+                <path d="M3.69 8.56a9 9 0 0 0 -.69 3.44" />
+                <path d="M3.69 15.44a9 9 0 0 0 1.95 2.92" />
+                <path d="M8.56 20.31a9 9 0 0 0 3.44 .69" />
+                <path d="M15.44 20.31a9 9 0 0 0 2.92 -1.95" />
+                <path d="M20.31 15.44a9 9 0 0 0 .69 -3.44" />
+                <path d="M20.31 8.56a9 9 0 0 0 -1.95 -2.92" />
+                <path d="M15.44 3.69a9 9 0 0 0 -3.44 -.69" />
+              </svg>
+              Sin avisos
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-3">
+          {% if latest_alerts.early_warnings %}
+          {% for alert in latest_alerts.early_warnings|slice:":1" %}
+          <div class="alert-card">
+            <div class="alert-summary mb-2">
+              <a href="{% url 'alerta_temprana' %}" class="link-secondary text-decoration-none d-block">
+                <strong>{{ alert.summary|truncatechars:80 }}</strong>
+              </a>
+            </div>
+            <div class="alert-details">
+              <div class="row g-1">
+                <div class="col-12">
+                  <span class="text-muted small">
+                    Emitido: {{ alert.date|date:'d/m H:i' }}
+                  </span>
+                </div>
+                {% if alert.valid_until %}
+                <div class="col-12">
+                  <span class="text-muted small">
+                    Válido hasta: {{ alert.valid_until|date:'d/m H:i' }}
+                  </span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="text-center mt-3">
+              <a href="{% url 'alerta_temprana' %}" class="btn btn-sm btn-outline-primary">
+                Ver detalles
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
+              viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M12 9v4" />
+              <path
+                d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" />
+              <path d="M12 16h.01" />
+            </svg>
+            <div class="mb-2">No hay alertas tempranas activas</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Ciclones Tropicales -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <h3 class="subheader text-muted fw-medium">Ciclones Tropicales</h3>
+          <div class="ms-auto">
+            {% if latest_alerts.tropical_cyclones %}
+            <span class="badge bg-red-lt">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-check me-1" width="12"
+                height="12" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                <path d="M9 12l2 2l4 -4" />
+              </svg>
+              Activo
+            </span>
+            {% else %}
+            <span class="badge bg-secondary-lt">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-dashed me-1" width="12"
+                height="12" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8.56 3.69a9 9 0 0 0 -2.92 1.95" />
+                <path d="M3.69 8.56a9 9 0 0 0 -.69 3.44" />
+                <path d="M3.69 15.44a9 9 0 0 0 1.95 2.92" />
+                <path d="M8.56 20.31a9 9 0 0 0 3.44 .69" />
+                <path d="M15.44 20.31a9 9 0 0 0 2.92 -1.95" />
+                <path d="M20.31 15.44a9 9 0 0 0 .69 -3.44" />
+                <path d="M20.31 8.56a9 9 0 0 0 -1.95 -2.92" />
+                <path d="M15.44 3.69a9 9 0 0 0 -3.44 -.69" />
+              </svg>
+              Sin avisos
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-3">
+          {% if latest_alerts.tropical_cyclones %}
+          {% for alert in latest_alerts.tropical_cyclones|slice:":1" %}
+          <div class="alert-card">
+            <div class="alert-summary mb-2">
+              <a href="{% url 'ciclon_tropical' %}" class="link-secondary text-decoration-none d-block">
+                <strong>{{ alert.summary|truncatechars:80 }}</strong>
+              </a>
+            </div>
+            <div class="alert-details">
+              <div class="row g-1">
+                <div class="col-12">
+                  <span class="text-muted small">
+                    Emitido: {{ alert.date|date:'d/m H:i' }}
+                  </span>
+                </div>
+                {% if alert.valid_until %}
+                <div class="col-12">
+                  <span class="text-muted small">
+                    Válido hasta: {{ alert.valid_until|date:'d/m H:i' }}
+                  </span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="text-center mt-3">
+              <a href="{% url 'ciclon_tropical' %}" class="btn btn-sm btn-outline-primary">
+                Ver detalle
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
+              viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+              <path d="M12 12m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+              <path d="M5.369 14.236c-1.839 -3.929 -1.561 -7.616 -.704 -11.236" />
+              <path d="M18.63 9.76c1.837 3.928 1.561 7.615 .703 11.236" />
+            </svg>
+            <div class="mb-2">No hay ciclones tropicales activos</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Avisos de Tormentas -->
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <h3 class="subheader text-muted fw-medium">Avisos de Tormentas</h3>
+          <div class="ms-auto">
+            {% if latest_alerts.storm_warnings %}
+            <span class="badge bg-blue-lt">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-check me-1" width="12"
+                height="12" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                <path d="M9 12l2 2l4 -4" />
+              </svg>
+              Activo
+            </span>
+            {% else %}
+            <span class="badge bg-secondary-lt">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-dashed me-1" width="12"
+                height="12" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M8.56 3.69a9 9 0 0 0 -2.92 1.95" />
+                <path d="M3.69 8.56a9 9 0 0 0 -.69 3.44" />
+                <path d="M3.69 15.44a9 9 0 0 0 1.95 2.92" />
+                <path d="M8.56 20.31a9 9 0 0 0 3.44 .69" />
+                <path d="M15.44 20.31a9 9 0 0 0 2.92 -1.95" />
+                <path d="M20.31 15.44a9 9 0 0 0 .69 -3.44" />
+                <path d="M20.31 8.56a9 9 0 0 0 -1.95 -2.92" />
+                <path d="M15.44 3.69a9 9 0 0 0 -3.44 -.69" />
+              </svg>
+              Sin avisos
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-3">
+          {% if latest_alerts.storm_warnings %}
+          {% for alert in latest_alerts.storm_warnings|slice:":1" %}
+          <div class="alert-card">
+            <div class="alert-summary mb-2">
+              <a href="{% url 'tormenta' %}" class="link-secondary text-decoration-none d-block">
+                <strong>{{ alert.summary|truncatechars:80 }}</strong>
+              </a>
+            </div>
+            <div class="alert-details">
+              <div class="row g-1">
+                <div class="col-12">
+                  <span class="text-muted small">
+                    Emitido: {{ alert.date|date:'d/m H:i' }}
+                  </span>
+                </div>
+                {% if alert.valid_until %}
+                <div class="col-12">
+                  <span class="text-muted small">
+                    Válido hasta: {{ alert.valid_until|date:'d/m H:i' }}
+                  </span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="text-center mt-3">
+              <a href="{% url 'tormenta' %}" class="btn btn-sm btn-outline-primary">
+                Ver detalle
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
+              viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-1" />
+              <path d="M13 14l-2 4l3 0l-2 4" />
+            </svg>
+            <div class="mb-2">No hay avisos de tormentas activos</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+{% endif %}

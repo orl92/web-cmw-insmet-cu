@@ -57,11 +57,10 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['title'] = 'Mis Suscripciones' if not self.request.user.is_staff else 'Todas las Suscripciones'
         context['parent'] = 'servicios'
         context['segment'] = 'suscripciones'
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['now'] = timezone.now()
         context['url_export'] = reverse_lazy('exportar_csv_suscripciones')
-        if context['is_staff']:
+        if self.request.user.is_staff or self.request.user.is_superuser:
             context['btn'] = 'Añadir Suscripción'
             context['url_create'] = reverse_lazy('crear_suscripcion')
         return context

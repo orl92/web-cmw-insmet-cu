@@ -19,7 +19,7 @@
     {% endfor %}
   </td>
   <td class="text-end">
-    {% if is_staff %}
+    {% if request.user.is_staff %}
     <a href="{% url 'detalle_publicacion' object.uuid %}" type="button" class="btn btn-icon btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Ver" data-bs-original-title="Ver">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -28,7 +28,7 @@
       </svg>
     </a>
     {% endif %}
-    {% if is_staff %}
+    {% if request.user.is_staff %}
     <a href="{% url 'actualizar_publicacion' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />

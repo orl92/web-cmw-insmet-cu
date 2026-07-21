@@ -3,7 +3,7 @@
 {% load home_extras %}
 
 {% block columns %}
-  {% if is_staff %}
+  {% if request.user.is_staff %}
     <th>Cliente</th>
   {% endif %}
   <th>Servicio</th>
@@ -11,7 +11,7 @@
   <th>Expiración</th>
   <th>Estado</th>
   <th>Pago</th>
-  {% if is_staff %}
+  {% if request.user.is_staff %}
     <th>Registro</th>
   {% endif %}
   <th class="text-end">Acciones</th>
@@ -19,7 +19,7 @@
 
 {% block row %}
   {% with subscription=object %}
-    {% if is_staff %}
+    {% if request.user.is_staff %}
     <td>
       <a href="{% url 'actualizar_cliente' subscription.customer.uuid %}" data-bs-toggle="tooltip" title="{{ subscription.customer.company_name }}">  
         {{ subscription.customer.company_name|truncatechars:30 }}
@@ -62,7 +62,7 @@
       {% endif %}
     </td>
     
-    {% if is_staff %}
+    {% if request.user.is_staff %}
     <td>
       {% if subscription.record_active %}
         <span class="badge badge-outline text-green">Activa</span>
@@ -73,7 +73,7 @@
     {% endif %}
     
     <td class="text-end">
-      {% if is_staff %}
+      {% if request.user.is_staff %}
         <!-- Botones para staff -->
         
         <!-- Descargar factura (si existe) -->

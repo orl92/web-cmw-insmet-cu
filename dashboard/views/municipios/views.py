@@ -27,7 +27,6 @@ class TownListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = ('Añadir Municipio')
         context['url_create'] = reverse_lazy('crear_municipio')
         context['url_list'] = reverse_lazy('municipios')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = Town.objects.all()
         return context

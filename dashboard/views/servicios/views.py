@@ -40,7 +40,6 @@ class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_create'] = reverse_lazy('crear_servicio')
         context['url_list'] = reverse_lazy('listado_servicios')
         context['url_export'] = reverse_lazy('exportar_csv_servicios')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         return context
 

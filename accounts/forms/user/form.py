@@ -177,6 +177,11 @@ class CustomerSignUpForm(UserCreationForm):
         if commit:
             user.save()
 
+            # Newsletter primero: se sincroniza incluso si Customer.create falla
+            profile, _ = Profile.objects.get_or_create(user=user)
+            profile.newsletter = self.cleaned_data.get('newsletter', False)
+            profile.save()
+
             # Asignar al grupo "Clientes"
             clientes_group, created = Group.objects.get_or_create(name='Clientes')
             if created:
@@ -200,10 +205,5 @@ class CustomerSignUpForm(UserCreationForm):
                 phone=self.cleaned_data['phone'],
                 accept_terms=self.cleaned_data['accept_terms'],
             )
-
-            # Sincronizar newsletter al profile (dispara señal a EmailRecipientList)
-            profile, _ = Profile.objects.get_or_create(user=user)
-            profile.newsletter = self.cleaned_data.get('newsletter', False)
-            profile.save()
 
         return user

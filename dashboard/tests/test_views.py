@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -6,10 +6,11 @@ from django.utils import timezone
 
 from dashboard.models import (
     Customer,
-    EarlyWarning,
+    Invoice,
     Province,
+    Service,
+    ServiceSubscription,
     SiteConfiguration,
-    TropicalCyclone,
     WeatherReport,
 )
 
@@ -46,33 +47,73 @@ class DashboardViewTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(self.url)
         self.assertIn('income_months', response.context)
-        self.assertIn('income_data', response.context)
+        self.assertIn('income_billed_data', response.context)
+        self.assertIn('income_paid_data', response.context)
+        self.assertIn('selected_income_range', response.context)
         self.assertIn('active_subs', response.context)
+        self.assertIn('active_subs_list', response.context)
         self.assertIn('expired_subs', response.context)
-        self.assertIn('alert_counts', response.context)
-        self.assertIn('new_customers', response.context)
-        self.assertIn('total_active_alerts', response.context)
+        self.assertIn('expired_subs_list', response.context)
+        self.assertIn('month_income', response.context)
+        self.assertIn('pending_subs', response.context)
+        self.assertIn('pending_subs_list', response.context)
+        self.assertIn('requested_subs_list', response.context)
 
-    def test_new_customers_count(self):
-        user = User.objects.create_user('cust1', date_joined=timezone.now())
-        Customer.objects.create(
-            company_name='Test Corp', reeup='123.1.12345', nit='12345678901',
+    def _make_client_user(self, username='client'):
+        user = User.objects.create_user(username, f'{username}@test.com', 'password',
+                                         first_name='Test', last_name='Client')
+        group, _ = Group.objects.get_or_create(name='Clientes')
+        user.groups.add(group)
+        return user
+
+    def test_client_can_access_dashboard(self):
+        user = self._make_client_user('client1')
+        self.client.force_login(user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_staff_non_client_cannot_access(self):
+        user = User.objects.create_user('regular', 'reg@test.com', 'password',
+                                          first_name='Regular', last_name='User')
+        self.client.force_login(user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_client_context_variables(self):
+        user = self._make_client_user('client2')
+        customer = Customer.objects.create(
+            company_name='Cliente SA', reeup='123.1.12345', nit='12345678901',
             account='1234567890123456', address='Calle 123', phone='12345678',
             user=user, accept_terms=True,
         )
-        self.client.force_login(self.admin)
+        svc = Service.objects.create(
+            title='Test Service', summary='Desc', price=100,
+            code='TS001', user=user,
+        )
+        ServiceSubscription.objects.create(
+            customer=customer, service=svc,
+            payment_status='paid', start_date=timezone.now(),
+            end_date=timezone.now() + timezone.timedelta(days=30),
+        )
+        ServiceSubscription.objects.create(
+            customer=customer, service=svc,
+            payment_status='pending',
+        )
+        self.client.force_login(user)
         response = self.client.get(self.url)
-        self.assertEqual(response.context['new_customers'], 1)
+        self.assertIn('is_client', response.context)
+        self.assertTrue(response.context['is_client'])
+        self.assertIn('client_active_subs', response.context)
+        self.assertEqual(response.context['client_active_subs'].count(), 1)
+        self.assertIn('client_pending_subs', response.context)
+        self.assertEqual(response.context['client_pending_subs'].count(), 1)
 
-    def test_alert_counts(self):
-        user = User.objects.create_user('alertuser')
-        EarlyWarning.objects.create(user=user, summary='Test', valid_until=timezone.now() + timezone.timedelta(days=1))
-        TropicalCyclone.objects.create(user=user, summary='Test', valid_until=timezone.now() + timezone.timedelta(days=1))
-        self.client.force_login(self.admin)
+    def test_client_show_commercial_false(self):
+        user = self._make_client_user('client3')
+        self.client.force_login(user)
         response = self.client.get(self.url)
-        self.assertEqual(response.context['alert_counts']['early_warnings'], 1)
-        self.assertEqual(response.context['alert_counts']['tropical_cyclones'], 1)
-        self.assertEqual(response.context['total_active_alerts'], 2)
+        self.assertIn('show_commercial', response.context)
+        self.assertFalse(response.context['show_commercial'])
 
 
 class ProvinceCRUDTests(TestCase):

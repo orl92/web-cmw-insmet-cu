@@ -1,0 +1,78 @@
+:root {
+  --chart-temperature-color-0: #206bc4;
+  --chart-temperature-color-1: #4299e1;
+  --chart-temperature-color-2: #2fb344;
+  --chart-temperature-color-3: #51cf66;
+  --chart-temperature-color-4: #ae3ec9;
+  --chart-temperature-color-5: #cc5de8;
+  --chart-grid-light: rgba(0, 0, 0, 0.07);
+  --chart-grid-dark: rgba(255, 255, 255, 0.07);
+}
+
+[data-bs-theme="dark"] {
+  --chart-temperature-color-0: #3d8bf2;
+  --chart-temperature-color-1: #66b3ff;
+  --chart-temperature-color-2: #40c057;
+  --chart-temperature-color-3: #69db7c;
+  --chart-temperature-color-4: #cc5de8;
+  --chart-temperature-color-5: #e599f7;
+}
+
+.alert-card {
+  padding: 0.5rem;
+}
+
+.alert-summary {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.alert-details {
+  font-size: 0.75rem;
+}
+
+#temperatureTrendChart .apexcharts-gridline {
+  stroke-dasharray: 4 !important;
+  stroke: var(--chart-grid-light) !important;
+}
+
+[data-bs-theme="dark"] #temperatureTrendChart .apexcharts-gridline {
+  stroke: var(--chart-grid-dark) !important;
+}
+
+#temperatureTrendChart .apexcharts-xaxis-tick,
+#temperatureTrendChart .apexcharts-yaxis-tick {
+  stroke: var(--tblr-border-color-translucent) !important;
+  opacity: 0.5 !important;
+}
+
+#temperatureTrendChart .apexcharts-legend-text {
+  color: var(--tblr-body-color) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  font-family: inherit !important;
+}
+
+#temperatureTrendChart .apexcharts-datalabels text {
+  fill: var(--tblr-body-color) !important;
+  font-size: 12px !important;
+  font-family: inherit !important;
+  opacity: 0.9 !important;
+}
+
+#temperatureTrendChart .apexcharts-tooltip {
+  border: 1px solid var(--tblr-border-color-translucent) !important;
+  box-shadow: var(--tblr-shadow-sm) !important;
+  background-color: var(--tblr-bg-surface) !important;
+}
+
+#temperatureTrendChart .apexcharts-tooltip-title {
+  background-color: var(--tblr-bg-surface-tertiary) !important;
+  border-bottom: 1px solid var(--tblr-border-color-translucent) !important;
+  color: var(--tblr-body-color) !important;
+  font-weight: 600 !important;
+}
+
+#temperatureTrendChart .apexcharts-svg {
+  transition: all 0.2s ease;
+}

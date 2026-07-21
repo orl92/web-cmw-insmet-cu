@@ -43,7 +43,6 @@ class WeatherCommentaryListView(LoginRequiredMixin, PermissionRequiredMixin, Lis
         context['btn'] = 'Añadir Comentario del Tiempo'
         context['url_create'] = reverse_lazy('crear_comentario_tiempo')
         context['url_list'] = reverse_lazy('listado_comentarios_tiempo')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = WeatherCommentary.objects.all()
         return context 

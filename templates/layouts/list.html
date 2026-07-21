@@ -1,7 +1,7 @@
 {% extends 'layouts/dashboard.html' %}
 {% load static %}
 {% block title_actions %}
-{% if is_staff %}
+{% if request.user.is_staff %}
 <div class="col-auto ms-auto d-print-none">
   <div class="d-flex justify-content-end flex-wrap gap-1">
     {% if url_export %}
@@ -25,7 +25,7 @@
 {% block content %}
   <div class="card">
     <div class="card-body p-4 table-responsive" style="border-radius: 10px;">
-      <table id="example" class="table" style="width:100%">
+      <table id="{{ list_id|default:'example' }}" class="table" style="width:100%">
         <thead>
           <tr>
             {% block columns %}
@@ -50,7 +50,7 @@
   <script src="{% static 'dist/libs/datatables/datatables.min.js' %}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      new DataTable('#example', {
+      new DataTable('#{{ list_id|default:'example' }}', {
         language: {
           url: "{% static 'dist/libs/datatables/Spanish.json' %}"
         }

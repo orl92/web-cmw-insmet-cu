@@ -1,0 +1,3 @@
+- [ ] Envolver `_region_temp()` calls con `json.dumps()` en dashboard.py
+- [ ] Envolver `income_billed_data` y `income_paid_data` con `json.dumps()`
+- [ ] `python manage.py test dashboard`

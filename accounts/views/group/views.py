@@ -29,7 +29,6 @@ class GroupListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context["btn"] = "Añadir Grupo"
         context["url_create"] = reverse_lazy("create_group")
         context["url_list"] = reverse_lazy("groups")
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context["objects"] = Group.objects.all()
         return context

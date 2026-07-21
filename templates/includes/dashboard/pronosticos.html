@@ -1,0 +1,276 @@
+{% load static %}
+{% load my_filters %}
+{% load home_extras %}
+
+{% if show_forecast %}
+
+<div class="row row-deck row-cards mt-3">
+  <div class="col-12">
+    <h3 class="card-title">Último Pronóstico: {{ latest_forecast.date|default:"Sin datos" }}</h3>
+  </div>
+  <!-- Costa Norte -->
+  <div class="col-lg-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="subheader text-muted fw-medium">Costa Norte</h3>
+        {% if latest_forecast %}
+        {% with m=latest_forecast.north.morning a=latest_forecast.north.afternoon n=latest_forecast.north.night %}
+        <div class="row">
+          <div class="col-4 text-center">
+            <p class="text-muted small">Mañana</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ m.sea|get_mar_description }}">
+              <strong>Mar:</strong> {{ m.sea }}
+            </p>
+          </div>
+          <div class="col-4 text-center">
+            <p class="text-muted small">Tarde (Max)</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ a.sea|get_mar_description }}">
+              <strong>Mar:</strong> {{ a.sea }}
+            </p>
+          </div>
+          <div class="col-4 text-center">
+            <p class="text-muted small">Noche</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ n.sea|get_mar_description }}">
+              <strong>Mar:</strong> {{ n.sea }}
+            </p>
+          </div>
+        </div>
+        {% endwith %}
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" />
+            <path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" />
+            <path d="M3 12h1" />
+            <path d="M12 3v1" />
+            <path d="M5.6 5.6l.7 .7" />
+            <path d="M3 21l18 -18" />
+          </svg>
+          <div>No hay pronósticos disponibles.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <!-- Interior -->
+  <div class="col-lg-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="subheader text-muted fw-medium">Interior</h3>
+        {% if latest_forecast %}
+        {% with m=latest_forecast.interior.morning a=latest_forecast.interior.afternoon n=latest_forecast.interior.night %}
+        <div class="row">
+          <div class="col-4 text-center">
+            <p class="text-muted small">Mañana</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
+            <p class="mb-1 invisible">
+              <strong>Mar:</strong>
+            </p>
+          </div>
+          <div class="col-4 text-center">
+            <p class="text-muted small">Tarde (Max)</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
+            <p class="mb-1 invisible">
+              <strong>Mar:</strong>
+            </p>
+          </div>
+          <div class="col-4 text-center">
+            <p class="text-muted small">Noche</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
+            <p class="mb-1 invisible">
+              <strong>Mar:</strong>
+            </p>
+          </div>
+        </div>
+        {% endwith %}
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" />
+            <path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" />
+            <path d="M3 12h1" />
+            <path d="M12 3v1" />
+            <path d="M5.6 5.6l.7 .7" />
+            <path d="M3 21l18 -18" />
+          </svg>
+          <div>No hay pronósticos disponibles.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <!-- Costa Sur -->
+  <div class="col-lg-4 mb-3">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="subheader text-muted fw-medium">Costa Sur</h3>
+        {% if latest_forecast %}
+        {% with m=latest_forecast.south.morning a=latest_forecast.south.afternoon n=latest_forecast.south.night %}
+        <div class="row">
+          <div class="col-4 text-center">
+            <p class="text-muted small">Mañana</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
+            <p class="mb-1" data-bs-toggle="tooltip" title="{{ m.sea|get_mar_description }}">
+              <strong>Mar:</strong> {{ m.sea }}
+            </p>
+          </div>
+          <div class="col-4 text-center">
+            <p class="text-muted small">Tarde (Max)</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
+            <p class="mb-1" data-bs-toggle="tooltip" title="{{ a.sea|get_mar_description }}">
+              <strong>Mar:</strong> {{ a.sea }}
+            </p>
+          </div>
+          <div class="col-4 text-center">
+            <p class="text-muted small">Noche</p>
+            <div class="weather-icon mx-auto">
+              <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon w-50" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
+            </div>
+            <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
+            <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
+            <p class="mb-1" data-bs-toggle="tooltip" title="{{ n.sea|get_mar_description }}">
+              <strong>Mar:</strong> {{ n.sea }}
+            </p>
+          </div>
+        </div>
+        {% endwith %}
+        {% else %}
+        <div class="text-center text-muted py-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" />
+            <path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" />
+            <path d="M3 12h1" />
+            <path d="M12 3v1" />
+            <path d="M5.6 5.6l.7 .7" />
+            <path d="M3 21l18 -18" />
+          </svg>
+          <div>No hay pronósticos disponibles.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <!-- Gráfico de Temperaturas -->
+  <div class="col-lg-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex">
+          <h3 class="subheader text-muted fw-medium">Temperaturas</h3>
+          <div class="ms-auto">
+            <div class="dropdown">
+              <a class="dropdown-toggle text-secondary" href="#" data-bs-toggle="dropdown" id="temperature-range-dropdown" aria-haspopup="true" aria-expanded="false">
+                {% if selected_range == '30d' %}
+                Últimos 30 días
+                {% elif selected_range == '3m' %}
+                Últimos 3 meses
+                {% else %}
+                Últimos 7 días
+                {% endif %}
+              </a>
+              <div class="dropdown-menu dropdown-menu-end" aria-labelledby="temperature-range-dropdown">
+                <a class="dropdown-item {% if selected_range == '7d' %}active{% endif %}" href="?range=7d{% if user.is_superuser %}
+                      {% if request.GET.page_groups %}
+                        &page_groups={{ request.GET.page_groups }}
+                      {% endif %}
+                      {% if request.GET.page_logins %}
+                        &page_logins={{ request.GET.page_logins }}
+                      {% endif %}
+                    {% endif %}">
+                  Últimos 7 días
+                </a>
+                <a class="dropdown-item {% if selected_range == '30d' %}active{% endif %}" href="?range=30d{% if user.is_superuser %}
+                      {% if request.GET.page_groups %}
+                        &page_groups={{ request.GET.page_groups }}
+                      {% endif %}
+                      {% if request.GET.page_logins %}
+                        &page_logins={{ request.GET.page_logins }}
+                      {% endif %}
+                    {% endif %}">
+                  Últimos 30 días
+                </a>
+                <a class="dropdown-item {% if selected_range == '3m' %}active{% endif %}" href="?range=3m{% if user.is_superuser %}
+                      {% if request.GET.page_groups %}
+                        &page_groups={{ request.GET.page_groups }}
+                      {% endif %}
+                      {% if request.GET.page_logins %}
+                        &page_logins={{ request.GET.page_logins }}
+                      {% endif %}
+                    {% endif %}">
+                  Últimos 3 meses
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% if has_forecasts %}
+        <div id="temperatureTrendChart" class="position-relative chart-lg"
+             data-labels="{{ temperature_labels }}"
+             data-series-north-max="{{ max_temperatures_north }}"
+             data-series-north-min="{{ min_temperatures_north }}"
+             data-series-inland-max="{{ max_temperatures_inland }}"
+             data-series-inland-min="{{ min_temperatures_inland }}"
+             data-series-south-max="{{ max_temperatures_south }}"
+             data-series-south-min="{{ min_temperatures_south }}"></div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M10 13.5a4 4 0 1 0 4 0v-8.5a2 2 0 0 0 -4 0v8.5" />
+            <path d="M10 9l4 0" />
+          </svg>
+          <div class="mb-2">No hay datos de temperaturas disponibles para el rango seleccionado</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endif %}

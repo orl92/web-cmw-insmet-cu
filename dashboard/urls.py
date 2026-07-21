@@ -40,11 +40,9 @@ from dashboard.views.contratos.views import (
     ContractListView,
 )
 from dashboard.views.company.views import CompanySettingsUpdateView
-from dashboard.views.dashboard.views import (
-    DashboardView,
-    ExcelJSONView,
-    MaintenanceModeToggleView,
-)
+from dashboard.views.dashboard.dashboard import DashboardView
+from dashboard.views.dashboard.excel_json import ExcelJSONView
+from dashboard.views.dashboard.maintenance import MaintenanceModeToggleView
 from dashboard.views.exports import (
     CertificateCSVExportView,
     ContractCSVExportView,

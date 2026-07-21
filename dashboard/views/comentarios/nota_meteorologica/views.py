@@ -43,7 +43,6 @@ class WeatherNoteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView)
         context['btn'] = 'Añadir Nota Meteorológica'
         context['url_create'] = reverse_lazy('crear_nota_meteorologica')
         context['url_list'] = reverse_lazy('listado_notas_meteorologicas')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = WeatherNote.objects.all()
         return context 

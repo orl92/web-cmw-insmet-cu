@@ -43,7 +43,6 @@ class WeatherTodayListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['btn'] = 'Añadir Tiempo para Hoy'
         context['url_create'] = reverse_lazy('crear_tiempo_h')
         context['url_list'] = reverse_lazy('listado_tiempo_h')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = WeatherToday.objects.all()
         return context

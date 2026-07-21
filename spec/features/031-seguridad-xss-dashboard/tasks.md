@@ -1,0 +1,4 @@
+- [ ] `dashboard/views/dashboard/views.py`: import html, escapar en serialize_sub
+- [ ] `dashboard.html`: agregar escapeHtml() + usar en buildSubsTable()
+- [ ] `my_filters.py:504`: except (AttributeError, TypeError) en vez de except:
+- [ ] `python manage.py test dashboard`

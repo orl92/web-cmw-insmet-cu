@@ -28,7 +28,6 @@ class ContractListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = 'Añadir Contrato'
         context['url_create'] = reverse_lazy('crear_contrato')
         context['url_list'] = reverse_lazy('listado_contratos')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['url_export'] = reverse_lazy('exportar_csv_contratos')
         context['objects'] = self.get_queryset()

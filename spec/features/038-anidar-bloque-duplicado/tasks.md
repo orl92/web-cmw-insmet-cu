@@ -1,0 +1,3 @@
+- [ ] Mover modal block dentro del primer `{% if show_commercial and not is_client %}`
+- [ ] Eliminar segundo `{% if %}` y su `{% endif %}`
+- [ ] `python manage.py test dashboard`

@@ -225,6 +225,14 @@ Todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos cus
 - [ ] ¿La funcionalidad depende de un worker externo? (Huey, sistema de colas, etc.)
 - [ ] `python manage.py check` sin errores
 
+## Skills y MCP
+
+El proyecto usa Tabler para UI. Estas herramientas están disponibles y deben usarse automáticamente según el contexto:
+
+- **frontend-design skill**: Cárgalo al diseñar o modificar UI nueva.
+- **web-design-guidelines skill**: Cárgalo al revisar componentes visuales o templates existentes.
+- **tabler MCP**: Úsalo al buscar iconos, componentes, layouts o documentación de Tabler.io.
+
 ## API
 
 - DRF con `DjangoModelPermissionsOrAnonReadOnly` por defecto

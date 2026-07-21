@@ -66,7 +66,6 @@ class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = 'Añadir Pronóstico'
         context['url_create'] = reverse_lazy('crear_pronostico')
         context['url_list'] = reverse_lazy('pronosticos')
-        context['is_staff'] = self.request.user.is_staff or self.request.user.is_superuser
         context['is_superuser'] = self.request.user.is_superuser
         context['url_export'] = reverse_lazy('exportar_csv_pronosticos')
 

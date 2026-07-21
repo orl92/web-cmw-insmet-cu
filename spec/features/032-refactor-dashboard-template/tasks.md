@@ -1,0 +1,9 @@
+- [ ] Crear directorio `templates/includes/dashboard/`
+- [ ] Crear `templates/includes/dashboard/superuser_kpis.html` con líneas 7-462
+- [ ] Crear `templates/includes/dashboard/alertas_activas.html` con líneas 465-736
+- [ ] Crear `templates/includes/dashboard/cliente_suscripciones.html` con líneas 738-833
+- [ ] Crear `templates/includes/dashboard/resumen_comercial.html` con líneas 835-1008
+- [ ] Crear `templates/includes/dashboard/pronosticos.html` con líneas 1010-1274
+- [ ] Crear `templates/includes/pagination.html` parametrizado
+- [ ] Reemplazar secciones en dashboard.html por {% include %}
+- [ ] `python manage.py test dashboard`
