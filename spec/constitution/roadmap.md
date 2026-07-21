@@ -29,12 +29,17 @@
 25. **025 · Tareas asíncronas** — Huey + SqliteHuey configurado; `send_email_task` para envío de correos asíncrono; `generate_invoice_pdf_and_email_task` para generación de PDF de factura + email; `mail_send()` refactorizado manteniendo mensajes UI sincrónicos; PDF de facturación extraído a función standalone en `utils.py`.
 26. **027 · Limpieza de código (hallazgos de revisión)** — `huey.db` agregado a `.gitignore`; imports no usados (`Invoice`, `Service`, `ServiceSubscription`, `StormWarning`) removidos de `dashboard/tests/test_views.py`; 10 llamadas `.filter(pk=1).update(maintenance_mode=False)` redundantes removidas en 3 archivos de test.
 27. **028 · Refactor CSV exports** — botón CSV en `list.html` unificado a `btn-icon btn-outline-success btn-sm` con tooltip; eliminados 4 CSV exports de metadatos (WeatherReport, EarlyWarning, TropicalCyclone, StormWarning); agregados 3 CSV exports con valor real (Contract, Certificate, EmailRecipientList) con sus URLs y contextos en ListViews.
-28. **031 · Seguridad XSS en dashboard** — `html.escape()` en `serialize_sub()`, `escapeHtml()` en JS del dashboard, `except:` → `except (AttributeError, TypeError):` en my_filters.py.
-29. **032 · Refactor dashboard template** — `dashboard.html` reducido de 1667 a ~418 líneas; 5 includes en `templates/includes/dashboard/` + `pagination.html`.
-30. **033 · Refactor dashboard views** — `views.py` dividido en `dashboard.py`, `excel_json.py`, `maintenance.py`; subqueries y helpers a nivel módulo; `prefetch_related('user_set')` en groups query.
-31. **034 · Refactor templatetags** — `my_filters.py` dividido en 4 submódulos (`form_filters`, `meteo_filters`, `perm_filters`, `utils_filters`); `in_group_permissions` eliminado; `id="example"` parametrizado en `list.html`.
-32. **035 · Migrar is_staff contextual a request.user.is_staff** — `{% if is_staff %}` reemplazado por `{% if request.user.is_staff %}` en 4 templates; `context['is_staff']` eliminado de 22 vistas; ~42 líneas redundantes removidas.
-33. **036 · Externalizar JS del dashboard** — ~310 líneas de JS ApexCharts y ~82 líneas de CSS inline movidas a `static/dist/js/dashboard.js` y `static/dist/css/dashboard.css`; datos pasados via `data-*` attributes en los divs de charts; dashboard.html reducido a 22 líneas.
+28. **029 · Newsletter en Profile** — campo `newsletter` movido de Customer a Profile; señales de sincronización automática con EmailRecipientList; data migration; checkbox en formularios de usuario y perfil.
+29. **030 · Mejoras al workflow** — AGENTS.md documentado con worker Huey, testing selectivo, política de creación de tests, checklist de seguridad post-cambio.
+30. **031 · Seguridad XSS en dashboard** — `html.escape()` en `serialize_sub()`, `escapeHtml()` en JS del dashboard, `except:` → `except (AttributeError, TypeError):` en my_filters.py.
+31. **032 · Refactor dashboard template** — `dashboard.html` reducido de 1667 a ~418 líneas; 5 includes en `templates/includes/dashboard/` + `pagination.html`.
+32. **033 · Refactor dashboard views** — `views.py` dividido en `dashboard.py`, `excel_json.py`, `maintenance.py`; subqueries y helpers a nivel módulo; `prefetch_related('user_set')` en groups query.
+33. **034 · Refactor templatetags** — `my_filters.py` dividido en 4 submódulos (`form_filters`, `meteo_filters`, `perm_filters`, `utils_filters`); `in_group_permissions` eliminado; `id="example"` parametrizado en `list.html`.
+34. **035 · Migrar is_staff contextual a request.user.is_staff** — `{% if is_staff %}` reemplazado por `{% if request.user.is_staff %}` en 4 templates; `context['is_staff']` eliminado de 22 vistas; ~42 líneas redundantes removidas.
+35. **036 · Externalizar JS del dashboard** — ~310 líneas de JS ApexCharts y ~82 líneas de CSS inline movidas a `static/dist/js/dashboard.js` y `static/dist/css/dashboard.css`; datos pasados via `data-*` attributes en los divs de charts; dashboard.html reducido a 22 líneas.
+36. **037 · Serialización consistente de charts** — todas las series de datos ApexCharts envueltas con `json.dumps()` en lugar de `str()` para consistencia y prevención de bugs con strings.
+37. **038 · Anidar bloque duplicado** — los dos `{% if show_commercial and not is_client %}` unificados en `resumen_comercial.html`, modal anidado dentro del primer bloque.
+38. **039 · Remover load sin usar** — `{% load my_filters %}` eliminado de `alertas_activas.html` (no usaba ningún filtro).
 
 ## Siguiente 🔜
 
