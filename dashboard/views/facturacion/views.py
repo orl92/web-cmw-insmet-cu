@@ -29,6 +29,7 @@ from dashboard.models import (
     ServiceSubscription,
 )
 from dashboard.tasks import generate_invoice_pdf_and_email_task
+from dashboard.views.facturacion.utils import enviar_correo_factura
 
 logger = logging.getLogger(__name__)
 

@@ -38,9 +38,10 @@ class UserUpdateForm(UserChangeForm):
 
     def save(self, commit=True):
         user = super().save(commit=commit)
+        newsletter = self.cleaned_data.get('newsletter', False)
         if commit:
             profile, _ = Profile.objects.get_or_create(user=user)
-            profile.newsletter = self.cleaned_data.get('newsletter', False)
+            profile.newsletter = newsletter
             profile.save()
         return user
 

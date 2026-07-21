@@ -3,6 +3,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 
+from accounts.models import Profile
 from dashboard.models import ServiceSubscription, EmailRecipient, EmailRecipientList
 
 
@@ -25,12 +26,12 @@ def _sync_newsletter_recipient(profile):
         ).delete()
 
 
-@receiver(post_save, sender='accounts.Profile')
+@receiver(post_save, sender=Profile)
 def sync_profile_newsletter(sender, instance, **kwargs):
     _sync_newsletter_recipient(instance)
 
 
-@receiver(pre_delete, sender='accounts.Profile')
+@receiver(pre_delete, sender=Profile)
 def cleanup_newsletter_on_delete(sender, instance, **kwargs):
     if instance.newsletter and instance.user.email:
         newsletter_list = EmailRecipientList.objects.filter(name='Newsletter').first()

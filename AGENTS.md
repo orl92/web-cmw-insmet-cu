@@ -27,11 +27,41 @@ python manage.py add_stations_data
 python manage.py createsuperuser
 ```
 
-- Iniciar el worker de correos (Huey):
-  ```bash
-  ./run_huey.sh &
-  ```
-  Sin este worker los correos se encolan pero nunca se envían.
+## Worker de correos (Huey)
+
+El worker de Huey procesa las tareas asíncronas (envío de correos y generación de PDFs). Sin este worker los correos se encolan pero nunca se envían.
+
+### Inicio rápido (desarrollo)
+```bash
+./run_huey.sh &
+```
+
+### tmux (sesión persistente)
+```bash
+tmux new-session -d -s huey './run_huey.sh'
+tmux attach -t huey          # para ver logs en vivo
+tmux kill-session -t huey    # para detenerlo
+```
+
+### Supervisor (producción, recomendado)
+Agregar como segundo programa en `/etc/supervisor/conf.d/webcmp.conf`:
+
+```ini
+[program:webcmp-huey]
+command=/var/www/web-cmw-insmet-cu/.venv/bin/huey_consumer config.huey.huey
+directory=/var/www/web-cmw-insmet-cu
+user=root
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/webcmp-huey.err.log
+stdout_logfile=/var/log/webcmp-huey.out.log
+```
+
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start webcmp-huey
+```
 
 ## Comandos custom
 
@@ -40,7 +70,20 @@ python manage.py createsuperuser
 
 ## Testing
 
-136 tests en 6 apps (common, accounts, dashboard, api, home, login). Ejecutar con:
+136 tests en 6 apps (common, accounts, dashboard, api, home, login).
+
+### Testing selectivo (default)
+Correr solo los tests de la(s) app(s) que modificaste:
+```bash
+python manage.py test <app>              # ej: dashboard
+python manage.py test <app>.<TestClass>  # ej: dashboard.tests.test_views
+python manage.py test <app>.<TestClass>.<test_method>  # un test específico
+```
+
+### Tests faltantes
+Si modificas código y no existe un test que lo cubra, **debes crearlo** como parte del mismo cambio. Ubícalo en la app correspondiente siguiendo la estructura existente.
+
+### Full suite (solo antes de commit)
 ```bash
 python manage.py test
 ```
@@ -101,10 +144,11 @@ Todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos cus
      ```bash
      python manage.py makemigrations
      ```
-  7. **Verificar** siempre:
-     ```bash
-     python manage.py check && python manage.py test
-     ```
+  7. **Verificar**:
+     - `python manage.py check` — sin errores
+     - `python manage.py test <app>` — tests específicos de la(s) app(s) modificada(s)
+     - Si no existe test para el cambio, **crearlo** antes de continuar
+     - Revisar checklist de **Seguridad post-cambio** (ver más abajo)
   8. **Revisar código** — aplicar items del checklist según lo modificado (ver más abajo).
   9. **Actualizar** `constitution/roadmap.md` moviendo la feature a "Hecho".
   10. **Commit** con mensaje descriptivo (incluir número y nombre de la feature).
@@ -171,6 +215,15 @@ Todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos cus
 - [ ] Vistas requieren permiso específico (no solo login)
 - [ ] Formularios: `fields` explícito (no `exclude` ni `__all__` si hay campos sensibles)
 - [ ] Mass assignment prevenido: ModelForms listan campos permitidos
+
+### Seguridad post-cambio
+- [ ] ¿El cambio expone datos sensibles en templates, API o logs?
+- [ ] ¿Usa `|safe` o `mark_safe` con datos de usuario no confiables?
+- [ ] ¿Requiere nuevos permisos? ¿están creados y asignados correctamente?
+- [ ] ¿Hay tareas asíncronas (Huey), señales o imports que necesiten registrarse en `AppConfig.ready()`?
+- [ ] ¿Hay imports o variables que sombrean built-ins de Python? (ej: `object`, `list`, `str`)
+- [ ] ¿La funcionalidad depende de un worker externo? (Huey, sistema de colas, etc.)
+- [ ] `python manage.py check` sin errores
 
 ## API
 

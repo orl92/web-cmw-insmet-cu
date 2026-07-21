@@ -2,22 +2,20 @@ from datetime import datetime
 
 from django.conf import settings
 from django.contrib import messages
-from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.urls import reverse
-from django.utils.html import strip_tags
 
 from dashboard.models import EmailRecipientList
 from dashboard.tasks import send_email_task
 
 
-def mail_send(request, object, subject, url):
+def mail_send(request, alert_obj, subject, url):
     # Construir la URL dinámica
     listado_url = request.build_absolute_uri(reverse(f'{url}'))
     index_url = request.build_absolute_uri(reverse('index'))
 
     # Obtener la lista seleccionada en el formulario
-    recipient_list = object.email_recipient_list
+    recipient_list = alert_obj.email_recipient_list
 
     # Siempre incluir subscriptores del newsletter
     newsletter_list = EmailRecipientList.objects.filter(name='Newsletter').first()
@@ -30,7 +28,7 @@ def mail_send(request, object, subject, url):
             html_message = render_to_string(
                 'pages/dashboard/emails/notification.html',
                 {
-                    'alert': object,
+                    'alert': alert_obj,
                     'title': subject,
                     'listado_url': listado_url,
                     'index_url': index_url,
@@ -41,10 +39,10 @@ def mail_send(request, object, subject, url):
             attachment_name = None
             attachment_content = None
             attachment_mime = None
-            if object.file:
+            if alert_obj.file:
                 try:
-                    file_name = object.file.name.split('/')[-1]
-                    file_content = object.file.read()
+                    file_name = alert_obj.file.name.split('/')[-1]
+                    file_content = alert_obj.file.read()
                     attachment_name = file_name
                     attachment_content = file_content
                     attachment_mime = 'application/pdf'

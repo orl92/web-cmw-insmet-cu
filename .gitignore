@@ -237,3 +237,5 @@ salida/telex/WX.18
 salida/telex/WX.21
 .vscode/launch.json
 huey.db
+huey.db-shm
+huey.db-wal

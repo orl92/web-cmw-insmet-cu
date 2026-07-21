@@ -59,36 +59,37 @@ class ProfileForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         user = self.instance.user
-        if User.objects.filter(email=email).exclude(pk=user.pk).exists():
-            raise forms.ValidationError("Este correo electrónico ya está registrado.")
+        if user is not None and user.pk is not None:
+            if User.objects.filter(email=email).exclude(pk=user.pk).exists():
+                raise forms.ValidationError("Este correo electrónico ya está registrado.")
         return email
+    
+    def _run_validators(self, field_name, value):
+        for validator in Customer._meta.get_field(field_name).validators:
+            validator(value)
     
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone:
-            validator = Customer._meta.get_field('phone').validators[0]
-            validator(phone)
+            self._run_validators('phone', phone)
         return phone
     
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup')
         if reeup:
-            validator = Customer._meta.get_field('reeup').validators[0]
-            validator(reeup)
+            self._run_validators('reeup', reeup)
         return reeup
     
     def clean_nit(self):
         nit = self.cleaned_data.get('nit')
         if nit:
-            validator = Customer._meta.get_field('nit').validators[0]
-            validator(nit)
+            self._run_validators('nit', nit)
         return nit
     
     def clean_account(self):
         account = self.cleaned_data.get('account')
         if account:
-            validator = Customer._meta.get_field('account').validators[0]
-            validator(account)
+            self._run_validators('account', account)
         return account
     
     def save(self, commit=True):

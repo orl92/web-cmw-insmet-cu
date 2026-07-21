@@ -6,6 +6,6 @@ export DJANGO_SETTINGS_MODULE=config.settings
 
 cd $DJANGODIR
 
-exec ${DJANGODIR}/.venv/bin/huey_consumer config.huey.huey \
+${DJANGODIR}/.venv/bin/huey_consumer config.huey.huey \
   --logfile=$LOGDIR \
   --verbose
