@@ -6,7 +6,7 @@ from apps.dashboard.models import WeatherReport
 class WeatherReportForm(forms.ModelForm):
     class Meta:
         model = WeatherReport
-        fields = ['summary', 'file', 'email_recipient_list']
+        fields = ['summary', 'content', 'file', 'email_recipient_list']
         widgets = {
             'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),
         }

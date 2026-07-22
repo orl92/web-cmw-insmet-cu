@@ -782,6 +782,7 @@ class WeatherReport(FileHandlerMixin, models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Autor")
     date = models.DateTimeField(verbose_name="Fecha y Hora de Creación")
     summary = models.TextField(max_length=300, verbose_name="Resumen")
+    content = models.TextField(blank=True, verbose_name="Contenido")
     file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
     email_recipient_list = models.ForeignKey("EmailRecipientList", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Lista de Correos")
     report_type = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Tipo")

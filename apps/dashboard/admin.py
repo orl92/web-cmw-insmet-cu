@@ -69,7 +69,7 @@ class WeatherReportAdmin(admin.ModelAdmin):
             'fields': ('report_type', 'user', 'date')
         }),
         ('Contenido', {
-            'fields': ('summary', 'file')
+            'fields': ('summary', 'content', 'file')
         }),
         ('Distribución', {
             'fields': ('email_recipient_list',),

@@ -130,7 +130,7 @@ class WeatherReportSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WeatherReport
-        fields = ['uuid', 'report_type', 'date', 'summary', 'user']
+        fields = ['uuid', 'report_type', 'date', 'summary', 'content', 'user']
 
 
 class ScientificPublicationSerializer(serializers.ModelSerializer):

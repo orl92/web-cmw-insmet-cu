@@ -3,7 +3,7 @@
 {% load my_filters %}
 {% load home_extras %}
 {% block extrastyle %}
-  <link href="{% static '' %}dist/css/forecast.css" rel="stylesheet" />
+  <link href="{% static 'dist/css/forecast.css' %}" rel="stylesheet" />
 {% endblock %}
 {% block content %}
   <div class="row row-deck row-cards mt-3">
@@ -211,9 +211,9 @@
   </div>
 {% endblock %}
 {% block extrajs %}
-  <script src="{% static '' %}dist/libs/amcharts/dist/index.js"></script>
-  <script src="{% static '' %}dist/libs/amcharts/dist/map.js"></script>
-  <script src="{% static '' %}dist/libs/amcharts/dist/themes/Animated.js"></script>
-  <script src="{% static '' %}dist/libs/amcharts/dist/geodata/data/countries2.js"></script>
-  <script src="{% static '' %}dist/js/map_station.js"></script>
+  <script src="{% static 'dist/libs/amcharts/dist/index.js' %}"></script>
+  <script src="{% static 'dist/libs/amcharts/dist/map.js' %}"></script>
+  <script src="{% static 'dist/libs/amcharts/dist/themes/Animated.js' %}"></script>
+  <script src="{% static 'dist/libs/amcharts/dist/geodata/data/countries2.js' %}"></script>
+  <script src="{% static 'dist/js/map_station.js' %}"></script>
 {% endblock %}
