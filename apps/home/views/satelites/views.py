@@ -53,7 +53,8 @@ class ProxyImageView(View):
                 stream=True,
                 timeout=10,
                 allow_redirects=False,
-                proxies=proxies
+                proxies=proxies,
+                verify=True
             )
 
             

@@ -606,6 +606,8 @@ class DescargarGifView(View):
                 for img in images:
                     img.close()
 
+                # Cose()
+
                 # Crear respuesta HTTP con el GIF
                 response = HttpResponse(gif_buffer.getvalue(), content_type='image/gif')
                 response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'

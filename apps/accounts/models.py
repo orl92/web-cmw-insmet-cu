@@ -8,6 +8,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from PIL import Image
 
+from django.templatetags.static import static
+
 from apps.common.utils import FileHandlerMixin, image_upload_path
 from config import settings
 
@@ -68,8 +70,8 @@ class Profile(FileHandlerMixin, models.Model):
 
     def get_avatar(self):
         if self.avatar:
-            return f'{settings.MEDIA_URL}{self.avatar}'
-        return f'{settings.STATIC_URL}dist/img/avatar.png'
+            return self.avatar.url
+        return static('dist/img/avatar.png')
 
     class Meta:
         verbose_name = 'Perfil'

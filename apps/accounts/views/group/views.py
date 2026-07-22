@@ -83,7 +83,7 @@ class GroupCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
                     model_name = model_class._meta.verbose_name
                 else:
                     model_name = perm.content_type.model.replace("_", " ").title()
-            except:  # noqa: E722
+            except AttributeError:
                 model_name = perm.content_type.model.replace("_", " ").title()
 
             # Determinar tipo de permiso
@@ -178,7 +178,7 @@ class GroupUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTes
                     model_name = model_class._meta.verbose_name
                 else:
                     model_name = perm.content_type.model.replace("_", " ").title()
-            except:  # noqa: E722
+            except AttributeError:
                 model_name = perm.content_type.model.replace("_", " ").title()
 
             # Determinar tipo de permiso

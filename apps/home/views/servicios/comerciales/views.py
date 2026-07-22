@@ -59,7 +59,7 @@ class PublicCommercialServicesListView(ListView):
         return context
 
 
-class ServiceDetailView(FormView):
+class ServiceDetailView(LoginRequiredMixin, FormView):
     template_name = 'pages/home/servicios/comerciales/detalle_servicio.html'
     form_class = PaymentMethodForm
     success_url = reverse_lazy('dashboard:suscripcion_list')

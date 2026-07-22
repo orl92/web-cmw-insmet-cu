@@ -114,7 +114,7 @@ for col in worksheet.columns:
         try:
             if len(str(cell.value)) > max_length:
                 max_length = len(cell.value)
-        except:
+        except (TypeError, ValueError):
             pass
     adjusted_width = (max_length + 2)
     worksheet.column_dimensions[column].width = adjusted_width

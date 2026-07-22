@@ -29,7 +29,6 @@ class UserUpdateForm(UserChangeForm):
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active', 'is_superuser', 'groups']
-        exclude = ['password', 'user_permissions']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
