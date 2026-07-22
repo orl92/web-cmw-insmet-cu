@@ -318,15 +318,9 @@
           url: window.location.href
         })
       } else {
-        const tempInput = document.createElement('input')
-        tempInput.value = window.location.href
-        document.body.appendChild(tempInput)
-        tempInput.select()
-        tempInput.setSelectionRange(0, 99999)
-        document.execCommand('copy')
-        document.body.removeChild(tempInput)
-    
-        alert('Enlace copiado al portapapeles. Compártelo para pagar desde una computadora.')
+        navigator.clipboard.writeText(window.location.href).then(function() {
+          alert('Enlace copiado al portapapeles. Compártelo para pagar desde una computadora.')
+        })
       }
     }
   </script>

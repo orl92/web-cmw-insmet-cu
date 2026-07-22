@@ -1,0 +1,26 @@
+<div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="pdfModalLabel">{{ modal_title|default:"PDF" }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div id="modalPdfContainer" class="modal-pdf-container">
+          <div id="modalPdfViewer" class="modal-pdf-viewer">
+            <div id="modalPdfPages" class="modal-pdf-pages"></div>
+          </div>
+          <div class="modal-pdf-controls">
+            <button type="button" id="modalPrevPage" class="btn btn-sm btn-light">‹</button>
+            <span id="modalPageInfo" class="modal-page-info">Página 1 de 1</span>
+            <button type="button" id="modalNextPage" class="btn btn-sm btn-light">›</button>
+            <button type="button" id="modalZoomOut" class="btn btn-sm btn-light ms-2">-</button>
+            <span id="modalZoomLevel" class="modal-zoom-level">100%</span>
+            <button type="button" id="modalZoomIn" class="btn btn-sm btn-light">+</button>
+            <button type="button" id="modalFitWidth" class="btn btn-sm btn-light ms-2">Ajustar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

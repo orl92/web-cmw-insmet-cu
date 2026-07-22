@@ -1,201 +1,17 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
 {% load my_filters %}
+{% load home_extras %}
 {% block extrastyle %}
   <link href="{% static '' %}dist/css/forecast.css" rel="stylesheet" />
 {% endblock %}
 {% block content %}
-  <!-- Pronóstico Principal -->
   <div class="row row-deck row-cards mt-3">
     <h4 class="card-title">Pronóstico del: {{ latest_forecast.date }}</h4>
-    <!-- Costa Norte -->
-    <div class="col-lg-4 mb-3">
-      <div class="card">
-        <div class="card-body">
-          <h3 class="subheader text-muted fw-medium">Costa Norte</h3>
-          {% if latest_forecast %}
-            {% with m=latest_forecast.north.morning a=latest_forecast.north.afternoon n=latest_forecast.north.night %}
-            <div class="row">
-              <div class="col-4 text-center">
-                <p class="text-muted small">Mañana</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ m.sea|get_mar_description }}">
-                  <strong>Mar:</strong> {{ m.sea }}
-                </p>
-              </div>
-              <div class="col-4 text-center">
-                <p class="text-muted small">Tarde (Max)</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ a.sea|get_mar_description }}">
-                  <strong>Mar:</strong> {{ a.sea }}
-                </p>
-              </div>
-              <div class="col-4 text-center">
-                <p class="text-muted small">Noche</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Mar: {{ n.sea|get_mar_description }}">
-                  <strong>Mar:</strong> {{ n.sea }}
-                </p>
-              </div>
-            </div>
-            {% endwith %}
-          {% else %}
-          <div class="text-center text-muted py-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" />
-              <path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" />
-              <path d="M3 12h1" />
-              <path d="M12 3v1" />
-              <path d="M5.6 5.6l.7 .7" />
-              <path d="M3 21l18 -18" />
-            </svg>
-            <div>No hay pronósticos disponibles.</div>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    <!-- Interior -->
-    <div class="col-lg-4 mb-3">
-      <div class="card">
-        <div class="card-body">
-          <h3 class="subheader text-muted fw-medium">Interior</h3>
-          {% if latest_forecast %}
-            {% with m=latest_forecast.interior.morning a=latest_forecast.interior.afternoon n=latest_forecast.interior.night %}
-            <div class="row">
-              <div class="col-4 text-center">
-                <p class="text-muted small">Mañana</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
-                <p class="mb-1 invisible">
-                  <strong>Mar:</strong>
-                </p>
-              </div>
-              <div class="col-4 text-center">
-                <p class="text-muted small">Tarde (Max)</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
-                <p class="mb-1 invisible">
-                  <strong>Mar:</strong>
-                </p>
-              </div>
-              <div class="col-4 text-center">
-                <p class="text-muted small">Noche</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
-                <p class="mb-1 invisible">
-                  <strong>Mar:</strong>
-                </p>
-              </div>
-            </div>
-            {% endwith %}
-          {% else %}
-          <div class="text-center text-muted py-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" />
-              <path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" />
-              <path d="M3 12h1" />
-              <path d="M12 3v1" />
-              <path d="M5.6 5.6l.7 .7" />
-              <path d="M3 21l18 -18" />
-            </svg>
-            <div>No hay pronósticos disponibles.</div>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    <!-- Costa Sur -->
-    <div class="col-lg-4 mb-3">
-      <div class="card">
-        <div class="card-body">
-          <h3 class="subheader text-muted fw-medium">Costa Sur</h3>
-          {% if latest_forecast %}
-            {% with m=latest_forecast.south.morning a=latest_forecast.south.afternoon n=latest_forecast.south.night %}
-            <div class="row">
-              <div class="col-4 text-center">
-                <p class="text-muted small">Mañana</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-success" data-bs-toggle="tooltip" title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="{{ m.sea|get_mar_description }}">
-                  <strong>Mar:</strong> {{ m.sea }}
-                </p>
-              </div>
-              <div class="col-4 text-center">
-                <p class="text-muted small">Tarde (Max)</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-danger" data-bs-toggle="tooltip" title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="{{ a.sea|get_mar_description }}">
-                  <strong>Mar:</strong> {{ a.sea }}
-                </p>
-              </div>
-              <div class="col-4 text-center">
-                <p class="text-muted small">Noche</p>
-                <div class="weather-icon mx-auto">
-                  <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
-                </div>
-                <h3 class="text-info" data-bs-toggle="tooltip" title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
-                <p class="mb-1" data-bs-toggle="tooltip" title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
-                <p class="mb-1" data-bs-toggle="tooltip" title="{{ n.sea|get_mar_description }}">
-                  <strong>Mar:</strong> {{ n.sea }}
-                </p>
-              </div>
-            </div>
-            {% endwith %}
-          {% else %}
-          <div class="text-center text-muted py-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" />
-              <path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" />
-              <path d="M3 12h1" />
-              <path d="M12 3v1" />
-              <path d="M5.6 5.6l.7 .7" />
-              <path d="M3 21l18 -18" />
-            </svg>
-            <div>No hay pronósticos disponibles.</div>
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+    {% include 'includes/home/forecast_region_card.html' with region_name='Costa Norte' region_data=latest_forecast.north show_sea=True %}
+    {% include 'includes/home/forecast_region_card.html' with region_name='Interior' region_data=latest_forecast.interior show_sea=False %}
+    {% include 'includes/home/forecast_region_card.html' with region_name='Costa Sur' region_data=latest_forecast.south show_sea=True %}
   </div>
-  <!-- Pronóstico Extendido -->
   <h4 class="card-title mt-3">Pronóstico Extendido 5 días</h4>
   <div class="row row-deck row-cards mt-3 row-cols-1 row-cols-sm-2 row-cols-lg-5">
     {% if latest_forecast %}
@@ -206,17 +22,17 @@
               <p class="mb-1">{{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:'D d/m' }}</p>
               <div class="day-content">
                 <div class="weather-icon mx-auto">
-                  <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" class="img-fluid" data-bs-toggle="tooltip" title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}" />
+                  <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" class="img-fluid" data-bs-toggle="tooltip" title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}" loading="lazy" />
                 </div>
                 <div class="temp-info mt-3">
-                  <spam class="temp-max text-danger fs-5" data-bs-toggle="tooltip" title="Temperatura Máxima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C">
+                  <span class="temp-max text-danger fs-5">
                     {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
                     <span class="temp-label">Máxima</span>
-                  </spam>
-                  <spam class="temp-min text-info fs-5" data-bs-toggle="tooltip" title="Temperatura Mínima: {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C">
+                  </span>
+                  <span class="temp-min text-info fs-5">
                     {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
                     <span class="temp-label">Mínima</span>
-                  </spam>
+                  </span>
                 </div>
               </div>
             </div>
@@ -229,22 +45,7 @@
           <div class="card h-100 shadow-sm">
             <div class="card-body">
               <div class="col-12">
-                <div class="text-center text-muted py-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M4 13.5a4 4 0 1 0 4 0v-8.5a2 2 0 1 0 -4 0v8.5" />
-                    <path d="M4 9h4" />
-                    <path d="M13 16a4 4 0 1 0 0 -8a4.07 4.07 0 0 0 -1 .124" />
-                    <path d="M13 3v1" />
-                    <path d="M21 12h1" />
-                    <path d="M13 20v1" />
-                    <path d="M19.4 5.6l-.7 .7" />
-                    <path d="M18.7 17.7l.7 .7" />
-                  </svg>
-                  <div>No hay pronósticos disponibles.</div>
-                </div>
+                {% include 'includes/home/empty_state.html' with icon='forecast' message='No hay pronósticos disponibles.' %}
               </div>
             </div>
           </div>
@@ -252,10 +53,8 @@
       {% endfor %}
     {% endif %}
   </div>
-  <!-- Datos Astronómicos -->
   <div class="row row-deck row-cards mt-3">
     <h4 class="card-title">Datos Astronómicos</h4>
-    <!-- Fases Lunares -->
     <div class="col-lg-4 mb-3">
       <div class="card">
         <div class="card-body" id="lunar-phases">
@@ -263,13 +62,13 @@
           {% if latest_forecast %}
             <div id="lunar-phases-content">
               <div class="lunarPhase">
-                <img src="{{ latest_forecast.lp|get_moon_img }}" alt="{{ latest_forecast.lp }}" data-bs-toggle="tooltip" title="{{ latest_forecast.lp|get_luna_description }}" style="height: 110px; width: 110px;" />
+                <img src="{{ latest_forecast.lp|get_moon_img }}" alt="{{ latest_forecast.lp }}" data-bs-toggle="tooltip" title="{{ latest_forecast.lp|get_luna_description }}" style="height: 110px; width: 110px;" loading="lazy" />
                 <div class="phaseInfo">
-                  <div data-bs-toggle="tooltip" title="Fase de la luna">{{ latest_forecast.lp }}</div>
+                  <div>{{ latest_forecast.lp }}</div>
                 </div>
               </div>
               <div class="nextPhase">
-                <img src="{{ latest_forecast.nlp|get_moon_img }}" alt="{{ latest_forecast.nlp }}" data-bs-toggle="tooltip" title="{{ latest_forecast.nlp|get_luna_description }}" style="height: 33px; width: 33px;" />
+                <img src="{{ latest_forecast.nlp|get_moon_img }}" alt="{{ latest_forecast.nlp }}" data-bs-toggle="tooltip" title="{{ latest_forecast.nlp|get_luna_description }}" style="height: 33px; width: 33px;" loading="lazy" />
                 <span class="moonDetails">
                   <div>Próxima: {{ latest_forecast.nlp }}</div>
                   <div>{{ latest_forecast.nlpd|date:'d/m/Y' }}</div>
@@ -277,22 +76,11 @@
               </div>
             </div>
           {% else %}
-          <div class="text-center text-muted py-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008" />
-              <path d="M17 4a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2" />
-              <path d="M19 11h2m-1 -1v2" />
-            </svg>
-            <div>No hay datos astronómicos disponibles.</div>
-          </div>
+            {% include 'includes/home/empty_state.html' with icon='astronomy' message='No hay datos astronómicos disponibles.' %}
           {% endif %}
         </div>
       </div>
     </div>
-    <!-- Salida y Puesta del Sol -->
     <div class="col-lg-4 mb-3">
       <div class="card">
         <div class="card-body" id="sunrise-sunset">
@@ -300,7 +88,7 @@
           {% if latest_forecast %}
             <div id="sunrise-sunset-content" class="d-flex justify-content-around">
               <div class="sunrise-sunset-item">
-                <img src="{{ 'sunrise'|get_sun_img }}" alt="Amanecer" data-bs-toggle="tooltip" title="{{ 'sunrise'|get_sol_description }}" style="height: 75px; width: 75px;" />
+                <img src="{{ 'sunrise'|get_sun_img }}" alt="Amanecer" data-bs-toggle="tooltip" title="{{ 'sunrise'|get_sol_description }}" style="height: 75px; width: 75px;" loading="lazy" />
                 <div class="time-details">
                   <div class="time-item">
                     <span class="time-value" id="sunrise-value">{{ latest_forecast.sunrise|time:'g:i A' }}</span>
@@ -309,7 +97,7 @@
                 </div>
               </div>
               <div class="sunrise-sunset-item">
-                <img src="{{ 'sunset'|get_sun_img }}" alt="Puesta de sol" data-bs-toggle="tooltip" title="{{ 'sunset'|get_sol_description }}" style="height: 75px; width: 75px;" />
+                <img src="{{ 'sunset'|get_sun_img }}" alt="Puesta de sol" data-bs-toggle="tooltip" title="{{ 'sunset'|get_sol_description }}" style="height: 75px; width: 75px;" loading="lazy" />
                 <div class="time-details">
                   <div class="time-item">
                     <span class="time-value" id="sunset-value">{{ latest_forecast.sunset|time:'g:i A' }}</span>
@@ -319,28 +107,11 @@
               </div>
             </div>
           {% else %}
-          <div class="text-center text-muted py-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M3 13h1" />
-              <path d="M20 13h1" />
-              <path d="M5.6 6.6l.7 .7" />
-              <path d="M18.4 6.6l-.7 .7" />
-              <path d="M8 13a4 4 0 1 1 8 0" />
-              <path d="M3 17h18" />
-              <path d="M7 20h5" />
-              <path d="M16 20h1" />
-              <path d="M12 5v-1" />
-            </svg>
-            <div>No hay datos astronómicos disponibles.</div>
-          </div>
+            {% include 'includes/home/empty_state.html' with icon='astronomy_sun' message='No hay datos astronómicos disponibles.' %}
           {% endif %}
         </div>
       </div>
     </div>
-    <!-- Índice UV -->
     <div class="col-lg-4 mb-3">
       <div class="card">
         <div class="card-body">
@@ -349,54 +120,14 @@
             <div id="uv-index-content" class="d-flex justify-content-center align-items-center mb-3">
               <div class="uvLabelContainer">
                 <svg width="130" height="134" viewBox="5 -12 171 178" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <!-- Arcos de niveles UV -->
                   <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-240 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
                   <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-243 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
                   <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-178 90.5 80)" fill="none" stroke="#FDE300" stroke-width="8" stroke-linecap="round"></path>
                   <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-115 90.5 80)" fill="none" stroke="#FF8C00" stroke-width="8" stroke-linecap="round"></path>
                   <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-52 90.5 80)" fill="none" stroke="#D13438" stroke-width="8" stroke-linecap="round"></path>
                   <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(13 90.5 80)" fill="none" stroke="#5C2E91" stroke-width="8" stroke-linecap="round"></path>
-
-                  <!-- Indicador UV dinámico -->
-                  {% with uv_index=latest_forecast.uv_index %}
-                    {% if uv_index == 0 %}
-                      <circle cx="51" cy="146" r="10" fill="#73AA24"></circle>
-                      <circle cx="51" cy="146" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 1 %}
-                      <circle cx="40.5" cy="136" r="10" fill="#73AA24"></circle>
-                      <circle cx="40.5" cy="136" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 2 %}
-                      <circle cx="19" cy="105" r="10" fill="#73AA24"></circle>
-                      <circle cx="19" cy="105" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 3 %}
-                      <circle cx="18" cy="63" r="10" fill="#FDE300"></circle>
-                      <circle cx="18" cy="63" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 4 %}
-                      <circle cx="24" cy="44" r="10" fill="#FDE300"></circle>
-                      <circle cx="24" cy="44" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 5 %}
-                      <circle cx="36" cy="26" r="10" fill="#FDE300"></circle>
-                      <circle cx="36" cy="26" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 6 %}
-                      <circle cx="73" cy="5" r="10" fill="#FF8C00"></circle>
-                      <circle cx="73" cy="5" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 7 %}
-                      <circle cx="112" cy="8" r="10" fill="#FF8C00"></circle>
-                      <circle cx="112" cy="8" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 8 %}
-                      <circle cx="148" cy="30" r="10" fill="#D13438"></circle>
-                      <circle cx="148" cy="30" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 9 %}
-                      <circle cx="159" cy="48" r="10" fill="#D13438"></circle>
-                      <circle cx="159" cy="48" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index == 10 %}
-                      <circle cx="164" cy="68" r="10" fill="#D13438"></circle>
-                      <circle cx="164" cy="68" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% elif uv_index >= 11 %}
-                      <circle cx="158" cy="113" r="10" fill="#5C2E91"></circle>
-                      <circle cx="158" cy="113" r="11.5" stroke="white" stroke-width="3"></circle>
-                    {% endif %}
-                  {% endwith %}
+                  <circle cx="{{ latest_forecast.uv_index|uv_cx }}" cy="{{ latest_forecast.uv_index|uv_cy }}" r="10" fill="{{ latest_forecast.uv_index|uv_color }}"></circle>
+                  <circle cx="{{ latest_forecast.uv_index|uv_cx }}" cy="{{ latest_forecast.uv_index|uv_cy }}" r="11.5" stroke="white" stroke-width="3"></circle>
                 </svg>
                 <div class="uvContentTitle">
                   {% if latest_forecast.uv_index > 11 %}
@@ -434,45 +165,29 @@
               </small>
             </div>
           {% else %}
-          <div class="text-center text-muted py-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24"
-              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <path d="M3 12h1m16 0h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7m-9.7 5.7a4 4 0 1 1 8 0" />
-              <path d="M12 4v-1" />
-              <path d="M13 16l2 5h1l2 -5" />
-              <path d="M6 16v3a2 2 0 1 0 4 0v-3" />
-            </svg>
-            <div>No hay datos de índice UV disponibles.</div>
-          </div>
+            {% include 'includes/home/empty_state.html' with icon='uv' message='No hay datos de índice UV disponibles.' %}
           {% endif %}
         </div>
       </div>
     </div>
   </div>
-  <!-- Mapa y Observaciones -->
   <div class="row row-cards mt-3">
-    <!-- Estaciones -->
     <div class="col-lg-8 mb-3">
       <h4>Estaciones Meteorologicas en la Provincia</h4>
       <div class="card">
         <div class="card-body">
           <h3 class="subheader text-muted fw-medium">Estaciones</h3>
           <div class="container" id="chartdiv" style="height: 450px;">
-            <!-- Mapa Estaciones Aquí -->
           </div>
         </div>
       </div>
     </div>
-    <!-- Observaciones del Clima -->
     <div class="col-lg-4 mb-3">
       <h4>Observaciones del Clima en las Estaciones</h4>
       <div class="card">
         <div class="card-body">
           <h3 class="subheader text-muted fw-medium">Observación</h3>
           <div class="container" id="station-details" style="height: 450px;">
-            <!-- Observaciones Aquí -->
             <p id="station-date" class="h3 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Fecha de la Observación"></p>
             <p id="station-title" class="h3 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Nombre y Número de la estación"></p>
             <p id="station-weather" class="h5 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Estado del cielo"></p>
@@ -480,17 +195,13 @@
             <div id="station-temperatures" class="text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Temperaturas máxima y mínima"></div>
             <br />
             <div id="station-humidity" class="text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Humedad relativa">
-              <!-- Aquí va el contenido de la estación de humedad relativa -->
             </div>
             <div class="weather__status d-flex flex-row justify-content-center align-items-center mt-3">
               <div id="station-wind" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Velocidad y dirección del viento">
-                <!-- Aquí va el contenido de la estación de viento -->
               </div>
               <div id="station-rain-3h" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Precipitaciones en las últimas 3h">
-                <!-- Aquí va el contenido de la estación de lluvia en las últimas 3 horas -->
               </div>
               <div id="station-rain-24h" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Precipitaciones en las últimas 24h">
-                <!-- Aquí va el contenido de la estación de lluvia en las últimas 24 horas -->
               </div>
             </div>
           </div>
@@ -500,7 +211,6 @@
   </div>
 {% endblock %}
 {% block extrajs %}
-  <!-- Libs JS -->
   <script src="{% static '' %}dist/libs/amcharts/dist/index.js"></script>
   <script src="{% static '' %}dist/libs/amcharts/dist/map.js"></script>
   <script src="{% static '' %}dist/libs/amcharts/dist/themes/Animated.js"></script>

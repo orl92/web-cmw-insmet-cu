@@ -1,0 +1,42 @@
+<div class="text-center text-muted py-3">
+  {% if icon == 'forecast' %}
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M9.173 14.83a4 4 0 1 1 5.657 -5.657" />
+    <path d="M11.294 12.707l.174 .247a7.5 7.5 0 0 0 8.845 2.492a9 9 0 0 1 -14.671 2.914" />
+    <path d="M3 12h1" />
+    <path d="M12 3v1" />
+    <path d="M5.6 5.6l.7 .7" />
+    <path d="M3 21l18 -18" />
+  </svg>
+  {% elif icon == 'astronomy' %}
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454l0 .008" />
+    <path d="M17 4a2 2 0 0 0 2 2a2 2 0 0 0 -2 2a2 2 0 0 0 -2 -2a2 2 0 0 0 2 -2" />
+    <path d="M19 11h2m-1 -1v2" />
+  </svg>
+  {% elif icon == 'astronomy_sun' %}
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M3 13h1" />
+    <path d="M20 13h1" />
+    <path d="M5.6 6.6l.7 .7" />
+    <path d="M18.4 6.6l-.7 .7" />
+    <path d="M8 13a4 4 0 1 1 8 0" />
+    <path d="M3 17h18" />
+    <path d="M7 20h5" />
+    <path d="M16 20h1" />
+    <path d="M12 5v-1" />
+  </svg>
+  {% elif icon == 'uv' %}
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M3 12h1m16 0h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7m-9.7 5.7a4 4 0 1 1 8 0" />
+    <path d="M12 4v-1" />
+    <path d="M13 16l2 5h1l2 -5" />
+    <path d="M6 16v3a2 2 0 1 0 4 0v-3" />
+  </svg>
+  {% endif %}
+  <div>{{ message|default:"No hay datos disponibles." }}</div>
+</div>
