@@ -52,7 +52,17 @@
 
 ## Siguiente 🔜
 
-*(ninguno — backlog)*
+48. **049 · Homepage refactor** — corregir `<spam>` bug, extraer bloques región climática a partial, eliminar hack `invisible`, tooltips redundantes, simplificar SVG UV, `loading="lazy"`, empty states a partial.
+49. **050 · XSS safe content** — reemplazar `|safe` en 4 templates por filtro sanitizador que solo permite HTML seguro.
+50. **051 · Template fixes auth** — `lang="en"` → `lang="es"` en base-auth.html; `autocomplete` en inputs login.
+51. **052 · PDF modal refactor** — extraer modal fullscreen PDF duplicado en 7+ templates a partial reutilizable.
+52. **053 · Servicios responsive** — unificar bloques `list-inline-item` duplicados (desktop/mobile) en servicios_comerciales.html y servicios_publicos.html.
+53. **054 · Email obfuscation** — ofuscar emails de autores en publicaciones.html para evitar scraping.
+54. **055 · Template fixes menor** — `execCommand` → `clipboard` API; `aria-label` en botones PDF; `<figcaption>` huérfano; extraer SVG logo a partial.
+55. **056 · Fix bugs críticos templates** — `detailed_forecast`/`detailed_commentary`/`detailed_note` no existen en `WeatherReport` (AttributeError en 3 templates públicas); se agrega campo `content` al modelo; migración; `<spam>` → `<span>` en index.html; `lang="en"` → `lang="es"` en base-auth.html; fix `{% static '' %}`.
+56. **057 · Seguridad post-auditoría** — `LoginRequiredMixin` a `ServiceDetailView`; `verify=True` en requests externas; excepciones específicas en delete views; `UserUpdateForm` de `exclude` a `fields`; `get_avatar()` usa `.url`.
+57. **058 · Performance y JS** — `select_related` en list views faltantes; `.catch()` en fetch calls; URLs API vía `data-*`; `print()` → logging; FontAwesome a Tabler Icons.
+58. **059 · UI y accesibilidad** — utils.html inline → static files; `aria-label` en icon-links; `<pre>` headings → `<h3>`; SVG `alt=""` → `role="img"`; labels con `for`; limpiar navbar comentado.
 
 ## Backlog / ideas 💡
 

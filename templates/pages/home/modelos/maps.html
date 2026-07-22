@@ -216,7 +216,7 @@
     <script>
         // Configuración global para el modal de GIF
         window.GIF_DOWNLOAD_CONFIG = {
-            downloadUrl: "{% url 'descargar_gif' %}",
+            downloadUrl: "{% url 'home:models_download_gif' %}",
             fechaInicioId: "{{ gif_form.fecha_inicio.id_for_label }}",
             fechaFinId: "{{ gif_form.fecha_fin.id_for_label }}"
         };

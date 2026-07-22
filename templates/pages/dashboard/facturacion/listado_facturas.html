@@ -67,7 +67,7 @@
 
       <!-- Reenviar correo (solo si no se envió y no está anulada) -->
       {% if not invoice.email_sent and not invoice.is_cancelled %}
-        <a href="{% url 'reenviar_correo_factura' invoice.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Reenviar correo">
+        <a href="{% url 'dashboard:factura_resend_email' invoice.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Reenviar correo">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-mail-forward">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
             <path d="M12 18h-7a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v7.5" />
@@ -183,11 +183,11 @@
         if (action === 'anular') {
           modalTitle.textContent = 'Anular factura';
           modalBody.innerHTML = `<p>¿Está seguro de anular la factura <strong>${number}</strong>?</p><p class="text-muted">Las suscripciones asociadas volverán a estado "solicitado".</p>`;
-          currentActionUrl = '{% url "anular_factura" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          currentActionUrl = '{% url "dashboard:factura_cancel" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         } else if (action === 'eliminar') {
           modalTitle.textContent = 'Eliminar permanentemente';
           modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> la factura <strong>${number}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
-          currentActionUrl = '{% url "eliminar_factura" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          currentActionUrl = '{% url "dashboard:factura_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         }
 
         showModal(confirmModal);

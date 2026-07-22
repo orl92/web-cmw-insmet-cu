@@ -20,14 +20,14 @@
     {% endif %}
   </td>
   <td class="text-end">
-    <a href="{% url 'detalle_certificado' object.uuid %}" type="button" class="btn btn-icon btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle">
+    <a href="{% url 'dashboard:certificado_detail' object.uuid %}" type="button" class="btn btn-icon btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
         <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
         <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
       </svg>
     </a>
-    <a href="{% url 'certificado_pdf' object.uuid %}" type="button" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Descargar PDF" data-bs-original-title="Descargar PDF" target="_blank">
+    <a href="{% url 'dashboard:certificado_pdf' object.uuid %}" type="button" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Descargar PDF" data-bs-original-title="Descargar PDF" target="_blank">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-download">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
@@ -125,11 +125,11 @@
         if (action === 'desactivar') {
           modalTitle.textContent = 'Desactivar certificado';
           modalBody.innerHTML = `<p>¿Está seguro de desactivar el certificado <strong>${name}</strong>?</p><p class="text-muted">El registro se desactivará pero se conservará en la base de datos.</p>`;
-          form.action = '{% url "eliminar_certificado" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          form.action = '{% url "dashboard:certificado_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         } else if (action === 'eliminar') {
           modalTitle.textContent = 'Eliminar permanentemente';
           modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> el certificado <strong>${name}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
-          form.action = '{% url "eliminar_certificado_permanente" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          form.action = '{% url "dashboard:certificado_hard_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         }
 
         showModal(confirmModal);

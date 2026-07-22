@@ -33,7 +33,7 @@
     {% endif %}
   </td>
   <td class="text-end">
-    <a href="{% url 'actualizar_servicio' object.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
+    <a href="{% url 'dashboard:servicio_update' object.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
@@ -130,11 +130,11 @@
         if (action === 'desactivar') {
           modalTitle.textContent = 'Desactivar servicio';
           modalBody.innerHTML = `<p>¿Está seguro de desactivar el servicio <strong>${name}</strong>?</p><p class="text-muted">El registro se desactivará pero se conservará en la base de datos.</p>`;
-          form.action = '{% url "eliminar_servicio" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          form.action = '{% url "dashboard:servicio_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         } else if (action === 'eliminar') {
           modalTitle.textContent = 'Eliminar permanentemente';
           modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> el servicio <strong>${name}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
-          form.action = '{% url "eliminar_servicio_permanente" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          form.action = '{% url "dashboard:servicio_hard_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         }
 
         showModal(confirmModal);

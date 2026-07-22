@@ -3,8 +3,8 @@
 <ul class="navbar-nav pt-lg-3">
     <!-- Dashboard -->
     {% if request.user.is_staff %}
-    <li class="nav-item {% if 'dashboard' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'dashboard' %}">
+    <li class="nav-item {% if 'dashboard:index' in segment %}active{% endif %}">
+        <a class="nav-link" href="{% url 'dashboard:index' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-dashboard"></i>
             </span>
@@ -13,7 +13,7 @@
     </li>
     {% else %}
     <li class="nav-item">
-        <a class="nav-link" href="{% url 'index' %}">
+        <a class="nav-link" href="{% url 'home:index' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-home"></i>
             </span>
@@ -33,11 +33,11 @@
             <div class="dropdown-menu-columns">
                 <div class="dropdown-menu-column">
                     {% if request.user.is_superuser %}
-                    <a class="dropdown-item {% if 'groups' in segment %}active{% endif %}" href="{% url 'groups' %}">Grupos</a>
-                    <a class="dropdown-item {% if 'users' in segment %}active{% endif %}" href="{% url 'users' %}">Usuarios</a>
+                    <a class="dropdown-item {% if 'groups' in segment %}active{% endif %}" href="{% url 'accounts:groups_list' %}">Grupos</a>
+                    <a class="dropdown-item {% if 'users' in segment %}active{% endif %}" href="{% url 'accounts:users_list' %}">Usuarios</a>
                     {% endif %}
-                    <a class="dropdown-item {% if 'profile' in segment %}active{% endif %}" href="{% url 'profile' %}">Perfil</a>
-                    <a class="dropdown-item {% if 'password_change' in segment %}active{% endif %}" href="{% url 'password_change' %}">Cambiar Contraseña</a>
+                    <a class="dropdown-item {% if 'profile' in segment %}active{% endif %}" href="{% url 'accounts:profile_detail' %}">Perfil</a>
+                    <a class="dropdown-item {% if 'password_change' in segment %}active{% endif %}" href="{% url 'accounts:password_change' %}">Cambiar Contraseña</a>
                 </div>
             </div>
         </div>
@@ -45,7 +45,7 @@
     <!-- Provincias -->
     {% if request.user|has_permission:'dashboard.view_province' %}
     <li class="nav-item {% if 'provincia' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'provincias' %}">
+        <a class="nav-link" href="{% url 'dashboard:provincia_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-map-2"></i>
             </span>
@@ -56,7 +56,7 @@
     <!-- Municipios -->
     {% if request.user|has_permission:'dashboard.view_town' %}
     <li class="nav-item {% if 'town' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'municipios' %}">
+        <a class="nav-link" href="{% url 'dashboard:municipio_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-building-community"></i>
             </span>
@@ -67,7 +67,7 @@
     <!-- Estaciones -->
     {% if request.user|has_permission:'dashboard.view_station' %}
     <li class="nav-item {% if 'estacion' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'estaciones' %}">
+        <a class="nav-link" href="{% url 'dashboard:estacion_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-building-broadcast-tower"></i>
             </span>
@@ -78,7 +78,7 @@
     <!-- Pronósticos -->
     {% if request.user|has_permission:'dashboard.view_forecast' %}
     <li class="nav-item {% if 'pronostico' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'pronosticos' %}">
+        <a class="nav-link" href="{% url 'dashboard:pronostico_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-sun-moon"></i>
             </span>
@@ -98,8 +98,8 @@
         <div class="dropdown-menu {% if 'tiempo' in parent %}show{% endif %}">
             <div class="dropdown-menu-columns">
                 <div class="dropdown-menu-column">
-                    <a class="dropdown-item {% if 'tiempo_h' in segment %}active{% endif %}" href="{% url 'listado_tiempo_h' %}">Hoy</a>
-                    <a class="dropdown-item {% if 'tiempo_m' in segment %}active{% endif %}" href="{% url 'listado_tiempo_m' %}">Mañana</a>
+                    <a class="dropdown-item {% if 'tiempo_h' in segment %}active{% endif %}" href="{% url 'dashboard:tiempo_hoy_list' %}">Hoy</a>
+                    <a class="dropdown-item {% if 'tiempo_m' in segment %}active{% endif %}" href="{% url 'dashboard:tiempo_manana_list' %}">Mañana</a>
                 </div>
             </div>
         </div>
@@ -117,8 +117,8 @@
         <div class="dropdown-menu {% if 'comentario' in parent %}show{% endif %}">
             <div class="dropdown-menu-columns">
                 <div class="dropdown-menu-column">
-                    <a class="dropdown-item {% if 'comentario_tiempo' in segment %}active{% endif %}" href="{% url 'listado_comentarios_tiempo' %}">Tiempo</a>
-                    <a class="dropdown-item {% if 'nota_meteorologica' in segment %}active{% endif %}" href="{% url 'listado_notas_meteorologicas' %}">Nota meteorológica</a>
+                    <a class="dropdown-item {% if 'comentario_tiempo' in segment %}active{% endif %}" href="{% url 'dashboard:comentario_tiempo_list' %}">Tiempo</a>
+                    <a class="dropdown-item {% if 'nota_meteorologica' in segment %}active{% endif %}" href="{% url 'dashboard:nota_meteorologica_list' %}">Nota meteorológica</a>
                 </div>
             </div>
         </div>
@@ -137,13 +137,13 @@
             <div class="dropdown-menu-columns">
                 <div class="dropdown-menu-column">
                     {% if request.user|has_permission:'dashboard.view_early_warning' %}
-                    <a class="dropdown-item {% if 'early' in segment %}active{% endif %}" href="{% url 'alertas_tempranas' %}">Alertas Tempranas</a>
+                    <a class="dropdown-item {% if 'early' in segment %}active{% endif %}" href="{% url 'dashboard:alerta_temprana_list' %}">Alertas Tempranas</a>
                     {% endif %}
                     {% if request.user|has_permission:'dashboard.view_tropical_cyclone' %}
-                    <a class="dropdown-item {% if 'cyclone' in segment %}active{% endif %}" href="{% url 'ciclones_tropicales' %}">Ciclones Tropicales</a>
+                    <a class="dropdown-item {% if 'cyclone' in segment %}active{% endif %}" href="{% url 'dashboard:ciclon_tropical_list' %}">Ciclones Tropicales</a>
                     {% endif %}
                     {% if request.user|has_permission:'dashboard.view_storm_warning' %}
-                    <a class="dropdown-item {% if 'storm' in segment %}active{% endif %}" href="{% url 'avisos_tormentas' %}">Tormentas</a>
+                    <a class="dropdown-item {% if 'storm' in segment %}active{% endif %}" href="{% url 'dashboard:tormenta_list' %}">Tormentas</a>
                     {% endif %}
                 </div>
             </div>
@@ -153,7 +153,7 @@
     <!-- Clientes -->
     {% if request.user|has_permission:'dashboard.view_customer' %}
     <li class="nav-item {% if 'clientes' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'listado_clientes' %}">
+        <a class="nav-link" href="{% url 'dashboard:cliente_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-users"></i>
             </span>
@@ -164,7 +164,7 @@
     <!-- Servicios -->
     {% if request.user|has_permission:'dashboard.view_service' %}
     <li class="nav-item {% if 'servicios' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'listado_servicios' %}">
+        <a class="nav-link" href="{% url 'dashboard:servicio_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-tools"></i>
             </span>
@@ -175,7 +175,7 @@
     <!-- Suscripciones -->
     {% if request.user|has_permission:'dashboard.view_subscription' or request.user|has_group:'Clientes' %}
     <li class="nav-item {% if 'suscripciones' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'listado_suscripciones' %}">
+        <a class="nav-link" href="{% url 'dashboard:suscripcion_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-file-certificate"></i>
             </span>
@@ -208,7 +208,7 @@
     <!-- Facturación -->
     {% if request.user|has_permission:'dashboard.view_invoice' %}
     <li class="nav-item {% if 'facturas' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'listado_facturas' %}">
+        <a class="nav-link" href="{% url 'dashboard:factura_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-file-invoice"></i>
             </span>
@@ -219,7 +219,7 @@
     <!-- Contratos -->
     {% if request.user|has_permission:'dashboard.view_contract' %}
     <li class="nav-item {% if 'contratos' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'listado_contratos' %}">
+        <a class="nav-link" href="{% url 'dashboard:contrato_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-contract"></i>
             </span>
@@ -230,7 +230,7 @@
     <!-- Certificados -->
     {% if request.user|has_permission:'dashboard.view_certificate' %}
     <li class="nav-item {% if 'certificados' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'listado_certificados' %}">
+        <a class="nav-link" href="{% url 'dashboard:certificado_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-certificate"></i>
             </span>
@@ -239,9 +239,9 @@
     </li>
     {% endif %}
     <!-- Publicaciones -->
-    {% if request.user|has_permission:'dashboard.view_scientific_publication' %}
+    {% if request.user|has_permission:'publications.view_scientific_publication' %}
     <li class="nav-item {% if 'publicaciones' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'listado_publicaciones' %}">
+        <a class="nav-link" href="{% url 'publications:list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-article"></i>
             </span>
@@ -252,7 +252,7 @@
     <!-- Listados de Correos -->
     {% if request.user|has_permission:'dashboard.view_email_recipient_list' %}
     <li class="nav-item {% if 'email' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'listado_correos' %}">
+        <a class="nav-link" href="{% url 'dashboard:lista_correo_list' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-mail"></i>
             </span>
@@ -262,8 +262,8 @@
     {% endif %}
     <!-- Configuración de la empresa -->
     {% if request.user|has_permission:'dashboard.change_companysettings' %}
-    <li class="nav-item {% if 'company_settings' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'company_settings' %}">
+    <li class="nav-item {% if 'dashboard:company_settings' in segment %}active{% endif %}">
+        <a class="nav-link" href="{% url 'dashboard:company_settings' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-building-bank"></i>
             </span>
@@ -274,7 +274,7 @@
     <!-- Modo Mantenimiento -->
     {% if request.user.is_superuser %}
     <li class="nav-item {% if 'maintenance' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'toggle_maintenance_mode' %}">
+        <a class="nav-link" href="{% url 'dashboard:toggle_maintenance_mode' %}">
             <span class="nav-link-icon d-md-none d-lg-inline-block">
                 <i class="ti ti-settings"></i>
             </span>

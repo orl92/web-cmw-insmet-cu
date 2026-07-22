@@ -33,7 +33,7 @@
             <div class="card-body d-flex flex-column">
               <h3 class="card-title">
                 <!-- Cambiado text-dark por text-reset para adaptarse al modo oscuro -->
-                <a href="{% url 'detalle_servicio_comercial' service.uuid %}" class="text-decoration-none text-reset">{{ service.title }}</a>
+                <a href="{% url 'home:services_commercial_detail' service.uuid %}" class="text-decoration-none text-reset">{{ service.title }}</a>
               </h3>
               <p class="text-secondary">{{ service.summary|truncatechars:200 }}</p>
 
@@ -41,7 +41,7 @@
               <div class="mt-auto d-flex justify-content-end gap-2">
                 {% if user.is_authenticated %}
                   {% if user.is_staff %}
-                    <a href="{% url 'actualizar_servicio' service.uuid %}" class="btn btn-outline-warning btn-sm">Editar</a>
+                    <a href="{% url 'dashboard:servicio_update' service.uuid %}" class="btn btn-outline-warning btn-sm">Editar</a>
                   {% elif user.customer %}
                     {% with sub=user_subscriptions|get_item:service.id %}
                       {% if sub %}
@@ -49,24 +49,24 @@
                           <!-- No mostrar botón, ya tiene ribbon -->
                         {% elif sub.payment_status == 'pending' %}
                           {% if sub.payment_method == 'qr' %}
-                            <a href="{% url 'pago_qr' %}" class="btn btn-outline-primary btn-sm">Pagar con QR</a>
+                            <a href="{% url 'home:payment' %}" class="btn btn-outline-primary btn-sm">Pagar con QR</a>
                           {% else %}
                             <!-- No mostrar botón, ya tiene ribbon -->
                           {% endif %}
                         {% elif sub.payment_status == 'requested' %}
                           <!-- No mostrar botón, ya tiene ribbon -->
                         {% else %}
-                          <a href="{% url 'detalle_servicio_comercial' service.uuid %}" class="btn btn-outline-primary btn-sm">Solicitar</a>
+                          <a href="{% url 'home:services_commercial_detail' service.uuid %}" class="btn btn-outline-primary btn-sm">Solicitar</a>
                         {% endif %}
                       {% else %}
-                        <a href="{% url 'detalle_servicio_comercial' service.uuid %}" class="btn btn-outline-primary btn-sm">Solicitar</a>
+                        <a href="{% url 'home:services_commercial_detail' service.uuid %}" class="btn btn-outline-primary btn-sm">Solicitar</a>
                       {% endif %}
                     {% endwith %}
                   {% else %}
-                    <a href="{% url 'customer_register' %}" class="btn btn-outline-primary btn-sm">Regístrese</a>
+                    <a href="{% url 'accounts:customer_register' %}" class="btn btn-outline-primary btn-sm">Regístrese</a>
                   {% endif %}
                 {% else %}
-                  <a href="{% url 'login' %}?next={% url 'detalle_servicio_comercial' service.uuid %}" class="btn btn-outline-primary btn-sm">Iniciar sesión</a>
+                  <a href="{% url 'login:in' %}?next={% url 'home:services_commercial_detail' service.uuid %}" class="btn btn-outline-primary btn-sm">Iniciar sesión</a>
                 {% endif %}
               </div>
             </div>

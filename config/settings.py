@@ -10,7 +10,6 @@ from pathlib import Path
 
 from cryptography.fernet import Fernet
 from django.contrib.messages import constants as messages
-from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 from str2bool import str2bool
 
@@ -27,171 +26,18 @@ HUEY_DB_PATH = BASE_DIR / 'huey.db'
 IS_PRODUCTION = 'PRODUCTION' in os.environ or '--production' in sys.argv
 
 
-def create_default_env(production=False):
-    """Crea un archivo .env con valores por defecto y guías para el usuario"""
-    env_path = BASE_DIR / '.env'
-    if env_path.exists():
-        return
-
-    print("\n🔧 Creando archivo .env automáticamente con valores iniciales...")
-
-    secret_key = get_random_secret_key()
-    encryption_key = Fernet.generate_key()
-    cipher_suite = Fernet(encryption_key)
-    encrypted_secret_key = cipher_suite.encrypt(secret_key.encode()).decode()
-
-    try:
-        with open(env_path, 'w', encoding='utf-8') as f:
-            # 1. Configuración básica
-            f.write("# =====================\n")
-            f.write("# CONFIGURACIÓN BÁSICA (REQUERIDA)\n")
-            f.write("# =====================\n")
-            f.write(f"DEBUG={'False' if production else 'True'}\n")
-            f.write(f"SECRET_KEY={encrypted_secret_key}\n")
-            f.write(f"ENCRYPTION_KEY={encryption_key.decode()}\n\n")
-
-            # 2. Configuración de email (solo desarrollo)
-            if not production:
-                f.write("# =====================\n")
-                f.write("# CONFIGURACIÓN DE EMAIL PARA DESARROLLO\n")
-                f.write("# =====================\n")
-                f.write("EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend\n")
-                f.write("# EmailBackend que muestra los correos en la consola\n\n")
-                f.write("# Comenta EMAIL_BACKEND y Descomenta el resto para usar Configuracion de server real\n\n")
-                f.write("# EMAIL_USE_TLS=True\n")
-                f.write("# EMAIL_HOST=smtp.tu-dominio.com\n")
-                f.write("# EMAIL_PORT=587\n")
-                f.write("# EMAIL_HOST_USER=user@tu-dominio.com\n")
-                f.write("# EMAIL_HOST_PASSWORD=tu_contraseña_segura\n")
-                f.write("# DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
-                f.write("# CUSTOM_EMAIL_BACKEND=config.custom_email_backend.CustomSTARTTLSBackend\n")
-                f.write("# EMAIL_USE_SSL=False\n\n")
-
-            # 3. Configuración para producción
-            if production:
-                # 3.1. Configuración de dominio
-                f.write("# =====================\n")
-                f.write("# CONFIGURACIÓN DE DOMINIO (PRODUCCIÓN - ⚠️ MODIFICAR! ⚠️)\n")
-                f.write("# =====================\n")
-                f.write("# Ejemplo: tu-dominio.com (sin http://)\n")
-                f.write("EXTERNAL_HOSTNAME=cmw.insmet.cu\n\n")
-                f.write("# Opcional: Puede definir manualmente estos valores si necesita configuraciones especiales\n")
-                f.write("# ALLOWED_HOSTS=tu-dominio.com,www.tu-dominio.com\n")
-                f.write("# CSRF_TRUSTED_ORIGINS=https://tu-dominio.com,https://www.tu-dominio.com\n\n")
-
-                # 3.2 Email
-                f.write("# =====================\n")
-                f.write("# CONFIGURACIÓN DE EMAIL (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
-                f.write("# =====================\n")
-                f.write("# ⚠️ DEBE CONFIGURAR LOS VALORES REALES ⚠️\n")
-                f.write("EMAIL_USE_TLS=True\n")
-                f.write("EMAIL_HOST=smtp.tu-dominio.com\n")
-                f.write("EMAIL_PORT=587\n")
-                f.write("EMAIL_HOST_USER=user@tu-dominio.com\n")
-                f.write("EMAIL_HOST_PASSWORD=tu_contraseña_segura\n")
-                f.write("DEFAULT_FROM_EMAIL='Centro Meteorológico Camagüey <user@tu-dominio.com>'\n")
-                f.write("CUSTOM_EMAIL_BACKEND=config.custom_email_backend.CustomSTARTTLSBackend\n")
-                f.write("EMAIL_USE_SSL=False\n")
-
-                # 3.3 Base de datos
-                f.write("# =====================\n")
-                f.write("# BASE DE DATOS (PRODUCCIÓN - ⚠️ MODIFICAR!)\n")
-                f.write("# =====================\n")
-                f.write("DB_ENGINE=postgresql  # Opciones: postgresql, mysql\n")
-                f.write("DB_NAME=web_db\n")
-                f.write("DB_USER=postgres\n")
-                f.write("DB_PASS=contraseña_segura\n")
-                f.write("DB_HOST=localhost\n")
-                f.write("DB_PORT=5432  # 3306 para MySQL\n")
-                f.write("# Configuración SSL PostgreSQL:\n")
-                f.write("DB_SSL_MODE=prefer  # disable, allow, prefer, require, verify-ca, verify-full\n")
-                f.write("# DB_SSL_ROOT_CERT=/ruta/ca.crt\n\n")
-                f.write("# Configuración SSL MySQL:\n")
-                f.write("# DB_SSL_MODE=PREFERRED  # DISABLED, PREFERRED, REQUIRED, VERIFY_CA, VERIFY_IDENTITY\n")
-                f.write("# DB_SSL_CA=/ruta/ca.pem\n")
-                f.write("# DB_SSL_CERT=/ruta/client-cert.pem\n")
-                f.write("# DB_SSL_KEY=/ruta/client-key.pem\n\n")
-
-                # 3.4 Configuración LDAP (ambos entornos)
-                f.write("# =====================\n")
-                f.write("# CONFIGURACIÓN LDAP (ELEGIR UNA OPCIÓN: WINDOWS AD o LINUX LDAP)\n")
-                f.write("# =====================\n")
-
-                # --- Active Directory (Windows) ---
-                f.write("# --- OPCIÓN 1: Active Directory (Windows) ---\n")
-                f.write("#LDAP_SERVER_URI=ldap://dc.cmw.insmet.cu:389\n")
-                f.write("#LDAP_START_TLS=True\n")
-                f.write("#LDAP_BIND_DN=CN=ldap-reader,CN=Users,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("#LDAP_BIND_PASSWORD=tu_contraseña_ad\n")
-                f.write("#LDAP_USER_SEARCH_BASE=OU=Usuarios,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("#LDAP_GROUP_SEARCH_BASE=OU=Grupos,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("#LDAP_STAFF_GROUP=CN=Staff,OU=Grupos,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("#LDAP_SUPERUSER_GROUP=CN=Admins,OU=Grupos,DC=cmw,DC=insmet,DC=cu\n\n")
-
-                # --- OpenLDAP (Linux) ---
-                f.write("# --- OPCIÓN 2: OpenLDAP (Linux) ---\n")
-                f.write("LDAP_SERVER_URI=ldap://dc.cmw.insmet.cu:389\n")
-                f.write("LDAP_START_TLS=True\n")
-                f.write("LDAP_BIND_DN=CN=linux,CN=Users,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("LDAP_BIND_PASSWORD=tu_contraseña_ldap\n")
-                f.write("LDAP_USER_SEARCH_BASE=OU=CMW,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("LDAP_GROUP_SEARCH_BASE=OU=CMW,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("LDAP_STAFF_GROUP=cn=staff,OU=CMW,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("LDAP_SUPERUSER_GROUP=cn=superuser,OU=CMW,DC=cmw,DC=insmet,DC=cu\n")
-                f.write("# Opciones adicionales LDAP:\n")
-                f.write("# LDAP_USER_ATTR_MAP=first_name:givenName,last_name:sn,email:mail\n")
-                f.write("# LDAP_CACHE_TIMEOUT=3600\n")
-
-                f.write("# 💡 Comenta la configuración que NO vayas a usar.\n")
-                f.write("# Solo una debe estar activa para evitar conflictos.\n\n")
-
-            else:
-                f.write("# Configuración para desarrollo (puede modificarse si usa otros hosts)\n")
-                f.write("ALLOWED_HOSTS=localhost,127.0.0.1\n")
-                f.write("CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000\n\n")
-                f.write("# EXTERNAL_HOSTNAME=cmw.insmet.cu\n\n")
-
-        # Mensajes post-creación
-        print("\n✅ Archivo .env creado exitosamente")
-        print("🔑 SECRET_KEY generada automáticamente.")
-
-        if production:
-            print("\n⚠️ ATENCIÓN: Debe editar manualmente estas variables CRÍTICAS para producción:")
-            print("  - EXTERNAL_HOSTNAME (debe ser su dominio real sin http://)")
-            print("  - Configuración LDAP (servidor, credenciales y bases de búsqueda)")
-            print("\n💡 El sistema automáticamente generará:")
-            print("  - ALLOWED_HOSTS basado en EXTERNAL_HOSTNAME")
-            print("  - Configuración de EMAIL (Modificar por servidor SMTP real)")
-            print("  - Configuración de BASE DE DATOS (Modificar por credenciales reales)")
-            print("  - CSRF_TRUSTED_ORIGINS (con https://)")
-            print("\n⚙️ Si necesita configuraciones especiales, puede definir manualmente:")
-            print("  - ALLOWED_HOSTS para múltiples dominios/subdominios")
-            print("  - CSRF_TRUSTED_ORIGINS para protocolos/puertos específicos")
-
-            print("\n💡 RECOMENDACIONES PARA PRODUCCIÓN:")
-            print("  - Use PostgreSQL o MySQL como motor de base de datos")
-            print("  - Configure backups automáticos de la base de datos")
-            print("  - Revise los permisos de los archivos sensibles")
-            print("  - Para LDAP, use cuentas con permisos mínimos necesarios")
-
-        print("\n✏️ Puede editarlo con:")
-        print("  - VS Code: 'code .env'")
-        print("  - Nano: 'nano .env'")
-        print("  - Cualquier editor de texto")
-
-    except Exception as e:
-        print(f"\n❌ Error al crear .env: {str(e)}")
-        print("ℹ️ Posible solución: Verifique los permisos de escritura en el directorio")
-        sys.exit(1)
+if not (BASE_DIR / '.env').exists():
+    print("\n❌ Archivo .env no encontrado.")
+    print("💡 Ejecute: python manage.py generate_env")
+    if IS_PRODUCTION:
+        print("   Para producción: python manage.py generate_env --production")
+    sys.exit(1)
 
 
 def decrypt_secret_key(encrypted_secret_key, encryption_key):
     cipher_suite = Fernet(encryption_key.encode())
     return cipher_suite.decrypt(encrypted_secret_key.encode()).decode()
 
-
-# Crear .env si no existe
-create_default_env(production=IS_PRODUCTION)
 
 # Cargar variables de entorno
 try:
@@ -369,11 +215,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'drf_spectacular_sidecar',
-    'api.apps.ApiConfig',
-    'home.apps.HomeConfig',
-    'login.apps.LoginConfig',
-    'accounts.apps.AccountsConfig',
-    'dashboard.apps.DashboardConfig',
+    'apps.api.apps.ApiConfig',
+    'apps.home.apps.HomeConfig',
+    'apps.login.apps.LoginConfig',
+    'apps.accounts.apps.AccountsConfig',
+    'apps.dashboard.apps.DashboardConfig',
+    'apps.publications.apps.PublicationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -385,8 +232,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'accounts.middleware.check_user_profile.CheckUserProfileMiddleware',
-    'dashboard.middleware.maintenance_mode.MaintenanceModeMiddleware',
+    'apps.accounts.middleware.check_user_profile.CheckUserProfileMiddleware',
+    'apps.dashboard.middleware.maintenance_mode.MaintenanceModeMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -407,7 +254,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'dashboard.context_processors.menu_notifications',
+                'apps.dashboard.context_processors.menu_notifications',
             ],
         },
     },
@@ -615,7 +462,7 @@ if os.getenv('LDAP_SERVER_URI'):
     
     # Configurar backend de autenticación
     AUTHENTICATION_BACKENDS = [
-        'accounts.ldap3_backend.LDAP3Backend', # Primero intenta LDAP
+        'apps.accounts.ldap3_backend.LDAP3Backend', # Primero intenta LDAP
         'django.contrib.auth.backends.ModelBackend', # Luego la base de datos local
     ]
     

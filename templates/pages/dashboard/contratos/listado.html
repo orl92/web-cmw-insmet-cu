@@ -24,7 +24,7 @@
     {% endif %}
   </td>
   <td class="text-end">
-    <a href="{% url 'detalle_contrato' object.uuid %}" type="button" class="btn btn-icon btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle">
+    <a href="{% url 'dashboard:contrato_detail' object.uuid %}" type="button" class="btn btn-icon btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Detalle" data-bs-original-title="Detalle">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
         <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
@@ -120,11 +120,11 @@
         if (action === 'desactivar') {
           modalTitle.textContent = 'Desactivar contrato';
           modalBody.innerHTML = `<p>¿Está seguro de desactivar el contrato <strong>${name}</strong>?</p><p class="text-muted">El registro se desactivará pero se conservará en la base de datos.</p>`;
-          form.action = '{% url "eliminar_contrato" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          form.action = '{% url "dashboard:contrato_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         } else if (action === 'eliminar') {
           modalTitle.textContent = 'Eliminar permanentemente';
           modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> el contrato <strong>${name}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
-          form.action = '{% url "eliminar_contrato_permanente" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          form.action = '{% url "dashboard:contrato_hard_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         }
 
         showModal(confirmModal);

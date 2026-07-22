@@ -49,7 +49,7 @@
           {% for alert in latest_alerts.early_warnings|slice:":1" %}
           <div class="alert-card">
             <div class="alert-summary mb-2">
-              <a href="{% url 'alerta_temprana' %}" class="link-secondary text-decoration-none d-block">
+              <a href="{% url 'home:warnings_early' %}" class="link-secondary text-decoration-none d-block">
                 <strong>{{ alert.summary|truncatechars:80 }}</strong>
               </a>
             </div>
@@ -70,7 +70,7 @@
               </div>
             </div>
             <div class="text-center mt-3">
-              <a href="{% url 'alerta_temprana' %}" class="btn btn-sm btn-outline-primary">
+              <a href="{% url 'home:warnings_early' %}" class="btn btn-sm btn-outline-primary">
                 Ver detalles
               </a>
             </div>
@@ -137,7 +137,7 @@
           {% for alert in latest_alerts.tropical_cyclones|slice:":1" %}
           <div class="alert-card">
             <div class="alert-summary mb-2">
-              <a href="{% url 'ciclon_tropical' %}" class="link-secondary text-decoration-none d-block">
+              <a href="{% url 'home:warnings_tropical' %}" class="link-secondary text-decoration-none d-block">
                 <strong>{{ alert.summary|truncatechars:80 }}</strong>
               </a>
             </div>
@@ -158,7 +158,7 @@
               </div>
             </div>
             <div class="text-center mt-3">
-              <a href="{% url 'ciclon_tropical' %}" class="btn btn-sm btn-outline-primary">
+              <a href="{% url 'home:warnings_tropical' %}" class="btn btn-sm btn-outline-primary">
                 Ver detalle
               </a>
             </div>
@@ -225,7 +225,7 @@
           {% for alert in latest_alerts.storm_warnings|slice:":1" %}
           <div class="alert-card">
             <div class="alert-summary mb-2">
-              <a href="{% url 'tormenta' %}" class="link-secondary text-decoration-none d-block">
+              <a href="{% url 'home:warnings_storm' %}" class="link-secondary text-decoration-none d-block">
                 <strong>{{ alert.summary|truncatechars:80 }}</strong>
               </a>
             </div>
@@ -246,7 +246,7 @@
               </div>
             </div>
             <div class="text-center mt-3">
-              <a href="{% url 'tormenta' %}" class="btn btn-sm btn-outline-primary">
+              <a href="{% url 'home:warnings_storm' %}" class="btn btn-sm btn-outline-primary">
                 Ver detalle
               </a>
             </div>

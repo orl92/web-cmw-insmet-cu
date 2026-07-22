@@ -237,7 +237,7 @@
         return;
       }
 
-      fetch("{% url 'company_settings_ajax' %}", {
+      fetch("{% url 'dashboard:company_settings_ajax' %}", {
         method: 'POST',
         body: formData,
         headers: {
@@ -293,7 +293,7 @@
   const servicesMap = {};
   servicesData.forEach(s => { servicesMap[s.id] = { code: s.code, price: s.price, unit: "U" }; });
 
-  const ajaxUrl = "{% url 'ajax_pending_subscriptions' %}";
+  const ajaxUrl = "{% url 'dashboard:ajax_pending_subscriptions' %}";
   const customerSelect = document.getElementById('id_customer');
   const groupedContainer = document.getElementById('subscriptions-grouped');
   const manualContainer = document.getElementById('manual-container');

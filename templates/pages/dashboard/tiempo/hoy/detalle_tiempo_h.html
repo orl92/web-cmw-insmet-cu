@@ -8,8 +8,8 @@
         <h3 class="card-title">Detalle del Tiempo para Hoy</h3>
         <div class="card-actions">
           <a href="{% url url_list %}" class="btn btn-secondary btn-icon">Volver al Listado</a>
-          <a href="{% url 'actualizar_tiempo_h' weather_today.uuid %}" class="btn btn-warning btn-icon">Editar</a>
-          <a href="{% url 'tiempo_h_pdf' weather_today.uuid %}" class="btn btn-info btn-icon" target="_blank">Descargar PDF</a>
+          <a href="{% url 'dashboard:tiempo_hoy_update' weather_today.uuid %}" class="btn btn-warning btn-icon">Editar</a>
+          <a href="{% url 'dashboard:tiempo_hoy_pdf' weather_today.uuid %}" class="btn btn-info btn-icon" target="_blank">Descargar PDF</a>
         </div>
       </div>
       <div class="card-body">

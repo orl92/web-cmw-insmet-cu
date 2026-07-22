@@ -13,7 +13,7 @@
           <path d="M9 14l3 3l3 -3" />
         </svg>
       </a>
-      <a href="{% url 'exportar_excel_pronosticos' %}?date={{ date }}" type="button" class="btn btn-icon btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Exportar Excel" aria-label="Exportar Excel">
+      <a href="{% url 'dashboard:pronostico_export_excel' %}?date={{ date }}" type="button" class="btn btn-icon btn-outline-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Exportar Excel" aria-label="Exportar Excel">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-spreadsheet">
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <path d="M14 3v4a1 1 0 0 0 1 1h4" />
@@ -24,7 +24,7 @@
         </svg>
       </a>
       {% for forecast in forecasts %}
-      <a href="{% url 'actualizar_pronostico' forecast.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Editar" aria-label="Editar">
+      <a href="{% url 'dashboard:pronostico_update' forecast.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Editar" aria-label="Editar">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
@@ -309,7 +309,7 @@
 
 {% block extrajs %}
   {{ block.super }}
-  {% include 'includes/dashboard/modal_delete_js.html' with delete_url_name='eliminar_pronostico' %}
+  {% include 'includes/dashboard/modal_delete_js.html' with delete_url_name='dashboard:pronostico_delete' %}
   <script src="{% static '' %}dist/libs/datatables/datatables.min.js"></script>
   <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062" defer></script>
   <script>

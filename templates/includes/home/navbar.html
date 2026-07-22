@@ -7,7 +7,7 @@
         </button>
         <!-- logo -->
         <h1 class="navbar-brand navbar-brand-autodark">
-            <a href="{% url 'index' %}">
+            <a href="{% url 'home:index' %}">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 514.9 158.95" class="navbar-brand-image">
                   <path fill="#2b4b9b" d="M513.01,127.55L345.16,18.72C324.4,6.32,304.68,0,283.19,0c-39.42,0-75.04,16.22-100.6,42.34h52.15c14.44-19.82,37.82-32.71,64.21-32.71c43.86,0,79.42,35.56,79.42,79.42c0,13.8-3.53,26.77-9.72,38.08l0.64,0.42H513.01z"/>
                   <path fill="#e5201e" d="M238.59,42.34c-6.6,8.6-11.41,18.62-13.86,29.56h148.44c-2.45-10.94-7.26-20.96-13.86-29.56H238.59z"/>
@@ -130,18 +130,18 @@
                         </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                             {% if request.user.is_staff %}
-                                <a href="{% url 'dashboard' %}" class="dropdown-item">Administración</a>
+                                <a href="{% url 'dashboard:index' %}" class="dropdown-item">Administración</a>
                             {% else %}
-                                <a href="{% url 'listado_suscripciones' %}" class="dropdown-item">Administración</a>
+                                <a href="{% url 'dashboard:suscripcion_list' %}" class="dropdown-item">Administración</a>
                             {% endif %}
                             {% if request.user.profile and not request.user.profile.is_ldap %}
-                                <a href="{% url 'password_change' %}" class="dropdown-item">Cambiar Contraseña</a>
+                                <a href="{% url 'accounts:password_change' %}" class="dropdown-item">Cambiar Contraseña</a>
                             {% endif %}
                             <div class="dropdown-divider"></div>
-                            <a href="{% url 'logout' %}" class="dropdown-item">Cerrar Sesión</a>
+                            <a href="{% url 'login:out' %}" class="dropdown-item">Cerrar Sesión</a>
                         </div>
                     {% else %}
-                        <a href="{% url 'login' %}" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="tooltip"
+                        <a href="{% url 'login:in' %}" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="tooltip"
                            data-bs-placement="bottom" title="Iniciar sesión">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
                                  viewBox="0 0 24 24"

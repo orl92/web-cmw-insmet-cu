@@ -18,12 +18,13 @@
 
 - `config/settings.py` — settings con auto-detección de entorno, auto-generación de `.env`, descifrado de SECRET_KEY con Fernet, validación de configuración de producción
 - `config/urls.py` — rutas raíz: `login/`, `admin/`, `api/`, `accounts/`, `dashboard/`, `home/`
-- `api/urls.py` — endpoints REST: `/api/doc/`, `/api/redoc/`, `/api/schema/`, stations, station-observation, forecast
-- `dashboard/models.py` — todos los modelos del dominio: Forecasts, avisos, servicios, clientes, facturación, publicaciones
-- `accounts/ldap3_backend.py` — backend de autenticación LDAP personalizado con ldap3
-- `accounts/middleware/check_user_profile.py` — middleware de verificación de perfil
-- `dashboard/middleware/maintenance_mode.py` — bloquea no-superusers en modo mantenimiento
-- `common/utils.py` — `FileHandlerMixin`, upload paths, error views, utilidades de weather icons
+- `apps/api/urls.py` — endpoints REST: `/api/doc/`, `/api/redoc/`, `/api/schema/`, stations, station-observation, forecast
+- `apps/dashboard/models.py` — modelos del dominio: Forecasts, avisos, servicios, clientes, facturación
+- `apps/publications/models.py` — ScientificPublication, Author
+- `apps/accounts/ldap3_backend.py` — backend de autenticación LDAP personalizado con ldap3
+- `apps/accounts/middleware/check_user_profile.py` — middleware de verificación de perfil
+- `apps/dashboard/middleware/maintenance_mode.py` — bloquea no-superusers en modo mantenimiento
+- `apps/common/utils.py` — `FileHandlerMixin`, upload paths, error views, utilidades de weather icons
 
 ## Comandos
 
@@ -54,6 +55,8 @@
 - **UUIDs**: todos los modelos expuestos en URLs usan `uuid.UUIDField` como identificador en lugar de PK numérica
 - **Archivos**: `FileHandlerMixin` para borrar automáticamente archivos del media al actualizar/eliminar el registro; las rutas se generan con `pdf_upload_path` / `image_upload_path` en `common/utils.py`
 - **Permisos**: todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos custom (`view_*`, `add_*`, `change_*`, `delete_*`)
+- **URLs**: toda app usa `app_name` en urls.py y nombres estandarizados: `list`, `create`, `detail`, `update`, `delete`, `pdf`. Templates usan `{% url 'app_name:name' %}`, vistas usan `reverse_lazy('app_name:name')`.
+- **Apps**: todas las apps Django viven en `apps/`. Importar siempre como `from apps.dashboard.models import ...`, nunca `from dashboard.models import ...`.
 - **Templates**: en `templates/` raíz (no por app); layouts, includes y pages
 - **Estáticos**: `static/` en desarrollo, `staticfiles/` en producción con WhiteNoise
 - **Migrations**: NO están versionadas (excluidas en `.gitignore`); ejecutar `makemigrations` siempre en setup
@@ -63,6 +66,32 @@
 - **Tema:** Tabler (https://tabler.io) — plantilla Bootstrap 5
 - **Layouts base:** `templates/layouts/base.html` (dashboard), `templates/layouts/home.html` (público), `templates/layouts/base-auth.html` (login)
 - **Iconos meteorológicos:** imágenes PNG en `static/dist/img/weather_icon/` y `static/dist/img/moon_faces/`
+
+## Skills del agente
+
+Skills instalados en `~/.agents/skills/`. Se cargan automáticamente según el contexto vía el árbol de decisión de `using-agent-skills`.
+
+### 24 skills de addyosmani/agent-skills
+| Fase | Skills |
+|------|--------|
+| Meta | `using-agent-skills` |
+| Define | `interview-me`, `idea-refine`, `spec-driven-development` |
+| Plan | `planning-and-task-breakdown` |
+| Build | `incremental-implementation`, `test-driven-development`, `context-engineering`, `source-driven-development`, `doubt-driven-development`, `frontend-ui-engineering`, `api-and-interface-design` |
+| Verify | `browser-testing-with-devtools`, `debugging-and-error-recovery` |
+| Review | `code-review-and-quality`, `code-simplification`, `security-and-hardening`, `performance-optimization` |
+| Ship | `git-workflow-and-versioning`, `ci-cd-and-automation`, `deprecation-and-migration`, `documentation-and-adrs`, `observability-and-instrumentation`, `shipping-and-launch` |
+
+### Skills complementarias del proyecto
+- `django-expert` — modelos, ORM, DRF, auth, tests, performance Django
+- `frontend-design` — diseño visual distintivo (tipografía, paleta, layout, identidad)
+- `web-design-guidelines` — auditoría de UI contra Web Interface Guidelines (accesibilidad, buenas prácticas visuales)
+- `project-structure-audit` — auditoría de estructura del proyecto contra estándares Django y convenciones locales; genera reporte en `spec/audits/`
+
+### MCP
+- `tabler` — búsqueda de iconos, componentes, layouts y documentación de Tabler.io
+
+El worker de tareas asíncronas usa **Huey** (no Celery). No aplicar skills de Celery.
 
 ## Límites duros
 

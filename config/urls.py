@@ -20,16 +20,17 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from common.utils import My400View, My403View, My404View, My500View
+from apps.common.utils import My400View, My403View, My404View, My500View
 
 urlpatterns = [
-    path('', include('login.urls')),
+    path('', include('apps.login.urls')),
     path('admin/', admin.site.urls),
-    path('api/', include('api.urls')),
-    path('accounts/', include('accounts.urls')),
-    path('dashboard/', include('dashboard.urls')),
-    
-    path('', include('home.urls')),
+    path('api/', include('apps.api.urls')),
+    path('accounts/', include('apps.accounts.urls')),
+    path('dashboard/', include('apps.dashboard.urls')),
+    path('dashboard/publicaciones/', include('apps.publications.urls')),
+
+    path('', include('apps.home.urls')),
 ]
 
 handler400 = My400View.as_view()

@@ -2,250 +2,126 @@
 
 ## Stack
 
-- Django 5.2 + DRF + drf-spectacular (OpenAPI), Python 3.8+
-- Virtual env: `.venv/` (activa con `source .venv/bin/activate`)
-- UI: Tabler via Django templates; root `templates/` (layouts/, includes/, pages/) — NOT per-app
-- DB: SQLite auto en dev, PostgreSQL o MySQL en prod
+Django 5.2 + DRF + drf-spectacular (OpenAPI), Python 3.8+. Virtual env `.venv/`. UI: Tabler via templates raíz (`templates/` con layouts/ includes/ pages/). DB: SQLite dev, PostgreSQL/MySQL prod. Apps dentro de `apps/`.
 
-## Entorno y arranque
-
-- `.env` se auto-genera al arrancar si no existe; `SECRET_KEY` cifrada con Fernet, se descifra en `config/settings.py:309`
-- `python manage.py runserver` → desarrollo (DEBUG=True, SQLite, consola email)
-- `python manage.py runserver --production` → producción (DEBUG=False, forza validaciones DB/email/LDAP)
-- `python manage.py runserver --production` espera `EXTERNAL_HOSTNAME`, `DB_*`, `EMAIL_*` en `.env`
-
-## Setup completo
+## Comandos
 
 ```bash
 source .venv/bin/activate
-sudo apt install libcairo2-dev pkg-config python3-dev wkhtmltopdf
-pip install -r requirements.txt
-python manage.py makemigrations
-python manage.py migrate
-python manage.py collectstatic --link --no-input
-python manage.py add_stations_data
-python manage.py createsuperuser
+pip install -r requirements.txt && python manage.py makemigrations migrate
+python manage.py collectstatic --link --no-input add_stations_data createsuperuser
+python manage.py runserver                    # desarrollo
+python manage.py runserver --production       # producción local
+python manage.py test <app>                   # testing selectivo
+python manage.py test                         # full suite (antes de commit)
+./run_huey.sh &                               # worker de correos/PDF (Huey)
 ```
 
-## Worker de correos (Huey)
-
-El worker de Huey procesa las tareas asíncronas (envío de correos y generación de PDFs). Sin este worker los correos se encolan pero nunca se envían.
-
-### Inicio rápido (desarrollo)
-```bash
-./run_huey.sh &
-```
-
-### tmux (sesión persistente)
-```bash
-tmux new-session -d -s huey './run_huey.sh'
-tmux attach -t huey          # para ver logs en vivo
-tmux kill-session -t huey    # para detenerlo
-```
-
-### Supervisor (producción, recomendado)
-Agregar como segundo programa en `/etc/supervisor/conf.d/webcmp.conf`:
-
-```ini
-[program:webcmp-huey]
-command=/var/www/web-cmw-insmet-cu/.venv/bin/huey_consumer config.huey.huey
-directory=/var/www/web-cmw-insmet-cu
-user=root
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/webcmp-huey.err.log
-stdout_logfile=/var/log/webcmp-huey.out.log
-```
-
-```bash
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start webcmp-huey
-```
-
-## Comandos custom
-
-- `python manage.py add_stations_data` — carga inicial de estaciones
-- `python manage.py import_ldap_users` — importa usuarios desde LDAP
-
-## Testing
-
-136 tests en 6 apps (common, accounts, dashboard, api, home, login).
-
-### Testing selectivo (default)
-Correr solo los tests de la(s) app(s) que modificaste:
-```bash
-python manage.py test <app>              # ej: dashboard
-python manage.py test <app>.<TestClass>  # ej: dashboard.tests.test_views
-python manage.py test <app>.<TestClass>.<test_method>  # un test específico
-```
-
-### Tests faltantes
-Si modificas código y no existe un test que lo cubra, **debes crearlo** como parte del mismo cambio. Ubícalo en la app correspondiente siguiendo la estructura existente.
-
-### Full suite (solo antes de commit)
-```bash
-python manage.py test
-```
-
-## Apps y rutas clave
+## Apps + Modelos
 
 | App | Responsabilidad |
 |---|---|
-| `config/` | settings, urls root, wsgi/asgi, email backend |
-| `api/` | REST endpoints: `/api/doc/`, `/api/redoc/`, stations, observations, forecasts |
-| `accounts/` | Users, groups, profiles, LDAP auth (`ldap3_backend.LDAP3Backend`) |
-| `dashboard/` | Admin CRUD: pronósticos, avisos, clientes, servicios, facturación, publicaciones |
-| `home/` | Páginas públicas: tiempo, modelos, satélites, servicios, institucion |
-| `login/` | Login/logout |
-| `common/` | `FileHandlerMixin`, `utils.py`, error views (400/403/404/500) |
-| `spec/` | Planificación SDD: `features/NNN-nombre/` con `{spec,plan,tasks}.md`. Una feature puede crear una app nueva o modificar existentes. |
+| `config/` | settings, urls root, wsgi/asgi, email backend, Huey |
+| `apps/api/` | REST endpoints: `/api/doc/`, `/api/redoc/`, stations, observations, forecasts |
+| `apps/accounts/` | Users, groups, profiles, LDAP auth (`LDAP3Backend`) |
+| `apps/dashboard/` | Admin CRUD: pronósticos, avisos, clientes, servicios, facturación |
+| `apps/publications/` | ScientificPublication, Author — publicaciones científicas |
+| `apps/home/` | Páginas públicas: tiempo, modelos, satélites, servicios, institucion |
+| `apps/login/` | Login/logout |
+| `apps/common/` | `FileHandlerMixin`, `utils.py`, error views (400/403/404/500) |
+| `spec/` | SDD features en `features/NNN-nombre/` con `{spec,plan,tasks}.md` |
 
-## Modelos clave
-
-- `Forecasts` — pronóstico detallado con 3 regiones (north/interior/south) + 5 días extendido + luna/sol/UV
-- `EarlyWarning`, `TropicalCyclone`, `StormWarning` — avisos con PDF (heredan `BaseWarning`)
-- `WeatherToday`, `WeatherTomorrow`, `WeatherCommentary`, `WeatherNote` — reportes meteorológicos con PDF
-- `Customer`, `Service`, `ServiceSubscription`, `Contract`, `Invoice`, `InvoiceItem`, `Certificate` — gestión comercial
-- `ScientificPublication`, `Author` — publicaciones científicas
-- `SiteConfiguration` — maintenance mode flag
-- `CompanySettings` — datos fiscales de la empresa (singleton, pk=1)
-
-## Permisos
-
-Todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos custom: `view_*`, `add_*`, `change_*`, `delete_*`. NO asumas que `add`/`change`/`delete`/`view` existen por defecto.
-
-## Middleware (orden en settings.py)
-
-1. `accounts.middleware.check_user_profile.CheckUserProfileMiddleware`
-2. `dashboard.middleware.maintenance_mode.MaintenanceModeMiddleware` — bloquea no-superusers excepto `/login/` cuando `maintenance_mode=True`
-
-## Auth
-
-- LDAP opcional via `accounts.ldap3_backend.LDAP3Backend`; se activa si `LDAP_SERVER_URI` está en `.env`
-- Fallback a `django.contrib.auth.backends.ModelBackend`
-- `Profile` se crea por señal `post_save` de `User`; usuarios LDAP se marcan con `is_ldap=True`
+Modelos clave: `Forecasts` (3 regiones × 3 períodos + 5 días + astronomía), `BaseWarning` (abstracta → `EarlyWarning`/`TropicalCyclone`/`StormWarning`), `WeatherReport` (today/tomorrow/commentary/note), `Customer`, `Service`, `ServiceSubscription` (soft delete), `Contract`, `Invoice`/`InvoiceItem`, `Certificate`, `ScientificPublication`/`Author`, `SiteConfiguration`, `CompanySettings`.
 
 ## Convenciones
 
-- **Idioma**: todo el contenido de UI/admin está en español (`es-mx`, `America/Havana`)
-- **UUIDs**: todos los modelos expuestos usan `uuid.UUIDField` como identificador en URLs
-- **Archivos**: `FileHandlerMixin` para limpieza automática al actualizar/eliminar; rutas `pdf_upload_path` / `image_upload_path`
-- **Estáticos**: `static/` (desarrollo), `staticfiles/` (producción con WhiteNoise `CompressedManifestStaticFilesStorage`)
-- **Migrations**: NO están en el repo (excluidas en `.gitignore`); ejecutar `makemigrations` siempre en setup
-- **Spec-Driven Development**: toda modificación (nueva app, corrección, adición, refactor, UI, infraestructura) sigue este flujo sin excepción. Si el usuario pide un cambio sin pasar por este flujo, completar las preguntas de la sección "Si el usuario pide un cambio..." antes de escribir código.
+- **Permisos**: `default_permissions = ()` + 4 custom: `view_*`, `add_*`, `change_*`, `delete_*` (en español). NO asumas que existen por defecto.
+- **Middleware**: `CheckUserProfileMiddleware` → `MaintenanceModeMiddleware` (bloquea no-superusers excepto `/login/`)
+- **Auth**: LDAP opcional (`LDAP3Backend`) → fallback `ModelBackend`; Profile se crea por señal `post_save`; usuarios LDAP con `is_ldap=True`
+- **UUIDs** en URLs de modelos expuestos (no `pk`)
+- **FileHandlerMixin** para limpieza automática de archivos al actualizar/eliminar
+- **Soft delete**: filtrar `record_active=True` en queries internas
+- **Migrations** NO versionadas (`.gitignore`)
+- **Estáticos**: `static/` dev, `staticfiles/` prod con WhiteNoise
+- **Idioma**: español (`es-mx`, `America/Havana`)
+- **Tema**: Tabler (Bootstrap 5), iconos meteorológicos PNG en `static/dist/img/weather_icon/`
+- **URLs**: toda app con URLs usa `app_name` en urls.py y names estandarizados (`app_name:list`, `create`, `detail`, `update`, `delete`, `pdf`). Templates usan `{% url 'app_name:name' %}`, vistas usan `reverse_lazy('app_name:name')`.
+- **Apps**: todas las apps Django viven en `apps/`. Importar como `from apps.dashboard.models import ...`, nunca como `from dashboard.models import ...`.
 
-  1. Crear `spec/features/NNN-nombre/` (siguiente número libre).
-  2. Escribir `spec.md`: qué hace la feature y criterios de aceptación.
-  3. Escribir `plan.md`: enfoque técnico, detallando qué app(s) crea o modifica.
-  4. Desglosar en `tasks.md` con referencias a archivos concretos.
-  5. **Escribir código** siguiendo el plan.
-  6. **Migraciones** — si hay cambios de modelo:
-     ```bash
-     python manage.py makemigrations
-     ```
-  7. **Verificar**:
-     - `python manage.py check` — sin errores
-     - `python manage.py test <app>` — tests específicos de la(s) app(s) modificada(s)
-     - Si no existe test para el cambio, **crearlo** antes de continuar
-     - Revisar checklist de **Seguridad post-cambio** (ver más abajo)
-  8. **Revisar código** — aplicar items del checklist según lo modificado (ver más abajo).
-  9. **Actualizar** `constitution/roadmap.md` moviendo la feature a "Hecho".
-  10. **Commit** con mensaje descriptivo (incluir número y nombre de la feature).
+## Skills
 
-  Si el plan crea una app nueva, seguir el patrón de apps existentes (ver tabla).
+Carga el skill que corresponda según la tarea. Los skills están en `~/.agents/skills/`.
 
-  Si el usuario pide un cambio sin pasar por este flujo, preguntar antes de codificar:
+### Meta
+- `using-agent-skills` — árbol de decisión completo para descubrir qué skill aplicar
 
-  ```
-  - ¿Qué tipo de cambio es? (feature nueva, corrección, refactor, infraestructura)
-  - ¿Afecta a una app existente o requiere una nueva?
-    - Si es nueva app: ¿nombre tentativo? ¿Qué modelos, vistas y templates incluye?
-    - Si es app existente: ¿cuál(es)? ¿qué archivos/contenido se modifica?
-  - ¿Tiene cambios de base de datos? (nuevos modelos, campos, migraciones)
-  - ¿Afecta URLs, API endpoints o permisos?
-  - ¿Afecta templates? (nuevos páginas/includes, o cambios en existentes)
-  - ¿Cuáles son los criterios de aceptación? (qué debe funcionar al terminar)
-  - Número de feature en spec/features/ (si aplica, o se asigna el siguiente)
-  ```
+### Lifecycle mapping (intent → skill)
 
-  Completar spec.md / plan.md / tasks.md con esas respuestas antes de tocar código.
+```
+Task arrives →
+  ├── No sabes qué quieres? ──────── interview-me
+  ├── Concepto vago? ────────────── idea-refine
+  ├── Feature nueva / cambio? ───── spec-driven-development
+  ├── Spec lista, falta plan? ───── planning-and-task-breakdown
+  ├── Implementar código? ───────── incremental-implementation
+  │   ├── UI/frontend? ─────────── frontend-ui-engineering
+  │   ├── API/interfaz? ────────── api-and-interface-design
+  │   ├── Duda técnica? ────────── doubt-driven-development
+  │   └── Documentación oficial? ─ source-driven-development
+  ├── Tests? ────────────────────── test-driven-development
+  │   └── Browser testing? ─────── browser-testing-with-devtools
+  ├── Bug / error? ──────────────── debugging-and-error-recovery
+  ├── Code review? ──────────────── code-review-and-quality
+  │   ├── Muy complejo? ───────── code-simplification
+  │   ├── Seguridad? ──────────── security-and-hardening
+  │   └── Performance? ────────── performance-optimization
+  ├── Commit / branch? ──────────── git-workflow-and-versioning
+  ├── CI/CD? ────────────────────── ci-cd-and-automation
+  ├── Migrar / sunset? ──────────── deprecation-and-migration
+  ├── Docs / ADRs? ──────────────── documentation-and-adrs
+  ├── Telemetría / logs? ────────── observability-and-instrumentation
+  └── Deploy? ───────────────────── shipping-and-launch
+```
 
-## Checklist de revisión
+### Skills complementarias del proyecto
+- `django-expert` — modelos, ORM, DRF, auth, tests, performance Django
+- `frontend-design` — diseño visual con identidad
+- `web-design-guidelines` — auditoría de accesibilidad y UI
+- `project-structure-audit` — auditoría de estructura del proyecto contra estándares Django y convenciones locales; genera reporte en `spec/audits/`
 
-  Aplicar solo los items relevantes al tipo de cambio realizado:
+### MCP
+- `tabler` — búsqueda de iconos, componentes, layouts, colores y documentación de Tabler.io
 
-### Modelos
-- [ ] `__str__` y `Meta.ordering` definidos
-- [ ] `Meta.permissions` idioma español (`view_*`, `add_*`, `change_*`, `delete_*`)
-- [ ] `unique_together` / `constraints` si hay relaciones 1-1
-- [ ] Soft delete: filtrar `record_active` en queries internas
-- [ ] FileField/ImageField: `upload_to` con `pdf_upload_path`/`image_upload_path`
+## Flujo SDD
 
-### Vistas (Dashboard)
-- [ ] `LoginRequiredMixin` + `PermissionRequiredMixin` con permiso correcto
-- [ ] `queryset` a nivel de clase con `timezone.now()`? → usar `get_queryset()`
-- [ ] `select_related`/`prefetch_related` para evitar N+1 en list/detail
-- [ ] Conteos derivados con resta (`total - activo = expirado`)? → query explícita
-- [ ] Ventanas de tiempo consistentes (días sueltos vs meses calendario)
-- [ ] `paginate_by = 20` en ListViews
+Cada feature sigue este flujo usando los skills:
 
-### API
-- [ ] `get_queryset()` filtra por vigencia con `timezone.now()` (no class attr)
-- [ ] Sin `__all__` ni `fields` que expongan campos sensibles
-- [ ] Paginación y rate limiting aplican automáticamente
+1. Cargar `spec-driven-development` → escribir `spec/features/NNN-nombre/spec.md`
+2. Cargar `planning-and-task-breakdown` → escribir `plan.md` + `tasks.md`
+3. Cargar `incremental-implementation` → implementar un task a la vez
+4. Si hay cambios de modelo: `python manage.py makemigrations`
+5. Verificar: `python manage.py check && python manage.py test <app>`
+6. Si no existe test para el cambio, crearlo
+7. Actualizar `constitution/roadmap.md` moviendo la feature a "Hecho"
+8. Commit descriptivo (incluir número y nombre de la feature)
 
-### Templates
-- [ ] `csrf_token` en todo `<form>` (excepto GET)
-- [ ] `enctype="multipart/form-data"` si hay input type=file
-- [ ] IDs de campos únicos si JS (Litepicker, forecast.js) depende de ellos
-- [ ] Sin `|safe` en datos ingresados por usuarios no confiables
-- [ ] URLs generadas con `{% url %}` (no hardcodeadas)
+Antes de codificar, si hace falta clarificar, preguntar: ¿tipo de cambio? ¿app(s) afectada(s)? ¿cambios de DB? ¿URLs/permisos? ¿templates? ¿criterios de aceptación? ¿número de feature?
 
-### JavaScript / Estáticos
-- [ ] URLs obtenidas de atributos `data-*` (no hardcodeadas en JS)
-- [ ] Manejo de errores en llamadas AJAX (callback error/fail)
-- [ ] `python manage.py collectstatic --link --no-input` si se agregó/modificó archivo en `static/`
+## Checklist proyecto-específico
 
-### URLs
-- [ ] Kwarg `uuid` (no `pk`) para modelos con UUIDField
-- [ ] Nombres de ruta únicos y descriptivos
+Estos items NO los cubren los skills genéricos. Verificarlos siempre:
 
-### Seguridad
-- [ ] Vistas requieren permiso específico (no solo login)
-- [ ] Formularios: `fields` explícito (no `exclude` ni `__all__` si hay campos sensibles)
-- [ ] Mass assignment prevenido: ModelForms listan campos permitidos
+- [ ] `default_permissions = ()` + 4 permisos custom (view/add/change/delete) en español
+- [ ] Kwarg `uuid` (no `pk`) en URLs de modelos con UUIDField
+- [ ] FileHandlerMixin + `file_fields` definido si hay FileField/ImageField
+- [ ] Soft delete: filtrar `record_active=True` (usa el manager por defecto, no `all_objects`)
+- [ ] `get_queryset()` con `timezone.now()` (nunca queryset a nivel de clase con fechas)
+- [ ] Tareas/imports Huey registrados en `AppConfig.ready()`
+- [ ] `paginate_by = 20` en ListViews del dashboard
+- [ ] Migraciones ejecutadas y NO versionadas (`.gitignore`)
 
-### Seguridad post-cambio
-- [ ] ¿El cambio expone datos sensibles en templates, API o logs?
-- [ ] ¿Usa `|safe` o `mark_safe` con datos de usuario no confiables?
-- [ ] ¿Requiere nuevos permisos? ¿están creados y asignados correctamente?
-- [ ] ¿Hay tareas asíncronas (Huey), señales o imports que necesiten registrarse en `AppConfig.ready()`?
-- [ ] ¿Hay imports o variables que sombrean built-ins de Python? (ej: `object`, `list`, `str`)
-- [ ] ¿La funcionalidad depende de un worker externo? (Huey, sistema de colas, etc.)
-- [ ] `python manage.py check` sin errores
+## API + Deploy + Locale
 
-## Skills y MCP
-
-El proyecto usa Tabler para UI. Estas herramientas están disponibles y deben usarse automáticamente según el contexto:
-
-- **frontend-design skill**: Cárgalo al diseñar o modificar UI nueva.
-- **web-design-guidelines skill**: Cárgalo al revisar componentes visuales o templates existentes.
-- **tabler MCP**: Úsalo al buscar iconos, componentes, layouts o documentación de Tabler.io.
-
-## API
-
-- DRF con `DjangoModelPermissionsOrAnonReadOnly` por defecto
-- Rate limiting: anon 100/h, user 1000/h
-- Schema OpenAPI en `/api/schema/`
-
-## Deploy
-
-- Nginx + Gunicorn (`gunicorn.sh`) + Supervisor
-- WSGI: `config.wsgi:application`
-- Stats: staticfiles servidos por Nginx en `/static/`, media en `/media/`
-- Socket: `/tmp/gunicorn-webcmp.sock`
-
-## Locale
-
-`LANGUAGE_CODE = 'es-mx'`, `TIME_ZONE = 'America/Havana'`
+- **API**: DRF con `DjangoModelPermissionsOrAnonReadOnly`; rate limit 100/h anon, 1000/h user; schema en `/api/schema/`
+- **Deploy**: Nginx + Gunicorn (`gunicorn.sh`) + Supervisor; estáticos por Nginx en `/static/`, media en `/media/`; socket `/tmp/gunicorn-webcmp.sock`
+- **Locale**: `LANGUAGE_CODE = 'es-mx'`, `TIME_ZONE = 'America/Havana'`

@@ -46,10 +46,10 @@
               <div class="subheader mb-3">Productos y servicios</div>
               <ul class="list-unstyled list-separated gap-2">
                 <li class="nav-item mb-2 fs-5">
-                  <a href="{% url 'servicios_comerciales' %}" class="nav-link p-0 link-secondary">Servicios Comerciales</a>
+                  <a href="{% url 'home:services_commercial' %}" class="nav-link p-0 link-secondary">Servicios Comerciales</a>
                 </li>
                 <li class="nav-item mb-2 fs-5">
-                  <a href="{% url 'servicios_publicos' %}" class="nav-link p-0 link-secondary">Servicios Públicos</a>
+                  <a href="{% url 'home:services_public' %}" class="nav-link p-0 link-secondary">Servicios Públicos</a>
                 </li>
                 <li class="nav-item mb-2 fs-5">
                   <a href="{% url 'doc' %}" target="_blank" rel="noopener noreferrer" class="nav-link p-0 link-secondary">DFM12 REST APIs</a>
@@ -142,7 +142,7 @@
               &copy;<script>
                       document.write(new Date().getFullYear())
                     </script>-
-              <a href="{% url 'index' %}" class="link-secondary">Centro Meteorológico Provincial de Camagüey.</a>
+              <a href="{% url 'home:index' %}" class="link-secondary">Centro Meteorológico Provincial de Camagüey.</a>
             </li>
           </ul>
         </div>

@@ -11,7 +11,7 @@
       <div class="col-lg">
         <div class="container-tight">
           <div class="text-center mb-4">
-            <a href="{% url 'index' %}">
+            <a href="{% url 'home:index' %}">
               <!-- SVG del logo (se mantiene igual que antes) -->
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 514.9 158.95" class="login-image" style="max-width: 300px; height: auto;">
                 <path fill="#2b4b9b" d="M513.01,127.55L345.16,18.72C324.4,6.32,304.68,0,283.19,0c-39.42,0-75.04,16.22-100.6,42.34h52.15c14.44-19.82,37.82-32.71,64.21-32.71c43.86,0,79.42,35.56,79.42,79.42c0,13.8-3.53,26.77-9.72,38.08l0.64,0.42H513.01z"/>
@@ -340,7 +340,7 @@
           
           <div class="text-center text-muted mt-3">
             <small>
-              ¿Ya tienes una cuenta? <a href="{% url 'login' %}" class="text-decoration-none">Iniciar Sesión</a>
+              ¿Ya tienes una cuenta? <a href="{% url 'login:in' %}" class="text-decoration-none">Iniciar Sesión</a>
             </small>
           </div>
         </div>

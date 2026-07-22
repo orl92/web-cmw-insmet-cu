@@ -7,7 +7,7 @@
                 {% csrf_token %}
                 <div class="page-pretitle">
                     Cargar desde Excel
-                    <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx, .xls" data-upload-url="{% url 'excel_json' %}">
+                    <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx, .xls" data-upload-url="{% url 'dashboard:excel_json' %}">
                 </div>
             </form>
         </div>

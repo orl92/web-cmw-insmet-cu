@@ -21,7 +21,7 @@
   {% with subscription=object %}
     {% if request.user.is_staff %}
     <td>
-      <a href="{% url 'actualizar_cliente' subscription.customer.uuid %}" data-bs-toggle="tooltip" title="{{ subscription.customer.company_name }}">  
+      <a href="{% url 'dashboard:cliente_update' subscription.customer.uuid %}" data-bs-toggle="tooltip" title="{{ subscription.customer.company_name }}">  
         {{ subscription.customer.company_name|truncatechars:30 }}
       </a>
     </td>
@@ -104,7 +104,7 @@
                   <path d="M6 15l2 0" />
                 </svg>
               </a>
-              <a href="{% url 'reenviar_certificado' subscription.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Reenviar certificado por correo">
+              <a href="{% url 'dashboard:certificado_resend' subscription.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Reenviar certificado por correo">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-mail-forward">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                   <path d="M12 18h-7a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v7.5" />
@@ -118,7 +118,7 @@
         {% endif %}
 
         <!-- Botones de gestión -->
-        <a href="{% url 'editar_suscripcion' subscription.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Editar">
+        <a href="{% url 'dashboard:suscripcion_update' subscription.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Editar">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
             <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
@@ -158,7 +158,7 @@
         {% endif %}
         
         {% if subscription.payment_status == 'requested' %}
-          <a href="{% url 'crear_factura' %}?customer_uuid={{ subscription.customer.uuid }}" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Facturar">
+          <a href="{% url 'dashboard:factura_create' %}?customer_uuid={{ subscription.customer.uuid }}" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Facturar">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-invoice">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
               <path d="M14 3v4a1 1 0 0 0 1 1h4" />
@@ -171,7 +171,7 @@
         {% endif %}
         
         {% if subscription.payment_status == 'pending' %}
-          <a href="{% url 'aprobar_suscripcion' subscription.uuid %}" class="btn btn-icon btn-outline-success btn-sm" data-bs-toggle="tooltip" title="Aprobar Pago">
+          <a href="{% url 'dashboard:suscripcion_approve' subscription.uuid %}" class="btn btn-icon btn-outline-success btn-sm" data-bs-toggle="tooltip" title="Aprobar Pago">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-circle-check">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
               <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
@@ -180,7 +180,7 @@
           </a>
           <!-- Botón regenerar factura (solo si existe al menos una factura) -->
           {% if subscription.invoices.exists %}
-            <form method="post" action="{% url 'regenerar_factura' subscription.uuid %}" style="display:inline;" onsubmit="return confirm('¿Estás seguro de regenerar la factura?');">
+            <form method="post" action="{% url 'dashboard:factura_regenerate' subscription.uuid %}" style="display:inline;" onsubmit="return confirm('¿Estás seguro de regenerar la factura?');">
               {% csrf_token %}
               <button type="submit" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Regenerar factura">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-refresh">
@@ -209,7 +209,7 @@
                 <path d="M6 15l2 0" />
               </svg>
             </a>
-            <a href="{% url 'reenviar_certificado' subscription.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Reenviar certificado por correo">
+            <a href="{% url 'dashboard:certificado_resend' subscription.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Reenviar certificado por correo">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-mail-forward">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M12 18h-7a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v7.5" />
@@ -239,7 +239,7 @@
           {% endwith %}
 
           {% if subscription.payment_method == 'qr' %}
-            <a href="{% url 'pago_qr' %}" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Pagar con QR">
+            <a href="{% url 'home:payment' %}" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Pagar con QR">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-qrcode">
                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                 <path d="M4 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -4" />
@@ -346,11 +346,11 @@
         if (action === 'anular') {
           modalTitle.textContent = 'Anular suscripción';
           modalBody.innerHTML = `<p>¿Está seguro de anular la suscripción de <strong>${customer}</strong> para el servicio <strong>${service}</strong>?</p><p class="text-muted">El registro se desactivará pero se conservará en la base de datos.</p>`;
-          currentActionUrl = '{% url "anular_suscripcion" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          currentActionUrl = '{% url "dashboard:suscripcion_cancel" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         } else if (action === 'eliminar') {
           modalTitle.textContent = 'Eliminar permanentemente';
           modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> la suscripción de <strong>${customer}</strong> para el servicio <strong>${service}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
-          currentActionUrl = '{% url "eliminar_suscripcion" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          currentActionUrl = '{% url "dashboard:suscripcion_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         }
 
         showModal(confirmModal);
