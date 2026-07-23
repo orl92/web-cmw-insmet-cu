@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from apps.dashboard.models import Province, Station, Town
+from apps.geo.models import Province, Station, Town
 
 
 class Command(BaseCommand):

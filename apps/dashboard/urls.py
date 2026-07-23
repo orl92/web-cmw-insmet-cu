@@ -1,4 +1,20 @@
-from django.urls import path
+from django.urls import include, path, reverse_lazy
+from django.views.generic.base import RedirectView
+
+from apps.geo.views import (
+    ProvinceCreateView,
+    ProvinceDeleteView,
+    ProvinceListView,
+    ProvinceUpdateView,
+    StationCreateView,
+    StationDeleteView,
+    StationListView,
+    StationUpdateView,
+    TownCreateView,
+    TownDeleteView,
+    TownListView,
+    TownUpdateView,
+)
 
 from apps.dashboard.views.avisos.alertas_tempranas.views import (
     EarlyWarningCreateView,
@@ -60,12 +76,6 @@ from apps.dashboard.views.email_recipient.views import (
     EmailRecipientListListView,
     EmailRecipientListUpdateView,
 )
-from apps.dashboard.views.estaciones.views import (
-    StationCreateView,
-    StationDeleteView,
-    StationListView,
-    StationUpdateView,
-)
 from apps.dashboard.views.facturacion.views import (
     CancelInvoiceView,
     CompanySettingsAjaxUpdateView,
@@ -76,23 +86,11 @@ from apps.dashboard.views.facturacion.views import (
     ResendInvoiceEmailView,
     ajax_pending_subscriptions,
 )
-from apps.dashboard.views.municipios.views import (
-    TownCreateView,
-    TownDeleteView,
-    TownListView,
-    TownUpdateView,
-)
 from apps.dashboard.views.pronosticos.views import (
     AllForecastCreateView,
     ForecastDeleteView,
     ForecastsListView,
     ForecastUpdateView,
-)
-from apps.dashboard.views.provincias.views import (
-    ProvinceCreateView,
-    ProvinceDeleteView,
-    ProvinceListView,
-    ProvinceUpdateView,
 )
 from apps.dashboard.views.servicios.views import (
     ServiceCreateView,
@@ -127,17 +125,15 @@ app_name = 'dashboard'
 urlpatterns = [
     # Dashboard
     path('', DashboardView.as_view(), name="index"),
-    # Provincias
+    path('', include('apps.geo.urls')),
     path('provincias/', ProvinceListView.as_view(), name='provincia_list'),
     path('crear/provincia/', ProvinceCreateView.as_view(), name='provincia_create'),
     path('actualizar/provincia/<uuid:uuid>/', ProvinceUpdateView.as_view(), name='provincia_update'),
     path('eliminar/provincia/<uuid:uuid>/', ProvinceDeleteView.as_view(), name='provincia_delete'),
-    # Estaciones
     path('estaciones/', StationListView.as_view(), name='estacion_list'),
     path('crear/estacion/', StationCreateView.as_view(), name='estacion_create'),
     path('actualizar/estacion/<uuid:uuid>/', StationUpdateView.as_view(), name='estacion_update'),
     path('eliminar/estacion/<uuid:uuid>/', StationDeleteView.as_view(), name='estacion_delete'),
-    # Municipios
     path('municipios/', TownListView.as_view(), name='municipio_list'),
     path('crear/municipio/', TownCreateView.as_view(), name='municipio_create'),
     path('actualizar/municipio/<uuid:uuid>/', TownUpdateView.as_view(), name='municipio_update'),

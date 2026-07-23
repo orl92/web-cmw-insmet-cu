@@ -1,5 +1,5 @@
 from datetime import datetime
-from apps.dashboard.models import Town
+from apps.geo.models import Town
 from apps.home.forms import MeteoDataForm, SoundingForm, GifDownloadForm
 from apps.home.data.plot_generators import generate_skewt
 import json

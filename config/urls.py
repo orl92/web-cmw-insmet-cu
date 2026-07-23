@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/', include('apps.api.urls')),
     path('accounts/', include('apps.accounts.urls')),
     path('dashboard/', include('apps.dashboard.urls')),
+    path('geo/', include(('apps.geo.urls', 'geo'), namespace='geo')),
     path('dashboard/publicaciones/', include('apps.publications.urls')),
 
     path('', include('apps.home.urls')),

@@ -220,6 +220,7 @@ INSTALLED_APPS = [
     'apps.home.apps.HomeConfig',
     'apps.login.apps.LoginConfig',
     'apps.accounts.apps.AccountsConfig',
+    'apps.geo.apps.GeoConfig',
     'apps.dashboard.apps.DashboardConfig',
     'apps.publications.apps.PublicationsConfig',
 ]
