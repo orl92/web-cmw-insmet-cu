@@ -37,10 +37,10 @@ class WeatherReportDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         type_map = {
-            'today': ('El Tiempo para Hoy', 'tiempo_h', 'tiempo'),
-            'tomorrow': ('El Tiempo para Mañana', 'tiempo_m', 'tiempo'),
-            'commentary': ('Comentario del Tiempo', 'comentario_tiempo', 'comentario'),
-            'note': ('Nota Meteorológica', 'nota_meteorologica', 'comentario'),
+            'today': ('El Tiempo para Hoy', 'weather_today', 'tiempo'),
+            'tomorrow': ('El Tiempo para Mañana', 'weather_tomorrow', 'tiempo'),
+            'commentary': ('Comentario del Tiempo', 'weather_commentary', 'tiempo'),
+            'note': ('Nota Meteorológica', 'weather_note', 'tiempo'),
         }
         title, segment, parent = type_map[self.get_report_type()]
         context['title'] = title

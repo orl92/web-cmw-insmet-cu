@@ -15,7 +15,7 @@ class TropicalCycloneListView(ListView):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Aviso de Ciclón Tropical'
         context['parent'] = 'aviso'
-        context['segment'] = 'ciclon_tropical'
+        context['segment'] = 'warnings_tropical'
         
         # Obtener objetos y agregar URLs absolutas
         objects = self.get_queryset()

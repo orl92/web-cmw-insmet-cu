@@ -15,7 +15,7 @@ class EarlyWarningListView(ListView):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Aviso de Alerta Temprana'
         context['parent'] = 'aviso'
-        context['segment'] = 'alerta_temprana'
+        context['segment'] = 'warnings_early'
         
         # Obtener objetos y agregar URLs absolutas
         objects = self.get_queryset()

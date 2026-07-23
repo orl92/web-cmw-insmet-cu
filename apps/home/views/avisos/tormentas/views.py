@@ -15,7 +15,7 @@ class StormListView(ListView):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Aviso de Tormenta'
         context['parent'] = 'aviso'
-        context['segment'] = 'tormenta'
+        context['segment'] = 'warnings_storm'
         
         # Obtener objetos y agregar URLs absolutas
         objects = self.get_queryset()

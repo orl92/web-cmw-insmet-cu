@@ -50,8 +50,8 @@ class MapaView(TemplateView):
         context['gif_form'] = GifDownloadForm(initial=gif_initial)  # Nuevo formulario para GIF
         context['initial_date'] = self.get_default_date()
         context['title'] = 'Modelo de pronóstico WRF'
-        context['parent'] = 'Física de la atmósfera'
-        context['segment'] = 'maps'
+        context['parent'] = 'modelos'
+        context['segment'] = 'models_maps'
         return context
 
     def get_default_datetime(self):
@@ -165,8 +165,8 @@ class MeteogramView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Meteorama'
-        context['parent'] = 'Física de la atmósfera'
-        context['segment'] = 'meteogram'
+        context['parent'] = 'modelos'
+        context['segment'] = 'models_meteogram'
 
         # Obtener municipio por defecto
         default_town = Town.objects.filter(
@@ -254,8 +254,8 @@ class SoundingView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Sondeos'
-        context['parent'] = 'Física de la atmósfera'
-        context['segment'] = 'sounding'
+        context['parent'] = 'modelos'
+        context['segment'] = 'models_sounding'
 
         # Obtener municipio por defecto (ej. usando coordenadas predeterminadas)
         default_town = Town.objects.filter(
