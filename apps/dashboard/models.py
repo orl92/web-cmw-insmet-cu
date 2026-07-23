@@ -17,7 +17,6 @@ from apps.common.utils import (
 
 
 class SiteConfiguration(models.Model):
-    id = models.AutoField(primary_key=True)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     maintenance_mode = models.BooleanField(default=True)
 
@@ -388,7 +387,7 @@ class ForecastExtendedDay(models.Model):
 
 class BaseWarning(FileHandlerMixin, models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="%(class)s_warnings")
     summary = models.TextField(max_length=300, verbose_name="Resumen")
     file = models.FileField(upload_to=pdf_upload_path, verbose_name="Archivo PDF")
     valid_until = models.DateTimeField(verbose_name="Válido Hasta")
@@ -408,6 +407,7 @@ class EarlyWarning(BaseWarning):
     class Meta:
         verbose_name = "Aviso de Alerta Temprana"
         verbose_name_plural = "Avisos de Alertas Tempranas"
+        ordering = ['-date']
         default_permissions = ()
         permissions = (
             ("view_early_warning", "Ver"),
@@ -421,6 +421,7 @@ class TropicalCyclone(BaseWarning):
     class Meta:
         verbose_name = "Aviso de Ciclón Tropical"
         verbose_name_plural = "Avisos de Ciclones Tropicales"
+        ordering = ['-date']
         default_permissions = ()
         permissions = (
             ("view_tropical_cyclone", "Ver"),
@@ -434,6 +435,7 @@ class StormWarning(BaseWarning):
     class Meta:
         verbose_name = "Aviso de Tormenta"
         verbose_name_plural = "Avisos de Tormentas"
+        ordering = ['-date']
         default_permissions = ()
         permissions = (
             ("view_storm_warning", "Ver"),
@@ -664,7 +666,7 @@ class Contract(SoftDeleteModel):
         return f"Contrato {self.number} - {self.subscription.customer.company_name}"
 
 
-class Invoice(SoftDeleteModel):
+class Invoice(SoftDeleteModel, FileHandlerMixin):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.ForeignKey(
         ServiceSubscription,
@@ -687,6 +689,8 @@ class Invoice(SoftDeleteModel):
     is_cancelled = models.BooleanField(default=False, verbose_name="¿Anulada?")
     email_sent = models.BooleanField(default=False, verbose_name='Correo enviado')
     email_error = models.TextField(blank=True, null=True, verbose_name='Error al enviar')
+
+    file_fields = ['pdf']
 
     class Meta:
         verbose_name = "Factura"
@@ -713,7 +717,7 @@ class Invoice(SoftDeleteModel):
 class InvoiceItem(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
-    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.SET_NULL, null=True, blank=True)
+    subscription = models.ForeignKey(ServiceSubscription, on_delete=models.SET_NULL, null=True, blank=True, related_name="invoice_items")
     codigo = models.CharField(max_length=50, blank=True)
     descripcion = models.TextField()
     cantidad = models.DecimalField(max_digits=10, decimal_places=2)
@@ -735,6 +739,7 @@ class InvoiceItem(models.Model):
     class Meta:
         verbose_name = "Item"
         verbose_name_plural = "Items"
+        ordering = ['invoice', 'codigo']
         default_permissions = ()
         permissions = (
             ("view_invoice_item", "Ver"),
@@ -744,7 +749,7 @@ class InvoiceItem(models.Model):
         )
 
 
-class Certificate(SoftDeleteModel):
+class Certificate(SoftDeleteModel, FileHandlerMixin):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.ForeignKey(
         ServiceSubscription,
@@ -754,6 +759,8 @@ class Certificate(SoftDeleteModel):
     )
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de emisión")
     pdf = models.FileField(upload_to='certificates/pdfs/', verbose_name="Certificado PDF")
+
+    file_fields = ['pdf']
 
     class Meta:
         verbose_name = "Certificado"
@@ -796,6 +803,7 @@ class WeatherReport(FileHandlerMixin, models.Model):
     class Meta:
         verbose_name = "Reporte Meteorológico"
         verbose_name_plural = "Reportes Meteorológicos"
+        ordering = ['-date']
         default_permissions = ()
         permissions = (
             ("view_weather_report", "Ver reportes meteorológicos"),
