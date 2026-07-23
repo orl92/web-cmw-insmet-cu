@@ -20,6 +20,7 @@ class TropicalCycloneListView(LoginRequiredMixin, PermissionRequiredMixin, ListV
     template_name = 'pages/dashboard/avisos/ciclones_tropicales/avisos_ciclones_tropicales.html'
     model = TropicalCyclone
     permission_required = 'dashboard.view_tropical_cyclone'
+    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

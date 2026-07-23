@@ -5,24 +5,28 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin)
+    UserPassesTestMixin,
+)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
 from apps.common.utils import log_action
-
-logger = logging.getLogger(__name__)
 from apps.dashboard.forms.email_recipient.forms import (
     EmailRecipientFormSet,
-    EmailRecipientListForm)
+    EmailRecipientListForm,
+)
 from apps.dashboard.models import EmailRecipientList
+
+logger = logging.getLogger(__name__)
+
 
 
 class EmailRecipientListListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/email_recipient/listado_correos.html'
     model = EmailRecipientList
     permission_required = 'dashboard.view_email_recipient_list'
+    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

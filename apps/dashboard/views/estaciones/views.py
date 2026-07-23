@@ -18,6 +18,7 @@ class StationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/estaciones/estaciones.html'
     model = Station
     permission_required = 'dashboard.view_station'  # Permiso requerido para ver una estacion
+    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

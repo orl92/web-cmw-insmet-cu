@@ -19,6 +19,7 @@ class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/servicios/listado_servicios.html'
     model = Service
     permission_required = 'dashboard.view_service'
+    paginate_by = 20
     context_object_name = 'objects'
 
     def dispatch(self, request, *args, **kwargs):

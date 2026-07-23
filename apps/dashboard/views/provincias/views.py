@@ -18,6 +18,7 @@ class ProvinceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/provincias/provincias.html'
     model = Province
     permission_required = 'dashboard.view_province'  # Permiso requerido para ver las provincias
+    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

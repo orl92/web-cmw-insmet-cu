@@ -129,6 +129,7 @@ REPORT_CONFIG = {
 
 class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = WeatherReport
+    paginate_by = 20
 
     def get_report_type(self):
         return self.kwargs.get('report_type', 'today')

@@ -18,6 +18,7 @@ class TownListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/municipios/municipios.html'
     model = Town
     permission_required = 'dashboard.view_town'
+    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

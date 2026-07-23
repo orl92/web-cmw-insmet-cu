@@ -15,6 +15,7 @@ class CertificateListView(LoginRequiredMixin, PermissionRequiredMixin, ListView)
     model = Certificate
     template_name = 'pages/dashboard/certificados/listado.html'
     permission_required = 'dashboard.view_certificate'
+    paginate_by = 20
 
     def get_queryset(self):
         return Certificate.objects.select_related(

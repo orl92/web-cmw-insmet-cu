@@ -20,6 +20,7 @@ class StormWarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     template_name = 'pages/dashboard/avisos/tormentas/avisos_tormentas.html'
     model = StormWarning
     permission_required = 'dashboard.view_storm_warning'
+    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
