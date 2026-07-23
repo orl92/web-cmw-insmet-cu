@@ -577,7 +577,7 @@ class DescargarGifView(View):
                     downloaded_count += 1
 
                 except Exception as e:
-                    print(f"Error al procesar {img_url}: {str(e)}")
+                    logger.exception("Error al procesar %s", img_url)
                     continue
 
             # Crear el GIF si hay imágenes descargadas

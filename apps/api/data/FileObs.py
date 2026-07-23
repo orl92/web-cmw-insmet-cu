@@ -1,9 +1,12 @@
+import logging
 import os
 import re
 import shutil
 import subprocess
 import threading
 import time
+
+logger = logging.getLogger(__name__)
 
 # from werkzeug.utils import secure_filename
 #
@@ -75,7 +78,7 @@ class FileObs:
         for attempt in range(self.max_retries):
             try:
                 with self._download_lock:  # Bloquea el acceso concurrente
-                    print(f"⏳ [Intento {attempt + 1}] Descargando {filename}...")
+                    logger.info("Intento %d: Descargando %s...", attempt + 1, filename)
 
                     # Limpiar directorio temporal antes de cada intento
                     self.limpiar_directorio_temporal()
@@ -106,20 +109,20 @@ class FileObs:
                         if not destino_norm.startswith(final_dir_norm + os.sep):
                             raise Exception("Invalid file path: path traversal detected")
                         shutil.move(temp_file_norm, destino_norm)
-                        print(f"✓ Descarga completada: {filename}")
+                        logger.info("Descarga completada: %s", filename)
                         return destino_norm
                     else:
                         raise Exception(f"Archivo {filename} no se descargó correctamente")
 
             except subprocess.CalledProcessError as e:
                 error_msg = f"❌ Error en descarga (intento {attempt + 1}): {e.stderr}"
-                print(error_msg)
+                logger.error("Error en descarga (intento %d): %s", attempt + 1, e.stderr)
                 if attempt == self.max_retries - 1:
                     raise Exception(f"Fallo después de {self.max_retries} intentos. Último error: {error_msg}")
                 time.sleep(self.retry_delay)
 
             except Exception as e:
-                print(f"❌ Error inesperado: {str(e)}")
+                logger.exception("Error inesperado en descarga")
                 if attempt == self.max_retries - 1:
                     raise
                 time.sleep(self.retry_delay)
@@ -130,4 +133,4 @@ class FileObs:
             if os.path.exists(self.TEMP_DIR):
                 shutil.rmtree(self.TEMP_DIR)
         except Exception as e:
-            print(f"⚠️ Error limpiando directorio temporal: {str(e)}")
+            logger.exception("Error limpiando directorio temporal")

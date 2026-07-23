@@ -1,10 +1,18 @@
+import logging
+
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_migrate, post_save, pre_delete
 from django.dispatch import receiver
 
 from apps.accounts.models import Profile
-from apps.dashboard.models import ServiceSubscription, EmailRecipient, EmailRecipientList
+from apps.dashboard.models import (
+    EmailRecipient,
+    EmailRecipientList,
+    ServiceSubscription,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def _sync_newsletter_recipient(profile):
@@ -58,4 +66,4 @@ def create_clientes_group(sender, **kwargs):
         # Añadir el permiso al grupo si aún no lo tiene
         if view_perm not in group.permissions.all():
             group.permissions.add(view_perm)
-            print("✓ Permiso 'view_subscription' añadido al grupo 'Clientes'")
+            logger.info("Permiso 'view_subscription' añadido al grupo 'Clientes'")
