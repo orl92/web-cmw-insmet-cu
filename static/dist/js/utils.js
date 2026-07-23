@@ -1,0 +1,97 @@
+function showToast(message, type = 'danger', duration = 5000) {
+    const toastId = 'toast-' + Date.now();
+    let icon, title;
+    switch(type) {
+      case 'success':
+        icon = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-check" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" /></svg>';
+        title = 'Éxito';
+        break;
+      case 'warning':
+        icon = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-alert-triangle" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 9v4" /><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" /><path d="M12 16h.01" /></svg>';
+        title = 'Advertencia';
+        break;
+      case 'info':
+        icon = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-info-circle" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 9h.01" /><path d="M11 12h1v4h1" /></svg>';
+        title = 'Información';
+        break;
+      default:
+        icon = '<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-circle-x" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M10 10l4 4m0 -4l-4 4" /></svg>';
+        title = 'Error';
+    }
+    const toastHTML = `
+      <div id="${toastId}" class="toast show" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="${duration}">
+        <div class="toast-header">
+          <span class="me-2">${icon}</span>
+          <strong class="me-auto">${title}</strong>
+          <small class="text-muted">justo ahora</small>
+          <button type="button" class="ms-2 btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+          ${message}
+        </div>
+      </div>
+    `;
+    const toastContainer = document.getElementById('toast-container');
+    if (toastContainer) {
+      toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+      const toastElement = document.getElementById(toastId);
+      const toast = new bootstrap.Toast(toastElement, {
+        delay: duration,
+        autohide: true
+      });
+      toast.show();
+      toastElement.addEventListener('hidden.bs.toast', function () {
+        toastElement.remove();
+      });
+    }
+  }
+  function initAutoDismissAlerts() {
+    document.querySelectorAll('.alert.alert-dismissible').forEach(alert => {
+      setTimeout(() => {
+        const closeButton = alert.querySelector('.btn-close');
+        if (closeButton) {
+          closeButton.click();
+        }
+      }, 5000);
+    });
+  }
+  function clearValidation(field) {
+    field.classList.remove('is-valid', 'is-invalid');
+  }
+  function markAsValid(field) {
+    field.classList.add('is-valid');
+    field.classList.remove('is-invalid');
+  }
+  function markAsInvalid(field) {
+    field.classList.add('is-invalid');
+    field.classList.remove('is-valid');
+  }
+  function validateRequired(field) {
+    const value = field.value.trim();
+    if (field.hasAttribute('required') && !value) {
+      markAsInvalid(field);
+      return false;
+    }
+    return true;
+  }
+  function initPasswordToggles() {
+    document.querySelectorAll('.password-toggle').forEach(toggle => {
+      toggle.addEventListener('click', function() {
+        const input = this.closest('.input-group').querySelector('input');
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.remove('ti-eye');
+          icon.classList.add('ti-eye-off');
+        } else {
+          input.type = 'password';
+          icon.classList.remove('ti-eye-off');
+          icon.classList.add('ti-eye');
+        }
+      });
+    });
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    initPasswordToggles();
+    initAutoDismissAlerts();
+  });

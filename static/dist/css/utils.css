@@ -1,0 +1,8 @@
+.alert-auto-dismiss {
+    animation: alertFadeOut 5s forwards;
+  }
+  @keyframes alertFadeOut {
+    0% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; visibility: hidden; }
+  }
