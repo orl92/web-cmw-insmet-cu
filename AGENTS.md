@@ -87,7 +87,7 @@ Task arrives →
 - `django-expert` — modelos, ORM, DRF, auth, tests, performance Django
 - `frontend-design` — diseño visual con identidad
 - `web-design-guidelines` — auditoría de accesibilidad y UI
-- `project-structure-audit` — auditoría de estructura del proyecto contra estándares Django y convenciones locales; genera reporte en `spec/audits/`
+- `project-structure-audit` — auditoría de estructura del proyecto contra estándares Django y convenciones locales; genera features SDD en `spec/features/`
 
 ### MCP
 - `tabler` — búsqueda de iconos, componentes, layouts, colores y documentación de Tabler.io
