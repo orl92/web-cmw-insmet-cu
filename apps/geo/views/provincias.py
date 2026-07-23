@@ -17,7 +17,6 @@ class ProvinceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/provincias/provincias.html'
     model = Province
     permission_required = 'geo.view_province'
-    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -28,7 +27,6 @@ class ProvinceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_create'] = reverse_lazy('geo:provincia_create')
         context['url_list'] = reverse_lazy('geo:provincia_list')
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = Province.objects.all()
         return context
 
 class ProvinceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

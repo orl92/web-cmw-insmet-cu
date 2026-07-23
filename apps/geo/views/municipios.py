@@ -17,18 +17,16 @@ class TownListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/municipios/municipios.html'
     model = Town
     permission_required = 'geo.view_town'
-    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Listado de Municipios'
         context['parent'] = ''
-        context['segment'] = 'town'
-        context['btn'] = ('Añadir Municipio')
+        context['segment'] = 'municipio'
+        context['btn'] = 'Añadir Municipio'
         context['url_create'] = reverse_lazy('geo:municipio_create')
         context['url_list'] = reverse_lazy('geo:municipio_list')
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = Town.objects.all().select_related('province')
         return context
 
 class TownCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

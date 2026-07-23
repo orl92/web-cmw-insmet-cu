@@ -1,12 +1,19 @@
 import uuid
 
+from django.core.validators import RegexValidator
 from django.db import models
 
 
 class Province(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=15, verbose_name="Nombre")
-    code = models.CharField(max_length=5, unique=True, verbose_name="Código")
+    code = models.CharField(
+        max_length=2,
+        unique=True,
+        validators=[RegexValidator(r'^\d{2}$', 'El código debe ser numérico de 2 dígitos (ej: 09).')],
+        verbose_name="Código",
+        help_text="Código numérico de 2 dígitos (ej: 09)",
+    )
 
     class Meta:
         managed = False

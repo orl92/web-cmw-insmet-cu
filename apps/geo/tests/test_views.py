@@ -33,21 +33,21 @@ class ProvinceCRUDTests(TestCase):
 
     def test_create_province(self):
         self.client.force_login(self.admin)
-        response = self.client.post(self.create_url, {'name': 'TestProv', 'code': 'TP'}, follow=True)
+        response = self.client.post(self.create_url, {'name': 'TestProv', 'code': '01'}, follow=True)
         self.assertTrue(Province.objects.filter(name='TestProv').exists())
         self.assertRedirects(response, self.list_url)
 
     def test_update_province(self):
         self.client.force_login(self.admin)
-        prov = Province.objects.create(name='OldName', code='ON')
+        prov = Province.objects.create(name='OldName', code='02')
         url = reverse('geo:provincia_update', args=[prov.uuid])
-        response = self.client.post(url, {'name': 'NewName', 'code': 'NN'}, follow=True)
+        response = self.client.post(url, {'name': 'NewName', 'code': '03'}, follow=True)
         prov.refresh_from_db()
         self.assertEqual(prov.name, 'NewName')
 
     def test_delete_province(self):
         self.client.force_login(self.admin)
-        prov = Province.objects.create(name='DeleteMe', code='DM')
+        prov = Province.objects.create(name='DeleteMe', code='04')
         url = reverse('geo:provincia_delete', args=[prov.uuid])
         response = self.client.post(url, follow=True)
         self.assertFalse(Province.objects.filter(name='DeleteMe').exists())
@@ -59,7 +59,7 @@ class StationCRUDTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance()
         cls.admin = _make_admin('stnadmin')
-        cls.prov = Province.objects.create(name='TestProv', code='TP')
+        cls.prov = Province.objects.create(name='TestProv', code='01')
         cls.list_url = reverse('geo:estacion_list')
         cls.create_url = reverse('geo:estacion_create')
 

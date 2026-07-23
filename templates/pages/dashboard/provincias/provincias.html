@@ -10,7 +10,7 @@
   <td>{{ object.code }}</td>
   <td class="text-end">
     {% if request.user.is_staff %}
-    <a href="{% url 'dashboard:provincia_update' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
+    <a href="{% url 'geo:provincia_update' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
         <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
@@ -38,5 +38,5 @@
 {% endblock %}
 {% block extrajs %}
   {{ block.super }}
-  {% include 'includes/dashboard/modal_delete_js.html' with delete_url_name='dashboard:provincia_delete' %}
+  {% include 'includes/dashboard/modal_delete_js.html' with delete_url_name='geo:provincia_delete' %}
 {% endblock %}

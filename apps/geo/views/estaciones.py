@@ -17,18 +17,16 @@ class StationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/dashboard/estaciones/estaciones.html'
     model = Station
     permission_required = 'geo.view_station'
-    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Listado de Estaciones'
         context['parent'] = ''
         context['segment'] = 'estacion'
-        context['btn'] = ('Añadir Estación')
+        context['btn'] = 'Añadir Estación'
         context['url_create'] = reverse_lazy('geo:estacion_create')
         context['url_list'] = reverse_lazy('geo:estacion_list')
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = Station.objects.all().select_related('province')
         return context
 
 class StationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

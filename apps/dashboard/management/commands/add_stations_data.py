@@ -26,6 +26,8 @@ class Command(BaseCommand):
         tipo = options['tipo']
         provincia_nombre = options['provincia']
 
+        self.backfill_uuids()
+
         self.stdout.write(self.style.NOTICE(f"Iniciando proceso para provincia: {provincia_nombre}"))
 
         # Crear provincia Camagüey si no existe
@@ -46,6 +48,17 @@ class Command(BaseCommand):
             self.agregar_estaciones(province)
 
         self.stdout.write(self.style.SUCCESS(f"Proceso completado para {provincia_nombre}!"))
+
+    def backfill_uuids(self):
+        import uuid
+        for model, name in [(Province, 'Provincias'), (Town, 'Municipios'), (Station, 'Estaciones')]:
+            count = 0
+            for obj in model.objects.filter(uuid__isnull=True):
+                obj.uuid = uuid.uuid4()
+                obj.save(update_fields=['uuid'])
+                count += 1
+            if count:
+                self.stdout.write(self.style.WARNING(f"UUIDs generados para {count} {name}"))
 
     def agregar_municipios(self, province):
         """Agrega los municipios de Camagüey"""
