@@ -1,6 +1,6 @@
 from django import forms
 
-from apps.dashboard.models import Service
+from apps.crm.models import Service
 
 
 class ServiceForm(forms.ModelForm):

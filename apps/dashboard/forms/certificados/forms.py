@@ -1,6 +1,7 @@
 from django import forms
 
-from apps.dashboard.models import Certificate, ServiceSubscription
+from apps.crm.models import ServiceSubscription
+from apps.dashboard.models import Certificate
 
 
 class CertificateForm(forms.ModelForm):

@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.auth.models import User
 
 from apps.accounts.models import Profile
-from apps.dashboard.models import Customer
+from apps.crm.models import Customer
 
 
 class ProfileForm(forms.ModelForm):

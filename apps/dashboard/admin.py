@@ -5,7 +5,6 @@ from apps.dashboard.models import (
     EmailRecipient,
     EmailRecipientList,
     Forecasts,
-    Service,
     StormWarning,
     TropicalCyclone,
     WeatherReport,
@@ -28,10 +27,6 @@ class TropicalCycloneAdmin(admin.ModelAdmin):
 @admin.register(StormWarning)
 class StormWarningAdmin(admin.ModelAdmin):
     list_display = ('summary', 'date', 'user')
-
-@admin.register(Service)
-class ServicesAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date', 'user')
 
 class EmailRecipientInline(admin.TabularInline):
     model = EmailRecipient

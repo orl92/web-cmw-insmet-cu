@@ -15,7 +15,7 @@ from apps.dashboard.forms.clientes.forms import (
     CustomerForUserForm,
     CustomerForm,
     CustomerUpdateForm)
-from apps.dashboard.models import Customer
+from apps.crm.models import Customer
 
 
 class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):

@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.views.generic import FormView, ListView
 
 from apps.dashboard.forms.suscripciones.forms import PaymentMethodForm
-from apps.dashboard.models import Customer, Service, ServiceSubscription
+from apps.crm.models import Customer, Service, ServiceSubscription
 
 
 class CommercialServicesListView(LoginRequiredMixin, ListView):

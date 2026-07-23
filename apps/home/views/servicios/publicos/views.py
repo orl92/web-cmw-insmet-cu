@@ -1,6 +1,6 @@
 from django.views.generic import ListView
 
-from apps.dashboard.models import Service
+from apps.crm.models import Service
 
 # Create your views here.
 

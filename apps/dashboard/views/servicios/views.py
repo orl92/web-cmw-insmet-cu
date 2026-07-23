@@ -12,7 +12,7 @@ from django.views.generic import CreateView, ListView, UpdateView, View
 
 from apps.common.utils import log_action
 from apps.dashboard.forms.servicios.forms import ServiceForm
-from apps.dashboard.models import Service
+from apps.crm.models import Service
 
 
 class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):

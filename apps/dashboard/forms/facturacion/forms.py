@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import formset_factory
-from apps.dashboard.models import Customer, Service, ServiceSubscription, CompanySettings
+from apps.crm.models import Customer, Service, ServiceSubscription
+from apps.dashboard.models import CompanySettings
 
 
 class InvoiceItemForm(forms.Form):

@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
-from apps.dashboard.models import Customer
+from apps.crm.models import Customer
 
 
 class CustomerForm(forms.ModelForm):

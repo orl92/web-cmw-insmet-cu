@@ -3,7 +3,8 @@ from datetime import timedelta
 from django import forms
 from django.utils import timezone
 
-from apps.dashboard.models import Certificate, Service, ServiceSubscription
+from apps.crm.models import Service, ServiceSubscription
+from apps.dashboard.models import Certificate
 
 
 class SubscriptionForm(forms.ModelForm):

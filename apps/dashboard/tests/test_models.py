@@ -5,19 +5,17 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
+from apps.crm.models import Customer, Service, ServiceSubscription
 from apps.dashboard.models import (
     Certificate,
     CompanySettings,
     Contract,
-    Customer,
     EarlyWarning,
     EmailRecipient,
     EmailRecipientList,
     Forecasts,
     Invoice,
     InvoiceItem,
-    Service,
-    ServiceSubscription,
     SiteConfiguration,
     StormWarning,
     TropicalCyclone,
@@ -146,110 +144,6 @@ class ForecastExtendedDayTests(TestCase):
                 forecast=f, day_number=1, date=date.today(),
                 min_temp=30, max_temp=20, weather='PN'
             )
-
-
-class CustomerTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = User.objects.create_user('cust', 'cust@example.com', 'password',
-                                             first_name='Test', last_name='User')
-
-    def test_create_customer(self):
-        customer = Customer.objects.create(
-            company_name='Test Corp',
-            reeup='123.1.1234',
-            nit='12345678901',
-            account='1234567890123456',
-            agency_bank='Test Bank',
-            address='Test Address',
-            user=self.user,
-            phone='12345678',
-            accept_terms=True,
-        )
-        self.assertEqual(str(customer), 'Test Corp')
-        self.assertIsNotNone(customer.uuid)
-
-    def test_invalid_reeup_raises_error(self):
-        customer = Customer(
-            company_name='Test Corp',
-            reeup='invalid',
-            nit='12345678901',
-            account='1234567890123456',
-            address='Test',
-            user=self.user,
-            phone='12345678',
-        )
-        with self.assertRaises(ValidationError):
-            customer.full_clean()
-
-
-class ServiceTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = User.objects.create_user('svc', 'svc@example.com', 'password',
-                                             first_name='Test', last_name='User')
-
-    def test_create_service(self):
-        service = Service.objects.create(
-            title='Test Service',
-            summary='Summary',
-            user=self.user,
-            service_type='public',
-        )
-        self.assertEqual(str(service), 'Test Service')
-        self.assertIsNotNone(service.uuid)
-
-    def test_get_image_url_returns_default_when_no_image(self):
-        service = Service.objects.create(title='Svc', summary='S', user=self.user)
-        url = service.get_image_url()
-        self.assertIn('default.svg', url)
-
-
-class ServiceSubscriptionTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = User.objects.create_user('sub', 'sub@example.com', 'password',
-                                             first_name='Test', last_name='User')
-        cls.customer = Customer.objects.create(
-            company_name='Sub Corp', reeup='111.1.1111', nit='11111111111',
-            account='1111111111111111', address='Addr', user=cls.user, phone='11111111')
-        cls.service = Service.objects.create(title='Sub Svc', summary='S', user=cls.user)
-
-    def test_soft_delete_sets_record_active_false(self):
-        sub = ServiceSubscription.objects.create(customer=self.customer, service=self.service)
-        sub.delete()
-        self.assertFalse(sub.record_active)
-        self.assertIsNotNone(sub.deleted_at)
-        self.assertTrue(ServiceSubscription.objects.filter(pk=sub.pk).exists())
-
-    def test_hard_delete_removes_record(self):
-        sub = ServiceSubscription.objects.create(customer=self.customer, service=self.service)
-        pk = sub.pk
-        sub.hard_delete()
-        self.assertFalse(ServiceSubscription.objects.filter(pk=pk).exists())
-
-    def test_is_active_property(self):
-        future = timezone.now() + timedelta(days=30)
-        sub = ServiceSubscription.objects.create(
-            customer=self.customer, service=self.service,
-            payment_status='paid', end_date=future)
-        self.assertTrue(sub.is_active)
-
-    def test_is_active_false_when_expired(self):
-        past = timezone.now() - timedelta(days=1)
-        sub = ServiceSubscription.objects.create(
-            customer=self.customer, service=self.service,
-            payment_status='paid', end_date=past)
-        self.assertFalse(sub.is_active)
-
-    def test_start_date_before_end_date(self):
-        sub = ServiceSubscription(
-            customer=self.customer, service=self.service,
-            start_date=timezone.now() + timedelta(days=5),
-            end_date=timezone.now(),
-        )
-        with self.assertRaises(ValidationError):
-            sub.full_clean()
 
 
 class InvoiceAndItemTests(TestCase):

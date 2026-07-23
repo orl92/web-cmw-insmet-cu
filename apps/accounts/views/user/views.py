@@ -14,7 +14,7 @@ from django.views.generic import CreateView, ListView, UpdateView, View
 from apps.accounts.forms.user.form import CustomerSignUpForm, UserForm, UserUpdateForm
 from apps.accounts.models import Profile
 from apps.common.utils import log_action
-from apps.dashboard.models import Customer
+from apps.crm.models import Customer
 
 # Create your views here.
 

@@ -221,6 +221,7 @@ INSTALLED_APPS = [
     'apps.login.apps.LoginConfig',
     'apps.accounts.apps.AccountsConfig',
     'apps.geo.apps.GeoConfig',
+    'apps.crm.apps.CrmConfig',
     'apps.dashboard.apps.DashboardConfig',
     'apps.publications.apps.PublicationsConfig',
 ]

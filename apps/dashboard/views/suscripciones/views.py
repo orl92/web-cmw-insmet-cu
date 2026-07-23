@@ -27,7 +27,8 @@ from apps.dashboard.forms.suscripciones.forms import (
     CertificateUploadForm,
     SubscriptionForm,
 )
-from apps.dashboard.models import Certificate, Customer, ServiceSubscription
+from apps.crm.models import Customer, ServiceSubscription
+from apps.dashboard.models import Certificate
 
 logger = logging.getLogger(__name__)
 

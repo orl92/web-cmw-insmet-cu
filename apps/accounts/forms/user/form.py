@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.models import Profile
-from apps.dashboard.models import Customer, ServiceSubscription
+from apps.crm.models import Customer, ServiceSubscription
 
 # Create your form here.
 
