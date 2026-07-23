@@ -9,7 +9,7 @@ class StormListView(ListView):
     template_name = 'pages/home/avisos/tormenta.html'
 
     def get_queryset(self):
-        return StormWarning.objects.filter(valid_until__gte=timezone.now())
+        return StormWarning.objects.filter(valid_until__gte=timezone.now()).select_related('user')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

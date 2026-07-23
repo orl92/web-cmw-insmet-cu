@@ -28,7 +28,7 @@ class TownListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_create'] = reverse_lazy('dashboard:municipio_create')
         context['url_list'] = reverse_lazy('dashboard:municipio_list')
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = Town.objects.all()
+        context['objects'] = Town.objects.all().select_related('province')
         return context
 
 class TownCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

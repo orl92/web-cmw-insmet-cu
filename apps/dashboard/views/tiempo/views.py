@@ -145,7 +145,7 @@ class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         return [self.get_config()['template_list']]
 
     def get_queryset(self):
-        return WeatherReport.objects.filter(report_type=self.get_report_type())
+        return WeatherReport.objects.filter(report_type=self.get_report_type()).select_related('user')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

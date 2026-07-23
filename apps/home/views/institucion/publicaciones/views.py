@@ -13,5 +13,5 @@ class ScientificPublicationListView(ListView):
         context['title'] = 'Publicaciones Científicas'
         context['parent'] = 'institucion'
         context['segment'] = 'publicaciones_cientificas'
-        context['objects'] = ScientificPublication.objects.all()
+        context['objects'] = ScientificPublication.objects.all().select_related('author').prefetch_related('coauthors')
         return context

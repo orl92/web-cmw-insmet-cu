@@ -33,7 +33,7 @@ class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_list'] = reverse_lazy('dashboard:cliente_list')
         context['url_export'] = reverse_lazy('dashboard:cliente_export_csv')
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = Customer.objects.all()
+        context['objects'] = Customer.objects.all().select_related('user')
         return context
 
 

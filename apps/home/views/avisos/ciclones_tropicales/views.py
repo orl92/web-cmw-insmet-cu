@@ -9,7 +9,7 @@ class TropicalCycloneListView(ListView):
     template_name = 'pages/home/avisos/ciclon_tropical.html'
 
     def get_queryset(self):
-        return TropicalCyclone.objects.filter(valid_until__gte=timezone.now())
+        return TropicalCyclone.objects.filter(valid_until__gte=timezone.now()).select_related('user')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

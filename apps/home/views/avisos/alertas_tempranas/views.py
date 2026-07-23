@@ -9,7 +9,7 @@ class EarlyWarningListView(ListView):
     template_name = 'pages/home/avisos/alerta_temprana.html'
 
     def get_queryset(self):
-        return EarlyWarning.objects.filter(valid_until__gte=timezone.now())
+        return EarlyWarning.objects.filter(valid_until__gte=timezone.now()).select_related('user')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -11,7 +11,7 @@ class PublicServicesListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        return Service.objects.filter(service_type=Service.PUBLIC).order_by('date')  # Ordenar por fecha
+        return Service.objects.filter(service_type=Service.PUBLIC).order_by('date').select_related('user')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

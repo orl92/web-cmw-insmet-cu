@@ -28,7 +28,7 @@ class StationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_create'] = reverse_lazy('dashboard:estacion_create')
         context['url_list'] = reverse_lazy('dashboard:estacion_list')
         context['is_superuser'] = self.request.user.is_superuser
-        context['objects'] = Station.objects.all()
+        context['objects'] = Station.objects.all().select_related('province')
         return context
 
 class StationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
