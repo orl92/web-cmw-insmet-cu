@@ -74,7 +74,7 @@
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">Cargar Imágenes</button>
                         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#gifModal">
-                            <i class="fas fa-download me-1"></i>Descargar GIF
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>Descargar GIF
                         </button>
                     </div>
                 </div>
@@ -139,7 +139,7 @@
 
                         <div class="alert alert-info">
                             <small>
-                                <i class="fas fa-info-circle me-1"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/></svg>
                                 Las imágenes están espaciadas cada 3 horas. Seleccione el rango deseado para el GIF.
                                 <br><strong>Rango máximo: 3 días (72 horas)</strong>
                             </small>
@@ -149,10 +149,10 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     <button type="button" class="btn btn-outline-secondary me-2" id="clearGifForm">
-                        <i class="fas fa-redo me-1"></i>Limpiar
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>Limpiar
                     </button>
                     <button type="button" class="btn btn-primary" id="confirmDownloadGif">
-                        <i class="fas fa-download me-1"></i>Descargar GIF
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>Descargar GIF
                     </button>
                 </div>
             </div>
@@ -165,7 +165,7 @@
          style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: none;">
         <div class="d-flex">
             <div class="toast-body">
-                <i class="fas fa-check-circle me-2"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M9 12l2 2l4 -4"/></svg>
                 <span id="toast-message">GIF descargado exitosamente</span>
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto"
@@ -194,7 +194,7 @@
 
                 <!-- Estado vacío -->
                 <div id="empty-state" class="text-center py-5 d-none">
-                    <i class="fas fa-cloud display-1 text-muted mb-3"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-cloud text-muted mb-3"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/></svg>
                     <h4 class="text-muted">No hay datos disponibles</h4>
                     <p class="text-muted">No se encontraron imágenes para los parámetros seleccionados.</p>
                 </div>

@@ -1,3 +1,11 @@
+// Leer URLs desde data-* attributes del script tag
+var currentScript = document.currentScript || (function() {
+    var scripts = document.getElementsByTagName('script');
+    return scripts[scripts.length - 1];
+})();
+var API_STATIONS_URL = currentScript.getAttribute('data-api-stations-url') || '/api/stations/';
+var API_OBSERVATION_URL = currentScript.getAttribute('data-api-observation-url') || '/api/station/observation/';
+
 // Crear el elemento raíz
 var root = am5.Root.new("chartdiv");
 
@@ -51,13 +59,14 @@ var pointSeries = chart.series.push(
 
 // Función para cargar las estaciones desde la API
 function cargarEstaciones() {
-    fetch('/api/stations/')
+    fetch(API_STATIONS_URL)
         .then(response => response.json())
         .then(data => {
             data.forEach(station => {
                 addCity(station.longitude, station.latitude, station.name, station.number);
             });
-        });
+        })
+        .catch(error => console.error('Error al cargar estaciones:', error));
 }
 
 // Definir los SVG como strings
@@ -73,9 +82,10 @@ function addCity(longitude, latitude, title, numero) {
     var hour = obtenerHorarioUTC();
     // console.log(`Solicitando datos para la estación ${numero} a la hora ${hour}`);
 
-    fetch(`/api/station/observation/${hour}/${numero}/`)
+    fetch(API_OBSERVATION_URL.replace('__HOUR__', hour).replace('999', numero))
         .then(response => response.json())
         .then(datos => {
+            if (!datos) return;
             // Seleccionar los elementos HTML
             var stationDetails = document.getElementById('station-details');
             var stationDate = document.getElementById('station-date');
@@ -139,7 +149,8 @@ function addCity(longitude, latitude, title, numero) {
                     tooltipContent: `${title}, No. ${numero}<hr>No existen datos para mostrar.` // Agregar el contenido del tooltip
                 });
             }
-        });
+        })
+        .catch(error => console.error('Error al obtener datos de estación:', error));
 }
 
 

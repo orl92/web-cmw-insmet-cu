@@ -215,5 +215,7 @@
   <script src="{% static 'dist/libs/amcharts/dist/map.js' %}"></script>
   <script src="{% static 'dist/libs/amcharts/dist/themes/Animated.js' %}"></script>
   <script src="{% static 'dist/libs/amcharts/dist/geodata/data/countries2.js' %}"></script>
-  <script src="{% static 'dist/js/map_station.js' %}"></script>
+  <script src="{% static 'dist/js/map_station.js' %}"
+          data-api-stations-url="{% url 'station-list' %}"
+          data-api-observation-url="{% url 'station-observation' '__HOUR__' 999 %}"></script>
 {% endblock %}

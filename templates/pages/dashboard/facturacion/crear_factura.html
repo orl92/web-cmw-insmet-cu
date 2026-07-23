@@ -563,6 +563,9 @@
         // Estado inicial: sin período activo, todo habilitado
         setPeriodInactive();
         updateDaysFromInputs();
+      })
+      .catch(function(error) {
+        console.error('Error al cargar suscripciones:', error);
       });
   }
 
