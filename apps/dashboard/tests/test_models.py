@@ -6,7 +6,9 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.dashboard.models import (
+    Certificate,
     CompanySettings,
+    Contract,
     Customer,
     EarlyWarning,
     EmailRecipient,
@@ -19,7 +21,9 @@ from apps.dashboard.models import (
     ServiceSubscription,
     SiteConfiguration,
     Station,
+    StormWarning,
     Town,
+    TropicalCyclone,
     WeatherReport,
 )
 
@@ -391,3 +395,133 @@ class WeatherReportTests(TestCase):
         r = self._make_report('today')
         self.assertIn('Hoy', str(r))
         self.assertIn(str(r.date), str(r))
+
+
+class TropicalCycloneTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('tc', 'tc@example.com', 'password')
+
+    def test_create_tropical_cyclone(self):
+        pdf = SimpleUploadedFile('tc.pdf', b'%PDF-1.4 tc', content_type='application/pdf')
+        tc = TropicalCyclone.objects.create(
+            user=self.user, summary='Test cyclone', file=pdf,
+            valid_until=timezone.now() + timedelta(days=1))
+        self.assertIn('Test cyclone', str(tc))
+        self.assertIsNotNone(tc.uuid)
+
+    def test_file_field_upload(self):
+        pdf = SimpleUploadedFile('tc2.pdf', b'%PDF-1.4 tc2', content_type='application/pdf')
+        tc = TropicalCyclone.objects.create(
+            user=self.user, summary='Cyclone with file', file=pdf,
+            valid_until=timezone.now() + timedelta(days=1))
+        self.assertTrue(tc.file.name.endswith('.pdf'))
+        self.assertTrue(tc.file.name.startswith('pdf/'))
+
+
+class StormWarningTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('storm', 'storm@example.com', 'password')
+
+    def test_create_storm_warning(self):
+        pdf = SimpleUploadedFile('storm.pdf', b'%PDF-1.4 storm', content_type='application/pdf')
+        sw = StormWarning.objects.create(
+            user=self.user, summary='Test storm', file=pdf,
+            valid_until=timezone.now() + timedelta(days=1))
+        self.assertIn('Test storm', str(sw))
+        self.assertIsNotNone(sw.uuid)
+
+    def test_file_field_upload(self):
+        pdf = SimpleUploadedFile('storm2.pdf', b'%PDF-1.4 storm2', content_type='application/pdf')
+        sw = StormWarning.objects.create(
+            user=self.user, summary='Storm with file', file=pdf,
+            valid_until=timezone.now() + timedelta(days=1))
+        self.assertTrue(sw.file.name.endswith('.pdf'))
+        self.assertTrue(sw.file.name.startswith('pdf/'))
+
+
+class ContractTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('contract', 'contract@example.com', 'password')
+        cls.customer = Customer.objects.create(
+            company_name='Contract Corp', reeup='333.1.3333', nit='33333333333',
+            account='3333333333333333', address='Addr', user=cls.user, phone='33333333')
+        cls.service = Service.objects.create(title='Contract Svc', summary='S', user=cls.user)
+        cls.subscription = ServiceSubscription.objects.create(
+            customer=cls.customer, service=cls.service)
+
+    def test_create_contract(self):
+        contract = Contract.objects.create(
+            subscription=self.subscription, number='CTR-001',
+            date=timezone.now().date(), commercial_registry='REG-001')
+        self.assertIn('CTR-001', str(contract))
+        self.assertIsNotNone(contract.uuid)
+
+    def test_soft_delete_sets_record_active_false(self):
+        contract = Contract.objects.create(
+            subscription=self.subscription, number='CTR-002',
+            date=timezone.now().date(), commercial_registry='REG-002')
+        contract.delete()
+        self.assertFalse(contract.record_active)
+        self.assertIsNotNone(contract.deleted_at)
+        self.assertTrue(Contract.objects.filter(pk=contract.pk).exists())
+
+    def test_hard_delete_removes_record(self):
+        contract = Contract.objects.create(
+            subscription=self.subscription, number='CTR-003',
+            date=timezone.now().date(), commercial_registry='REG-003')
+        pk = contract.pk
+        contract.hard_delete()
+        self.assertFalse(Contract.objects.filter(pk=pk).exists())
+
+
+class CertificateTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user('cert', 'cert@example.com', 'password')
+        cls.customer = Customer.objects.create(
+            company_name='Cert Corp', reeup='444.1.4444', nit='44444444444',
+            account='4444444444444444', address='Addr', user=cls.user, phone='44444444')
+        cls.service = Service.objects.create(title='Cert Svc', summary='S', user=cls.user)
+        cls.subscription = ServiceSubscription.objects.create(
+            customer=cls.customer, service=cls.service)
+
+    def test_create_certificate(self):
+        pdf = SimpleUploadedFile('cert.pdf', b'%PDF-1.4 cert', content_type='application/pdf')
+        cert = Certificate.objects.create(
+            subscription=self.subscription, pdf=pdf)
+        self.assertIn('Cert Svc', str(cert))
+        self.assertIn('Cert Corp', str(cert))
+        self.assertIsNotNone(cert.uuid)
+
+    def test_soft_delete_sets_record_active_false(self):
+        pdf = SimpleUploadedFile('cert_soft.pdf', b'%PDF-1.4 soft', content_type='application/pdf')
+        cert = Certificate.objects.create(
+            subscription=self.subscription, pdf=pdf)
+        cert.delete()
+        self.assertFalse(cert.record_active)
+        self.assertIsNotNone(cert.deleted_at)
+        self.assertTrue(Certificate.objects.filter(pk=cert.pk).exists())
+
+    def test_hard_delete_removes_record(self):
+        pdf = SimpleUploadedFile('cert_hard.pdf', b'%PDF-1.4 hard', content_type='application/pdf')
+        cert = Certificate.objects.create(
+            subscription=self.subscription, pdf=pdf)
+        pk = cert.pk
+        cert.hard_delete()
+        self.assertFalse(Certificate.objects.filter(pk=pk).exists())
+
+    def test_hard_delete_cleans_up_file(self):
+        import os
+        pdf = SimpleUploadedFile('cert_cleanup.pdf', b'%PDF-1.4 cleanup', content_type='application/pdf')
+        cert = Certificate.objects.create(
+            subscription=self.subscription, pdf=pdf)
+        file_path = cert.pdf.path
+        self.assertTrue(os.path.exists(file_path))
+        cert.hard_delete()
+        self.assertFalse(os.path.exists(file_path))
+
+    def test_file_fields_defined(self):
+        self.assertEqual(Certificate.file_fields, ['pdf'])

@@ -1,3 +1,6 @@
+from datetime import timedelta
+from unittest.mock import patch
+
 from django.contrib.auth.models import Group, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
@@ -5,12 +8,16 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.dashboard.models import (
+    Contract,
     Customer,
+    EarlyWarning,
     Invoice,
     Province,
     Service,
     ServiceSubscription,
     SiteConfiguration,
+    StormWarning,
+    TropicalCyclone,
     WeatherReport,
 )
 
@@ -273,3 +280,465 @@ class WeatherReportCRUDTests(TestCase):
         response = self.client.post(url, follow=True)
         self.assertFalse(WeatherReport.objects.filter(pk=r.pk).exists())
         self.assertRedirects(response, reverse('dashboard:tiempo_hoy_list'))
+
+
+class EarlyWarningTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance()
+        cls.admin = _make_admin('ewadmin')
+        cls.list_url = reverse('dashboard:alerta_temprana_list')
+        cls.create_url = reverse('dashboard:alerta_temprana_create')
+
+    def test_login_required(self):
+        self.client.logout()
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_superuser_access(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_contains_objects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = EarlyWarning.objects.create(
+            user=self.admin, summary='Test Early Warning',
+            valid_until=valid_until, file=pdf,
+        )
+        response = self.client.get(self.list_url)
+        self.assertContains(response, obj.summary)
+
+    @patch('apps.dashboard.views.avisos.alertas_tempranas.views.mail_send')
+    def test_create_redirects(self, mock_mail_send):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        valid_until = (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+        data = {'summary': 'New Early Warning', 'valid_until': valid_until, 'file': pdf}
+        response = self.client.post(self.create_url, data, follow=True)
+        self.assertTrue(EarlyWarning.objects.filter(summary='New Early Warning').exists())
+        self.assertRedirects(response, self.list_url)
+
+    @patch('apps.dashboard.views.avisos.alertas_tempranas.views.mail_send')
+    def test_update_redirects(self, mock_mail_send):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('orig.pdf', b'%PDF-1.4 orig', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = EarlyWarning.objects.create(
+            user=self.admin, summary='Original', valid_until=valid_until, file=pdf,
+        )
+        url = reverse('dashboard:alerta_temprana_update', args=[obj.uuid])
+        pdf2 = SimpleUploadedFile('new.pdf', b'%PDF-1.4 new', content_type='application/pdf')
+        valid_until2 = (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')
+        response = self.client.post(url, {
+            'summary': 'Updated', 'valid_until': valid_until2, 'file': pdf2,
+        }, follow=True)
+        obj.refresh_from_db()
+        self.assertEqual(obj.summary, 'Updated')
+        self.assertRedirects(response, self.list_url)
+
+    def test_delete_redirects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('del.pdf', b'%PDF-1.4 del', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = EarlyWarning.objects.create(
+            user=self.admin, summary='Delete Me', valid_until=valid_until, file=pdf,
+        )
+        url = reverse('dashboard:alerta_temprana_delete', args=[obj.uuid])
+        response = self.client.post(url, follow=True)
+        self.assertFalse(EarlyWarning.objects.filter(pk=obj.pk).exists())
+        self.assertRedirects(response, self.list_url)
+
+
+class TropicalCycloneTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance()
+        cls.admin = _make_admin('tcadmin')
+        cls.list_url = reverse('dashboard:ciclon_tropical_list')
+        cls.create_url = reverse('dashboard:ciclon_tropical_create')
+
+    def test_login_required(self):
+        self.client.logout()
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_superuser_access(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_contains_objects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = TropicalCyclone.objects.create(
+            user=self.admin, summary='Test Cyclone',
+            valid_until=valid_until, file=pdf,
+        )
+        response = self.client.get(self.list_url)
+        self.assertContains(response, obj.summary)
+
+    @patch('apps.dashboard.views.avisos.ciclones_tropicales.views.mail_send')
+    def test_create_redirects(self, mock_mail_send):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        valid_until = (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+        data = {'summary': 'New Cyclone', 'valid_until': valid_until, 'file': pdf}
+        response = self.client.post(self.create_url, data, follow=True)
+        self.assertTrue(TropicalCyclone.objects.filter(summary='New Cyclone').exists())
+        self.assertRedirects(response, self.list_url)
+
+    @patch('apps.dashboard.views.avisos.ciclones_tropicales.views.mail_send')
+    def test_update_redirects(self, mock_mail_send):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('orig.pdf', b'%PDF-1.4 orig', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = TropicalCyclone.objects.create(
+            user=self.admin, summary='Original', valid_until=valid_until, file=pdf,
+        )
+        url = reverse('dashboard:ciclon_tropical_update', args=[obj.uuid])
+        pdf2 = SimpleUploadedFile('new.pdf', b'%PDF-1.4 new', content_type='application/pdf')
+        valid_until2 = (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')
+        response = self.client.post(url, {
+            'summary': 'Updated', 'valid_until': valid_until2, 'file': pdf2,
+        }, follow=True)
+        obj.refresh_from_db()
+        self.assertEqual(obj.summary, 'Updated')
+        self.assertRedirects(response, self.list_url)
+
+    def test_delete_redirects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('del.pdf', b'%PDF-1.4 del', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = TropicalCyclone.objects.create(
+            user=self.admin, summary='Delete Me', valid_until=valid_until, file=pdf,
+        )
+        url = reverse('dashboard:ciclon_tropical_delete', args=[obj.uuid])
+        response = self.client.post(url, follow=True)
+        self.assertFalse(TropicalCyclone.objects.filter(pk=obj.pk).exists())
+        self.assertRedirects(response, self.list_url)
+
+
+class StormWarningTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance()
+        cls.admin = _make_admin('swadmin')
+        cls.list_url = reverse('dashboard:tormenta_list')
+        cls.create_url = reverse('dashboard:tormenta_create')
+
+    def test_login_required(self):
+        self.client.logout()
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_superuser_access(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_contains_objects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = StormWarning.objects.create(
+            user=self.admin, summary='Test Storm',
+            valid_until=valid_until, file=pdf,
+        )
+        response = self.client.get(self.list_url)
+        self.assertContains(response, obj.summary)
+
+    @patch('apps.dashboard.views.avisos.tormentas.views.mail_send')
+    def test_create_redirects(self, mock_mail_send):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        valid_until = (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+        data = {'summary': 'New Storm', 'valid_until': valid_until, 'file': pdf}
+        response = self.client.post(self.create_url, data, follow=True)
+        self.assertTrue(StormWarning.objects.filter(summary='New Storm').exists())
+        self.assertRedirects(response, self.list_url)
+
+    @patch('apps.dashboard.views.avisos.tormentas.views.mail_send')
+    def test_update_redirects(self, mock_mail_send):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('orig.pdf', b'%PDF-1.4 orig', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = StormWarning.objects.create(
+            user=self.admin, summary='Original', valid_until=valid_until, file=pdf,
+        )
+        url = reverse('dashboard:tormenta_update', args=[obj.uuid])
+        pdf2 = SimpleUploadedFile('new.pdf', b'%PDF-1.4 new', content_type='application/pdf')
+        valid_until2 = (timezone.now() + timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S')
+        response = self.client.post(url, {
+            'summary': 'Updated', 'valid_until': valid_until2, 'file': pdf2,
+        }, follow=True)
+        obj.refresh_from_db()
+        self.assertEqual(obj.summary, 'Updated')
+        self.assertRedirects(response, self.list_url)
+
+    def test_delete_redirects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('del.pdf', b'%PDF-1.4 del', content_type='application/pdf')
+        valid_until = timezone.now() + timedelta(days=1)
+        obj = StormWarning.objects.create(
+            user=self.admin, summary='Delete Me', valid_until=valid_until, file=pdf,
+        )
+        url = reverse('dashboard:tormenta_delete', args=[obj.uuid])
+        response = self.client.post(url, follow=True)
+        self.assertFalse(StormWarning.objects.filter(pk=obj.pk).exists())
+        self.assertRedirects(response, self.list_url)
+
+
+class ServiceCRUDTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance()
+        cls.admin = _make_admin('svadmin')
+        cls.list_url = reverse('dashboard:servicio_list')
+        cls.create_url = reverse('dashboard:servicio_create')
+
+    def test_login_required(self):
+        self.client.logout()
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_superuser_access(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_contains_objects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        Service.objects.create(
+            title='Test Service', summary='Desc', user=self.admin,
+            service_type='public', pdf=pdf,
+        )
+        response = self.client.get(self.list_url)
+        self.assertContains(response, 'Test Service')
+
+    def test_create_redirects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        data = {
+            'title': 'New Service', 'summary': 'Desc',
+            'service_type': 'public', 'pdf': pdf,
+            'code': '', 'price': '',
+        }
+        response = self.client.post(self.create_url, data, follow=True)
+        self.assertTrue(Service.objects.filter(title='New Service').exists())
+        self.assertRedirects(response, self.list_url)
+
+    def test_update_redirects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('orig.pdf', b'%PDF-1.4 orig', content_type='application/pdf')
+        svc = Service.objects.create(
+            title='Original', summary='Desc', user=self.admin,
+            service_type='public', pdf=pdf,
+        )
+        url = reverse('dashboard:servicio_update', args=[svc.uuid])
+        pdf2 = SimpleUploadedFile('new.pdf', b'%PDF-1.4 new', content_type='application/pdf')
+        data = {
+            'title': 'Updated Service', 'summary': 'Updated Desc',
+            'service_type': 'public', 'pdf': pdf2,
+            'code': '', 'price': '',
+        }
+        response = self.client.post(url, data, follow=True)
+        svc.refresh_from_db()
+        self.assertEqual(svc.title, 'Updated Service')
+        self.assertRedirects(response, self.list_url)
+
+    def test_delete_redirects(self):
+        self.client.force_login(self.admin)
+        pdf = SimpleUploadedFile('del.pdf', b'%PDF-1.4 del', content_type='application/pdf')
+        svc = Service.objects.create(
+            title='Delete Me', summary='Desc', user=self.admin,
+            service_type='public', pdf=pdf,
+        )
+        url = reverse('dashboard:servicio_delete', args=[svc.uuid])
+        response = self.client.post(url, follow=True)
+        svc.refresh_from_db()
+        self.assertFalse(svc.record_active)
+        self.assertRedirects(response, self.list_url)
+
+
+class CustomerCRUDTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance()
+        cls.admin = _make_admin('cuadmin')
+        cls.list_url = reverse('dashboard:cliente_list')
+        cls.create_url = reverse('dashboard:cliente_create')
+
+    def test_login_required(self):
+        self.client.logout()
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_superuser_access(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_contains_objects(self):
+        self.client.force_login(self.admin)
+        user = User.objects.create_user('listcust', 'list@test.com', 'password')
+        Customer.objects.create(
+            company_name='List Company', reeup='123.1.12345', nit='12345678901',
+            account='1234567890123456', address='Calle 123', phone='12345678',
+            user=user, accept_terms=True,
+        )
+        response = self.client.get(self.list_url)
+        self.assertContains(response, 'List Company')
+
+    def test_create_redirects(self):
+        self.client.force_login(self.admin)
+        data = {
+            'username': 'newcustomer',
+            'password': 'testpass123',
+            'email': 'customer@test.com',
+            'client_type': 'juridica',
+            'company_name': 'New Company',
+            'reeup': '123.1.12345',
+            'nit': '12345678901',
+            'account': '1234567890123456',
+            'agency_bank': 'Test Bank',
+            'address': 'Calle 123',
+            'phone': '12345678',
+        }
+        response = self.client.post(self.create_url, data, follow=True)
+        self.assertTrue(Customer.objects.filter(company_name='New Company').exists())
+        self.assertRedirects(response, self.list_url)
+
+    def test_update_redirects(self):
+        self.client.force_login(self.admin)
+        user = User.objects.create_user('updcust', 'upd@test.com', 'password')
+        customer = Customer.objects.create(
+            company_name='Old Company', reeup='123.1.12345', nit='12345678901',
+            account='1234567890123456', address='Calle 123', phone='12345678',
+            user=user, accept_terms=True,
+        )
+        url = reverse('dashboard:cliente_update', args=[customer.uuid])
+        data = {
+            'email': 'updated@test.com',
+            'client_type': 'juridica',
+            'company_name': 'Updated Company',
+            'reeup': '123.1.12345',
+            'nit': '12345678901',
+            'account': '1234567890123456',
+            'agency_bank': 'Updated Bank',
+            'address': 'Calle 456',
+            'phone': '87654321',
+        }
+        response = self.client.post(url, data, follow=True)
+        customer.refresh_from_db()
+        self.assertEqual(customer.company_name, 'Updated Company')
+        self.assertRedirects(response, self.list_url)
+
+    def test_delete_redirects(self):
+        self.client.force_login(self.admin)
+        user = User.objects.create_user('delcust', 'del@test.com', 'password')
+        customer = Customer.objects.create(
+            company_name='Delete Company', reeup='123.1.12345', nit='12345678901',
+            account='1234567890123456', address='Calle 123', phone='12345678',
+            user=user, accept_terms=True,
+        )
+        url = reverse('dashboard:cliente_delete', args=[customer.uuid])
+        response = self.client.post(url, follow=True)
+        customer.refresh_from_db()
+        self.assertFalse(customer.record_active)
+        self.assertRedirects(response, self.list_url)
+
+
+class ContractCRUDTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance()
+        cls.admin = _make_admin('coadmin')
+        cls.list_url = reverse('dashboard:contrato_list')
+        cls.create_url = reverse('dashboard:contrato_create')
+        user = User.objects.create_user('contractuser', 'contract@test.com', 'password')
+        cls.customer = Customer.objects.create(
+            company_name='Contract Corp', reeup='123.1.12345', nit='12345678901',
+            account='1234567890123456', address='Calle 123', phone='12345678',
+            user=user, accept_terms=True,
+        )
+        cls.service = Service.objects.create(
+            title='Contract Svc', summary='Test', user=cls.admin,
+            service_type='commercial', price=100, code='CS001',
+        )
+        cls.subscription = ServiceSubscription.objects.create(
+            customer=cls.customer, service=cls.service,
+            payment_status='paid', start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
+        )
+
+    def test_login_required(self):
+        self.client.logout()
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 302)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_superuser_access(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(self.create_url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_contains_objects(self):
+        self.client.force_login(self.admin)
+        Contract.objects.create(
+            subscription=self.subscription, number='2025-0001',
+            date=timezone.now().date(), commercial_registry='A09404',
+        )
+        response = self.client.get(self.list_url)
+        self.assertContains(response, '2025-0001')
+
+    def test_create_redirects(self):
+        self.client.force_login(self.admin)
+        data = {
+            'subscription': self.subscription.pk,
+            'number': '2025-0002',
+            'date': timezone.now().date().strftime('%Y-%m-%d'),
+            'commercial_registry': 'A09405',
+        }
+        response = self.client.post(self.create_url, data, follow=True)
+        self.assertTrue(Contract.objects.filter(number='2025-0002').exists())
+        self.assertRedirects(response, self.list_url)
+
+    def test_delete_redirects(self):
+        self.client.force_login(self.admin)
+        contract = Contract.objects.create(
+            subscription=self.subscription, number='2025-0003',
+            date=timezone.now().date(), commercial_registry='A09406',
+        )
+        url = reverse('dashboard:contrato_delete', args=[contract.uuid])
+        response = self.client.post(url, follow=True)
+        contract.refresh_from_db()
+        self.assertFalse(contract.record_active)
+        self.assertRedirects(response, self.list_url)
