@@ -60,17 +60,29 @@
 56. **057 · Seguridad post-auditoría** — `LoginRequiredMixin` a `ServiceDetailView`; `verify=True` en requests externas; excepciones específicas en delete views; `UserUpdateForm` de `exclude` a `fields`; `get_avatar()` usa `.url`.
 57. **058 · Performance y JS** — `select_related` en list views; `.catch()` en fetch calls; URLs API vía `data-*`; `print()` → logging; FontAwesome a Tabler Icons.
 58. **060 · URL namespace refactor** — `app_name` añadido a todas las apps; URLs namespaced consistentes en templates y vistas.
+59. **069 · Tests comerciales** — 98 tests unitarios y de integración para `apps/commercial/` (modelos, formularios, vistas, tareas Huey); suite completa 233 tests OK.
 
 ## Siguiente 🔜
 
-59. **059 · UI y accesibilidad** — utils.html inline → static files; `aria-label` en icon-links; `<pre>` headings → `<h3>`; SVG `alt=""` → `role="img"`; labels con `for`; limpiar navbar comentado.
-60. **061 · Models conventions** — FileHandlerMixin, `Meta.ordering`, `related_name`, UUID en modelos faltantes.
-61. **063 · Templates y static** — `paginate_by = 20` en ListViews, bloques comentados, accesibilidad.
-62. **064 · Tests coverage** — tests faltantes en publications, home, dashboard.
-63. **065 · Settings y seguridad** — CORS headers para API REST.
-64. **066 · Restructure apps** — crear `core/`, `user_auth/`, `meteo/`, `commercial/`; mover modelos, views, forms, urls, admin; eliminar `common/`, `accounts/`, `login/`, `crm/`, `billing/` legacy; reset DB + migraciones; `PROVEEDOR_FACTURA` migrado a CompanySettings.
-65. **067 · Unify Warning model** — fusionar EarlyWarning, TropicalCyclone, StormWarning en un solo modelo `Warning` con `warning_type`; views parametrizadas; eliminar código duplicado.
-66. **068 · Restructure templates** — mover templates de `pages/dashboard/` a su app correspondiente (`commercial/`, `meteo/`, `core/`, etc.); reorganizar `includes/dashboard/` por app; actualizar todos los `{% url %}` a nuevos namespaces.
+60. **059 · UI y accesibilidad** — utils.html inline → static files; `aria-label` en icon-links; `<pre>` headings → `<h3>`; SVG `alt=""` → `role="img"`; labels con `for`; limpiar navbar comentado.
+61. **061 · Models conventions** — FileHandlerMixin, `Meta.ordering`, `related_name`, UUID en modelos faltantes.
+62. **063 · Templates y static** — `paginate_by = 20` en ListViews, bloques comentados, accesibilidad.
+63. **064 · Tests coverage** — tests faltantes en publications, home, dashboard.
+64. **065 · Settings y seguridad** — CORS headers para API REST.
+65. **066 · Restructure apps** — crear `core/`, `user_auth/`, `meteo/`, `commercial/`; mover modelos, views, forms, urls, admin; eliminar `common/`, `accounts/`, `login/`, `crm/`, `billing/` legacy; reset DB + migraciones; `PROVEEDOR_FACTURA` migrado a CompanySettings.
+66. **067 · Unify Warning model** — fusionar EarlyWarning, TropicalCyclone, StormWarning en un solo modelo `Warning` con `warning_type`; views parametrizadas; eliminar código duplicado.
+67. **068 · Restructure templates** — mover templates de `pages/dashboard/` a su app correspondiente (`commercial/`, `meteo/`, `core/`, etc.); reorganizar `includes/dashboard/` por app; actualizar todos los `{% url %}` a nuevos namespaces.
+68. **070 · Tests secundarios** — tests faltantes en publications, home, dashboard, api. Solo spec.md — requiere plan.md + tasks.md.
+69. **071 · Performance queries** — optimizar queries N+1, agregar `select_related`/`prefetch_related` donde falte. Solo spec.md.
+70. **072 · Dark mode** — implementar alternador claro/oscuro persistente con Tabler. Solo spec.md.
+71. **073 · UI polish** — refinamientos visuales: espaciado, tipografía, estados vacíos, micro-interacciones. Solo spec.md.
+72. **074 · Redis cache** — integrar Redis para caché de consultas frecuentes y sesiones. Solo spec.md.
+73. **075 · Monitoreo de tareas** — panel de monitoreo para cola Huey: tareas pendientes, fallidas, tiempos de ejecución. Solo spec.md.
+74. **076 · Auditoría de actividad** — registro de actividad de usuarios (login, CRUD, exportaciones) con filtros y búsqueda. Solo spec.md.
+75. **077 · Operaciones masivas** — acciones en lote en listados (exportar, eliminar, cambiar estado). Solo spec.md.
+76. **078 · Tema personalizado** — personalización visual: colores de marca, logo, favicon desde admin. Solo spec.md.
+77. **079 · Exportar gráficos** — botón de descarga PNG/PDF para gráficos ApexCharts del dashboard. Solo spec.md.
+78. **080 · Debug Toolbar** — Django Debug Toolbar en entorno de desarrollo. Solo spec.md.
 
 ## Backlog / ideas 💡
 
@@ -80,4 +92,4 @@
 - PWA / service worker
 - Notificaciones en tiempo real (WebSockets)
 
-> Cada feature nueva se crea como `features/NNN-nombre-feature/` con `spec.md`, `plan.md` y `tasks.md` antes de tocar código.
+> Cada feature nueva se crea como `features/NNN-nombre-feature/` con `spec.md`, `plan.md` y `tasks.md` antes de tocar código. Al completar, actualizar `spec/constitution/roadmap.md` moviendo la feature a Hecho antes de empezar la siguiente.

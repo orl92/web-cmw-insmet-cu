@@ -95,6 +95,8 @@ Task arrives →
 
 ## Flujo SDD
 
+> **⚠️ REGLA INVIOLABLE**: No se puede saltar ningún paso de este flujo. Cada feature nueva debe pasar por **spec → plan → tasks → implementación → actualizar roadmap** antes de empezar la siguiente. Saltarse la actualización del roadmap rompe el flujo de trabajo y queda documentación huérfana.
+
 Cada feature sigue este flujo usando los skills:
 
 1. Cargar `spec-driven-development` → escribir `spec/features/NNN-nombre/spec.md`
@@ -103,7 +105,7 @@ Cada feature sigue este flujo usando los skills:
 4. Si hay cambios de modelo: `python manage.py makemigrations`
 5. Verificar: `python manage.py check && python manage.py test <app>`
 6. Si no existe test para el cambio, crearlo
-7. Actualizar `constitution/roadmap.md` moviendo la feature a "Hecho"
+7. Actualizar `spec/constitution/roadmap.md` moviendo la feature a "Hecho"
 8. Commit descriptivo (incluir número y nombre de la feature)
 
 Antes de codificar, si hace falta clarificar, preguntar: ¿tipo de cambio? ¿app(s) afectada(s)? ¿cambios de DB? ¿URLs/permisos? ¿templates? ¿criterios de aceptación? ¿número de feature?
