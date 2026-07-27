@@ -1,5 +1,5 @@
 from datetime import datetime
-from apps.geo.models import Town
+from apps.meteo.models import Town
 from apps.home.forms import MeteoDataForm, SoundingForm, GifDownloadForm
 from apps.home.data.plot_generators import generate_skewt
 import json
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class MapaView(TemplateView):
-    template_name = 'pages/home/modelos/maps.html'
+    template_name = 'pages/home/models/maps.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -160,7 +160,7 @@ class MapaView(TemplateView):
 
 
 class MeteogramView(TemplateView):
-    template_name = 'pages/home/modelos/meteogram.html'
+    template_name = 'pages/home/models/meteogram.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -249,7 +249,7 @@ class MeteogramView(TemplateView):
 
 
 class SoundingView(TemplateView):
-    template_name = 'pages/home/modelos/sounding.html'
+    template_name = 'pages/home/models/sounding.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

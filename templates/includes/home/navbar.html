@@ -79,19 +79,20 @@
                             </div>
                         </a>
                         <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="{% url 'user_auth:profile_detail' %}" class="dropdown-item">Mi Perfil</a>
                             {% if request.user.is_staff %}
                                 <a href="{% url 'dashboard:index' %}" class="dropdown-item">Administración</a>
                             {% else %}
-                                <a href="{% url 'dashboard:suscripcion_list' %}" class="dropdown-item">Administración</a>
+                                <a href="{% url 'commercial:suscripcion_list' %}" class="dropdown-item">Mis Suscripciones</a>
                             {% endif %}
                             {% if request.user.profile and not request.user.profile.is_ldap %}
-                                <a href="{% url 'accounts:password_change' %}" class="dropdown-item">Cambiar Contraseña</a>
+                                <a href="{% url 'user_auth:password_change' %}" class="dropdown-item">Cambiar Contraseña</a>
                             {% endif %}
                             <div class="dropdown-divider"></div>
-                            <a href="{% url 'login:out' %}" class="dropdown-item">Cerrar Sesión</a>
+                            <a href="{% url 'user_auth:logout' %}" class="dropdown-item">Cerrar Sesión</a>
                         </div>
                     {% else %}
-                        <a href="{% url 'login:in' %}" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="tooltip"
+                        <a href="{% url 'user_auth:login' %}" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="tooltip"
                            data-bs-placement="bottom" title="Iniciar sesión">
                             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
                                  viewBox="0 0 24 24"

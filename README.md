@@ -21,7 +21,7 @@ El sistema detecta automáticamente el entorno (development/production) y config
 
 ### 🔄 Comparación de entornos
 
-| Variable               | Desarrollo (`runserver`)            | Producción (`runserver --production`)       |
+| Variable               | Desarrollo (`runserver`)            | Producción (`PRODUCTION=true`)              |
 | ---------------------- | ------------------------------------- | ---------------------------------------------- |
 | `DEBUG`              | `True` (activado)                   | `False` (desactivado)                        |
 | `DB_ENGINE`          | `sqlite3` (automático)             | `postgresql`/`mysql` (requiere config)     |
@@ -43,7 +43,7 @@ El sistema detecta automáticamente el entorno (development/production) y config
   - Incluye herramientas de depuración
 - **Producción**:
 
-  - Genera plantilla `.env` al ejecutar `runserver --production` con valores requeridos
+  - Genera plantilla `.env` al ejecutar `python manage.py generate_env --production` con valores requeridos
   - Exige validación manual de configuraciones críticas
   - Habilita optimizaciones de seguridad y performance
 
@@ -117,7 +117,7 @@ python manage.py runserver
 
 ```bash
 # Modo producción (pruebas locales)
-python manage.py runserver --production
+PRODUCTION=true python manage.py runserver
 ```
 
 En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`.

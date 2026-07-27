@@ -1,0 +1,220 @@
+{% extends 'layouts/list.html' %}
+{% load static %}
+
+{% block columns %}
+  <th>Número</th>
+  <th>Fecha</th>
+  <th>Cliente</th>
+  <th>Servicio(s)</th>
+  <th>Monto</th>
+  <th>Estado</th>
+  <th class="text-end">Acciones</th>
+{% endblock %}
+
+{% block row %}
+  {% with invoice=object %}
+    <td><span class="text-muted">{{ invoice.number }}</span></td>
+    <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
+    <td>
+      {% if invoice.subscription %}
+        <span data-bs-toggle="tooltip" title="{{ invoice.subscription.customer.company_name }}">
+          {{ invoice.subscription.customer.company_name|truncatechars:30 }}
+        </span>
+      {% elif invoice.customer %}
+        <span data-bs-toggle="tooltip" title="{{ invoice.customer.company_name }}">
+          {{ invoice.customer.company_name|truncatechars:30 }}
+        </span>
+      {% else %}
+        <span class="text-muted">—</span>
+      {% endif %}
+    </td>
+    <td>
+      {% if invoice.subscription %}
+        <span data-bs-toggle="tooltip" title="{{ invoice.subscription.service.title }}">
+          {{ invoice.subscription.service.title|truncatechars:40 }}
+        </span>
+      {% else %}
+        {% for item in invoice.items.all %}
+          <span data-bs-toggle="tooltip" title="{{ item.descripcion }}">
+            {{ item.descripcion|truncatechars:40 }}
+          </span>
+          {% if not forloop.last %}, {% endif %}
+        {% empty %}
+          <span class="text-muted">—</span>
+        {% endfor %}
+      {% endif %}
+    </td>
+    <td>$ {{ invoice.amount|floatformat:2 }}</td>
+    <td>
+      {% if invoice.is_cancelled %}
+        <span class="badge badge-outline text-secondary">Anulada</span>
+      {% else %}
+        <span class="badge badge-outline text-green">Activa</span>
+      {% endif %}
+    </td>
+    <td class="text-end">
+      <!-- Descargar PDF -->
+      {% if invoice.pdf %}
+        <a href="{{ invoice.pdf.url }}" target="_blank" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Descargar Factura" download>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-download">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+            <polyline points="7 11 12 16 17 11" />
+            <line x1="12" y1="4" x2="12" y2="16" />
+          </svg>
+        </a>
+      {% endif %}
+
+      <!-- Reenviar correo (solo si no se envió y no está anulada) -->
+      {% if not invoice.email_sent and not invoice.is_cancelled %}
+        <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Reenviar correo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-mail-forward">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 18h-7a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v7.5" />
+            <path d="M3 6l9 6l9 -6" />
+            <path d="M15 18h6" />
+            <path d="M18 15l3 3l-3 3" />
+          </svg>
+        </a>
+      {% endif %}
+
+      <!-- Anular (soft delete) – abre modal -->
+      {% if not invoice.is_cancelled and perms.dashboard.delete_invoice %}
+        <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-bs-toggle="tooltip" title="Anular factura"
+                data-action="anular" data-uuid="{{ invoice.uuid }}" data-number="{{ invoice.number }}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 7l16 0" />
+            <path d="M10 11l0 6" />
+            <path d="M14 11l0 6" />
+            <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+            <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+          </svg>
+        </button>
+      {% endif %}
+
+      <!-- Eliminar permanentemente (solo superusuario) – abre modal -->
+      {% if is_superuser and invoice.is_cancelled %}
+        <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-bs-toggle="tooltip" title="Eliminar permanentemente"
+                data-action="eliminar" data-uuid="{{ invoice.uuid }}" data-number="{{ invoice.number }}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 7l16 0" />
+            <path d="M10 11l0 6" />
+            <path d="M14 11l0 6" />
+            <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+            <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+          </svg>
+        </button>
+      {% endif %}
+    </td>
+  {% endwith %}
+{% endblock %}
+
+{% block modal %}
+  <!-- Modal de confirmación para anular/eliminar factura -->
+  <div class="modal modal-blur fade" id="confirmInvoiceActionModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="modalTitle"></h5>
+          <button type="button" class="btn-close btn-close-white" id="closeConfirmModalBtn" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link link-secondary me-auto" id="cancelConfirmModalBtn">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirmar</button>
+        </div>
+        <form id="invoiceActionForm" method="post" style="display: none;">
+          {% csrf_token %}
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+  {{ block.super }}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const confirmModal = document.getElementById('confirmInvoiceActionModal');
+      if (!confirmModal) return;
+
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+      const confirmBtn = document.getElementById('confirmActionBtn');
+      const form = document.getElementById('invoiceActionForm');
+      const closeConfirmBtn = document.getElementById('closeConfirmModalBtn');
+      const cancelConfirmBtn = document.getElementById('cancelConfirmModalBtn');
+
+      let currentActionUrl = '';
+
+      // Funciones para mostrar/ocultar el modal manualmente (como en el modal de empresa)
+      function showModal(modal) {
+        modal.classList.add('show');
+        modal.style.display = 'block';
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('modal-open');
+        if (!document.querySelector('.modal-backdrop')) {
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop fade show';
+          document.body.appendChild(backdrop);
+        }
+      }
+
+      function hideModal(modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('modal-open');
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.remove();
+      }
+
+      // Delegación de eventos para botones con clase .action-btn
+      document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.action-btn');
+        if (!btn) return;
+
+        const action = btn.dataset.action;
+        const uuid = btn.dataset.uuid;
+        const number = btn.dataset.number;
+
+        if (action === 'anular') {
+          modalTitle.textContent = 'Anular factura';
+          modalBody.innerHTML = `<p>¿Está seguro de anular la factura <strong>${number}</strong>?</p><p class="text-muted">Las suscripciones asociadas volverán a estado "solicitado".</p>`;
+          currentActionUrl = '{% url "commercial:factura_cancel" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+        } else if (action === 'eliminar') {
+          modalTitle.textContent = 'Eliminar permanentemente';
+          modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> la factura <strong>${number}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
+          currentActionUrl = '{% url "commercial:factura_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+        }
+
+        showModal(confirmModal);
+      });
+
+      // Botones de cierre del modal
+      if (closeConfirmBtn) {
+        closeConfirmBtn.addEventListener('click', () => hideModal(confirmModal));
+      }
+      if (cancelConfirmBtn) {
+        cancelConfirmBtn.addEventListener('click', () => hideModal(confirmModal));
+      }
+
+      // Cerrar modal al hacer clic fuera del contenido (backdrop)
+      window.addEventListener('click', function (e) {
+        if (e.target === confirmModal) {
+          hideModal(confirmModal);
+        }
+      });
+
+      // Confirmar acción
+      confirmBtn.addEventListener('click', function () {
+        if (currentActionUrl) {
+          form.action = currentActionUrl;
+          form.submit();
+        }
+      });
+    });
+  </script>
+{% endblock %}

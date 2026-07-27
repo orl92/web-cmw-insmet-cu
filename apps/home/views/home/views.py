@@ -1,6 +1,6 @@
 from django.views.generic import TemplateView
 
-from apps.dashboard.models import Forecasts
+from apps.meteo.models import Forecasts
 from django.core.exceptions import ObjectDoesNotExist
 
 # Create your views here.

@@ -1,0 +1,19 @@
+<li class="nav-item dropdown {% if 'user_auth' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+        <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-lock"></i></span>
+        <span class="nav-link-title">Autenticación</span>
+    </a>
+    <div class="dropdown-menu {% if 'user_auth' in parent %}show{% endif %}">
+        <div class="dropdown-menu-columns">
+            <div class="dropdown-menu-column">
+                {% if request.user.is_superuser %}
+                {% url 'user_auth:groups_list' as groups_url %}{% if groups_url %}<a class="dropdown-item {% if 'groups' in segment %}active{% endif %}" href="{{ groups_url }}">Grupos</a>{% endif %}
+                {% url 'user_auth:permission_profiles_list' as profiles_url %}{% if profiles_url %}<a class="dropdown-item {% if 'permission_profiles' in segment %}active{% endif %}" href="{{ profiles_url }}">Permisos</a>{% endif %}
+                {% url 'user_auth:users_list' as users_url %}{% if users_url %}<a class="dropdown-item {% if 'users' in segment %}active{% endif %}" href="{{ users_url }}">Usuarios</a>{% endif %}
+                {% endif %}
+                <a class="dropdown-item {% if 'profile' in segment and 'permission_profiles' not in segment %}active{% endif %}" href="{% url 'user_auth:profile_detail' %}">Perfil</a>
+                {% url 'user_auth:password_change' as password_change_url %}{% if password_change_url %}<a class="dropdown-item {% if 'password_change' in segment %}active{% endif %}" href="{{ password_change_url }}">Cambiar Contraseña</a>{% endif %}
+            </div>
+        </div>
+    </div>
+</li>

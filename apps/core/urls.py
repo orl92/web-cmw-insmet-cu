@@ -1,0 +1,25 @@
+from django.urls import path
+
+from apps.core.views import (
+    CompanySettingsAjaxUpdateView,
+    CompanySettingsUpdateView,
+    EmailRecipientListCreateView,
+    EmailRecipientListCSVExportView,
+    EmailRecipientListDeleteView,
+    EmailRecipientListListView,
+    EmailRecipientListUpdateView,
+    MaintenanceModeToggleView,
+)
+
+app_name = 'core'
+
+urlpatterns = [
+    path('empresa/', CompanySettingsUpdateView.as_view(), name='company_settings'),
+    path('empresa/ajax/', CompanySettingsAjaxUpdateView.as_view(), name='company_settings_ajax'),
+    path('listas-correo/', EmailRecipientListListView.as_view(), name='email_recipient_list'),
+    path('listas-correo/crear/', EmailRecipientListCreateView.as_view(), name='email_recipient_create'),
+    path('listas-correo/<uuid:pk>/editar/', EmailRecipientListUpdateView.as_view(), name='email_recipient_update'),
+    path('listas-correo/<uuid:pk>/eliminar/', EmailRecipientListDeleteView.as_view(), name='email_recipient_delete'),
+    path('listas-correo/exportar/csv/', EmailRecipientListCSVExportView.as_view(), name='email_recipient_export_csv'),
+    path('toggle-maintenance/', MaintenanceModeToggleView.as_view(), name='toggle_maintenance_mode'),
+]

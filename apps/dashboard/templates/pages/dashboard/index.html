@@ -1,0 +1,25 @@
+{% extends 'layouts/dashboard.html' %}
+{% load static %}
+{% load my_filters %}
+
+{% block content %}
+
+{% if user.is_superuser %}
+{% include 'includes/dashboard/superuser_kpis.html' %}
+{% endif %}
+
+{% include 'includes/dashboard/alertas_activas.html' %}
+
+{% include 'includes/dashboard/cliente_suscripciones.html' %}
+
+{% include 'includes/dashboard/resumen_comercial.html' %}
+
+{% include 'includes/dashboard/pronosticos.html' %}
+
+{% endblock %}
+
+{% block extrajs %}
+<link href="{% static 'dist/css/dashboard.css' %}" rel="stylesheet">
+<script src="{% static 'dist/libs/apexcharts/dist/apexcharts.min.js' %}"></script>
+<script src="{% static 'dist/js/dashboard.js' %}"></script>
+{% endblock %}

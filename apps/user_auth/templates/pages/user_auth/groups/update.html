@@ -1,0 +1,286 @@
+{% extends 'layouts/form.html' %}
+{% load static my_filters %}
+
+{% block content_before %}
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">{{ title }}</h2>
+                <div class="text-muted mt-1">
+                    Actualiza los permisos y nombre del grupo
+                </div>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="{{ url_list }}" class="btn btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-left">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M5 12l14 0" />
+                            <path d="M5 12l6 6" />
+                            <path d="M5 12l6 -6" />
+                        </svg>
+                        Volver al listado
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block form %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <label class="form-label required">Nombre del Grupo</label>
+        <input type="text" class="form-control" id="{{ form.name.id_for_label }}"
+               name="{{ form.name.name }}" value="{{ form.name.value|default:'' }}"
+               placeholder="Nombre del Grupo" required>
+        {% if form.name.errors %}
+            <div class="text-danger mt-1">{{ form.name.errors }}</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h5 class="mb-0">Permisos del Grupo</h5>
+                <p class="text-muted mb-0">Actualiza los permisos que tendrá este grupo</p>
+            </div>
+        </div>
+
+        {% if permission_profiles %}
+        <div class="mb-3">
+            <label class="form-label">Aplicar perfil predefinido</label>
+            <div class="btn-list">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="clear-all-btn">Desmarcar todos</button>
+                {% for profile in permission_profiles %}
+                <button type="button" class="btn btn-outline-primary btn-sm apply-profile-btn"
+                        data-profile-id="{{ profile.uuid }}"
+                        data-permissions="[{% for p in profile.permissions.all %}{{ p.id }}{% if not forloop.last %},{% endif %}{% endfor %}]"
+                        style="line-height: 1.4">
+                    {{ profile.name }}
+                    {% if profile.description %}<br><small class="text-secondary">{{ profile.description }}</small>{% endif %}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="table-responsive">
+            <table class="table table-flush-spacing">
+                <tbody>
+                    <tr>
+                        <td class="text-nowrap fw-medium">
+                            Acceso de Administrador
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Permite un acceso completo al sistema">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+                                <path d="M12 9h.01" />
+                                <path d="M11 12h1v4h1" />
+                            </svg>
+                        </td>
+                        <td>
+                            <div class="d-flex justify-content-end">
+                                <div class="form-check mb-0 mt-1">
+                                    <input type="checkbox" 
+                                           name="admin_access" 
+                                           id="admin_access_checkbox"
+                                           class="form-check-input">
+                                    <label class="form-check-label" for="admin_access_checkbox"> 
+                                        Seleccionar todos los permisos
+                                    </label>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for app_label, app_data in grouped_by_app.items %}
+                    <tr>
+                        <td colspan="2" class="bg-azure-lt">
+                            <strong>{{ app_data.verbose_name }}</strong>
+                            <div class="form-check form-check-inline float-end">
+                                <input type="checkbox"
+                                       class="app-select-all form-check-input"
+                                       id="select-all-{{ app_label }}"
+                                       data-app="{{ app_label }}">
+                                <label class="form-check-label" for="select-all-{{ app_label }}">
+                                    Seleccionar todos
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for model_name, perms in app_data.models.items %}
+                    <tr>
+                        <td class="text-nowrap fw-medium">{{ model_name }}</td>
+                        <td>
+                            <div class="d-flex justify-content-end">
+                                {% if perms.view %}
+                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                                    <input type="checkbox"
+                                           name="{{ perms.view.field_name }}"
+                                           value="{{ perms.view.perm.id }}"
+                                           id="{{ perms.view.field_id }}"
+                                           class="form-check-input permission-checkbox perm-{{ app_label }} view"
+                                           {% if perms.view.is_checked %}checked{% endif %}>
+                                    <label class="form-check-label text-green fw-medium" for="{{ perms.view.field_id }}">
+                                        Ver
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% if perms.add %}
+                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                                    <input type="checkbox"
+                                           name="{{ perms.add.field_name }}"
+                                           value="{{ perms.add.perm.id }}"
+                                           id="{{ perms.add.field_id }}"
+                                           class="form-check-input permission-checkbox perm-{{ app_label }} add"
+                                           {% if perms.add.is_checked %}checked{% endif %}>
+                                    <label class="form-check-label text-blue fw-medium" for="{{ perms.add.field_id }}">
+                                        Añadir
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% if perms.change %}
+                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                                    <input type="checkbox"
+                                           name="{{ perms.change.field_name }}"
+                                           value="{{ perms.change.perm.id }}"
+                                           id="{{ perms.change.field_id }}"
+                                           class="form-check-input permission-checkbox perm-{{ app_label }} change"
+                                           {% if perms.change.is_checked %}checked{% endif %}>
+                                    <label class="form-check-label text-orange fw-medium" for="{{ perms.change.field_id }}">
+                                        Editar
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% if perms.delete %}
+                                <div class="form-check mb-0 mt-1">
+                                    <input type="checkbox"
+                                           name="{{ perms.delete.field_name }}"
+                                           value="{{ perms.delete.perm.id }}"
+                                           id="{{ perms.delete.field_id }}"
+                                           class="form-check-input permission-checkbox perm-{{ app_label }} delete"
+                                           {% if perms.delete.is_checked %}checked{% endif %}>
+                                    <label class="form-check-label text-red fw-medium" for="{{ perms.delete.field_id }}">
+                                        Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted">
+                            No se encontraron modelos con permisos definidos
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if form.permissions.errors %}
+            <div class="alert alert-danger mt-3" role="alert">{{ form.permissions.errors }}</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block form_actions %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="btn-list justify-content-end">
+            <a href="{{ url_list }}" class="btn btn-outline-secondary">
+                Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-device-floppy">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
+                    <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M14 4l0 4l-6 0l0 -4" />
+                </svg>
+                Actualizar Grupo
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<style>
+input.view:checked { background-color: var(--tblr-green); border-color: var(--tblr-green); }
+input.add:checked { background-color: var(--tblr-blue); border-color: var(--tblr-blue); }
+input.change:checked { background-color: var(--tblr-orange); border-color: var(--tblr-orange); }
+input.delete:checked { background-color: var(--tblr-red); border-color: var(--tblr-red); }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const permissionCheckboxes = document.querySelectorAll('.permission-checkbox');
+    const adminAccessCheckbox = document.getElementById('admin_access_checkbox');
+
+    function updateAdminAccessCheckbox() {
+        if (!adminAccessCheckbox) return;
+        const allChecked = Array.from(permissionCheckboxes).every(cb => cb.checked);
+        const someChecked = Array.from(permissionCheckboxes).some(cb => cb.checked);
+        adminAccessCheckbox.checked = allChecked;
+        adminAccessCheckbox.indeterminate = someChecked && !allChecked;
+    }
+
+    if (adminAccessCheckbox) {
+        adminAccessCheckbox.addEventListener('change', function() {
+            permissionCheckboxes.forEach(function(cb) { cb.checked = adminAccessCheckbox.checked; });
+        });
+    }
+
+    permissionCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', function() { updateAdminAccessCheckbox(); });
+    });
+
+    document.querySelectorAll('.app-select-all').forEach(function(appCheckbox) {
+        appCheckbox.addEventListener('change', function() {
+            var app = this.dataset.app;
+            document.querySelectorAll('.perm-' + app).forEach(function(cb) {
+                cb.checked = appCheckbox.checked;
+            });
+            updateAdminAccessCheckbox();
+        });
+    });
+
+    document.getElementById('clear-all-btn').addEventListener('click', function() {
+        permissionCheckboxes.forEach(function(cb) { cb.checked = false; });
+        updateAdminAccessCheckbox();
+    });
+
+    document.querySelectorAll('.apply-profile-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var permIds = JSON.parse(this.dataset.permissions);
+            permissionCheckboxes.forEach(function(cb) {
+                cb.checked = permIds.indexOf(parseInt(cb.value)) !== -1;
+            });
+            updateAdminAccessCheckbox();
+        });
+    });
+
+    updateAdminAccessCheckbox();
+
+    var form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            var nameField = document.getElementById('{{ form.name.id_for_label }}');
+            if (!nameField.value.trim()) {
+                e.preventDefault();
+                alert('Por favor, ingresa un nombre para el grupo.');
+                nameField.focus();
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

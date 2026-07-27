@@ -3,7 +3,7 @@ from datetime import datetime
 from django import forms
 from django.core.validators import MaxValueValidator, MinValueValidator
 
-from apps.geo.models import Town
+from apps.meteo.models import Town
 
 
 class MeteoDataForm(forms.Form):

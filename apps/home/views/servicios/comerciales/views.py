@@ -5,19 +5,19 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import FormView, ListView
 
-from apps.dashboard.forms.suscripciones.forms import PaymentMethodForm
-from apps.crm.models import Customer, Service, ServiceSubscription
+from apps.commercial.forms import PaymentMethodForm
+from apps.commercial.models import Customer, Service, ServiceSubscription
 
 
 class CommercialServicesListView(LoginRequiredMixin, ListView):
     model = ServiceSubscription
-    template_name = 'pages/home/servicios/comerciales/servicios_comerciales.html'
+    template_name = 'pages/home/services/commercial.html'
     context_object_name = 'subscriptions'
     paginate_by = 10
 
     def get_queryset(self):
         try:
-            customer = self.request.user.customer
+            customer = self.request.user.commercial_customer
         except Customer.DoesNotExist:
             return ServiceSubscription.objects.none()
         ahora = timezone.now()
@@ -37,7 +37,7 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
 
 class PublicCommercialServicesListView(ListView):
     model = Service
-    template_name = 'pages/home/servicios/comerciales/servicios_comerciales_public.html'
+    template_name = 'pages/home/services/commercial_public.html'
     context_object_name = 'services'
     paginate_by = 10
 
@@ -50,8 +50,8 @@ class PublicCommercialServicesListView(ListView):
         context['parent'] = 'servicios'
         context['segment'] = 'comercial_p'
         context['now'] = timezone.now()
-        if self.request.user.is_authenticated and hasattr(self.request.user, 'customer'):
-            customer = self.request.user.customer
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
+            customer = self.request.user.commercial_customer
             subs = ServiceSubscription.objects.filter(customer=customer)
             context['user_subscriptions'] = {sub.service_id: sub for sub in subs}
         else:
@@ -60,9 +60,9 @@ class PublicCommercialServicesListView(ListView):
 
 
 class ServiceDetailView(LoginRequiredMixin, FormView):
-    template_name = 'pages/home/servicios/comerciales/detalle_servicio.html'
+    template_name = 'pages/home/services/service_detail.html'
     form_class = PaymentMethodForm
-    success_url = reverse_lazy('dashboard:suscripcion_list')
+    success_url = reverse_lazy('commercial:suscripcion_list')
 
     def dispatch(self, request, *args, **kwargs):
         self.service = get_object_or_404(Service, uuid=kwargs['uuid'], service_type=Service.COMMERCIAL)
@@ -76,8 +76,8 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         context['segment'] = 'comerciales'
         context['estimated_total'] = self.service.price * 30 if self.service.price else 0
 
-        if self.request.user.is_authenticated and hasattr(self.request.user, 'customer'):
-            customer = self.request.user.customer
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
+            customer = self.request.user.commercial_customer
             existing = ServiceSubscription.objects.filter(
                 customer=customer,
                 service=self.service
@@ -89,13 +89,13 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        if not (request.user.is_authenticated and hasattr(request.user, 'customer')):
+        if not (request.user.is_authenticated and hasattr(request.user, 'commercial_customer')):
             messages.error(request, "Debes ser un cliente registrado para solicitar servicios.")
-            return redirect('{}?next={}'.format(reverse('login:in'), request.path))
+            return redirect('{}?next={}'.format(reverse('user_auth:login'), request.path))
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
-        customer = self.request.user.customer
+        customer = self.request.user.commercial_customer
         existing = ServiceSubscription.objects.filter(
             customer=customer,
             service=self.service

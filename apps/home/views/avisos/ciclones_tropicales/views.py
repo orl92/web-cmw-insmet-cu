@@ -1,15 +1,15 @@
 from django.utils import timezone
 from django.views.generic import ListView
 
-from apps.dashboard.models import TropicalCyclone
+from apps.meteo.models import Warning as MeteoWarning
 
 
 class TropicalCycloneListView(ListView):
-    model = TropicalCyclone
-    template_name = 'pages/home/avisos/ciclon_tropical.html'
+    model = MeteoWarning
+    template_name = 'pages/home/warnings/tropical_cyclone.html'
 
     def get_queryset(self):
-        return TropicalCyclone.objects.filter(valid_until__gte=timezone.now()).select_related('user')
+        return MeteoWarning.objects.filter(warning_type='tropical_cyclone', valid_until__gte=timezone.now()).select_related('user')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

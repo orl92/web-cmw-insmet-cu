@@ -11,9 +11,9 @@ source .venv/bin/activate
 pip install -r requirements.txt && python manage.py makemigrations migrate
 python manage.py collectstatic --link --no-input add_stations_data createsuperuser
 python manage.py runserver                    # desarrollo
-python manage.py runserver --production       # producción local
 python manage.py test <app>                   # testing selectivo
 python manage.py test                         # full suite (antes de commit)
+PRODUCTION=true python manage.py runserver    # producción local (usa DB real, SSL, etc.)
 ./run_huey.sh &                               # worker de correos/PDF (Huey)
 ```
 
@@ -23,30 +23,32 @@ python manage.py test                         # full suite (antes de commit)
 |---|---|
 | `config/` | settings, urls root, wsgi/asgi, email backend, Huey |
 | `apps/api/` | REST endpoints: `/api/doc/`, `/api/redoc/`, stations, observations, forecasts |
-| `apps/accounts/` | Users, groups, profiles, LDAP auth (`LDAP3Backend`) |
-| `apps/dashboard/` | Admin CRUD: pronósticos, avisos, clientes, servicios, facturación |
-| `apps/publications/` | ScientificPublication, Author — publicaciones científicas |
+| `apps/user_auth/` | Profile, login/logout, users, groups, LDAP auth (`LDAP3Backend`), password management |
+| `apps/core/` | FileHandlerMixin, SoftDeleteModel, utils, error views, CompanySettings, SiteConfiguration, EmailRecipientList/Recipient, templatetags, context_processors, middleware, mail_send |
+| `apps/dashboard/` | Solo DashboardView principal (vista agregada del panel) |
+| `apps/commercial/` | Customer, Service, ServiceSubscription, Invoice/InvoiceItem, Contract, Certificate — servicios comerciales y facturación |
+| `apps/meteo/` | Forecasts/ForecastRegions/ForecastExtendedDay, Warning (con warning_type), WeatherReport (today/tomorrow/commentary/note) |
+| `apps/geo/` | Province, Town, Station |
 | `apps/home/` | Páginas públicas: tiempo, modelos, satélites, servicios, institucion |
-| `apps/login/` | Login/logout |
-| `apps/common/` | `FileHandlerMixin`, `utils.py`, error views (400/403/404/500) |
+| `apps/publications/` | ScientificPublication, Author — publicaciones científicas |
 | `spec/` | SDD features en `features/NNN-nombre/` con `{spec,plan,tasks}.md` |
-
-Modelos clave: `Forecasts` (3 regiones × 3 períodos + 5 días + astronomía), `BaseWarning` (abstracta → `EarlyWarning`/`TropicalCyclone`/`StormWarning`), `WeatherReport` (today/tomorrow/commentary/note), `Customer`, `Service`, `ServiceSubscription` (soft delete), `Contract`, `Invoice`/`InvoiceItem`, `Certificate`, `ScientificPublication`/`Author`, `SiteConfiguration`, `CompanySettings`.
 
 ## Convenciones
 
-- **Permisos**: `default_permissions = ()` + 4 custom: `view_*`, `add_*`, `change_*`, `delete_*` (en español). NO asumas que existen por defecto.
+- **UI Framework**: exclusivamente Tabler.io (Bootstrap 5). No usar otros frameworks CSS/UI.
+- **Permisos**: `default_permissions = ()` + 4 personalizados: `view_*`, `add_*`, `change_*`, `delete_*` (en español). NO asumas que existen por defecto.
 - **Middleware**: `CheckUserProfileMiddleware` → `MaintenanceModeMiddleware` (bloquea no-superusers excepto `/login/`)
 - **Auth**: LDAP opcional (`LDAP3Backend`) → fallback `ModelBackend`; Profile se crea por señal `post_save`; usuarios LDAP con `is_ldap=True`
 - **UUIDs** en URLs de modelos expuestos (no `pk`)
-- **FileHandlerMixin** para limpieza automática de archivos al actualizar/eliminar
-- **Soft delete**: filtrar `record_active=True` en queries internas
+- **FileHandlerMixin** obligatorio en todo modelo que tenga FileField/ImageField
+- **Soft delete** en modelos de negocio con datos sensibles (Customer, Service, ServiceSubscription, Invoice, Contract, Certificate, Warning). NO forzar en modelos auxiliares/transaccionales (InvoiceItem, ForecastRegions, EmailRecipient).
+- **Paginación**: `paginate_by = 20` solo en vistas SIN DataTables. Las vistas con DataTables cargan todos los registros y delegan la paginación al cliente.
 - **Migrations** NO versionadas (`.gitignore`)
 - **Estáticos**: `static/` dev, `staticfiles/` prod con WhiteNoise
 - **Idioma**: español (`es-mx`, `America/Havana`)
 - **Tema**: Tabler (Bootstrap 5), iconos meteorológicos PNG en `static/dist/img/weather_icon/`
 - **URLs**: toda app con URLs usa `app_name` en urls.py y names estandarizados (`app_name:list`, `create`, `detail`, `update`, `delete`, `pdf`). Templates usan `{% url 'app_name:name' %}`, vistas usan `reverse_lazy('app_name:name')`.
-- **Apps**: todas las apps Django viven en `apps/`. Importar como `from apps.dashboard.models import ...`, nunca como `from dashboard.models import ...`.
+- **Apps**: todas las apps Django viven en `apps/`. Importar como `from apps.commercial.models import ...`, nunca como `from commercial.models import ...`.
 
 ## Skills
 
@@ -87,7 +89,6 @@ Task arrives →
 - `django-expert` — modelos, ORM, DRF, auth, tests, performance Django
 - `frontend-design` — diseño visual con identidad
 - `web-design-guidelines` — auditoría de accesibilidad y UI
-- `project-structure-audit` — auditoría de estructura del proyecto contra estándares Django y convenciones locales; genera features SDD en `spec/features/`
 
 ### MCP
 - `tabler` — búsqueda de iconos, componentes, layouts, colores y documentación de Tabler.io
@@ -115,9 +116,7 @@ Estos items NO los cubren los skills genéricos. Verificarlos siempre:
 - [ ] Kwarg `uuid` (no `pk`) en URLs de modelos con UUIDField
 - [ ] FileHandlerMixin + `file_fields` definido si hay FileField/ImageField
 - [ ] Soft delete: filtrar `record_active=True` (usa el manager por defecto, no `all_objects`)
-- [ ] `get_queryset()` con `timezone.now()` (nunca queryset a nivel de clase con fechas)
 - [ ] Tareas/imports Huey registrados en `AppConfig.ready()`
-- [ ] `paginate_by = 20` en ListViews del dashboard
 - [ ] Migraciones ejecutadas y NO versionadas (`.gitignore`)
 
 ## API + Deploy + Locale

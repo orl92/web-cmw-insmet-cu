@@ -5,7 +5,7 @@ from apps.publications.models import ScientificPublication
 
 
 class ScientificPublicationListView(ListView):
-    template_name = 'pages/home/institucion/publicaciones/publicaciones.html'
+    template_name = 'pages/home/institution/publications.html'
     model = ScientificPublication
 
     def get_context_data(self, **kwargs):

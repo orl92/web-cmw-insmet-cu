@@ -1,0 +1,80 @@
+{% extends 'layouts/form.html' %}
+{% load static my_filters %}
+{% block title_actions %}
+    <div class="col-12 col-md-auto order-md-last">
+        <div class="d-flex justify-content-center">
+            <form id="uploadForm" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="page-pretitle">
+                    Cargar desde Excel
+                    <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx, .xls" data-upload-url="{% url 'meteo:excel_json' %}">
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock title_actions %}
+{% block form %}
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="mb-3">
+                <label class="form-label required">{{ form.date.label }}</label>
+                <div class="mb-3">
+                    <div class="input-group input-group-flat {% if form.date.errors %}is-invalid{% endif %}">
+                        <span class="input-group-text {% if form.date.errors %}border-danger{% endif %}"></span>
+                        <input type="date" name="date" class="form-control {% if form.date.errors %}is-invalid{% endif %}"
+                            placeholder="aaaa-mm-dd" id="{{ form.date.id_for_label }}"
+                            value="{{ date }}" required>
+                    </div>
+                    {% if form.date.errors %}
+                        <div class="invalid-feedback">{{ form.date.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ region_formset.management_form }}
+    {{ extended_formset.management_form }}
+
+    {% for label, region_key, has_sea in region_config %}
+    <h3>{{ label }}</h3>
+    <div class="row">
+        {% for form in region_formset %}
+            {% if form.region.value == region_key %}
+                <input type="hidden" name="{{ form.region.html_name }}" value="{{ form.region.value }}">
+                <input type="hidden" name="{{ form.period.html_name }}" value="{{ form.period.value }}">
+                <div class="col-lg-4">
+                    <div class="card mb-3">
+                        <div class="card-header"><h4>{{ form.period.value|period_display }}</h4></div>
+                        <div class="card-body">
+                            {% include 'includes/dashboard/pronosticos/region_fields.html' with has_sea=has_sea %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    <h3>Pronóstico Extendido</h3>
+    <div class="row">
+        {% for form in extended_formset %}
+            <input type="hidden" name="{{ form.day_number.html_name }}" value="{{ form.day_number.value }}">
+            <div class="col-12 col-lg">
+                <div class="card mb-3">
+                    <div class="card-header"><h4>Día {{ form.day_number.value }}</h4></div>
+                    <div class="card-body">
+                        {% include 'includes/dashboard/pronosticos/extended_day.html' %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <h3>Astronomía</h3>
+    {% include 'includes/dashboard/pronosticos/astro_fields.html' %}
+{% endblock %}
+{% block extrajs %}
+    {{ block.super }}
+    <script src="{% static 'dist/js/forecast.js' %}"></script>
+{% endblock %}

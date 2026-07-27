@@ -1,12 +1,12 @@
 from django.views.generic import ListView
 
-from apps.crm.models import Service
+from apps.commercial.models import Service
 
 # Create your views here.
 
 class PublicServicesListView(ListView):
     model = Service
-    template_name = 'pages/home/servicios/publicos/servicios_publicos.html'
+    template_name = 'pages/home/services/public.html'
     context_object_name = 'pdf_list'
     paginate_by = 10
 

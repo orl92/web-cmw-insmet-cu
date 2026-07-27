@@ -6,7 +6,7 @@ from django.views.generic import TemplateView
 # Create your views here.
 
 class SateliteView(TemplateView):
-    template_name = 'pages/home/satelites/satelites.html'
+    template_name = 'pages/home/satellites/satellites.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

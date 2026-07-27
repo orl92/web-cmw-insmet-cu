@@ -2,15 +2,14 @@ from datetime import date, time, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.dashboard.models import (
-    EarlyWarning,
+from apps.meteo.models import (
     Forecasts,
-    StormWarning,
-    TropicalCyclone,
+    Warning as MeteoWarning,
     WeatherReport,
 )
 from apps.publications.models import Author, ScientificPublication
@@ -48,7 +47,7 @@ class WeatherReportDetailViewContextTests(TestCase):
 
     def _create_report(self, report_type):
         return WeatherReport.objects.create(
-            user=self.user, date=timezone.now(), summary=f'Test {report_type}',
+            user=self.user, summary=f'Test {report_type}',
             report_type=report_type,
         )
 
@@ -92,8 +91,8 @@ class EarlyWarningViewContextTests(TestCase):
         cls.user = User.objects.create_user('ewarn', 'ew@t.com', 'pass', first_name='E', last_name='W')
 
     def test_context_title(self):
-        EarlyWarning.objects.create(
-            user=self.user, summary='Test warning',
+        MeteoWarning.objects.create(
+            user=self.user, warning_type='early', summary='Test warning',
             valid_until=timezone.now() + timedelta(days=1),
         )
         response = self.client.get(reverse('home:warnings_early'))
@@ -105,12 +104,12 @@ class EarlyWarningViewContextTests(TestCase):
         self.assertEqual(response.context['segment'], 'warnings_early')
 
     def test_context_objects_filtered_by_validity(self):
-        expired = EarlyWarning.objects.create(
-            user=self.user, summary='Expired',
+        expired = MeteoWarning.objects.create(
+            user=self.user, warning_type='early', summary='Expired',
             valid_until=timezone.now() - timedelta(days=1),
         )
-        active = EarlyWarning.objects.create(
-            user=self.user, summary='Active',
+        active = MeteoWarning.objects.create(
+            user=self.user, warning_type='early', summary='Active',
             valid_until=timezone.now() + timedelta(days=1),
         )
         response = self.client.get(reverse('home:warnings_early'))
@@ -174,9 +173,10 @@ class ScientificPublicationViewContextTests(TestCase):
         self.assertEqual(response.context['segment'], 'publicaciones_cientificas')
 
     def test_context_objects_returns_publications(self):
+        pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
         pub = ScientificPublication.objects.create(
             title='Test Pub', author=self.author, summary='Summary',
-            publication_date=date.today(),
+            publication_date=date.today(), pdf_file=pdf,
         )
         response = self.client.get(reverse('home:publications'))
         self.assertIn(pub, response.context['object_list'])

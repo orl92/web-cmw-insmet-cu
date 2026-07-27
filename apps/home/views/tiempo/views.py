@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.views.generic import DetailView
 
-from apps.dashboard.models import WeatherReport
+from apps.meteo.models import WeatherReport
 
 
 class WeatherReportDetailView(DetailView):
@@ -12,10 +12,10 @@ class WeatherReportDetailView(DetailView):
 
     def get_template_names(self):
         type_map = {
-            'today': 'pages/home/tiempo/hoy/tiempo_h.html',
-            'tomorrow': 'pages/home/tiempo/mañana/tiempo_m.html',
-            'commentary': 'pages/home/comentarios/tiempo/comentario_tiempo.html',
-            'note': 'pages/home/comentarios/nota_meteorologica/nota_meteorologica.html',
+            'today': 'pages/home/weather/today.html',
+            'tomorrow': 'pages/home/weather/tomorrow.html',
+            'commentary': 'pages/home/commentaries/weather.html',
+            'note': 'pages/home/commentaries/note.html',
         }
         return [type_map[self.get_report_type()]]
 
@@ -46,5 +46,5 @@ class WeatherReportDetailView(DetailView):
         context['title'] = title
         context['parent'] = parent
         context['segment'] = segment
-        context['objects'] = self.get_queryset()
+        context['objects'] = self.model.objects.filter(report_type=self.get_report_type())
         return context

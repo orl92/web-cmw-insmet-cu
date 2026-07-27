@@ -6,23 +6,19 @@ from rest_framework.response import Response
 
 from apps.api.data.GetData import GetData
 from apps.api.serializers import (
-    EarlyWarningSerializer,
     ForecastSerializer,
     ScientificPublicationSerializer,
     ServiceSerializer,
     StationObservationSerializer,
     StationSerializer,
-    StormWarningSerializer,
-    TropicalCycloneSerializer,
+    WarningSerializer,
     WeatherReportSerializer,
 )
-from apps.dashboard.models import (
-    EarlyWarning,
+from apps.commercial.models import Service
+from apps.meteo.models import Station
+from apps.meteo.models import (
     Forecasts,
-    Service,
-    Station,
-    StormWarning,
-    TropicalCyclone,
+    Warning as MeteoWarning,
     WeatherReport,
 )
 from apps.publications.models import ScientificPublication
@@ -133,27 +129,27 @@ class ForecastAPIView(GenericAPIView):
 
 
 class EarlyWarningListAPIView(ListAPIView):
-    serializer_class = EarlyWarningSerializer
+    serializer_class = WarningSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return EarlyWarning.objects.filter(valid_until__gte=timezone.now())
+        return MeteoWarning.objects.filter(warning_type='early', valid_until__gte=timezone.now())
 
 
 class TropicalCycloneListAPIView(ListAPIView):
-    serializer_class = TropicalCycloneSerializer
+    serializer_class = WarningSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return TropicalCyclone.objects.filter(valid_until__gte=timezone.now())
+        return MeteoWarning.objects.filter(warning_type='tropical_cyclone', valid_until__gte=timezone.now())
 
 
 class StormWarningListAPIView(ListAPIView):
-    serializer_class = StormWarningSerializer
+    serializer_class = WarningSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return StormWarning.objects.filter(valid_until__gte=timezone.now())
+        return MeteoWarning.objects.filter(warning_type='storm', valid_until__gte=timezone.now())
 
 
 class WeatherReportListAPIView(ListAPIView):

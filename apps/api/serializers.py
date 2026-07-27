@@ -1,17 +1,15 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.common.utils import get_moon_img_path, get_sun_img_path
-from apps.dashboard.models import (
-    EarlyWarning,
-    ForecastExtendedDay,
-    ForecastRegions,
+from apps.commercial.models import Service
+from apps.core.utils import get_moon_img_path, get_sun_img_path
+from apps.meteo.models import Station
+from apps.meteo.models import (
     Forecasts,
-    Service,
-    Station,
-    StormWarning,
-    TropicalCyclone,
     WeatherReport,
+)
+from apps.meteo.models import (
+    Warning as MeteoWarning,
 )
 from apps.publications.models import ScientificPublication
 
@@ -101,28 +99,12 @@ class ForecastSerializer(serializers.ModelSerializer):
         }
 
 
-class EarlyWarningSerializer(serializers.ModelSerializer):
+class WarningSerializer(serializers.ModelSerializer):
     user = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
-        model = EarlyWarning
-        fields = ['uuid', 'date', 'valid_until', 'summary', 'user']
-
-
-class TropicalCycloneSerializer(serializers.ModelSerializer):
-    user = serializers.CharField(source='user.username', read_only=True)
-
-    class Meta:
-        model = TropicalCyclone
-        fields = ['uuid', 'date', 'valid_until', 'summary', 'user']
-
-
-class StormWarningSerializer(serializers.ModelSerializer):
-    user = serializers.CharField(source='user.username', read_only=True)
-
-    class Meta:
-        model = StormWarning
-        fields = ['uuid', 'date', 'valid_until', 'summary', 'user']
+        model = MeteoWarning
+        fields = ['uuid', 'warning_type', 'date', 'valid_until', 'summary', 'user']
 
 
 class WeatherReportSerializer(serializers.ModelSerializer):

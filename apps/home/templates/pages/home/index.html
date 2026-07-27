@@ -1,0 +1,221 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+{% load my_filters %}
+
+{% block extrastyle %}
+  <link href="{% static 'dist/css/forecast.css' %}" rel="stylesheet" />
+{% endblock %}
+{% block content %}
+  <div class="row row-deck row-cards mt-3">
+    <h4 class="card-title">Pronóstico del: {{ latest_forecast.date }}</h4>
+    {% include 'includes/home/forecast_region_card.html' with region_name='Costa Norte' region_data=latest_forecast.north show_sea=True %}
+    {% include 'includes/home/forecast_region_card.html' with region_name='Interior' region_data=latest_forecast.interior show_sea=False %}
+    {% include 'includes/home/forecast_region_card.html' with region_name='Costa Sur' region_data=latest_forecast.south show_sea=True %}
+  </div>
+  <h4 class="card-title mt-3">Pronóstico Extendido 5 días</h4>
+  <div class="row row-deck row-cards mt-3 row-cols-1 row-cols-sm-2 row-cols-lg-5">
+    {% if latest_forecast %}
+      {% for day in "12345" %}
+        <div class="col mb-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <p class="mb-1">{{ latest_forecast|get_forecast_day:day|get_dict_value:'date'|date:'D d/m' }}</p>
+              <div class="day-content">
+                <div class="weather-icon mx-auto">
+                  <img src="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_weather_img }}" alt="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather' }}" class="img-fluid" data-bs-toggle="tooltip" title="{{ latest_forecast|get_forecast_day:day|get_dict_value:'weather'|get_tiempo_description }}" loading="lazy" />
+                </div>
+                <div class="temp-info mt-3">
+                  <span class="temp-max text-danger fs-5">
+                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'max_temp' }}°C
+                    <span class="temp-label">Máxima</span>
+                  </span>
+                  <span class="temp-min text-info fs-5">
+                    {{ latest_forecast|get_forecast_day:day|get_dict_value:'min_temp' }}°C
+                    <span class="temp-label">Mínima</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      {% for day in "12345" %}
+        <div class="col mb-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <div class="col-12">
+                {% include 'includes/home/empty_state.html' with icon='forecast' message='No hay pronósticos disponibles.' %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <div class="row row-deck row-cards mt-3">
+    <h4 class="card-title">Datos Astronómicos</h4>
+    <div class="col-lg-4 mb-3">
+      <div class="card">
+        <div class="card-body" id="lunar-phases">
+          <h3 class="subheader text-muted fw-medium">Fase Lunar</h3>
+          {% if latest_forecast %}
+            <div id="lunar-phases-content">
+              <div class="lunarPhase">
+                <img src="{{ latest_forecast.lp|get_moon_img }}" alt="{{ latest_forecast.lp }}" data-bs-toggle="tooltip" title="{{ latest_forecast.lp|get_luna_description }}" style="height: 110px; width: 110px;" loading="lazy" />
+                <div class="phaseInfo">
+                  <div>{{ latest_forecast.lp }}</div>
+                </div>
+              </div>
+              <div class="nextPhase">
+                <img src="{{ latest_forecast.nlp|get_moon_img }}" alt="{{ latest_forecast.nlp }}" data-bs-toggle="tooltip" title="{{ latest_forecast.nlp|get_luna_description }}" style="height: 33px; width: 33px;" loading="lazy" />
+                <span class="moonDetails">
+                  <div>Próxima: {{ latest_forecast.nlp }}</div>
+                  <div>{{ latest_forecast.nlpd|date:'d/m/Y' }}</div>
+                </span>
+              </div>
+            </div>
+          {% else %}
+            {% include 'includes/home/empty_state.html' with icon='astronomy' message='No hay datos astronómicos disponibles.' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card">
+        <div class="card-body" id="sunrise-sunset">
+          <h3 class="subheader text-muted fw-medium">Salida y Puesta del Sol</h3>
+          {% if latest_forecast %}
+            <div id="sunrise-sunset-content" class="d-flex justify-content-around">
+              <div class="sunrise-sunset-item">
+                <img src="{{ 'sunrise'|get_sun_img }}" alt="Amanecer" data-bs-toggle="tooltip" title="{{ 'sunrise'|get_sol_description }}" style="height: 75px; width: 75px;" loading="lazy" />
+                <div class="time-details">
+                  <div class="time-item">
+                    <span class="time-value" id="sunrise-value">{{ latest_forecast.sunrise|time:'g:i A' }}</span>
+                    <span class="time-label">Amanecer</span>
+                  </div>
+                </div>
+              </div>
+              <div class="sunrise-sunset-item">
+                <img src="{{ 'sunset'|get_sun_img }}" alt="Puesta de sol" data-bs-toggle="tooltip" title="{{ 'sunset'|get_sol_description }}" style="height: 75px; width: 75px;" loading="lazy" />
+                <div class="time-details">
+                  <div class="time-item">
+                    <span class="time-value" id="sunset-value">{{ latest_forecast.sunset|time:'g:i A' }}</span>
+                    <span class="time-label">Puesta de sol</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            {% include 'includes/home/empty_state.html' with icon='astronomy_sun' message='No hay datos astronómicos disponibles.' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="subheader text-muted fw-medium">Índice UV</h3>
+          {% if latest_forecast %}
+            <div id="uv-index-content" class="d-flex justify-content-center align-items-center mb-3">
+              <div class="uvLabelContainer">
+                <svg width="130" height="134" viewBox="5 -12 171 178" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-240 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-243 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-178 90.5 80)" fill="none" stroke="#FDE300" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-115 90.5 80)" fill="none" stroke="#FF8C00" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-52 90.5 80)" fill="none" stroke="#D13438" stroke-width="8" stroke-linecap="round"></path>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(13 90.5 80)" fill="none" stroke="#5C2E91" stroke-width="8" stroke-linecap="round"></path>
+                  <circle cx="{{ latest_forecast.uv_index|uv_cx }}" cy="{{ latest_forecast.uv_index|uv_cy }}" r="10" fill="{{ latest_forecast.uv_index|uv_color }}"></circle>
+                  <circle cx="{{ latest_forecast.uv_index|uv_cx }}" cy="{{ latest_forecast.uv_index|uv_cy }}" r="11.5" stroke="white" stroke-width="3"></circle>
+                </svg>
+                <div class="uvContentTitle">
+                  {% if latest_forecast.uv_index > 11 %}
+                    11+
+                  {% else %}
+                    {{ latest_forecast.uv_index }}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div id="uv-exposure-message" class="text-center">
+              <p class="mb-0 fw-medium">
+                {% if latest_forecast.uv_index <= 2 %}
+                  Protección no requerida
+                {% elif latest_forecast.uv_index <= 5 %}
+                  Usa protector solar
+                {% elif latest_forecast.uv_index <= 7 %}
+                  Usa gorra y protector solar
+                {% else %}
+                  Evita exposición prolongada
+                {% endif %}
+              </p>
+              <small class="text-muted">
+                Índice UV {{ latest_forecast.uv_index }} -{% if latest_forecast.uv_index <= 2 %}
+                  Bajo
+                {% elif latest_forecast.uv_index <= 5 %}
+                  Moderado
+                {% elif latest_forecast.uv_index <= 7 %}
+                  Alto
+                {% elif latest_forecast.uv_index <= 10 %}
+                  Muy Alto
+                {% else %}
+                  Extremo
+                {% endif %}
+              </small>
+            </div>
+          {% else %}
+            {% include 'includes/home/empty_state.html' with icon='uv' message='No hay datos de índice UV disponibles.' %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row row-cards mt-3">
+    <div class="col-lg-8 mb-3">
+      <h4>Estaciones Meteorologicas en la Provincia</h4>
+      <div class="card">
+        <div class="card-body">
+          <h3 class="subheader text-muted fw-medium">Estaciones</h3>
+          <div class="container" id="chartdiv" style="height: 450px;">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <h4>Observaciones del Clima en las Estaciones</h4>
+      <div class="card">
+        <div class="card-body">
+          <h3 class="subheader text-muted fw-medium">Observación</h3>
+          <div class="container" id="station-details" style="height: 450px;">
+            <p id="station-date" class="h3 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Fecha de la Observación"></p>
+            <p id="station-title" class="h3 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Nombre y Número de la estación"></p>
+            <p id="station-weather" class="h5 mb-4 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Estado del cielo"></p>
+            <p id="station-temperature" class="display-2 text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Temperatura actual"></p>
+            <div id="station-temperatures" class="text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Temperaturas máxima y mínima"></div>
+            <br />
+            <div id="station-humidity" class="text-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Humedad relativa">
+            </div>
+            <div class="weather__status d-flex flex-row justify-content-center align-items-center mt-3">
+              <div id="station-wind" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Velocidad y dirección del viento">
+              </div>
+              <div id="station-rain-3h" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Precipitaciones en las últimas 3h">
+              </div>
+              <div id="station-rain-24h" class="p-1 d-flex flex-column justify-content-center align-items-center" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Precipitaciones en las últimas 24h">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extrajs %}
+  <script src="{% static 'dist/libs/amcharts/dist/index.js' %}"></script>
+  <script src="{% static 'dist/libs/amcharts/dist/map.js' %}"></script>
+  <script src="{% static 'dist/libs/amcharts/dist/themes/Animated.js' %}"></script>
+  <script src="{% static 'dist/libs/amcharts/dist/geodata/data/countries2.js' %}"></script>
+  <script src="{% static 'dist/js/map_station.js' %}"
+          data-api-stations-url="{% url 'station-list' %}"
+          data-api-observation-url="{% url 'station-observation' '__HOUR__' 999 %}"></script>
+{% endblock %}

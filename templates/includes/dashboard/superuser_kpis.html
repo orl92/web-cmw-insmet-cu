@@ -1,6 +1,6 @@
 {% load static %}
 {% load my_filters %}
-{% load home_extras %}
+
 
 <!-- Sección exclusiva para Superusuarios -->
 <!-- Estadísticas estilo KPI Dashboard -->
@@ -451,7 +451,7 @@
         </div>
       </div>
       <div class="modal-footer">
-        <a href="{% url 'accounts:group_update' group.groupprofile.uuid %}" class="btn btn-primary">Editar Grupo</a>
+        {% url 'user_auth:group_update' group.groupprofile.uuid as group_update_url %}{% if group_update_url %}<a href="{{ group_update_url }}" class="btn btn-primary">Editar Grupo</a>{% endif %}
       </div>
     </div>
   </div>

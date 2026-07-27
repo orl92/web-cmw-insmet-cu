@@ -3,7 +3,7 @@ import uuid
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from apps.common.utils import FileHandlerMixin, pdf_upload_path
+from apps.core.models import FileHandlerMixin, pdf_upload_path
 
 
 class ScientificPublication(FileHandlerMixin, models.Model):

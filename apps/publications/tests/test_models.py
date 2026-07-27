@@ -3,6 +3,7 @@ from datetime import date
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
+from apps.core.tests.base import FileHandlingTestCase
 from apps.publications.models import Author, ScientificPublication
 
 
@@ -30,7 +31,7 @@ class AuthorTests(TestCase):
         self.assertEqual(author.orcid_id, '')
 
 
-class ScientificPublicationTests(TestCase):
+class ScientificPublicationTests(FileHandlingTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.author = Author.objects.create(first_name='Carlos', last_name='Garcia')

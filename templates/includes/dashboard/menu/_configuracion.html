@@ -1,0 +1,25 @@
+{% load my_filters %}
+
+{% if request.user|has_permission:'core.change_companysettings' or request.user.is_superuser or request.user|has_permission:'core.view_emailrecipientlist' %}
+<li class="nav-item dropdown {% if 'core:company_settings' in segment or 'maintenance' in segment or 'email' in segment %}active{% endif %}">
+    <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+        <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-settings"></i></span>
+        <span class="nav-link-title">Configuración</span>
+    </a>
+    <div class="dropdown-menu {% if 'core:company_settings' in segment or 'maintenance' in segment or 'email' in segment %}show{% endif %}">
+        <div class="dropdown-menu-columns">
+            <div class="dropdown-menu-column">
+                {% if request.user|has_permission:'core.change_companysettings' %}
+                <a class="dropdown-item {% if 'core:company_settings' in segment %}active{% endif %}" href="{% url 'core:company_settings' %}">Empresa</a>
+                {% endif %}
+                {% if request.user.is_superuser %}
+                <a class="dropdown-item {% if 'maintenance' in segment %}active{% endif %}" href="{% url 'core:toggle_maintenance_mode' %}">Mantenimiento</a>
+                {% endif %}
+                {% if request.user|has_permission:'core.view_emailrecipientlist' %}
+                <a class="dropdown-item {% if 'email' in segment %}active{% endif %}" href="{% url 'core:email_recipient_list' %}">Listados de Correos</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</li>
+{% endif %}

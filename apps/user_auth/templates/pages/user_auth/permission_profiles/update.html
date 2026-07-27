@@ -1,0 +1,178 @@
+{% extends 'layouts/form.html' %}
+{% load static my_filters %}
+
+{% block content_before %}
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">{{ title }}</h2>
+                <div class="text-muted mt-1">Actualiza los permisos de este perfil</div>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="{{ url_list }}" class="btn btn-secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-left">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M5 12l14 0"/>
+                            <path d="M5 12l6 6"/>
+                            <path d="M5 12l6 -6"/>
+                        </svg>Volver al listado
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block form %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="row">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <label class="form-label required">Nombre del Perfil</label>
+                <input type="text" class="form-control" id="{{ form.name.id_for_label }}"
+                       name="{{ form.name.name }}" value="{{ form.name.value|default:'' }}" required>
+                {% if form.name.errors %}
+                    <div class="text-danger mt-1">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Descripción</label>
+                <input type="text" class="form-control" id="{{ form.description.id_for_label }}"
+                       name="{{ form.description.name }}" value="{{ form.description.value|default:'' }}" placeholder="Opcional">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h5 class="mb-0">Permisos del Perfil</h5>
+                <p class="text-muted mb-0">Actualiza los permisos que incluirá este perfil</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-flush-spacing">
+                <tbody>
+                    {% for app_label, app_data in grouped_by_app.items %}
+                    <tr>
+                        <td colspan="2" class="bg-azure-lt">
+                            <strong>{{ app_data.verbose_name }}</strong>
+                            <div class="form-check form-check-inline float-end">
+                                <input type="checkbox"
+                                       class="app-select-all form-check-input"
+                                       id="select-all-{{ app_label }}"
+                                       data-app="{{ app_label }}">
+                                <label class="form-check-label" for="select-all-{{ app_label }}">
+                                    Seleccionar todos
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for model_name, perms in app_data.models.items %}
+                    <tr>
+                        <td class="text-nowrap fw-medium">{{ model_name }}</td>
+                        <td>
+                            <div class="d-flex justify-content-end">
+                                {% if perms.view %}
+                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                                    <input type="checkbox"
+                                           name="{{ perms.view.field_name }}"
+                                           value="{{ perms.view.perm.id }}"
+                                           id="{{ perms.view.field_id }}"
+                                           class="form-check-input permission-checkbox perm-{{ app_label }} view"
+                                           {% if perms.view.is_checked %}checked{% endif %}>
+                                    <label class="form-check-label text-green fw-medium" for="{{ perms.view.field_id }}">Ver</label>
+                                </div>
+                                {% endif %}
+                                {% if perms.add %}
+                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                                    <input type="checkbox"
+                                           name="{{ perms.add.field_name }}"
+                                           value="{{ perms.add.perm.id }}"
+                                           id="{{ perms.add.field_id }}"
+                                           class="form-check-input permission-checkbox perm-{{ app_label }} add"
+                                           {% if perms.add.is_checked %}checked{% endif %}>
+                                    <label class="form-check-label text-blue fw-medium" for="{{ perms.add.field_id }}">Añadir</label>
+                                </div>
+                                {% endif %}
+                                {% if perms.change %}
+                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                                    <input type="checkbox"
+                                           name="{{ perms.change.field_name }}"
+                                           value="{{ perms.change.perm.id }}"
+                                           id="{{ perms.change.field_id }}"
+                                           class="form-check-input permission-checkbox perm-{{ app_label }} change"
+                                           {% if perms.change.is_checked %}checked{% endif %}>
+                                    <label class="form-check-label text-orange fw-medium" for="{{ perms.change.field_id }}">Editar</label>
+                                </div>
+                                {% endif %}
+                                {% if perms.delete %}
+                                <div class="form-check mb-0 mt-1">
+                                    <input type="checkbox"
+                                           name="{{ perms.delete.field_name }}"
+                                           value="{{ perms.delete.perm.id }}"
+                                           id="{{ perms.delete.field_id }}"
+                                           class="form-check-input permission-checkbox perm-{{ app_label }} delete"
+                                           {% if perms.delete.is_checked %}checked{% endif %}>
+                                    <label class="form-check-label text-red fw-medium" for="{{ perms.delete.field_id }}">Eliminar</label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted">Sin permisos disponibles</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block form_actions %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="btn-list justify-content-end">
+            <a href="{{ url_list }}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-device-floppy">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2"/>
+                    <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/>
+                    <path d="M14 4l0 4l-6 0l0 -4"/>
+                </svg>Actualizar Perfil
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<style>
+.checkbox-view:checked { background-color: var(--tblr-green); border-color: var(--tblr-green); }
+.checkbox-add:checked { background-color: var(--tblr-blue); border-color: var(--tblr-blue); }
+.checkbox-change:checked { background-color: var(--tblr-orange); border-color: var(--tblr-orange); }
+.checkbox-delete:checked { background-color: var(--tblr-red); border-color: var(--tblr-red); }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.app-select-all').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            document.querySelectorAll('.perm-' + this.dataset.app).forEach(function(pcb) {
+                pcb.checked = cb.checked;
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

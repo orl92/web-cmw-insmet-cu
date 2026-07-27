@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.dashboard.models import WeatherReport
+from apps.meteo.models import WeatherReport
 
 
 class IndexViewTests(TestCase):
@@ -42,7 +42,7 @@ class ScientificPublicationListViewTests(TestCase):
 class WeatherReportHomeTests(TestCase):
     def test_today_returns_200_when_exists(self):
         user = User.objects.create_user('test', 't@t.com', 'pass', first_name='T', last_name='U')
-        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', report_type='today')
+        WeatherReport.objects.create(user=user, summary='Test', report_type='today')
         response = self.client.get(reverse('home:weather_today'))
         self.assertEqual(response.status_code, 200)
 
@@ -52,7 +52,7 @@ class WeatherReportHomeTests(TestCase):
 
     def test_tomorrow_returns_200_when_exists(self):
         user = User.objects.create_user('test2', 't2@t.com', 'pass', first_name='T', last_name='U')
-        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', report_type='tomorrow')
+        WeatherReport.objects.create(user=user, summary='Test', report_type='tomorrow')
         response = self.client.get(reverse('home:weather_tomorrow'))
         self.assertEqual(response.status_code, 200)
 
@@ -62,7 +62,7 @@ class WeatherReportHomeTests(TestCase):
 
     def test_commentary_returns_200_when_exists(self):
         user = User.objects.create_user('test3', 't3@t.com', 'pass', first_name='T', last_name='U')
-        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', report_type='commentary')
+        WeatherReport.objects.create(user=user, summary='Test', report_type='commentary')
         response = self.client.get(reverse('home:weather_commentary'))
         self.assertEqual(response.status_code, 200)
 
@@ -72,7 +72,7 @@ class WeatherReportHomeTests(TestCase):
 
     def test_note_returns_200_when_exists(self):
         user = User.objects.create_user('test4', 't4@t.com', 'pass', first_name='T', last_name='U')
-        WeatherReport.objects.create(user=user, date=timezone.now(), summary='Test', report_type='note')
+        WeatherReport.objects.create(user=user, summary='Test', report_type='note')
         response = self.client.get(reverse('home:weather_note'))
         self.assertEqual(response.status_code, 200)
 

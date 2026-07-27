@@ -1,0 +1,656 @@
+{% extends 'layouts/form.html' %}
+{% load static %}
+
+{% block form %}
+<div id="form-messages"></div>
+
+<div class="row">
+  <!-- Cliente -->
+  <div class="col-md-6 mb-3">
+    <label class="form-label required">{{ form.customer.label }}</label>
+    {{ form.customer }}
+    {% if form.customer.errors %}
+      <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
+    {% endif %}
+  </div>
+  <!-- Registro Comercial -->
+  <div class="col-md-6 mb-3">
+    <label class="form-label">{{ form.commercial_registry.label }}</label>
+    <div class="input-group">
+      <input type="text" class="form-control" value="{{ form.commercial_registry.value|default:'' }}" disabled />
+      <input type="hidden" name="{{ form.commercial_registry.html_name }}" value="{{ form.commercial_registry.value|default:'' }}" />
+      <button type="button" class="btn btn-outline-secondary" id="btn-open-modal" title="Editar datos de la empresa">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+          <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+          <path d="M16 5l3 3" />
+        </svg>
+        Editar
+      </button>
+    </div>
+    {% if form.commercial_registry.errors %}
+      <div class="invalid-feedback d-block">{{ form.commercial_registry.errors.0 }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Fechas y duración -->
+<div class="row">
+  <div class="col-md-4 mb-3">
+    <label class="form-label">{{ form.start_date.label }}</label>
+    {{ form.start_date }}
+  </div>
+  <div class="col-md-4 mb-3">
+    <label class="form-label">{{ form.end_date.label }}</label>
+    {{ form.end_date }}
+  </div>
+  <div class="col-md-4 mb-3">
+    <label class="form-label">Días del período</label>
+    <input type="text" class="form-control" id="days-count" value="0" readonly />
+  </div>
+</div>
+
+<!-- Bloque dinámico -->
+<div id="dynamic-fields">
+  <!-- Suscripciones agrupadas por período -->
+  <div id="subscriptions-grouped" style="display: none;"></div>
+
+  <!-- Facturación manual -->
+  <div id="manual-container" style="display: none;">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title">Añadir servicios manualmente</h5>
+          <button type="button" id="add-item" class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Añadir servicio">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </div>
+        {{ items_formset.management_form }}
+        <div id="items-container">
+          {% for item_form in items_formset %}
+            <div class="item-row card mb-3">
+              <div class="card-body d-flex align-items-end">
+                <div class="flex-grow-1 row g-3">
+                  <div class="col-md-4">
+                    <label class="form-label">{{ item_form.service.label }}</label>
+                    {{ item_form.service }}
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">{{ item_form.codigo.label }}</label>
+                    {{ item_form.codigo }}
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">{{ item_form.cantidad.label }}</label>
+                    <input type="text" name="{{ item_form.cantidad.html_name }}" value="{{ item_form.cantidad.value|default:'' }}" class="form-control quantity-days" readonly />
+                  </div>
+                  <div class="col-md-1">
+                    <label class="form-label">{{ item_form.unidad_medida.label }}</label>
+                    {{ item_form.unidad_medida }}
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label">{{ item_form.precio.label }}</label>
+                    {{ item_form.precio }}
+                  </div>
+                </div>
+                <div class="ms-3">
+                  <button type="button" class="btn btn-sm btn-icon btn-outline-danger remove-row" data-bs-toggle="tooltip" title="Eliminar servicio">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M4 7l16 0" />
+                      <path d="M10 11l0 6" />
+                      <path d="M14 11l0 6" />
+                      <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                      <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block modal %}
+  <!-- Modal para editar Datos de la Empresa (sin cambios) -->
+  <div class="modal modal-blur fade" id="modal-company-settings" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Datos de la Empresa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="company-settings-form" novalidate>
+            {% csrf_token %}
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Nombre</label>
+                <input type="text" name="nombre" class="form-control" value="{{ company.nombre }}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Dirección</label>
+                <input type="text" name="direccion" class="form-control" value="{{ company.direccion }}">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Código REEUP</label>
+                <input type="text" name="codigo_reeup" class="form-control" value="{{ company.codigo_reeup }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">NIT</label>
+                <input type="text" name="nit" class="form-control" value="{{ company.nit }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Registro Comercial</label>
+                <input type="text" name="registro_comercial" class="form-control" value="{{ company.registro_comercial }}">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Cuenta Bancaria</label>
+                <input type="text" name="cuenta_bancaria" class="form-control" value="{{ company.cuenta_bancaria }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Agencia Bancaria</label>
+                <input type="text" name="agencia_bancaria" class="form-control" value="{{ company.agencia_bancaria }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Teléfonos</label>
+                <input type="text" name="telefonos" class="form-control" value="{{ company.telefonos }}">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary ms-auto">Guardar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  // ============================================================
+  // Gestión del modal de empresa (sin cambios)
+  // ============================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    var modal = document.getElementById('modal-company-settings');
+    if (!modal) return;
+
+    var openBtn = document.getElementById('btn-open-modal');
+    var closeBtn = modal.querySelector('.btn-close');
+    var cancelBtn = modal.querySelector('[data-bs-dismiss="modal"]');
+    var form = document.getElementById('company-settings-form');
+
+    if (!openBtn || !form) return;
+
+    function showModal() {
+      modal.classList.add('show');
+      modal.style.display = 'block';
+      document.body.classList.add('modal-open');
+      if (!document.querySelector('.modal-backdrop')) {
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+      }
+    }
+
+    function hideModal() {
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+      var backdrop = document.querySelector('.modal-backdrop');
+      if (backdrop) backdrop.remove();
+    }
+
+    openBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      showModal();
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', hideModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
+
+    window.addEventListener('click', function(e) {
+      if (e.target === modal) hideModal();
+    });
+
+    // Envío AJAX del formulario del modal
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var formData = new FormData(form);
+      var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+      if (!csrfToken) {
+        alert('Error: token CSRF no encontrado');
+        return;
+      }
+
+      fetch("{% url 'core:company_settings_ajax' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': csrfToken.value
+        }
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.success) {
+          var registroComercial = formData.get('registro_comercial');
+          var hiddenInput = document.querySelector('input[name="commercial_registry"]');
+          if (hiddenInput) {
+            var inputGroup = hiddenInput.closest('.input-group');
+            var visibleInput = inputGroup.querySelector('input[disabled]');
+            if (visibleInput) visibleInput.value = registroComercial;
+            hiddenInput.value = registroComercial;
+          }
+          hideModal();
+
+          var messagesContainer = document.getElementById('form-messages');
+          if (messagesContainer) {
+            var alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = 'Datos actualizados correctamente. ' +
+              '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>';
+            messagesContainer.appendChild(alertDiv);
+            setTimeout(function() {
+              alertDiv.remove();
+            }, 4000);
+          }
+        } else {
+          var errorMsg = '';
+          for (var field in data.errors) {
+            if (data.errors.hasOwnProperty(field)) {
+              errorMsg += field + ': ' + data.errors[field].join(', ') + '\n';
+            }
+          }
+          alert('Error al guardar:\n' + errorMsg);
+        }
+      })
+      .catch(function(error) {
+        console.error('Error en la petición:', error);
+        alert('Error de red o servidor.');
+      });
+    });
+  });
+
+  // ============================================================
+  // Lógica de suscripciones, agrupación y facturación manual
+  // ============================================================
+  const servicesData = JSON.parse('{{ commercial_services_json|escapejs }}');
+  const servicesMap = {};
+  servicesData.forEach(s => { servicesMap[s.id] = { code: s.code, price: s.price, unit: "U" }; });
+
+  const ajaxUrl = "{% url 'commercial:ajax_pending_subscriptions' %}";
+  const customerSelect = document.getElementById('id_customer');
+  const groupedContainer = document.getElementById('subscriptions-grouped');
+  const manualContainer = document.getElementById('manual-container');
+  const startDateInput = document.getElementById('id_start_date');
+  const endDateInput = document.getElementById('id_end_date');
+  const daysCountInput = document.getElementById('days-count');
+
+  // ========== Helpers ==========
+  function calculateDays(start, end) {
+    if (!start || !end) return 0;
+    const s = new Date(start + 'T00:00:00');
+    const e = new Date(end + 'T00:00:00');
+    if (isNaN(s) || isNaN(e)) return 0;
+    const diff = e - s;
+    return diff >= 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
+  }
+
+  function updateDaysFromInputs() {
+    const days = calculateDays(startDateInput.value, endDateInput.value);
+    daysCountInput.value = days;
+    document.querySelectorAll('#items-container .quantity-days').forEach(input => {
+      input.value = days;
+    });
+  }
+
+  // *** MEJORA: actualización en tiempo real al cambiar fechas (input + change para máxima compatibilidad e inmediatez) ***
+  if (startDateInput && endDateInput) {
+    startDateInput.addEventListener('change', updateDaysFromInputs);
+    startDateInput.addEventListener('input', updateDaysFromInputs);
+    endDateInput.addEventListener('change', updateDaysFromInputs);
+    endDateInput.addEventListener('input', updateDaysFromInputs);
+    updateDaysFromInputs(); // valor inicial
+  }
+  // ***********************************************************************************************************************
+
+  function setPeriodFields(start, end) {
+    startDateInput.value = start;
+    endDateInput.value = end;
+    updateDaysFromInputs();
+  }
+
+  // ========== Tooltip helpers ==========
+  function getOrCreateTooltip(el) {
+    const Tooltip = window.bootstrap?.Tooltip;
+    if (!Tooltip) return null;
+    let instance = Tooltip.getInstance(el);
+    if (!instance) {
+      instance = new Tooltip(el, { trigger: 'hover' });
+    }
+    return instance;
+  }
+
+  function updateTooltipContent(sw) {
+    const tooltip = getOrCreateTooltip(sw);
+    if (tooltip) {
+      tooltip.setContent({ '.tooltip-inner': sw.title });
+    }
+  }
+
+  // ========== Funciones de control de período ==========
+  // Activa un período (switch encendido, fechas, bloquea otros) sin modificar checkboxes
+  function setPeriodActive(start, end) {
+    setPeriodFields(start, end);
+    document.querySelectorAll('.period-switch').forEach(sw => {
+      if (sw.dataset.start === start && sw.dataset.end === end) {
+        sw.checked = true;
+        sw.title = 'Desactivar período';
+        sw.disabled = false;
+      } else {
+        sw.checked = false;
+        sw.title = 'Activar período';
+        sw.disabled = true;
+      }
+      updateTooltipContent(sw);
+    });
+    // Bloquear checkboxes de otros períodos, desmarcarlos
+    document.querySelectorAll('.subscription-check').forEach(cb => {
+      if (cb.dataset.start === start && cb.dataset.end === end) {
+        cb.disabled = false;
+      } else {
+        cb.disabled = true;
+        cb.checked = false;
+      }
+    });
+  }
+
+  // Desactiva cualquier período (libera switches y checkboxes)
+  function setPeriodInactive() {
+    document.querySelectorAll('.period-switch').forEach(sw => {
+      sw.checked = false;
+      sw.title = 'Activar período';
+      sw.disabled = false;
+      updateTooltipContent(sw);
+    });
+    document.querySelectorAll('.subscription-check').forEach(cb => {
+      cb.disabled = false;
+      cb.checked = false;
+    });
+  }
+
+  // Activar período y marcar TODOS los checkboxes del grupo
+  function selectAllInPeriod(start, end) {
+    setPeriodActive(start, end);
+    document.querySelectorAll(`.subscription-check[data-start="${start}"][data-end="${end}"]`).forEach(cb => {
+      cb.checked = true;
+    });
+  }
+
+  // Desactivar período y desmarcar TODOS los checkboxes del grupo
+  function clearAllInPeriod(start, end) {
+    setPeriodInactive();
+    // No es necesario desmarcar porque setPeriodInactive ya desmarca todo
+  }
+
+  // ========== Eventos ==========
+  function onPeriodSwitchChange(e) {
+    const sw = e.target;
+    const start = sw.dataset.start;
+    const end = sw.dataset.end;
+    if (sw.checked) {
+      selectAllInPeriod(start, end);
+    } else {
+      clearAllInPeriod(start, end);
+    }
+  }
+
+  function onCheckboxChange(e) {
+    const cb = e.target;
+    const start = cb.dataset.start;
+    const end = cb.dataset.end;
+
+    if (cb.checked) {
+      // Acaba de marcar este checkbox → activar período (bloquear otros)
+      setPeriodActive(start, end);
+    } else {
+      // Se desmarcó, comprobar si aún hay alguno marcado en este período
+      const anyChecked = document.querySelector(`.subscription-check[data-start="${start}"][data-end="${end}"]:checked`);
+      if (!anyChecked) {
+        // Ninguno marcado → desactivar período
+        setPeriodInactive();
+      }
+      // Si aún hay otros marcados, no hacer nada (el período sigue activo)
+    }
+  }
+
+  function switchToManualInvoice() {
+    setPeriodInactive();
+    groupedContainer.style.display = 'none';
+    manualContainer.style.display = 'block';
+    const today = new Date().toISOString().split('T')[0];
+    const nextMonth = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
+    startDateInput.value = today;
+    endDateInput.value = nextMonth;
+    updateDaysFromInputs();
+  }
+
+  // ========== Carga de suscripciones ==========
+  function loadGroupedSubscriptions(customerId) {
+    if (!customerId) {
+      groupedContainer.style.display = 'none';
+      manualContainer.style.display = 'none';
+      return;
+    }
+    fetch(`${ajaxUrl}?customer=${customerId}`)
+      .then(response => response.text())
+      .then(html => {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const checkboxes = tempDiv.querySelectorAll('.subscription-check');
+        if (checkboxes.length === 0) {
+          groupedContainer.innerHTML = '';
+          groupedContainer.style.display = 'none';
+          manualContainer.style.display = 'block';
+          updateDaysFromInputs();
+          return;
+        }
+
+        // Agrupar por período
+        const groups = {};
+        checkboxes.forEach(cb => {
+          const key = cb.dataset.start + '|' + cb.dataset.end;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(cb);
+        });
+
+        let htmlResult = `
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">Suscripciones Pendientes</h5>
+            <button type="button" class="btn btn-outline-secondary" id="switch-to-manual-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Facturación manual
+            </button>
+          </div>
+        `;
+
+        for (const key in groups) {
+          const [start, end] = key.split('|');
+          const days = calculateDays(start, end);
+          htmlResult += `
+            <div class="card mb-3">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="card-title mb-0">
+                    <span class="fw-bold">${start} → ${end}</span>
+                    <span class="badge bg-blue-lt ms-2">${days} días</span>
+                  </h6>
+                  <div class="form-check form-switch form-switch-lg mb-0">
+                    <input class="form-check-input period-switch" type="checkbox" 
+                           id="switch-${start}-${end}" data-start="${start}" data-end="${end}"
+                           data-bs-toggle="tooltip" data-bs-placement="bottom" title="Activar período">
+                    <label class="form-check-label" for="switch-${start}-${end}"></label>
+                  </div>
+                </div>
+                <div id="group-${start}-${end}">
+          `;
+          groups[key].forEach(cb => {
+            let summary = cb.dataset.summary ? cb.dataset.summary : '';
+            if (summary.length > 80) {
+              summary = summary.substring(0, 80) + '…';
+            }
+            htmlResult += `
+              <div class="form-check">
+                <input class="form-check-input subscription-check" type="checkbox" 
+                       name="subscriptions" value="${cb.value}" 
+                       id="sub_${cb.value}" data-start="${start}" data-end="${end}" 
+                       data-service="${cb.dataset.service}" data-days="${days}" data-summary="${summary}">
+                <label class="form-check-label" for="sub_${cb.value}">
+                  <strong>${cb.dataset.service}</strong>
+                  ${summary ? `<br><small class="text-muted">${summary}</small>` : ''}
+                </label>
+              </div>
+            `;
+          });
+          htmlResult += `</div></div></div>`;
+        }
+
+        groupedContainer.innerHTML = htmlResult;
+        groupedContainer.style.display = 'block';
+        manualContainer.style.display = 'none';
+
+        // Inicializar tooltips de Bootstrap en los switches
+        const Tooltip = window.bootstrap?.Tooltip;
+        if (Tooltip) {
+          groupedContainer.querySelectorAll('.period-switch').forEach(sw => {
+            new Tooltip(sw, { trigger: 'hover' });
+          });
+        }
+
+        // Evento del botón "Facturación manual"
+        const switchBtn = document.getElementById('switch-to-manual-btn');
+        if (switchBtn) {
+          switchBtn.addEventListener('click', switchToManualInvoice);
+        }
+
+        // Eventos de los switches y checkboxes
+        document.querySelectorAll('.period-switch').forEach(sw => {
+          sw.addEventListener('change', onPeriodSwitchChange);
+        });
+        document.querySelectorAll('.subscription-check').forEach(cb => {
+          cb.addEventListener('change', onCheckboxChange);
+        });
+
+        // Estado inicial: sin período activo, todo habilitado
+        setPeriodInactive();
+        updateDaysFromInputs();
+      })
+      .catch(function(error) {
+        console.error('Error al cargar suscripciones:', error);
+      });
+  }
+
+  customerSelect.addEventListener('change', function() {
+    loadGroupedSubscriptions(this.value);
+  });
+
+  if (customerSelect && customerSelect.value) {
+    loadGroupedSubscriptions(customerSelect.value);
+  }
+
+  // ========== Facturación manual (sin cambios) ==========
+  function updateRowFromService(row) {
+    const serviceSelect = row.querySelector('select[id$="-service"]');
+    const codeInput = row.querySelector('input[id$="-codigo"]');
+    const priceInput = row.querySelector('input[id$="-precio"]');
+    const unitInput = row.querySelector('input[id$="-unidad_medida"]');
+    const selectedId = serviceSelect.value;
+    if (selectedId && servicesMap[selectedId]) {
+      const data = servicesMap[selectedId];
+      codeInput.value = data.code;
+      priceInput.value = data.price;
+      unitInput.value = data.unit;
+    } else {
+      codeInput.value = '';
+      priceInput.value = '';
+      unitInput.value = 'U';
+    }
+    const days = calculateDays(startDateInput.value, endDateInput.value);
+    const quantityInput = row.querySelector('.quantity-days');
+    if (quantityInput) quantityInput.value = days;
+  }
+
+  function bindRowEvents(row) {
+    const select = row.querySelector('select[id$="-service"]');
+    if (select) select.addEventListener('change', () => updateRowFromService(row));
+    const removeBtn = row.querySelector('.remove-row');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function() {
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        const currentCount = parseInt(totalForms.value);
+        if (currentCount <= 1) {
+          row.querySelectorAll('input:not([type="hidden"]), textarea').forEach(el => el.value = '');
+          row.querySelector('select').selectedIndex = 0;
+          updateRowFromService(row);
+          return;
+        }
+        row.remove();
+        const container = document.getElementById('items-container');
+        const rows = container.querySelectorAll('.item-row');
+        totalForms.value = rows.length;
+        rows.forEach((r, index) => {
+          r.querySelectorAll('input, textarea, select').forEach(input => {
+            const name = input.name;
+            if (name) {
+              input.name = name.replace(/items-\d+-/, `items-${index}-`);
+              input.id = input.name;
+            }
+          });
+        });
+      });
+    }
+  }
+
+  document.querySelectorAll('.item-row').forEach(row => bindRowEvents(row));
+
+  document.getElementById('add-item').addEventListener('click', function() {
+    const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+    const currentCount = parseInt(totalForms.value);
+    const container = document.getElementById('items-container');
+    const lastRow = container.querySelector('.item-row:last-child');
+    if (!lastRow) return;
+    const newRow = lastRow.cloneNode(true);
+    const regex = new RegExp(`items-${currentCount-1}-`, 'g');
+    newRow.innerHTML = newRow.innerHTML.replace(regex, `items-${currentCount}-`);
+    newRow.querySelectorAll('input, textarea, select').forEach(input => {
+      if (input.type !== 'hidden') {
+        if (input.tagName === 'SELECT') input.selectedIndex = 0;
+        else input.value = '';
+      }
+    });
+    container.appendChild(newRow);
+    totalForms.value = currentCount + 1;
+    bindRowEvents(newRow);
+    updateRowFromService(newRow);
+  });
+</script>
+{% endblock %}

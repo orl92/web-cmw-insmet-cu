@@ -88,15 +88,15 @@
           <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
             <a href="{% url 'home:index' %}" class="dropdown-item">Ver Sitio</a>
             <div class="dropdown-divider"></div>
-            <a href="{% url 'accounts:profile_detail' %}" class="dropdown-item">Perfil</a>
-            <a href="{% url 'accounts:password_change' %}" class="dropdown-item">Cambiar Contraseña</a>
+            <a href="{% url 'user_auth:profile_detail' %}" class="dropdown-item">Perfil</a>
+            {% url 'user_auth:password_change' as password_change_url %}{% if password_change_url %}<a href="{{ password_change_url }}" class="dropdown-item">Cambiar Contraseña</a>{% endif %}
             <div class="dropdown-divider"></div>
-            <a href="{% url 'login:out' %}" class="dropdown-item">Cerrar Sesión</a>
+            <a href="{% url 'user_auth:logout' %}" class="dropdown-item">Cerrar Sesión</a>
           </div>
         </div>
       {% else %}
         <div class="d-none d-lg-flex">
-          <a href="{% url 'login:in' %}" class="nav-link px-0 hide-theme-dark" title="Iniciar sesión" data-bs-toggle="tooltip" data-bs-placement="bottom">
+          <a href="{% url 'user_auth:login' %}" class="nav-link px-0 hide-theme-dark" title="Iniciar sesión" data-bs-toggle="tooltip" data-bs-placement="bottom">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />

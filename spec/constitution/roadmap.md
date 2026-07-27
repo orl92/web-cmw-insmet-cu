@@ -65,10 +65,12 @@
 
 59. **059 · UI y accesibilidad** — utils.html inline → static files; `aria-label` en icon-links; `<pre>` headings → `<h3>`; SVG `alt=""` → `role="img"`; labels con `for`; limpiar navbar comentado.
 60. **061 · Models conventions** — FileHandlerMixin, `Meta.ordering`, `related_name`, UUID en modelos faltantes.
-61. **062 · Apps responsibility** — dividir `dashboard/` (~21 modelos, 5 dominios) en apps por dominio.
-62. **063 · Templates y static** — `paginate_by = 20` en ListViews, bloques comentados, accesibilidad.
-63. **064 · Tests coverage** — tests faltantes en publications, home, dashboard.
-64. **065 · Settings y seguridad** — CORS headers para API REST.
+61. **063 · Templates y static** — `paginate_by = 20` en ListViews, bloques comentados, accesibilidad.
+62. **064 · Tests coverage** — tests faltantes en publications, home, dashboard.
+63. **065 · Settings y seguridad** — CORS headers para API REST.
+64. **066 · Restructure apps** — crear `core/`, `user_auth/`, `meteo/`, `commercial/`; mover modelos, views, forms, urls, admin; eliminar `common/`, `accounts/`, `login/`, `crm/`, `billing/` legacy; reset DB + migraciones; `PROVEEDOR_FACTURA` migrado a CompanySettings.
+65. **067 · Unify Warning model** — fusionar EarlyWarning, TropicalCyclone, StormWarning en un solo modelo `Warning` con `warning_type`; views parametrizadas; eliminar código duplicado.
+66. **068 · Restructure templates** — mover templates de `pages/dashboard/` a su app correspondiente (`commercial/`, `meteo/`, `core/`, etc.); reorganizar `includes/dashboard/` por app; actualizar todos los `{% url %}` a nuevos namespaces.
 
 ## Backlog / ideas 💡
 

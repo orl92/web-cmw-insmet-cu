@@ -20,16 +20,18 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from apps.common.utils import My400View, My403View, My404View, My500View
+from apps.core.utils import My400View, My403View, My404View, My500View
 
 urlpatterns = [
-    path('', include('apps.login.urls')),
+
     path('admin/', admin.site.urls),
     path('api/', include('apps.api.urls')),
-    path('accounts/', include('apps.accounts.urls')),
+    path('commercial/', include('apps.commercial.urls')),
+    path('meteo/', include('apps.meteo.urls')),
+    path('config/', include('apps.core.urls')),
+    path('accounts/', include('apps.user_auth.urls')),
     path('dashboard/', include('apps.dashboard.urls')),
-    path('geo/', include(('apps.geo.urls', 'geo'), namespace='geo')),
-    path('dashboard/publicaciones/', include('apps.publications.urls')),
+    path('publications/', include('apps.publications.urls')),
 
     path('', include('apps.home.urls')),
 ]

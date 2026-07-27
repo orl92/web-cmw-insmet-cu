@@ -1,0 +1,60 @@
+{% extends 'layouts/dashboard.html' %}
+{% load static %}
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Detalle del Tiempo para Mañana</h3>
+        <div class="card-actions">
+          <a href="{% url url_list %}" class="btn btn-secondary btn-icon">Volver al Listado</a>
+          <a href="{% url 'meteo:tiempo_manana_update' weather_tomorrow.uuid %}" class="btn btn-warning btn-icon">Editar</a>
+          <a href="{% url 'meteo:tiempo_manana_pdf' weather_tomorrow.uuid %}" class="btn btn-info btn-icon" target="_blank">Descargar PDF</a>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h4>Información General</h4>
+            <table class="table table-bordered">
+              <tr><th>Fecha:</th><td>{{ weather_tomorrow.date|date:'j \d\e F \d\e Y' }}</td></tr>
+              <tr><th>Hora:</th><td>{{ weather_tomorrow.date|time:'h:i A' }}</td></tr>
+              <tr><th>Autor:</th><td>{{ weather_tomorrow.user.get_full_name|default:weather_tomorrow.user.username }}</td></tr>
+              <tr><th>Lista de Correo:</th><td>{{ weather_tomorrow.email_recipient_list.name|default:'-' }}</td></tr>
+            </table>
+          </div>
+          <div class="col-md-6">
+            <h4>Archivo</h4>
+            <div class="text-center">
+              <div class="file-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-file-text text-danger">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                  <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                  <path d="M9 9l1 0" />
+                  <path d="M9 13l6 0" />
+                  <path d="M9 17l6 0" />
+                </svg>
+              </div>
+              <p class="mt-2">{{ weather_tomorrow.file.name|default:'Sin archivo' }}</p>
+              {% if weather_tomorrow.file %}
+                <a href="{{ weather_tomorrow.file.url }}" class="btn btn-primary btn-pill" target="_blank">Ver PDF</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="row mt-4">
+          <div class="col-12">
+            <h4>Resumen</h4>
+            <div class="card">
+              <div class="card-body">
+                <p>{{ weather_tomorrow.summary|linebreaks }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

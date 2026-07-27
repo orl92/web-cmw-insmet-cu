@@ -1,15 +1,15 @@
 from django.utils import timezone
 from django.views.generic import ListView
 
-from apps.dashboard.models import EarlyWarning
+from apps.meteo.models import Warning as MeteoWarning
 
 
 class EarlyWarningListView(ListView):
-    model = EarlyWarning
-    template_name = 'pages/home/avisos/alerta_temprana.html'
+    model = MeteoWarning
+    template_name = 'pages/home/warnings/early_warning.html'
 
     def get_queryset(self):
-        return EarlyWarning.objects.filter(valid_until__gte=timezone.now()).select_related('user')
+        return MeteoWarning.objects.filter(warning_type='early', valid_until__gte=timezone.now()).select_related('user')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

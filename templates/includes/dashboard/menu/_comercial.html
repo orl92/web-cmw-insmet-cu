@@ -1,0 +1,46 @@
+{% load my_filters %}
+
+{% if request.user|has_permission:'commercial.view_customer' or request.user|has_permission:'commercial.view_service' or request.user|has_permission:'commercial.view_subscription' or request.user|has_group:'Clientes' or request.user|has_permission:'commercial.view_invoice' or request.user|has_permission:'commercial.view_contract' or request.user|has_permission:'commercial.view_certificate' %}
+<li class="nav-item dropdown {% if 'cliente' in segment or 'servicio' in segment or 'suscripciones' in segment or 'facturas' in segment or 'contratos' in segment or 'certificados' in segment %}active{% endif %}">
+    <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+        <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-building-store"></i></span>
+        <span class="nav-link-title">Comercial</span>
+    </a>
+    <div class="dropdown-menu {% if 'cliente' in segment or 'servicio' in segment or 'suscripciones' in segment or 'facturas' in segment or 'contratos' in segment or 'certificados' in segment %}show{% endif %}">
+        <div class="dropdown-menu-columns">
+            <div class="dropdown-menu-column">
+                {% if request.user|has_permission:'commercial.view_customer' %}
+                <a class="dropdown-item {% if 'cliente' in segment %}active{% endif %}" href="{% url 'commercial:cliente_list' %}">Clientes</a>
+                {% endif %}
+                {% if request.user|has_permission:'commercial.view_service' %}
+                <a class="dropdown-item {% if 'servicio' in segment %}active{% endif %}" href="{% url 'commercial:servicio_list' %}">Servicios</a>
+                {% endif %}
+                {% if request.user|has_permission:'commercial.view_subscription' or request.user|has_group:'Clientes' %}
+                <a class="dropdown-item {% if 'suscripciones' in segment %}active{% endif %}" href="{% url 'commercial:suscripcion_list' %}">
+                    {% if request.user.is_staff %}Suscripciones{% else %}Mis Suscripciones{% endif %}
+                    {% if request.user.is_staff %}
+                        {% if staff_requested_count > 0 %}<span class="badge bg-blue-lt ms-1">{{ staff_requested_count }}</span>{% endif %}
+                        {% if staff_pending_count > 0 %}<span class="badge bg-orange-lt ms-1">{{ staff_pending_count }}</span>{% endif %}
+                        {% if staff_expired_count > 0 %}<span class="badge bg-red-lt ms-1">{{ staff_expired_count }}</span>{% endif %}
+                    {% endif %}
+                    {% if not request.user.is_staff %}
+                        {% if client_requested_count > 0 %}<span class="badge bg-blue-lt ms-1">{{ client_requested_count }}</span>{% endif %}
+                        {% if client_pending_count > 0 %}<span class="badge bg-orange-lt ms-1">{{ client_pending_count }}</span>{% endif %}
+                        {% if client_expired_count > 0 %}<span class="badge bg-red-lt ms-1">{{ client_expired_count }}</span>{% endif %}
+                    {% endif %}
+                </a>
+                {% endif %}
+                {% if request.user|has_permission:'commercial.view_invoice' %}
+                <a class="dropdown-item {% if 'facturas' in segment %}active{% endif %}" href="{% url 'commercial:factura_list' %}">Facturación</a>
+                {% endif %}
+                {% if request.user|has_permission:'commercial.view_contract' %}
+                <a class="dropdown-item {% if 'contratos' in segment %}active{% endif %}" href="{% url 'commercial:contrato_list' %}">Contratos</a>
+                {% endif %}
+                {% if request.user|has_permission:'commercial.view_certificate' %}
+                <a class="dropdown-item {% if 'certificados' in segment %}active{% endif %}" href="{% url 'commercial:certificado_list' %}">Certificados</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</li>
+{% endif %}

@@ -9,7 +9,8 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin)
+    UserPassesTestMixin,
+)
 from django.db import transaction
 from django.forms import modelformset_factory
 from django.http import HttpResponse
@@ -24,10 +25,8 @@ from django.views.generic import (
     View,
 )
 
-from apps.common.utils import log_action
-from apps.publications.forms import (
-    CoauthorForm,
-    ScientificPublicationForm)
+from apps.core.utils import log_action
+from apps.publications.forms import CoauthorForm, ScientificPublicationForm
 from apps.publications.models import Author, ScientificPublication
 
 
@@ -46,7 +45,7 @@ def get_coauthor_formset(queryset=None, data=None, prefix="coauthors"):
 class ScientificPublicationListView(
     LoginRequiredMixin, PermissionRequiredMixin, ListView
 ):
-    template_name = "pages/dashboard/publicaciones/listado_publicaciones.html"
+    template_name = "pages/publications/list.html"
     model = ScientificPublication
     permission_required = "publications.view_scientific_publication"
 
@@ -59,9 +58,9 @@ class ScientificPublicationListView(
         context["url_create"] = reverse_lazy("publications:create")
         context["url_list"] = reverse_lazy("publications:list")
         context['is_superuser'] = self.request.user.is_superuser
-        context["objects"] = ScientificPublication.objects.all().prefetch_related(
-            "author", "coauthors"
-        )
+        context["objects"] = ScientificPublication.objects.all().select_related(
+            "author"
+        ).prefetch_related("coauthors")
         return context
 
 
@@ -70,7 +69,7 @@ class ScientificPublicationCreateView(
 ):
     model = ScientificPublication
     form_class = ScientificPublicationForm
-    template_name = "pages/dashboard/publicaciones/crear_publicacion.html"
+    template_name = "pages/publications/create.html"
     permission_required = "publications.add_scientific_publication"
     success_url = reverse_lazy("publications:list")
     url_redirect = success_url
@@ -106,9 +105,7 @@ class ScientificPublicationCreateView(
         if form.is_valid() and formset.is_valid():
             try:
                 with transaction.atomic():
-                    self.object = form.save(commit=False)
-                    self.object.user = self.request.user
-                    self.object.save()
+                    self.object = form.save()
 
                     coauthors_to_add = []
                     for coauthor_form in formset:
@@ -162,7 +159,7 @@ class ScientificPublicationUpdateView(
 ):
     model = ScientificPublication
     form_class = ScientificPublicationForm
-    template_name = "pages/dashboard/publicaciones/actualizar_publicacion.html"
+    template_name = "pages/publications/update.html"
     permission_required = "publications.change_scientific_publication"
     success_url = reverse_lazy("publications:list")
     url_redirect = success_url
@@ -290,7 +287,7 @@ class ScientificPublicationDetailView(
     LoginRequiredMixin, PermissionRequiredMixin, DetailView
 ):
     model = ScientificPublication
-    template_name = "pages/dashboard/publicaciones/detalle_publicacion.html"
+    template_name = "pages/publications/detail.html"
     permission_required = "publications.view_scientific_publication"
     context_object_name = "publicacion"
 
@@ -304,9 +301,9 @@ class ScientificPublicationDetailView(
         context["parent"] = ""
         context["segment"] = "publicaciones"
         context["url_list"] = reverse_lazy("publications:list")
-        context["publicacion"] = ScientificPublication.objects.prefetch_related(
-            "author", "coauthors"
-        ).get(uuid=self.kwargs.get("uuid"))
+        context["publicacion"] = ScientificPublication.objects.select_related(
+            "author"
+        ).prefetch_related("coauthors").get(uuid=self.kwargs.get("uuid"))
         return context
 
 
@@ -322,7 +319,7 @@ class ScientificPublicationPDFView(
         logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
         logo_base64 = self.get_image_base64(logo_path)
 
-        template = get_template("pages/dashboard/publicaciones/pdf_template.html")
+        template = get_template("pages/publications/pdf.html")
         context = {
             "publicacion": publicacion,
             "logo_base64": logo_base64,

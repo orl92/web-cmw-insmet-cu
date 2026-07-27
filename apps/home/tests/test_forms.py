@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from apps.geo.models import Town
+from apps.meteo.models import Town
 from apps.home.forms import GifDownloadForm, MeteoDataForm, MeteogramForm, SoundingForm
 
 

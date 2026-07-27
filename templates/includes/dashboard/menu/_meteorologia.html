@@ -1,0 +1,55 @@
+{% load my_filters %}
+{% if request.user|has_permission:'meteo.view_province' or request.user|has_permission:'meteo.view_town' or request.user|has_permission:'meteo.view_station' or request.user|has_permission:'meteo.view_forecast' or request.user|has_permission:'meteo.view_weatherreport' or request.user|has_permission:'meteo.view_warning' %}
+<li class="nav-item dropdown {% if 'provincia' in segment or 'municipio' in segment or 'town' in segment or 'estacion' in segment or 'pronostico' in segment or 'tiempo' in parent or 'comentario' in parent or 'avisos' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+        <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-cloud"></i></span>
+        <span class="nav-link-title">Meteorología</span>
+    </a>
+    <div class="dropdown-menu {% if 'provincia' in segment or 'municipio' in segment or 'town' in segment or 'estacion' in segment or 'pronostico' in segment or 'tiempo' in parent or 'comentario' in parent or 'avisos' in parent %}show{% endif %}">
+        <div class="dropdown-menu-columns">
+            <div class="dropdown-menu-column">
+                {% if request.user|has_permission:'meteo.view_province' or request.user|has_permission:'meteo.view_town' or request.user|has_permission:'meteo.view_station' %}
+                <div class="dropend">
+                    <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false">Geografía</a>
+                    <div class="dropdown-menu {% if 'provincia' in segment or 'municipio' in segment or 'town' in segment or 'estacion' in segment %}show{% endif %}">
+                        {% if request.user|has_permission:'meteo.view_province' %}
+                        <a class="dropdown-item {% if 'provincia' in segment %}active{% endif %}" href="{% url 'meteo:provincia_list' %}">Provincias</a>
+                        {% endif %}
+                        {% if request.user|has_permission:'meteo.view_town' %}
+                        <a class="dropdown-item {% if 'municipio' in segment or 'town' in segment %}active{% endif %}" href="{% url 'meteo:municipio_list' %}">Municipios</a>
+                        {% endif %}
+                        {% if request.user|has_permission:'meteo.view_station' %}
+                        <a class="dropdown-item {% if 'estacion' in segment %}active{% endif %}" href="{% url 'meteo:estacion_list' %}">Estaciones</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if request.user|has_permission:'meteo.view_forecast' %}
+                <a class="dropdown-item {% if 'pronostico' in segment %}active{% endif %}" href="{% url 'meteo:pronostico_list' %}">Pronósticos</a>
+                {% endif %}
+                {% if request.user|has_permission:'meteo.view_weatherreport' %}
+                <div class="dropend">
+                    <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false">Reportes</a>
+                    <div class="dropdown-menu {% if 'tiempo_h' in segment or 'tiempo_m' in segment or 'comentario_tiempo' in segment or 'nota_meteorologica' in segment %}show{% endif %}">
+                        <a class="dropdown-item {% if 'tiempo_h' in segment %}active{% endif %}" href="{% url 'meteo:tiempo_hoy_list' %}">Tiempo Hoy</a>
+                        <a class="dropdown-item {% if 'tiempo_m' in segment %}active{% endif %}" href="{% url 'meteo:tiempo_manana_list' %}">Tiempo Mañana</a>
+                        <a class="dropdown-item {% if 'comentario_tiempo' in segment %}active{% endif %}" href="{% url 'meteo:comentario_tiempo_list' %}">Comentario del Tiempo</a>
+                        <a class="dropdown-item {% if 'nota_meteorologica' in segment %}active{% endif %}" href="{% url 'meteo:nota_meteorologica_list' %}">Nota Meteorológica</a>
+                    </div>
+                </div>
+                {% endif %}
+                {% if request.user|has_permission:'meteo.view_warning' %}
+                <div class="dropend">
+                    <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="false">Avisos</a>
+                    <div class="dropdown-menu {% if 'early' in segment or 'cyclone' in segment or 'storm' in segment %}show{% endif %}">
+                        <a class="dropdown-item {% if 'early' in segment %}active{% endif %}" href="{% url 'meteo:alerta_temprana_list' %}">Alertas Tempranas</a>
+                        <a class="dropdown-item {% if 'cyclone' in segment %}active{% endif %}" href="{% url 'meteo:ciclon_tropical_list' %}">Ciclones Tropicales</a>
+                        <a class="dropdown-item {% if 'storm' in segment %}active{% endif %}" href="{% url 'meteo:tormenta_list' %}">Tormentas</a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</li>
+{% endif %}

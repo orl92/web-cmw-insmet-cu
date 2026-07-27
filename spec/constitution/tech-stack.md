@@ -29,7 +29,7 @@
 ## Comandos
 
 - `source .venv/bin/activate && python manage.py runserver` — entorno local (dev)
-- `python manage.py runserver --production` — simula producción local
+- `PRODUCTION=true python manage.py runserver` — simula producción local
 - `python manage.py test` — ejecuta tests
 - `python manage.py add_stations_data` — carga inicial de estaciones
 - `python manage.py import_ldap_users` — importa usuarios desde LDAP
@@ -86,7 +86,7 @@ Skills instalados en `~/.agents/skills/`. Se cargan automáticamente según el c
 - `django-expert` — modelos, ORM, DRF, auth, tests, performance Django
 - `frontend-design` — diseño visual distintivo (tipografía, paleta, layout, identidad)
 - `web-design-guidelines` — auditoría de UI contra Web Interface Guidelines (accesibilidad, buenas prácticas visuales)
-- `project-structure-audit` — auditoría de estructura del proyecto contra estándares Django y convenciones locales; genera features SDD en `spec/features/`
+
 
 ### MCP
 - `tabler` — búsqueda de iconos, componentes, layouts y documentación de Tabler.io

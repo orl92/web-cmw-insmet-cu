@@ -10,16 +10,8 @@ from django.db.models import Count, Exists, OuterRef, Sum
 from django.utils import timezone
 from django.views.generic import TemplateView
 
-from apps.dashboard.models import (
-    Customer,
-    EarlyWarning,
-    Forecasts,
-    Invoice,
-    InvoiceItem,
-    ServiceSubscription,
-    StormWarning,
-    TropicalCyclone,
-)
+from apps.commercial.models import Customer, Invoice, InvoiceItem, ServiceSubscription
+from apps.meteo.models import Forecasts, Warning
 
 
 def _region_temp(f, region_key, period):
@@ -40,6 +32,7 @@ paid_direct = Exists(ServiceSubscription.objects.filter(
     payment_status='paid', record_active=True
 ))
 
+
 paid_via_items = Exists(InvoiceItem.objects.filter(
     invoice_id=OuterRef('id'),
     subscription__payment_status='paid',
@@ -48,7 +41,7 @@ paid_via_items = Exists(InvoiceItem.objects.filter(
 
 
 class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name = 'pages/dashboard/dashboard.html'
+    template_name = 'pages/dashboard/index.html'
 
     def dispatch(self, request, *args, **kwargs):
         user = request.user
@@ -83,16 +76,12 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'selected_range': time_range,
         })
 
-        context['show_alerts'] = any([
-            user.has_perm('dashboard.view_early_warning'),
-            user.has_perm('dashboard.view_tropical_cyclone'),
-            user.has_perm('dashboard.view_storm_warning'),
-        ])
-        context['show_forecast'] = user.has_perm('dashboard.view_forecast')
+        context['show_alerts'] = user.has_perm('meteo.view_warning')
+        context['show_forecast'] = user.has_perm('meteo.view_forecast')
         context['is_client'] = user.groups.filter(name='Clientes').exists() and not user.is_superuser
         context['show_commercial'] = any([
-            user.has_perm('dashboard.view_subscription'),
-            user.has_perm('dashboard.view_invoice'),
+            user.has_perm('commercial.view_subscription'),
+            user.has_perm('commercial.view_invoice'),
         ]) and not context['is_client']
 
         now = timezone.now()
@@ -159,22 +148,20 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 context['min_temperatures_inland'] = json.dumps([_region_temp(f, 'interior', 'night') for f in forecasts_list])
 
         if context['show_alerts']:
-            latest_early_warning = EarlyWarning.objects.filter(
-                valid_until__gte=now
+            latest_early = Warning.objects.filter(
+                warning_type='early', valid_until__gte=now
             ).order_by('-date').first()
-
-            latest_tropical_cyclone = TropicalCyclone.objects.filter(
-                valid_until__gte=now
+            latest_cyclone = Warning.objects.filter(
+                warning_type='tropical_cyclone', valid_until__gte=now
             ).order_by('-date').first()
-
-            latest_storm_warning = StormWarning.objects.filter(
-                valid_until__gte=now
+            latest_storm = Warning.objects.filter(
+                warning_type='storm', valid_until__gte=now
             ).order_by('-date').first()
 
             context['latest_alerts'] = {
-                'early_warnings': [latest_early_warning] if latest_early_warning else [],
-                'tropical_cyclones': [latest_tropical_cyclone] if latest_tropical_cyclone else [],
-                'storm_warnings': [latest_storm_warning] if latest_storm_warning else [],
+                'early_warnings': [latest_early] if latest_early else [],
+                'tropical_cyclones': [latest_cyclone] if latest_cyclone else [],
+                'storm_warnings': [latest_storm] if latest_storm else [],
             }
 
         if context['show_commercial']:
