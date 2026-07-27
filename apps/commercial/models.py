@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 
@@ -21,13 +22,17 @@ class Customer(SoftDeleteModel):
     company_name = models.CharField(
         max_length=100, blank=True, null=True, verbose_name="Nombre de la Empresa",
     )
-    reeup = models.CharField(max_length=12, blank=True, null=True, unique=True, verbose_name="REEUP")
-    nit = models.CharField(max_length=11, blank=True, null=True, unique=True, verbose_name="NIT")
-    account = models.CharField(max_length=16, unique=True, verbose_name="Cuenta Bancaria")
+    reeup = models.CharField(max_length=12, blank=True, null=True, unique=True, verbose_name="REEUP",
+        validators=[RegexValidator(r'^\d{3}\.\d{1,2}\.\d{4,5}$', 'El REEUP debe tener el formato ###.#.#### o ###.##.#####')])
+    nit = models.CharField(max_length=11, blank=True, null=True, unique=True, verbose_name="NIT",
+        validators=[RegexValidator(r'^\d{11}$', 'El NIT debe tener exactamente 11 dígitos numéricos.')])
+    account = models.CharField(max_length=16, unique=True, verbose_name="Cuenta Bancaria",
+        validators=[RegexValidator(r'^\d{16}$', 'La cuenta bancaria debe tener exactamente 16 dígitos numéricos.')])
     agency_bank = models.CharField(max_length=100, blank=True, null=True, verbose_name="Agencia Bancaria")
     address = models.TextField(verbose_name="Dirección")
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Usuario", related_name='commercial_customer')
-    phone = models.CharField(max_length=8, verbose_name="Número de Teléfono")
+    phone = models.CharField(max_length=8, verbose_name="Número de Teléfono",
+        validators=[RegexValidator(r'^\d{8}$', 'El teléfono debe tener exactamente 8 dígitos numéricos.')])
     accept_terms = models.BooleanField(default=False, verbose_name="Aceptó Términos")
 
     class Meta:
