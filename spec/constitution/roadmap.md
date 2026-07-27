@@ -87,10 +87,32 @@
 
 ## Backlog / ideas 💡
 
-- Frontend build pipeline (package.json, bundler, Sass)
-- Auth API (JWT, tokens de acceso)
-- Traducción EN del portal público
-- PWA / service worker
-- Notificaciones en tiempo real (WebSockets)
+### 🔴 Seguridad
+
+- **Content Security Policy (CSP)** — Cabeceras HTTP para prevenir XSS y exfiltración de datos. Usar `django-csp` o middleware manual.
+- **Proxy SSL y cabeceras de seguridad** — Configurar `SECURE_PROXY_SSL_HEADER`, `SECURE_REFERRER_POLICY`, `SESSION_COOKIE_HTTPONLY`, `CSRF_COOKIE_HTTPONLY` explícitos. Sin proxy SSL header, Django detrás de Nginx rompe cookies seguras.
+- **2FA / MFA para usuarios admin** — Autenticación de dos factores con `django-otp` o `django-two-factor-auth` para staff y superusuarios del dashboard.
+- **Validación de archivos subidos** — Magic bytes, extensión, tamaño máximo en todos los FileField/ImageField (Service, Invoice, Certificate, Profile.avatar). Actualmente solo `ScientificPublication.pdf` tiene validación.
+- **Eliminar `.env` del repositorio** — Los archivos `/.env` y `/apps/.env` contienen credenciales reales. Agregar a `.gitignore`, generar `.env.example` con valores dummy.
+
+### 🟡 Automatización
+
+- **Pre-commit hooks** — Ruff (lint + format), djlint para templates Django, verificación de migraciones.
+- **CI/CD con GitHub Actions** — Test suite en cada push/PR, lint, `pip-audit` para vulnerabilidades, typecheck.
+- **Health check endpoint** — `/health/` que verifique DB, Redis y Huey worker. Necesario para monitoreo de deploy.
+- **Docker Compose para desarrollo** — Postgres, Redis, Mailpit (email de prueba). Elimina dependencias del sistema anfitrión.
+
+### 🟢 Developer Experience
+
+- **Backup automatizado de base de datos** — Script + cron para dump diario SQLite/PostgreSQL con purge de backups viejos.
+- **Validación de entorno al startup** — Verificar en `settings.py` que todas las variables obligatorias existen antes de arrancar.
+- **Búsqueda global en navbar** — SearchBar que busque en clientes, facturas, servicios, contratos y pronósticos.
+- **Loading states / skeletons** — Esqueletos de carga para DataTables, charts del dashboard y tablas de pronósticos.
+
+### 🔵 Evolución
+
+- **Auth API (JWT)** — Tokens JWT para autenticación de API REST sin cookies de sesión. Útil para integraciones externas y apps móviles.
+- **Notificaciones en tiempo real (WebSockets)** — Push de alertas meteorológicas y cambios de estado vía Django Channels + Redis.
+- **Traducción EN del portal público** — Internacionalización con i18n de Django para audiencia angloparlante.
 
 > Cada feature nueva se crea como `features/NNN-nombre-feature/` con `spec.md`, `plan.md` y `tasks.md` antes de tocar código. Al completar, actualizar `spec/constitution/roadmap.md` moviendo la feature a Hecho antes de empezar la siguiente.
