@@ -24,7 +24,7 @@ class CheckUserProfileMiddleware:
                 customer = user.commercial_customer
                 required_fields = ['company_name', 'reeup', 'nit', 'account', 'address', 'phone']
                 for field in required_fields:
-                    if not getattr(customer, field, '').strip():
+                    if not str(getattr(customer, field, '')).strip():
                         missing_company = True
                         break
 
