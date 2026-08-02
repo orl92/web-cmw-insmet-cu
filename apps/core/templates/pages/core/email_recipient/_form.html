@@ -26,9 +26,18 @@
 
 <fieldset class="mb-4">
   <legend class="h4">Destinatarios</legend>
+  <small class="form-text text-muted">Añade los destinatarios de la lista.</small>
+
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger mt-3">
+      {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
   {{ formset.management_form }}
+
   <div class="table-responsive">
-    <table class="table table-bordered">
+    <table class="table table-bordered mt-3">
       <thead>
         <tr>
           <th>Correo Electrónico</th>
@@ -37,20 +46,23 @@
       </thead>
       <tbody id="recipient-tbody">
         {% for recipient_form in formset %}
-          <tr>
+          <tr data-index="{{ forloop.counter0 }}">
+            {% if recipient_form.existing %}
+              <input type="hidden" name="{{ recipient_form.uuid.html_name }}"
+                     value="{{ recipient_form.uuid.value|default:'' }}"
+                     id="{{ recipient_form.uuid.id_for_label }}">
+            {% endif %}
             <td>
               <input type="email" class="form-control {% if recipient_form.email.errors %}is-invalid{% endif %}"
-                     name="recipients-{{ forloop.counter0 }}-email"
+                     name="{{ recipient_form.email.html_name }}"
                      value="{{ recipient_form.email.value|default:'' }}" placeholder="Correo Electrónico">
               {% if recipient_form.email.errors %}
                 <div class="invalid-feedback d-block">{{ recipient_form.email.errors.0 }}</div>
               {% endif %}
             </td>
             <td class="align-middle text-center">
-              <input type="hidden" name="recipients-{{ forloop.counter0 }}-uuid"
-                     value="{{ recipient_form.instance.pk|default:'' }}">
-              <input type="checkbox" name="recipients-{{ forloop.counter0 }}-DELETE"
-                     class="recipient-delete" value="on" hidden>
+              <input type="checkbox" name="{{ recipient_form.DELETE.html_name }}" value="on"
+                     class="recipient-delete" hidden>
               <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-recipient"
                       title="Eliminar destinatario">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
@@ -68,5 +80,6 @@
       </tbody>
     </table>
   </div>
+
   <button type="button" id="add-recipient" class="btn btn-pill btn-outline-success btn-sm mt-3">Añadir Destinatario</button>
 </fieldset>

@@ -24,12 +24,24 @@ class EmailRecipientListCreateViewTests(TestCase):
         self.assertContains(response, 'Destinatarios')
         self.assertContains(response, 'id="recipient-tbody"')
         self.assertContains(response, 'Añadir Destinatario')
+        self.assertContains(response, 'name="recipients-0-email"')
+        self.assertContains(response, 'id_recipients-TOTAL_FORMS')
+        self.assertNotContains(response, 'name="recipients-0-uuid"')
+
+    def test_get_renders_coauthor_style_js_with_form_index(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'let formIndex = 1;')
+        self.assertContains(response, 'recipientRowHtml(formIndex)')
+        self.assertContains(response, "tbody.insertAdjacentHTML('beforeend', recipientRowHtml(formIndex))")
 
     def test_get_does_not_render_broken_delete_name_literal(self):
         self.client.force_login(self.superuser)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'form-${formIndex}-DELETE')
+        self.assertNotContains(response, 'recipients-__PREFIX__-email')
 
     def test_post_creates_list_and_recipients(self):
         self.client.force_login(self.superuser)
@@ -68,6 +80,15 @@ class EmailRecipientListUpdateViewTests(TestCase):
         self.assertContains(response, 'recipients-0-uuid')
         self.assertContains(response, 'recipients-0-DELETE')
         self.assertContains(response, 'recipients-1-DELETE')
+
+    def test_get_renders_extra_empty_row_and_matching_form_index(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="recipients-2-email"')
+        self.assertContains(response, 'let formIndex = 3;')
+        self.assertContains(response, 'data-index="2"')
+        self.assertNotContains(response, 'name="recipients-2-uuid"')
 
     def test_post_with_delete_flag_removes_recipient(self):
         self.client.force_login(self.superuser)

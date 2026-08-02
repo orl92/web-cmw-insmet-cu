@@ -25,6 +25,10 @@ class EmailRecipientForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['email'].required = False
 
+    @property
+    def existing(self):
+        return self.instance.pk is not None and not self.instance._state.adding
+
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if self.instance.pk and self.instance.email == email:
