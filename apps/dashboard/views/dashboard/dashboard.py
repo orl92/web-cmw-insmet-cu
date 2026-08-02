@@ -21,8 +21,8 @@ def _region_temp(f, region_key, period):
 
 def serialize_sub(sub):
     return {
-        'customer': html.escape(sub.customer.company_name) if sub.customer else 'N/A',
-        'service': html.escape(sub.service.title) if sub.service else 'N/A',
+        'customer': html.escape(sub.customer.company_name or 'N/A') if sub.customer else 'N/A',
+        'service': html.escape(sub.service.title or 'N/A') if sub.service else 'N/A',
         'end_date': sub.end_date.strftime('%d/%m/%Y') if sub.end_date else 'N/A',
     }
 

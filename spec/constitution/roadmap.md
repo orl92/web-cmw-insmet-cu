@@ -71,10 +71,10 @@
 67. **067 · Unify Warning model** — fusionar EarlyWarning, TropicalCyclone, StormWarning en un solo modelo `Warning` con `warning_type`; views parametrizadas; eliminar código duplicado. (Incluido en 066.)
 68. **068 · Restructure templates** — mover templates a cada app; reorganizar includes; actualizar `{% url %}`. (Incluido en 066.)
 69. **Template polish CRUD (transversal, commits 14f3d1b/b8c2704/4ebd53d)** — templates create/update/detail de meteo, user_auth, core y commercial/publications unificados al patrón de `customer/create.html`: fieldsets con `legend.h4`, `<hr>` entre grupos, grid `row`/`col-md-*`, errores `invalid-feedback d-block`. Bugfixes: formset de `EmailRecipient` con campo `-uuid` (no `-id`) para que edición/borrado hagan round-trip; datetime local en suscripciones (reemplaza `toISOString()` que cambiaba UTC); modal de invoice con API `bootstrap.Modal`; `html_name` en formset de coautores (`BoundField.name` era el nombre sin prefijo y rompía el guardado); value bindings en contract; fecha `d/m/Y` en detail de publicaciones. Tests de regresión añadidos (+7): suite 250 tests OK.
+70. **070 · Tests secundarios** — `apps/dashboard/tests/` (acceso staff/cliente, flags de permisos, rangos, KPIs, charts JSON, `serialize_sub` tolera persona natural); `apps/core/tests/test_middleware.py` (`CheckUserProfileMiddleware` + `MaintenanceModeMiddleware`); `apps/core/tests/test_tasks.py` (`send_email_task` vía `call_local` con adjuntos por args y por path); fix `serialize_sub` (crash con `company_name=None`). Suite 278 tests OK.
 
 ## Siguiente 🔜
 
-69. **070 · Tests secundarios** — tests faltantes en publications, home, dashboard, api. Solo spec.md — requiere plan.md + tasks.md.
 70. **071 · Performance queries** — optimizar queries N+1, agregar `select_related`/`prefetch_related` donde falte. Solo spec.md.
 71. **072 · Dark mode** — implementar alternador claro/oscuro persistente con Tabler. Solo spec.md.
 72. **073 · UI polish** — refinamientos visuales: espaciado, tipografía, estados vacíos, micro-interacciones. Solo spec.md.
