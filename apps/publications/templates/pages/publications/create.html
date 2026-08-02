@@ -1,4 +1,5 @@
 {% extends 'layouts/form.html' %}
+{% load form_filters %}
 {% block form %}
   <fieldset class="mb-4">
     <legend class="h4">Información de la Publicación</legend>
@@ -16,7 +17,7 @@
         <label class="form-label required" for="{{ form.publication_date.id_for_label }}">{{ form.publication_date.label }}</label>
         <input type="date" class="form-control {% if form.publication_date.errors %}is-invalid{% endif %}"
                id="{{ form.publication_date.id_for_label }}" name="{{ form.publication_date.name }}"
-               value="{{ form.publication_date.value|date:'Y-m-d'|default:'' }}" required>
+               value="{{ form.publication_date.value|iso_date|default:'' }}" required>
         {% if form.publication_date.errors %}
           <div class="invalid-feedback d-block">{{ form.publication_date.errors.0 }}</div>
         {% endif %}

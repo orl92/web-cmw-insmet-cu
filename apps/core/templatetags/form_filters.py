@@ -1,3 +1,5 @@
+from datetime import date, datetime
+
 from django import template
 
 register = template.Library()
@@ -18,3 +20,15 @@ def add_attrs(value, attrs_str):
 @register.filter
 def filename(value):
     return value.name.split('/')[-1] if value else ''
+
+@register.filter
+def iso_date(value):
+    if isinstance(value, date):
+        return value.strftime('%Y-%m-%d')
+    return value
+
+@register.filter
+def iso_datetime(value):
+    if isinstance(value, datetime):
+        return value.strftime('%Y-%m-%dT%H:%M')
+    return value

@@ -125,6 +125,20 @@ class ScientificPublicationUpdateViewTests(TestCase):
         self.assertContains(response, 'coauthors-0-first_name')
         self.assertContains(response, 'value="Coautor"')
 
+    def test_get_prepopulates_publication_date(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="2026-05-10"')
+
+    def test_invalid_post_keeps_submitted_date(self):
+        self.client.force_login(self.admin)
+        data = self._valid_data()
+        data['title'] = ''
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="2026-05-10"')
+
     def test_post_preserves_coauthor(self):
         self.client.force_login(self.admin)
         response = self.client.post(self.url, self._valid_data(), follow=True)
