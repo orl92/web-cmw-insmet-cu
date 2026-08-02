@@ -1,127 +1,157 @@
 {% extends 'layouts/dashboard.html' %}
 {% load static %}
+{% block title_actions %}
+  <div class="col-auto ms-auto d-print-none">
+    <div class="d-flex justify-content-end flex-wrap gap-1">
+      <a href="{% url 'publications:list' %}" type="button" class="btn btn-icon btn-outline-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Volver al listado" aria-label="Volver al listado">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-left">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M5 12l14 0"/>
+          <path d="M5 12l6 6"/>
+          <path d="M5 12l6 -6"/>
+        </svg>
+      </a>
+      <a href="{% url 'publications:update' publicacion.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Editar" aria-label="Editar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
+          <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
+          <path d="M16 5l3 3"/>
+        </svg>
+      </a>
+      <a href="{% url 'publications:pdf' publicacion.uuid %}" type="button" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Descargar PDF" aria-label="Descargar PDF" target="_blank">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-download">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
+          <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/>
+          <path d="M12 11v6"/>
+          <path d="M9 14l3 3l3 -3"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+{% endblock title_actions %}
 {% block content %}
-  <div class="row">
+  <div class="row row-cards">
     <div class="col-12">
       <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Detalle de la Publicación Científica</h3>
-          <div class="card-actions">
-            <a href="{% url 'publications:list' %}" class="btn btn-secondary btn-icon">Volver al Listado</a>
-            <a href="{% url 'publications:update' publicacion.uuid %}" class="btn btn-warning btn-icon">Editar</a>
-            <a href="{% url 'publications:pdf' publicacion.uuid %}" class="btn btn-info btn-icon" target="_blank">Descargar PDF</a>
+        <div class="card-body">
+          <div class="datagrid">
+            <div class="datagrid-item">
+              <div class="datagrid-title">Título</div>
+              <div class="datagrid-content">{{ publicacion.title }}</div>
+            </div>
+            <div class="datagrid-item">
+              <div class="datagrid-title">Fecha de Publicación</div>
+              <div class="datagrid-content">{{ publicacion.publication_date|date:"d/m/Y" }}</div>
+            </div>
+            <div class="datagrid-item">
+              <div class="datagrid-title">Usuario</div>
+              <div class="datagrid-content">{{ publicacion.user }}</div>
+            </div>
+            <div class="datagrid-item">
+              <div class="datagrid-title">Fecha de Creación</div>
+              <div class="datagrid-content">{{ publicacion.created_at|date:"d/m/Y H:i" }}</div>
+            </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Archivo</h3>
+        </div>
         <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-              <h4>Información General</h4>
-              <table class="table table-bordered">
-                <tr>
-                  <th>Título:</th>
-                  <td>{{ publicacion.title }}</td>
-                </tr>
-                <tr>
-                  <th>Fecha de Publicación:</th>
-                  <td>{{ publicacion.publication_date|date:"d/m/Y" }}</td>
-                </tr>
-                <tr>
-                  <th>Usuario:</th>
-                  <td>{{ publicacion.user }}</td>
-                </tr>
-                <tr>
-                  <th>Fecha de Creación:</th>
-                  <td>{{ publicacion.created_at|date:"d/m/Y H:i" }}</td>
-                </tr>
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              {% include 'includes/partials/pdf_avatar.html' %}
+            </div>
+            <div class="flex-grow-1">
+              <p class="mb-1">{{ publicacion.pdf_file.name|default:'Sin archivo' }}</p>
+              {% if publicacion.pdf_file %}
+                <a href="{{ publicacion.pdf_file.url }}" class="btn btn-primary btn-pill" target="_blank">Ver PDF</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Resumen</h3>
+        </div>
+        <div class="card-body">
+          <p>{{ publicacion.summary|linebreaks }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Autor Principal</h3>
+        </div>
+        <div class="card-body">
+          <div class="datagrid">
+            <div class="datagrid-item">
+              <div class="datagrid-title">Nombre</div>
+              <div class="datagrid-content">{{ publicacion.author.first_name }} {{ publicacion.author.last_name }}</div>
+            </div>
+            <div class="datagrid-item">
+              <div class="datagrid-title">Correo</div>
+              <div class="datagrid-content">{{ publicacion.author.email|default:'-' }}</div>
+            </div>
+            <div class="datagrid-item">
+              <div class="datagrid-title">Institución</div>
+              <div class="datagrid-content">{{ publicacion.author.institution|default:'-' }}</div>
+            </div>
+            <div class="datagrid-item">
+              <div class="datagrid-title">ORCID ID</div>
+              <div class="datagrid-content">{{ publicacion.author.orcid_id|default:'-' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Coautores</h3>
+        </div>
+        <div class="card-body">
+          {% if publicacion.coauthors.all %}
+            <div class="table-responsive">
+              <table class="table table-vcenter">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Correo</th>
+                    <th>Institución</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for coauthor in publicacion.coauthors.all %}
+                    <tr>
+                      <td>{{ coauthor.first_name }} {{ coauthor.last_name }}</td>
+                      <td>{{ coauthor.email|default:'-' }}</td>
+                      <td>{{ coauthor.institution|default:'-' }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="3" class="text-center text-muted">No hay coautores registrados</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
               </table>
             </div>
-            <div class="col-md-6">
-              <h4>Archivo</h4>
-              <div class="text-center">
-                <div class="file-icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-file-text text-danger">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
-                    <path d="M9 9l1 0" />
-                    <path d="M9 13l6 0" />
-                    <path d="M9 17l6 0" />
-                  </svg>
-                </div>
-                <p class="mt-2">{{ publicacion.pdf_file.name|default:'Sin archivo' }}</p>
-                {% if publicacion.pdf_file %}
-                  <a href="{{ publicacion.pdf_file.url }}" class="btn btn-primary btn-pill" target="_blank">Ver PDF</a>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <div class="row mt-4">
-            <div class="col-12">
-              <h4>Resumen</h4>
-              <div class="card">
-                <div class="card-body">
-                  <p>{{ publicacion.summary|linebreaks }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="row mt-4">
-            <div class="col-md-6">
-              <h4>Autor Principal</h4>
-              <div class="table-responsive">
-                <table class="table table-bordered">
-                  <tbody>
-                    <tr>
-                      <th>Nombre:</th>
-                      <td>{{ publicacion.author.first_name }} {{ publicacion.author.last_name }}</td>
-                    </tr>
-                    <tr>
-                      <th>Correo:</th>
-                      <td>{{ publicacion.author.email|default:'-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>Institución:</th>
-                      <td>{{ publicacion.author.institution|default:'-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>ORCID ID:</th>
-                      <td>{{ publicacion.author.orcid_id|default:'-' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <h4>Coautores</h4>
-              <div class="table-responsive">
-                <table class="table table-bordered">
-                  <thead>
-                    <tr>
-                      <th>Nombre</th>
-                      <th>Correo</th>
-                      <th>Institución</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for coauthor in publicacion.coauthors.all %}
-                      <tr>
-                        <td>{{ coauthor.first_name }} {{ coauthor.last_name }}</td>
-                        <td>{{ coauthor.email|default:'-' }}</td>
-                        <td>{{ coauthor.institution|default:'-' }}</td>
-                      </tr>
-                    {% empty %}
-                      <tr>
-                        <td colspan="3" class="text-center">No hay coautores registrados</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          {% else %}
+            <p class="text-muted mb-0">No hay coautores registrados</p>
+          {% endif %}
         </div>
       </div>
     </div>

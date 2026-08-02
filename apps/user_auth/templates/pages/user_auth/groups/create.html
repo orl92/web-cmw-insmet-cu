@@ -1,34 +1,9 @@
 {% extends 'layouts/form.html' %}
 {% load static my_filters %}
 
-{% block content_before %}
-<div class="page-header d-print-none">
-    <div class="container-xl">
-        <div class="row g-2 align-items-center">
-            <div class="col">
-                <h2 class="page-title">{{ title }}</h2>
-                <div class="text-muted mt-1">Configura los permisos que tendrá este grupo</div>
-            </div>
-            <div class="col-auto ms-auto d-print-none">
-                <div class="btn-list">
-                    <a href="{{ url_list }}" class="btn btn-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-left">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                            <path d="M5 12l14 0" />
-                            <path d="M5 12l6 6" />
-                            <path d="M5 12l6 -6" />
-                        </svg>Volver al listado
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
 {% block form %}
 <div class="row">
-    <div class="col-12 mb-4">
+    <div class="col-md-12 mb-3">
         <label class="form-label required">Nombre del Grupo</label>
         <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}"
                id="{{ form.name.id_for_label }}"
@@ -47,9 +22,9 @@
                 <p class="text-muted mb-0">Selecciona los permisos que tendrá este grupo</p>
             </div>
         </div>
-
+        
         {% include 'pages/user_auth/groups/_profile_selector.html' %}
-
+        
         <div class="table-responsive">
             <table class="table table-flush-spacing">
                 <tbody>
@@ -163,22 +138,6 @@
         {% if form.permissions.errors %}
             <div class="alert alert-danger mt-3" role="alert">{{ form.permissions.errors }}</div>
         {% endif %}
-    </div>
-</div>
-{% endblock %}
-
-{% block form_actions %}
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="btn-list justify-content-end">
-            <a href="{{ url_list }}" class="btn btn-outline-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-check">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M5 12l5 5l10 -10" />
-                </svg>Crear Grupo
-            </button>
-        </div>
     </div>
 </div>
 {% endblock %}

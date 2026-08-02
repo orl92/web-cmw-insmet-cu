@@ -19,6 +19,14 @@ from apps.core.views.exports import CSVExportView
 logger = logging.getLogger(__name__)
 
 
+def _discard_empty_recipient_forms(formset):
+    for form in formset.forms:
+        if form in formset.deleted_forms:
+            continue
+        if not form.cleaned_data.get('email'):
+            form.cleaned_data['DELETE'] = True
+
+
 class EmailRecipientListListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = 'pages/core/email_recipient/list.html'
     model = EmailRecipientList
@@ -52,6 +60,7 @@ class EmailRecipientListCreateView(LoginRequiredMixin, PermissionRequiredMixin, 
         formset = EmailRecipientFormSet(self.request.POST, instance=self.object, prefix='recipients')
 
         if formset.is_valid():
+            _discard_empty_recipient_forms(formset)
             formset.save()
             log_action(
                 user=self.request.user,
@@ -93,6 +102,7 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
         formset = EmailRecipientFormSet(self.request.POST, instance=self.object, prefix='recipients')
 
         if formset.is_valid():
+            _discard_empty_recipient_forms(formset)
             formset.save()
             log_action(
                 user=self.request.user,

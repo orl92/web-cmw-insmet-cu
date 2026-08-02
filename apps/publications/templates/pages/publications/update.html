@@ -3,7 +3,8 @@
 {% block form %}
   <fieldset class="mb-4">
     <legend class="h4">Información de la Publicación</legend>
-    <div class="mb-3">
+    <div class="row">
+      <div class="col-md-6 mb-3">
       <label class="form-label required" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
       <input type="text" class="form-control {% if form.title.errors %}is-invalid{% endif %}"
              id="{{ form.title.id_for_label }}" name="{{ form.title.name }}"
@@ -11,8 +12,7 @@
       {% if form.title.errors %}
         <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
       {% endif %}
-    </div>
-    <div class="row">
+      </div>
       <div class="col-md-6 mb-3">
         <label class="form-label required" for="{{ form.publication_date.id_for_label }}">{{ form.publication_date.label }}</label>
         <input type="date" class="form-control {% if form.publication_date.errors %}is-invalid{% endif %}"
@@ -41,7 +41,7 @@
     <small class="form-text text-muted">Información del autor principal de la publicación.</small>
 
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-md-6 mb-3">
         <label class="form-label required" for="{{ form.author_first_name.id_for_label }}">{{ form.author_first_name.label }}</label>
         <input type="text" class="form-control {% if form.author_first_name.errors %}is-invalid{% endif %}"
                id="{{ form.author_first_name.id_for_label }}" name="{{ form.author_first_name.name }}"
@@ -50,7 +50,7 @@
           <div class="invalid-feedback d-block">{{ form.author_first_name.errors.0 }}</div>
         {% endif %}
       </div>
-      <div class="col-md-6">
+      <div class="col-md-6 mb-3">
         <label class="form-label required" for="{{ form.author_last_name.id_for_label }}">{{ form.author_last_name.label }}</label>
         <input type="text" class="form-control {% if form.author_last_name.errors %}is-invalid{% endif %}"
                id="{{ form.author_last_name.id_for_label }}" name="{{ form.author_last_name.name }}"
@@ -61,8 +61,8 @@
       </div>
     </div>
 
-    <div class="row mt-3">
-      <div class="col-md-6">
+    <div class="row">
+      <div class="col-md-12 mb-3">
         <label class="form-label" for="{{ form.author_email.id_for_label }}">{{ form.author_email.label }}</label>
         <input type="email" class="form-control {% if form.author_email.errors %}is-invalid{% endif %}"
                id="{{ form.author_email.id_for_label }}" name="{{ form.author_email.name }}"
@@ -71,7 +71,7 @@
           <div class="invalid-feedback d-block">{{ form.author_email.errors.0 }}</div>
         {% endif %}
       </div>
-      <div class="col-md-6">
+      <div class="col-md-6 mb-3">
         <label class="form-label" for="{{ form.author_institution.id_for_label }}">{{ form.author_institution.label }}</label>
         <input type="text" class="form-control {% if form.author_institution.errors %}is-invalid{% endif %}"
                id="{{ form.author_institution.id_for_label }}" name="{{ form.author_institution.name }}"
@@ -80,10 +80,7 @@
           <div class="invalid-feedback d-block">{{ form.author_institution.errors.0 }}</div>
         {% endif %}
       </div>
-    </div>
-
-    <div class="row mt-3">
-      <div class="col-md-6">
+      <div class="col-md-6 mb-3">
         <label class="form-label" for="{{ form.author_orcid_id.id_for_label }}">{{ form.author_orcid_id.label }}</label>
         <input type="text" class="form-control {% if form.author_orcid_id.errors %}is-invalid{% endif %}"
                id="{{ form.author_orcid_id.id_for_label }}" name="{{ form.author_orcid_id.name }}"
@@ -98,7 +95,6 @@
   <hr class="my-4">
 
   <fieldset class="mb-4">
-    <legend class="h4">Archivo PDF</legend>
     <div class="mb-3">
       <label class="form-label" for="{{ form.pdf_file.id_for_label }}">{{ form.pdf_file.label }}</label>
       <div class="card">

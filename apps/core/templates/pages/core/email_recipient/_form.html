@@ -12,8 +12,9 @@
     </div>
     <div class="col-md-6 mb-3">
       <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-      <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.name }}"
-                placeholder="Descripción (opcional)" rows="3">{{ form.description.value|default:'' }}</textarea>
+      <input type="text" class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+             id="{{ form.description.id_for_label }}" name="{{ form.description.name }}"
+             placeholder="Descripción (opcional)" value="{{ form.description.value|default:'' }}">
       {% if form.description.errors %}
         <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
       {% endif %}

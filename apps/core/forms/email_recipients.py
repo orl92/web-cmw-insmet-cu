@@ -9,7 +9,7 @@ class EmailRecipientListForm(forms.ModelForm):
         fields = ['name', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la lista'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Descripción (opcional)', 'rows': 3}),
+            'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descripción (opcional)'}),
         }
 
 
@@ -36,5 +36,5 @@ class EmailRecipientForm(forms.ModelForm):
 
 EmailRecipientFormSet = inlineformset_factory(
     EmailRecipientList, EmailRecipient,
-    form=EmailRecipientForm, extra=0, can_delete=True,
+    form=EmailRecipientForm, extra=1, can_delete=True,
 )
