@@ -15,16 +15,16 @@
 ### T2 · Middleware tests
 - [x] Crear `apps/core/tests/test_middleware.py`
 - [x] `CheckUserProfileMiddleware`:
-  - [ ] usuario sin email/nombre/apellido → redirect `/accounts/profile/update/`
-  - [ ] usuario completo → 200
-  - [ ] cliente natural con campos faltantes → redirect; completo → 200
-  - [ ] cliente jurídica sin company_name/reeup/nit → redirect
-  - [ ] no-redirect si path ya es el de update de perfil
+  - [x] usuario sin email/nombre/apellido → redirect `/accounts/profile/update/`
+  - [x] usuario completo → 200
+  - [x] cliente natural con campos faltantes → redirect; completo → 200
+  - [x] cliente jurídica sin company_name/reeup/nit → redirect
+  - [x] no-redirect si path ya es el de update de perfil
 - [x] `MaintenanceModeMiddleware`:
-  - [ ] mantenimiento ON + no-superuser → redirect login
-  - [ ] mantenimiento ON + superuser → 200
-  - [ ] mantenimiento ON + `/login/` exento
-  - [ ] mantenimiento OFF → 200
+  - [x] mantenimiento ON + no-superuser → redirect login
+  - [x] mantenimiento ON + superuser → 200
+  - [x] mantenimiento ON + `/login/` exento
+  - [x] mantenimiento OFF → 200
 
 ### T3 · Huey task tests
 - [x] Crear `apps/core/tests/test_tasks.py`
