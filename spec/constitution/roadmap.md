@@ -70,6 +70,7 @@
 66. **066 · Restructure apps** — migración completa: `core/`, `user_auth/`, `meteo/`, `commercial/`; Warning unificado; templates movidos a cada app; URLs namespaced; migraciones desde cero.
 67. **067 · Unify Warning model** — fusionar EarlyWarning, TropicalCyclone, StormWarning en un solo modelo `Warning` con `warning_type`; views parametrizadas; eliminar código duplicado. (Incluido en 066.)
 68. **068 · Restructure templates** — mover templates a cada app; reorganizar includes; actualizar `{% url %}`. (Incluido en 066.)
+69. **Template polish CRUD (transversal, commits 14f3d1b/b8c2704/4ebd53d)** — templates create/update/detail de meteo, user_auth, core y commercial/publications unificados al patrón de `customer/create.html`: fieldsets con `legend.h4`, `<hr>` entre grupos, grid `row`/`col-md-*`, errores `invalid-feedback d-block`. Bugfixes: formset de `EmailRecipient` con campo `-uuid` (no `-id`) para que edición/borrado hagan round-trip; datetime local en suscripciones (reemplaza `toISOString()` que cambiaba UTC); modal de invoice con API `bootstrap.Modal`; `html_name` en formset de coautores (`BoundField.name` era el nombre sin prefijo y rompía el guardado); value bindings en contract; fecha `d/m/Y` en detail de publicaciones. Tests de regresión añadidos (+7): suite 250 tests OK.
 
 ## Siguiente 🔜
 
