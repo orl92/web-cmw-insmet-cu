@@ -215,6 +215,7 @@ class CustomerForUserFormTests(TestCase):
             data={
                 'client_type': 'natural',
                 'account': '1234567890123456',
+                'agency_bank': 'Banco Test',
                 'address': 'Addr',
                 'phone': '12345678',
                 'email': 'foruser@example.com',

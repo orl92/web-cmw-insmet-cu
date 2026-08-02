@@ -9,8 +9,24 @@
 {% block row %}
   <td>{{ object.date|date:'j \d\e F \d\e Y' }}</td>
   <td>{{ object.date|time:'h:i A' }}</td>
-  <td>{{ object.user.username }}</td>
+  <td>{{ object.user.get_full_name|default:object.user.username }}</td>
   <td class="text-end">
+    <a href="{% url 'meteo:comentario_tiempo_detail' object.uuid %}" type="button" class="btn btn-icon btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Ver" data-bs-original-title="Ver">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+      </svg>
+    </a>
+    <a href="{% url 'meteo:comentario_tiempo_pdf' object.uuid %}" type="button" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Descargar PDF" data-bs-original-title="Descargar PDF" target="_blank">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-download">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+        <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+        <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+        <path d="M12 11v6" />
+        <path d="M9 14l3 3l3 -3" />
+      </svg>
+    </a>
     <a href="{% url 'meteo:comentario_tiempo_update' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />

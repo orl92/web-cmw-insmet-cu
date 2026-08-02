@@ -3,15 +3,15 @@
 {% block columns %}
   <th>Provincia</th>
   <th>Nombre</th>
-  <th>Latidud</th>
+  <th>Latitud</th>
   <th>Longitud</th>
   <th class="text-end">Acciones</th>
 {% endblock %}
 {% block row %}
-  <td>{{ object.province.name }}</td>
-  <td>{{ object.name }}</td>
-  <td>{{ object.latitude }}</td>
-  <td>{{ object.longitude }}</td>
+  <td>{{ object.province.name|default:'—' }}</td>
+  <td class="fw-medium">{{ object.name }}</td>
+  <td>{{ object.latitude|floatformat:4 }}° N</td>
+  <td>{{ object.longitude|floatformat:4 }}° O</td>
   <td class="text-end">
     <a href="{% url 'meteo:municipio_update' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">

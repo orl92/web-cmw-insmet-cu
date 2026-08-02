@@ -83,7 +83,7 @@ class CustomerSignUpForm(UserCreationForm):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1234567890123456'})
     )
     agency_bank = forms.CharField(
-        max_length=100, required=False, label="Agencia Bancaria",
+        max_length=100, required=True, label="Agencia Bancaria",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'BPA, BFI, etc.'})
     )
     address = forms.CharField(

@@ -3,11 +3,19 @@
 {% block columns %}
   <th>Nombre</th>
   <th>Código</th>
+  <th>Municipios</th>
+  <th>Estaciones</th>
   <th class="text-end">Acciones</th>
 {% endblock %}
 {% block row %}
-  <td>{{ object.name }}</td>
-  <td>{{ object.code }}</td>
+  <td class="fw-medium">{{ object.name }}</td>
+  <td><span class="badge bg-blue-lt">{{ object.code }}</span></td>
+  <td>
+    <span class="badge badge-outline text-blue">{{ object.num_towns }}</span>
+  </td>
+  <td>
+    <span class="badge badge-outline text-green">{{ object.num_stations }}</span>
+  </td>
   <td class="text-end">
     {% if request.user.is_staff %}
     <a href="{% url 'meteo:provincia_update' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">

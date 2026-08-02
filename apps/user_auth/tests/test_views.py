@@ -113,6 +113,18 @@ class GroupListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Listado de Grupos')
 
+    def test_list_renders_edit_and_delete_buttons(self):
+        group = Group.objects.create(name='Editores')
+        self.assertTrue(hasattr(group, 'profile'))
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertContains(response, f'/accounts/group/update/{group.profile.uuid}/')
+        self.assertContains(
+            response,
+            f'data-uuid="{group.profile.uuid}"',
+        )
+        self.assertContains(response, 'action-btn')
+
 
 class GroupCreateViewTests(TestCase):
     @classmethod

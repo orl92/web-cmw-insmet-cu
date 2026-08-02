@@ -3,12 +3,23 @@
 {% block columns %}
   <th>Nombre</th>
   <th>Descripción</th>
+  <th>Destinatarios</th>
   <th class="text-end">Acciones</th>
 {% endblock %}
 
 {% block row %}
-  <td>{{ object.name }}</td>
+  <td class="fw-medium">{{ object.name }}</td>
   <td>{{ object.description|default:'Sin descripción' }}</td>
+  <td>
+    {% with recipients=object.recipients.all %}
+      <span class="badge bg-blue-lt">{{ recipients|length }} correo{{ recipients|length|pluralize }}</span>
+      {% if recipients %}
+        <div class="text-secondary small mt-1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{% for r in recipients %}{{ r.email }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+          {% for r in recipients|slice:':3' %}{{ r.email }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if recipients|length > 3 %}…{% endif %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  </td>
   <td class="text-end">
     <!-- Botón para editar -->
     <a href="{% url 'core:email_recipient_update' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">

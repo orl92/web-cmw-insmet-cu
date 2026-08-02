@@ -28,6 +28,7 @@ class StationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_create'] = reverse_lazy('meteo:estacion_create')
         context['url_list'] = reverse_lazy('meteo:estacion_list')
         context['is_superuser'] = self.request.user.is_superuser
+        context['objects'] = self.get_queryset().select_related('province')
         return context
 
 class StationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

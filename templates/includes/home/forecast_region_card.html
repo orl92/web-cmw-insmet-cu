@@ -9,7 +9,7 @@
           <div class="col-4 text-center">
             <p class="text-muted small">Mañana</p>
             <div class="weather-icon mx-auto">
-              <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ m.weather|get_tiempo_description }}" />
+              <img src="{{ m.weather_icon }}" alt="{{ m.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ m.weather|get_tiempo_description }}" />
             </div>
             <h3 class="text-success">{{ m.temp }}°C</h3>
             <p class="mb-1">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
@@ -22,7 +22,7 @@
           <div class="col-4 text-center">
             <p class="text-muted small">Tarde (Max)</p>
             <div class="weather-icon mx-auto">
-              <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ a.weather|get_tiempo_description }}" />
+              <img src="{{ a.weather_icon }}" alt="{{ a.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ a.weather|get_tiempo_description }}" />
             </div>
             <h3 class="text-danger">{{ a.temp }}°C</h3>
             <p class="mb-1">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
@@ -35,7 +35,7 @@
           <div class="col-4 text-center">
             <p class="text-muted small">Noche</p>
             <div class="weather-icon mx-auto">
-              <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" title="{{ n.weather|get_tiempo_description }}" />
+              <img src="{{ n.weather_icon }}" alt="{{ n.weather|get_tiempo_description }}" class="weather-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ n.weather|get_tiempo_description }}" />
             </div>
             <h3 class="text-info">{{ n.temp }}°C</h3>
             <p class="mb-1">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>

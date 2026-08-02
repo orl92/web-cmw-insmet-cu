@@ -114,7 +114,7 @@
       {% endif %}
     </div>
     <div class="col-md-6 mb-3">
-      <label class="form-label">{{ form.agency_bank.label }}</label>
+      <label class="form-label required">{{ form.agency_bank.label }}</label>
       <input type="text" class="form-control {% if form.agency_bank.errors %}is-invalid{% endif %}"
              id="{{ form.agency_bank.id_for_label }}" name="{{ form.agency_bank.name }}"
              value="{{ form.agency_bank.value|default:'' }}"
@@ -183,6 +183,7 @@ function toggleClientType(value) {
     inputs.forEach(function(inp) {
       inp.removeAttribute('required');
       inp.removeAttribute('pattern');
+      inp.value = '';
     });
   } else {
     container.style.display = 'block';

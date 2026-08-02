@@ -154,4 +154,5 @@ class EmailRecipientListCSVExportView(CSVExportView):
         ('Nombre', 'name'),
         ('Descripción', 'description'),
         ('Cantidad Destinatarios', lambda o: str(o.recipients.count())),
+        ('Correos', lambda o: '; '.join(o.recipients.values_list('email', flat=True))),
     ]

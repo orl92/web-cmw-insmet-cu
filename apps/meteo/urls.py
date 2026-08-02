@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.meteo.views import forecast, weather_report, warning, province, town, station
+from apps.meteo.views import exports, forecast, weather_report, warning, province, town, station
 
 app_name = 'meteo'
 
@@ -13,6 +13,7 @@ urlpatterns = [
     path('pronosticos/<uuid:uuid>/editar/', forecast.ForecastUpdateView.as_view(), name='pronostico_update'),
     path('pronosticos/<uuid:uuid>/eliminar/', forecast.ForecastDeleteView.as_view(), name='pronostico_delete'),
     path('pronosticos/excel-json/', forecast.ExcelJSONView.as_view(), name='excel_json'),
+    path('pronosticos/exportar/csv/', exports.ForecastCSVExportView.as_view(), name='pronostico_export_csv'),
 
     # ──────────────────────────────────────────────
     # Weather Reports (today, tomorrow, commentary, note)

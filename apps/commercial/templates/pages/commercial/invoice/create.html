@@ -62,7 +62,7 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="card-title">Añadir servicios manualmente</h5>
-          <button type="button" id="add-item" class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" title="Añadir servicio">
+          <button type="button" id="add-item" class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Añadir servicio">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -98,7 +98,7 @@
                   </div>
                 </div>
                 <div class="ms-3">
-                  <button type="button" class="btn btn-sm btn-icon btn-outline-danger remove-row" data-bs-toggle="tooltip" title="Eliminar servicio">
+                  <button type="button" class="btn btn-sm btn-icon btn-outline-danger remove-row" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Eliminar servicio">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                       <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                       <path d="M4 7l16 0" />
@@ -341,7 +341,7 @@
     if (!Tooltip) return null;
     let instance = Tooltip.getInstance(el);
     if (!instance) {
-      instance = new Tooltip(el, { trigger: 'hover' });
+      instance = new Tooltip(el, { trigger: 'hover', placement: 'bottom' });
     }
     return instance;
   }
@@ -542,7 +542,7 @@
         const Tooltip = window.bootstrap?.Tooltip;
         if (Tooltip) {
           groupedContainer.querySelectorAll('.period-switch').forEach(sw => {
-            new Tooltip(sw, { trigger: 'hover' });
+            new Tooltip(sw, { trigger: 'hover', placement: 'bottom' });
           });
         }
 

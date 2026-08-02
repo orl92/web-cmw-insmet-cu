@@ -51,23 +51,7 @@
             </div>
         </div>
 
-        {% if permission_profiles %}
-        <div class="mb-3">
-            <label class="form-label">Aplicar perfil predefinido</label>
-            <div class="btn-list">
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="clear-all-btn">Desmarcar todos</button>
-                {% for profile in permission_profiles %}
-                <button type="button" class="btn btn-outline-primary btn-sm apply-profile-btn"
-                        data-profile-id="{{ profile.uuid }}"
-                        data-permissions="[{% for p in profile.permissions.all %}{{ p.id }}{% if not forloop.last %},{% endif %}{% endfor %}]"
-                        style="line-height: 1.4">
-                    {{ profile.name }}
-                    {% if profile.description %}<br><small class="text-secondary">{{ profile.description }}</small>{% endif %}
-                </button>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
+        {% include 'pages/user_auth/groups/_profile_selector.html' %}
 
         <div class="table-responsive">
             <table class="table table-flush-spacing">
@@ -75,7 +59,7 @@
                     <tr>
                         <td class="text-nowrap fw-medium">
                             Acceso de Administrador
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Permite un acceso completo al sistema">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-info-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Permite un acceso completo al sistema">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                                 <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
                                 <path d="M12 9h.01" />
@@ -257,15 +241,33 @@ document.addEventListener('DOMContentLoaded', function() {
         updateAdminAccessCheckbox();
     });
 
-    document.querySelectorAll('.apply-profile-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var permIds = JSON.parse(this.dataset.permissions);
+    var profileSelect = document.getElementById('profile-select');
+    var applyProfileBtn = document.getElementById('apply-profile-btn');
+    var profileDescription = document.getElementById('profile-description');
+
+    function updateProfileDescription() {
+        if (!profileSelect || !profileDescription) return;
+        var opt = profileSelect.selectedOptions[0];
+        profileDescription.textContent = (opt && opt.value) ? (opt.dataset.description || '') : '';
+        profileDescription.title = profileDescription.textContent;
+    }
+
+    if (profileSelect) {
+        profileSelect.addEventListener('change', updateProfileDescription);
+        updateProfileDescription();
+    }
+
+    if (applyProfileBtn && profileSelect) {
+        applyProfileBtn.addEventListener('click', function() {
+            var opt = profileSelect.selectedOptions[0];
+            if (!opt || !opt.value) return;
+            var permIds = JSON.parse(opt.dataset.permissions);
             permissionCheckboxes.forEach(function(cb) {
                 cb.checked = permIds.indexOf(parseInt(cb.value)) !== -1;
             });
             updateAdminAccessCheckbox();
         });
-    });
+    }
 
     updateAdminAccessCheckbox();
 

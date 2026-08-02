@@ -233,10 +233,10 @@
                       {% endif %}
                     </div>
                     <div class="col-md-6 mb-3">
-                      <label class="form-label">Agencia Bancaria</label>
+                      <label class="form-label required">Agencia Bancaria</label>
                       <input type="text" class="form-control {% if form.agency_bank.errors %}is-invalid{% endif %}"
                              name="agency_bank" placeholder="BPA, BFI, etc." value="{{ form.agency_bank.value|default:'' }}"
-                             maxlength="100">
+                             maxlength="100" required>
                       {% if form.agency_bank.errors %}
                         <div class="invalid-feedback">{{ form.agency_bank.errors.0 }}</div>
                       {% endif %}

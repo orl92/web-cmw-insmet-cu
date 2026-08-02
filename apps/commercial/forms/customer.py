@@ -29,6 +29,7 @@ class CustomerForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if field_name not in ['username', 'password', 'password2', 'email', 'client_type']:
                 field.widget.attrs.update({'class': 'form-control'})
+        self.fields['agency_bank'].required = True
         self._set_juridica_required()
 
     def _set_juridica_required(self):
@@ -122,6 +123,7 @@ class CustomerUpdateForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if field_name not in ['email', 'client_type']:
                 field.widget.attrs.update({'class': 'form-control'})
+        self.fields['agency_bank'].required = True
         self._set_juridica_required()
 
     def _set_juridica_required(self):
@@ -204,6 +206,7 @@ class CustomerForUserForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if field_name not in ['email', 'client_type']:
                 field.widget.attrs.update({'class': 'form-control'})
+        self.fields['agency_bank'].required = True
         self._set_juridica_required()
 
     def _set_juridica_required(self):

@@ -65,6 +65,10 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         context['segment'] = 'profile'
         context['url_list'] = self.success_url
         context['is_customer'] = hasattr(self.request.user, 'commercial_customer')
+        context['client_type'] = (
+            self.request.user.commercial_customer.client_type
+            if hasattr(self.request.user, 'commercial_customer') else None
+        )
 
         active_tab = 'personal'
 
@@ -72,12 +76,12 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             form = context.get('form')
             if form and form.errors:
                 campos_personal = ['first_name', 'last_name', 'email', 'newsletter', 'avatar']
-                campos_empresa = ['company_name', 'reeup', 'nit', 'account', 'address', 'phone']
+                campos_cliente = ['company_name', 'reeup', 'nit', 'account', 'address', 'phone']
 
                 if any(campo in form.errors for campo in campos_personal):
                     active_tab = 'personal'
-                elif any(campo in form.errors for campo in campos_empresa):
-                    active_tab = 'empresa'
+                elif any(campo in form.errors for campo in campos_cliente):
+                    active_tab = 'cliente'
 
         context['active_tab'] = active_tab
         return context

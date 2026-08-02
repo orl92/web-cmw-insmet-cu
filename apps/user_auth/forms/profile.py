@@ -50,9 +50,13 @@ class ProfileForm(forms.ModelForm):
                 self.fields['address'].initial = customer.address
                 self.fields['phone'].initial = customer.phone
 
-                for field_name in ['company_name', 'reeup', 'nit', 'account',
-                                   'agency_bank', 'address', 'phone']:
+                common_fields = ['account', 'agency_bank', 'address', 'phone']
+                for field_name in common_fields:
                     self.fields[field_name].required = True
+
+                if customer.client_type == customer.ClientType.JURIDICA:
+                    for field_name in ['company_name', 'reeup', 'nit']:
+                        self.fields[field_name].required = True
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -108,13 +112,18 @@ class ProfileForm(forms.ModelForm):
 
             if hasattr(user, 'commercial_customer'):
                 customer = user.commercial_customer
-                customer.company_name = self.cleaned_data.get('company_name', '')
-                customer.reeup = self.cleaned_data.get('reeup', '')
-                customer.nit = self.cleaned_data.get('nit', '')
-                customer.account = self.cleaned_data.get('account', '')
-                customer.agency_bank = self.cleaned_data.get('agency_bank', '')
-                customer.address = self.cleaned_data.get('address', '')
-                customer.phone = self.cleaned_data.get('phone', '')
+                if customer.client_type == customer.ClientType.JURIDICA:
+                    customer.company_name = self.cleaned_data.get('company_name') or None
+                    customer.reeup = self.cleaned_data.get('reeup') or None
+                    customer.nit = self.cleaned_data.get('nit') or None
+                else:
+                    customer.company_name = None
+                    customer.reeup = None
+                    customer.nit = None
+                customer.account = self.cleaned_data.get('account') or ''
+                customer.agency_bank = self.cleaned_data.get('agency_bank') or ''
+                customer.address = self.cleaned_data.get('address') or ''
+                customer.phone = self.cleaned_data.get('phone') or ''
                 customer.save()
 
         return profile

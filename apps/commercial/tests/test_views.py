@@ -108,7 +108,7 @@ class CustomerUpdateViewTests(TestCase):
             client_type='juridica', user=cls.owner_user,
             company_name='Test Corp', reeup='111.1.1111',
             nit='11111111111', account='1234567890123456',
-            address='Original', phone='12345678',
+            agency_bank='Banco Test', address='Original', phone='12345678',
         )
         # Give owner the change_customer permission
         ct = ContentType.objects.get_for_model(Customer)
@@ -470,15 +470,44 @@ class CSVExportViewTests(TestCase):
             response.get('Content-Type'),
             'text/csv; charset=utf-8',
         )
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('Tipo de Cliente', content)
+        self.assertIn('Agencia Bancaria', content)
 
     def test_service_csv(self):
         self.client.force_login(self.admin)
         url = reverse('commercial:servicio_export_csv')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('Fecha', content)
+        self.assertIn('Suscripciones', content)
 
     def test_invoice_csv(self):
         self.client.force_login(self.admin)
         url = reverse('commercial:factura_export_csv')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('Servicio(s)', content)
+        self.assertIn('Estado', content)
+
+    def test_subscription_csv(self):
+        self.client.force_login(self.admin)
+        url = reverse('commercial:suscripcion_export_csv')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8-sig')
+        self.assertIn('Método de Pago', content)
+
+    def test_contract_csv(self):
+        self.client.force_login(self.admin)
+        url = reverse('commercial:contrato_export_csv')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_certificate_csv(self):
+        self.client.force_login(self.admin)
+        url = reverse('commercial:certificado_export_csv')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)

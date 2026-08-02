@@ -20,25 +20,25 @@
           </button>
         </li>
         
-        {# Pestaña 2: Datos de Empresa - SOLO para clientes #}
+        {# Pestaña 2: Datos de Clientes#}
         {% if is_customer %}
         <li class="nav-item" role="presentation">
-          <button class="nav-link {% if active_tab == 'empresa' %}active{% endif %}" 
-                  id="empresa-tab" 
+          <button class="nav-link {% if active_tab == 'cliente' %}active{% endif %}" 
+                  id="cliente-tab" 
                   data-bs-toggle="tab" 
-                  data-bs-target="#empresa" 
+                  data-bs-target="#cliente" 
                   type="button" 
                   role="tab" 
-                  aria-controls="empresa" 
-                  aria-selected="{% if active_tab == 'empresa' %}true{% else %}false{% endif %}">
-            Datos de Empresa
+                  aria-controls="cliente" 
+                  aria-selected="{% if active_tab == 'cliente' %}true{% else %}false{% endif %}">
+            Datos del Cliente
           </button>
         </li>
         {% endif %}
       </ul>
       
       <div class="tab-content">
-        {# Pestaña 1: Información Personal - CONTENIDO #}
+        {# Pestaña 1: Información Personal #}
         <div class="tab-pane fade {% if active_tab == 'personal' %}show active{% endif %}" 
              id="personal" 
              role="tabpanel" 
@@ -138,13 +138,14 @@
           </div>
         </div>
         
-        {# Pestaña 2: Datos de Empresa - CONTENIDO (solo para clientes) #}
+        {# Pestaña 2: Datos del Cliente - CONTENIDO (solo para clientes) #}
         {% if is_customer %}
-        <div class="tab-pane fade {% if active_tab == 'empresa' %}show active{% endif %}" 
-             id="empresa" 
+        <div class="tab-pane fade {% if active_tab == 'cliente' %}show active{% endif %}" 
+             id="cliente" 
              role="tabpanel" 
-             aria-labelledby="empresa-tab">
+             aria-labelledby="cliente-tab">
           <div class="p-3">
+            {% if client_type == 'juridica' %}
             <div class="mb-3">
               <label class="form-label required">{{ form.company_name.label }}</label>
               <input type="text" class="form-control" name="{{ form.company_name.name }}" value="{{ form.company_name.value|default:'' }}" required />
@@ -173,6 +174,7 @@
                 </div>
               </div>
             </div>
+            {% endif %}
 
             <div class="row">
               <div class="col-md-6">

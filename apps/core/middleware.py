@@ -22,9 +22,11 @@ class CheckUserProfileMiddleware:
             missing_company = False
             if hasattr(user, 'commercial_customer'):
                 customer = user.commercial_customer
-                required_fields = ['company_name', 'reeup', 'nit', 'account', 'address', 'phone']
+                required_fields = ['account', 'agency_bank', 'address', 'phone']
+                if customer.client_type == customer.ClientType.JURIDICA:
+                    required_fields += ['company_name', 'reeup', 'nit']
                 for field in required_fields:
-                    if not getattr(customer, field, '').strip():
+                    if not (getattr(customer, field, '') or '').strip():
                         missing_company = True
                         break
 
@@ -32,7 +34,7 @@ class CheckUserProfileMiddleware:
                 update_url = reverse('user_auth:profile_update')
                 if request.path != update_url:
                     if missing_company:
-                        messages.warning(request, 'Por favor, complete los datos de su empresa antes de continuar.')
+                        messages.warning(request, 'Por favor, complete los datos de su cliente antes de continuar.')
                     else:
                         messages.warning(request, 'Por favor, complete su perfil antes de continuar.')
                     return redirect(update_url)

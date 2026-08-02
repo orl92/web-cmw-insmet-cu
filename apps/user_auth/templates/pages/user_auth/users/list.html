@@ -7,7 +7,8 @@
   <th>Nombre de usuario</th>
   <th>Correo</th>
   <th>Rol</th>
-  <th>Staff</th>
+  <th>Estado</th>
+  <th>Último acceso</th>
   <th class="text-end">Acciones</th>
 {% endblock %}
 
@@ -15,7 +16,15 @@
   <td>
     <img src="{{ object.profile.get_avatar }}" alt="Avatar de {{ object.username }}" class="rounded-circle" width="25" height="25" />
   </td>
-  <td>{{ object.username }}</td>
+  <td>
+    <div class="d-flex align-items-center gap-1">
+      <span>{{ object.username }}</span>
+      {% if object.profile.is_ldap %}
+        <span class="badge badge-outline text-purple" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Usuario LDAP">LDAP</span>
+      {% endif %}
+    </div>
+    <div class="text-secondary small">Registro: {{ object.date_joined|date:"d/m/Y" }}</div>
+  </td>
   <td>{{ object.email }}</td>
   <td>
     {% if object.is_superuser %}
@@ -23,14 +32,23 @@
     {% else %}
       {% for group in object.groups.all %}
         <span class="badge badge-outline text-blue">{{ group.name }}</span>{% if not forloop.last %}, {% endif %}
+      {% empty %}
+        <span class="text-secondary">—</span>
       {% endfor %}
     {% endif %}
   </td>
   <td>
-    {% if object.is_staff %}
-      <span class="text-success">✔️</span>
+    {% if object.is_active %}
+      <span class="badge badge-outline text-green">Activo</span>
     {% else %}
-      <span class="text-danger">❌</span>
+      <span class="badge badge-outline text-red">Inactivo</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if object.last_login %}
+      {{ object.last_login|date:"d/m/Y H:i" }}
+    {% else %}
+      <span class="text-secondary">Nunca</span>
     {% endif %}
   </td>
   <td class="text-end">

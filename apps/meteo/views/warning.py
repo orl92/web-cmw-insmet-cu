@@ -7,6 +7,7 @@ from django.contrib.auth.mixins import (
 )
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView, ListView, UpdateView, View
 
 from apps.core.utils import log_action
@@ -101,6 +102,7 @@ class WarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_list'] = reverse_lazy(cfg['url_list'])
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = self.get_queryset()
+        context['now'] = timezone.now()
         return context
 
 

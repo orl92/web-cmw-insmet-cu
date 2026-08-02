@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     UserPassesTestMixin,
 )
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
@@ -28,6 +29,10 @@ class ProvinceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_create'] = reverse_lazy('meteo:provincia_create')
         context['url_list'] = reverse_lazy('meteo:provincia_list')
         context['is_superuser'] = self.request.user.is_superuser
+        context['objects'] = self.get_queryset().annotate(
+            num_towns=Count('towns', distinct=True),
+            num_stations=Count('stations', distinct=True),
+        )
         return context
 
 class ProvinceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

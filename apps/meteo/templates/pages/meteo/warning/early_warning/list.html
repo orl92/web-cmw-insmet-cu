@@ -3,16 +3,37 @@
 {% block columns %}
   <th>Resumen</th>
   <th>Fecha</th>
-  <th>Valido</th>
-  <th>Usuario</th>
+  <th>Válido hasta</th>
+  <th>Estado</th>
+  <th>Autor</th>
   <th class="text-end">Acciones</th>
 {% endblock %}
 {% block row %}
-  <td>{{ object.summary }}</td>
-  <td>{{ object.date }}</td>
-  <td>{{ object.valid_until }}</td>
-  <td>{{ object.user }}</td>
+  <td>
+    <div data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ object.summary }}">{{ object.summary|truncatechars:60 }}</div>
+  </td>
+  <td>{{ object.date|date:"d/m/Y H:i" }}</td>
+  <td>{{ object.valid_until|date:"d/m/Y H:i" }}</td>
+  <td>
+    {% if object.valid_until >= now %}
+      <span class="badge badge-outline text-green">Vigente</span>
+    {% else %}
+      <span class="badge badge-outline text-red">Expirado</span>
+    {% endif %}
+  </td>
+  <td>{{ object.user.get_full_name|default:object.user }}</td>
   <td class="text-end">
+    {% if object.file %}
+      <a href="{{ object.file.url }}" type="button" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Descargar PDF" data-bs-original-title="Descargar PDF" target="_blank">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-download">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+          <path d="M12 11v6" />
+          <path d="M9 14l3 3l3 -3" />
+        </svg>
+      </a>
+    {% endif %}
     <a href="{% url 'meteo:alerta_temprana_update' object.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Editar" data-bs-original-title="Editar">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
         <path stroke="none" d="M0 0h24v24H0z" fill="none" />

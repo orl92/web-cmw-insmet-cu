@@ -17,11 +17,11 @@
     <td>{{ invoice.issue_date|date:"d/m/Y" }}</td>
     <td>
       {% if invoice.subscription %}
-        <span data-bs-toggle="tooltip" title="{{ invoice.subscription.customer.company_name }}">
+        <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ invoice.subscription.customer.company_name }}">
           {{ invoice.subscription.customer.company_name|truncatechars:30 }}
         </span>
       {% elif invoice.customer %}
-        <span data-bs-toggle="tooltip" title="{{ invoice.customer.company_name }}">
+        <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ invoice.customer.company_name }}">
           {{ invoice.customer.company_name|truncatechars:30 }}
         </span>
       {% else %}
@@ -30,12 +30,12 @@
     </td>
     <td>
       {% if invoice.subscription %}
-        <span data-bs-toggle="tooltip" title="{{ invoice.subscription.service.title }}">
+        <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ invoice.subscription.service.title }}">
           {{ invoice.subscription.service.title|truncatechars:40 }}
         </span>
       {% else %}
         {% for item in invoice.items.all %}
-          <span data-bs-toggle="tooltip" title="{{ item.descripcion }}">
+          <span data-bs-toggle="tooltip" data-bs-placement="bottom" title="{{ item.descripcion }}">
             {{ item.descripcion|truncatechars:40 }}
           </span>
           {% if not forloop.last %}, {% endif %}
@@ -55,7 +55,7 @@
     <td class="text-end">
       <!-- Descargar PDF -->
       {% if invoice.pdf %}
-        <a href="{{ invoice.pdf.url }}" target="_blank" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" title="Descargar Factura" download>
+        <a href="{{ invoice.pdf.url }}" target="_blank" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Descargar Factura" download>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-download">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
             <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
@@ -67,7 +67,7 @@
 
       <!-- Reenviar correo (solo si no se envió y no está anulada) -->
       {% if not invoice.email_sent and not invoice.is_cancelled %}
-        <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Reenviar correo">
+        <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Reenviar correo">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-mail-forward">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
             <path d="M12 18h-7a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v7.5" />
@@ -79,8 +79,8 @@
       {% endif %}
 
       <!-- Anular (soft delete) – abre modal -->
-      {% if not invoice.is_cancelled and perms.dashboard.delete_invoice %}
-        <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-bs-toggle="tooltip" title="Anular factura"
+      {% if not invoice.is_cancelled and perms.commercial.delete_invoice %}
+        <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Anular factura"
                 data-action="anular" data-uuid="{{ invoice.uuid }}" data-number="{{ invoice.number }}">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -95,7 +95,7 @@
 
       <!-- Eliminar permanentemente (solo superusuario) – abre modal -->
       {% if is_superuser and invoice.is_cancelled %}
-        <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-bs-toggle="tooltip" title="Eliminar permanentemente"
+        <button type="button" class="btn btn-icon btn-outline-danger btn-sm action-btn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Eliminar permanentemente"
                 data-action="eliminar" data-uuid="{{ invoice.uuid }}" data-number="{{ invoice.number }}">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>

@@ -28,6 +28,7 @@ class TownListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_create'] = reverse_lazy('meteo:municipio_create')
         context['url_list'] = reverse_lazy('meteo:municipio_list')
         context['is_superuser'] = self.request.user.is_superuser
+        context['objects'] = self.get_queryset().select_related('province')
         return context
 
 class TownCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
