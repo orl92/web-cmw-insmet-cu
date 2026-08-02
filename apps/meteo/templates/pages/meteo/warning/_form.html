@@ -1,14 +1,25 @@
 {% load static %}
 <fieldset class="mb-4">
   <legend class="h4">Información General</legend>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.summary.label }}</label>
-    <input type="text" class="form-control {% if form.summary.errors %}is-invalid{% endif %}"
-           id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
-           value="{{ form.summary.value|default:'' }}" placeholder="Resumen" required>
-    {% if form.summary.errors %}
-      <div class="invalid-feedback d-block">{{ form.summary.errors.0 }}</div>
-    {% endif %}
+  <div class="row">
+    <div class="col-md-8 mb-3">
+      <label class="form-label required">{{ form.summary.label }}</label>
+      <input type="text" class="form-control {% if form.summary.errors %}is-invalid{% endif %}"
+             id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
+             value="{{ form.summary.value|default:'' }}" placeholder="Resumen" required>
+      {% if form.summary.errors %}
+        <div class="invalid-feedback d-block">{{ form.summary.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-4 mb-3">
+      <label class="form-label required">{{ form.valid_until.label }}</label>
+      <input type="datetime-local" class="form-control {% if form.valid_until.errors %}is-invalid{% endif %}"
+             id="{{ form.valid_until.id_for_label }}" name="{{ form.valid_until.name }}"
+             value="{{ form.valid_until.value|date:'Y-m-d\TH:i' }}" required>
+      {% if form.valid_until.errors %}
+        <div class="invalid-feedback d-block">{{ form.valid_until.errors.0 }}</div>
+      {% endif %}
+    </div>
   </div>
 </fieldset>
 

@@ -5,6 +5,8 @@
 {% block content %}
   <div class="row row-cards">
     <div class="col-12">
+      {% block content_before %}
+      {% endblock content_before %}
       <!-- Contenedor de toasts -->
       <div class="toast-container position-fixed top-0 end-0 p-3" id="toast-container" style="z-index: 1060;">
         <!-- Los toasts se insertarán aquí dinámicamente -->
@@ -27,8 +29,10 @@
           {% endblock %}
         </div>
         <div class="card-footer">
-          <button type="submit" class="btn btn-primary ms-auto">Aceptar</button>
-          <a href="{{ url_list }}" class="btn btn-secondary ms-auto">Cancelar</a>
+          {% block form_actions %}
+            <button type="submit" class="btn btn-primary ms-auto">Aceptar</button>
+            <a href="{{ url_list }}" class="btn btn-secondary ms-auto">Cancelar</a>
+          {% endblock form_actions %}
         </div>
       </form>
     </div>

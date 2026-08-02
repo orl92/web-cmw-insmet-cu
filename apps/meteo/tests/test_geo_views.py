@@ -39,3 +39,25 @@ class ProvinceListViewTests(TestCase):
         self.assertContains(response, 'badge badge-outline text-green">6')
         self.assertNotContains(response, 'badge badge-outline text-blue">78')
         self.assertNotContains(response, 'badge badge-outline text-green">78')
+
+
+class StationCreateViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance_mode()
+        cls.admin = User.objects.create_superuser(
+            'admin', 'admin@example.com', 'pass',
+            first_name='Admin', last_name='User',
+        )
+        cls.province = Province.objects.create(name='Camagüey', code='09')
+
+    def test_latitude_and_longitude_use_correct_ids_and_types(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('meteo:estacion_create'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertContains(response, 'id="id_latitude"')
+        self.assertContains(response, 'id="id_longitude"')
+        self.assertEqual(content.count('id="id_latitude"'), 1)
+        self.assertNotContains(response, 'type="float"')
+        self.assertContains(response, 'type="number" step="any"')

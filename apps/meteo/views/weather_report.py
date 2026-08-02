@@ -349,6 +349,8 @@ class WeatherReportDetailView(LoginRequiredMixin, PermissionRequiredMixin, Detai
         context['parent'] = cfg['parent']
         context['segment'] = cfg['segment']
         context['url_list'] = reverse_lazy(cfg['url_list'])
+        context['url_update'] = cfg['url_update']
+        context['url_pdf'] = cfg['url_pdf']
         return context
 
 

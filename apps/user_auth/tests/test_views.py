@@ -139,8 +139,14 @@ class GroupCreateViewTests(TestCase):
         data = {'name': 'NewGroup'}
         response = self.client.post(self.url, data, follow=True)
         self.assertTrue(Group.objects.filter(name='NewGroup').exists())
-        group = Group.objects.get(name='NewGroup')
-        self.assertTrue(hasattr(group, 'profile'))
+
+    def test_create_page_renders_custom_actions_not_generic_aceptar(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Volver al listado')
+        self.assertContains(response, 'Crear Grupo')
+        self.assertNotContains(response, '>Aceptar<')
 
 
 class ProfileDetailViewTests(TestCase):

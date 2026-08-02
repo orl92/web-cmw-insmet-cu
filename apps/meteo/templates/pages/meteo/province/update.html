@@ -1,20 +1,27 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
 {% block form %}
-  <div class="mb-3">
-    <label class="form-label required">{{ form.name.label }}</label>
-    <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
-      id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" value="{{ form.name.value }}" placeholder="Nombre" autofocus required />
-    {% if form.name.errors %}
-      <span class="invalid-feedback">{{ form.name.errors.0 }}</span>
-    {% endif %}
+<fieldset class="mb-4">
+  <legend class="h4">Datos de la Provincia</legend>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.name.label }}</label>
+      <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+        id="{{ form.name.id_for_label }}" name="{{ form.name.name }}"
+        value="{{ form.name.value|default:'' }}" placeholder="Camagüey" autofocus required />
+      {% if form.name.errors %}
+        <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.code.label }}</label>
+      <input type="text" class="form-control {% if form.code.errors %}is-invalid{% endif %}"
+        id="{{ form.code.id_for_label }}" name="{{ form.code.name }}"
+        value="{{ form.code.value|default:'' }}" placeholder="09" required />
+      {% if form.code.errors %}
+        <div class="invalid-feedback d-block">{{ form.code.errors.0 }}</div>
+      {% endif %}
+    </div>
   </div>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.code.label }}</label>
-    <input type="text" class="form-control {% if form.code.errors %}is-invalid{% endif %}" 
-      id="{{ form.code.id_for_label }}" name="{{ form.code.name }}" value="{{ form.code.value }}" placeholder="Código" required />
-    {% if form.code.errors %}
-      <span class="invalid-feedback">{{ form.code.errors.0 }}</span>
-    {% endif %}
-  </div>
+</fieldset>
 {% endblock %}
