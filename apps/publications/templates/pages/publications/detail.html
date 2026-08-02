@@ -23,7 +23,7 @@
                 </tr>
                 <tr>
                   <th>Fecha de Publicación:</th>
-                  <td>{{ publicacion.publication_date }}</td>
+                  <td>{{ publicacion.publication_date|date:"d/m/Y" }}</td>
                 </tr>
                 <tr>
                   <th>Usuario:</th>
@@ -31,7 +31,7 @@
                 </tr>
                 <tr>
                   <th>Fecha de Creación:</th>
-                  <td>{{ publicacion.created_at }}</td>
+                  <td>{{ publicacion.created_at|date:"d/m/Y H:i" }}</td>
                 </tr>
               </table>
             </div>

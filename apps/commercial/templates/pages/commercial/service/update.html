@@ -1,150 +1,142 @@
 {% extends 'layouts/form.html' %}
-{% load static %}
 
-{% block form %} 
-  <div class="mb-3">
-    <label class="form-label required">Título</label>
-    <input type="text" class="form-control" name="title" placeholder="Título del Servicio" value="{{ object.title }}" required>
-    {% if form.title.errors %}
-      <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
-    {% endif %}
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">Resumen</label>
-    <textarea class="form-control {% if form.summary.errors %}is-invalid{% endif %}" 
-              name="summary" rows="2" placeholder="Resumen del Servicio" required>{{ form.summary.value|default:'' }}</textarea>
-    {% if form.summary.errors %}
-      <div class="invalid-feedback">{{ form.summary.errors.0 }}</div>
-    {% endif %}
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label required">Tipo de Servicio</label>
-    <select class="form-control" name="service_type" id="id_service_type" required>
-      {% for choice_value, choice_label in form.fields.service_type.choices %}
-        <option value="{{ choice_value }}" {% if choice_value == object.service_type %}selected{% endif %}>{{ choice_label }}</option>
-      {% endfor %}
-    </select>
-    {% if form.service_type.errors %}
-      <div class="invalid-feedback d-block">{{ form.service_type.errors.0 }}</div>
-    {% endif %}
-  </div>
-
-  <!-- Código del servicio (solo comerciales) -->
-  <div class="mb-3" id="field_code" style="display: {% if object.service_type == 'commercial' %}block{% else %}none{% endif %};">
-    <label class="form-label required">Código del servicio</label>
-    <input type="text" class="form-control" name="code" placeholder="Ej: 700501072507005" value="{{ object.code|default:'' }}">
-    {% if form.code.errors %}
-      <div class="invalid-feedback d-block">{{ form.code.errors.0 }}</div>
-    {% endif %}
-    <small class="text-muted">Código único que identifica al servicio en las facturas.</small>
-  </div>
-
-  <!-- Precio (solo comerciales) -->
-  <div class="mb-3" id="field_price" style="display: {% if object.service_type == 'commercial' %}block{% else %}none{% endif %};">
-    <label class="form-label required">Precio (CUP)</label>
-    <div class="input-group">
-      <span class="input-group-text">$</span>
-      <input type="number" step="0.01" min="0" class="form-control" 
-             name="price" placeholder="0.00" value="{{ object.price|default:'' }}">
-    </div>
-    {% if form.price.errors %}
-      <div class="invalid-feedback d-block">{{ form.price.errors.0 }}</div>
-    {% endif %}
-    <small class="text-muted">Precio unitario del servicio (solo para comerciales).</small>
-  </div>
-
-  <!-- Campo para PDF (servicios públicos) -->
-  <div class="mb-3" id="field_pdf" style="display: {% if object.service_type == 'public' %}block{% else %}none{% endif %};">
-    <label class="form-label">Archivo PDF</label>
-    <div class="card">
-      <div class="card-body">
-        <div class="mb-3">
-          <div class="d-flex align-items-center">
-            <div class="me-3">
-              <div class="avatar rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                  <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
-                  <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
-                  <path d="M17 18h2" />
-                  <path d="M20 15h-3v6" />
-                  <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
-                </svg>
-              </div>
-            </div>
-            <div>
-              <div class="mb-2">
-                <input type="file" class="form-control" name="pdf" accept=".pdf">
-                <small class="text-muted">Solo archivos PDF. Máximo 10MB. Dejar en blanco si no desea cambiar el archivo actual.</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {% if object.pdf %}
-          <div class="mt-2">
-            <a href="{{ object.pdf.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
-                <polyline points="7 11 12 16 17 11" />
-                <line x1="12" y1="4" x2="12" y2="16" />
-              </svg>
-              Ver PDF actual
-            </a>
-          </div>
+{% block form %}
+  <fieldset class="mb-4">
+    <legend class="h4">Información del Servicio</legend>
+    <div class="row">
+      <div class="col-md-8 mb-3">
+        <label class="form-label required" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+        <input type="text" class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+               id="{{ form.title.id_for_label }}" name="{{ form.title.name }}"
+               placeholder="Título del Servicio" value="{{ form.title.value|default:'' }}" required>
+        {% if form.title.errors %}
+          <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
         {% endif %}
-
-        {% if form.pdf.errors %}
-          <span class="text-danger d-block mb-3 mt-2">{{ form.pdf.errors }}</span>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label required" for="id_service_type">{{ form.service_type.label }}</label>
+        <select class="form-control {% if form.service_type.errors %}is-invalid{% endif %}"
+                name="service_type" id="id_service_type" required>
+          {% for choice_value, choice_label in form.fields.service_type.choices %}
+            <option value="{{ choice_value }}" {% if form.service_type.value == choice_value %}selected{% endif %}>{{ choice_label }}</option>
+          {% endfor %}
+        </select>
+        {% if form.service_type.errors %}
+          <div class="invalid-feedback d-block">{{ form.service_type.errors.0 }}</div>
         {% endif %}
       </div>
     </div>
-  </div>
+    <div class="mb-3">
+      <label class="form-label required" for="{{ form.summary.id_for_label }}">{{ form.summary.label }}</label>
+      <textarea class="form-control {% if form.summary.errors %}is-invalid{% endif %}"
+                id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
+                rows="2" placeholder="Resumen del Servicio" required>{{ form.summary.value|default:'' }}</textarea>
+      {% if form.summary.errors %}
+        <div class="invalid-feedback d-block">{{ form.summary.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </fieldset>
 
-  <!-- Campo para Imagen (servicios comerciales) -->
-  <div class="mb-3" id="field_image" style="display: {% if object.service_type == 'commercial' %}block{% else %}none{% endif %};">
-    <label class="form-label">Imagen</label>
-    <div class="card">
-      <div class="card-body">
-        <div class="mb-3">
+  <hr class="my-4">
+
+  <fieldset class="mb-4">
+    <legend class="h4">Datos Específicos</legend>
+
+    <div class="row">
+      <div class="col-md-6 mb-3" id="field_code" style="display: {% if object.service_type == 'commercial' %}block{% else %}none{% endif %};">
+        <label class="form-label required" for="{{ form.code.id_for_label }}">{{ form.code.label }}</label>
+        <input type="text" class="form-control {% if form.code.errors %}is-invalid{% endif %}"
+               id="{{ form.code.id_for_label }}" name="{{ form.code.name }}"
+               placeholder="Ej: 700501072507005" value="{{ form.code.value|default:'' }}">
+        {% if form.code.errors %}
+          <div class="invalid-feedback d-block">{{ form.code.errors.0 }}</div>
+        {% endif %}
+        <small class="text-muted">Código único que identifica al servicio en las facturas.</small>
+      </div>
+      <div class="col-md-6 mb-3" id="field_price" style="display: {% if object.service_type == 'commercial' %}block{% else %}none{% endif %};">
+        <label class="form-label required" for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+        <div class="input-group">
+          <span class="input-group-text">$</span>
+          <input type="number" step="0.01" min="0" class="form-control {% if form.price.errors %}is-invalid{% endif %}"
+                 id="{{ form.price.id_for_label }}" name="{{ form.price.name }}"
+                 placeholder="0.00" value="{{ form.price.value|default:'' }}">
+        </div>
+        {% if form.price.errors %}
+          <div class="invalid-feedback d-block">{{ form.price.errors.0 }}</div>
+        {% endif %}
+        <small class="text-muted">Precio unitario del servicio (solo para comerciales).</small>
+      </div>
+    </div>
+
+    <div class="mb-3" id="field_pdf" style="display: {% if object.service_type == 'public' %}block{% else %}none{% endif %};">
+      <label class="form-label" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              {% include 'includes/partials/pdf_avatar.html' %}
+            </div>
+            <div class="flex-grow-1">
+              <input type="file" class="form-control {% if form.pdf.errors %}is-invalid{% endif %}"
+                     id="{{ form.pdf.id_for_label }}" name="{{ form.pdf.name }}" accept=".pdf">
+              <small class="text-muted">Solo archivos PDF. Máximo 10MB. Dejar en blanco si no desea cambiar el archivo actual.</small>
+              {% if object.pdf %}
+                <div class="mt-2">
+                  <a href="{{ object.pdf.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+                      <polyline points="7 11 12 16 17 11" />
+                      <line x1="12" y1="4" x2="12" y2="16" />
+                    </svg>
+                    Ver PDF actual
+                  </a>
+                </div>
+              {% endif %}
+              {% if form.pdf.errors %}
+                <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-3" id="field_image" style="display: {% if object.service_type == 'commercial' %}block{% else %}none{% endif %};">
+      <label class="form-label" for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
+      <div class="card">
+        <div class="card-body">
           <div class="d-flex align-items-center">
             <div class="me-3">
               <div class="avatar rounded-circle" style="width: 64px; height: 64px; overflow: hidden;">
                 <img src="{{ object.get_image_url }}" alt="Imagen" style="width: 100%; height: 100%; object-fit: cover;">
               </div>
             </div>
-            <div>
-              <div class="mb-2">
-                <input type="file" class="form-control" name="image" accept="image/*">
-                <small class="text-muted">Formatos: JPG, PNG, GIF. Máximo 2MB. Dejar en blanco si no desea cambiar la imagen actual.</small>
-              </div>
+            <div class="flex-grow-1">
+              <input type="file" class="form-control {% if form.image.errors %}is-invalid{% endif %}"
+                     id="{{ form.image.id_for_label }}" name="{{ form.image.name }}" accept="image/*">
+              <small class="text-muted">Formatos: JPG, PNG, GIF. Máximo 2MB. Dejar en blanco si no desea cambiar la imagen actual.</small>
+              {% if object.image %}
+                <div class="mt-2">
+                  <a href="{{ object.get_image_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <circle cx="12" cy="12" r="2"/>
+                      <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7z"/>
+                    </svg>
+                    Ver imagen actual
+                  </a>
+                </div>
+              {% endif %}
+              {% if form.image.errors %}
+                <div class="invalid-feedback d-block mt-2">{{ form.image.errors.0 }}</div>
+              {% endif %}
             </div>
           </div>
         </div>
-
-        {% if object.image %}
-          <div class="mt-2">
-            <a href="{{ object.get_image_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <circle cx="12" cy="12" r="2"/>
-                <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7z"/>
-              </svg>
-              Ver imagen actual
-            </a>
-          </div>
-        {% endif %}
-
-        {% if form.image.errors %}
-          <span class="text-danger d-block mb-3 mt-2">{{ form.image.errors }}</span>
-        {% endif %}
       </div>
     </div>
-  </div>
+  </fieldset>
 {% endblock %}
 
 {% block extrajs %}

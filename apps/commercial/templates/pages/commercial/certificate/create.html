@@ -1,9 +1,10 @@
 {% extends 'layouts/form.html' %}
-{% load static %}
 
 {% block form %}
+  <fieldset class="mb-4">
+    <legend class="h4">Certificado de Suscripción</legend>
     <div class="mb-3">
-      <label class="form-label required">{{ form.subscription.label }}</label>
+      <label class="form-label required" for="{{ form.subscription.id_for_label }}">{{ form.subscription.label }}</label>
       <select class="form-control {% if form.subscription.errors %}is-invalid{% endif %}"
               id="{{ form.subscription.id_for_label }}" name="{{ form.subscription.name }}" required>
         <option value="">Seleccione una suscripción</option>
@@ -14,43 +15,30 @@
         {% endfor %}
       </select>
       {% if form.subscription.errors %}
-        <div class="invalid-feedback">{{ form.subscription.errors.0 }}</div>
+        <div class="invalid-feedback d-block">{{ form.subscription.errors.0 }}</div>
       {% endif %}
     </div>
 
     <div class="mb-3">
-      <label class="form-label required">{{ form.pdf.label }}</label>
+      <label class="form-label required" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
       <div class="card">
         <div class="card-body">
-          <div class="mb-3">
-            <div class="d-flex align-items-center">
-              <div class="me-3">
-                <div class="avatar rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                    <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
-                    <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
-                    <path d="M17 18h2" />
-                    <path d="M20 15h-3v6" />
-                    <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <div class="mb-2">
-                  <input type="file" class="form-control {% if form.pdf.errors %}is-invalid{% endif %}"
-                         id="{{ form.pdf.id_for_label }}" name="{{ form.pdf.name }}"
-                         accept=".pdf" required>
-                </div>
-                <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
-              </div>
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              {% include 'includes/partials/pdf_avatar.html' %}
+            </div>
+            <div class="flex-grow-1">
+              <input type="file" class="form-control {% if form.pdf.errors %}is-invalid{% endif %}"
+                     id="{{ form.pdf.id_for_label }}" name="{{ form.pdf.name }}"
+                     accept=".pdf" required>
+              <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
+              {% if form.pdf.errors %}
+                <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
+              {% endif %}
             </div>
           </div>
-          {% if form.pdf.errors %}
-            <span class="invalid-feedback">{{ form.pdf.errors.0 }}</span>
-          {% endif %}
         </div>
       </div>
     </div>
+  </fieldset>
 {% endblock %}

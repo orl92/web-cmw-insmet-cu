@@ -366,6 +366,19 @@ class ContractCreateViewTests(TestCase):
             Contract.objects.filter(number='CONT-001').exists()
         )
 
+    def test_invalid_post_repopulates_values(self):
+        self.client.force_login(self.admin)
+        data = {
+            'number': 'CONT-002',
+            'date': date.today().isoformat(),
+            'commercial_registry': 'REG-002',
+        }
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="CONT-002"')
+        self.assertContains(response, f'value="{date.today().isoformat()}"')
+        self.assertContains(response, 'value="REG-002"')
+
 
 class ContractDeleteViewTests(TestCase):
     @classmethod

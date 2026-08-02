@@ -190,41 +190,18 @@
     if (!modal) return;
 
     var openBtn = document.getElementById('btn-open-modal');
-    var closeBtn = modal.querySelector('.btn-close');
-    var cancelBtn = modal.querySelector('[data-bs-dismiss="modal"]');
     var form = document.getElementById('company-settings-form');
 
     if (!openBtn || !form) return;
 
-    function showModal() {
-      modal.classList.add('show');
-      modal.style.display = 'block';
-      document.body.classList.add('modal-open');
-      if (!document.querySelector('.modal-backdrop')) {
-        var backdrop = document.createElement('div');
-        backdrop.className = 'modal-backdrop fade show';
-        document.body.appendChild(backdrop);
-      }
-    }
-
-    function hideModal() {
-      modal.classList.remove('show');
-      modal.style.display = 'none';
-      document.body.classList.remove('modal-open');
-      var backdrop = document.querySelector('.modal-backdrop');
-      if (backdrop) backdrop.remove();
+    var modalInstance = null;
+    if (window.bootstrap && window.bootstrap.Modal) {
+      modalInstance = new window.bootstrap.Modal(modal);
     }
 
     openBtn.addEventListener('click', function(e) {
       e.preventDefault();
-      showModal();
-    });
-
-    if (closeBtn) closeBtn.addEventListener('click', hideModal);
-    if (cancelBtn) cancelBtn.addEventListener('click', hideModal);
-
-    window.addEventListener('click', function(e) {
-      if (e.target === modal) hideModal();
+      if (modalInstance) modalInstance.show();
     });
 
     // Envío AJAX del formulario del modal
@@ -255,7 +232,7 @@
             if (visibleInput) visibleInput.value = registroComercial;
             hiddenInput.value = registroComercial;
           }
-          hideModal();
+          if (modalInstance) modalInstance.hide();
 
           var messagesContainer = document.getElementById('form-messages');
           if (messagesContainer) {
