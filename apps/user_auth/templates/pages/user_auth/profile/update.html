@@ -3,73 +3,75 @@
 {% load static %}
 
 {% block form %}
-    {# Contenedor de pestañas - Siempre visible #}
     <div class="mb-4">
       <ul class="nav nav-tabs" role="tablist">
-        {# Pestaña 1: Información Personal - SIEMPRE visible #}
         <li class="nav-item" role="presentation">
-          <button class="nav-link {% if active_tab == 'personal' %}active{% endif %}" 
-                  id="personal-tab" 
-                  data-bs-toggle="tab" 
-                  data-bs-target="#personal" 
-                  type="button" 
-                  role="tab" 
-                  aria-controls="personal" 
+          <button class="nav-link {% if active_tab == 'personal' %}active{% endif %}"
+                  id="personal-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#personal"
+                  type="button"
+                  role="tab"
+                  aria-controls="personal"
                   aria-selected="{% if active_tab == 'personal' %}true{% else %}false{% endif %}">
             Información Personal
           </button>
         </li>
-        
-        {# Pestaña 2: Datos de Clientes#}
+
         {% if is_customer %}
         <li class="nav-item" role="presentation">
-          <button class="nav-link {% if active_tab == 'cliente' %}active{% endif %}" 
-                  id="cliente-tab" 
-                  data-bs-toggle="tab" 
-                  data-bs-target="#cliente" 
-                  type="button" 
-                  role="tab" 
-                  aria-controls="cliente" 
+          <button class="nav-link {% if active_tab == 'cliente' %}active{% endif %}"
+                  id="cliente-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#cliente"
+                  type="button"
+                  role="tab"
+                  aria-controls="cliente"
                   aria-selected="{% if active_tab == 'cliente' %}true{% else %}false{% endif %}">
             Datos del Cliente
           </button>
         </li>
         {% endif %}
       </ul>
-      
+
       <div class="tab-content">
-        {# Pestaña 1: Información Personal #}
-        <div class="tab-pane fade {% if active_tab == 'personal' %}show active{% endif %}" 
-             id="personal" 
-             role="tabpanel" 
+        <div class="tab-pane fade {% if active_tab == 'personal' %}show active{% endif %}"
+             id="personal"
+             role="tabpanel"
              aria-labelledby="personal-tab">
           <div class="p-3">
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label required">{{ form.first_name.label }}</label>
-                  <input type="text" class="form-control" name="{{ form.first_name.name }}" value="{{ form.first_name.value|default:'' }}" required />
+                  <label class="form-label required" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+                  <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                         id="{{ form.first_name.id_for_label }}" name="{{ form.first_name.name }}"
+                         value="{{ form.first_name.value|default:'' }}" required />
                   {% if form.first_name.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.first_name.errors }}</span>
+                    <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label required">{{ form.last_name.label }}</label>
-                  <input type="text" class="form-control" name="{{ form.last_name.name }}" value="{{ form.last_name.value|default:'' }}" required />
+                  <label class="form-label required" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+                  <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                         id="{{ form.last_name.id_for_label }}" name="{{ form.last_name.name }}"
+                         value="{{ form.last_name.value|default:'' }}" required />
                   {% if form.last_name.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.last_name.errors }}</span>
+                    <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label required">{{ form.email.label }}</label>
-              <input type="email" class="form-control" name="{{ form.email.name }}" value="{{ form.email.value|default:'' }}" required />
+              <label class="form-label required" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+              <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
+                     id="{{ form.email.id_for_label }}" name="{{ form.email.name }}"
+                     value="{{ form.email.value|default:'' }}" required />
               {% if form.email.errors %}
-                <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
+                <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
               {% endif %}
             </div>
 
@@ -79,7 +81,7 @@
 
             <div class="mb-3">
               <label class="form-check form-switch">
-                <input class="form-check-input" type="checkbox"
+                <input class="form-check-input {% if form.newsletter.errors %}is-invalid{% endif %}" type="checkbox"
                        name="{{ form.newsletter.name }}"
                        id="id_newsletter"
                        {% if form.newsletter.value %}checked{% endif %}>
@@ -89,12 +91,12 @@
                 </span>
               </label>
               {% if form.newsletter.errors %}
-                <span class="text-danger d-block mb-3">{{ form.newsletter.errors }}</span>
+                <div class="invalid-feedback d-block">{{ form.newsletter.errors.0 }}</div>
               {% endif %}
             </div>
 
             <div class="mb-3">
-              <label class="form-label">{{ form.avatar.label }}</label>
+              <label class="form-label" for="avatar-input">{{ form.avatar.label }}</label>
               <div class="card">
                 <div class="card-body">
                   <div class="mb-3">
@@ -106,13 +108,14 @@
                       </div>
                       <div>
                         <div class="mb-2">
-                          <input type="file" class="form-control" name="{{ form.avatar.name }}" id="avatar-input" accept="image/*" />
+                          <input type="file" class="form-control {% if form.avatar.errors %}is-invalid{% endif %}"
+                                 name="{{ form.avatar.name }}" id="avatar-input" accept="image/*" />
                         </div>
                         <small class="text-muted">Formatos: JPG, PNG, GIF. Tamaño máximo: 2MB.</small>
                       </div>
                     </div>
                   </div>
-                  
+
                   {% if request.user.profile.avatar %}
                   <div class="mt-2">
                     <button type="submit" name="delete_avatar" class="btn btn-outline-danger btn-sm">
@@ -128,48 +131,53 @@
                     </button>
                   </div>
                   {% endif %}
-                  
+
                   {% if form.avatar.errors %}
-                    <span class="text-danger d-block mb-3 mt-2">{{ form.avatar.errors }}</span>
+                    <div class="invalid-feedback d-block mt-2">{{ form.avatar.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
             </div>
           </div>
         </div>
-        
-        {# Pestaña 2: Datos del Cliente - CONTENIDO (solo para clientes) #}
+
         {% if is_customer %}
-        <div class="tab-pane fade {% if active_tab == 'cliente' %}show active{% endif %}" 
-             id="cliente" 
-             role="tabpanel" 
+        <div class="tab-pane fade {% if active_tab == 'cliente' %}show active{% endif %}"
+             id="cliente"
+             role="tabpanel"
              aria-labelledby="cliente-tab">
           <div class="p-3">
             {% if client_type == 'juridica' %}
             <div class="mb-3">
-              <label class="form-label required">{{ form.company_name.label }}</label>
-              <input type="text" class="form-control" name="{{ form.company_name.name }}" value="{{ form.company_name.value|default:'' }}" required />
+              <label class="form-label required" for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}</label>
+              <input type="text" class="form-control {% if form.company_name.errors %}is-invalid{% endif %}"
+                     id="{{ form.company_name.id_for_label }}" name="{{ form.company_name.name }}"
+                     value="{{ form.company_name.value|default:'' }}" required />
               {% if form.company_name.errors %}
-                <span class="text-danger d-block mb-3">{{ form.company_name.errors }}</span>
+                <div class="invalid-feedback d-block">{{ form.company_name.errors.0 }}</div>
               {% endif %}
             </div>
-            
+
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label required">{{ form.reeup.label }}</label>
-                  <input type="text" class="form-control" name="{{ form.reeup.name }}" value="{{ form.reeup.value|default:'' }}" required />
+                  <label class="form-label required" for="{{ form.reeup.id_for_label }}">{{ form.reeup.label }}</label>
+                  <input type="text" class="form-control {% if form.reeup.errors %}is-invalid{% endif %}"
+                         id="{{ form.reeup.id_for_label }}" name="{{ form.reeup.name }}"
+                         value="{{ form.reeup.value|default:'' }}" required />
                   {% if form.reeup.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.reeup.errors }}</span>
+                    <div class="invalid-feedback d-block">{{ form.reeup.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label required">{{ form.nit.label }}</label>
-                  <input type="text" class="form-control" name="{{ form.nit.name }}" value="{{ form.nit.value|default:'' }}" required />
+                  <label class="form-label required" for="{{ form.nit.id_for_label }}">{{ form.nit.label }}</label>
+                  <input type="text" class="form-control {% if form.nit.errors %}is-invalid{% endif %}"
+                         id="{{ form.nit.id_for_label }}" name="{{ form.nit.name }}"
+                         value="{{ form.nit.value|default:'' }}" required />
                   {% if form.nit.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.nit.errors }}</span>
+                    <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
@@ -179,38 +187,44 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label required">{{ form.account.label }}</label>
-                  <input type="text" class="form-control" name="{{ form.account.name }}" value="{{ form.account.value|default:'' }}" required />
+                  <label class="form-label required" for="{{ form.account.id_for_label }}">{{ form.account.label }}</label>
+                  <input type="text" class="form-control {% if form.account.errors %}is-invalid{% endif %}"
+                         id="{{ form.account.id_for_label }}" name="{{ form.account.name }}"
+                         value="{{ form.account.value|default:'' }}" required />
                   {% if form.account.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.account.errors }}</span>
+                    <div class="invalid-feedback d-block">{{ form.account.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label required">{{ form.phone.label }}</label>
-                  <input type="text" class="form-control" name="{{ form.phone.name }}" value="{{ form.phone.value|default:'' }}" required />
+                  <label class="form-label required" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                  <input type="text" class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
+                         id="{{ form.phone.id_for_label }}" name="{{ form.phone.name }}"
+                         value="{{ form.phone.value|default:'' }}" required />
                   {% if form.phone.errors %}
-                    <span class="text-danger d-block mb-3">{{ form.phone.errors }}</span>
+                    <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
             </div>
 
-            <!-- NUEVO: Agencia Bancaria (ancho completo) -->
             <div class="mb-3">
-              <label class="form-label required">{{ form.agency_bank.label }}</label>
-              <input type="text" class="form-control" name="{{ form.agency_bank.name }}" value="{{ form.agency_bank.value|default:'' }}" required />
+              <label class="form-label required" for="{{ form.agency_bank.id_for_label }}">{{ form.agency_bank.label }}</label>
+              <input type="text" class="form-control {% if form.agency_bank.errors %}is-invalid{% endif %}"
+                     id="{{ form.agency_bank.id_for_label }}" name="{{ form.agency_bank.name }}"
+                     value="{{ form.agency_bank.value|default:'' }}" required />
               {% if form.agency_bank.errors %}
-                <span class="text-danger d-block mb-3">{{ form.agency_bank.errors }}</span>
+                <div class="invalid-feedback d-block">{{ form.agency_bank.errors.0 }}</div>
               {% endif %}
             </div>
-            
+
             <div class="mb-3">
-              <label class="form-label required">{{ form.address.label }}</label>
-              <textarea class="form-control" name="{{ form.address.name }}" rows="3" required>{{ form.address.value|default:'' }}</textarea>
+              <label class="form-label required" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+              <textarea class="form-control {% if form.address.errors %}is-invalid{% endif %}"
+                        id="{{ form.address.id_for_label }}" name="{{ form.address.name }}" rows="3" required>{{ form.address.value|default:'' }}</textarea>
               {% if form.address.errors %}
-                <span class="text-danger d-block mb-3">{{ form.address.errors }}</span>
+                <div class="invalid-feedback d-block">{{ form.address.errors.0 }}</div>
               {% endif %}
             </div>
           </div>

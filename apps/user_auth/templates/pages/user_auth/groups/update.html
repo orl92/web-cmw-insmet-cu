@@ -33,11 +33,12 @@
 <div class="row">
     <div class="col-12 mb-4">
         <label class="form-label required">Nombre del Grupo</label>
-        <input type="text" class="form-control" id="{{ form.name.id_for_label }}"
+        <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+               id="{{ form.name.id_for_label }}"
                name="{{ form.name.name }}" value="{{ form.name.value|default:'' }}"
                placeholder="Nombre del Grupo" required>
         {% if form.name.errors %}
-            <div class="text-danger mt-1">{{ form.name.errors }}</div>
+            <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
         {% endif %}
     </div>
 </div>

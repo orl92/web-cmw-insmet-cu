@@ -32,16 +32,21 @@
         <div class="row">
             <div class="col-md-6 mb-3 mb-md-0">
                 <label class="form-label required">Nombre del Perfil</label>
-                <input type="text" class="form-control" id="{{ form.name.id_for_label }}"
+                <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                       id="{{ form.name.id_for_label }}"
                        name="{{ form.name.name }}" placeholder="Ej: Comercial" required>
                 {% if form.name.errors %}
-                    <div class="text-danger mt-1">{{ form.name.errors }}</div>
+                    <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
                 {% endif %}
             </div>
             <div class="col-md-6">
                 <label class="form-label">Descripción</label>
-                <input type="text" class="form-control" id="{{ form.description.id_for_label }}"
+                <input type="text" class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                       id="{{ form.description.id_for_label }}"
                        name="{{ form.description.name }}" placeholder="Opcional">
+                {% if form.description.errors %}
+                    <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -153,10 +158,10 @@
 
 {% block extrajs %}
 <style>
-.checkbox-view:checked { background-color: var(--tblr-green); border-color: var(--tblr-green); }
-.checkbox-add:checked { background-color: var(--tblr-blue); border-color: var(--tblr-blue); }
-.checkbox-change:checked { background-color: var(--tblr-orange); border-color: var(--tblr-orange); }
-.checkbox-delete:checked { background-color: var(--tblr-red); border-color: var(--tblr-red); }
+input.view:checked { background-color: var(--tblr-green); border-color: var(--tblr-green); }
+input.add:checked { background-color: var(--tblr-blue); border-color: var(--tblr-blue); }
+input.change:checked { background-color: var(--tblr-orange); border-color: var(--tblr-orange); }
+input.delete:checked { background-color: var(--tblr-red); border-color: var(--tblr-red); }
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {

@@ -1,114 +1,32 @@
 {% extends 'layouts/form.html' %}
-{% load static %}
-
 {% block form %}
-  <!-- Campo para el Nombre de la Lista -->
-  <div class="mb-3">
-    <label class="form-label required">{{ form.name.label }}</label>
-    <input type="text" class="form-control" id="{{ form.name.id_for_label }}" name="{{ form.name.name }}" placeholder="Nombre de la Lista" value="{{ form.name.value }}" required>
-    {% if form.name.errors %}
-      <span class="text-danger d-block mb-3">{{ form.name.errors }}</span>
-    {% endif %}
-  </div>
-
-  <!-- Campo para la Descripción -->
-  <div class="mb-3">
-    <label class="form-label">{{ form.description.label }}</label>
-    <textarea class="form-control" id="{{ form.description.id_for_label }}" name="{{ form.description.name }}" placeholder="Descripción (opcional)" rows="3">{{ form.description.value }}</textarea>
-    {% if form.description.errors %}
-      <span class="text-danger d-block mb-3">{{ form.description.errors }}</span>
-    {% endif %}
-  </div>
-
-  <!-- Sección para Destinatarios -->
-  <fieldset>
-    <legend>Destinatarios</legend>
-    {{ formset.management_form }}
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          <th>Correo Electrónico</th>
-          <th>Eliminar</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for form in formset %}
-        <tr>
-          <td>
-            <input type="email" class="form-control" name="recipients-{{ forloop.counter0 }}-email" value="{{ form.email.value|default:'' }}" placeholder="Correo Electrónico">
-            {% if form.email.errors %}
-              <span class="text-danger d-block mb-3">{{ form.email.errors }}</span>
-            {% endif %}
-          </td>
-          <td class="align-middle">
-            <input type="hidden" name="recipients-{{ forloop.counter0 }}-id" value="{{ form.instance.pk }}">
-            <input type="checkbox" name="recipients-{{ forloop.counter0 }}-DELETE" style="display:none;">
-            <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-recipient">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M4 7l16 0" />
-                <path d="M10 11l0 6" />
-                <path d="M14 11l0 6" />
-                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
-              </svg>
-            </button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <button type="button" id="add-recipient" class="btn btn-pill btn-outline-success btn-sm mt-3">Añadir Destinatario</button>
-  </fieldset>
-  
-
-{% endblock form %}
+  {% include 'pages/core/email_recipient/_form.html' %}
+{% endblock %}
 
 {% block extrajs %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  $(document).ready(function () {
-    // Evento para añadir destinatarios
-    $('#add-recipient').click(function () {
-      const formsetTableBody = $('table tbody'); // Selecciona el cuerpo de la tabla
-      const totalFormsInput = $('#id_recipients-TOTAL_FORMS'); // Campo que lleva la cuenta total de formularios
-      // Obtiene el número actual de formularios
-      const formIndex = parseInt(totalFormsInput.val());
-      // Crea una nueva fila con un botón para eliminar
-      const newRow = `
-        <tr>
-          <td>
-            <input type="email" class="form-control" name="recipients-${formIndex}-email" placeholder="Correo Electrónico" required>
-          </td>
-          <td class="align-middle">
-            <button type="button" class="btn btn-icon btn-outline-danger btn-sm delete-recipient" name="recipients-${formIndex}-DELETE">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-trash">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M4 7l16 0" />
-                <path d="M10 11l0 6" />
-                <path d="M14 11l0 6" />
-                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
-              </svg>
-            </button>
-          </td>
-        </tr>
-      `;
-      // Añade la nueva fila al cuerpo de la tabla
-      formsetTableBody.append(newRow);
+  document.addEventListener('DOMContentLoaded', function () {
+    var tbody = document.getElementById('recipient-tbody');
+    var template = document.getElementById('recipient-row-template');
+    var totalForms = document.getElementById('id_recipients-TOTAL_FORMS');
 
-      // Actualiza el campo que lleva la cuenta total de formularios
-      totalFormsInput.val(formIndex + 1);
+    document.getElementById('add-recipient').addEventListener('click', function () {
+      var index = parseInt(totalForms.value, 10);
+      var wrapper = document.createElement('tbody');
+      wrapper.innerHTML = template.innerHTML.split('__PREFIX__').join(index);
+      tbody.appendChild(wrapper.firstElementChild);
+      totalForms.value = index + 1;
     });
 
-    // Evento para eliminar destinatarios
-    $('table').on('click', '.delete-recipient', function () {
-      // Elimina la fila donde se hizo clic
-      $(this).closest('tr').remove();
-      // Opcional: Actualiza el campo que lleva la cuenta total de formularios
-      const totalFormsInput = $('#id_recipients-TOTAL_FORMS');
-      const remainingRows = $('table tbody tr').length;
-      totalFormsInput.val(remainingRows); // Ajusta el conteo al número actual de filas restantes
+    tbody.addEventListener('click', function (event) {
+      var button = event.target.closest('.delete-recipient');
+      if (!button) return;
+      var row = button.closest('tr');
+      var deleteCheckbox = row.querySelector('.recipient-delete');
+      if (deleteCheckbox) {
+        deleteCheckbox.checked = true;
+      }
+      row.classList.add('d-none');
     });
   });
 </script>
