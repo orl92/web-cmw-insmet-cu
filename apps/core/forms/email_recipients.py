@@ -40,5 +40,5 @@ class EmailRecipientForm(forms.ModelForm):
 
 EmailRecipientFormSet = inlineformset_factory(
     EmailRecipientList, EmailRecipient,
-    form=EmailRecipientForm, extra=1, can_delete=True,
+    form=EmailRecipientForm, extra=0, can_delete=True,
 )

@@ -176,7 +176,7 @@ class ScientificPublicationViewContextTests(TestCase):
         pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
         pub = ScientificPublication.objects.create(
             title='Test Pub', author=self.author, summary='Summary',
-            publication_date=date.today(), pdf_file=pdf,
+            publication_date=date.today(), pdf=pdf,
         )
         response = self.client.get(reverse('home:publications'))
         self.assertIn(pub, response.context['object_list'])

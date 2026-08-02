@@ -43,7 +43,7 @@ class ScientificPublicationTests(FileHandlingTestCase):
             author=self.author,
             publication_date=date(2024, 6, 15),
             summary='Resumen del estudio',
-            pdf_file=pdf,
+            pdf=pdf,
         )
         self.assertEqual(str(pub), 'Estudio del Clima')
         self.assertIsNotNone(pub.uuid)
@@ -54,18 +54,18 @@ class ScientificPublicationTests(FileHandlingTestCase):
         pdf = SimpleUploadedFile('p.pdf', b'%PDF-1.4', content_type='application/pdf')
         pub1 = ScientificPublication.objects.create(
             title='Primera', author=self.author,
-            publication_date=date(2024, 1, 1), summary='S1', pdf_file=pdf,
+            publication_date=date(2024, 1, 1), summary='S1', pdf=pdf,
         )
         pub2 = ScientificPublication.objects.create(
             title='Segunda', author=self.author,
-            publication_date=date(2024, 6, 1), summary='S2', pdf_file=pdf,
+            publication_date=date(2024, 6, 1), summary='S2', pdf=pdf,
         )
         pubs = ScientificPublication.objects.all()
         self.assertEqual(pubs[0], pub2)
         self.assertEqual(pubs[1], pub1)
 
     def test_file_fields_defined(self):
-        self.assertEqual(ScientificPublication.file_fields, ['pdf_file'])
+        self.assertEqual(ScientificPublication.file_fields, ['pdf'])
 
     def test_custom_permissions(self):
         meta = ScientificPublication._meta

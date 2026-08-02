@@ -24,15 +24,15 @@ class EmailRecipientListCreateViewTests(TestCase):
         self.assertContains(response, 'Destinatarios')
         self.assertContains(response, 'id="recipient-tbody"')
         self.assertContains(response, 'Añadir Destinatario')
-        self.assertContains(response, 'name="recipients-0-email"')
         self.assertContains(response, 'id_recipients-TOTAL_FORMS')
+        self.assertNotContains(response, 'name="recipients-0-email"')
         self.assertNotContains(response, 'name="recipients-0-uuid"')
 
     def test_get_renders_coauthor_style_js_with_form_index(self):
         self.client.force_login(self.superuser)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'let formIndex = 1;')
+        self.assertContains(response, 'let formIndex = 0;')
         self.assertContains(response, 'recipientRowHtml(formIndex)')
         self.assertContains(response, "tbody.insertAdjacentHTML('beforeend', recipientRowHtml(formIndex))")
 
@@ -72,22 +72,17 @@ class EmailRecipientListUpdateViewTests(TestCase):
         cls.r2 = EmailRecipient.objects.create(recipient_list=cls.lst, email='drop@example.com')
         cls.url = reverse('core:email_recipient_update', args=[cls.lst.pk])
 
-    def test_get_renders_indexed_names_and_delete_checkbox(self):
+    def test_get_renders_existing_rows_and_matching_form_index(self):
         self.client.force_login(self.superuser)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'recipients-0-email')
-        self.assertContains(response, 'recipients-0-uuid')
+        self.assertContains(response, 'name="recipients-0-email"')
+        self.assertContains(response, 'name="recipients-1-email"')
+        self.assertContains(response, 'name="recipients-0-uuid"')
         self.assertContains(response, 'recipients-0-DELETE')
         self.assertContains(response, 'recipients-1-DELETE')
-
-    def test_get_renders_extra_empty_row_and_matching_form_index(self):
-        self.client.force_login(self.superuser)
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'name="recipients-2-email"')
-        self.assertContains(response, 'let formIndex = 3;')
-        self.assertContains(response, 'data-index="2"')
+        self.assertContains(response, 'let formIndex = 2;')
+        self.assertNotContains(response, 'name="recipients-2-email"')
         self.assertNotContains(response, 'name="recipients-2-uuid"')
 
     def test_post_with_delete_flag_removes_recipient(self):

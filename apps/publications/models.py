@@ -13,11 +13,11 @@ class ScientificPublication(FileHandlerMixin, models.Model):
     coauthors = models.ManyToManyField("Author", related_name="coauthored_publications", verbose_name="Coautores", blank=True)
     publication_date = models.DateField(verbose_name="Fecha de Publicación")
     summary = models.TextField(verbose_name="Resumen")
-    pdf_file = models.FileField(upload_to=pdf_upload_path, validators=[FileExtensionValidator(["pdf"])], verbose_name="Archivo PDF")
+    pdf = models.FileField(upload_to=pdf_upload_path, validators=[FileExtensionValidator(["pdf"])], verbose_name="Archivo PDF")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
 
-    file_fields = ['pdf_file']
+    file_fields = ['pdf']
 
     def __str__(self):
         return self.title

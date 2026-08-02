@@ -71,9 +71,9 @@
                       </div>
                       <div class="col-md-auto">
                         <!-- Botón para ver PDF si existe -->
-                        {% if object.pdf_file %}
+                        {% if object.pdf %}
                           <div class="mt-3">
-                            <a href="#" class="btn btn-pill btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pdfModal" data-pdf-url="{{ object.pdf_file.url }}">
+                            <a href="#" class="btn btn-pill btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pdfModal" data-pdf-url="{{ object.pdf.url }}">
                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                                 <path d="M14 3v4a1 1 0 0 0 1 1h4" />
@@ -127,10 +127,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             {% if objects %}
                 {% for object in objects %}
-                    {% if object.pdf_file %}
+                    {% if object.pdf %}
                     const pdfViewer{{ forloop.counter }} = new PDFViewer({
-                        pdfUrl: '{{ object.pdf_file.url }}',
-                        modalPdfUrl: '{{ object.pdf_file.url }}',
+                        pdfUrl: '{{ object.pdf.url }}',
+                        modalPdfUrl: '{{ object.pdf.url }}',
                         containerId: 'pdfPreviewContainer-{{ forloop.counter }}',
                         pagesId: 'pdfPages-{{ forloop.counter }}'
                     });

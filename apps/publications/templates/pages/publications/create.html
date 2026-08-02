@@ -96,7 +96,7 @@
 
   <fieldset class="mb-4">
     <div class="mb-3">
-      <label class="form-label required" for="{{ form.pdf_file.id_for_label }}">{{ form.pdf_file.label }}</label>
+      <label class="form-label required" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
       <div class="card">
         <div class="card-body">
           <div class="d-flex align-items-center">
@@ -104,12 +104,12 @@
               {% include 'includes/partials/pdf_avatar.html' %}
             </div>
             <div class="flex-grow-1">
-              <input type="file" class="form-control {% if form.pdf_file.errors %}is-invalid{% endif %}"
-                     id="{{ form.pdf_file.id_for_label }}" name="{{ form.pdf_file.name }}"
+              <input type="file" class="form-control {% if form.pdf.errors %}is-invalid{% endif %}"
+                     id="{{ form.pdf.id_for_label }}" name="{{ form.pdf.name }}"
                      accept=".pdf" required>
               <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
-              {% if form.pdf_file.errors %}
-                <div class="invalid-feedback d-block mt-2">{{ form.pdf_file.errors.0 }}</div>
+              {% if form.pdf.errors %}
+                <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
               {% endif %}
             </div>
           </div>

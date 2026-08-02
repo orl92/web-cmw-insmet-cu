@@ -34,7 +34,7 @@ class ScientificPublicationCreateViewTests(TestCase):
             'title': 'Publicación de prueba',
             'publication_date': '2026-05-10',
             'summary': 'Resumen de prueba',
-            'pdf_file': _pdf(),
+            'pdf': _pdf(),
             'author_first_name': 'Autor',
             'author_last_name': 'Principal',
             'author_email': 'autor@example.com',
@@ -90,7 +90,7 @@ class ScientificPublicationUpdateViewTests(TestCase):
         cls.pub = ScientificPublication.objects.create(
             author=cls.author, title='Publicación a editar',
             publication_date='2026-05-10', summary='Resumen',
-            pdf_file=_pdf(),
+            pdf=_pdf(),
         )
         cls.pub.coauthors.add(cls.coauthor)
         cls.url = reverse('publications:update', args=[cls.pub.uuid])
@@ -100,7 +100,7 @@ class ScientificPublicationUpdateViewTests(TestCase):
             'title': 'Publicación a editar',
             'publication_date': '2026-05-10',
             'summary': 'Resumen',
-            'pdf_file': _pdf(),
+            'pdf': _pdf(),
             'author_first_name': 'Autor',
             'author_last_name': 'Principal',
             'author_email': 'autor@example.com',

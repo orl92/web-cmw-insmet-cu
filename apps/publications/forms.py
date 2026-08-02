@@ -53,7 +53,7 @@ class ScientificPublicationForm(forms.ModelForm):
 
     class Meta:
         model = ScientificPublication
-        fields = ["title", "publication_date", "summary", "pdf_file"]
+        fields = ["title", "publication_date", "summary", "pdf"]
         widgets = {
             "title": forms.TextInput(
                 attrs={
@@ -71,7 +71,7 @@ class ScientificPublicationForm(forms.ModelForm):
                     "rows": 4,
                 }
             ),
-            "pdf_file": forms.FileInput(
+            "pdf": forms.FileInput(
                 attrs={"class": "form-control", "accept": ".pdf"}
             ),
         }
