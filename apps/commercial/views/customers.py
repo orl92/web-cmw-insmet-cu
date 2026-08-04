@@ -144,17 +144,18 @@ class CustomerHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         customer = get_object_or_404(Customer, uuid=uuid)
         company_name = customer.company_name
         user = customer.user
-        customer.hard_delete()
-        try:
-            user.delete()
-        except Exception:
-            pass
         log_action(
             user=self.request.user,
             obj=customer,
             action_flag=DELETION,
             message=f"Cliente eliminado físicamente: {company_name}."
         )
+        customer.hard_delete()
+        if user and user.pk != self.request.user.pk:
+            try:
+                user.delete()
+            except Exception:
+                pass
         messages.success(request, f'Cliente {company_name} eliminado permanentemente.')
         return redirect('commercial:cliente_list')
 

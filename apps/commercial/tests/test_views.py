@@ -177,6 +177,24 @@ class CustomerHardDeleteViewTests(TestCase):
         response = self.client.post(url, follow=True)
         self.assertFalse(Customer.objects.filter(pk=pk).exists())
 
+    def test_hard_delete_with_own_user_does_not_crash(self):
+        own = _make_superuser('ownadmin')
+        own_customer = Customer.objects.create(
+            client_type='natural', user=own,
+            address='Addr2', phone='87654321',
+            account='8923456789012345', agency_bank='BANDEC',
+        )
+        self.client.force_login(own)
+        url = reverse(
+            'commercial:cliente_hard_delete', args=[own_customer.uuid]
+        )
+        response = self.client.post(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            Customer.objects.filter(pk=own_customer.pk).exists()
+        )
+        self.assertTrue(own.__class__.objects.filter(pk=own.pk).exists())
+
     def test_normal_user_cannot_hard_delete(self):
         self.client.force_login(self.normal)
         url = reverse(
