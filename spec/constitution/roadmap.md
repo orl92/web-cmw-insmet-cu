@@ -86,6 +86,7 @@
 78. **079 · Exportar gráficos** — botón de descarga PNG/PDF para gráficos ApexCharts del dashboard. Solo spec.md.
 79. **080 · Debug Toolbar** — Django Debug Toolbar en entorno de desarrollo. Solo spec.md.
 80. **081 · Pulido templates home** — HTML inválido y redundancias en templates públicas (footer, navbar, h1, empty_state). Spec/plan/tasks listos.
+81. **082 · Rediseño páginas públicas home** — páginas de contenido (tiempo, comentario, nota, avisos, publicaciones) como documentos con PDF embebido + partials DRY (pdf_scripts, weather_article, paginación Tabler, campos UTC). Spec/plan/tasks listos.
 
 ## Backlog / ideas 💡
 
