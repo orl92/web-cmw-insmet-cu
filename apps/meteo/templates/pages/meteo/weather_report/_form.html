@@ -22,12 +22,14 @@
         <div class="me-3">
           {% include 'includes/partials/pdf_avatar.html' %}
         </div>
-        <div>
-          <div class="mb-2">
-            <input type="file" class="form-control {% if form.file.errors %}is-invalid{% endif %}"
-                   id="{{ form.file.id_for_label }}" name="{{ form.file.name }}" accept=".pdf"{% if not object %} required{% endif %}>
-          </div>
+        <div class="flex-grow-1">
+          <input type="file" class="form-control {% if form.file.errors %}is-invalid{% endif %}"
+                  id="{{ form.file.id_for_label }}" name="{{ form.file.name }}"
+                  accept=".pdf"{% if not object %} required{% endif %}>
           <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
+          {% if form.file.errors %}
+            <div class="invalid-feedback d-block mt-2">{{ form.file.errors.0 }}</div>
+          {% endif %}
         </div>
       </div>
       {% if object and object.file %}
@@ -41,9 +43,6 @@
             Ver PDF
           </a>
         </div>
-      {% endif %}
-      {% if form.file.errors %}
-        <div class="invalid-feedback d-block mt-1">{{ form.file.errors.0 }}</div>
       {% endif %}
     </div>
   </div>
