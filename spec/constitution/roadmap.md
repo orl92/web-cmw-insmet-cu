@@ -85,6 +85,7 @@
 77. **078 · Tema personalizado** — personalización visual: colores de marca, logo, favicon desde admin. Solo spec.md.
 78. **079 · Exportar gráficos** — botón de descarga PNG/PDF para gráficos ApexCharts del dashboard. Solo spec.md.
 79. **080 · Debug Toolbar** — Django Debug Toolbar en entorno de desarrollo. Solo spec.md.
+80. **081 · Pulido templates home** — HTML inválido y redundancias en templates públicas (footer, navbar, h1, empty_state). Spec/plan/tasks listos.
 
 ## Backlog / ideas 💡
 
