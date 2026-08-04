@@ -151,3 +151,48 @@ class ScientificPublicationUpdateViewTests(TestCase):
         data['coauthors-0-DELETE'] = 'on'
         response = self.client.post(self.url, data, follow=True)
         self.assertEqual(self.pub.coauthors.count(), 0)
+
+
+class ScientificPublicationDetailViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('pubadmin3')
+        cls.author = Author.objects.create(
+            first_name='Autor', last_name='Principal',
+            email='autor@example.com', institution='CMP Camagüey',
+        )
+        cls.coauthor = Author.objects.create(
+            first_name='Coautor', last_name='Secundario', email='coautor@example.com',
+        )
+        cls.pub = ScientificPublication.objects.create(
+            author=cls.author, title='Publicación detalle',
+            publication_date='2026-05-10', summary='Resumen de detalle',
+            pdf=_pdf('articulo_final.pdf'),
+        )
+        cls.pub.coauthors.add(cls.coauthor)
+        cls.url = reverse('publications:detail', args=[cls.pub.uuid])
+
+    def test_get_renders_detail_200(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Publicación detalle')
+        self.assertContains(response, 'Autor Principal')
+        self.assertContains(response, 'Coautores')
+        self.assertContains(response, 'Coautor Secundario')
+
+    def test_detail_renders_clean_filename_not_full_path(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertContains(response, 'articulo_final.pdf')
+        self.assertContains(response, 'Ver PDF')
+        self.assertContains(
+            response,
+            reverse('publications:pdf', args=[self.pub.uuid]),
+        )
+
+    def test_detail_does_not_show_usuario_item(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertNotContains(response, 'datagrid-title">Usuario</div>')

@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime
 
 from django import template
@@ -19,7 +20,10 @@ def add_attrs(value, attrs_str):
 
 @register.filter
 def filename(value):
-    return value.name.split('/')[-1] if value else ''
+    if not value:
+        return ''
+    name = value.name.split('/')[-1]
+    return re.sub(r'^[0-9a-f-]{36}_', '', name)
 
 @register.filter
 def iso_date(value):
