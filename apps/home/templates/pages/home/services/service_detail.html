@@ -156,7 +156,7 @@
   </div> {# Fin card-body #}
 
   <div class="card-footer">
-    {% if user.is_authenticated and user.customer and not existing_subscription %}
+    {% if user.is_authenticated and user.commercial_customer and not existing_subscription %}
       {% if service.service_type == 'commercial' %}
         <button type="submit" form="subscription-form" class="btn btn-primary">Aceptar</button>
       {% else %}

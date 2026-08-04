@@ -40,7 +40,7 @@
               <!-- Botones de acción -->
               <div class="mt-auto d-flex justify-content-end gap-2">
                 {% if user.is_authenticated %}
-                  {% if user.customer %}
+                  {% if user.commercial_customer %}
                     {% with sub=user_subscriptions|get_item:service.id %}
                       {% if sub %}
                         {% if sub.payment_status == 'paid' and sub.end_date > now %}
