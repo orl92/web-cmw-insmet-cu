@@ -6,7 +6,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.core.models import FileHandlerMixin, SoftDeleteModel, pdf_upload_path
+from apps.core.models import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
 
 
 class Customer(SoftDeleteModel):
@@ -67,7 +67,7 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
     summary = models.CharField(max_length=500, verbose_name='Resumen')
     service_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default=PUBLIC, verbose_name='Tipo de Servicio')
     pdf = models.FileField(upload_to=pdf_upload_path, blank=True, null=True, verbose_name='Archivo PDF')
-    image = models.ImageField(upload_to='services/images/', blank=True, null=True, verbose_name='Imagen')
+    image = models.ImageField(upload_to=image_upload_path, blank=True, null=True, verbose_name='Imagen')
     code = models.CharField(max_length=50, unique=True, null=True, blank=True, verbose_name="Código del servicio")
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Precio (CUP)")
 
