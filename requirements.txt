@@ -14,7 +14,7 @@ djangorestframework==3.17.1
 dotenv==0.9.9
 drf-redesign==0.6.0
 drf-spectacular==0.30.0
-drf-spectacular-sidecar==2025.12.1
+drf-spectacular-sidecar==2026.8.1
 flexcache==0.3
 flexparser==0.4
 fonttools==4.63.0
