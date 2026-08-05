@@ -15,12 +15,14 @@ def generate_invoice_pdf_and_email_task(invoice_uuid, site_url):
         enviar_correo_factura,
         generate_invoice_pdf_standalone,
     )
+
     invoice = Invoice.objects.get(uuid=invoice_uuid)
     customer = invoice.customer
     items = list(invoice.items.all())
 
     generate_invoice_pdf_standalone(
-        invoice, customer,
+        invoice,
+        customer,
         invoice.subscription.start_date if invoice.subscription else invoice.issue_date,
         invoice.subscription.end_date if invoice.subscription else invoice.issue_date,
         '',
@@ -30,9 +32,16 @@ def generate_invoice_pdf_and_email_task(invoice_uuid, site_url):
 
 
 @huey.task()
-def send_email_task(subject, html_message, from_email, recipients,
-                    attachment_name=None, attachment_content=None, attachment_mime=None,
-                    attachment_path=None):
+def send_email_task(
+    subject,
+    html_message,
+    from_email,
+    recipients,
+    attachment_name=None,
+    attachment_content=None,
+    attachment_mime=None,
+    attachment_path=None,
+):
     if attachment_path and os.path.isfile(attachment_path):
         attachment_name = os.path.basename(attachment_path)
         with open(attachment_path, 'rb') as f:

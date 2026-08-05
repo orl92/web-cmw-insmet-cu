@@ -9,8 +9,10 @@ from django.utils import timezone
 
 from apps.meteo.models import (
     Forecasts,
-    Warning as MeteoWarning,
     WeatherReport,
+)
+from apps.meteo.models import (
+    Warning as MeteoWarning,
 )
 from apps.publications.models import Author, ScientificPublication
 
@@ -31,8 +33,12 @@ class IndexViewContextTests(TestCase):
 
     def test_context_latest_forecast_when_exists(self):
         Forecasts.objects.create(
-            date=date.today(), lp='Luna Nueva', nlp='Cuarto Creciente',
-            nlpd=date.today(), sunrise=time(6, 30), sunset=time(18, 30),
+            date=date.today(),
+            lp='Luna Nueva',
+            nlp='Cuarto Creciente',
+            nlpd=date.today(),
+            sunrise=time(6, 30),
+            sunset=time(18, 30),
             uv_index=5,
         )
         response = self.client.get(reverse('home:index'))
@@ -43,11 +49,14 @@ class IndexViewContextTests(TestCase):
 class WeatherReportDetailViewContextTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('ruser', 'r@t.com', 'pass', first_name='R', last_name='U')
+        cls.user = User.objects.create_user(
+            'ruser', 'r@t.com', 'pass', first_name='R', last_name='U'
+        )
 
     def _create_report(self, report_type):
         return WeatherReport.objects.create(
-            user=self.user, summary=f'Test {report_type}',
+            user=self.user,
+            summary=f'Test {report_type}',
             report_type=report_type,
         )
 
@@ -88,11 +97,15 @@ class WeatherReportDetailViewContextTests(TestCase):
 class EarlyWarningViewContextTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('ewarn', 'ew@t.com', 'pass', first_name='E', last_name='W')
+        cls.user = User.objects.create_user(
+            'ewarn', 'ew@t.com', 'pass', first_name='E', last_name='W'
+        )
 
     def test_context_title(self):
         MeteoWarning.objects.create(
-            user=self.user, warning_type='early', summary='Test warning',
+            user=self.user,
+            warning_type='early',
+            summary='Test warning',
             valid_until=timezone.now() + timedelta(days=1),
         )
         response = self.client.get(reverse('home:warnings_early'))
@@ -105,11 +118,15 @@ class EarlyWarningViewContextTests(TestCase):
 
     def test_context_objects_filtered_by_validity(self):
         expired = MeteoWarning.objects.create(
-            user=self.user, warning_type='early', summary='Expired',
+            user=self.user,
+            warning_type='early',
+            summary='Expired',
             valid_until=timezone.now() - timedelta(days=1),
         )
         active = MeteoWarning.objects.create(
-            user=self.user, warning_type='early', summary='Active',
+            user=self.user,
+            warning_type='early',
+            summary='Active',
             valid_until=timezone.now() + timedelta(days=1),
         )
         response = self.client.get(reverse('home:warnings_early'))
@@ -120,7 +137,9 @@ class EarlyWarningViewContextTests(TestCase):
 class TropicalCycloneViewContextTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('tcuser', 'tc@t.com', 'pass', first_name='T', last_name='C')
+        cls.user = User.objects.create_user(
+            'tcuser', 'tc@t.com', 'pass', first_name='T', last_name='C'
+        )
 
     def test_context_title(self):
         response = self.client.get(reverse('home:warnings_tropical'))
@@ -135,7 +154,9 @@ class TropicalCycloneViewContextTests(TestCase):
 class StormWarningViewContextTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user = User.objects.create_user('suser', 's@t.com', 'pass', first_name='S', last_name='T')
+        cls.user = User.objects.create_user(
+            'suser', 's@t.com', 'pass', first_name='S', last_name='T'
+        )
 
     def test_context_title(self):
         response = self.client.get(reverse('home:warnings_storm'))
@@ -175,8 +196,11 @@ class ScientificPublicationViewContextTests(TestCase):
     def test_context_objects_returns_publications(self):
         pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
         pub = ScientificPublication.objects.create(
-            title='Test Pub', author=self.author, summary='Summary',
-            publication_date=date.today(), pdf=pdf,
+            title='Test Pub',
+            author=self.author,
+            summary='Summary',
+            publication_date=date.today(),
+            pdf=pdf,
         )
         response = self.client.get(reverse('home:publications'))
         self.assertIn(pub, response.context['object_list'])

@@ -33,24 +33,23 @@ class MeteoDataForm(forms.Form):
 
     datetime_init = forms.CharField(
         label='Fecha y hora inicial (YYYYMMDDHH)',
-        widget=forms.TextInput(attrs={
-            'placeholder': 'Ej. 2025071006',
-            'pattern': r'\d{10}',
-            'title': 'Ingrese fecha en formato YYYYMMDDHH'
-        })
+        widget=forms.TextInput(
+            attrs={
+                'placeholder': 'Ej. 2025071006',
+                'pattern': r'\d{10}',
+                'title': 'Ingrese fecha en formato YYYYMMDDHH',
+            }
+        ),
     )
 
-    var_name = forms.ChoiceField(
-        label='Variable Meteorológica',
-        choices=VAR_CHOICES
-    )
+    var_name = forms.ChoiceField(label='Variable Meteorológica', choices=VAR_CHOICES)
 
     def clean_datetime_init(self):
         data = self.cleaned_data['datetime_init']
         try:
             datetime.strptime(data, '%Y%m%d%H')
         except ValueError:
-            raise forms.ValidationError("Formato debe ser YYYYMMDDHH")
+            raise forms.ValidationError('Formato debe ser YYYYMMDDHH') from None
         return data
 
     def clean(self):
@@ -68,12 +67,10 @@ class MeteoDataForm(forms.Form):
 class MeteogramForm(forms.Form):
     datetime_init = forms.CharField(
         label='Fecha y hora inicial',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'YYYYMMDDHH',
-            'pattern': r'\d{10}'
-        }),
-        help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)'
+        widget=forms.TextInput(
+            attrs={'class': 'form-control', 'placeholder': 'YYYYMMDDHH', 'pattern': r'\d{10}'}
+        ),
+        help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)',
     )
 
     town = forms.ModelChoiceField(
@@ -81,7 +78,7 @@ class MeteogramForm(forms.Form):
         label='Municipio',
         required=True,
         widget=forms.Select(attrs={'class': 'form-control'}),
-        help_text='Seleccione un municipio'
+        help_text='Seleccione un municipio',
     )
 
     def clean_datetime_init(self):
@@ -89,19 +86,17 @@ class MeteogramForm(forms.Form):
         try:
             datetime.strptime(data, '%Y%m%d%H')
         except ValueError:
-            raise forms.ValidationError("Formato debe ser YYYYMMDDHH")
+            raise forms.ValidationError('Formato debe ser YYYYMMDDHH') from None
         return data
 
 
 class SoundingForm(forms.Form):
     datetime_init = forms.CharField(
         label='Fecha y hora inicial',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'YYYYMMDDHH',
-            'pattern': r'\d{10}'
-        }),
-        help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)'
+        widget=forms.TextInput(
+            attrs={'class': 'form-control', 'placeholder': 'YYYYMMDDHH', 'pattern': r'\d{10}'}
+        ),
+        help_text='Formato: AAAAMMDDHH (ej. 2025071806 para el 18 de julio 2025 a las 06:00)',
     )
 
     town = forms.ModelChoiceField(
@@ -109,19 +104,15 @@ class SoundingForm(forms.Form):
         label='Municipio',
         required=True,
         widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text='Seleccione un municipio'
+        help_text='Seleccione un municipio',
     )
 
     t_index = forms.IntegerField(
         label='Índice de tiempo',
         initial=1,
-        widget=forms.NumberInput(attrs={
-            'class': 'form-control',
-            'min': '1',
-            'max': '24'
-        }),
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '24'}),
         validators=[MinValueValidator(1), MaxValueValidator(24)],
-        help_text='Índice de tiempo (1-24) para el pronóstico'
+        help_text='Índice de tiempo (1-24) para el pronóstico',
     )
 
     def clean_datetime_init(self):
@@ -129,7 +120,7 @@ class SoundingForm(forms.Form):
         try:
             datetime.strptime(data, '%Y%m%d%H')
         except ValueError:
-            raise forms.ValidationError("Formato debe ser YYYYMMDDHH")
+            raise forms.ValidationError('Formato debe ser YYYYMMDDHH') from None
         return data
 
 
@@ -147,24 +138,28 @@ class GifDownloadForm(forms.Form):
 
     fecha_inicio = forms.CharField(
         label='Fecha inicial del rango (YYYYMMDDHH)',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ej. 2025102900',
-            'pattern': r'\d{10}',
-            'title': 'Ingrese fecha en formato YYYYMMDDHH'
-        }),
-        required=True
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej. 2025102900',
+                'pattern': r'\d{10}',
+                'title': 'Ingrese fecha en formato YYYYMMDDHH',
+            }
+        ),
+        required=True,
     )
 
     fecha_fin = forms.CharField(
         label='Fecha final del rango (YYYYMMDDHH)',
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Ej. 2025102918',
-            'pattern': r'\d{10}',
-            'title': 'Ingrese fecha en formato YYYYMMDDHH'
-        }),
-        required=True
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej. 2025102918',
+                'pattern': r'\d{10}',
+                'title': 'Ingrese fecha en formato YYYYMMDDHH',
+            }
+        ),
+        required=True,
     )
 
     def get_default_start_date(self):
@@ -184,7 +179,7 @@ class GifDownloadForm(forms.Form):
         try:
             datetime.strptime(data, '%Y%m%d%H')
         except ValueError:
-            raise forms.ValidationError("Formato debe ser YYYYMMDDHH")
+            raise forms.ValidationError('Formato debe ser YYYYMMDDHH') from None
         return data
 
     def clean_fecha_fin(self):
@@ -192,7 +187,7 @@ class GifDownloadForm(forms.Form):
         try:
             datetime.strptime(data, '%Y%m%d%H')
         except ValueError:
-            raise forms.ValidationError("Formato debe ser YYYYMMDDHH")
+            raise forms.ValidationError('Formato debe ser YYYYMMDDHH') from None
         return data
 
     def clean(self):
@@ -205,11 +200,13 @@ class GifDownloadForm(forms.Form):
             fecha_fin_dt = datetime.strptime(fecha_fin, '%Y%m%d%H')
 
             if fecha_ini_dt > fecha_fin_dt:
-                raise forms.ValidationError("La fecha de inicio no puede ser mayor que la fecha final")
+                raise forms.ValidationError(
+                    'La fecha de inicio no puede ser mayor que la fecha final'
+                )
 
             # Validar que el rango no sea mayor a 3 días (72 horas)
             diferencia = fecha_fin_dt - fecha_ini_dt
             if diferencia.total_seconds() > 72 * 3600:  # 72 horas en segundos
-                raise forms.ValidationError("El rango máximo permitido es de 3 días (72 horas)")
+                raise forms.ValidationError('El rango máximo permitido es de 3 días (72 horas)')
 
         return cleaned_data

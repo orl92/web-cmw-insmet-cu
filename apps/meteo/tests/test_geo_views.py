@@ -15,19 +15,27 @@ class ProvinceListViewTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance_mode()
         cls.admin = User.objects.create_superuser(
-            'admin', 'admin@example.com', 'pass',
-            first_name='Admin', last_name='User',
+            'admin',
+            'admin@example.com',
+            'pass',
+            first_name='Admin',
+            last_name='User',
         )
         cls.province = Province.objects.create(name='Camagüey', code='09')
         for i in range(13):
             Town.objects.create(
-                province=cls.province, name=f'Municipio {i}',
-                latitude=21.5, longitude=-78.2,
+                province=cls.province,
+                name=f'Municipio {i}',
+                latitude=21.5,
+                longitude=-78.2,
             )
         for i in range(6):
             Station.objects.create(
-                province=cls.province, name=f'Estación {i}', number=100 + i,
-                latitude=21.5, longitude=-78.2,
+                province=cls.province,
+                name=f'Estación {i}',
+                number=100 + i,
+                latitude=21.5,
+                longitude=-78.2,
             )
 
     def test_list_shows_town_and_station_counts(self):
@@ -46,8 +54,11 @@ class StationCreateViewTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance_mode()
         cls.admin = User.objects.create_superuser(
-            'admin', 'admin@example.com', 'pass',
-            first_name='Admin', last_name='User',
+            'admin',
+            'admin@example.com',
+            'pass',
+            first_name='Admin',
+            last_name='User',
         )
         cls.province = Province.objects.create(name='Camagüey', code='09')
 

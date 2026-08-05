@@ -22,10 +22,22 @@ TIEMPO_IMG_BASE_MAP = {
 
 CODIGOS_SIN_VARIACION = ['N', 'ALG TORM', 'NUM TORM', 'ALG CHUB', 'NUM CHUB']
 
-PERIOD_SUFFIXES = {
-    'morning': 'm',
-    'afternoon': 'a',
-    'night': 'n'
+PERIOD_SUFFIXES = {'morning': 'm', 'afternoon': 'a', 'night': 'n'}
+
+MOON_IMG_MAP = {
+    'Luna Nueva': 'dist/img/moon_faces/new_moon.png',
+    'Creciente': 'dist/img/moon_faces/waning_crescent_moon.png',
+    'Cuarto Creciente': 'dist/img/moon_faces/first_quarter_moon.png',
+    'Gibosa Creciente': 'dist/img/moon_faces/waning_gibbous_moon.png',
+    'Luna Llena': 'dist/img/moon_faces/full_moon.png',
+    'Gibosa Menguante': 'dist/img/moon_faces/waxing_gibbous_moon.png',
+    'Cuarto Menguante': 'dist/img/moon_faces/last_quarter_moon.png',
+    'Menguante': 'dist/img/moon_faces/waxing_crescent_moon.png',
+}
+
+SUN_IMG_MAP = {
+    'sunrise': 'dist/img/sun/sunrise.png',
+    'sunset': 'dist/img/sun/sunset.png',
 }
 
 
@@ -53,25 +65,11 @@ def get_img_path(weather_code, period='afternoon'):
 
 
 def get_moon_img_path(moon_phase):
-    MOON_IMG_MAP = {
-        'Luna Nueva': 'dist/img/moon_faces/new_moon.png',
-        'Creciente': 'dist/img/moon_faces/waning_crescent_moon.png',
-        'Cuarto Creciente': 'dist/img/moon_faces/first_quarter_moon.png',
-        'Gibosa Creciente': 'dist/img/moon_faces/waning_gibbous_moon.png',
-        'Luna Llena': 'dist/img/moon_faces/full_moon.png',
-        'Gibosa Menguante': 'dist/img/moon_faces/waxing_gibbous_moon.png',
-        'Cuarto Menguante': 'dist/img/moon_faces/last_quarter_moon.png',
-        'Menguante': 'dist/img/moon_faces/waxing_crescent_moon.png',
-    }
     file_path = MOON_IMG_MAP.get(moon_phase)
     return static(file_path) if file_path else ''
 
 
 def get_sun_img_path(sun_event):
-    SUN_IMG_MAP = {
-        'sunrise': 'dist/img/sun/sunrise.png',
-        'sunset': 'dist/img/sun/sunset.png',
-    }
     file_path = SUN_IMG_MAP.get(sun_event)
     return static(file_path) if file_path else ''
 
@@ -82,7 +80,9 @@ def mail_send(request, alert_obj, subject, url):
 
     from apps.core.tasks import send_email_task
 
-    recipient_list = alert_obj.email_recipient_list.recipients.all() if alert_obj.email_recipient_list else []
+    recipient_list = (
+        alert_obj.email_recipient_list.recipients.all() if alert_obj.email_recipient_list else []
+    )
     if not recipient_list:
         return
 
@@ -100,7 +100,13 @@ def mail_send(request, alert_obj, subject, url):
     if hasattr(alert_obj, 'file') and alert_obj.file:
         pdf_attachment = alert_obj.file.path if os.path.isfile(alert_obj.file.path) else None
 
-    send_email_task(subject, html_message, settings.DEFAULT_FROM_EMAIL, recipient_emails, attachment_path=pdf_attachment)
+    send_email_task(
+        subject,
+        html_message,
+        settings.DEFAULT_FROM_EMAIL,
+        recipient_emails,
+        attachment_path=pdf_attachment,
+    )
 
 
 class My400View(View):

@@ -18,13 +18,19 @@ class WarningFormDateTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance_mode()
         cls.admin = User.objects.create_superuser(
-            'warnadmin', 'warnadmin@example.com', 'pass',
-            first_name='Admin', last_name='User',
+            'warnadmin',
+            'warnadmin@example.com',
+            'pass',
+            first_name='Admin',
+            last_name='User',
         )
         cls.warning = Warning.objects.create(
-            warning_type='early', user=cls.admin,
+            warning_type='early',
+            user=cls.admin,
             summary='Resumen del aviso',
-            valid_until=timezone.datetime(2026, 8, 5, 14, 30, tzinfo=timezone.get_current_timezone()),
+            valid_until=timezone.datetime(
+                2026, 8, 5, 14, 30, tzinfo=timezone.get_current_timezone()
+            ),
         )
 
     def test_update_get_prepopulates_valid_until(self):

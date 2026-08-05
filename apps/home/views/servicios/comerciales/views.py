@@ -21,11 +21,13 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
         except Customer.DoesNotExist:
             return ServiceSubscription.objects.none()
         ahora = timezone.now()
-        return ServiceSubscription.objects.filter(
-            customer=customer,
-            payment_status='paid',
-            end_date__gt=ahora
-        ).select_related('service', 'service__user').order_by('start_date')
+        return (
+            ServiceSubscription.objects.filter(
+                customer=customer, payment_status='paid', end_date__gt=ahora
+            )
+            .select_related('service', 'service__user')
+            .order_by('start_date')
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -65,7 +67,9 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
     success_url = reverse_lazy('commercial:suscripcion_list')
 
     def dispatch(self, request, *args, **kwargs):
-        self.service = get_object_or_404(Service, uuid=kwargs['uuid'], service_type=Service.COMMERCIAL)
+        self.service = get_object_or_404(
+            Service, uuid=kwargs['uuid'], service_type=Service.COMMERCIAL
+        )
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -78,10 +82,11 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
 
         if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
             customer = self.request.user.commercial_customer
-            existing = ServiceSubscription.objects.filter(
-                customer=customer,
-                service=self.service
-            ).exclude(payment_status='expired').first()
+            existing = (
+                ServiceSubscription.objects.filter(customer=customer, service=self.service)
+                .exclude(payment_status='expired')
+                .first()
+            )
             context['existing_subscription'] = existing
         return context
 
@@ -90,25 +95,28 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
 
     def post(self, request, *args, **kwargs):
         if not (request.user.is_authenticated and hasattr(request.user, 'commercial_customer')):
-            messages.error(request, "Debes ser un cliente registrado para solicitar servicios.")
+            messages.error(request, 'Debes ser un cliente registrado para solicitar servicios.')
             return redirect('{}?next={}'.format(reverse('user_auth:login'), request.path))
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         customer = self.request.user.commercial_customer
-        existing = ServiceSubscription.objects.filter(
-            customer=customer,
-            service=self.service
-        ).exclude(payment_status='expired').first()
+        existing = (
+            ServiceSubscription.objects.filter(customer=customer, service=self.service)
+            .exclude(payment_status='expired')
+            .first()
+        )
         if existing:
-            messages.warning(self.request, "Ya tienes una solicitud o suscripción para este servicio.")
+            messages.warning(
+                self.request, 'Ya tienes una solicitud o suscripción para este servicio.'
+            )
             return redirect('home:services_commercial_detail', uuid=self.service.uuid)
 
         start_date = form.cleaned_data['start_date']
         end_date = form.cleaned_data['end_date']
 
         if end_date < start_date:
-            messages.error(self.request, "La fecha de fin no puede ser anterior a la de inicio.")
+            messages.error(self.request, 'La fecha de fin no puede ser anterior a la de inicio.')
             return self.form_invalid(form)
 
         ServiceSubscription.objects.create(
@@ -117,7 +125,7 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
             start_date=start_date,
             end_date=end_date,
             payment_status='requested',
-            payment_method=form.cleaned_data['payment_method']
+            payment_method=form.cleaned_data['payment_method'],
         )
-        messages.success(self.request, "Solicitud enviada. El staff generará una factura.")
+        messages.success(self.request, 'Solicitud enviada. El staff generará una factura.')
         return redirect(self.success_url)

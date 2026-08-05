@@ -19,14 +19,14 @@ class FileObs:
 
     def __init__(self):
         # Configuración
-        self.HOST = "10.0.100.224"
-        self.USER = "estaciones"
-        self.PASS = "CasaB2024*"
-        self.PORT = "990"
-        self.REMOTE_DIR = "/Reportes Procesados"
-        self.TEMP_DIR = "./media/temp"
-        self.FINAL_DIR = "./media/obs"
-        self.horas_validas = ["00", "03", "06", "09", "12", "15", "18", "21"]
+        self.HOST = '10.0.100.224'
+        self.USER = 'estaciones'
+        self.PASS = 'CasaB2024*'
+        self.PORT = '990'
+        self.REMOTE_DIR = '/Reportes Procesados'
+        self.TEMP_DIR = './media/temp'
+        self.FINAL_DIR = './media/obs'
+        self.horas_validas = ['00', '03', '06', '09', '12', '15', '18', '21']
         self.max_retries = 3
         self.retry_delay = 5  # segundos entre reintentos
 
@@ -34,11 +34,11 @@ class FileObs:
         number = str(station_number)[2:]
         # Validar hora
         if hora not in self.horas_validas:
-            raise ValueError(f"Hora inválida. Usa una de: {self.horas_validas}")
+            raise ValueError(f'Hora inválida. Usa una de: {self.horas_validas}')
         else:
-            if hora in ["00", "06", "12", "18"]:
+            if hora in ['00', '06', '12', '18']:
                 filename = f'SM{number}.{hora}'
-            elif hora in ["03", "09", "15", "31"]:
+            elif hora in ['03', '09', '15', '31']:
                 filename = f'SI{number}.{hora}'
             else:
                 filename = None
@@ -50,7 +50,7 @@ class FileObs:
             # Enforce strict expected pattern: prefix SM/SI, then digits, then '.', then valid hour
             pattern = r'^(SM|SI)\d+\.(00|03|06|09|12|15|18|21)$'
             if not re.fullmatch(pattern, filename):
-                raise ValueError(f"Nombre de archivo inválido generado: {filename}")
+                raise ValueError(f'Nombre de archivo inválido generado: {filename}')
 
         # Crear directorios (temp y final)
         os.makedirs(self.TEMP_DIR, exist_ok=True)
@@ -78,20 +78,28 @@ class FileObs:
         for attempt in range(self.max_retries):
             try:
                 with self._download_lock:  # Bloquea el acceso concurrente
-                    logger.info("Intento %d: Descargando %s...", attempt + 1, filename)
+                    logger.info('Intento %d: Descargando %s...', attempt + 1, filename)
 
                     # Limpiar directorio temporal antes de cada intento
                     self.limpiar_directorio_temporal()
                     os.makedirs(self.TEMP_DIR, exist_ok=True)
 
                     # Ejecutar LFTP
-                    resultado = subprocess.run(
-                        ["lftp", "-u", f"{self.USER},{self.PASS}", "-p", self.PORT,
-                         f"ftps://{self.HOST}", "-e", comando],  # FTPS explícito
+                    subprocess.run(
+                        [
+                            'lftp',
+                            '-u',
+                            f'{self.USER},{self.PASS}',
+                            '-p',
+                            self.PORT,
+                            f'ftps://{self.HOST}',
+                            '-e',
+                            comando,
+                        ],  # FTPS explícito
                         check=True,
                         text=True,
                         capture_output=True,
-                        timeout=90
+                        timeout=90,
                     )
 
                     # Verificar si el archivo se descargó correctamente
@@ -101,28 +109,30 @@ class FileObs:
                         temp_file_norm = os.path.normpath(os.path.abspath(temp_file))
                         temp_dir_norm = os.path.normpath(os.path.abspath(self.TEMP_DIR))
                         if not temp_file_norm.startswith(temp_dir_norm + os.sep):
-                            raise Exception("Invalid temp file path: path traversal detected")
+                            raise Exception('Invalid temp file path: path traversal detected')
                         destino = os.path.join(self.FINAL_DIR, filename)
                         # Normalize and validate the destination path
                         destino_norm = os.path.normpath(os.path.abspath(destino))
                         final_dir_norm = os.path.normpath(os.path.abspath(self.FINAL_DIR))
                         if not destino_norm.startswith(final_dir_norm + os.sep):
-                            raise Exception("Invalid file path: path traversal detected")
+                            raise Exception('Invalid file path: path traversal detected')
                         shutil.move(temp_file_norm, destino_norm)
-                        logger.info("Descarga completada: %s", filename)
+                        logger.info('Descarga completada: %s', filename)
                         return destino_norm
                     else:
-                        raise Exception(f"Archivo {filename} no se descargó correctamente")
+                        raise Exception(f'Archivo {filename} no se descargó correctamente')
 
             except subprocess.CalledProcessError as e:
-                error_msg = f"❌ Error en descarga (intento {attempt + 1}): {e.stderr}"
-                logger.error("Error en descarga (intento %d): %s", attempt + 1, e.stderr)
+                error_msg = f'❌ Error en descarga (intento {attempt + 1}): {e.stderr}'
+                logger.error('Error en descarga (intento %d): %s', attempt + 1, e.stderr)
                 if attempt == self.max_retries - 1:
-                    raise Exception(f"Fallo después de {self.max_retries} intentos. Último error: {error_msg}")
+                    raise Exception(
+                        f'Fallo después de {self.max_retries} intentos. Último error: {error_msg}'
+                    ) from e
                 time.sleep(self.retry_delay)
 
-            except Exception as e:
-                logger.exception("Error inesperado en descarga")
+            except Exception:
+                logger.exception('Error inesperado en descarga')
                 if attempt == self.max_retries - 1:
                     raise
                 time.sleep(self.retry_delay)
@@ -132,5 +142,5 @@ class FileObs:
         try:
             if os.path.exists(self.TEMP_DIR):
                 shutil.rmtree(self.TEMP_DIR)
-        except Exception as e:
-            logger.exception("Error limpiando directorio temporal")
+        except Exception:
+            logger.exception('Error limpiando directorio temporal')

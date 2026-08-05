@@ -11,14 +11,16 @@ from apps.user_auth.models import Profile
 
 logger = logging.getLogger(__name__)
 
+
 def str2bool(v):
-    return v.lower() in ("yes", "true", "t", "1") if isinstance(v, str) else v
+    return v.lower() in ('yes', 'true', 't', '1') if isinstance(v, str) else v
+
 
 class LDAP3Backend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
-        logger.debug(f"🔑 Iniciando autenticación LDAP para: {username}")
+        logger.debug(f'🔑 Iniciando autenticación LDAP para: {username}')
         if password is None or password == '':
-            logger.debug("🔑 Contraseña vacía, abortando autenticación LDAP.")
+            logger.debug('🔑 Contraseña vacía, abortando autenticación LDAP.')
             return None
 
         server_uri = os.getenv('LDAP_SERVER_URI')
@@ -31,7 +33,7 @@ class LDAP3Backend(BaseBackend):
         superuser_group = os.getenv('LDAP_SUPERUSER_GROUP')
 
         if not server_uri:
-            logger.error("❌ LDAP_SERVER_URI no configurado")
+            logger.error('❌ LDAP_SERVER_URI no configurado')
             return None
 
         try:
@@ -41,49 +43,46 @@ class LDAP3Backend(BaseBackend):
             if start_tls:
                 conn.start_tls()
 
-            user_filter = f"(sAMAccountName={username})"
+            user_filter = f'(sAMAccountName={username})'
             conn.search(
                 search_base=user_search_base,
                 search_filter=user_filter,
                 search_scope=ldap3.SUBTREE,
-                attributes=['*']
+                attributes=['*'],
             )
 
             if not conn.entries:
-                logger.warning(f"⚠️ Usuario no encontrado en LDAP: {username}")
+                logger.warning(f'⚠️ Usuario no encontrado en LDAP: {username}')
                 return None
 
             user_entry = conn.entries[0]
             user_dn = user_entry.entry_dn
 
-            user_conn = ldap3.Connection(server, user=user_dn, password=password, auto_bind=True)
+            _user_conn = ldap3.Connection(server, user=user_dn, password=password, auto_bind=True)
 
             user = self.get_or_create_user(
-                username,
-                user_entry,
-                group_search_base,
-                staff_group,
-                superuser_group,
-                conn
+                username, user_entry, group_search_base, staff_group, superuser_group, conn
             )
 
             user.backend = self.__module__ + '.' + self.__class__.__name__
             return user
 
         except LDAPException as e:
-            logger.error(f"❌ Error de LDAP: {str(e)}")
+            logger.error(f'❌ Error de LDAP: {str(e)}')
             return None
         except Exception as e:
-            logger.exception(f"❌ Error inesperado durante autenticación LDAP: {str(e)}")
+            logger.exception(f'❌ Error inesperado durante autenticación LDAP: {str(e)}')
             return None
 
-    def get_or_create_user(self, username, user_entry, group_search_base, staff_group, superuser_group, conn):
-        User = get_user_model()
+    def get_or_create_user(
+        self, username, user_entry, group_search_base, staff_group, superuser_group, conn
+    ):
+        user_model = get_user_model()
         user_attrs = self.get_user_attributes(user_entry)
 
         try:
-            user = User.objects.get(username=username)
-            logger.debug(f"🔄 Usuario existente en Django: {username}")
+            user = user_model.objects.get(username=username)
+            logger.debug(f'🔄 Usuario existente en Django: {username}')
 
             changes = False
 
@@ -96,94 +95,97 @@ class LDAP3Backend(BaseBackend):
 
             if group_search_base:
                 new_staff = self.is_member_of(conn, user_entry, staff_group, group_search_base)
-                new_superuser = self.is_member_of(conn, user_entry, superuser_group, group_search_base)
+                new_superuser = self.is_member_of(
+                    conn, user_entry, superuser_group, group_search_base
+                )
 
                 if user.is_staff != new_staff:
                     user.is_staff = new_staff
                     changes = True
-                    logger.debug(f"🔄 Actualizando is_staff a {new_staff}")
+                    logger.debug(f'🔄 Actualizando is_staff a {new_staff}')
 
                 if user.is_superuser != new_superuser:
                     user.is_superuser = new_superuser
                     changes = True
-                    logger.debug(f"🔄 Actualizando is_superuser a {new_superuser}")
+                    logger.debug(f'🔄 Actualizando is_superuser a {new_superuser}')
 
             if changes:
                 user.save()
-                logger.info(f"💾 Usuario actualizado: {username}")
+                logger.info(f'💾 Usuario actualizado: {username}')
             else:
-                logger.debug(f"✅ Usuario sin cambios: {username}")
+                logger.debug(f'✅ Usuario sin cambios: {username}')
 
             try:
                 profile, created = Profile.objects.get_or_create(
-                    user=user,
-                    defaults={'is_ldap': True}
+                    user=user, defaults={'is_ldap': True}
                 )
 
                 if not created and not profile.is_ldap:
                     profile.is_ldap = True
                     profile.save()
-                    logger.info(f"🔄 Perfil actualizado a is_ldap=True para {username}")
+                    logger.info(f'🔄 Perfil actualizado a is_ldap=True para {username}')
 
-                logger.debug(f"🏁 Estado final is_ldap para {username}: {profile.is_ldap}")
+                logger.debug(f'🏁 Estado final is_ldap para {username}: {profile.is_ldap}')
 
             except Exception as e:
-                logger.error(f"❌ Error al actualizar perfil para usuario existente: {str(e)}")
+                logger.error(f'❌ Error al actualizar perfil para usuario existente: {str(e)}')
                 if hasattr(user, 'profile'):
                     user.profile.is_ldap = True
                     user.profile.save()
 
             return user
 
-        except User.DoesNotExist:
-            logger.debug(f"➕ Creando nuevo usuario: {username}")
-            user = User(username=username)
+        except user_model.DoesNotExist:
+            logger.debug(f'➕ Creando nuevo usuario: {username}')
+            user = user_model(username=username)
             user.set_unusable_password()
 
-            user.first_name = user_attrs.get("first_name", "")
-            user.last_name = user_attrs.get("last_name", "")
-            user.email = user_attrs.get("email", "")
+            user.first_name = user_attrs.get('first_name', '')
+            user.last_name = user_attrs.get('last_name', '')
+            user.email = user_attrs.get('email', '')
 
             user._is_ldap_user = True
 
             if group_search_base:
                 user.is_staff = self.is_member_of(conn, user_entry, staff_group, group_search_base)
-                user.is_superuser = self.is_member_of(conn, user_entry, superuser_group, group_search_base)
+                user.is_superuser = self.is_member_of(
+                    conn, user_entry, superuser_group, group_search_base
+                )
 
             user.save()
-            logger.info(f"✅ Nuevo usuario creado: {username}")
+            logger.info(f'✅ Nuevo usuario creado: {username}')
 
             try:
                 Profile.objects.create(user=user, is_ldap=True)
-                logger.info(f"✅ Perfil LDAP creado para {username}")
+                logger.info(f'✅ Perfil LDAP creado para {username}')
             except Exception as e:
-                logger.error(f"❌ Error al crear perfil LDAP: {str(e)}")
+                logger.error(f'❌ Error al crear perfil LDAP: {str(e)}')
                 Profile.objects.get_or_create(user=user, defaults={'is_ldap': True})
-                logger.warning(f"⚠️ Perfil LDAP creado en modo fallback")
+                logger.warning('⚠️ Perfil LDAP creado en modo fallback')
 
             try:
                 user.refresh_from_db()
 
                 if hasattr(user, 'profile'):
                     if user.profile.is_ldap:
-                        logger.debug(f"✔️ Confirmado: is_ldap=True para {username}")
+                        logger.debug(f'✔️ Confirmado: is_ldap=True para {username}')
                     else:
-                        logger.error(f"❌ ERROR CRÍTICO: is_ldap=False para {username}")
+                        logger.error(f'❌ ERROR CRÍTICO: is_ldap=False para {username}')
                         user.profile.is_ldap = True
                         user.profile.save()
                 else:
                     Profile.objects.create(user=user, is_ldap=True)
 
             except Exception as e:
-                logger.error(f"🚨 Error fatal en verificación de perfil: {str(e)}")
+                logger.error(f'🚨 Error fatal en verificación de perfil: {str(e)}')
 
             return user
 
     def get_user_attributes(self, user_entry):
         return {
-            "first_name": self.get_attr_value(user_entry, "givenName"),
-            "last_name": self.get_attr_value(user_entry, "sn"),
-            "email": self.get_attr_value(user_entry, "mail")
+            'first_name': self.get_attr_value(user_entry, 'givenName'),
+            'last_name': self.get_attr_value(user_entry, 'sn'),
+            'email': self.get_attr_value(user_entry, 'mail'),
         }
 
     def get_attr_value(self, entry, attr_name):
@@ -194,25 +196,25 @@ class LDAP3Backend(BaseBackend):
 
     def is_member_of(self, conn, user_entry, group_dn, group_search_base):
         if not group_dn:
-            logger.debug(f"👥 Grupo no configurado: {group_dn}")
+            logger.debug(f'👥 Grupo no configurado: {group_dn}')
             return False
         try:
             user_dn = user_entry.entry_dn
             conn.search(
                 search_base=group_search_base,
-                search_filter=f"(&(distinguishedName={group_dn})(member={user_dn}))",
+                search_filter=f'(&(distinguishedName={group_dn})(member={user_dn}))',
                 search_scope=ldap3.SUBTREE,
-                attributes=['dn']
+                attributes=['dn'],
             )
             result = bool(conn.entries)
             return result
         except LDAPException as e:
-            logger.error(f"❌ Error al verificar membresía en grupo {group_dn}: {str(e)}")
+            logger.error(f'❌ Error al verificar membresía en grupo {group_dn}: {str(e)}')
             return False
 
     def get_user(self, user_id):
-        User = get_user_model()
+        user_model = get_user_model()
         try:
-            return User.objects.get(pk=user_id)
+            return user_model.objects.get(pk=user_id)
         except ObjectDoesNotExist:
             return None

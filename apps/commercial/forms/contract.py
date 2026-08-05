@@ -1,4 +1,5 @@
 from django import forms
+
 from apps.commercial.models import Contract
 
 
@@ -10,5 +11,7 @@ class ContractForm(forms.ModelForm):
             'subscription': forms.Select(attrs={'class': 'form-control'}),
             'number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '2025-0001'}),
             'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'commercial_registry': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'A09404'}),
+            'commercial_registry': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'A09404'}
+            ),
         }

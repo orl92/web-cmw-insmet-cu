@@ -2,9 +2,8 @@ import os
 import shutil
 import tempfile
 
-from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import models, connection
+from django.db import connection, models
 from django.test import TransactionTestCase, override_settings
 
 from apps.core.models import FileHandlerMixin

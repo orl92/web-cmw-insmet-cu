@@ -10,8 +10,10 @@ from apps.publications.models import Author, ScientificPublication
 class AuthorTests(TestCase):
     def test_create_author(self):
         author = Author.objects.create(
-            first_name='Juan', last_name='Perez',
-            email='juan@example.com', institution='UCLV',
+            first_name='Juan',
+            last_name='Perez',
+            email='juan@example.com',
+            institution='UCLV',
             orcid_id='0000-0001-2345-6789',
         )
         self.assertEqual(str(author), 'Juan Perez')
@@ -53,12 +55,18 @@ class ScientificPublicationTests(FileHandlingTestCase):
     def test_publication_ordering(self):
         pdf = SimpleUploadedFile('p.pdf', b'%PDF-1.4', content_type='application/pdf')
         pub1 = ScientificPublication.objects.create(
-            title='Primera', author=self.author,
-            publication_date=date(2024, 1, 1), summary='S1', pdf=pdf,
+            title='Primera',
+            author=self.author,
+            publication_date=date(2024, 1, 1),
+            summary='S1',
+            pdf=pdf,
         )
         pub2 = ScientificPublication.objects.create(
-            title='Segunda', author=self.author,
-            publication_date=date(2024, 6, 1), summary='S2', pdf=pdf,
+            title='Segunda',
+            author=self.author,
+            publication_date=date(2024, 6, 1),
+            summary='S2',
+            pdf=pdf,
         )
         pubs = ScientificPublication.objects.all()
         self.assertEqual(pubs[0], pub2)
@@ -83,7 +91,10 @@ class ScientificPublicationTests(FileHandlingTestCase):
         meta = Author._meta
         perms = {p[0] for p in meta.permissions}
         expected = {
-            'view_author', 'add_author', 'change_author', 'delete_author',
+            'view_author',
+            'add_author',
+            'change_author',
+            'delete_author',
         }
         self.assertEqual(perms, expected)
         self.assertEqual(meta.default_permissions, ())

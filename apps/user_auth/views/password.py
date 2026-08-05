@@ -8,11 +8,11 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
 
+from apps.core.utils import log_action
 from apps.user_auth.forms.password import (
     AdminPasswordChangeForm,
     UserPasswordChangeForm,
 )
-from apps.core.utils import log_action
 
 
 class PasswordChangeView(LoginRequiredMixin, FormView):
@@ -22,10 +22,16 @@ class PasswordChangeView(LoginRequiredMixin, FormView):
     url_redirect = success_url
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and hasattr(request.user, 'profile'):
-            if request.user.profile.is_ldap:
-                messages.warning(request, "No puedes cambiar tu contraseña porque estás autenticado mediante LDAP.")
-                return redirect('user_auth:profile_detail')
+        if (
+            request.user.is_authenticated
+            and hasattr(request.user, 'profile')
+            and request.user.profile.is_ldap
+        ):
+            messages.warning(
+                request,
+                'No puedes cambiar tu contraseña porque estás autenticado mediante LDAP.',
+            )
+            return redirect('user_auth:profile_detail')
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
@@ -40,7 +46,7 @@ class PasswordChangeView(LoginRequiredMixin, FormView):
             user=self.request.user,
             obj=user,
             action_flag=CHANGE,
-            message="El usuario cambió su contraseña."
+            message='El usuario cambió su contraseña.',
         )
         messages.success(self.request, 'Tu contraseña ha sido cambiada con éxito.')
         return super().form_valid(form)
@@ -63,7 +69,10 @@ class AdminPasswordChangeView(LoginRequiredMixin, PermissionRequiredMixin, FormV
     def dispatch(self, request, *args, **kwargs):
         user = get_object_or_404(User, profile__uuid=self.kwargs.get('uuid'))
         if hasattr(user, 'profile') and user.profile.is_ldap:
-            messages.error(request, f"No puedes cambiar la contraseña de '{user.username}' porque es un usuario LDAP.")
+            messages.error(
+                request,
+                f"No puedes cambiar la contraseña de '{user.username}' porque es un usuario LDAP.",
+            )
             return redirect('user_auth:users_list')
         return super().dispatch(request, *args, **kwargs)
 
@@ -79,7 +88,10 @@ class AdminPasswordChangeView(LoginRequiredMixin, PermissionRequiredMixin, FormV
             user=self.request.user,
             obj=user,
             action_flag=CHANGE,
-            message=f"El administrador {self.request.user.username} cambió la contraseña del usuario {user.username}."
+            message=(
+                f'El administrador {self.request.user.username} cambió la contraseña '
+                f'del usuario {user.username}.'
+            ),
         )
         messages.success(self.request, 'La contraseña del usuario ha sido cambiada con éxito.')
         return super().form_valid(form)
@@ -97,10 +109,16 @@ class UserPasswordResetView(PasswordResetView):
     success_url = reverse_lazy('user_auth:password_reset_done')
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and hasattr(request.user, 'profile'):
-            if request.user.profile.is_ldap:
-                messages.warning(request, "No puedes restablecer tu contraseña porque estás autenticado mediante LDAP.")
-                return redirect('user_auth:profile_detail')
+        if (
+            request.user.is_authenticated
+            and hasattr(request.user, 'profile')
+            and request.user.profile.is_ldap
+        ):
+            messages.warning(
+                request,
+                'No puedes restablecer tu contraseña porque estás autenticado mediante LDAP.',
+            )
+            return redirect('user_auth:profile_detail')
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):

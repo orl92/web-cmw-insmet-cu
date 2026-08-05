@@ -46,7 +46,9 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Mis Suscripciones' if not self.request.user.is_staff else 'Todas las Suscripciones'
+        context['title'] = (
+            'Mis Suscripciones' if not self.request.user.is_staff else 'Todas las Suscripciones'
+        )
         context['parent'] = 'servicios'
         context['segment'] = 'suscripciones'
         context['is_superuser'] = self.request.user.is_superuser
@@ -81,7 +83,10 @@ class SubscriptionCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Suscripción creada para: {self.object.customer.company_name} - {self.object.service.title}"
+            message=(
+                f'Suscripción creada para: {self.object.customer.company_name} '
+                f'- {self.object.service.title}'
+            ),
         )
         messages.success(self.request, 'Suscripción creada con éxito.')
         return response
@@ -112,7 +117,10 @@ class SubscriptionUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Update
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Suscripción actualizada para: {self.object.customer.company_name} - {self.object.service.title}"
+            message=(
+                f'Suscripción actualizada para: {self.object.customer.company_name} '
+                f'- {self.object.service.title}'
+            ),
         )
         messages.success(self.request, 'Suscripción actualizada con éxito.')
         return response
@@ -130,10 +138,12 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 
     def test_func(self):
         sub = self.get_object()
-        return (self.request.user.groups.filter(name='Clientes').exists() and
-                hasattr(self.request.user, 'commercial_customer') and
-                sub.customer == self.request.user.commercial_customer and
-                sub.is_active)
+        return (
+            self.request.user.groups.filter(name='Clientes').exists()
+            and hasattr(self.request.user, 'commercial_customer')
+            and sub.customer == self.request.user.commercial_customer
+            and sub.is_active
+        )
 
     def form_valid(self, form):
         old = self.object
@@ -143,15 +153,17 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
             payment_status='requested',
-            record_active=True
+            record_active=True,
         )
         log_action(
             user=self.request.user,
             obj=new_sub,
             action_flag=ADDITION,
-            message=f"Suscripción renovada desde {old.uuid}"
+            message=f'Suscripción renovada desde {old.uuid}',
         )
-        messages.success(self.request, 'Solicitud de renovación enviada. El staff generará una factura.')
+        messages.success(
+            self.request, 'Solicitud de renovación enviada. El staff generará una factura.'
+        )
         return redirect(self.success_url)
 
     def get_context_data(self, **kwargs):
@@ -183,13 +195,10 @@ class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, Updat
     def form_valid(self, form):
         sub = self.get_object()
         if sub.payment_status != 'pending':
-            messages.error(self.request, "Esta suscripción no está pendiente de pago.")
+            messages.error(self.request, 'Esta suscripción no está pendiente de pago.')
             return redirect(self.success_url)
 
-        certificate = Certificate(
-            subscription=sub,
-            pdf=form.cleaned_data['pdf']
-        )
+        certificate = Certificate(subscription=sub, pdf=form.cleaned_data['pdf'])
         certificate.save()
 
         sub.payment_status = 'paid'
@@ -201,16 +210,16 @@ class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, Updat
             user=self.request.user,
             obj=sub,
             action_flag=CHANGE,
-            message=f"Pago aprobado, certificado {certificate.pk} subido"
+            message=f'Pago aprobado, certificado {certificate.pk} subido',
         )
         log_action(
             user=self.request.user,
             obj=certificate,
             action_flag=ADDITION,
-            message=f"Certificado generado para suscripción {sub.uuid}"
+            message=f'Certificado generado para suscripción {sub.uuid}',
         )
 
-        messages.success(self.request, "Pago aprobado y certificado enviado.")
+        messages.success(self.request, 'Pago aprobado y certificado enviado.')
         return redirect(self.success_url)
 
     def send_certificate_email(self, request, subscription, certificate):
@@ -233,11 +242,13 @@ class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
         subscription = get_object_or_404(ServiceSubscription, uuid=kwargs['uuid'])
 
         if subscription.payment_status == 'paid':
-            messages.error(request, "No se puede regenerar una factura de una suscripción ya pagada.")
+            messages.error(
+                request, 'No se puede regenerar una factura de una suscripción ya pagada.'
+            )
             return redirect('commercial:suscripcion_list')
 
         if not subscription.invoices.exists():
-            messages.error(request, "Esta suscripción no tiene facturas para regenerar.")
+            messages.error(request, 'Esta suscripción no tiene facturas para regenerar.')
             return redirect('commercial:suscripcion_list')
 
         for invoice in subscription.invoices.all():
@@ -247,7 +258,7 @@ class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 user=request.user,
                 obj=invoice,
                 action_flag=CHANGE,
-                message=f"Factura {invoice.number} anulada por regeneración"
+                message=f'Factura {invoice.number} anulada por regeneración',
             )
 
         subscription.certificates.all().delete()
@@ -258,22 +269,25 @@ class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=request.user,
             obj=subscription,
             action_flag=CHANGE,
-            message="Facturas anuladas, estado revertido a solicitado para regenerar"
+            message='Facturas anuladas, estado revertido a solicitado para regenerar',
         )
 
-        messages.success(request, "Factura anterior anulada. Ahora puede generar una nueva.")
-        return redirect(f"{reverse('commercial:factura_create')}?customer_uuid={subscription.customer.uuid}")
+        messages.success(request, 'Factura anterior anulada. Ahora puede generar una nueva.')
+        return redirect(
+            f'{reverse("commercial:factura_create")}?customer_uuid={subscription.customer.uuid}'
+        )
 
 
 class SubscriptionCancelView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """Anula (soft delete) una suscripción."""
+
     permission_required = 'commercial.delete_subscription'
 
     def post(self, request, uuid):
         subscription = get_object_or_404(ServiceSubscription, uuid=uuid)
 
         if not subscription.record_active:
-            messages.warning(request, "La suscripción ya estaba desactivada.")
+            messages.warning(request, 'La suscripción ya estaba desactivada.')
             return redirect('commercial:suscripcion_list')
 
         subscription.delete()
@@ -282,7 +296,10 @@ class SubscriptionCancelView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=request.user,
             obj=subscription,
             action_flag=DELETION,
-            message=f"Suscripción desactivada: {subscription.customer.company_name} - {subscription.service.title}"
+            message=(
+                f'Suscripción desactivada: {subscription.customer.company_name} '
+                f'- {subscription.service.title}'
+            ),
         )
         messages.success(request, 'Suscripción desactivada con éxito.')
         return redirect('commercial:suscripcion_list')
@@ -290,6 +307,7 @@ class SubscriptionCancelView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
 class SubscriptionHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     """Eliminación física permanente (solo superusuarios)."""
+
     def test_func(self):
         return self.request.user.is_superuser
 
@@ -304,9 +322,9 @@ class SubscriptionHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
             user=request.user,
             obj=subscription,
             action_flag=DELETION,
-            message=f"Suscripción eliminada físicamente: {customer_name} - {service_title}"
+            message=f'Suscripción eliminada físicamente: {customer_name} - {service_title}',
         )
-        messages.success(request, f"Suscripción de {customer_name} eliminada permanentemente.")
+        messages.success(request, f'Suscripción de {customer_name} eliminada permanentemente.')
         return redirect('commercial:suscripcion_list')
 
 
@@ -322,7 +340,7 @@ def enviar_correo_certificado(subscription, request=None):
     if not certificate:
         return False
 
-    subject = f"Certificado de {subscription.service.title}"
+    subject = f'Certificado de {subscription.service.title}'
     base_url = request.build_absolute_uri('/') if request else settings.BASE_URL
     context = {
         'subscription': subscription,
@@ -333,12 +351,9 @@ def enviar_correo_certificado(subscription, request=None):
     html_content = render_to_string('pages/commercial/emails/certificado.html', context)
 
     email = EmailMessage(
-        subject,
-        html_content,
-        settings.DEFAULT_FROM_EMAIL,
-        [subscription.customer.user.email]
+        subject, html_content, settings.DEFAULT_FROM_EMAIL, [subscription.customer.user.email]
     )
-    email.content_subtype = "html"
+    email.content_subtype = 'html'
 
     if certificate.pdf:
         email.attach_file(certificate.pdf.path)
@@ -347,7 +362,7 @@ def enviar_correo_certificado(subscription, request=None):
         email.send()
         return True
     except Exception as e:
-        logger.error(f"Error enviando certificado: {e}")
+        logger.error(f'Error enviando certificado: {e}')
         return False
 
 
@@ -358,23 +373,28 @@ class ResendCertificateEmailView(LoginRequiredMixin, PermissionRequiredMixin, Vi
         subscription = get_object_or_404(ServiceSubscription, uuid=uuid)
 
         if subscription.payment_status != 'paid':
-            messages.error(request, "Solo se pueden reenviar certificados de suscripciones pagadas.")
+            messages.error(
+                request, 'Solo se pueden reenviar certificados de suscripciones pagadas.'
+            )
             return redirect('commercial:suscripcion_list')
 
         if not subscription.certificates.exists():
-            messages.error(request, "Esta suscripción no tiene certificado.")
+            messages.error(request, 'Esta suscripción no tiene certificado.')
             return redirect('commercial:suscripcion_list')
 
         exito = enviar_correo_certificado(subscription, request=request)
         if exito:
-            messages.success(request, f"Certificado de {subscription.service.title} reenviado correctamente.")
+            messages.success(
+                request, f'Certificado de {subscription.service.title} reenviado correctamente.'
+            )
         else:
-            messages.error(request, "No se pudo reenviar el certificado. Revise los logs.")
+            messages.error(request, 'No se pudo reenviar el certificado. Revise los logs.')
         return redirect('commercial:suscripcion_list')
 
 
 class CertificateHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     """Eliminación física de certificado (solo superusuarios)."""
+
     def test_func(self):
         return self.request.user.is_superuser
 
@@ -385,7 +405,7 @@ class CertificateHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
             user=request.user,
             obj=certificate,
             action_flag=DELETION,
-            message=f"Certificado {certificate.pk} eliminado físicamente."
+            message=f'Certificado {certificate.pk} eliminado físicamente.',
         )
-        messages.success(request, "Certificado eliminado permanentemente.")
+        messages.success(request, 'Certificado eliminado permanentemente.')
         return redirect('commercial:suscripcion_list')

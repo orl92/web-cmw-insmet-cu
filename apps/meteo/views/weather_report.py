@@ -18,8 +18,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
 
-from apps.core.utils import log_action
-from apps.core.utils import mail_send
+from apps.core.utils import log_action, mail_send
 from apps.meteo.forms.weather_report import WeatherReportForm
 from apps.meteo.models import WeatherReport
 
@@ -150,7 +149,9 @@ class WeatherReportListView(LoginRequiredMixin, PermissionRequiredMixin, ListVie
         return [self.get_config()['template_list']]
 
     def get_queryset(self):
-        return WeatherReport.objects.filter(report_type=self.get_report_type()).select_related('user')
+        return WeatherReport.objects.filter(report_type=self.get_report_type()).select_related(
+            'user'
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -202,10 +203,12 @@ class WeatherReportCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó un nuevo {cfg['title_create']}: {self.object.date}."
+            message=f'Se creó un nuevo {cfg["title_create"]}: {self.object.date}.',
         )
 
-        messages.success(self.request, f'{cfg["title_create"]} ha sido creado con éxito.', extra_tags='success')
+        messages.success(
+            self.request, f'{cfg["title_create"]} ha sido creado con éxito.', extra_tags='success'
+        )
         mail_send(self.request, self.object, cfg['subject_create'], cfg['mail_url'])
 
         return redirect(self.get_success_url())
@@ -220,7 +223,9 @@ class WeatherReportCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
         return context
 
 
-class WeatherReportUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+class WeatherReportUpdateView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     model = WeatherReport
     form_class = WeatherReportForm
 
@@ -255,8 +260,7 @@ class WeatherReportUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
         original_object = self.get_object(queryset=None)
         relevant_fields = ['summary', 'file', 'email_recipient_list']
         has_changes = any(
-            form.cleaned_data[field] != getattr(original_object, field)
-            for field in relevant_fields
+            form.cleaned_data[field] != getattr(original_object, field) for field in relevant_fields
         )
         cfg = self.get_config()
 
@@ -267,13 +271,17 @@ class WeatherReportUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserP
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó {cfg['title_update']}: {self.object.date}."
+            message=f'Se actualizó {cfg["title_update"]}: {self.object.date}.',
         )
 
         if has_changes:
             mail_send(self.request, self.object, cfg['subject_update'], cfg['mail_url'])
 
-        messages.success(self.request, f'{cfg["title_update"]} ha sido actualizado con éxito.', extra_tags='success')
+        messages.success(
+            self.request,
+            f'{cfg["title_update"]} ha sido actualizado con éxito.',
+            extra_tags='success',
+        )
         return redirect(self.get_success_url())
 
     def get_context_data(self, **kwargs):
@@ -308,7 +316,7 @@ class WeatherReportDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View)
             user=self.request.user,
             obj=obj,
             action_flag=DELETION,
-            message=f"Se eliminó {cfg['title_list']}: {obj.date.strftime('%d-%m-%Y')}."
+            message=f'Se eliminó {cfg["title_list"]}: {obj.date.strftime("%d-%m-%Y")}.',
         )
         try:
             obj.delete()
@@ -376,7 +384,7 @@ class WeatherReportPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailVi
         obj = self.get_object()
         cfg = self.get_config()
 
-        logo_path = os.path.join(settings.BASE_DIR, "static/dist/img/logo.png")
+        logo_path = os.path.join(settings.BASE_DIR, 'static/dist/img/logo.png')
         logo_base64 = self.get_image_base64(logo_path)
 
         template = get_template(cfg['template_pdf'])
@@ -384,16 +392,16 @@ class WeatherReportPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailVi
         html = template.render(context)
 
         result = BytesIO()
-        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+        pdf = pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
 
         if not pdf.err:
             response = HttpResponse(result.getvalue(), content_type='application/pdf')
-            filename = f"{cfg['pdf_filename_prefix']}_{obj.date.strftime('%Y-%m-%d')}.pdf"
+            filename = f'{cfg["pdf_filename_prefix"]}_{obj.date.strftime("%Y-%m-%d")}.pdf'
             response['Content-Disposition'] = f'attachment; filename="{filename}"'
             return response
-        return HttpResponse("Error al generar el PDF", status=400)
+        return HttpResponse('Error al generar el PDF', status=400)
 
     @staticmethod
     def get_image_base64(image_path):
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("utf-8")
+        with open(image_path, 'rb') as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')

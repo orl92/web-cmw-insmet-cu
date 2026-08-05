@@ -11,21 +11,27 @@ from apps.commercial.models import Customer
 class CustomerForm(forms.ModelForm):
     username = forms.CharField(max_length=150, required=True, label='Nombre de Usuario')
     password = forms.CharField(widget=forms.PasswordInput, required=True, label='Contraseña')
-    password2 = forms.CharField(widget=forms.PasswordInput, required=True, label='Confirmar Contraseña')
+    password2 = forms.CharField(
+        widget=forms.PasswordInput, required=True, label='Confirmar Contraseña'
+    )
     email = forms.EmailField(required=True, label='Correo Electrónico')
 
     class Meta:
         model = Customer
         fields = [
-            'client_type', 'company_name', 'reeup', 'nit', 'account',
-            'agency_bank', 'address', 'phone',
+            'client_type',
+            'company_name',
+            'reeup',
+            'nit',
+            'account',
+            'agency_bank',
+            'address',
+            'phone',
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['client_type'].widget = forms.RadioSelect(
-            attrs={'class': 'form-check-input'}
-        )
+        self.fields['client_type'].widget = forms.RadioSelect(attrs={'class': 'form-check-input'})
         for field_name, field in self.fields.items():
             if field_name not in ['username', 'password', 'password2', 'email', 'client_type']:
                 field.widget.attrs.update({'class': 'form-control'})
@@ -33,7 +39,11 @@ class CustomerForm(forms.ModelForm):
         self._set_juridica_required()
 
     def _set_juridica_required(self):
-        client_type = self.data.get('client_type') or self.initial.get('client_type') or Customer.ClientType.JURIDICA
+        client_type = (
+            self.data.get('client_type')
+            or self.initial.get('client_type')
+            or Customer.ClientType.JURIDICA
+        )
         if client_type == Customer.ClientType.JURIDICA:
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
@@ -48,11 +58,11 @@ class CustomerForm(forms.ModelForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not reeup:
-                raise ValidationError("El REEUP es obligatorio para personas jurídicas.")
+                raise ValidationError('El REEUP es obligatorio para personas jurídicas.')
             if not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
-                raise ValidationError("El REEUP debe tener el formato ###.#.#### o ###.##.#####")
+                raise ValidationError('El REEUP debe tener el formato ###.#.#### o ###.##.#####')
             if Customer.objects.filter(reeup=reeup).exists():
-                raise ValidationError("Este código REEUP ya está registrado.")
+                raise ValidationError('Este código REEUP ya está registrado.')
         return reeup
 
     def clean_nit(self):
@@ -60,25 +70,25 @@ class CustomerForm(forms.ModelForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not nit:
-                raise ValidationError("El NIT es obligatorio para personas jurídicas.")
+                raise ValidationError('El NIT es obligatorio para personas jurídicas.')
             if not re.match(r'^\d{11}$', nit):
-                raise ValidationError("El NIT debe tener exactamente 11 dígitos numéricos.")
+                raise ValidationError('El NIT debe tener exactamente 11 dígitos numéricos.')
             if Customer.objects.filter(nit=nit).exists():
-                raise ValidationError("Este NIT ya está registrado.")
+                raise ValidationError('Este NIT ya está registrado.')
         return nit
 
     def clean_account(self):
         account = self.cleaned_data.get('account')
         if not re.match(r'^\d{16}$', account):
-            raise ValidationError("La cuenta bancaria debe tener exactamente 16 dígitos numéricos.")
+            raise ValidationError('La cuenta bancaria debe tener exactamente 16 dígitos numéricos.')
         if Customer.objects.filter(account=account).exists():
-            raise ValidationError("Esta cuenta bancaria ya está registrada.")
+            raise ValidationError('Esta cuenta bancaria ya está registrada.')
         return account
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if not re.match(r'^\d{8}$', phone):
-            raise ValidationError("El teléfono debe tener exactamente 8 dígitos numéricos.")
+            raise ValidationError('El teléfono debe tener exactamente 8 dígitos numéricos.')
         return phone
 
     def clean(self):
@@ -96,7 +106,7 @@ class CustomerForm(forms.ModelForm):
                 user = User.objects.create_user(
                     username=self.cleaned_data['username'],
                     password=self.cleaned_data['password'],
-                    email=self.cleaned_data['email']
+                    email=self.cleaned_data['email'],
                 )
                 customer.user = user
                 customer.save()
@@ -109,17 +119,21 @@ class CustomerUpdateForm(forms.ModelForm):
     class Meta:
         model = Customer
         fields = [
-            'client_type', 'company_name', 'reeup', 'nit', 'account',
-            'agency_bank', 'address', 'phone',
+            'client_type',
+            'company_name',
+            'reeup',
+            'nit',
+            'account',
+            'agency_bank',
+            'address',
+            'phone',
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.user:
             self.fields['email'].initial = self.instance.user.email
-        self.fields['client_type'].widget = forms.RadioSelect(
-            attrs={'class': 'form-check-input'}
-        )
+        self.fields['client_type'].widget = forms.RadioSelect(attrs={'class': 'form-check-input'})
         for field_name, field in self.fields.items():
             if field_name not in ['email', 'client_type']:
                 field.widget.attrs.update({'class': 'form-control'})
@@ -127,7 +141,11 @@ class CustomerUpdateForm(forms.ModelForm):
         self._set_juridica_required()
 
     def _set_juridica_required(self):
-        client_type = self.data.get('client_type') or self.initial.get('client_type') or (self.instance.client_type if self.instance.pk else Customer.ClientType.JURIDICA)
+        client_type = (
+            self.data.get('client_type')
+            or self.initial.get('client_type')
+            or (self.instance.client_type if self.instance.pk else Customer.ClientType.JURIDICA)
+        )
         if client_type == Customer.ClientType.JURIDICA:
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
@@ -142,11 +160,11 @@ class CustomerUpdateForm(forms.ModelForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not reeup:
-                raise ValidationError("El REEUP es obligatorio para personas jurídicas.")
+                raise ValidationError('El REEUP es obligatorio para personas jurídicas.')
             if not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
-                raise ValidationError("El REEUP debe tener el formato ###.#.#### o ###.##.#####")
+                raise ValidationError('El REEUP debe tener el formato ###.#.#### o ###.##.#####')
             if Customer.objects.filter(reeup=reeup).exclude(pk=self.instance.pk).exists():
-                raise ValidationError("Este código REEUP ya está registrado.")
+                raise ValidationError('Este código REEUP ya está registrado.')
         return reeup
 
     def clean_nit(self):
@@ -154,25 +172,25 @@ class CustomerUpdateForm(forms.ModelForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not nit:
-                raise ValidationError("El NIT es obligatorio para personas jurídicas.")
+                raise ValidationError('El NIT es obligatorio para personas jurídicas.')
             if not re.match(r'^\d{11}$', nit):
-                raise ValidationError("El NIT debe tener exactamente 11 dígitos numéricos.")
+                raise ValidationError('El NIT debe tener exactamente 11 dígitos numéricos.')
             if Customer.objects.filter(nit=nit).exclude(pk=self.instance.pk).exists():
-                raise ValidationError("Este NIT ya está registrado.")
+                raise ValidationError('Este NIT ya está registrado.')
         return nit
 
     def clean_account(self):
         account = self.cleaned_data.get('account', '')
         if not re.match(r'^\d{16}$', account):
-            raise ValidationError("La cuenta bancaria debe tener exactamente 16 dígitos numéricos.")
+            raise ValidationError('La cuenta bancaria debe tener exactamente 16 dígitos numéricos.')
         if Customer.objects.filter(account=account).exclude(pk=self.instance.pk).exists():
-            raise ValidationError("Esta cuenta bancaria ya está registrada.")
+            raise ValidationError('Esta cuenta bancaria ya está registrada.')
         return account
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '')
         if not re.match(r'^\d{8}$', phone):
-            raise ValidationError("El teléfono debe tener exactamente 8 dígitos numéricos.")
+            raise ValidationError('El teléfono debe tener exactamente 8 dígitos numéricos.')
         return phone
 
     def save(self, commit=True):
@@ -191,8 +209,14 @@ class CustomerForUserForm(forms.ModelForm):
     class Meta:
         model = Customer
         fields = [
-            'client_type', 'company_name', 'reeup', 'nit', 'account',
-            'agency_bank', 'address', 'phone',
+            'client_type',
+            'company_name',
+            'reeup',
+            'nit',
+            'account',
+            'agency_bank',
+            'address',
+            'phone',
         ]
 
     def __init__(self, *args, **kwargs):
@@ -200,9 +224,7 @@ class CustomerForUserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.user:
             self.fields['email'].initial = self.user.email
-        self.fields['client_type'].widget = forms.RadioSelect(
-            attrs={'class': 'form-check-input'}
-        )
+        self.fields['client_type'].widget = forms.RadioSelect(attrs={'class': 'form-check-input'})
         for field_name, field in self.fields.items():
             if field_name not in ['email', 'client_type']:
                 field.widget.attrs.update({'class': 'form-control'})
@@ -210,7 +232,15 @@ class CustomerForUserForm(forms.ModelForm):
         self._set_juridica_required()
 
     def _set_juridica_required(self):
-        client_type = self.data.get('client_type') or self.initial.get('client_type') or (self.instance.client_type if self.instance and self.instance.pk else Customer.ClientType.JURIDICA)
+        client_type = (
+            self.data.get('client_type')
+            or self.initial.get('client_type')
+            or (
+                self.instance.client_type
+                if self.instance and self.instance.pk
+                else Customer.ClientType.JURIDICA
+            )
+        )
         if client_type == Customer.ClientType.JURIDICA:
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
@@ -225,14 +255,14 @@ class CustomerForUserForm(forms.ModelForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not reeup:
-                raise ValidationError("El REEUP es obligatorio para personas jurídicas.")
+                raise ValidationError('El REEUP es obligatorio para personas jurídicas.')
             if not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
-                raise ValidationError("El REEUP debe tener el formato ###.#.#### o ###.##.#####")
+                raise ValidationError('El REEUP debe tener el formato ###.#.#### o ###.##.#####')
             if self.instance and self.instance.pk:
                 if Customer.objects.filter(reeup=reeup).exclude(pk=self.instance.pk).exists():
-                    raise ValidationError("Este código REEUP ya está registrado.")
+                    raise ValidationError('Este código REEUP ya está registrado.')
             elif Customer.objects.filter(reeup=reeup).exists():
-                raise ValidationError("Este código REEUP ya está registrado.")
+                raise ValidationError('Este código REEUP ya está registrado.')
         return reeup
 
     def clean_nit(self):
@@ -240,31 +270,31 @@ class CustomerForUserForm(forms.ModelForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not nit:
-                raise ValidationError("El NIT es obligatorio para personas jurídicas.")
+                raise ValidationError('El NIT es obligatorio para personas jurídicas.')
             if not re.match(r'^\d{11}$', nit):
-                raise ValidationError("El NIT debe tener exactamente 11 dígitos numéricos.")
+                raise ValidationError('El NIT debe tener exactamente 11 dígitos numéricos.')
             if self.instance and self.instance.pk:
                 if Customer.objects.filter(nit=nit).exclude(pk=self.instance.pk).exists():
-                    raise ValidationError("Este NIT ya está registrado.")
+                    raise ValidationError('Este NIT ya está registrado.')
             elif Customer.objects.filter(nit=nit).exists():
-                raise ValidationError("Este NIT ya está registrado.")
+                raise ValidationError('Este NIT ya está registrado.')
         return nit
 
     def clean_account(self):
         account = self.cleaned_data.get('account', '')
         if not re.match(r'^\d{16}$', account):
-            raise ValidationError("La cuenta bancaria debe tener exactamente 16 dígitos numéricos.")
+            raise ValidationError('La cuenta bancaria debe tener exactamente 16 dígitos numéricos.')
         if self.instance and self.instance.pk:
             if Customer.objects.filter(account=account).exclude(pk=self.instance.pk).exists():
-                raise ValidationError("Esta cuenta bancaria ya está registrada.")
+                raise ValidationError('Esta cuenta bancaria ya está registrada.')
         elif Customer.objects.filter(account=account).exists():
-            raise ValidationError("Esta cuenta bancaria ya está registrada.")
+            raise ValidationError('Esta cuenta bancaria ya está registrada.')
         return account
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '')
         if not re.match(r'^\d{8}$', phone):
-            raise ValidationError("El teléfono debe tener exactamente 8 dígitos numéricos.")
+            raise ValidationError('El teléfono debe tener exactamente 8 dígitos numéricos.')
         return phone
 
     def save(self, commit=True):

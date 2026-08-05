@@ -18,7 +18,9 @@ class Profile(FileHandlerMixin, models.Model):
     file_fields = ['avatar']
     uuid = models.UUIDField(primary_key=True, default=uuid_lib.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    avatar = models.ImageField(upload_to=image_upload_path, null=True, blank=True, verbose_name='Avatar')
+    avatar = models.ImageField(
+        upload_to=image_upload_path, null=True, blank=True, verbose_name='Avatar'
+    )
     is_ldap = models.BooleanField(default=False, verbose_name='Usuario LDAP')
     newsletter = models.BooleanField(default=False, verbose_name='Recibir boletín')
 

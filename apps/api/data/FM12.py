@@ -189,7 +189,6 @@ class FM12:
 
         # Lluvia en 24h
         self.__7R24R24R24R24 = None
-        
 
     @property
     def YY(self):

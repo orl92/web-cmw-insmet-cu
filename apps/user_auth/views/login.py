@@ -7,7 +7,6 @@ from django.views.generic.base import RedirectView
 
 from apps.core.utils import log_action
 
-
 LOGIN_ACTION = 4
 LOGOUT_ACTION = 5
 
@@ -40,7 +39,9 @@ class LogoutRedirectView(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         if self.request.user.is_authenticated:
-            log_action(self.request.user, self.request.user, LOGOUT_ACTION, 'El usuario cerró sesión.')
+            log_action(
+                self.request.user, self.request.user, LOGOUT_ACTION, 'El usuario cerró sesión.'
+            )
             messages.info(self.request, 'Has cerrado sesión con éxito.')
             logout(self.request)
         return super().get_redirect_url(*args, **kwargs)

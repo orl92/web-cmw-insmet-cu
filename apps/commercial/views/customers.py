@@ -1,3 +1,5 @@
+import contextlib
+
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
@@ -63,10 +65,14 @@ class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
             user=self.request.user,
             obj=customer,
             action_flag=ADDITION,
-            message=f"Se creó un nuevo cliente: {customer.user.username}."
+            message=f'Se creó un nuevo cliente: {customer.user.username}.',
         )
 
-        messages.success(self.request, f'Cliente creado con éxito. Nombre de usuario: {customer.user.username}', extra_tags='success')
+        messages.success(
+            self.request,
+            f'Cliente creado con éxito. Nombre de usuario: {customer.user.username}',
+            extra_tags='success',
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -78,7 +84,9 @@ class CustomerCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
         return context
 
 
-class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+class CustomerUpdateView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     model = Customer
     form_class = CustomerUpdateForm
     template_name = 'pages/commercial/customer/update.html'
@@ -97,10 +105,12 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó el cliente: {self.object.user.username}."
+            message=f'Se actualizó el cliente: {self.object.user.username}.',
         )
 
-        messages.success(self.request, 'El cliente ha sido actualizado con éxito.', extra_tags='warning')
+        messages.success(
+            self.request, 'El cliente ha sido actualizado con éxito.', extra_tags='warning'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -117,6 +127,7 @@ class CustomerUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
 
 class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """Soft delete: desactiva el cliente sin borrar su usuario."""
+
     permission_required = 'commercial.delete_customer'
 
     def post(self, request, uuid):
@@ -129,7 +140,7 @@ class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=customer,
             action_flag=DELETION,
-            message=f"Cliente desactivado: {customer.company_name}."
+            message=f'Cliente desactivado: {customer.company_name}.',
         )
         messages.success(request, 'Cliente desactivado con éxito.')
         return redirect('commercial:cliente_list')
@@ -137,6 +148,7 @@ class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
 class CustomerHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     """Eliminación física permanente (solo superusuarios)."""
+
     def test_func(self):
         return self.request.user.is_superuser
 
@@ -148,14 +160,12 @@ class CustomerHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
             user=self.request.user,
             obj=customer,
             action_flag=DELETION,
-            message=f"Cliente eliminado físicamente: {company_name}."
+            message=f'Cliente eliminado físicamente: {company_name}.',
         )
         customer.hard_delete()
         if user and user.pk != self.request.user.pk:
-            try:
+            with contextlib.suppress(Exception):
                 user.delete()
-            except Exception:
-                pass
         messages.success(request, f'Cliente {company_name} eliminado permanentemente.')
         return redirect('commercial:cliente_list')
 
@@ -196,13 +206,13 @@ class CustomerCreateForUserView(LoginRequiredMixin, PermissionRequiredMixin, Cre
             user=self.request.user,
             obj=customer,
             action_flag=ADDITION,
-            message=f"Cliente creado desde usuario existente: {customer.user.username}."
+            message=f'Cliente creado desde usuario existente: {customer.user.username}.',
         )
 
         messages.success(
             self.request,
             f'Datos de cliente completados para {customer.user.username}.',
-            extra_tags='success'
+            extra_tags='success',
         )
         return response
 

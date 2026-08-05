@@ -68,11 +68,13 @@ class ScientificPublicationCreateViewTests(TestCase):
 
     def test_post_creates_publication_with_coauthors(self):
         self.client.force_login(self.admin)
-        response = self.client.post(self.url, self._valid_data(), follow=True)
+        self.client.post(self.url, self._valid_data(), follow=True)
         pub = ScientificPublication.objects.filter(title='Publicación de prueba').first()
         self.assertIsNotNone(pub)
         self.assertEqual(pub.coauthors.count(), 1)
-        self.assertTrue(Author.objects.filter(first_name='Coautor', last_name='Secundario').exists())
+        self.assertTrue(
+            Author.objects.filter(first_name='Coautor', last_name='Secundario').exists()
+        )
 
 
 class ScientificPublicationUpdateViewTests(TestCase):
@@ -81,15 +83,21 @@ class ScientificPublicationUpdateViewTests(TestCase):
         disable_maintenance_mode()
         cls.admin = _make_superuser('pubadmin2')
         cls.author = Author.objects.create(
-            first_name='Autor', last_name='Principal',
-            email='autor@example.com', institution='CMP Camagüey',
+            first_name='Autor',
+            last_name='Principal',
+            email='autor@example.com',
+            institution='CMP Camagüey',
         )
         cls.coauthor = Author.objects.create(
-            first_name='Coautor', last_name='Secundario', email='coautor@example.com',
+            first_name='Coautor',
+            last_name='Secundario',
+            email='coautor@example.com',
         )
         cls.pub = ScientificPublication.objects.create(
-            author=cls.author, title='Publicación a editar',
-            publication_date='2026-05-10', summary='Resumen',
+            author=cls.author,
+            title='Publicación a editar',
+            publication_date='2026-05-10',
+            summary='Resumen',
             pdf=_pdf(),
         )
         cls.pub.coauthors.add(cls.coauthor)
@@ -141,7 +149,7 @@ class ScientificPublicationUpdateViewTests(TestCase):
 
     def test_post_preserves_coauthor(self):
         self.client.force_login(self.admin)
-        response = self.client.post(self.url, self._valid_data(), follow=True)
+        self.client.post(self.url, self._valid_data(), follow=True)
         self.assertEqual(self.pub.coauthors.count(), 1)
         self.assertEqual(self.pub.coauthors.first().pk, self.coauthor.pk)
 
@@ -149,7 +157,7 @@ class ScientificPublicationUpdateViewTests(TestCase):
         self.client.force_login(self.admin)
         data = self._valid_data()
         data['coauthors-0-DELETE'] = 'on'
-        response = self.client.post(self.url, data, follow=True)
+        self.client.post(self.url, data, follow=True)
         self.assertEqual(self.pub.coauthors.count(), 0)
 
 
@@ -159,15 +167,21 @@ class ScientificPublicationDetailViewTests(TestCase):
         disable_maintenance_mode()
         cls.admin = _make_superuser('pubadmin3')
         cls.author = Author.objects.create(
-            first_name='Autor', last_name='Principal',
-            email='autor@example.com', institution='CMP Camagüey',
+            first_name='Autor',
+            last_name='Principal',
+            email='autor@example.com',
+            institution='CMP Camagüey',
         )
         cls.coauthor = Author.objects.create(
-            first_name='Coautor', last_name='Secundario', email='coautor@example.com',
+            first_name='Coautor',
+            last_name='Secundario',
+            email='coautor@example.com',
         )
         cls.pub = ScientificPublication.objects.create(
-            author=cls.author, title='Publicación detalle',
-            publication_date='2026-05-10', summary='Resumen de detalle',
+            author=cls.author,
+            title='Publicación detalle',
+            publication_date='2026-05-10',
+            summary='Resumen de detalle',
             pdf=_pdf('articulo_final.pdf'),
         )
         cls.pub.coauthors.add(cls.coauthor)

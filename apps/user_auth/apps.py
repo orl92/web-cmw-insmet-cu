@@ -7,4 +7,4 @@ class UserAuthConfig(AppConfig):
     verbose_name = 'Usuarios'
 
     def ready(self):
-        import apps.user_auth.signals
+        pass

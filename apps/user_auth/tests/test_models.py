@@ -1,8 +1,6 @@
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
 
-from apps.user_auth.models import GroupProfile, Profile
-
 
 class ProfileModelTests(TestCase):
     def test_profile_created_via_signal_when_user_created(self):

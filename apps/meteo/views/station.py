@@ -31,6 +31,7 @@ class StationListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['objects'] = self.get_queryset().select_related('province')
         return context
 
+
 class StationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Station
     form_class = StationForm
@@ -45,9 +46,11 @@ class StationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó una nueva estación: {self.object.name}."
+            message=f'Se creó una nueva estación: {self.object.name}.',
         )
-        messages.success(self.request, 'La estación ha sido creada con éxito.', extra_tags='success')
+        messages.success(
+            self.request, 'La estación ha sido creada con éxito.', extra_tags='success'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -58,7 +61,10 @@ class StationCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         context['url_list'] = reverse_lazy('meteo:estacion_list')
         return context
 
-class StationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+
+class StationUpdateView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     model = Station
     form_class = StationForm
     template_name = 'pages/meteo/station/update.html'
@@ -76,9 +82,11 @@ class StationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó la estación: {self.object.name}."
+            message=f'Se actualizó la estación: {self.object.name}.',
         )
-        messages.success(self.request, 'La estación ha sido actualizada con éxito.', extra_tags='warning')
+        messages.success(
+            self.request, 'La estación ha sido actualizada con éxito.', extra_tags='warning'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -93,6 +101,7 @@ class StationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
         station = self.get_object()
         return self.request.user.is_superuser or station.user == self.request.user
 
+
 class StationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'meteo.delete_station'
 
@@ -102,7 +111,7 @@ class StationDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=station,
             action_flag=DELETION,
-            message=f"Se eliminó la estación {station.name}."
+            message=f'Se eliminó la estación {station.name}.',
         )
         try:
             station.delete()

@@ -33,28 +33,34 @@ def _build_region_initial():
     initial = []
     for region in REGION_MAP:
         for period in PERIOD_MAP:
-            initial.append({
-                'region': region,
-                'period': period,
-                'temp': '',
-                'weather': '',
-                'wind_dir': '',
-                'wind_speed': '',
-                'sea_note': '' if REGION_HAS_SEA[region] else None,
-            })
+            initial.append(
+                {
+                    'region': region,
+                    'period': period,
+                    'temp': '',
+                    'weather': '',
+                    'wind_dir': '',
+                    'wind_speed': '',
+                    'sea_note': '' if REGION_HAS_SEA[region] else None,
+                }
+            )
     return initial
 
 
 def _build_extended_initial(date_value):
     initial = []
     for day_num in range(1, 6):
-        initial.append({
-            'day_number': day_num,
-            'date': (date_value + timedelta(days=day_num)).strftime('%Y-%m-%d') if date_value else '',
-            'min_temp': '',
-            'max_temp': '',
-            'weather': '',
-        })
+        initial.append(
+            {
+                'day_number': day_num,
+                'date': (date_value + timedelta(days=day_num)).strftime('%Y-%m-%d')
+                if date_value
+                else '',
+                'min_temp': '',
+                'max_temp': '',
+                'weather': '',
+            }
+        )
     return initial
 
 
@@ -116,8 +122,12 @@ class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
         ]
 
         if self.request.POST:
-            context['region_formset'] = ForecastRegionsFormSet(self.request.POST, instance=Forecasts())
-            context['extended_formset'] = ForecastExtendedDayFormSet(self.request.POST, instance=Forecasts())
+            context['region_formset'] = ForecastRegionsFormSet(
+                self.request.POST, instance=Forecasts()
+            )
+            context['extended_formset'] = ForecastExtendedDayFormSet(
+                self.request.POST, instance=Forecasts()
+            )
         else:
             context['region_formset'] = ForecastRegionsFormSet(
                 instance=Forecasts(), initial=_build_region_initial()
@@ -140,13 +150,19 @@ class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó un nuevo pronóstico para el: {self.object.date.strftime('%d-%m-%Y')}."
+            message=(
+                f'Se creó un nuevo pronóstico para el: {self.object.date.strftime("%d-%m-%Y")}.'
+            ),
         )
-        messages.success(self.request, 'El pronóstico ha sido creado con éxito.', extra_tags='success')
+        messages.success(
+            self.request, 'El pronóstico ha sido creado con éxito.', extra_tags='success'
+        )
         return redirect(self.success_url)
 
 
-class ForecastUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+class ForecastUpdateView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     model = Forecasts
     form_class = ForecastsForm
     template_name = 'pages/meteo/forecast/form.html'
@@ -171,8 +187,12 @@ class ForecastUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
         context['date'] = self.object.date.strftime('%Y-%m-%d')
 
         if self.request.POST:
-            context['region_formset'] = ForecastRegionsFormSet(self.request.POST, instance=self.object)
-            context['extended_formset'] = ForecastExtendedDayFormSet(self.request.POST, instance=self.object)
+            context['region_formset'] = ForecastRegionsFormSet(
+                self.request.POST, instance=self.object
+            )
+            context['extended_formset'] = ForecastExtendedDayFormSet(
+                self.request.POST, instance=self.object
+            )
         else:
             context['region_formset'] = ForecastRegionsFormSet(instance=self.object)
             context['extended_formset'] = ForecastExtendedDayFormSet(instance=self.object)
@@ -191,9 +211,11 @@ class ForecastUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó el pronóstico del: {self.object.date.strftime('%d-%m-%Y')}."
+            message=f'Se actualizó el pronóstico del: {self.object.date.strftime("%d-%m-%Y")}.',
         )
-        messages.success(self.request, 'El pronóstico ha sido actualizado con éxito.', extra_tags='warning')
+        messages.success(
+            self.request, 'El pronóstico ha sido actualizado con éxito.', extra_tags='warning'
+        )
         return redirect(self.success_url)
 
     def test_func(self):
@@ -209,7 +231,7 @@ class ForecastDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=forecast,
             action_flag=DELETION,
-            message=f"Se eliminó el pronóstico del: {forecast.date.strftime('%d-%m-%Y')}."
+            message=f'Se eliminó el pronóstico del: {forecast.date.strftime("%d-%m-%Y")}.',
         )
         try:
             forecast.delete()
@@ -238,16 +260,18 @@ class ExcelJSONView(View):
             df_astro = pd.read_excel(xls, 'Astronomía')
             astro = df_astro.iloc[0].to_dict() if not df_astro.empty else {}
 
-            return JsonResponse({
-                'date': str(astro.get('date', '')),
-                'regions': regions,
-                'extended': extended,
-                'lp': astro.get('lp', ''),
-                'nlp': astro.get('nlp', ''),
-                'nlpd': astro.get('nlpd', ''),
-                'sunrise': str(astro.get('sunrise', '')),
-                'sunset': str(astro.get('sunset', '')),
-                'uv_index': str(astro.get('uv_index', '')),
-            })
+            return JsonResponse(
+                {
+                    'date': str(astro.get('date', '')),
+                    'regions': regions,
+                    'extended': extended,
+                    'lp': astro.get('lp', ''),
+                    'nlp': astro.get('nlp', ''),
+                    'nlpd': astro.get('nlpd', ''),
+                    'sunrise': str(astro.get('sunrise', '')),
+                    'sunset': str(astro.get('sunset', '')),
+                    'uv_index': str(astro.get('uv_index', '')),
+                }
+            )
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)

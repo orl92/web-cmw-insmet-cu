@@ -14,9 +14,11 @@ from apps.core.models import CompanySettings
 logger = logging.getLogger(__name__)
 
 
-def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, commercial_registry, items):
+def generate_invoice_pdf_standalone(
+    invoice, customer, start_date, end_date, commercial_registry, items
+):
     company = CompanySettings.get_instance()
-    periodo = f"Desde {start_date.strftime('%d/%m/%Y')} hasta {end_date.strftime('%d/%m/%Y')}"
+    periodo = f'Desde {start_date.strftime("%d/%m/%Y")} hasta {end_date.strftime("%d/%m/%Y")}'
     context = {
         'numero_factura': invoice.number,
         'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
@@ -42,14 +44,17 @@ def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, com
             'no_contrato': '',
             'fecha_contrato': '',
         },
-        'items': [{
-            'codigo': item.codigo,
-            'descripcion': item.descripcion,
-            'cantidad': item.cantidad,
-            'unidad_medida': item.unidad_medida,
-            'precio': item.precio,
-            'importe': item.importe,
-        } for item in items],
+        'items': [
+            {
+                'codigo': item.codigo,
+                'descripcion': item.descripcion,
+                'cantidad': item.cantidad,
+                'unidad_medida': item.unidad_medida,
+                'precio': item.precio,
+                'importe': item.importe,
+            }
+            for item in items
+        ],
         'total': float(invoice.amount),
         'current_year': timezone.now().year,
     }
@@ -65,8 +70,9 @@ def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, com
         'enable-local-file-access': None,
     }
     pdf_bytes = pdfkit.from_string(html_string, False, options=options)
-    filename = f"factura_{invoice.id}.pdf"
+    filename = f'factura_{invoice.id}.pdf'
     invoice.pdf.save(filename, ContentFile(pdf_bytes))
+
 
 def enviar_correo_factura(invoice, customer, request=None, base_url=None):
     """
@@ -106,7 +112,7 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
     }
 
     html_content = render_to_string(template, context)
-    subject = f"Factura {invoice.number} - {customer.company_name}"
+    subject = f'Factura {invoice.number} - {customer.company_name}'
 
     email = EmailMessage(
         subject=subject,
@@ -114,7 +120,7 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[customer.user.email],
     )
-    email.content_subtype = "html"
+    email.content_subtype = 'html'
 
     if invoice.pdf and invoice.pdf.storage.exists(invoice.pdf.name):
         with invoice.pdf.storage.open(invoice.pdf.name, 'rb') as f:
@@ -122,6 +128,7 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
 
     if subscription and subscription.payment_method == 'qr':
         from django.contrib.staticfiles import finders
+
         qr_path = finders.find('dist/img/QR/QR.png')
         if not qr_path:
             qr_path = os.path.join(settings.STATIC_ROOT, 'dist/img/QR/QR.png')
@@ -134,10 +141,10 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
         invoice.email_sent = True
         invoice.email_error = None
         invoice.save()
-        logger.info(f"Factura {invoice.number} enviada a {customer.user.email}")
+        logger.info(f'Factura {invoice.number} enviada a {customer.user.email}')
         return True
     except Exception as e:
-        logger.error(f"Error enviando factura {invoice.number}: {e}")
+        logger.error(f'Error enviando factura {invoice.number}: {e}')
         invoice.email_sent = False
         invoice.email_error = str(e)
         invoice.save()

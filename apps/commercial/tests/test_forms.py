@@ -1,41 +1,49 @@
 import struct
 import zlib
-from decimal import Decimal
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.utils import timezone
 
+from apps.commercial.forms.certificate import CertificateForm
+from apps.commercial.forms.contract import ContractForm
+from apps.commercial.forms.customer import (
+    CustomerForm,
+    CustomerForUserForm,
+    CustomerUpdateForm,
+)
+from apps.commercial.forms.invoice import InvoiceForm
+from apps.commercial.forms.service import ServiceForm
+from apps.commercial.forms.subscription import (
+    PaymentMethodForm,
+    SubscriptionForm,
+)
+from apps.commercial.models import (
+    Customer,
+    Service,
+    ServiceSubscription,
+)
+
 
 def _make_png():
     """Generate a minimal valid PNG in memory."""
     width, height = 1, 1
     raw = b'\x00' + b'\xff\x00\x00\x00' * width * height
+
     def chunk(chunk_type, data):
         c = chunk_type + data
-        return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
-    ihdr = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
-    return (b'\x89PNG\r\n\x1a\n' +
-            chunk(b'IHDR', ihdr) +
-            chunk(b'IDAT', zlib.compress(raw)) +
-            chunk(b'IEND', b''))
+        return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xFFFFFFFF)
 
-from apps.commercial.forms.certificate import CertificateForm
-from apps.commercial.forms.contract import ContractForm
-from apps.commercial.forms.customer import (
-    CustomerForm, CustomerUpdateForm, CustomerForUserForm,
-)
-from apps.commercial.forms.invoice import InvoiceForm, InvoiceItemForm
-from apps.commercial.forms.service import ServiceForm
-from apps.commercial.forms.subscription import (
-    SubscriptionForm, CertificateUploadForm, PaymentMethodForm,
-)
-from apps.commercial.models import (
-    Certificate, Contract, Customer, Invoice,
-    InvoiceItem, Service, ServiceSubscription,
-)
+    ihdr = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
+    return (
+        b'\x89PNG\r\n\x1a\n'
+        + chunk(b'IHDR', ihdr)
+        + chunk(b'IDAT', zlib.compress(raw))
+        + chunk(b'IEND', b'')
+    )
 
 
 def _make_user(username='testuser', **kwargs):
@@ -131,18 +139,20 @@ class CustomerFormTests(TestCase):
         customer = form.save()
         self.assertIsNotNone(customer.pk)
         self.assertIsNotNone(customer.user)
-        self.assertTrue(
-            User.objects.filter(username='newcliente').exists()
-        )
+        self.assertTrue(User.objects.filter(username='newcliente').exists())
         self.assertEqual(customer.user.email, 'cliente@example.com')
 
     def test_unique_reeup(self):
         user1 = _make_user('u1')
         Customer.objects.create(
-            client_type='juridica', user=user1,
-            company_name='Existing', reeup='123.4.5678',
-            nit='11111111111', account='1111111111111111',
-            address='Addr', phone='11111111',
+            client_type='juridica',
+            user=user1,
+            company_name='Existing',
+            reeup='123.4.5678',
+            nit='11111111111',
+            account='1111111111111111',
+            address='Addr',
+            phone='11111111',
         )
         data = self._valid_juridica_data()
         data['username'] = 'newuser2'
@@ -156,10 +166,14 @@ class CustomerFormTests(TestCase):
     def test_unique_nit(self):
         user1 = _make_user('u1')
         Customer.objects.create(
-            client_type='juridica', user=user1,
-            company_name='Existing', reeup='111.1.1111',
-            nit='11111111111', account='1111111111111111',
-            address='Addr', phone='11111111',
+            client_type='juridica',
+            user=user1,
+            company_name='Existing',
+            reeup='111.1.1111',
+            nit='11111111111',
+            account='1111111111111111',
+            address='Addr',
+            phone='11111111',
         )
         data = self._valid_juridica_data()
         data['nit'] = '11111111111'
@@ -177,10 +191,14 @@ class CustomerUpdateFormTests(TestCase):
     def setUpTestData(cls):
         cls.user = _make_user('updateuser')
         cls.customer = Customer.objects.create(
-            client_type='juridica', user=cls.user,
-            company_name='Old Name', reeup='111.1.1111',
-            nit='11111111111', account='1111111111111111',
-            address='Old address', phone='11111111',
+            client_type='juridica',
+            user=cls.user,
+            company_name='Old Name',
+            reeup='111.1.1111',
+            nit='11111111111',
+            account='1111111111111111',
+            address='Old address',
+            phone='11111111',
         )
 
     def test_valid_update(self):
@@ -234,10 +252,13 @@ class ServiceFormTests(TestCase):
 
     def test_public_service_valid(self):
         pdf = SimpleUploadedFile(
-            'doc.pdf', b'PDF', content_type='application/pdf',
+            'doc.pdf',
+            b'PDF',
+            content_type='application/pdf',
         )
         form = ServiceForm(
-            user=self.user, data={
+            user=self.user,
+            data={
                 'title': 'Public Svc',
                 'summary': 'A public service',
                 'service_type': 'public',
@@ -248,13 +269,18 @@ class ServiceFormTests(TestCase):
 
     def test_public_service_rejects_image(self):
         pdf = SimpleUploadedFile(
-            'doc.pdf', b'PDF', content_type='application/pdf',
+            'doc.pdf',
+            b'PDF',
+            content_type='application/pdf',
         )
         image = SimpleUploadedFile(
-            'img.png', b'PNG', content_type='image/png',
+            'img.png',
+            b'PNG',
+            content_type='image/png',
         )
         form = ServiceForm(
-            user=self.user, data={
+            user=self.user,
+            data={
                 'title': 'Bad Public',
                 'summary': 'Should fail',
                 'service_type': 'public',
@@ -266,7 +292,8 @@ class ServiceFormTests(TestCase):
 
     def test_public_service_requires_pdf(self):
         form = ServiceForm(
-            user=self.user, data={
+            user=self.user,
+            data={
                 'title': 'No PDF',
                 'summary': 'Should fail',
                 'service_type': 'public',
@@ -277,10 +304,13 @@ class ServiceFormTests(TestCase):
 
     def test_commercial_service_valid(self):
         image = SimpleUploadedFile(
-            'img.png', _make_png(), content_type='image/png',
+            'img.png',
+            _make_png(),
+            content_type='image/png',
         )
         form = ServiceForm(
-            user=self.user, data={
+            user=self.user,
+            data={
                 'title': 'Comm Svc',
                 'summary': 'A commercial service',
                 'service_type': 'commercial',
@@ -293,10 +323,13 @@ class ServiceFormTests(TestCase):
 
     def test_commercial_service_requires_code(self):
         image = SimpleUploadedFile(
-            'img.png', b'PNG', content_type='image/png',
+            'img.png',
+            b'PNG',
+            content_type='image/png',
         )
         form = ServiceForm(
-            user=self.user, data={
+            user=self.user,
+            data={
                 'title': 'No Code',
                 'summary': 'Should fail',
                 'service_type': 'commercial',
@@ -308,10 +341,13 @@ class ServiceFormTests(TestCase):
 
     def test_commercial_service_requires_price(self):
         image = SimpleUploadedFile(
-            'img.png', b'PNG', content_type='image/png',
+            'img.png',
+            b'PNG',
+            content_type='image/png',
         )
         form = ServiceForm(
-            user=self.user, data={
+            user=self.user,
+            data={
                 'title': 'No Price',
                 'summary': 'Should fail',
                 'service_type': 'commercial',
@@ -324,13 +360,18 @@ class ServiceFormTests(TestCase):
 
     def test_commercial_service_rejects_pdf(self):
         pdf = SimpleUploadedFile(
-            'doc.pdf', b'PDF', content_type='application/pdf',
+            'doc.pdf',
+            b'PDF',
+            content_type='application/pdf',
         )
         image = SimpleUploadedFile(
-            'img.png', b'PNG', content_type='image/png',
+            'img.png',
+            b'PNG',
+            content_type='image/png',
         )
         form = ServiceForm(
-            user=self.user, data={
+            user=self.user,
+            data={
                 'title': 'Bad Comm',
                 'summary': 'Should fail',
                 'service_type': 'commercial',
@@ -348,23 +389,30 @@ class SubscriptionFormTests(TestCase):
     def setUpTestData(cls):
         cls.user = _make_user('subform')
         cls.customer = Customer.objects.create(
-            client_type='natural', user=cls.user,
-            address='Addr', phone='12345678',
+            client_type='natural',
+            user=cls.user,
+            address='Addr',
+            phone='12345678',
             account='1234567890123456',
         )
         cls.service = Service.objects.create(
-            user=cls.user, title='Comm Svc',
-            summary='Commercial', service_type='commercial',
-            code='C010', price=Decimal('60.00'),
+            user=cls.user,
+            title='Comm Svc',
+            summary='Commercial',
+            service_type='commercial',
+            code='C010',
+            price=Decimal('60.00'),
         )
 
     def test_period_1m_calculates_end_date(self):
-        form = SubscriptionForm(data={
-            'customer': self.customer.pk,
-            'service': self.service.pk,
-            'period': '1m',
-            'payment_status': 'requested',
-        })
+        form = SubscriptionForm(
+            data={
+                'customer': self.customer.pk,
+                'service': self.service.pk,
+                'period': '1m',
+                'payment_status': 'requested',
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
         sub = form.save(commit=False)
         self.assertIsNotNone(sub.start_date)
@@ -373,24 +421,28 @@ class SubscriptionFormTests(TestCase):
         self.assertEqual(delta, 30)
 
     def test_period_3m_calculates_end_date(self):
-        form = SubscriptionForm(data={
-            'customer': self.customer.pk,
-            'service': self.service.pk,
-            'period': '3m',
-            'payment_status': 'requested',
-        })
+        form = SubscriptionForm(
+            data={
+                'customer': self.customer.pk,
+                'service': self.service.pk,
+                'period': '3m',
+                'payment_status': 'requested',
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
         sub = form.save(commit=False)
         delta = (sub.end_date - sub.start_date).days
         self.assertEqual(delta, 90)
 
     def test_period_1y_calculates_end_date(self):
-        form = SubscriptionForm(data={
-            'customer': self.customer.pk,
-            'service': self.service.pk,
-            'period': '1y',
-            'payment_status': 'requested',
-        })
+        form = SubscriptionForm(
+            data={
+                'customer': self.customer.pk,
+                'service': self.service.pk,
+                'period': '1y',
+                'payment_status': 'requested',
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
         sub = form.save(commit=False)
         delta = (sub.end_date - sub.start_date).days
@@ -399,14 +451,16 @@ class SubscriptionFormTests(TestCase):
     def test_custom_period_validates_dates(self):
         start = timezone.now()
         end = start - timedelta(days=1)
-        form = SubscriptionForm(data={
-            'customer': self.customer.pk,
-            'service': self.service.pk,
-            'period': 'custom',
-            'payment_status': 'requested',
-            'start_date': start.strftime('%Y-%m-%dT%H:%M'),
-            'end_date': end.strftime('%Y-%m-%dT%H:%M'),
-        })
+        form = SubscriptionForm(
+            data={
+                'customer': self.customer.pk,
+                'service': self.service.pk,
+                'period': 'custom',
+                'payment_status': 'requested',
+                'start_date': start.strftime('%Y-%m-%dT%H:%M'),
+                'end_date': end.strftime('%Y-%m-%dT%H:%M'),
+            }
+        )
         self.assertFalse(form.is_valid())
 
 
@@ -415,37 +469,47 @@ class ContractFormTests(TestCase):
     def setUpTestData(cls):
         cls.user = _make_user('conform')
         customer = Customer.objects.create(
-            client_type='natural', user=cls.user,
-            address='Addr', phone='12345678',
+            client_type='natural',
+            user=cls.user,
+            address='Addr',
+            phone='12345678',
             account='1234567890123456',
         )
         service = Service.objects.create(
-            user=cls.user, title='Svc',
-            summary='Svc', service_type='commercial',
-            code='C020', price=Decimal('70.00'),
+            user=cls.user,
+            title='Svc',
+            summary='Svc',
+            service_type='commercial',
+            code='C020',
+            price=Decimal('70.00'),
         )
         cls.sub = ServiceSubscription.objects.create(
-            customer=customer, service=service,
+            customer=customer,
+            service=service,
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
         )
 
     def test_valid_contract_form(self):
-        form = ContractForm(data={
-            'subscription': self.sub.pk,
-            'number': 'CONT-001',
-            'date': date.today().isoformat(),
-            'commercial_registry': 'REG-001',
-        })
+        form = ContractForm(
+            data={
+                'subscription': self.sub.pk,
+                'number': 'CONT-001',
+                'date': date.today().isoformat(),
+                'commercial_registry': 'REG-001',
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_contract_saves(self):
-        form = ContractForm(data={
-            'subscription': self.sub.pk,
-            'number': 'CONT-002',
-            'date': date.today().isoformat(),
-            'commercial_registry': 'REG-002',
-        })
+        form = ContractForm(
+            data={
+                'subscription': self.sub.pk,
+                'number': 'CONT-002',
+                'date': date.today().isoformat(),
+                'commercial_registry': 'REG-002',
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
         contract = form.save()
         self.assertIsNotNone(contract.pk)
@@ -456,24 +520,32 @@ class CertificateFormTests(TestCase):
     def setUpTestData(cls):
         cls.user = _make_user('certform')
         customer = Customer.objects.create(
-            client_type='natural', user=cls.user,
-            address='Addr', phone='12345678',
+            client_type='natural',
+            user=cls.user,
+            address='Addr',
+            phone='12345678',
             account='1234567890123456',
         )
         service = Service.objects.create(
-            user=cls.user, title='Svc',
-            summary='Svc', service_type='commercial',
-            code='C030', price=Decimal('80.00'),
+            user=cls.user,
+            title='Svc',
+            summary='Svc',
+            service_type='commercial',
+            code='C030',
+            price=Decimal('80.00'),
         )
         cls.sub = ServiceSubscription.objects.create(
-            customer=customer, service=service,
+            customer=customer,
+            service=service,
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
         )
 
     def test_valid_certificate_form(self):
         pdf = SimpleUploadedFile(
-            'cert.pdf', b'PDF', content_type='application/pdf',
+            'cert.pdf',
+            b'PDF',
+            content_type='application/pdf',
         )
         form = CertificateForm(
             data={'subscription': self.sub.pk},
@@ -484,11 +556,13 @@ class CertificateFormTests(TestCase):
 
 class PaymentMethodFormTests(TestCase):
     def test_valid_form(self):
-        form = PaymentMethodForm(data={
-            'payment_method': 'qr',
-            'start_date': date.today().isoformat(),
-            'end_date': (date.today() + timedelta(days=30)).isoformat(),
-        })
+        form = PaymentMethodForm(
+            data={
+                'payment_method': 'qr',
+                'start_date': date.today().isoformat(),
+                'end_date': (date.today() + timedelta(days=30)).isoformat(),
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_requires_dates(self):
@@ -503,15 +577,19 @@ class InvoiceFormTests(TestCase):
     def setUpTestData(cls):
         cls.user = _make_user('invform')
         cls.customer = Customer.objects.create(
-            client_type='natural', user=cls.user,
-            address='Addr', phone='12345678',
+            client_type='natural',
+            user=cls.user,
+            address='Addr',
+            phone='12345678',
             account='1234567890123456',
         )
 
     def test_invoice_form_requires_customer(self):
-        form = InvoiceForm(data={
-            'start_date': date.today().isoformat(),
-            'end_date': (date.today() + timedelta(days=30)).isoformat(),
-        })
+        form = InvoiceForm(
+            data={
+                'start_date': date.today().isoformat(),
+                'end_date': (date.today() + timedelta(days=30)).isoformat(),
+            }
+        )
         self.assertFalse(form.is_valid())
         self.assertIn('customer', form.errors)

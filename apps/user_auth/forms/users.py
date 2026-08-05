@@ -6,8 +6,8 @@ from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
-from apps.user_auth.models import Profile
 from apps.commercial.models import Customer, ServiceSubscription
+from apps.user_auth.models import Profile
 
 
 class UserForm(UserCreationForm):
@@ -19,13 +19,23 @@ class UserForm(UserCreationForm):
 class UserUpdateForm(UserChangeForm):
     password = forms.CharField(widget=forms.PasswordInput(), required=False)
     newsletter = forms.BooleanField(
-        required=False, label="Recibe novedades por correo",
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        required=False,
+        label='Recibe novedades por correo',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active', 'is_superuser', 'groups']
+        fields = [
+            'username',
+            'first_name',
+            'last_name',
+            'email',
+            'is_staff',
+            'is_active',
+            'is_superuser',
+            'groups',
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -45,67 +55,98 @@ class UserUpdateForm(UserChangeForm):
 
 class CustomerSignUpForm(UserCreationForm):
     first_name = forms.CharField(
-        max_length=30, required=True, label="Nombre",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Juan'})
+        max_length=30,
+        required=True,
+        label='Nombre',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Juan'}),
     )
     last_name = forms.CharField(
-        max_length=30, required=True, label="Apellido",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pérez'})
+        max_length=30,
+        required=True,
+        label='Apellido',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pérez'}),
     )
     phone = forms.CharField(
-        max_length=8, required=True, label="Número de Teléfono",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '51234567'})
+        max_length=8,
+        required=True,
+        label='Número de Teléfono',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '51234567'}),
     )
     email = forms.EmailField(
-        required=True, label="Correo electrónico",
-        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@empresa.com'})
+        required=True,
+        label='Correo electrónico',
+        widget=forms.EmailInput(
+            attrs={'class': 'form-control', 'placeholder': 'ejemplo@empresa.com'}
+        ),
     )
     client_type = forms.ChoiceField(
         choices=Customer.ClientType.choices,
         initial=Customer.ClientType.JURIDICA,
-        required=True, label="Tipo de Cliente",
-        widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
+        required=True,
+        label='Tipo de Cliente',
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
     )
     company_name = forms.CharField(
-        max_length=100, required=False, label="Nombre de la Empresa o Razón Social",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mi Empresa S.A.'})
+        max_length=100,
+        required=False,
+        label='Nombre de la Empresa o Razón Social',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Mi Empresa S.A.'}),
     )
     reeup = forms.CharField(
-        max_length=12, required=False, label="REEUP",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '211.0.6749'})
+        max_length=12,
+        required=False,
+        label='REEUP',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '211.0.6749'}),
     )
     nit = forms.CharField(
-        max_length=11, required=False, label="NIT",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '12345678901'})
+        max_length=11,
+        required=False,
+        label='NIT',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '12345678901'}),
     )
     account = forms.CharField(
-        max_length=16, required=True, label="Cuenta Bancaria",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1234567890123456'})
+        max_length=16,
+        required=True,
+        label='Cuenta Bancaria',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1234567890123456'}),
     )
     agency_bank = forms.CharField(
-        max_length=100, required=True, label="Agencia Bancaria",
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'BPA, BFI, etc.'})
+        max_length=100,
+        required=True,
+        label='Agencia Bancaria',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'BPA, BFI, etc.'}),
     )
     address = forms.CharField(
-        required=True, label="Dirección",
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Av. Principal 123'})
+        required=True,
+        label='Dirección',
+        widget=forms.Textarea(
+            attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Av. Principal 123'}
+        ),
     )
     accept_terms = forms.BooleanField(
-        required=True, label="Acepto los Términos y Condiciones",
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        required=True,
+        label='Acepto los Términos y Condiciones',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
     newsletter = forms.BooleanField(
-        required=False, label="Deseo recibir novedades por correo electrónico",
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+        required=False,
+        label='Deseo recibir novedades por correo electrónico',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password1', 'password2', 'first_name', 'last_name']
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'usuario_empresa'}),
-            'password1': forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': '********'}),
-            'password2': forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': '********'}),
+            'username': forms.TextInput(
+                attrs={'class': 'form-control', 'placeholder': 'usuario_empresa'}
+            ),
+            'password1': forms.PasswordInput(
+                attrs={'class': 'form-control', 'placeholder': '********'}
+            ),
+            'password2': forms.PasswordInput(
+                attrs={'class': 'form-control', 'placeholder': '********'}
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -126,19 +167,19 @@ class CustomerSignUpForm(UserCreationForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
-            raise ValidationError("Este correo electrónico ya está registrado.")
+            raise ValidationError('Este correo electrónico ya está registrado.')
         return email
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
         if User.objects.filter(username=username).exists():
-            raise ValidationError("Este nombre de usuario ya existe.")
+            raise ValidationError('Este nombre de usuario ya existe.')
         return username
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if not re.match(r'^\d{8}$', phone):
-            raise ValidationError("El teléfono debe tener exactamente 8 dígitos numéricos.")
+            raise ValidationError('El teléfono debe tener exactamente 8 dígitos numéricos.')
         return phone
 
     def clean_reeup(self):
@@ -146,11 +187,11 @@ class CustomerSignUpForm(UserCreationForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not reeup:
-                raise ValidationError("El REEUP es obligatorio para personas jurídicas.")
+                raise ValidationError('El REEUP es obligatorio para personas jurídicas.')
             if not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
-                raise ValidationError("El REEUP debe tener el formato ###.#.#### o ###.##.#####")
+                raise ValidationError('El REEUP debe tener el formato ###.#.#### o ###.##.#####')
             if Customer.objects.filter(reeup=reeup).exists():
-                raise ValidationError("Este código REEUP ya está registrado.")
+                raise ValidationError('Este código REEUP ya está registrado.')
         return reeup
 
     def clean_nit(self):
@@ -158,17 +199,17 @@ class CustomerSignUpForm(UserCreationForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not nit:
-                raise ValidationError("El NIT es obligatorio para personas jurídicas.")
+                raise ValidationError('El NIT es obligatorio para personas jurídicas.')
             if not re.match(r'^\d{11}$', nit):
-                raise ValidationError("El NIT debe tener exactamente 11 dígitos numéricos.")
+                raise ValidationError('El NIT debe tener exactamente 11 dígitos numéricos.')
             if Customer.objects.filter(nit=nit).exists():
-                raise ValidationError("Este NIT ya está registrado.")
+                raise ValidationError('Este NIT ya está registrado.')
         return nit
 
     def clean_account(self):
         account = self.cleaned_data.get('account')
         if not re.match(r'^\d{16}$', account):
-            raise ValidationError("La cuenta bancaria debe tener exactamente 16 dígitos numéricos.")
+            raise ValidationError('La cuenta bancaria debe tener exactamente 16 dígitos numéricos.')
         return account
 
     def save(self, commit=True):
@@ -189,8 +230,7 @@ class CustomerSignUpForm(UserCreationForm):
             if created:
                 subscription_content_type = ContentType.objects.get_for_model(ServiceSubscription)
                 view_perm = Permission.objects.get(
-                    content_type=subscription_content_type,
-                    codename='view_subscription'
+                    content_type=subscription_content_type, codename='view_subscription'
                 )
                 clientes_group.permissions.add(view_perm)
             user.groups.add(clientes_group)

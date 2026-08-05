@@ -1,0 +1,45 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+exclude = [
+    ".venv",
+    "static",
+    "staticfiles",
+    "media",
+    "logs",
+    "*/migrations/*",
+    "schema.yml",
+    "spec",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "N",
+    "UP",
+    "B",
+    "SIM",
+]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+# Decodificadores de formatos WMO: nombres de función/variable siguen el spec
+# meteorológico (FM12, iW, get_ddViento) y comentarios de spec largos.
+# Se mantienen tal cual por legibilidad con el estándar WMO.
+"apps/api/data/*.py" = ["E501", "N802", "N803", "N806", "F403", "F405"]
+# Notación meteorológica estándar (T, Td, RM, LM, MW) en generadores de gráficos.
+"apps/home/data/plot_generators.py" = ["N806"]
+# Strings SVG inline de iconos de acción (no rompibles sin reescribir templates).
+"apps/core/templatetags/utils_filters.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.bandit]
+exclude_dirs = [".venv", "static", "staticfiles", "media", "*/migrations/*"]
+targets = ["apps", "config", "manage.py"]

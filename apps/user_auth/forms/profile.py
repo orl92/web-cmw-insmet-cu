@@ -1,31 +1,61 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from apps.user_auth.models import Profile
 from apps.commercial.models import Customer
+from apps.user_auth.models import Profile
 
 
 class ProfileForm(forms.ModelForm):
-    first_name = forms.CharField(max_length=30, required=True, label="Nombre")
-    last_name = forms.CharField(max_length=30, required=True, label="Apellido")
-    email = forms.EmailField(required=True, label="Correo electrónico")
+    first_name = forms.CharField(max_length=30, required=True, label='Nombre')
+    last_name = forms.CharField(max_length=30, required=True, label='Apellido')
+    email = forms.EmailField(required=True, label='Correo electrónico')
 
-    company_name = forms.CharField(max_length=100, required=False, label="Nombre de la Empresa",
-                                   widget=forms.TextInput(attrs={'class': 'form-control'}))
-    reeup = forms.CharField(max_length=12, required=False, label="REEUP",
-                            widget=forms.TextInput(attrs={'class': 'form-control'}))
-    nit = forms.CharField(max_length=11, required=False, label="NIT",
-                          widget=forms.TextInput(attrs={'class': 'form-control'}))
-    account = forms.CharField(max_length=16, required=False, label="Cuenta Bancaria",
-                              widget=forms.TextInput(attrs={'class': 'form-control'}))
-    agency_bank = forms.CharField(max_length=100, required=False, label="Agencia Bancaria",
-                                  widget=forms.TextInput(attrs={'class': 'form-control'}))
-    address = forms.CharField(required=False, label="Dirección",
-                              widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}))
-    phone = forms.CharField(max_length=8, required=False, label="Número de Teléfono",
-                            widget=forms.TextInput(attrs={'class': 'form-control'}))
-    newsletter = forms.BooleanField(required=False, label="Recibir novedades por email",
-                                    widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    company_name = forms.CharField(
+        max_length=100,
+        required=False,
+        label='Nombre de la Empresa',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    reeup = forms.CharField(
+        max_length=12,
+        required=False,
+        label='REEUP',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    nit = forms.CharField(
+        max_length=11,
+        required=False,
+        label='NIT',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    account = forms.CharField(
+        max_length=16,
+        required=False,
+        label='Cuenta Bancaria',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    agency_bank = forms.CharField(
+        max_length=100,
+        required=False,
+        label='Agencia Bancaria',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    address = forms.CharField(
+        required=False,
+        label='Dirección',
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+    )
+    phone = forms.CharField(
+        max_length=8,
+        required=False,
+        label='Número de Teléfono',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
+    newsletter = forms.BooleanField(
+        required=False,
+        label='Recibir novedades por email',
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+    )
 
     class Meta:
         model = Profile
@@ -61,9 +91,12 @@ class ProfileForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         user = self.instance.user
-        if user is not None and user.pk is not None:
-            if User.objects.filter(email=email).exclude(pk=user.pk).exists():
-                raise forms.ValidationError("Este correo electrónico ya está registrado.")
+        if (
+            user is not None
+            and user.pk is not None
+            and User.objects.filter(email=email).exclude(pk=user.pk).exists()
+        ):
+            raise forms.ValidationError('Este correo electrónico ya está registrado.')
         return email
 
     def _run_validators(self, field_name, value):
@@ -98,7 +131,7 @@ class ProfileForm(forms.ModelForm):
         profile = super().save(commit=False)
 
         if profile.user_id is None:
-            raise ValueError("El perfil no tiene un usuario asociado.")
+            raise ValueError('El perfil no tiene un usuario asociado.')
 
         user = profile.user
         user.first_name = self.cleaned_data['first_name']

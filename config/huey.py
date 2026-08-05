@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from huey import SqliteHuey
 
 from config import settings

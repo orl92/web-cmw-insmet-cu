@@ -7,15 +7,16 @@ from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
-    UserPassesTestMixin)
+    UserPassesTestMixin,
+)
 from django.contrib.auth.models import Group, Permission
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
+from apps.core.utils import log_action
 from apps.user_auth.forms.groups import GroupForm
 from apps.user_auth.models import GroupProfile, PermissionProfile
-from apps.core.utils import log_action
 
 
 def _get_grouped_permissions(group=None, permissions=None):
@@ -23,14 +24,19 @@ def _get_grouped_permissions(group=None, permissions=None):
     merge = getattr(settings, 'GROUP_PERMISSION_APP_MERGE', {})
     merge_models = getattr(settings, 'GROUP_PERMISSION_MODEL_MERGE', {})
 
-    qs = Permission.objects.filter(
-        content_type__app_label__in=[
-            cfg.label for cfg in apps.get_app_configs()
-            if cfg.label not in excluded
-            and not cfg.name.startswith('django.contrib.')
-            and cfg.get_models()
-        ]
-    ).select_related('content_type').order_by('content_type__app_label', 'content_type__model', 'codename')
+    qs = (
+        Permission.objects.filter(
+            content_type__app_label__in=[
+                cfg.label
+                for cfg in apps.get_app_configs()
+                if cfg.label not in excluded
+                and not cfg.name.startswith('django.contrib.')
+                and cfg.get_models()
+            ]
+        )
+        .select_related('content_type')
+        .order_by('content_type__app_label', 'content_type__model', 'codename')
+    )
 
     grouped = OrderedDict()
     if group is not None:
@@ -53,7 +59,11 @@ def _get_grouped_permissions(group=None, permissions=None):
 
         try:
             model_class = perm.content_type.model_class()
-            model_name = model_class._meta.verbose_name if model_class else perm.content_type.model.replace('_', ' ').title()
+            model_name = (
+                model_class._meta.verbose_name
+                if model_class
+                else perm.content_type.model.replace('_', ' ').title()
+            )
         except AttributeError:
             model_name = perm.content_type.model.replace('_', ' ').title()
 
@@ -73,7 +83,10 @@ def _get_grouped_permissions(group=None, permissions=None):
 
         if model_name not in grouped[app_label]['models']:
             grouped[app_label]['models'][model_name] = {
-                'view': None, 'add': None, 'change': None, 'delete': None,
+                'view': None,
+                'add': None,
+                'change': None,
+                'delete': None,
             }
 
         if perm_type in grouped[app_label]['models'][model_name]:
@@ -121,11 +134,10 @@ class GroupCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             user=self.request.user,
             obj=group,
             action_flag=ADDITION,
-            message=f'Se creó un nuevo grupo {group.name}.')
-
-        messages.success(
-            self.request, 'El grupo ha sido creado con éxito.', extra_tags='success'
+            message=f'Se creó un nuevo grupo {group.name}.',
         )
+
+        messages.success(self.request, 'El grupo ha sido creado con éxito.', extra_tags='success')
         return redirect('user_auth:groups_list')
 
     def get_context_data(self, **kwargs):
@@ -158,12 +170,12 @@ class GroupUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTes
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f'Se actualizó el grupo {self.object.name}.')
+            message=f'Se actualizó el grupo {self.object.name}.',
+        )
 
         messages.success(
-            self.request,
-            'El grupo ha sido actualizado con éxito.',
-            extra_tags='warning')
+            self.request, 'El grupo ha sido actualizado con éxito.', extra_tags='warning'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -179,7 +191,9 @@ class GroupUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTes
 
     def test_func(self):
         group = self.get_object()
-        if group.name == 'Clientes' and 'Clientes' in self.request.user.groups.values_list('name', flat=True):
+        if group.name == 'Clientes' and 'Clientes' in self.request.user.groups.values_list(
+            'name', flat=True
+        ):
             return False
         return self.request.user.is_superuser or self.request.user.has_perm('auth.change_group')
 
@@ -196,7 +210,7 @@ class GroupDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=request.user,
             obj=group,
             action_flag=DELETION,
-            message=f'Se eliminó el grupo {group_name}.'
+            message=f'Se eliminó el grupo {group_name}.',
         )
         group.delete()
         messages.success(request, f'Grupo {group_name} se ha eliminado correctamente.')

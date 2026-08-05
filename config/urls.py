@@ -23,7 +23,6 @@ from django.urls import include, path
 from apps.core.utils import My400View, My403View, My404View, My500View
 
 urlpatterns = [
-
     path('admin/', admin.site.urls),
     path('api/', include('apps.api.urls')),
     path('commercial/', include('apps.commercial.urls')),
@@ -32,7 +31,6 @@ urlpatterns = [
     path('accounts/', include('apps.user_auth.urls')),
     path('dashboard/', include('apps.dashboard.urls')),
     path('publications/', include('apps.publications.urls')),
-
     path('', include('apps.home.urls')),
 ]
 

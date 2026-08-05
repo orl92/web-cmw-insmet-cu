@@ -16,7 +16,11 @@ from apps.meteo.models import Forecasts, Warning
 
 def _region_temp(f, region_key, period):
     data = getattr(f, region_key)
-    return float(data[period]['temp']) if data and data.get(period) and data[period].get('temp') else 0.0
+    return (
+        float(data[period]['temp'])
+        if data and data.get(period) and data[period].get('temp')
+        else 0.0
+    )
 
 
 def serialize_sub(sub):
@@ -27,17 +31,20 @@ def serialize_sub(sub):
     }
 
 
-paid_direct = Exists(ServiceSubscription.objects.filter(
-    id=OuterRef('subscription_id'),
-    payment_status='paid', record_active=True
-))
+paid_direct = Exists(
+    ServiceSubscription.objects.filter(
+        id=OuterRef('subscription_id'), payment_status='paid', record_active=True
+    )
+)
 
 
-paid_via_items = Exists(InvoiceItem.objects.filter(
-    invoice_id=OuterRef('id'),
-    subscription__payment_status='paid',
-    subscription__record_active=True
-))
+paid_via_items = Exists(
+    InvoiceItem.objects.filter(
+        invoice_id=OuterRef('id'),
+        subscription__payment_status='paid',
+        subscription__record_active=True,
+    )
+)
 
 
 class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -68,21 +75,30 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         start_date = timezone.now().date() - timezone.timedelta(days=days)
 
-        context.update({
-            'title': 'Dashboard',
-            'parent': '',
-            'segment': 'dashboard',
-            'is_superuser': user.is_superuser,
-            'selected_range': time_range,
-        })
+        context.update(
+            {
+                'title': 'Dashboard',
+                'parent': '',
+                'segment': 'dashboard',
+                'is_superuser': user.is_superuser,
+                'selected_range': time_range,
+            }
+        )
 
         context['show_alerts'] = user.has_perm('meteo.view_warning')
         context['show_forecast'] = user.has_perm('meteo.view_forecast')
-        context['is_client'] = user.groups.filter(name='Clientes').exists() and not user.is_superuser
-        context['show_commercial'] = any([
-            user.has_perm('commercial.view_subscription'),
-            user.has_perm('commercial.view_invoice'),
-        ]) and not context['is_client']
+        context['is_client'] = (
+            user.groups.filter(name='Clientes').exists() and not user.is_superuser
+        )
+        context['show_commercial'] = (
+            any(
+                [
+                    user.has_perm('commercial.view_subscription'),
+                    user.has_perm('commercial.view_invoice'),
+                ]
+            )
+            and not context['is_client']
+        )
 
         now = timezone.now()
 
@@ -90,25 +106,20 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             try:
                 customer = Customer.objects.get(user=user)
                 subs = ServiceSubscription.objects.filter(customer=customer, record_active=True)
-                context['client_active_subs'] = subs.filter(
-                    payment_status='paid', end_date__gt=now
-                )
-                context['client_pending_subs'] = subs.filter(
-                    payment_status='pending'
-                )
+                context['client_active_subs'] = subs.filter(payment_status='paid', end_date__gt=now)
+                context['client_pending_subs'] = subs.filter(payment_status='pending')
                 context['client_expired_subs'] = subs.filter(
                     payment_status='paid', end_date__lte=now
                 )
                 context['client_expiring_soon'] = subs.filter(
-                    payment_status='paid', end_date__gt=now,
-                    end_date__lte=now + timezone.timedelta(days=30)
+                    payment_status='paid',
+                    end_date__gt=now,
+                    end_date__lte=now + timezone.timedelta(days=30),
                 )
-                context['client_requested_subs'] = subs.filter(
-                    payment_status='requested'
-                )
-                context['client_invoices'] = Invoice.objects.filter(
-                    customer=customer
-                ).order_by('-issue_date')[:5]
+                context['client_requested_subs'] = subs.filter(payment_status='requested')
+                context['client_invoices'] = Invoice.objects.filter(customer=customer).order_by(
+                    '-issue_date'
+                )[:5]
             except Customer.DoesNotExist:
                 context['client_active_subs'] = ServiceSubscription.objects.none()
                 context['client_pending_subs'] = ServiceSubscription.objects.none()
@@ -119,13 +130,13 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         if context['show_forecast']:
             try:
-                context['latest_forecast'] = Forecasts.objects.prefetch_related('regions', 'extended_days').latest('date')
+                context['latest_forecast'] = Forecasts.objects.prefetch_related(
+                    'regions', 'extended_days'
+                ).latest('date')
             except ObjectDoesNotExist:
                 context['latest_forecast'] = None
 
-            forecasts = Forecasts.objects.filter(
-                date__gte=start_date
-            ).order_by('date')
+            forecasts = Forecasts.objects.filter(date__gte=start_date).order_by('date')
 
             total_forecasts = forecasts.count()
             if total_forecasts > 30:
@@ -139,24 +150,44 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             if context['has_forecasts']:
                 forecasts_list = list(forecasts)
 
-                context['temperature_labels'] = json.dumps([f.date.strftime('%d/%m') for f in forecasts_list])
-                context['max_temperatures_north'] = json.dumps([_region_temp(f, 'north', 'afternoon') for f in forecasts_list])
-                context['min_temperatures_north'] = json.dumps([_region_temp(f, 'north', 'night') for f in forecasts_list])
-                context['max_temperatures_south'] = json.dumps([_region_temp(f, 'south', 'afternoon') for f in forecasts_list])
-                context['min_temperatures_south'] = json.dumps([_region_temp(f, 'south', 'night') for f in forecasts_list])
-                context['max_temperatures_inland'] = json.dumps([_region_temp(f, 'interior', 'afternoon') for f in forecasts_list])
-                context['min_temperatures_inland'] = json.dumps([_region_temp(f, 'interior', 'night') for f in forecasts_list])
+                context['temperature_labels'] = json.dumps(
+                    [f.date.strftime('%d/%m') for f in forecasts_list]
+                )
+                context['max_temperatures_north'] = json.dumps(
+                    [_region_temp(f, 'north', 'afternoon') for f in forecasts_list]
+                )
+                context['min_temperatures_north'] = json.dumps(
+                    [_region_temp(f, 'north', 'night') for f in forecasts_list]
+                )
+                context['max_temperatures_south'] = json.dumps(
+                    [_region_temp(f, 'south', 'afternoon') for f in forecasts_list]
+                )
+                context['min_temperatures_south'] = json.dumps(
+                    [_region_temp(f, 'south', 'night') for f in forecasts_list]
+                )
+                context['max_temperatures_inland'] = json.dumps(
+                    [_region_temp(f, 'interior', 'afternoon') for f in forecasts_list]
+                )
+                context['min_temperatures_inland'] = json.dumps(
+                    [_region_temp(f, 'interior', 'night') for f in forecasts_list]
+                )
 
         if context['show_alerts']:
-            latest_early = Warning.objects.filter(
-                warning_type='early', valid_until__gte=now
-            ).order_by('-date').first()
-            latest_cyclone = Warning.objects.filter(
-                warning_type='tropical_cyclone', valid_until__gte=now
-            ).order_by('-date').first()
-            latest_storm = Warning.objects.filter(
-                warning_type='storm', valid_until__gte=now
-            ).order_by('-date').first()
+            latest_early = (
+                Warning.objects.filter(warning_type='early', valid_until__gte=now)
+                .order_by('-date')
+                .first()
+            )
+            latest_cyclone = (
+                Warning.objects.filter(warning_type='tropical_cyclone', valid_until__gte=now)
+                .order_by('-date')
+                .first()
+            )
+            latest_storm = (
+                Warning.objects.filter(warning_type='storm', valid_until__gte=now)
+                .order_by('-date')
+                .first()
+            )
 
             context['latest_alerts'] = {
                 'early_warnings': [latest_early] if latest_early else [],
@@ -188,28 +219,31 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             income_start = month_start - timezone.timedelta(days=num_months * 30)
 
-            billed_qs = Invoice.objects.filter(
-                is_cancelled=False,
-                issue_date__gte=income_start
-            ).values('issue_date__year', 'issue_date__month').annotate(
-                total=Sum('amount')
-            ).order_by('issue_date__year', 'issue_date__month')
+            billed_qs = (
+                Invoice.objects.filter(is_cancelled=False, issue_date__gte=income_start)
+                .values('issue_date__year', 'issue_date__month')
+                .annotate(total=Sum('amount'))
+                .order_by('issue_date__year', 'issue_date__month')
+            )
 
-            paid_qs = Invoice.objects.filter(
-                is_cancelled=False,
-                issue_date__gte=income_start
-            ).filter(
-                paid_direct | paid_via_items
-            ).values('issue_date__year', 'issue_date__month').annotate(
-                total=Sum('amount')
-            ).order_by('issue_date__year', 'issue_date__month')
+            paid_qs = (
+                Invoice.objects.filter(is_cancelled=False, issue_date__gte=income_start)
+                .filter(paid_direct | paid_via_items)
+                .values('issue_date__year', 'issue_date__month')
+                .annotate(total=Sum('amount'))
+                .order_by('issue_date__year', 'issue_date__month')
+            )
 
             billed_map = {}
             paid_map = {}
             for entry in billed_qs:
-                billed_map[(entry['issue_date__year'], entry['issue_date__month'])] = float(entry['total'])
+                billed_map[(entry['issue_date__year'], entry['issue_date__month'])] = float(
+                    entry['total']
+                )
             for entry in paid_qs:
-                paid_map[(entry['issue_date__year'], entry['issue_date__month'])] = float(entry['total'])
+                paid_map[(entry['issue_date__year'], entry['issue_date__month'])] = float(
+                    entry['total']
+                )
 
             months_labels = []
             billed_data = []
@@ -220,7 +254,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 while m < 1:
                     m += 12
                     y -= 1
-                months_labels.append(f"{m:02d}/{y}")
+                months_labels.append(f'{m:02d}/{y}')
                 billed_data.append(billed_map.get((y, m), 0))
                 paid_data.append(paid_map.get((y, m), 0))
 
@@ -244,39 +278,54 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 payment_status='paid',
                 end_date__gt=now,
                 end_date__lte=now + timezone.timedelta(days=30),
-                record_active=True
+                record_active=True,
             ).count()
 
             month_end = (month_start + timezone.timedelta(days=32)).replace(day=1)
-            month_income_paid = Invoice.objects.filter(
-                is_cancelled=False,
-                issue_date__gte=month_start,
-                issue_date__lt=month_end
-            ).filter(
-                paid_direct | paid_via_items
-            ).aggregate(total=Sum('amount'))['total'] or 0
+            month_income_paid = (
+                Invoice.objects.filter(
+                    is_cancelled=False, issue_date__gte=month_start, issue_date__lt=month_end
+                )
+                .filter(paid_direct | paid_via_items)
+                .aggregate(total=Sum('amount'))['total']
+                or 0
+            )
             context['month_income'] = float(month_income_paid)
 
-            active_subs_qs = ServiceSubscription.objects.filter(
-                payment_status='paid', end_date__gt=now, record_active=True
-            ).select_related('customer', 'service').order_by('customer__company_name')[:20]
+            active_subs_qs = (
+                ServiceSubscription.objects.filter(
+                    payment_status='paid', end_date__gt=now, record_active=True
+                )
+                .select_related('customer', 'service')
+                .order_by('customer__company_name')[:20]
+            )
 
-            expired_subs_qs = ServiceSubscription.objects.filter(
-                payment_status='paid', end_date__lte=now, record_active=True
-            ).select_related('customer', 'service').order_by('customer__company_name')[:20]
+            expired_subs_qs = (
+                ServiceSubscription.objects.filter(
+                    payment_status='paid', end_date__lte=now, record_active=True
+                )
+                .select_related('customer', 'service')
+                .order_by('customer__company_name')[:20]
+            )
 
-            pending_subs_qs = ServiceSubscription.objects.filter(
-                payment_status='pending', record_active=True
-            ).select_related('customer', 'service').order_by('customer__company_name')[:20]
+            pending_subs_qs = (
+                ServiceSubscription.objects.filter(payment_status='pending', record_active=True)
+                .select_related('customer', 'service')
+                .order_by('customer__company_name')[:20]
+            )
 
-            requested_subs_qs = ServiceSubscription.objects.filter(
-                payment_status='requested', record_active=True
-            ).select_related('customer', 'service').order_by('customer__company_name')[:20]
+            requested_subs_qs = (
+                ServiceSubscription.objects.filter(payment_status='requested', record_active=True)
+                .select_related('customer', 'service')
+                .order_by('customer__company_name')[:20]
+            )
 
             context['active_subs_list'] = json.dumps([serialize_sub(s) for s in active_subs_qs])
             context['expired_subs_list'] = json.dumps([serialize_sub(s) for s in expired_subs_qs])
             context['pending_subs_list'] = json.dumps([serialize_sub(s) for s in pending_subs_qs])
-            context['requested_subs_list'] = json.dumps([serialize_sub(s) for s in requested_subs_qs])
+            context['requested_subs_list'] = json.dumps(
+                [serialize_sub(s) for s in requested_subs_qs]
+            )
 
         if user.is_superuser:
             context['user_stats'] = {
@@ -285,9 +334,11 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 'staff_users': User.objects.filter(is_staff=True).count(),
             }
 
-            permission_groups = Group.objects.annotate(
-                user_count=Count('user')
-            ).prefetch_related('permissions', 'user_set').order_by('-user_count')
+            permission_groups = (
+                Group.objects.annotate(user_count=Count('user'))
+                .prefetch_related('permissions', 'user_set')
+                .order_by('-user_count')
+            )
             paginator_groups = Paginator(permission_groups, 2)
             page_number_groups = self.request.GET.get('page_groups')
             context['permission_groups_page'] = paginator_groups.get_page(page_number_groups)

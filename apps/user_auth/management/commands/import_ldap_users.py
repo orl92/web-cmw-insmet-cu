@@ -10,7 +10,7 @@ class Command(BaseCommand):
     help = 'Importa usuarios de LDAP que tengan email, nombre y apellido completos usando ldap3'
 
     def handle(self, *args, **options):
-        User = get_user_model()
+        user_model = get_user_model()
 
         # Configuración desde variables de entorno
         server_uri = os.getenv('LDAP_SERVER_URI')
@@ -21,7 +21,9 @@ class Command(BaseCommand):
         attributes = ['sAMAccountName', 'givenName', 'sn', 'mail']
 
         if not server_uri or not bind_dn or not bind_password:
-            self.stdout.write(self.style.ERROR("Faltan variables de entorno necesarias para la conexión LDAP"))
+            self.stdout.write(
+                self.style.ERROR('Faltan variables de entorno necesarias para la conexión LDAP')
+            )
             return
 
         try:
@@ -32,7 +34,7 @@ class Command(BaseCommand):
                 search_base=search_base,
                 search_filter=search_filter,
                 search_scope=SUBTREE,
-                attributes=attributes
+                attributes=attributes,
             )
 
             total = 0
@@ -47,12 +49,14 @@ class Command(BaseCommand):
                     email = str(entry.mail).strip()
 
                     if not all([username, first_name, last_name, email]):
-                        self.stdout.write(self.style.WARNING(
-                            f'Usuario {username} omitido - faltan datos requeridos'
-                        ))
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f'Usuario {username} omitido - faltan datos requeridos'
+                            )
+                        )
                         continue
 
-                    user, created = User.objects.get_or_create(username=username)
+                    user, created = user_model.objects.get_or_create(username=username)
                     user.first_name = first_name
                     user.last_name = last_name
                     user.email = email
@@ -60,19 +64,21 @@ class Command(BaseCommand):
                     user.save()
 
                     imported += 1
-                    action = "Creado" if created else "Actualizado"
-                    self.stdout.write(self.style.SUCCESS(
-                        f'{action}: {username} - {first_name} {last_name} <{email}>'
-                    ))
+                    action = 'Creado' if created else 'Actualizado'
+                    self.stdout.write(
+                        self.style.SUCCESS(
+                            f'{action}: {username} - {first_name} {last_name} <{email}>'
+                        )
+                    )
 
                 except Exception as e:
-                    self.stdout.write(self.style.ERROR(
-                        f'Error procesando entrada LDAP: {str(e)}'
-                    ))
+                    self.stdout.write(self.style.ERROR(f'Error procesando entrada LDAP: {str(e)}'))
 
-            self.stdout.write(self.style.SUCCESS(
-                f'\nProceso completado. {imported} de {total} usuarios importados/actualizados'
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'\nProceso completado. {imported} de {total} usuarios importados/actualizados'
+                )
+            )
 
         except LDAPException as e:
             self.stdout.write(self.style.ERROR(f'Error de conexión LDAP: {str(e)}'))

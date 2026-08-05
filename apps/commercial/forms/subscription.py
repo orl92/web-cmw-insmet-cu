@@ -16,7 +16,7 @@ class SubscriptionForm(forms.ModelForm):
     ]
     period = forms.ChoiceField(
         choices=PERIOD_CHOICES,
-        label="Período",
+        label='Período',
         widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_period'}),
         required=False,
     )
@@ -25,8 +25,12 @@ class SubscriptionForm(forms.ModelForm):
         model = ServiceSubscription
         fields = ['customer', 'service', 'start_date', 'end_date', 'payment_status', 'period']
         widgets = {
-            'start_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control', 'id': 'id_start_date'}),
-            'end_date': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control', 'id': 'id_end_date'}),
+            'start_date': forms.DateTimeInput(
+                attrs={'type': 'datetime-local', 'class': 'form-control', 'id': 'id_start_date'}
+            ),
+            'end_date': forms.DateTimeInput(
+                attrs={'type': 'datetime-local', 'class': 'form-control', 'id': 'id_end_date'}
+            ),
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'service': forms.Select(attrs={'class': 'form-control'}),
             'payment_status': forms.Select(attrs={'class': 'form-control'}),
@@ -37,7 +41,9 @@ class SubscriptionForm(forms.ModelForm):
         self.fields['service'].queryset = Service.objects.filter(service_type=Service.COMMERCIAL)
         if self.instance and self.instance.pk:
             self.fields['payment_status'].disabled = True
-            self.fields['payment_status'].help_text = "El estado solo puede modificarse mediante acciones específicas."
+            self.fields[
+                'payment_status'
+            ].help_text = 'El estado solo puede modificarse mediante acciones específicas.'
             if self.instance.start_date and self.instance.end_date:
                 delta = (self.instance.end_date - self.instance.start_date).days
                 if 28 <= delta <= 31:
@@ -75,7 +81,7 @@ class SubscriptionForm(forms.ModelForm):
             cleaned_data['end_date'] = end
         else:
             if start and end and start >= end:
-                raise forms.ValidationError("La fecha de inicio debe ser anterior a la de fin.")
+                raise forms.ValidationError('La fecha de inicio debe ser anterior a la de fin.')
         return cleaned_data
 
 
@@ -84,7 +90,9 @@ class CertificateUploadForm(forms.ModelForm):
         model = Certificate
         fields = ['pdf']
         widgets = {
-            'pdf': forms.FileInput(attrs={'accept': '.pdf', 'required': True, 'class': 'form-control'})
+            'pdf': forms.FileInput(
+                attrs={'accept': '.pdf', 'required': True, 'class': 'form-control'}
+            )
         }
 
 
@@ -95,21 +103,19 @@ class PaymentMethodForm(forms.Form):
         ('presencial', 'Pago Presencial'),
     ]
     payment_method = forms.ChoiceField(
-        choices=PAYMENT_METHOD_CHOICES,
-        widget=forms.RadioSelect,
-        label="Método de pago"
+        choices=PAYMENT_METHOD_CHOICES, widget=forms.RadioSelect, label='Método de pago'
     )
     start_date = forms.DateField(
-        label="Fecha de inicio del servicio",
+        label='Fecha de inicio del servicio',
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         required=True,
-        help_text="Fecha desde la cual necesita el servicio."
+        help_text='Fecha desde la cual necesita el servicio.',
     )
     end_date = forms.DateField(
-        label="Fecha de fin del servicio",
+        label='Fecha de fin del servicio',
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         required=True,
-        help_text="Fecha hasta la cual necesita el servicio."
+        help_text='Fecha hasta la cual necesita el servicio.',
     )
 
 
@@ -120,19 +126,17 @@ class InvoiceForm(forms.Form):
         ('presencial', 'Pago Presencial'),
     ]
     payment_method = forms.ChoiceField(
-        choices=PAYMENT_METHOD_CHOICES,
-        widget=forms.RadioSelect,
-        label="Método de pago"
+        choices=PAYMENT_METHOD_CHOICES, widget=forms.RadioSelect, label='Método de pago'
     )
     start_date = forms.DateField(
-        label="Fecha de inicio del servicio",
+        label='Fecha de inicio del servicio',
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         required=True,
-        help_text="Fecha desde la cual necesita el servicio."
+        help_text='Fecha desde la cual necesita el servicio.',
     )
     end_date = forms.DateField(
-        label="Fecha de fin del servicio",
+        label='Fecha de fin del servicio',
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         required=True,
-        help_text="Fecha hasta la cual necesita el servicio."
+        help_text='Fecha hasta la cual necesita el servicio.',
     )

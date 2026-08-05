@@ -44,16 +44,10 @@ class GetData:
                     'precipitacion en 24 horas': d.get_precipitacion24(),  # mm
                 }
             else:
-                return {
-                    'estacion': station_number,
-                    'data': None
-                }
+                return {'estacion': station_number, 'data': None}
 
         except Exception:
-            return {
-                'estacion': station_number,
-                'data': None
-            }
+            return {'estacion': station_number, 'data': None}
 
     def get_all_stations(self, hour):
         _dict = {}

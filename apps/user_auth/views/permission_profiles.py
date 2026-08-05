@@ -8,10 +8,10 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView, View
 
+from apps.core.utils import log_action
 from apps.user_auth.forms.permission_profiles import PermissionProfileForm
 from apps.user_auth.models import PermissionProfile
 from apps.user_auth.views.groups import _get_grouped_permissions
-from apps.core.utils import log_action
 
 
 class PermissionProfileListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -45,7 +45,8 @@ class PermissionProfileCreateView(LoginRequiredMixin, PermissionRequiredMixin, C
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f'Se creó el perfil de permisos {self.object.name}.')
+            message=f'Se creó el perfil de permisos {self.object.name}.',
+        )
         messages.success(self.request, 'Perfil de permisos creado con éxito.', extra_tags='success')
         return response
 
@@ -73,8 +74,11 @@ class PermissionProfileUpdateView(LoginRequiredMixin, PermissionRequiredMixin, U
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f'Se actualizó el perfil de permisos {self.object.name}.')
-        messages.success(self.request, 'Perfil de permisos actualizado con éxito.', extra_tags='warning')
+            message=f'Se actualizó el perfil de permisos {self.object.name}.',
+        )
+        messages.success(
+            self.request, 'Perfil de permisos actualizado con éxito.', extra_tags='warning'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -98,7 +102,8 @@ class PermissionProfileDeleteView(LoginRequiredMixin, PermissionRequiredMixin, V
             user=request.user,
             obj=profile,
             action_flag=DELETION,
-            message=f'Se eliminó el perfil de permisos {name}.')
+            message=f'Se eliminó el perfil de permisos {name}.',
+        )
         profile.delete()
         messages.success(request, f'Perfil de permisos "{name}" eliminado correctamente.')
         return redirect('user_auth:permission_profiles_list')

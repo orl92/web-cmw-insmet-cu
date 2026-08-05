@@ -50,7 +50,11 @@ class CertificateCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Certificado creado para {self.object.subscription.customer.company_name} - {self.object.subscription.service.title}."
+            message=(
+                f'Certificado creado para '
+                f'{self.object.subscription.customer.company_name} - '
+                f'{self.object.subscription.service.title}.'
+            ),
         )
         messages.success(self.request, 'Certificado creado con éxito.', extra_tags='success')
         return response
@@ -72,7 +76,7 @@ class CertificateDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailV
     def get_object(self, queryset=None):
         return get_object_or_404(
             Certificate.objects.select_related('subscription__customer', 'subscription__service'),
-            uuid=self.kwargs['uuid']
+            uuid=self.kwargs['uuid'],
         )
 
     def get_context_data(self, **kwargs):
@@ -108,7 +112,7 @@ class CertificateDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=certificate,
             action_flag=DELETION,
-            message=f"Certificado desactivado: {certificate}."
+            message=f'Certificado desactivado: {certificate}.',
         )
         messages.success(request, 'Certificado desactivado con éxito.')
         return redirect('commercial:certificado_list')

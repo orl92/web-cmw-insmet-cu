@@ -1,13 +1,21 @@
 from django import forms
+
 from apps.core.models import CompanySettings
 
 
 class CompanySettingsForm(forms.ModelForm):
     class Meta:
         model = CompanySettings
-        fields = ['nombre', 'direccion', 'codigo_reeup', 'nit',
-                  'cuenta_bancaria', 'agencia_bancaria', 'telefonos',
-                  'registro_comercial']
+        fields = [
+            'nombre',
+            'direccion',
+            'codigo_reeup',
+            'nit',
+            'cuenta_bancaria',
+            'agencia_bancaria',
+            'telefonos',
+            'registro_comercial',
+        ]
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'direccion': forms.TextInput(attrs={'class': 'form-control'}),

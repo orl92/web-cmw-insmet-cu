@@ -32,45 +32,72 @@ class ForecastCSVExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
         writer = csv.writer(response)
 
         writer.writerow(['PRONÓSTICO POR REGIONES'])
-        writer.writerow(['Fecha', 'Zona', 'Período', 'Temperatura (°C)', 'Tiempo', 'Viento (dd)', 'Viento (ff)', 'Mar'])
+        writer.writerow(
+            [
+                'Fecha',
+                'Zona',
+                'Período',
+                'Temperatura (°C)',
+                'Tiempo',
+                'Viento (dd)',
+                'Viento (ff)',
+                'Mar',
+            ]
+        )
         for forecast in forecasts:
             for region in forecast.regions.all():
-                writer.writerow([
-                    forecast.date.strftime('%d/%m/%Y'),
-                    region.get_region_display(),
-                    region.get_period_display(),
-                    region.temp,
-                    region.weather,
-                    region.wind_dir,
-                    region.wind_speed,
-                    region.sea_note or '',
-                ])
+                writer.writerow(
+                    [
+                        forecast.date.strftime('%d/%m/%Y'),
+                        region.get_region_display(),
+                        region.get_period_display(),
+                        region.temp,
+                        region.weather,
+                        region.wind_dir,
+                        region.wind_speed,
+                        region.sea_note or '',
+                    ]
+                )
         writer.writerow([])
 
         writer.writerow(['PRONÓSTICO EXTENDIDO'])
         writer.writerow(['Fecha', 'Día', 'Mínima (°C)', 'Máxima (°C)', 'Tiempo'])
         for forecast in forecasts:
             for day in forecast.extended_days.all():
-                writer.writerow([
-                    day.date.strftime('%d/%m/%Y'),
-                    day.day_number,
-                    day.min_temp,
-                    day.max_temp,
-                    day.weather,
-                ])
+                writer.writerow(
+                    [
+                        day.date.strftime('%d/%m/%Y'),
+                        day.day_number,
+                        day.min_temp,
+                        day.max_temp,
+                        day.weather,
+                    ]
+                )
         writer.writerow([])
 
         writer.writerow(['DATOS ASTRONÓMICOS'])
-        writer.writerow(['Fecha', 'Fase Lunar', 'Próxima Fase', 'Fecha Próxima', 'Salida Sol', 'Puesta Sol', 'Índice UV'])
+        writer.writerow(
+            [
+                'Fecha',
+                'Fase Lunar',
+                'Próxima Fase',
+                'Fecha Próxima',
+                'Salida Sol',
+                'Puesta Sol',
+                'Índice UV',
+            ]
+        )
         for forecast in forecasts:
-            writer.writerow([
-                forecast.date.strftime('%d/%m/%Y'),
-                forecast.lp,
-                forecast.nlp,
-                forecast.nlpd.strftime('%d/%m/%Y') if forecast.nlpd else '',
-                forecast.sunrise.strftime('%H:%M') if forecast.sunrise else '',
-                forecast.sunset.strftime('%H:%M') if forecast.sunset else '',
-                forecast.uv_index,
-            ])
+            writer.writerow(
+                [
+                    forecast.date.strftime('%d/%m/%Y'),
+                    forecast.lp,
+                    forecast.nlp,
+                    forecast.nlpd.strftime('%d/%m/%Y') if forecast.nlpd else '',
+                    forecast.sunrise.strftime('%H:%M') if forecast.sunrise else '',
+                    forecast.sunset.strftime('%H:%M') if forecast.sunset else '',
+                    forecast.uv_index,
+                ]
+            )
 
         return response

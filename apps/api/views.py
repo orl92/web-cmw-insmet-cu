@@ -15,26 +15,29 @@ from apps.api.serializers import (
     WeatherReportSerializer,
 )
 from apps.commercial.models import Service
-from apps.meteo.models import Station
 from apps.meteo.models import (
     Forecasts,
-    Warning as MeteoWarning,
+    Station,
     WeatherReport,
+)
+from apps.meteo.models import (
+    Warning as MeteoWarning,
 )
 from apps.publications.models import ScientificPublication
 
 ALLOWED_REPORT_TYPES = {'today', 'tomorrow', 'commentary', 'note'}
-    
+
+
 class StationObservationView(GenericAPIView):
     """
     ### Vista de Observación de Estación Meteorológica
     Recupera datos de observación para una estación específica a una hora determinada.
 
     **Parámetros:**
-    - `hour` (str): Hora de observación (formato HH). 
+    - `hour` (str): Hora de observación (formato HH).
       Horas permitidas: 00, 03, 06, 09, 12, 15, 18, 21
     - `station_number` (str): Número de la estación meteorológica.
-    
+
     **Estaciones disponibles:**
     - Florida: 78350
     - Palo Seco: 78354
@@ -42,11 +45,12 @@ class StationObservationView(GenericAPIView):
     - Esmeralda: 78352
     - Santa Cruz: 78351
     - Camagüey: 78355
-    
+
     **Respuestas:**
     - `200 OK`: Devuelve los datos de observación.
     - `400 Bad Request`: Devuelve errores de validación.
     """
+
     permission_classes = [AllowAny]
     serializer_class = StationObservationSerializer
 
@@ -58,26 +62,31 @@ class StationObservationView(GenericAPIView):
             '78353': 'Nuevitas',
             '78352': 'Esmeralda',
             '78351': 'Santa Cruz',
-            '78355': 'Camagüey'
+            '78355': 'Camagüey',
         }
-        
+
         hour_str = str(hour).zfill(2)
-        
+
         if hour_str not in allowed_hours:
             return Response(
-                {"error": "Invalid hour parameter. Valid hours: 00, 03, 06, 09, 12, 15, 18, 21"},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'Invalid hour parameter. Valid hours: 00, 03, 06, 09, 12, 15, 18, 21'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-            
+
         if str(station_number) not in stations:
             return Response(
-                {"error": "Invalid station number. Available stations: " + ", ".join(f"{k} ({v})" for k, v in stations.items())},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    'error': 'Invalid station number. Available stations: '
+                    + ', '.join(f'{k} ({v})' for k, v in stations.items())
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         data = GetData().get_station(hour_str, station_number)
-        serializer = self.get_serializer(data={'hour': hour_str, 'station_number': station_number, 'data': data})
-        
+        serializer = self.get_serializer(
+            data={'hour': hour_str, 'station_number': station_number, 'data': data}
+        )
+
         if serializer.is_valid():
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -87,10 +96,11 @@ class StationListAPIView(ListAPIView):
     """
     ### Vista de Listado de Estaciones
     Esta vista proporciona una lista de todas las estaciones.
-    
+
     **Respuestas:**
     - `200 OK`: Devuelve la lista de estaciones.
     """
+
     queryset = Station.objects.all()
     serializer_class = StationSerializer
     permission_classes = [AllowAny]
@@ -100,15 +110,17 @@ class ForecastAPIView(GenericAPIView):
     """
     ### Vista de API de Pronóstico
     Esta vista recupera los datos de pronóstico.
-    
+
     **Parámetros:**
-    - `date`: La fecha en formato Año-Mes-Dia (YYYY-MM-DD) para la cual se solicitan los datos de pronóstico. 
-    
+    - `date`: La fecha en formato Año-Mes-Dia (YYYY-MM-DD) para la cual se
+      solicitan los datos de pronóstico.
+
     **Respuestas:**
     - `200 OK`: Devuelve los datos de pronóstico.
     - `400 Bad Request`: Devuelve errores de validación.
     - `404 Not Found`: Devuelve un mensaje si los pronósticos no se han actualizado.
     """
+
     permission_classes = [AllowAny]
     queryset = Forecasts.objects.prefetch_related('regions', 'extended_days').all()
     serializer_class = ForecastSerializer
@@ -122,7 +134,7 @@ class ForecastAPIView(GenericAPIView):
         forecasts = self.queryset.filter(date=date).first()
 
         if not forecasts:
-            return Response({"message": "Los pronósticos no se han actualizado."}, status=404)
+            return Response({'message': 'Los pronósticos no se han actualizado.'}, status=404)
 
         serializer = self.get_serializer(forecasts)
         return Response(serializer.data)
@@ -141,7 +153,9 @@ class TropicalCycloneListAPIView(ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return MeteoWarning.objects.filter(warning_type='tropical_cyclone', valid_until__gte=timezone.now())
+        return MeteoWarning.objects.filter(
+            warning_type='tropical_cyclone', valid_until__gte=timezone.now()
+        )
 
 
 class StormWarningListAPIView(ListAPIView):

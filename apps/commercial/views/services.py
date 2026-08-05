@@ -29,9 +29,11 @@ class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        return Service.objects.select_related('user').annotate(
-            num_subscriptions=Count('servicesubscription')
-        ).order_by('-date')
+        return (
+            Service.objects.select_related('user')
+            .annotate(num_subscriptions=Count('servicesubscription'))
+            .order_by('-date')
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -65,7 +67,7 @@ class ServiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó el servicio: {self.object.title}"
+            message=f'Se creó el servicio: {self.object.title}',
         )
         messages.success(self.request, 'Servicio creado con éxito.')
         return response
@@ -79,7 +81,9 @@ class ServiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         return context
 
 
-class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+class ServiceUpdateView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     model = Service
     form_class = ServiceForm
     template_name = 'pages/commercial/service/update.html'
@@ -121,7 +125,7 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó el servicio: {self.object.title}"
+            message=f'Se actualizó el servicio: {self.object.title}',
         )
         messages.success(self.request, 'Servicio actualizado con éxito.')
         return redirect(self.success_url)
@@ -137,6 +141,7 @@ class ServiceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
 
 class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """Soft delete: desactiva el servicio."""
+
     permission_required = 'commercial.delete_service'
 
     def post(self, request, uuid):
@@ -149,7 +154,7 @@ class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=service,
             action_flag=DELETION,
-            message=f"Servicio desactivado: {service.title}."
+            message=f'Servicio desactivado: {service.title}.',
         )
         messages.success(request, 'Servicio desactivado con éxito.')
         return redirect('commercial:servicio_list')
@@ -157,6 +162,7 @@ class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
 class ServiceHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     """Eliminación física permanente (solo superusuarios)."""
+
     def test_func(self):
         return self.request.user.is_superuser
 
@@ -168,7 +174,7 @@ class ServiceHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
             user=self.request.user,
             obj=service,
             action_flag=DELETION,
-            message=f"Servicio eliminado físicamente: {service_title}."
+            message=f'Servicio eliminado físicamente: {service_title}.',
         )
         messages.success(request, f'Servicio {service_title} eliminado permanentemente.')
         return redirect('commercial:servicio_list')

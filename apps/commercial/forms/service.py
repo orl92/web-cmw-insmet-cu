@@ -1,4 +1,5 @@
 from django import forms
+
 from apps.commercial.models import Service
 
 
@@ -37,7 +38,9 @@ class ServiceForm(forms.ModelForm):
                 self.add_error('image', 'Los servicios públicos no deben tener imagen.')
         elif service_type == Service.COMMERCIAL:
             if not code:
-                self.add_error('code', 'El código del servicio es obligatorio para servicios comerciales.')
+                self.add_error(
+                    'code', 'El código del servicio es obligatorio para servicios comerciales.'
+                )
             if price is None:
                 self.add_error('price', 'El precio es obligatorio para servicios comerciales.')
             if not image and not existing_image:

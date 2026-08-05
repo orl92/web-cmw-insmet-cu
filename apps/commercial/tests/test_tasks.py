@@ -1,15 +1,17 @@
-from unittest.mock import patch, MagicMock
-
-from decimal import Decimal
 from datetime import timedelta
+from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.utils import timezone
 
 from apps.commercial.models import (
-    Certificate, Customer, Invoice, InvoiceItem,
-    Service, ServiceSubscription,
+    Customer,
+    Invoice,
+    InvoiceItem,
+    Service,
+    ServiceSubscription,
 )
 
 
@@ -17,33 +19,42 @@ class InvoiceUtilsTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(
-            'invutil', 'i@i.com', 'pass',
-            first_name='Test', last_name='User',
+            'invutil',
+            'i@i.com',
+            'pass',
+            first_name='Test',
+            last_name='User',
         )
         cls.customer = Customer.objects.create(
-            client_type='natural', user=cls.user,
-            address='Addr', phone='12345678',
+            client_type='natural',
+            user=cls.user,
+            address='Addr',
+            phone='12345678',
             account='1234567890123456',
         )
         cls.invoice = Invoice.objects.create(
-            customer=cls.customer, number='INV-UTIL',
+            customer=cls.customer,
+            number='INV-UTIL',
             amount=Decimal('100.00'),
         )
         InvoiceItem.objects.create(
             invoice=cls.invoice,
-            descripcion='Item 1', cantidad=1,
+            descripcion='Item 1',
+            cantidad=1,
             precio=Decimal('100.00'),
         )
 
     @patch('apps.commercial.views.invoice_utils.render_to_string')
     @patch('apps.commercial.views.invoice_utils.EmailMessage')
-    def test_enviar_correo_factura(self, MockEmail, MockRender):
-        MockRender.return_value = '<html></html>'
+    def test_enviar_correo_factura(self, mock_email_cls, mock_render):
+        mock_render.return_value = '<html></html>'
         mock_email = MagicMock()
-        MockEmail.return_value = mock_email
+        mock_email_cls.return_value = mock_email
         from apps.commercial.views.invoice_utils import enviar_correo_factura
+
         result = enviar_correo_factura(
-            self.invoice, self.customer,
+            self.invoice,
+            self.customer,
             base_url='http://testserver/',
         )
         self.assertTrue(result)
@@ -52,16 +63,16 @@ class InvoiceUtilsTests(TestCase):
 
     @patch('apps.commercial.views.invoice_utils.render_to_string')
     @patch('apps.commercial.views.invoice_utils.EmailMessage')
-    def test_enviar_correo_factura_failure_logs_error(
-        self, MockEmail, MockRender
-    ):
-        MockRender.return_value = '<html></html>'
+    def test_enviar_correo_factura_failure_logs_error(self, mock_email_cls, mock_render):
+        mock_render.return_value = '<html></html>'
         mock_email = MagicMock()
         mock_email.send.side_effect = Exception('SMTP error')
-        MockEmail.return_value = mock_email
+        mock_email_cls.return_value = mock_email
         from apps.commercial.views.invoice_utils import enviar_correo_factura
+
         result = enviar_correo_factura(
-            self.invoice, self.customer,
+            self.invoice,
+            self.customer,
             base_url='http://testserver/',
         )
         self.assertFalse(result)
@@ -73,21 +84,30 @@ class CertificateEmailTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(
-            'certmail', 'c@c.com', 'pass',
-            first_name='Test', last_name='User',
+            'certmail',
+            'c@c.com',
+            'pass',
+            first_name='Test',
+            last_name='User',
         )
         cls.customer = Customer.objects.create(
-            client_type='natural', user=cls.user,
-            address='Addr', phone='12345678',
+            client_type='natural',
+            user=cls.user,
+            address='Addr',
+            phone='12345678',
             account='1234567890123456',
         )
         cls.service = Service.objects.create(
-            user=cls.user, title='Svc',
-            summary='Svc', service_type='commercial',
-            code='C200', price=Decimal('80.00'),
+            user=cls.user,
+            title='Svc',
+            summary='Svc',
+            service_type='commercial',
+            code='C200',
+            price=Decimal('80.00'),
         )
         cls.sub = ServiceSubscription.objects.create(
-            customer=cls.customer, service=cls.service,
+            customer=cls.customer,
+            service=cls.service,
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
             payment_status='paid',
@@ -97,8 +117,10 @@ class CertificateEmailTests(TestCase):
         from apps.commercial.views.subscriptions import (
             enviar_correo_certificado,
         )
+
         sub_no_cert = ServiceSubscription.objects.create(
-            customer=self.customer, service=self.service,
+            customer=self.customer,
+            service=self.service,
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
         )
@@ -109,22 +131,26 @@ class CertificateEmailTests(TestCase):
         from apps.commercial.views.subscriptions import (
             enviar_correo_certificado,
         )
+
         user_no_email = User.objects.create_user(
-            'noemail', '', 'pass',
-            first_name='No', last_name='Email',
+            'noemail',
+            '',
+            'pass',
+            first_name='No',
+            last_name='Email',
         )
         customer_no_email = Customer.objects.create(
-            client_type='natural', user=user_no_email,
-            address='Addr', phone='12345678',
+            client_type='natural',
+            user=user_no_email,
+            address='Addr',
+            phone='12345678',
             account='9999999999999999',
         )
         sub = ServiceSubscription.objects.create(
-            customer=customer_no_email, service=self.service,
+            customer=customer_no_email,
+            service=self.service,
             start_date=timezone.now(),
             end_date=timezone.now() + timedelta(days=30),
         )
         result = enviar_correo_certificado(sub)
         self.assertFalse(result)
-
-
-

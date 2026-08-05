@@ -15,7 +15,6 @@ class CheckUserProfileMiddleware:
         user = get_user(request)
         if user.is_authenticated:
             profile, created = Profile.objects.get_or_create(user=user)
-            profile_uuid = profile.uuid
 
             missing_personal = not user.email or not user.first_name or not user.last_name
 
@@ -34,9 +33,14 @@ class CheckUserProfileMiddleware:
                 update_url = reverse('user_auth:profile_update')
                 if request.path != update_url:
                     if missing_company:
-                        messages.warning(request, 'Por favor, complete los datos de su cliente antes de continuar.')
+                        messages.warning(
+                            request,
+                            'Por favor, complete los datos de su cliente antes de continuar.',
+                        )
                     else:
-                        messages.warning(request, 'Por favor, complete su perfil antes de continuar.')
+                        messages.warning(
+                            request, 'Por favor, complete su perfil antes de continuar.'
+                        )
                     return redirect(update_url)
 
         return self.get_response(request)
@@ -47,10 +51,14 @@ class MaintenanceModeMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if request.user.is_authenticated and not request.user.is_superuser:
-            site_config = SiteConfiguration.objects.first()
-            if site_config and site_config.maintenance_mode:
-                if request.path not in [reverse('user_auth:login'), reverse('user_auth:logout')]:
-                    messages.warning(request, 'El sitio está en modo mantenimiento.')
-                    return redirect('user_auth:login')
+        site_config = SiteConfiguration.objects.first()
+        if (
+            request.user.is_authenticated
+            and not request.user.is_superuser
+            and site_config
+            and site_config.maintenance_mode
+            and request.path not in [reverse('user_auth:login'), reverse('user_auth:logout')]
+        ):
+            messages.warning(request, 'El sitio está en modo mantenimiento.')
+            return redirect('user_auth:login')
         return self.get_response(request)

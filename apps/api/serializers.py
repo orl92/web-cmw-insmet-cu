@@ -3,9 +3,9 @@ from rest_framework import serializers
 
 from apps.commercial.models import Service
 from apps.core.utils import get_moon_img_path, get_sun_img_path
-from apps.meteo.models import Station
 from apps.meteo.models import (
     Forecasts,
+    Station,
     WeatherReport,
 )
 from apps.meteo.models import (
@@ -22,10 +22,12 @@ class StationSerializer(serializers.ModelSerializer):
         model = Station
         fields = ['province_code', 'province_name', 'name', 'number', 'latitude', 'longitude']
 
+
 class StationObservationSerializer(serializers.Serializer):
     hour = serializers.CharField()
     station_number = serializers.IntegerField()
     data = serializers.JSONField()
+
 
 class StationObservationAllSerializer(serializers.Serializer):
     hour = serializers.CharField()
@@ -86,16 +88,16 @@ class ForecastSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.JSONField)
     def get_astronomical_data(self, obj):
         return {
-            "lp": obj.lp,
-            "lp_icon": get_moon_img_path(obj.lp),
-            "nlp": obj.nlp,
-            "nlp_icon": get_moon_img_path(obj.nlp),
-            "nlpd": obj.nlpd,
-            "sunrise": obj.sunrise,
-            "sunrise_icon": get_sun_img_path('sunrise'),
-            "sunset": obj.sunset,
-            "sunset_icon": get_sun_img_path('sunset'),
-            "uv_index": obj.uv_index
+            'lp': obj.lp,
+            'lp_icon': get_moon_img_path(obj.lp),
+            'nlp': obj.nlp,
+            'nlp_icon': get_moon_img_path(obj.nlp),
+            'nlpd': obj.nlpd,
+            'sunrise': obj.sunrise,
+            'sunrise_icon': get_sun_img_path('sunrise'),
+            'sunset': obj.sunset,
+            'sunset_icon': get_sun_img_path('sunset'),
+            'uv_index': obj.uv_index,
         }
 
 

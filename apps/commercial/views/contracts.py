@@ -5,9 +5,9 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, View
 
-from apps.core.utils import log_action
 from apps.commercial.forms.contract import ContractForm
 from apps.commercial.models import Contract
+from apps.core.utils import log_action
 
 
 class ContractListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -49,7 +49,10 @@ class ContractCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Contrato {self.object.number} creado para {self.object.subscription.customer.company_name}."
+            message=(
+                f'Contrato {self.object.number} creado para '
+                f'{self.object.subscription.customer.company_name}.'
+            ),
         )
         messages.success(self.request, 'Contrato creado con éxito.', extra_tags='success')
         return response
@@ -71,7 +74,7 @@ class ContractDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
     def get_object(self, queryset=None):
         return get_object_or_404(
             Contract.objects.select_related('subscription__customer', 'subscription__service'),
-            uuid=self.kwargs['uuid']
+            uuid=self.kwargs['uuid'],
         )
 
     def get_context_data(self, **kwargs):
@@ -96,7 +99,7 @@ class ContractDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=contract,
             action_flag=DELETION,
-            message=f"Contrato desactivado: {contract.number}."
+            message=f'Contrato desactivado: {contract.number}.',
         )
         messages.success(request, 'Contrato desactivado con éxito.')
         return redirect('commercial:contrato_list')

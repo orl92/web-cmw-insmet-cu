@@ -6,9 +6,12 @@ from django.forms import inlineformset_factory
 from apps.meteo.models import ForecastExtendedDay, ForecastRegions, Forecasts
 
 ForecastRegionsFormSet = inlineformset_factory(
-    Forecasts, ForecastRegions,
+    Forecasts,
+    ForecastRegions,
     fields=['region', 'period', 'temp', 'weather', 'wind_dir', 'wind_speed', 'sea_note'],
-    extra=9, max_num=9, can_delete=False,
+    extra=9,
+    max_num=9,
+    can_delete=False,
     widgets={
         'region': forms.HiddenInput(),
         'period': forms.HiddenInput(),
@@ -21,9 +24,12 @@ ForecastRegionsFormSet = inlineformset_factory(
 )
 
 ForecastExtendedDayFormSet = inlineformset_factory(
-    Forecasts, ForecastExtendedDay,
+    Forecasts,
+    ForecastExtendedDay,
     fields=['day_number', 'date', 'min_temp', 'max_temp', 'weather'],
-    extra=5, max_num=5, can_delete=False,
+    extra=5,
+    max_num=5,
+    can_delete=False,
     widgets={
         'day_number': forms.HiddenInput(),
         'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
@@ -39,10 +45,14 @@ class ForecastsForm(forms.ModelForm):
         model = Forecasts
         fields = ['date', 'lp', 'nlp', 'nlpd', 'sunrise', 'sunset', 'uv_index']
         widgets = {
-            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'date': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'
+            ),
             'lp': forms.Select(attrs={'class': 'form-select'}),
             'nlp': forms.Select(attrs={'class': 'form-select'}),
-            'nlpd': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'nlpd': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'
+            ),
             'sunrise': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'sunset': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'uv_index': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -55,4 +65,4 @@ class ForecastsForm(forms.ModelForm):
         try:
             return datetime.datetime.strptime(date, '%Y-%m-%d').date()
         except (TypeError, ValueError):
-            raise forms.ValidationError("Formato de fecha inválido. Use YYYY-MM-DD")
+            raise forms.ValidationError('Formato de fecha inválido. Use YYYY-MM-DD') from None

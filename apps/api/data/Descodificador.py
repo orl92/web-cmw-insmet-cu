@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import datetime
 
 from dateutil import tz
 from numpy import *
@@ -120,8 +120,8 @@ class Descodificador:
     # Humedad relativa
     def get_rh(self):
         try:
-            es = 6.112 * exp(((17.67 * self.get_temp()) / (self.get_temp() + 243.5)))
-            e = 6.112 * exp(((17.67 * self.get_td()) / (self.get_td() + 243.5)))
+            es = 6.112 * exp((17.67 * self.get_temp()) / (self.get_temp() + 243.5))
+            e = 6.112 * exp((17.67 * self.get_td()) / (self.get_td() + 243.5))
             rh = 100 * (e / es)
             return int(round(rh))
         except Exception:
@@ -134,14 +134,18 @@ class Descodificador:
     # Horario de la obserbación
     def get_horario(self):
         now = datetime.utcnow()
-        h = datetime(year=now.year, month=now.month, day=int(self.obs['day']), hour=int(self.obs['hour']))
+        h = datetime(
+            year=now.year, month=now.month, day=int(self.obs['day']), hour=int(self.obs['hour'])
+        )
         h = h.replace(tzinfo=tz.tzutc())
         return h.astimezone(tz.gettz('America/Havana')).strftime('%I:00 %p')
 
     # Día de la obserbación
     def get_dia(self):
         now = datetime.utcnow()
-        d = datetime(year=now.year, month=now.month, day=int(self.obs['day']), hour=int(self.obs['hour']))
+        d = datetime(
+            year=now.year, month=now.month, day=int(self.obs['day']), hour=int(self.obs['hour'])
+        )
         d = d.replace(tzinfo=tz.tzutc())
         return d.astimezone(tz.gettz('America/Havana')).strftime('%d/%m/%Y')
 
@@ -243,7 +247,7 @@ class Descodificador:
                 return 'Poco nublado'
             if 4 <= int(self.fm12._8Nh) <= 5:
                 return 'Parcialmente nublado'
-            if 5 < int(self.fm12._8Nh):
+            if int(self.fm12._8Nh) > 5:
                 return 'Nublado'
 
         except Exception:

@@ -3,7 +3,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.user_auth.models import Profile
 from apps.core.models import SiteConfiguration
 
 
@@ -26,8 +25,9 @@ class UserListViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         disable_maintenance_mode()
-        cls.superuser = User.objects.create_superuser('admin', 'admin@example.com', 'password',
-                                                       first_name='Admin', last_name='User')
+        cls.superuser = User.objects.create_superuser(
+            'admin', 'admin@example.com', 'password', first_name='Admin', last_name='User'
+        )
         cls.user = _make_user('regular')
         cls.url = reverse('user_auth:users_list')
 
@@ -55,8 +55,9 @@ class UserCreateViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         disable_maintenance_mode()
-        cls.superuser = User.objects.create_superuser('admin2', 'admin2@example.com', 'password',
-                                                       first_name='Admin', last_name='User')
+        cls.superuser = User.objects.create_superuser(
+            'admin2', 'admin2@example.com', 'password', first_name='Admin', last_name='User'
+        )
         cls.url = reverse('user_auth:user_create')
 
     def test_get_returns_200_for_superuser(self):
@@ -74,7 +75,7 @@ class UserCreateViewTests(TestCase):
             'first_name': 'New',
             'last_name': 'User',
         }
-        response = self.client.post(self.url, data, follow=True)
+        self.client.post(self.url, data, follow=True)
         self.assertTrue(User.objects.filter(username='newuser').exists())
         user = User.objects.get(username='newuser')
         self.assertTrue(hasattr(user, 'profile'))
@@ -84,8 +85,9 @@ class UserDeleteViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         disable_maintenance_mode()
-        cls.superuser = User.objects.create_superuser('admin3', 'admin3@example.com', 'password',
-                                                       first_name='Admin', last_name='User')
+        cls.superuser = User.objects.create_superuser(
+            'admin3', 'admin3@example.com', 'password', first_name='Admin', last_name='User'
+        )
         cls.target = _make_user('todelete')
 
     def _url(self, uuid):
@@ -103,8 +105,9 @@ class GroupListViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         disable_maintenance_mode()
-        cls.superuser = User.objects.create_superuser('admin4', 'admin4@example.com', 'password',
-                                                       first_name='Admin', last_name='User')
+        cls.superuser = User.objects.create_superuser(
+            'admin4', 'admin4@example.com', 'password', first_name='Admin', last_name='User'
+        )
         cls.url = reverse('user_auth:groups_list')
 
     def test_superuser_can_access(self):
@@ -130,14 +133,15 @@ class GroupCreateViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         disable_maintenance_mode()
-        cls.superuser = User.objects.create_superuser('admin5', 'admin5@example.com', 'password',
-                                                       first_name='Admin', last_name='User')
+        cls.superuser = User.objects.create_superuser(
+            'admin5', 'admin5@example.com', 'password', first_name='Admin', last_name='User'
+        )
         cls.url = reverse('user_auth:group_create')
 
     def test_post_creates_group_and_groupprofile(self):
         self.client.force_login(self.superuser)
         data = {'name': 'NewGroup'}
-        response = self.client.post(self.url, data, follow=True)
+        self.client.post(self.url, data, follow=True)
         self.assertTrue(Group.objects.filter(name='NewGroup').exists())
 
     def test_create_page_renders_standard_form_actions(self):

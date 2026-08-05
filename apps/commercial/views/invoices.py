@@ -25,9 +25,9 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
-from apps.core.tasks import generate_invoice_pdf_and_email_task
 from apps.commercial.views.invoice_utils import enviar_correo_factura
 from apps.core.models import CompanySettings
+from apps.core.tasks import generate_invoice_pdf_and_email_task
 from apps.core.utils import log_action
 
 logger = logging.getLogger(__name__)
@@ -41,16 +41,18 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'commercial.view_invoice'
 
     def get_queryset(self):
-        return Invoice.objects.select_related(
-            'subscription__customer', 'subscription__service'
-        ).prefetch_related('items').order_by('-issue_date')
+        return (
+            Invoice.objects.select_related('subscription__customer', 'subscription__service')
+            .prefetch_related('items')
+            .order_by('-issue_date')
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Listado de Facturas'
         context['parent'] = 'facturacion'
         context['segment'] = 'facturas'
-        context['btn'] = ('Añadir Factura')
+        context['btn'] = 'Añadir Factura'
         context['url_create'] = reverse_lazy('commercial:factura_create')
         context['url_list'] = reverse_lazy('commercial:factura_list')
         context['url_export'] = reverse_lazy('commercial:factura_export_csv')
@@ -76,11 +78,17 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     customer=customer,
                     payment_status__in=['requested', 'pending'],
                     start_date__isnull=False,
-                    end_date__isnull=False
+                    end_date__isnull=False,
                 ).first()
                 if pending_sub:
-                    initial['start_date'] = pending_sub.start_date.date() if pending_sub.start_date else today
-                    initial['end_date'] = pending_sub.end_date.date() if pending_sub.end_date else today + timedelta(days=30)
+                    initial['start_date'] = (
+                        pending_sub.start_date.date() if pending_sub.start_date else today
+                    )
+                    initial['end_date'] = (
+                        pending_sub.end_date.date()
+                        if pending_sub.end_date
+                        else today + timedelta(days=30)
+                    )
                 else:
                     initial['start_date'] = today.isoformat()
                     initial['end_date'] = (today + timedelta(days=30)).isoformat()
@@ -100,8 +108,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         context['items_formset'] = InvoiceItemFormSet(prefix='items')
         commercial_services = Service.objects.filter(service_type=Service.COMMERCIAL)
         context['commercial_services_json'] = json.dumps(
-            list(commercial_services.values('id', 'code', 'title', 'price')),
-            cls=DjangoJSONEncoder
+            list(commercial_services.values('id', 'code', 'title', 'price')), cls=DjangoJSONEncoder
         )
         context['company'] = CompanySettings.get_instance()
         return context
@@ -124,18 +131,22 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             for (sub_start, sub_end), subs in groups.items():
                 self.process_batch_invoice(customer, sub_start, sub_end, commercial_registry, subs)
 
-            messages.success(self.request, f"Se generaron {len(groups)} factura(s) según los períodos de las suscripciones.")
+            messages.success(
+                self.request,
+                f'Se generaron {len(groups)} factura(s) según los períodos de las suscripciones.',
+            )
             return redirect(self.success_url)
         else:
-            return self.process_manual_invoice(form, customer, start_date, end_date, commercial_registry)
+            return self.process_manual_invoice(
+                form, customer, start_date, end_date, commercial_registry
+            )
 
-    def process_batch_invoice(self, customer, start_date, end_date, commercial_registry, subscriptions):
+    def process_batch_invoice(
+        self, customer, start_date, end_date, commercial_registry, subscriptions
+    ):
         days_count = (end_date - start_date).days
         invoice = Invoice.objects.create(
-            subscription=None,
-            customer=customer,
-            amount=0,
-            number=self.generate_invoice_number()
+            subscription=None, customer=customer, amount=0, number=self.generate_invoice_number()
         )
         total = 0
         items = []
@@ -165,7 +176,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     'number': self.generate_contract_number(),
                     'date': timezone.now().date(),
                     'commercial_registry': commercial_registry,
-                }
+                },
             )
             if not created:
                 contract.commercial_registry = commercial_registry
@@ -175,7 +186,10 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 user=self.request.user,
                 obj=sub,
                 action_flag=CHANGE,
-                message=f"Suscripción facturada en lote: {sub.service.title} para {sub.customer.company_name}"
+                message=(
+                    f'Suscripción facturada en lote: {sub.service.title} '
+                    f'para {sub.customer.company_name}'
+                ),
             )
 
         invoice.amount = total
@@ -185,7 +199,10 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             user=self.request.user,
             obj=invoice,
             action_flag=ADDITION,
-            message=f"Factura por lote {invoice.number} - Cliente: {customer.company_name} - Monto: ${total:.2f}"
+            message=(
+                f'Factura por lote {invoice.number} - Cliente: '
+                f'{customer.company_name} - Monto: ${total:.2f}'
+            ),
         )
 
         site_url = self.request.build_absolute_uri('/')
@@ -194,7 +211,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def process_manual_invoice(self, form, customer, start_date, end_date, commercial_registry):
         items_formset = InvoiceItemFormSet(self.request.POST, prefix='items')
         if not items_formset.is_valid():
-            messages.error(self.request, "Corrige los errores en las líneas de factura.")
+            messages.error(self.request, 'Corrige los errores en las líneas de factura.')
             context = self.get_context_data(form=form)
             context['items_formset'] = items_formset
             return self.render_to_response(context)
@@ -202,10 +219,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         days_count = (end_date - start_date).days
 
         invoice = Invoice.objects.create(
-            subscription=None,
-            customer=customer,
-            amount=0,
-            number=self.generate_invoice_number()
+            subscription=None, customer=customer, amount=0, number=self.generate_invoice_number()
         )
         total = 0
         items = []
@@ -219,10 +233,12 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 sub = ServiceSubscription.objects.create(
                     customer=customer,
                     service=service,
-                    start_date=timezone.make_aware(datetime.combine(start_date, datetime.min.time())),
+                    start_date=timezone.make_aware(
+                        datetime.combine(start_date, datetime.min.time())
+                    ),
                     end_date=timezone.make_aware(datetime.combine(end_date, datetime.min.time())),
                     payment_status='pending',
-                    record_active=True
+                    record_active=True,
                 )
 
                 if first_sub is None:
@@ -245,7 +261,9 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     user=self.request.user,
                     obj=sub,
                     action_flag=ADDITION,
-                    message=f"Suscripción creada manualmente: {customer.company_name} - {service.title}"
+                    message=(
+                        f'Suscripción creada manualmente: {customer.company_name} - {service.title}'
+                    ),
                 )
 
         invoice.amount = total
@@ -257,12 +275,15 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             user=self.request.user,
             obj=invoice,
             action_flag=ADDITION,
-            message=f"Factura manual {invoice.number} - Cliente: {customer.company_name} - Monto: ${total:.2f}"
+            message=(
+                f'Factura manual {invoice.number} - Cliente: '
+                f'{customer.company_name} - Monto: ${total:.2f}'
+            ),
         )
 
         site_url = self.request.build_absolute_uri('/')
         generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
-        messages.success(self.request, "Factura manual generada (con suscripciones creadas).")
+        messages.success(self.request, 'Factura manual generada (con suscripciones creadas).')
         return redirect(self.success_url)
 
     def generate_invoice_number(self):
@@ -271,10 +292,10 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         if last and last.number:
             try:
                 num = int(last.number.split('-')[-1])
-                return f"{year}-{num+1:04d}"
+                return f'{year}-{num + 1:04d}'
             except (ValueError, IndexError):
                 pass
-        return f"{year}-0001"
+        return f'{year}-0001'
 
     def generate_contract_number(self):
         year = timezone.now().year
@@ -282,10 +303,10 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         if last_contract and last_contract.number:
             try:
                 num = int(last_contract.number.split('-')[-1])
-                return f"{year}-{num+1:04d}"
+                return f'{year}-{num + 1:04d}'
             except (ValueError, IndexError):
                 pass
-        return f"{year}-0001"
+        return f'{year}-0001'
 
 
 class CancelInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
@@ -295,13 +316,15 @@ class CancelInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
         invoice = get_object_or_404(Invoice, uuid=uuid)
 
         if invoice.is_cancelled:
-            messages.warning(request, f"La factura {invoice.number} ya estaba anulada.")
+            messages.warning(request, f'La factura {invoice.number} ya estaba anulada.')
             return redirect('commercial:factura_list')
 
         invoice.is_cancelled = True
         invoice.save()
 
-        items_with_subs = invoice.items.filter(subscription__isnull=False).select_related('subscription')
+        items_with_subs = invoice.items.filter(subscription__isnull=False).select_related(
+            'subscription'
+        )
         for item in items_with_subs:
             sub = item.subscription
             if sub.payment_status in ['pending', 'requested']:
@@ -311,16 +334,18 @@ class CancelInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     user=request.user,
                     obj=sub,
                     action_flag=CHANGE,
-                    message=f"Estado revertido a 'solicitado' por anulación de factura {invoice.number}"
+                    message=(
+                        f"Estado revertido a 'solicitado' por anulación de factura {invoice.number}"
+                    ),
                 )
 
         log_action(
             user=request.user,
             obj=invoice,
             action_flag=CHANGE,
-            message=f"Factura {invoice.number} anulada"
+            message=f'Factura {invoice.number} anulada',
         )
-        messages.success(request, f"Factura {invoice.number} anulada correctamente.")
+        messages.success(request, f'Factura {invoice.number} anulada correctamente.')
         return redirect('commercial:factura_list')
 
 
@@ -335,10 +360,10 @@ class InvoiceHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
             user=request.user,
             obj=invoice,
             action_flag=DELETION,
-            message=f"Factura {invoice.number} eliminada permanentemente"
+            message=f'Factura {invoice.number} eliminada permanentemente',
         )
         invoice.hard_delete()
-        messages.success(request, f"Factura {invoice_number} eliminada permanentemente.")
+        messages.success(request, f'Factura {invoice_number} eliminada permanentemente.')
         return redirect('commercial:factura_list')
 
 
@@ -359,14 +384,21 @@ class ResendInvoiceEmailView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 customer = first_item.subscription.customer
 
         if not customer or not customer.user or not customer.user.email:
-            messages.error(request, "No se pudo determinar el cliente o no tiene correo electrónico.")
+            messages.error(
+                request, 'No se pudo determinar el cliente o no tiene correo electrónico.'
+            )
             return redirect('commercial:factura_list')
 
         exito = enviar_correo_factura(invoice, customer, request=request)
         if exito:
-            messages.success(request, f"Correo de la factura {invoice.number} reenviado correctamente.")
+            messages.success(
+                request, f'Correo de la factura {invoice.number} reenviado correctamente.'
+            )
         else:
-            messages.error(request, f"No se pudo reenviar el correo de la factura {invoice.number}. Revise los logs.")
+            messages.error(
+                request,
+                f'No se pudo reenviar el correo de la factura {invoice.number}. Revise los logs.',
+            )
         return redirect('commercial:factura_list')
 
 
@@ -375,9 +407,7 @@ def ajax_pending_subscriptions(request):
     if not customer_id:
         return HttpResponse('')
     subs = ServiceSubscription.objects.filter(
-        customer_id=customer_id,
-        payment_status__in=['requested', 'pending'],
-        record_active=True
+        customer_id=customer_id, payment_status__in=['requested', 'pending'], record_active=True
     ).select_related('service')
     if not subs.exists():
         return HttpResponse('<p class="text-muted">No hay suscripciones pendientes.</p>')
@@ -389,8 +419,9 @@ def ajax_pending_subscriptions(request):
         summary = sub.service.summary or ''
         html += f'''
         <div class="form-check">
-          <input class="form-check-input subscription-check" type="checkbox" name="subscriptions" value="{sub.pk}" 
-                 id="sub_{sub.pk}" data-start="{start_str}" data-end="{end_str}" 
+          <input class="form-check-input subscription-check" type="checkbox"
+                 name="subscriptions" value="{sub.pk}"
+                 id="sub_{sub.pk}" data-start="{start_str}" data-end="{end_str}"
                  data-service="{sub.service.title}" data-days="{days}" data-summary="{summary}">
           <label class="form-check-label" for="sub_{sub.pk}">
             <strong>{sub.service.title}</strong>
@@ -403,6 +434,7 @@ def ajax_pending_subscriptions(request):
 
 class ContractHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     """Eliminación física de contrato (solo superusuarios)."""
+
     def test_func(self):
         return self.request.user.is_superuser
 
@@ -414,7 +446,7 @@ class ContractHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
             user=request.user,
             obj=contract,
             action_flag=DELETION,
-            message=f"Contrato {contract_number} eliminado físicamente."
+            message=f'Contrato {contract_number} eliminado físicamente.',
         )
-        messages.success(request, f"Contrato {contract_number} eliminado permanentemente.")
+        messages.success(request, f'Contrato {contract_number} eliminado permanentemente.')
         return redirect('commercial:suscripcion_list')

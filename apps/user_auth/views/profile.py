@@ -7,9 +7,9 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import DetailView, UpdateView
 
+from apps.core.utils import log_action
 from apps.user_auth.forms.profile import ProfileForm
 from apps.user_auth.models import Profile
-from apps.core.utils import log_action
 
 
 class ProfileDetailView(LoginRequiredMixin, DetailView):
@@ -67,7 +67,8 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         context['is_customer'] = hasattr(self.request.user, 'commercial_customer')
         context['client_type'] = (
             self.request.user.commercial_customer.client_type
-            if hasattr(self.request.user, 'commercial_customer') else None
+            if hasattr(self.request.user, 'commercial_customer')
+            else None
         )
 
         active_tab = 'personal'
@@ -95,9 +96,11 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 user=request.user,
                 obj=profile,
                 action_flag=CHANGE,
-                message="El usuario eliminó su avatar."
+                message='El usuario eliminó su avatar.',
             )
-            messages.success(self.request, 'El avatar ha sido eliminado con éxito.', extra_tags='danger')
+            messages.success(
+                self.request, 'El avatar ha sido eliminado con éxito.', extra_tags='danger'
+            )
             return redirect('user_auth:profile_update')
 
         return super().post(request, *args, **kwargs)
@@ -110,7 +113,7 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             user=self.request.user,
             obj=profile,
             action_flag=CHANGE,
-            message="El usuario actualizó su perfil."
+            message='El usuario actualizó su perfil.',
         )
 
         if hasattr(self.request.user, 'commercial_customer'):
@@ -118,8 +121,10 @@ class ProfileUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                 user=self.request.user,
                 obj=self.request.user.commercial_customer,
                 action_flag=CHANGE,
-                message="El cliente actualizó sus datos de empresa."
+                message='El cliente actualizó sus datos de empresa.',
             )
 
-        messages.success(self.request, 'El perfil ha sido actualizado con éxito.', extra_tags='warning')
+        messages.success(
+            self.request, 'El perfil ha sido actualizado con éxito.', extra_tags='warning'
+        )
         return response

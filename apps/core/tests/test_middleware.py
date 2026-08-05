@@ -49,8 +49,12 @@ class CheckUserProfileMiddlewareTests(TestCase):
     def test_natural_customer_missing_fields_redirects(self):
         user = _make_user('natmissing', is_staff=True)
         Customer.objects.create(
-            client_type='natural', user=user,
-            account='', agency_bank='', address='', phone='',
+            client_type='natural',
+            user=user,
+            account='',
+            agency_bank='',
+            address='',
+            phone='',
         )
         self.client.force_login(user)
         response = self.client.get(self.dashboard_url)
@@ -60,9 +64,12 @@ class CheckUserProfileMiddlewareTests(TestCase):
     def test_natural_customer_complete_passes(self):
         user = _make_user('natok', is_staff=True)
         Customer.objects.create(
-            client_type='natural', user=user,
-            account='1234567890123456', agency_bank='Banco Test',
-            address='Calle 1', phone='12345678',
+            client_type='natural',
+            user=user,
+            account='1234567890123456',
+            agency_bank='Banco Test',
+            address='Calle 1',
+            phone='12345678',
         )
         self.client.force_login(user)
         response = self.client.get(self.dashboard_url)
@@ -71,10 +78,15 @@ class CheckUserProfileMiddlewareTests(TestCase):
     def test_juridica_customer_missing_company_fields_redirects(self):
         user = _make_user('jurmissing', is_staff=True)
         Customer.objects.create(
-            client_type='juridica', user=user,
-            account='1234567890123456', agency_bank='Banco Test',
-            address='Calle 1', phone='12345678',
-            company_name='', reeup='', nit='',
+            client_type='juridica',
+            user=user,
+            account='1234567890123456',
+            agency_bank='Banco Test',
+            address='Calle 1',
+            phone='12345678',
+            company_name='',
+            reeup='',
+            nit='',
         )
         self.client.force_login(user)
         response = self.client.get(self.dashboard_url)
@@ -100,8 +112,11 @@ class MaintenanceModeMiddlewareTests(TestCase):
     def test_maintenance_allows_superuser(self):
         set_maintenance(True)
         admin = User.objects.create_superuser(
-            'maintadmin', 'maintadmin@example.com', 'pass',
-            first_name='Admin', last_name='Super',
+            'maintadmin',
+            'maintadmin@example.com',
+            'pass',
+            first_name='Admin',
+            last_name='Super',
         )
         self.client.force_login(admin)
         response = self.client.get(self.dashboard_url)

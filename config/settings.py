@@ -40,18 +40,28 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',') if o.strip()]
+ALLOWED_HOSTS = [
+    h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(
+        ','
+    )
+    if o.strip()
+]
 
 if external_hostname := os.getenv('EXTERNAL_HOSTNAME', ''):
-    domain = external_hostname.replace('https://', '').replace('http://', '').split('/')[0].split(':')[0]
+    domain = (
+        external_hostname.replace('https://', '').replace('http://', '').split('/')[0].split(':')[0]
+    )
     if domain not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(domain)
     schemes = ['http://', 'https://'] if not DEBUG else ['http://']
     for scheme in schemes:
-        origin = f"{scheme}{domain}"
+        origin = f'{scheme}{domain}'
         if ':' in external_hostname.split('://')[-1]:
-            origin += f":{external_hostname.split(':')[-1]}"
+            origin += f':{external_hostname.split(":")[-1]}'
         if origin not in CSRF_TRUSTED_ORIGINS:
             CSRF_TRUSTED_ORIGINS.append(origin)
 
@@ -70,7 +80,6 @@ INSTALLED_APPS = [
     'drf_spectacular_sidecar',
     'apps.api.apps.ApiConfig',
     'apps.home.apps.HomeConfig',
-
     'apps.publications.apps.PublicationsConfig',
     'apps.core.apps.CoreConfig',
     'apps.user_auth.apps.UserAuthConfig',
@@ -114,6 +123,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 # Database
 def get_database_config():
@@ -169,19 +179,24 @@ LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login/'
 
 GROUP_PERMISSION_EXCLUDED_APPS = [
-    "auth", "user_auth", "admin", "contenttypes", "sessions", "messages",
-    "staticfiles",
+    'auth',
+    'user_auth',
+    'admin',
+    'contenttypes',
+    'sessions',
+    'messages',
+    'staticfiles',
 ]
 GROUP_PERMISSION_APP_MERGE = {
-    "auth": "user_auth",
+    'auth': 'user_auth',
 }
 GROUP_PERMISSION_MODEL_MERGE = {
-    "Pronóstico": "Pronóstico",
-    "Pronóstico por Región": "Pronóstico",
-    "Día Extendido": "Pronóstico",
-    "Factura": "Facturacion",
-    "Item": "Facturacion",
-    "Correo": "Lista de correo",
+    'Pronóstico': 'Pronóstico',
+    'Pronóstico por Región': 'Pronóstico',
+    'Día Extendido': 'Pronóstico',
+    'Factura': 'Facturacion',
+    'Item': 'Facturacion',
+    'Correo': 'Lista de correo',
 }
 
 MESSAGE_TAGS = {
@@ -221,7 +236,9 @@ X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_THROTTLE_RATES': {'anon': '100/hour', 'user': '1000/hour'},
 }
@@ -237,7 +254,13 @@ SPECTACULAR_SETTINGS = {
 }
 
 # CORS
-CORS_ALLOWED_ORIGINS = [o.strip() for o in os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',') if o.strip()]
+CORS_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(
+        ','
+    )
+    if o.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 CORS_URLS_REGEX = r'^/api/.*$'
 
@@ -285,4 +308,3 @@ LOGGING = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-

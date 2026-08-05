@@ -36,9 +36,9 @@ class CompanySettingsUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Upd
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message="Configuración de la empresa actualizada"
+            message='Configuración de la empresa actualizada',
         )
-        messages.success(self.request, "Configuración guardada correctamente.")
+        messages.success(self.request, 'Configuración guardada correctamente.')
         return redirect(self.success_url)
 
 

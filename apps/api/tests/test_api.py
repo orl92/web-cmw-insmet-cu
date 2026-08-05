@@ -1,7 +1,6 @@
 from datetime import date, time, timedelta
 
 from django.contrib.auth.models import User
-from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -9,11 +8,14 @@ from rest_framework.test import APITestCase
 
 from apps.commercial.models import Service
 from apps.core.models import SiteConfiguration
-from apps.meteo.models import Province, Station
 from apps.meteo.models import (
     Forecasts,
-    Warning as MeteoWarning,
+    Province,
+    Station,
     WeatherReport,
+)
+from apps.meteo.models import (
+    Warning as MeteoWarning,
 )
 from apps.publications.models import Author, ScientificPublication
 
@@ -23,10 +25,12 @@ class StationListAPITests(APITestCase):
     def setUpTestData(cls):
         SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
         prov = Province.objects.create(name='Camagüey', code='CM')
-        Station.objects.create(name='Florida', number=123, province=prov,
-                               latitude=21.5, longitude=-78.2)
-        Station.objects.create(name='Camagüey', number=456, province=prov,
-                               latitude=21.4, longitude=-77.9)
+        Station.objects.create(
+            name='Florida', number=123, province=prov, latitude=21.5, longitude=-78.2
+        )
+        Station.objects.create(
+            name='Camagüey', number=456, province=prov, latitude=21.4, longitude=-77.9
+        )
         cls.url = reverse('station-list')
 
     def test_list_returns_all_stations(self):
@@ -45,12 +49,17 @@ class ForecastAPITests(APITestCase):
     @classmethod
     def setUpTestData(cls):
         from apps.meteo.models import ForecastExtendedDay, ForecastRegions
+
         SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
         today = date.today()
         forecast = Forecasts.objects.create(
             date=today,
-            lp='Luna Nueva', nlp='Cuarto Creciente', nlpd=today + timedelta(days=7),
-            sunrise=time(6, 30), sunset=time(18, 30), uv_index=5,
+            lp='Luna Nueva',
+            nlp='Cuarto Creciente',
+            nlpd=today + timedelta(days=7),
+            sunrise=time(6, 30),
+            sunset=time(18, 30),
+            uv_index=5,
         )
         regions_data = [
             ('north', 'morning', 25, 'PN', 'N', '10', 'TQ'),
@@ -65,15 +74,23 @@ class ForecastAPITests(APITestCase):
         ]
         for region, period, temp, weather, wind_dir, wind_speed, sea in regions_data:
             ForecastRegions.objects.create(
-                forecast=forecast, region=region, period=period,
-                temp=temp, weather=weather, wind_dir=wind_dir,
-                wind_speed=wind_speed, sea_note=sea,
+                forecast=forecast,
+                region=region,
+                period=period,
+                temp=temp,
+                weather=weather,
+                wind_dir=wind_dir,
+                wind_speed=wind_speed,
+                sea_note=sea,
             )
         for i in range(1, 6):
             ForecastExtendedDay.objects.create(
-                forecast=forecast, day_number=i,
+                forecast=forecast,
+                day_number=i,
                 date=today + timedelta(days=i),
-                min_temp=20, max_temp=30, weather='PN',
+                min_temp=20,
+                max_temp=30,
+                weather='PN',
             )
         cls.url = reverse('forecast', args=[today.isoformat()])
 
@@ -113,11 +130,15 @@ class EarlyWarningAPITests(APITestCase):
         SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
         user = User.objects.create_user('testuser')
         MeteoWarning.objects.create(
-            user=user, warning_type='early', summary='Alerta activa',
+            user=user,
+            warning_type='early',
+            summary='Alerta activa',
             valid_until=timezone.now() + timedelta(days=1),
         )
         MeteoWarning.objects.create(
-            user=user, warning_type='early', summary='Alerta expirada',
+            user=user,
+            warning_type='early',
+            summary='Alerta expirada',
             valid_until=timezone.now() - timedelta(days=1),
         )
         cls.url = reverse('early-warning-list')
@@ -141,7 +162,9 @@ class TropicalCycloneAPITests(APITestCase):
         SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
         user = User.objects.create_user('testuser')
         MeteoWarning.objects.create(
-            user=user, warning_type='tropical_cyclone', summary='Ciclón activo',
+            user=user,
+            warning_type='tropical_cyclone',
+            summary='Ciclón activo',
             valid_until=timezone.now() + timedelta(days=1),
         )
         cls.url = reverse('tropical-cyclone-list')
@@ -164,7 +187,9 @@ class StormWarningAPITests(APITestCase):
         SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
         user = User.objects.create_user('testuser')
         MeteoWarning.objects.create(
-            user=user, warning_type='storm', summary='Tormenta activa',
+            user=user,
+            warning_type='storm',
+            summary='Tormenta activa',
             valid_until=timezone.now() + timedelta(days=1),
         )
         cls.url = reverse('storm-warning-list')
@@ -182,7 +207,8 @@ class WeatherReportAPITests(APITestCase):
         cls.user = User.objects.create_user('testuser')
         for rtype in ('today', 'tomorrow', 'commentary', 'note'):
             WeatherReport.objects.create(
-                user=cls.user, report_type=rtype,
+                user=cls.user,
+                report_type=rtype,
                 summary=f'Reporte {rtype}',
             )
         cls.valid_url = reverse('weather-report-list', args=['today'])
@@ -219,9 +245,11 @@ class ScientificPublicationAPITests(APITestCase):
     def setUpTestData(cls):
         SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
         author = Author.objects.create(first_name='John', last_name='Doe')
-        pub = ScientificPublication.objects.create(
-            title='Test Paper', summary='Abstract',
-            publication_date=date.today(), author=author,
+        ScientificPublication.objects.create(
+            title='Test Paper',
+            summary='Abstract',
+            publication_date=date.today(),
+            author=author,
         )
         cls.url = reverse('publication-list')
 
@@ -244,12 +272,17 @@ class ServiceAPITests(APITestCase):
         SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
         user = User.objects.create_user('testuser')
         Service.objects.create(
-            user=user, title='Gratuito', service_type='public',
+            user=user,
+            title='Gratuito',
+            service_type='public',
             summary='Servicio público',
         )
         Service.objects.create(
-            user=user, title='Pago', service_type='commercial',
-            summary='Servicio comercial', price=100,
+            user=user,
+            title='Pago',
+            service_type='commercial',
+            summary='Servicio comercial',
+            price=100,
         )
         cls.url = reverse('service-list')
 

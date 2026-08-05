@@ -65,8 +65,15 @@ def get_item(dictionary, key):
 
 
 ALLOWED_TAGS = {
-    'b': [], 'strong': [], 'i': [], 'em': [], 'p': [],
-    'br': [], 'ul': [], 'ol': [], 'li': [],
+    'b': [],
+    'strong': [],
+    'i': [],
+    'em': [],
+    'p': [],
+    'br': [],
+    'ul': [],
+    'ol': [],
+    'li': [],
     'a': ['href'],
 }
 
@@ -81,6 +88,7 @@ def sanitize_html(value):
     if isinstance(value, SafeData):
         value = str(value)
     escaped = escape(value)
+
     def replace_tag(m):
         tag_name = m.group(1).lower()
         if tag_name not in ALLOWED_TAGS:
@@ -97,5 +105,6 @@ def sanitize_html(value):
                 if attr_name in allowed_attrs:
                     safe_attrs += f' {attr_name}="{escape(attr_val)}"'
         return f'<{tag_name}{safe_attrs}>'
+
     result = TAG_RE.sub(replace_tag, escaped)
-    return mark_safe(result)
+    return mark_safe(result)  # nosec B703

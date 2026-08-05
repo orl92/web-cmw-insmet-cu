@@ -1,7 +1,8 @@
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
+
+from apps.core.models import EmailRecipient, EmailRecipientList
 from apps.user_auth.models import Profile
-from apps.core.models import EmailRecipientList, EmailRecipient
 
 
 @receiver(post_save, sender=Profile)

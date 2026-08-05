@@ -2,16 +2,18 @@ import json
 from datetime import time
 
 from django.contrib.auth.models import ContentType, Group, User
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.commercial.models import (
-    Customer, Invoice, Service, ServiceSubscription,
+    Customer,
+    Invoice,
+    Service,
+    ServiceSubscription,
 )
 from apps.core.models import SiteConfiguration
-from apps.meteo.models import Forecasts, ForecastRegions, Warning
+from apps.meteo.models import ForecastRegions, Forecasts, Warning
 
 
 def disable_maintenance_mode():
@@ -20,7 +22,8 @@ def disable_maintenance_mode():
 
 def _make_user(username, **kwargs):
     data = {
-        'first_name': 'Test', 'last_name': 'User',
+        'first_name': 'Test',
+        'last_name': 'User',
         'email': f'{username}@example.com',
     }
     data.update(kwargs)
@@ -29,8 +32,11 @@ def _make_user(username, **kwargs):
 
 def _make_superuser(username):
     return User.objects.create_superuser(
-        username, f'{username}@example.com', 'pass',
-        first_name='Admin', last_name='Super',
+        username,
+        f'{username}@example.com',
+        'pass',
+        first_name='Admin',
+        last_name='Super',
     )
 
 
@@ -104,9 +110,12 @@ class DashboardContextTests(TestCase):
         group = Group.objects.get_or_create(name='Clientes')[0]
         client.groups.add(group)
         Customer.objects.create(
-            client_type='natural', user=client,
-            account='1234567890123456', agency_bank='Banco Test',
-            address='Calle 1', phone='12345678',
+            client_type='natural',
+            user=client,
+            account='1234567890123456',
+            agency_bank='Banco Test',
+            address='Calle 1',
+            phone='12345678',
         )
         self.client.force_login(client)
         response = self.client.get(self.url)
@@ -122,22 +131,32 @@ class DashboardContextTests(TestCase):
         group = Group.objects.get_or_create(name='Clientes')[0]
         client.groups.add(group)
         customer = Customer.objects.create(
-            client_type='natural', user=client,
-            account='1234567890123456', agency_bank='Banco Test',
-            address='Calle 1', phone='12345678',
+            client_type='natural',
+            user=client,
+            account='1234567890123456',
+            agency_bank='Banco Test',
+            address='Calle 1',
+            phone='12345678',
         )
         admin = _make_superuser('adminsub')
         service = Service.objects.create(
-            user=admin, title='Svc', summary='S',
-            service_type='commercial', code='CDB1',
+            user=admin,
+            title='Svc',
+            summary='S',
+            service_type='commercial',
+            code='CDB1',
             price='50.00',
         )
         sub = ServiceSubscription.objects.create(
-            customer=customer, service=service,
-            payment_status='paid', start_date=timezone.now(),
+            customer=customer,
+            service=service,
+            payment_status='paid',
+            start_date=timezone.now(),
             end_date=timezone.now() + timezone.timedelta(days=30),
         )
-        Invoice.objects.create(customer=customer, subscription=sub, number='INV-DB-1', amount='100.00')
+        Invoice.objects.create(
+            customer=customer, subscription=sub, number='INV-DB-1', amount='100.00'
+        )
         self.client.force_login(client)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
@@ -164,22 +183,33 @@ class DashboardCommercialDataTests(TestCase):
         _grant(ServiceSubscription, cls.admin, 'view_subscription')
         _grant(Invoice, cls.admin, 'view_invoice')
         customer = Customer.objects.create(
-            client_type='natural', user=_make_user('comcust'),
-            account='1234567890123456', agency_bank='Banco Test',
-            address='Calle 1', phone='12345678',
+            client_type='natural',
+            user=_make_user('comcust'),
+            account='1234567890123456',
+            agency_bank='Banco Test',
+            address='Calle 1',
+            phone='12345678',
         )
         service = Service.objects.create(
-            user=cls.admin, title='Svc Com', summary='S',
-            service_type='commercial', code='CDB2', price='50.00',
+            user=cls.admin,
+            title='Svc Com',
+            summary='S',
+            service_type='commercial',
+            code='CDB2',
+            price='50.00',
         )
         cls.sub = ServiceSubscription.objects.create(
-            customer=customer, service=service,
-            payment_status='paid', start_date=timezone.now(),
+            customer=customer,
+            service=service,
+            payment_status='paid',
+            start_date=timezone.now(),
             end_date=timezone.now() + timezone.timedelta(days=60),
         )
         Invoice.objects.create(
-            customer=customer, subscription=cls.sub,
-            number='INV-DB-2', amount='150.00',
+            customer=customer,
+            subscription=cls.sub,
+            number='INV-DB-2',
+            amount='150.00',
         )
 
     def test_income_chart_data_is_json(self):
@@ -213,21 +243,31 @@ class DashboardForecastChartTests(TestCase):
         _grant(Forecasts, cls.admin, 'view_forecast')
         cls.forecast = Forecasts.objects.create(
             date=timezone.now().date(),
-            lp='Luna Nueva', nlp='Creciente',
+            lp='Luna Nueva',
+            nlp='Creciente',
             nlpd=timezone.now().date() + timezone.timedelta(days=7),
-            sunrise=time(6, 30), sunset=time(19, 0),
+            sunrise=time(6, 30),
+            sunset=time(19, 0),
             uv_index=8,
         )
         for region in ('north', 'interior', 'south'):
             ForecastRegions.objects.create(
-                forecast=cls.forecast, region=region,
-                period='afternoon', temp=30,
-                weather='PN', wind_dir='NE', wind_speed='10',
+                forecast=cls.forecast,
+                region=region,
+                period='afternoon',
+                temp=30,
+                weather='PN',
+                wind_dir='NE',
+                wind_speed='10',
             )
             ForecastRegions.objects.create(
-                forecast=cls.forecast, region=region,
-                period='night', temp=24,
-                weather='PN', wind_dir='NE', wind_speed='8',
+                forecast=cls.forecast,
+                region=region,
+                period='night',
+                temp=24,
+                weather='PN',
+                wind_dir='NE',
+                wind_speed='8',
             )
 
     def test_forecast_chart_data(self):
@@ -236,7 +276,9 @@ class DashboardForecastChartTests(TestCase):
         self.assertEqual(response.status_code, 200)
         context = response.context
         self.assertTrue(context['has_forecasts'])
-        self.assertEqual(json.loads(context['temperature_labels']), [self.forecast.date.strftime('%d/%m')])
+        self.assertEqual(
+            json.loads(context['temperature_labels']), [self.forecast.date.strftime('%d/%m')]
+        )
         self.assertEqual(json.loads(context['max_temperatures_north']), [30.0])
         self.assertEqual(json.loads(context['min_temperatures_north']), [24.0])
         self.assertEqual(json.loads(context['max_temperatures_south']), [30.0])

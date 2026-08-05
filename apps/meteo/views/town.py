@@ -31,6 +31,7 @@ class TownListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['objects'] = self.get_queryset().select_related('province')
         return context
 
+
 class TownCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Town
     form_class = TownForm
@@ -45,9 +46,11 @@ class TownCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó un nuevo municipio: {self.object.name}."
+            message=f'Se creó un nuevo municipio: {self.object.name}.',
         )
-        messages.success(self.request, 'El municipio ha sido creada con éxito.', extra_tags='success')
+        messages.success(
+            self.request, 'El municipio ha sido creada con éxito.', extra_tags='success'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -57,6 +60,7 @@ class TownCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         context['segment'] = 'town'
         context['url_list'] = reverse_lazy('meteo:municipio_list')
         return context
+
 
 class TownUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Town
@@ -76,9 +80,11 @@ class TownUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTest
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó el municipio: {self.object.name}."
+            message=f'Se actualizó el municipio: {self.object.name}.',
         )
-        messages.success(self.request, 'El municipio ha sido actualizada con éxito.', extra_tags='warning')
+        messages.success(
+            self.request, 'El municipio ha sido actualizada con éxito.', extra_tags='warning'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -93,6 +99,7 @@ class TownUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTest
         town = self.get_object()
         return self.request.user.is_superuser or town.user == self.request.user
 
+
 class TownDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'meteo.delete_town'
 
@@ -102,7 +109,7 @@ class TownDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=town,
             action_flag=DELETION,
-            message=f"Se eliminó el municipio {town.name}."
+            message=f'Se eliminó el municipio {town.name}.',
         )
         try:
             town.delete()

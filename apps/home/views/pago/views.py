@@ -1,8 +1,7 @@
 from django.views.generic import TemplateView
 
-
-
 # Create your views here.
+
 
 class PagoView(TemplateView):
     template_name = 'pages/home/payment/qr.html'

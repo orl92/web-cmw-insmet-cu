@@ -13,8 +13,13 @@ class EmailRecipientListCreateViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         disable_maintenance_mode()
-        cls.superuser = User.objects.create_superuser('admin_recip', 'admin_recip@example.com', 'password',
-                                                       first_name='Admin', last_name='User')
+        cls.superuser = User.objects.create_superuser(
+            'admin_recip',
+            'admin_recip@example.com',
+            'password',
+            first_name='Admin',
+            last_name='User',
+        )
         cls.url = reverse('core:email_recipient_create')
 
     def test_get_renders_recipients_table_and_add_button(self):
@@ -34,7 +39,9 @@ class EmailRecipientListCreateViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'let formIndex = 0;')
         self.assertContains(response, 'recipientRowHtml(formIndex)')
-        self.assertContains(response, "tbody.insertAdjacentHTML('beforeend', recipientRowHtml(formIndex))")
+        self.assertContains(
+            response, "tbody.insertAdjacentHTML('beforeend', recipientRowHtml(formIndex))"
+        )
 
     def test_get_does_not_render_broken_delete_name_literal(self):
         self.client.force_login(self.superuser)
@@ -55,7 +62,7 @@ class EmailRecipientListCreateViewTests(TestCase):
             'recipients-0-email': 'uno@example.com',
             'recipients-1-email': 'dos@example.com',
         }
-        response = self.client.post(self.url, data, follow=True)
+        self.client.post(self.url, data, follow=True)
         lst = EmailRecipientList.objects.filter(name='Lista Create').first()
         self.assertIsNotNone(lst)
         self.assertEqual(lst.recipients.count(), 2)
@@ -65,8 +72,13 @@ class EmailRecipientListUpdateViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         disable_maintenance_mode()
-        cls.superuser = User.objects.create_superuser('admin_recip2', 'admin_recip2@example.com', 'password',
-                                                       first_name='Admin', last_name='User')
+        cls.superuser = User.objects.create_superuser(
+            'admin_recip2',
+            'admin_recip2@example.com',
+            'password',
+            first_name='Admin',
+            last_name='User',
+        )
         cls.lst = EmailRecipientList.objects.create(name='Lista Update')
         cls.r1 = EmailRecipient.objects.create(recipient_list=cls.lst, email='keep@example.com')
         cls.r2 = EmailRecipient.objects.create(recipient_list=cls.lst, email='drop@example.com')
@@ -100,6 +112,6 @@ class EmailRecipientListUpdateViewTests(TestCase):
             'recipients-1-email': 'drop@example.com',
             'recipients-1-DELETE': 'on',
         }
-        response = self.client.post(self.url, data, follow=True)
+        self.client.post(self.url, data, follow=True)
         self.assertTrue(EmailRecipient.objects.filter(pk=self.r1.pk).exists())
         self.assertFalse(EmailRecipient.objects.filter(pk=self.r2.pk).exists())

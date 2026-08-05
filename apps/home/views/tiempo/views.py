@@ -29,10 +29,13 @@ class WeatherReportDetailView(DetailView):
         return name_map[self.get_report_type()]
 
     def get_object(self):
-        return WeatherReport.objects.filter(
-            report_type=self.get_report_type(),
-            date__date=timezone.now().date()
-        ).select_related('user').first()
+        return (
+            WeatherReport.objects.filter(
+                report_type=self.get_report_type(), date__date=timezone.now().date()
+            )
+            .select_related('user')
+            .first()
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

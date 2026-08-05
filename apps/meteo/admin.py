@@ -1,18 +1,32 @@
 from django.contrib import admin
-from apps.meteo.models import Forecasts, ForecastRegions, ForecastExtendedDay, WeatherReport, Province, Town, Station, Warning
+
+from apps.meteo.models import (
+    ForecastExtendedDay,
+    ForecastRegions,
+    Forecasts,
+    Province,
+    Station,
+    Town,
+    Warning,
+    WeatherReport,
+)
+
 
 class ForecastRegionsInline(admin.TabularInline):
     model = ForecastRegions
     extra = 3
 
+
 class ForecastExtendedDayInline(admin.TabularInline):
     model = ForecastExtendedDay
     extra = 5
+
 
 @admin.register(Forecasts)
 class ForecastsAdmin(admin.ModelAdmin):
     inlines = [ForecastRegionsInline, ForecastExtendedDayInline]
     list_display = ('date', 'sunrise', 'sunset', 'uv_index')
+
 
 @admin.register(WeatherReport)
 class WeatherReportAdmin(admin.ModelAdmin):

@@ -12,11 +12,13 @@ def pdf_upload_path(instance, filename):
     safe_name = re.sub(r'[^\w\.\-]', '_', filename)
     return f'pdf/{cls_name}/{uid}_{safe_name}'
 
+
 def image_upload_path(instance, filename):
     cls_name = instance.__class__.__name__.lower()
     uid = str(instance.uuid)
     safe_name = re.sub(r'[^\w\.\-]', '_', filename)
     return f'img/{cls_name}/{uid}_{safe_name}'
+
 
 class FileHandlerMixin(models.Model):
     file_fields = []
@@ -31,9 +33,8 @@ class FileHandlerMixin(models.Model):
                 if old_instance:
                     old_file = getattr(old_instance, field_name)
                     new_file = getattr(self, field_name)
-                    if old_file and old_file != new_file:
-                        if os.path.isfile(old_file.path):
-                            os.remove(old_file.path)
+                    if old_file and old_file != new_file and os.path.isfile(old_file.path):
+                        os.remove(old_file.path)
         super().save(*args, **kwargs)
 
     def _cleanup_files(self):
@@ -66,47 +67,81 @@ class SoftDeleteModel(models.Model):
 
 
 TIEMPO_CHOICES = [
-    ('despejado', 'Despejado'), ('mayormente_despejado', 'Mayormente despejado'),
-    ('parcialmente_nublado', 'Parcialmente nublado'), ('mayormente_nublado', 'Mayormente nublado'),
-    ('nublado', 'Nublado'), ('lluvias', 'Lluvias'), ('lluvias_debiles', 'Lluvias débiles'),
-    ('chubascos', 'Chubascos'), ('chubascos_electricos', 'Chubascos eléctricos'),
-    ('chubascos_lluvias', 'Chubascos y lluvias'), ('tormenta', 'Tormenta eléctrica'),
+    ('despejado', 'Despejado'),
+    ('mayormente_despejado', 'Mayormente despejado'),
+    ('parcialmente_nublado', 'Parcialmente nublado'),
+    ('mayormente_nublado', 'Mayormente nublado'),
+    ('nublado', 'Nublado'),
+    ('lluvias', 'Lluvias'),
+    ('lluvias_debiles', 'Lluvias débiles'),
+    ('chubascos', 'Chubascos'),
+    ('chubascos_electricos', 'Chubascos eléctricos'),
+    ('chubascos_lluvias', 'Chubascos y lluvias'),
+    ('tormenta', 'Tormenta eléctrica'),
 ]
 
 VIENTO_DIRECCION_CHOICES = [
-    ('N', 'Norte'), ('NNE', 'Norte-Noreste'), ('NE', 'Noreste'), ('ENE', 'Este-Noreste'),
-    ('E', 'Este'), ('ESE', 'Este-Sureste'), ('SE', 'Sureste'), ('SSE', 'Sur-Sureste'),
-    ('S', 'Sur'), ('SSO', 'Sur-Suroeste'), ('SO', 'Suroeste'), ('OSO', 'Oeste-Suroeste'),
-    ('O', 'Oeste'), ('ONO', 'Oeste-Noroeste'), ('NO', 'Noroeste'), ('NNO', 'Norte-Noroeste'),
-    ('variable', 'Variable'), ('calmado', 'Calmado'),
+    ('N', 'Norte'),
+    ('NNE', 'Norte-Noreste'),
+    ('NE', 'Noreste'),
+    ('ENE', 'Este-Noreste'),
+    ('E', 'Este'),
+    ('ESE', 'Este-Sureste'),
+    ('SE', 'Sureste'),
+    ('SSE', 'Sur-Sureste'),
+    ('S', 'Sur'),
+    ('SSO', 'Sur-Suroeste'),
+    ('SO', 'Suroeste'),
+    ('OSO', 'Oeste-Suroeste'),
+    ('O', 'Oeste'),
+    ('ONO', 'Oeste-Noroeste'),
+    ('NO', 'Noroeste'),
+    ('NNO', 'Norte-Noroeste'),
+    ('variable', 'Variable'),
+    ('calmado', 'Calmado'),
 ]
 
 LUNA_CHOICES = [
-    ('nueva', 'Luna nueva'), ('creciente', 'Luna creciente'),
-    ('cuarto_creciente', 'Cuarto creciente'), ('creciente_gibosa', 'Creciente gibosa'),
-    ('llena', 'Luna llena'), ('menguante_gibosa', 'Menguante gibosa'),
-    ('cuarto_menguante', 'Cuarto menguante'), ('menguante', 'Luna menguante'),
+    ('nueva', 'Luna nueva'),
+    ('creciente', 'Luna creciente'),
+    ('cuarto_creciente', 'Cuarto creciente'),
+    ('creciente_gibosa', 'Creciente gibosa'),
+    ('llena', 'Luna llena'),
+    ('menguante_gibosa', 'Menguante gibosa'),
+    ('cuarto_menguante', 'Cuarto menguante'),
+    ('menguante', 'Luna menguante'),
 ]
 
 MAR_CHOICES = [
-    ('0', '0 — Calma'), ('1', '1 — Rizada'), ('2', '2 — Marejadilla'),
-    ('3', '3 — Marejada'), ('4', '4 — Fuerte marejada'), ('5', '5 — Gruesa'),
-    ('6', '6 — Muy gruesa'), ('7', '7 — Montaña'), ('8', '8 — Montañosa'),
+    ('0', '0 — Calma'),
+    ('1', '1 — Rizada'),
+    ('2', '2 — Marejadilla'),
+    ('3', '3 — Marejada'),
+    ('4', '4 — Fuerte marejada'),
+    ('5', '5 — Gruesa'),
+    ('6', '6 — Muy gruesa'),
+    ('7', '7 — Montaña'),
+    ('8', '8 — Montañosa'),
     ('9', '9 — Excepcional'),
 ]
 
 TIEMPO_IMG_BASE_MAP = {
-    'despejado': 'despejado', 'mayormente_despejado': 'mayormente_despejado',
-    'parcialmente_nublado': 'parcialmente_nublado', 'mayormente_nublado': 'nublado',
-    'nublado': 'nublado', 'lluvias': 'lluvia', 'lluvias_debiles': 'lluvia',
-    'chubascos': 'chubascos', 'chubascos_electricos': 'chubascos',
-    'chubascos_lluvias': 'chubascos', 'tormenta': 'tormenta',
+    'despejado': 'despejado',
+    'mayormente_despejado': 'mayormente_despejado',
+    'parcialmente_nublado': 'parcialmente_nublado',
+    'mayormente_nublado': 'nublado',
+    'nublado': 'nublado',
+    'lluvias': 'lluvia',
+    'lluvias_debiles': 'lluvia',
+    'chubascos': 'chubascos',
+    'chubascos_electricos': 'chubascos',
+    'chubascos_lluvias': 'chubascos',
+    'tormenta': 'tormenta',
 }
 
 CODIGOS_SIN_VARIACION = {'variable', 'calmado'}
 
 PERIOD_SUFFIXES = {'noche', 'madrugada', 'manana', 'tarde'}
-
 
 
 class SiteConfiguration(models.Model):
@@ -141,7 +176,8 @@ class CompanySettings(models.Model):
     agencia_bancaria = models.CharField(max_length=100, verbose_name='Agencia bancaria')
     telefonos = models.CharField(max_length=100, verbose_name='Teléfonos')
     registro_comercial = models.CharField(
-        max_length=50, verbose_name='Registro Comercial',
+        max_length=50,
+        verbose_name='Registro Comercial',
         help_text='Ej: A09404',
     )
 
@@ -198,8 +234,10 @@ class EmailRecipient(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, verbose_name='Correo electrónico')
     recipient_list = models.ForeignKey(
-        EmailRecipientList, on_delete=models.CASCADE,
-        related_name='recipients', verbose_name='Lista de correo',
+        EmailRecipientList,
+        on_delete=models.CASCADE,
+        related_name='recipients',
+        verbose_name='Lista de correo',
     )
 
     class Meta:

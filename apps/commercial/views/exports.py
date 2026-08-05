@@ -33,9 +33,11 @@ def _invoice_customer(invoice):
         return str(invoice.subscription.customer)
     if invoice.customer:
         return str(invoice.customer)
-    item = invoice.items.filter(subscription__isnull=False).select_related(
-        'subscription__customer'
-    ).first()
+    item = (
+        invoice.items.filter(subscription__isnull=False)
+        .select_related('subscription__customer')
+        .first()
+    )
     if item and item.subscription and item.subscription.customer:
         return str(item.subscription.customer)
     return ''
@@ -60,7 +62,14 @@ class CustomerCSVExportView(CSVExportView):
     columns = [
         ('Cliente', lambda o: str(o)),
         ('Tipo de Cliente', lambda o: o.get_client_type_display()),
-        ('Identificación', lambda o: f'REEUP {o.reeup} / NIT {o.nit}' if o.client_type == Customer.ClientType.JURIDICA else ''),
+        (
+            'Identificación',
+            lambda o: (
+                f'REEUP {o.reeup} / NIT {o.nit}'
+                if o.client_type == Customer.ClientType.JURIDICA
+                else ''
+            ),
+        ),
         ('Cuenta Bancaria', 'account'),
         ('Agencia Bancaria', 'agency_bank'),
         ('Correo Electrónico', lambda o: o.user.email or ''),
@@ -140,7 +149,10 @@ class CertificateCSVExportView(CSVExportView):
     columns = [
         ('Cliente', _sub_customer),
         ('Servicio', _sub_service),
-        ('Fecha Emisión', lambda o: o.issued_date.strftime('%d/%m/%Y %H:%M') if o.issued_date else ''),
+        (
+            'Fecha Emisión',
+            lambda o: o.issued_date.strftime('%d/%m/%Y %H:%M') if o.issued_date else '',
+        ),
         ('Pago', lambda o: o.subscription.get_payment_status_display() if o.subscription else ''),
         ('Activo', lambda o: 'Sí' if o.record_active else 'No'),
     ]

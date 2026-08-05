@@ -25,7 +25,7 @@ class ProvinceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['title'] = 'Listado de Provincias'
         context['parent'] = ''
         context['segment'] = 'provincia'
-        context['btn'] = ('Añadir Provincia')
+        context['btn'] = 'Añadir Provincia'
         context['url_create'] = reverse_lazy('meteo:provincia_create')
         context['url_list'] = reverse_lazy('meteo:provincia_list')
         context['is_superuser'] = self.request.user.is_superuser
@@ -34,6 +34,7 @@ class ProvinceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             num_stations=Count('stations', distinct=True),
         )
         return context
+
 
 class ProvinceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Province
@@ -49,9 +50,11 @@ class ProvinceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó una nueva provincia: {self.object.name}."
+            message=f'Se creó una nueva provincia: {self.object.name}.',
         )
-        messages.success(self.request, 'La provincia ha sido creada con éxito.', extra_tags='success')
+        messages.success(
+            self.request, 'La provincia ha sido creada con éxito.', extra_tags='success'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -62,7 +65,10 @@ class ProvinceCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
         context['url_list'] = reverse_lazy('meteo:provincia_list')
         return context
 
-class ProvinceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+
+class ProvinceUpdateView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     model = Province
     form_class = ProvinceForm
     template_name = 'pages/meteo/province/update.html'
@@ -80,9 +86,11 @@ class ProvinceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó la provincia: {self.object.name}."
+            message=f'Se actualizó la provincia: {self.object.name}.',
         )
-        messages.success(self.request, 'La provincia ha sido actualizada con éxito.', extra_tags='warning')
+        messages.success(
+            self.request, 'La provincia ha sido actualizada con éxito.', extra_tags='warning'
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -96,6 +104,7 @@ class ProvinceUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPasses
     def test_func(self):
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
+
 class ProvinceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'meteo.delete_province'
 
@@ -105,7 +114,7 @@ class ProvinceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=province,
             action_flag=DELETION,
-            message=f"Se eliminó la provincia {province.name}."
+            message=f'Se eliminó la provincia {province.name}.',
         )
         try:
             province.delete()

@@ -55,9 +55,11 @@ class EmailRecipientListCreateView(LoginRequiredMixin, PermissionRequiredMixin, 
     success_url = reverse_lazy('core:email_recipient_list')
 
     def form_valid(self, form):
-        logger.debug("Datos enviados (POST): %s", self.request.POST)
+        logger.debug('Datos enviados (POST): %s', self.request.POST)
         response = super().form_valid(form)
-        formset = EmailRecipientFormSet(self.request.POST, instance=self.object, prefix='recipients')
+        formset = EmailRecipientFormSet(
+            self.request.POST, instance=self.object, prefix='recipients'
+        )
 
         if formset.is_valid():
             _discard_empty_recipient_forms(formset)
@@ -66,19 +68,25 @@ class EmailRecipientListCreateView(LoginRequiredMixin, PermissionRequiredMixin, 
                 user=self.request.user,
                 obj=self.object,
                 action_flag=ADDITION,
-                message=f"Se creó un nuevo listado de correos: {self.object.name}."
+                message=f'Se creó un nuevo listado de correos: {self.object.name}.',
             )
-            messages.success(self.request, 'La lista de correos y los destinatarios se han creado con éxito.')
+            messages.success(
+                self.request, 'La lista de correos y los destinatarios se han creado con éxito.'
+            )
         else:
-            logger.debug("Errores del formset: %s", formset.errors)
-            messages.error(self.request, 'Hubo un error con los destinatarios. Verifica los campos.')
+            logger.debug('Errores del formset: %s', formset.errors)
+            messages.error(
+                self.request, 'Hubo un error con los destinatarios. Verifica los campos.'
+            )
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
         return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['formset'] = kwargs.get('formset', EmailRecipientFormSet(instance=self.object, prefix='recipients'))
+        context['formset'] = kwargs.get(
+            'formset', EmailRecipientFormSet(instance=self.object, prefix='recipients')
+        )
         context['title'] = 'Crear Listado de Correos'
         context['parent'] = ''
         context['segment'] = 'email'
@@ -86,7 +94,9 @@ class EmailRecipientListCreateView(LoginRequiredMixin, PermissionRequiredMixin, 
         return context
 
 
-class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+class EmailRecipientListUpdateView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     model = EmailRecipientList
     form_class = EmailRecipientListForm
     template_name = 'pages/core/email_recipient/update.html'
@@ -99,7 +109,9 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        formset = EmailRecipientFormSet(self.request.POST, instance=self.object, prefix='recipients')
+        formset = EmailRecipientFormSet(
+            self.request.POST, instance=self.object, prefix='recipients'
+        )
 
         if formset.is_valid():
             _discard_empty_recipient_forms(formset)
@@ -108,19 +120,26 @@ class EmailRecipientListUpdateView(LoginRequiredMixin, PermissionRequiredMixin, 
                 user=self.request.user,
                 obj=self.object,
                 action_flag=CHANGE,
-                message=f"Se actualizó el listado de correos: {self.object.name}."
+                message=f'Se actualizó el listado de correos: {self.object.name}.',
             )
-            messages.success(self.request, 'La lista de correos y los destinatarios han sido actualizados con éxito.')
+            messages.success(
+                self.request,
+                'La lista de correos y los destinatarios han sido actualizados con éxito.',
+            )
         else:
-            logger.debug("Errores del formset en update: %s", formset.errors)
-            messages.error(self.request, 'Hubo un error con los destinatarios. Verifica los campos.')
+            logger.debug('Errores del formset en update: %s', formset.errors)
+            messages.error(
+                self.request, 'Hubo un error con los destinatarios. Verifica los campos.'
+            )
             return self.render_to_response(self.get_context_data(form=form, formset=formset))
 
         return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        formset = kwargs.get('formset', EmailRecipientFormSet(instance=self.object, prefix='recipients'))
+        formset = kwargs.get(
+            'formset', EmailRecipientFormSet(instance=self.object, prefix='recipients')
+        )
 
         for form in formset:
             if not form.instance.email:
@@ -146,7 +165,7 @@ class EmailRecipientListDeleteView(LoginRequiredMixin, PermissionRequiredMixin, 
             user=self.request.user,
             obj=email_list,
             action_flag=DELETION,
-            message=f"Se eliminó el listado de correo {email_list.name}."
+            message=f'Se eliminó el listado de correo {email_list.name}.',
         )
         try:
             email_list.delete()

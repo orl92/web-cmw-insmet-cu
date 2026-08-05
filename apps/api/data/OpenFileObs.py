@@ -10,9 +10,8 @@ class OpenFileObs:
         fileobs = FileObs()
         self.__filename = fileobs.descargar_archivos_por_hora(self.__hour, self.__station_number)
         fileobs.limpiar_directorio_temporal()
-        f = open(self.filename, 'r')
-        self.__openFile = f.readlines()
-        f.close()
+        with open(self.filename) as f:
+            self.__openFile = f.readlines()
 
     @property
     def hour(self):

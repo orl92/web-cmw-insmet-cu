@@ -16,24 +16,35 @@ class WeatherReportDetailViewTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance_mode()
         cls.admin = User.objects.create_superuser(
-            'admin', 'admin@example.com', 'pass',
-            first_name='Admin', last_name='User',
+            'admin',
+            'admin@example.com',
+            'pass',
+            first_name='Admin',
+            last_name='User',
         )
         cls.reports = {
             'today': WeatherReport.objects.create(
-                report_type='today', summary='Resumen hoy', user=cls.admin,
+                report_type='today',
+                summary='Resumen hoy',
+                user=cls.admin,
                 date=timezone.now(),
             ),
             'tomorrow': WeatherReport.objects.create(
-                report_type='tomorrow', summary='Resumen mañana', user=cls.admin,
+                report_type='tomorrow',
+                summary='Resumen mañana',
+                user=cls.admin,
                 date=timezone.now(),
             ),
             'commentary': WeatherReport.objects.create(
-                report_type='commentary', summary='Comentario', user=cls.admin,
+                report_type='commentary',
+                summary='Comentario',
+                user=cls.admin,
                 date=timezone.now(),
             ),
             'note': WeatherReport.objects.create(
-                report_type='note', summary='Nota', user=cls.admin,
+                report_type='note',
+                summary='Nota',
+                user=cls.admin,
                 date=timezone.now(),
             ),
         }

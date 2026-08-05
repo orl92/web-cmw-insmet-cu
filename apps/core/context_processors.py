@@ -22,7 +22,7 @@ def menu_notifications(request):
             warning_type='storm', valid_until__gte=now
         ).count()
     except Exception as e:
-        logger.warning("Context processor query failed: %s", e)
+        logger.warning('Context processor query failed: %s', e)
         context['early_warning_count'] = 0
         context['tropical_cyclone_count'] = 0
         context['storm_warning_count'] = 0
@@ -30,6 +30,7 @@ def menu_notifications(request):
     if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
         try:
             from apps.commercial.models import ServiceSubscription
+
             context['staff_requested_count'] = ServiceSubscription.objects.filter(
                 payment_status='requested', record_active=True
             ).count()
@@ -40,7 +41,7 @@ def menu_notifications(request):
                 payment_status='expired', record_active=True
             ).count()
         except Exception as e:
-            logger.warning("Staff counts query failed: %s", e)
+            logger.warning('Staff counts query failed: %s', e)
             context['staff_requested_count'] = 0
             context['staff_pending_count'] = 0
             context['staff_expired_count'] = 0
@@ -48,6 +49,7 @@ def menu_notifications(request):
     if request.user.is_authenticated and hasattr(request.user, 'commercial_customer'):
         try:
             from apps.commercial.models import ServiceSubscription
+
             customer = request.user.commercial_customer
             context['client_requested_count'] = ServiceSubscription.objects.filter(
                 customer=customer, payment_status='requested', record_active=True
@@ -62,7 +64,7 @@ def menu_notifications(request):
                 customer=customer, payment_status='paid', end_date__gt=now, record_active=True
             ).count()
         except Exception as e:
-            logger.warning("Client counts query failed: %s", e)
+            logger.warning('Client counts query failed: %s', e)
             context['client_requested_count'] = 0
             context['client_pending_count'] = 0
             context['client_expired_count'] = 0

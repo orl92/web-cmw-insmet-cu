@@ -1,4 +1,5 @@
 from django import forms
+
 from apps.commercial.models import Certificate, ServiceSubscription
 
 
@@ -16,6 +17,6 @@ class CertificateForm(forms.ModelForm):
         self.fields['subscription'].queryset = ServiceSubscription.objects.filter(
             record_active=True
         ).select_related('customer', 'service')
-        self.fields['subscription'].label_from_instance = (
-            lambda obj: f"{obj.customer.company_name} - {obj.service.title}"
+        self.fields['subscription'].label_from_instance = lambda obj: (
+            f'{obj.customer.company_name} - {obj.service.title}'
         )

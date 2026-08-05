@@ -47,9 +47,12 @@ class Command(BaseCommand):
                 os.remove(path)
                 self.stdout.write(f'Eliminado: {rel}')
 
-        self.stdout.write(self.style.SUCCESS(
-            f"{'Se eliminarían' if dry_run else 'Eliminados'} {len(orphans)} archivo(s) huérfano(s)."
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'{"Se eliminarían" if dry_run else "Eliminados"} '
+                f'{len(orphans)} archivo(s) huérfano(s).'
+            )
+        )
 
     def _collect_referenced(self):
         referenced = set()

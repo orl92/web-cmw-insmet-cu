@@ -26,15 +26,17 @@ class MaintenanceModeToggleView(UserPassesTestMixin, TemplateView):
             config.maintenance_mode = maintenance_mode
             config.save()
 
+            action = 'activó' if maintenance_mode else 'desactivó'
+            message = f'El usuario {request.user.username} {action} el modo de mantenimiento.'
             log_action(
                 user=request.user,
                 obj=request.user,
                 action_flag=6,
-                message=f"El usuario {request.user.username} {'activó' if maintenance_mode else 'desactivó'} el modo de mantenimiento."
+                message=message,
             )
 
-            state = "activado" if config.maintenance_mode else "desactivado"
-            messages.success(request, f"El modo de mantenimiento ha sido {state}.")
+            state = 'activado' if config.maintenance_mode else 'desactivado'
+            messages.success(request, f'El modo de mantenimiento ha sido {state}.')
 
         return redirect('core:toggle_maintenance_mode')
 

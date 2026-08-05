@@ -10,8 +10,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, ListView, UpdateView, View
 
-from apps.core.utils import log_action
-from apps.core.utils import mail_send
+from apps.core.utils import log_action, mail_send
 from apps.meteo.forms.warning import WarningForm
 from apps.meteo.models import Warning
 
@@ -141,10 +140,14 @@ class WarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             user=self.request.user,
             obj=self.object,
             action_flag=ADDITION,
-            message=f"Se creó un nuevo {cfg['title_create']}: {self.object.date.strftime('%d-%m-%Y')}."
+            message=(
+                f'Se creó un nuevo {cfg["title_create"]}: {self.object.date.strftime("%d-%m-%Y")}.'
+            ),
         )
 
-        messages.success(self.request, f'{cfg["title_create"]} ha sido creado con éxito.', extra_tags='success')
+        messages.success(
+            self.request, f'{cfg["title_create"]} ha sido creado con éxito.', extra_tags='success'
+        )
         mail_send(self.request, self.object, cfg['subject_create'], cfg['mail_url'])
 
         return response
@@ -159,7 +162,9 @@ class WarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         return context
 
 
-class WarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView):
+class WarningUpdateView(
+    LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin, UpdateView
+):
     model = Warning
     form_class = WarningForm
     parent = 'avisos'
@@ -194,8 +199,7 @@ class WarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
         original_object = self.get_object(queryset=None)
         relevant_fields = ['summary', 'file', 'valid_until']
         has_changes = any(
-            form.cleaned_data[field] != getattr(original_object, field)
-            for field in relevant_fields
+            form.cleaned_data[field] != getattr(original_object, field) for field in relevant_fields
         )
         cfg = self.get_config()
 
@@ -205,13 +209,17 @@ class WarningUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UserPassesT
             user=self.request.user,
             obj=self.object,
             action_flag=CHANGE,
-            message=f"Se actualizó {cfg['title_update']}: {self.object.date.strftime('%d-%m-%Y')}."
+            message=f'Se actualizó {cfg["title_update"]}: {self.object.date.strftime("%d-%m-%Y")}.',
         )
 
         if has_changes:
             mail_send(self.request, self.object, cfg['subject_update'], cfg['mail_url'])
 
-        messages.success(self.request, f'{cfg["title_update"]} ha sido actualizado con éxito.', extra_tags='success')
+        messages.success(
+            self.request,
+            f'{cfg["title_update"]} ha sido actualizado con éxito.',
+            extra_tags='success',
+        )
         return response
 
     def get_context_data(self, **kwargs):
@@ -243,7 +251,7 @@ class WarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=warning,
             action_flag=DELETION,
-            message=f"Se eliminó {cfg['title_list']}: {warning.date.strftime('%d-%m-%Y')}."
+            message=f'Se eliminó {cfg["title_list"]}: {warning.date.strftime("%d-%m-%Y")}.',
         )
         try:
             warning.delete()
