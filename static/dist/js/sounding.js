@@ -2,9 +2,9 @@
 class SoundingFormHandler {
     constructor() {
         this.weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        this.months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+        this.months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        
+
         this.initElements();
         this.setCurrentDateAndTime();
         this.bindEvents();
@@ -13,9 +13,9 @@ class SoundingFormHandler {
         this.setupTownChangeHandler();
         this.updateForecastOptions();
         this.checkUrlParams();
-        
+
         this.autoHideTimeout = null;
-        
+
         // Carga inicial automática después de un breve delay
         // para asegurar que todo está inicializado
         setTimeout(() => {
@@ -43,16 +43,16 @@ class SoundingFormHandler {
         const month = (now.getUTCMonth() + 1).toString().padStart(2, '0');
         const day = now.getUTCDate().toString().padStart(2, '0');
         const currentDate = `${year}-${month}-${day}`;
-        
+
         // Solo establecer valores si no existen ya (por ejemplo, de parámetros URL)
         if (this.datePicker && !this.datePicker.value) {
             this.datePicker.value = currentDate;
         }
-        
+
         if (this.hourSelect && !this.hourSelect.value) {
             this.hourSelect.value = '00';
         }
-        
+
         this.updateDatetimeInit();
     }
 
@@ -83,7 +83,7 @@ class SoundingFormHandler {
                 this.updateForecastOptions();
             });
         }
-        
+
         if (this.hourSelect) {
             this.hourSelect.addEventListener('change', () => {
                 this.updateDatetimeInit();
@@ -98,7 +98,7 @@ class SoundingFormHandler {
                 const selectedOption = e.target.options[e.target.selectedIndex];
                 const lat = selectedOption.getAttribute('data-lat');
                 const long = selectedOption.getAttribute('data-long');
-                
+
                 if (document.querySelector('[name="lat"]')) {
                     document.querySelector('[name="lat"]').value = lat;
                 }
@@ -120,59 +120,59 @@ class SoundingFormHandler {
 
     updateForecastOptions() {
         if (!this.datePicker || !this.hourSelect || !this.forecastSelect) return;
-        
+
         const dateValue = this.datePicker.value;
         const hourValue = this.hourSelect.value;
-        
+
         if (!dateValue || !hourValue) return;
-        
+
         const baseDate = new Date(`${dateValue}T${hourValue}:00Z`);
         if (isNaN(baseDate.getTime())) return;
-        
+
         this.forecastSelect.innerHTML = '';
-        
+
         for (let i = 0; i < 24; i++) {
             const forecastDate = new Date(baseDate);
             const hoursToAdd = i * 3;
             forecastDate.setUTCHours(forecastDate.getUTCHours() + hoursToAdd);
-            
+
             if (isNaN(forecastDate.getTime())) {
                 console.error('Fecha inválida en previsión');
                 continue;
             }
-            
+
             const dayOfWeek = forecastDate.getUTCDay();
             const monthIndex = forecastDate.getUTCMonth();
-            
+
             if (dayOfWeek < 0 || dayOfWeek >= this.weekdays.length) {
                 console.error('Índice de día fuera de rango:', dayOfWeek);
                 continue;
             }
-            
+
             if (monthIndex < 0 || monthIndex >= this.months.length) {
                 console.error('Índice de mes fuera de rango:', monthIndex);
                 continue;
             }
-            
+
             const weekday = this.weekdays[dayOfWeek];
             const month = this.months[monthIndex];
             const day = forecastDate.getUTCDate();
             const year = forecastDate.getUTCFullYear();
             const hours = forecastDate.getUTCHours().toString().padStart(2, '0');
-            
+
             const option = document.createElement('option');
             option.value = i + 1;
             option.textContent = `${weekday}, ${day} ${month} ${year} ${hours} UTC (+${hoursToAdd} Hrs)`;
-            
+
             if (i === 0) option.selected = true;
-            
+
             this.forecastSelect.appendChild(option);
         }
     }
 
     checkUrlParams() {
         const params = new URLSearchParams(window.location.search);
-        
+
         // Verificar si hay parámetros en la URL
         if (params.toString()) {
             const datetimeInit = params.get('datetime_init') || '';
@@ -190,7 +190,7 @@ class SoundingFormHandler {
                 this.forecastSelect.value = tIndex;
             }
         }
-        
+
         this.updateDatetimeInit();
         this.updateForecastOptions();
     }
@@ -198,7 +198,7 @@ class SoundingFormHandler {
     loadInitialData() {
         // Forzar actualización de datetime-init antes de enviar
         this.updateDatetimeInit();
-        
+
         // Simular envío del formulario para cargar datos iniciales
         setTimeout(() => {
             this.handleSubmit(new Event('submit'));
@@ -217,11 +217,11 @@ class SoundingFormHandler {
         }
 
         this.errorMessageElement.textContent = message;
-        
+
         if (this.plotArea) {
             this.plotArea.style.display = 'block';
         }
-        
+
         this.errorContainer.style.display = 'block';
         this.hidePlot();
 
@@ -234,7 +234,7 @@ class SoundingFormHandler {
         if (this.errorContainer) {
             this.errorContainer.style.display = 'none';
         }
-        
+
         if (this.autoHideTimeout) {
             clearTimeout(this.autoHideTimeout);
             this.autoHideTimeout = null;
@@ -290,7 +290,7 @@ class SoundingFormHandler {
 
         try {
             const formData = new FormData(this.form);
-            
+
             const response = await fetch('', {
                 method: 'POST',
                 body: formData,
@@ -351,14 +351,14 @@ class SoundingFormHandler {
         const selectedOption = this.townSelect.options[this.townSelect.selectedIndex];
         const lat = selectedOption.getAttribute('data-lat');
         const long = selectedOption.getAttribute('data-long');
-        
+
         const params = {
             datetime_init: this.datetimeInitEl.value,
             lat: lat,
             long: long,
             t_index: this.forecastSelect.value
         };
-        
+
         const urlParams = new URLSearchParams(params);
         const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
         window.history.pushState({}, '', newUrl);

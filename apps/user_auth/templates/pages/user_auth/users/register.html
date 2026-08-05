@@ -440,17 +440,17 @@
     min-height: auto;
     padding: 15px 0;
   }
-  
+
   @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  
+
   .wizard-step.has-error {
     border-left: 4px solid var(--tblr-danger);
     padding-left: 10px;
   }
-  
+
   @media (max-width: 768px) {
     .container-normal {
       padding-left: 15px;
@@ -571,13 +571,13 @@
       steps.forEach(step => step.style.display = 'none');
       const currentStepElement = document.getElementById(`step-${currentStep}`);
       if (currentStepElement) currentStepElement.style.display = 'block';
-      
+
       progressBar.style.width = (currentStep / totalSteps) * 100 + '%';
       progressBar.setAttribute('aria-valuenow', (currentStep / totalSteps) * 100);
       currentStepSpan.textContent = currentStep;
-      
+
       prevBtn.disabled = currentStep === 1;
-      
+
       if (currentStep === totalSteps) {
         nextBtn.style.display = 'none';
         submitBtn.style.display = 'inline-block';

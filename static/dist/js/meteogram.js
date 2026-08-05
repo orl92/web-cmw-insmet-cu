@@ -155,7 +155,7 @@ class Meteogram {
     onChartLoad(chart) {
         // Guardar referencia al meteograma en el chart
         chart.meteogram = this;
-        
+
         setTimeout(() => this.drawWeatherSymbols(chart), 50);
 
         window.addEventListener('resize', () => {
@@ -279,7 +279,7 @@ class Meteogram {
                     color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
                     zIndex: 5
                 }
-            }, 
+            },
             {
                 linkedTo: 0,
                 type: 'datetime',
@@ -302,7 +302,7 @@ class Meteogram {
             }],
 
             yAxis: [
-                // Temperature 
+                // Temperature
                 {
                      title: {
                         text: null
@@ -327,16 +327,16 @@ class Meteogram {
                     gridLineColor: colors.gridLine,
                 },
 
-                // Precipitation 
+                // Precipitation
                 {
                     title: {
                         text: null,
                         style: {
                             fontSize: '10px',
-                            color: colors.precipitation, 
+                            color: colors.precipitation,
                         }
                     },
-                    
+
                     labels: {
                         format: '{value:.0f}mm',
                         style: {
@@ -345,7 +345,7 @@ class Meteogram {
                         },
                         x: -3
                     },
-                    opposite: false, 
+                    opposite: false,
                     min: 0, // Forzar que empiece en 0
                     max: 10, // Establecer un máximo razonable
                     tickInterval: 2,
@@ -731,7 +731,7 @@ class MeteogramFormHandler {
         const today = new Date().toISOString().split('T')[0];
         if (this.datepicker) this.datepicker.value = today;
         if (this.hourSelect) this.hourSelect.value = '00';
-        
+
         setTimeout(() => {
             this.updateDatetimeInit();
         }, 0);
@@ -760,12 +760,12 @@ class MeteogramFormHandler {
 
         // Actualizar el mensaje de error
         this.errorMessageElement.textContent = message;
-        
+
         // Mostrar el plot-area para que el error sea visible
         if (this.plotArea) {
             this.plotArea.style.display = 'block';
         }
-        
+
         // Mostrar el contenedor de error
         this.errorContainer.style.display = 'block';
 
@@ -783,7 +783,7 @@ class MeteogramFormHandler {
             // Solo ocultamos el contenedor de error, no el plot-area
             this.errorContainer.style.display = 'none';
         }
-        
+
         // Limpiar el timeout
         if (this.autoHideTimeout) {
             clearTimeout(this.autoHideTimeout);
@@ -808,7 +808,7 @@ class MeteogramFormHandler {
                 console.warn('Error al destruir instancia del meteograma:', e);
             }
         }
-        
+
         // También limpia el contenedor del gráfico
         if (this.chartContainer) {
             this.chartContainer.innerHTML = '';
@@ -822,13 +822,13 @@ class MeteogramFormHandler {
         this.updateDatetimeInit();
 
         const datetimeInit = document.getElementById('datetime-init').value;
-        
+
         if (!this.form.checkValidity()) {
             e.stopPropagation();
             this.form.classList.add('was-validated');
             return;
         }
-        
+
         if (!/^\d{10}$/.test(datetimeInit)) {
             this.showError(`Formato de fecha/hora inválido: ${datetimeInit}`);
             return;
@@ -919,7 +919,7 @@ class MeteogramFormHandler {
 
             // Crear el meteograma
             this.meteogramInstance = new Meteogram(formattedResponse.data, 'container', options);
-            
+
         } catch (error) {
             console.error('Error al crear meteograma:', error);
             this.showError(`Error al crear gráfico: ${error.message}`);

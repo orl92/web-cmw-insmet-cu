@@ -137,7 +137,7 @@ function getSeaConditionTitle(seaValue) {
             return 'Condición desconocida';
     }
 }
-   
+
 // Función para obtener el título completo de la condición del tiempo basado en su abreviatura
 function getWeatherConditionTitle(weatherValue) {
     switch (weatherValue) {
@@ -158,7 +158,7 @@ function getWeatherConditionTitle(weatherValue) {
         case 'NUM TORM':
             return 'Numerosas Tormentas';
     }
-}  
+}
 
 
 
@@ -236,7 +236,7 @@ function displayForecast(region, forecast) {
             </div>
         </div>
     `;
-}    
+}
 
 // Función para mostrar la fecha sin año
 function formatDateWithoutYear(dateString) {
@@ -288,8 +288,8 @@ function displayExtendedForecast(forecast) {
         const contentElement2 = document.querySelector(`#day${i}-content-2`);
         if (contentElement2) {
             contentElement2.innerHTML = `
-                <div class="weather-icon" style="height: 100px; width: 100px"> 
-                    <img src="${forecast[`day${i}`].weather_icon}" alt="${forecast[`day${i}`].weather}" title="${getWeatherConditionTitle(forecast[`day${i}`].weather)}"> 
+                <div class="weather-icon" style="height: 100px; width: 100px">
+                    <img src="${forecast[`day${i}`].weather_icon}" alt="${forecast[`day${i}`].weather}" title="${getWeatherConditionTitle(forecast[`day${i}`].weather)}">
                 </div>
                 <div class="temp-info">
                     <div class="temp-max" title="Temperatura máxima">${forecast[`day${i}`].max_temp}°</div>
@@ -347,7 +347,7 @@ function displayAstronomicalData(data) {
 
     const sunrise = formatTime24to12(data.sunrise.slice(0, 5));
     const sunset = formatTime24to12(data.sunset.slice(0, 5));
-    
+
     document.querySelector('#sunrise-sunset-content').innerHTML = `
         <div class="sunrise-sunset-item">
             <img src="${data.sunrise_icon}" alt="Amanecer" title="Amanecer" style="height: 75px; width: 75px;">
@@ -368,7 +368,7 @@ function displayAstronomicalData(data) {
             </div>
         </div>
     `;
-   
+
 // Crear el indicador de índice UV
     let uvIndexContent = createUvIndexContent(data.uv_index);
     document.querySelector('#uv-index-content').innerHTML = uvIndexContent;

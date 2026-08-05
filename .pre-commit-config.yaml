@@ -12,11 +12,16 @@ repos:
       - id: check-merge-conflict
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
       - id: detect-secrets
-        exclude: "static/|staticfiles/|.*\\.min\\.js$|.*\\.map$"
+        args: ['--baseline', '.secrets.baseline']
+        exclude: "static/|staticfiles/|\\.secrets\\.baseline$|.*\\.min\\.js$|.*\\.map$"
 
   - repo: https://github.com/djlint/djlint
     rev: v1.44.0
     hooks:
-      - id: djlint-lint
-      - id: djlint-reformat
+      - id: djlint-django
+      - id: djlint-reformat-django

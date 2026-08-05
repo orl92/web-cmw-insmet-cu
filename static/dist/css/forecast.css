@@ -85,7 +85,7 @@
     .temp-info {
         gap: 15px;
     }
-    
+
     .temp-label {
         font-size: 0.7rem;
     }
@@ -108,7 +108,7 @@
         height: 70px;
         width: 70px;
     }
-    
+
     .temp-info {
         gap: 10px; /* Menor espacio en móvil */
     }

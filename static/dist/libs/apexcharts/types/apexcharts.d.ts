@@ -334,7 +334,7 @@ type ApexAxisChartSeries = {
  | Record<string, any>[];
 }[]
 
-type ApexNonAxisChartSeries = 
+type ApexNonAxisChartSeries =
   | number[]
   | ApexAxisChartSeries
 

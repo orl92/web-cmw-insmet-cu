@@ -51,7 +51,7 @@ class MeteoPlotter {
         if (this.emptyStateElement) {
             this.emptyStateElement.classList.remove('d-none');
         }
-        
+
         if (this.galleryContainer) {
             this.galleryContainer.innerHTML = '';
         }
@@ -89,7 +89,7 @@ class MeteoPlotter {
                 <div class="row g-2 g-md-3">
                     <div class="col-12">
                         <a data-fslightbox="gallery" href="${proxyUrl}" data-caption="${this.varLabel} - ${timePart}">
-                            <div class="img-responsive img-responsive-3x1 rounded-3 border" 
+                            <div class="img-responsive img-responsive-3x1 rounded-3 border"
                                  style="background-image: url(${proxyUrl})">
                             </div>
                         </a>
@@ -236,7 +236,7 @@ async function submitFormWithDefaultValues() {
 
     } catch (error) {
         console.error('Error:', error);
-        
+
         // Mostrar error usando el método de MeteoPlotter
         const plotter = new MeteoPlotter({ imageUrls: [] });
         plotter.showError(error.message);
@@ -246,9 +246,9 @@ async function submitFormWithDefaultValues() {
 // Función para formatear errores de forma más amigable
 function formatErrorMessage(error) {
     if (!error) return 'Error desconocido';
-    
+
     const errorStr = error.toString();
-    
+
     // Manejar errores comunes de la API
     if (errorStr.includes('404')) {
         return 'No se encontraron datos para los parámetros seleccionados. Por favor, intente con otra fecha o variable.';
@@ -259,7 +259,7 @@ function formatErrorMessage(error) {
     } else if (errorStr.includes('500')) {
         return 'Error interno del servidor. Por favor, contacte al administrador.';
     }
-    
+
     // Para otros errores, devolver el mensaje original pero limpiado
     return errorStr.replace(/Error:|["{}]/g, '').trim();
 }

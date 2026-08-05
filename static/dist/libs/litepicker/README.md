@@ -13,12 +13,12 @@ Date range picker - lightweight, no dependencies
 * Select forward/backward
 * Inline mode
 * Repick date range
-* Lock days  
+* Lock days
 * Keyboard accessibility (with plugin)
 * Mobile friendly (with plugin)
 * Predefined ranges (with plugin)
 * Multiple select (with plugin)
-  
+
 See more details in docs.
 
 # [Documentation](https://litepicker.com)
@@ -58,7 +58,7 @@ See more details in docs.
 [![](https://github.com/wakirin/Litepicker/blob/gh-pages/assets/images/coffee.png?raw=true)](https://ko-fi.com/wakirin)
 
 ## Tested on real browsers
-Tested on real browsers via BrowserStack.  
-Thanks to the BrowserStack for supporting the open-source projects.  
+Tested on real browsers via BrowserStack.
+Thanks to the BrowserStack for supporting the open-source projects.
 
 [![](https://github.com/wakirin/Litepicker/blob/gh-pages/assets/images/Browserstack-logo.png?raw=true)](https://www.browserstack.com/)

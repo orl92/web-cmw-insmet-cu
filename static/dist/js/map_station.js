@@ -104,7 +104,7 @@ function addCity(longitude, latitude, title, numero) {
                 stationTitle.textContent = `${title}, No. ${numero}`;
                 stationWeather.textContent = `${datos.data["estado del cielo"]}`;
                 stationTemperature.innerHTML = `<strong>${datos.data.temperatura} °C</strong>`;
-                
+
                 // Comprobar si las temperaturas máximas y mínimas están disponibles
                 if (datos.data["temperatura maxima"] !== undefined && datos.data["temperatura minima"] !== undefined) {
                     // Si no existe un objeto para esta estación, inicializar uno

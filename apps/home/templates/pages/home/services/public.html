@@ -146,7 +146,7 @@
   <script>
     // Configurar PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         // Inicializar el visor PDF si la clase existe
         if (typeof PDFViewer !== 'undefined') {

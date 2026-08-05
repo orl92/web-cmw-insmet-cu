@@ -183,7 +183,7 @@
   <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof PDFViewer !== 'undefined') {
             window.viewer = new PDFViewer({
