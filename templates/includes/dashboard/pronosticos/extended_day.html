@@ -1,17 +1,21 @@
-{% if form.instance.pk %}<input type="hidden" name="{{ form.id.html_name }}" value="{{ form.instance.pk }}">{% endif %}
+{% if form.instance.pk %}
+  <input type="hidden"
+         name="{{ form.id.html_name }}"
+         value="{{ form.instance.pk }}">
+{% endif %}
 <div class="mb-3">
-    <label class="form-label">Fecha</label>
-    {{ form.date }}
+  <label class="form-label">Fecha</label>
+  {{ form.date }}
 </div>
 <div class="mb-3">
-    <label class="form-label">Temp. Mín</label>
-    {{ form.min_temp }}
+  <label class="form-label">Temp. Mín</label>
+  {{ form.min_temp }}
 </div>
 <div class="mb-3">
-    <label class="form-label">Temp. Máx</label>
-    {{ form.max_temp }}
+  <label class="form-label">Temp. Máx</label>
+  {{ form.max_temp }}
 </div>
 <div class="mb-3">
-    <label class="form-label">Tiempo</label>
-    {{ form.weather }}
+  <label class="form-label">Tiempo</label>
+  {{ form.weather }}
 </div>

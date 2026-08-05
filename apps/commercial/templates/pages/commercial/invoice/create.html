@@ -1,132 +1,181 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
-
 {% block form %}
-<div id="form-messages"></div>
-
-<div class="row">
-  <!-- Cliente -->
-  <div class="col-md-6 mb-3">
-    <label class="form-label required">{{ form.customer.label }}</label>
-    {{ form.customer }}
-    {% if form.customer.errors %}
-      <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
-    {% endif %}
-  </div>
-  <!-- Registro Comercial -->
-  <div class="col-md-6 mb-3">
-    <label class="form-label">{{ form.commercial_registry.label }}</label>
-    <div class="input-group">
-      <input type="text" class="form-control" value="{{ form.commercial_registry.value|default:'' }}" disabled />
-      <input type="hidden" name="{{ form.commercial_registry.html_name }}" value="{{ form.commercial_registry.value|default:'' }}" />
-      <button type="button" class="btn btn-outline-secondary" id="btn-open-modal" title="Editar datos de la empresa">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
-          <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
-          <path d="M16 5l3 3" />
-        </svg>
-        Editar
-      </button>
+  <div id="form-messages"></div>
+  <div class="row">
+    <!-- Cliente -->
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.customer.label }}</label>
+      {{ form.customer }}
+      {% if form.customer.errors %}
+        <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
+      {% endif %}
     </div>
-    {% if form.commercial_registry.errors %}
-      <div class="invalid-feedback d-block">{{ form.commercial_registry.errors.0 }}</div>
-    {% endif %}
+    <!-- Registro Comercial -->
+    <div class="col-md-6 mb-3">
+      <label class="form-label">{{ form.commercial_registry.label }}</label>
+      <div class="input-group">
+        <input type="text"
+               class="form-control"
+               value="{{ form.commercial_registry.value|default:'' }}"
+               disabled />
+        <input type="hidden"
+               name="{{ form.commercial_registry.html_name }}"
+               value="{{ form.commercial_registry.value|default:'' }}" />
+        <button type="button"
+                class="btn btn-outline-secondary"
+                id="btn-open-modal"
+                title="Editar datos de la empresa">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="icon"
+               width="24"
+               height="24"
+               viewBox="0 0 24 24"
+               stroke-width="2"
+               stroke="currentColor"
+               fill="none"
+               stroke-linecap="round"
+               stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+            <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+            <path d="M16 5l3 3" />
+          </svg>
+          Editar
+        </button>
+      </div>
+      {% if form.commercial_registry.errors %}
+        <div class="invalid-feedback d-block">{{ form.commercial_registry.errors.0 }}</div>
+      {% endif %}
+    </div>
   </div>
-</div>
-
-<!-- Fechas y duración -->
-<div class="row">
-  <div class="col-md-4 mb-3">
-    <label class="form-label">{{ form.start_date.label }}</label>
-    {{ form.start_date }}
+  <!-- Fechas y duración -->
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <label class="form-label">{{ form.start_date.label }}</label>
+      {{ form.start_date }}
+    </div>
+    <div class="col-md-4 mb-3">
+      <label class="form-label">{{ form.end_date.label }}</label>
+      {{ form.end_date }}
+    </div>
+    <div class="col-md-4 mb-3">
+      <label class="form-label">Días del período</label>
+      <input type="text" class="form-control" id="days-count" value="0" readonly />
+    </div>
   </div>
-  <div class="col-md-4 mb-3">
-    <label class="form-label">{{ form.end_date.label }}</label>
-    {{ form.end_date }}
-  </div>
-  <div class="col-md-4 mb-3">
-    <label class="form-label">Días del período</label>
-    <input type="text" class="form-control" id="days-count" value="0" readonly />
-  </div>
-</div>
-
-<!-- Bloque dinámico -->
-<div id="dynamic-fields">
-  <!-- Suscripciones agrupadas por período -->
-  <div id="subscriptions-grouped" style="display: none;"></div>
-
-  <!-- Facturación manual -->
-  <div id="manual-container" style="display: none;">
-    <div class="card">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="card-title">Añadir servicios manualmente</h5>
-          <button type="button" id="add-item" class="btn btn-sm btn-icon btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Añadir servicio">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
-        </div>
-        {{ items_formset.management_form }}
-        <div id="items-container">
-          {% for item_form in items_formset %}
-            <div class="item-row card mb-3">
-              <div class="card-body d-flex align-items-end">
-                <div class="flex-grow-1 row g-3">
-                  <div class="col-md-4">
-                    <label class="form-label">{{ item_form.service.label }}</label>
-                    {{ item_form.service }}
+  <!-- Bloque dinámico -->
+  <div id="dynamic-fields">
+    <!-- Suscripciones agrupadas por período -->
+    <div id="subscriptions-grouped" style="display: none;"></div>
+    <!-- Facturación manual -->
+    <div id="manual-container" style="display: none;">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title">Añadir servicios manualmente</h5>
+            <button type="button"
+                    id="add-item"
+                    class="btn btn-sm btn-icon btn-outline-primary"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    title="Añadir servicio">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="icon"
+                   width="24"
+                   height="24"
+                   viewBox="0 0 24 24"
+                   stroke-width="2"
+                   stroke="currentColor"
+                   fill="none"
+                   stroke-linecap="round"
+                   stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
+          {{ items_formset.management_form }}
+          <div id="items-container">
+            {% for item_form in items_formset %}
+              <div class="item-row card mb-3">
+                <div class="card-body d-flex align-items-end">
+                  <div class="flex-grow-1 row g-3">
+                    <div class="col-md-4">
+                      <label class="form-label">{{ item_form.service.label }}</label>
+                      {{ item_form.service }}
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">{{ item_form.codigo.label }}</label>
+                      {{ item_form.codigo }}
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">{{ item_form.cantidad.label }}</label>
+                      <input type="text"
+                             name="{{ item_form.cantidad.html_name }}"
+                             value="{{ item_form.cantidad.value|default:'' }}"
+                             class="form-control quantity-days"
+                             readonly />
+                    </div>
+                    <div class="col-md-1">
+                      <label class="form-label">{{ item_form.unidad_medida.label }}</label>
+                      {{ item_form.unidad_medida }}
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">{{ item_form.precio.label }}</label>
+                      {{ item_form.precio }}
+                    </div>
                   </div>
-                  <div class="col-md-2">
-                    <label class="form-label">{{ item_form.codigo.label }}</label>
-                    {{ item_form.codigo }}
+                  <div class="ms-3">
+                    <button type="button"
+                            class="btn btn-sm btn-icon btn-outline-danger remove-row"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            title="Eliminar servicio">
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                           class="icon"
+                           width="24"
+                           height="24"
+                           viewBox="0 0 24 24"
+                           stroke-width="2"
+                           stroke="currentColor"
+                           fill="none"
+                           stroke-linecap="round"
+                           stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M4 7l16 0" />
+                        <path d="M10 11l0 6" />
+                        <path d="M14 11l0 6" />
+                        <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                        <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                      </svg>
+                    </button>
                   </div>
-                  <div class="col-md-2">
-                    <label class="form-label">{{ item_form.cantidad.label }}</label>
-                    <input type="text" name="{{ item_form.cantidad.html_name }}" value="{{ item_form.cantidad.value|default:'' }}" class="form-control quantity-days" readonly />
-                  </div>
-                  <div class="col-md-1">
-                    <label class="form-label">{{ item_form.unidad_medida.label }}</label>
-                    {{ item_form.unidad_medida }}
-                  </div>
-                  <div class="col-md-2">
-                    <label class="form-label">{{ item_form.precio.label }}</label>
-                    {{ item_form.precio }}
-                  </div>
-                </div>
-                <div class="ms-3">
-                  <button type="button" class="btn btn-sm btn-icon btn-outline-danger remove-row" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Eliminar servicio">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                      <path d="M4 7l16 0" />
-                      <path d="M10 11l0 6" />
-                      <path d="M14 11l0 6" />
-                      <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-                      <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
-                    </svg>
-                  </button>
                 </div>
               </div>
-            </div>
-          {% endfor %}
+            {% endfor %}
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 {% endblock %}
-
 {% block modal %}
   <!-- Modal para editar Datos de la Empresa (sin cambios) -->
-  <div class="modal modal-blur fade" id="modal-company-settings" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal modal-blur fade"
+       id="modal-company-settings"
+       tabindex="-1"
+       role="dialog"
+       aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Editar Datos de la Empresa</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <form id="company-settings-form" novalidate>
@@ -134,17 +183,26 @@
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label class="form-label">Nombre</label>
-                <input type="text" name="nombre" class="form-control" value="{{ company.nombre }}">
+                <input type="text"
+                       name="nombre"
+                       class="form-control"
+                       value="{{ company.nombre }}">
               </div>
               <div class="col-md-6 mb-3">
                 <label class="form-label">Dirección</label>
-                <input type="text" name="direccion" class="form-control" value="{{ company.direccion }}">
+                <input type="text"
+                       name="direccion"
+                       class="form-control"
+                       value="{{ company.direccion }}">
               </div>
             </div>
             <div class="row">
               <div class="col-md-4 mb-3">
                 <label class="form-label">Código REEUP</label>
-                <input type="text" name="codigo_reeup" class="form-control" value="{{ company.codigo_reeup }}">
+                <input type="text"
+                       name="codigo_reeup"
+                       class="form-control"
+                       value="{{ company.codigo_reeup }}">
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label">NIT</label>
@@ -152,25 +210,39 @@
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label">Registro Comercial</label>
-                <input type="text" name="registro_comercial" class="form-control" value="{{ company.registro_comercial }}">
+                <input type="text"
+                       name="registro_comercial"
+                       class="form-control"
+                       value="{{ company.registro_comercial }}">
               </div>
             </div>
             <div class="row">
               <div class="col-md-4 mb-3">
                 <label class="form-label">Cuenta Bancaria</label>
-                <input type="text" name="cuenta_bancaria" class="form-control" value="{{ company.cuenta_bancaria }}">
+                <input type="text"
+                       name="cuenta_bancaria"
+                       class="form-control"
+                       value="{{ company.cuenta_bancaria }}">
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label">Agencia Bancaria</label>
-                <input type="text" name="agencia_bancaria" class="form-control" value="{{ company.agencia_bancaria }}">
+                <input type="text"
+                       name="agencia_bancaria"
+                       class="form-control"
+                       value="{{ company.agencia_bancaria }}">
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label">Teléfonos</label>
-                <input type="text" name="telefonos" class="form-control" value="{{ company.telefonos }}">
+                <input type="text"
+                       name="telefonos"
+                       class="form-control"
+                       value="{{ company.telefonos }}">
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-link link-secondary me-auto" data-bs-dismiss="modal">Cancelar</button>
+              <button type="button"
+                      class="btn btn-link link-secondary me-auto"
+                      data-bs-dismiss="modal">Cancelar</button>
               <button type="submit" class="btn btn-primary ms-auto">Guardar</button>
             </div>
           </form>
@@ -179,9 +251,8 @@
     </div>
   </div>
 {% endblock %}
-
 {% block extrajs %}
-<script>
+  <script>
   // ============================================================
   // Gestión del modal de empresa (sin cambios)
   // ============================================================
@@ -461,7 +532,7 @@
             <h5 class="mb-0">Suscripciones Pendientes</h5>
             <button type="button" class="btn btn-outline-secondary" id="switch-to-manual-btn">
               <svg xmlns="http://www.w3.org/2000/svg" class="icon me-1" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
@@ -482,9 +553,7 @@
                     <span class="badge bg-blue-lt ms-2">${days} días</span>
                   </h6>
                   <div class="form-check form-switch form-switch-lg mb-0">
-                    <input class="form-check-input period-switch" type="checkbox" 
-                           id="switch-${start}-${end}" data-start="${start}" data-end="${end}"
-                           data-bs-toggle="tooltip" data-bs-placement="bottom" title="Activar período">
+                    <input class="form-check-input period-switch" type="checkbox" id="switch-${start}-${end}" data-start="${start}" data-end="${end}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Activar período">
                     <label class="form-check-label" for="switch-${start}-${end}"></label>
                   </div>
                 </div>
@@ -497,10 +566,7 @@
             }
             htmlResult += `
               <div class="form-check">
-                <input class="form-check-input subscription-check" type="checkbox" 
-                       name="subscriptions" value="${cb.value}" 
-                       id="sub_${cb.value}" data-start="${start}" data-end="${end}" 
-                       data-service="${cb.dataset.service}" data-days="${days}" data-summary="${summary}">
+                <input class="form-check-input subscription-check" type="checkbox" name="subscriptions" value="${cb.value}" id="sub_${cb.value}" data-start="${start}" data-end="${end}" data-service="${cb.dataset.service}" data-days="${days}" data-summary="${summary}">
                 <label class="form-check-label" for="sub_${cb.value}">
                   <strong>${cb.dataset.service}</strong>
                   ${summary ? `<br><small class="text-muted">${summary}</small>` : ''}
@@ -629,5 +695,5 @@
     bindRowEvents(newRow);
     updateRowFromService(newRow);
   });
-</script>
+  </script>
 {% endblock %}

@@ -7,7 +7,9 @@
         <div class="card-actions">
           <a href="{{ url_list }}" class="btn btn-secondary btn-icon">Volver al Listado</a>
           <a href="{% url url_update obj.uuid %}" class="btn btn-warning btn-icon">Editar</a>
-          <a href="{% url url_pdf obj.uuid %}" class="btn btn-info btn-icon" target="_blank">Descargar PDF</a>
+          <a href="{% url url_pdf obj.uuid %}"
+             class="btn btn-info btn-icon"
+             target="_blank">Descargar PDF</a>
         </div>
       </div>
       <div class="card-body">
@@ -15,21 +17,33 @@
           <div class="col-md-6">
             <h4>Información General</h4>
             <table class="table table-bordered">
-              <tr><th>Fecha:</th><td>{{ obj.date|date:'j \d\e F \d\e Y' }}</td></tr>
-              <tr><th>Hora:</th><td>{{ obj.date|time:'h:i A' }}</td></tr>
-              <tr><th>Autor:</th><td>{{ obj.user.get_full_name|default:obj.user.username }}</td></tr>
-              <tr><th>Lista de Correo:</th><td>{{ obj.email_recipient_list.name|default:'-' }}</td></tr>
+              <tr>
+                <th>Fecha:</th>
+                <td>{{ obj.date|date:'j \d\e F \d\e Y' }}</td>
+              </tr>
+              <tr>
+                <th>Hora:</th>
+                <td>{{ obj.date|time:'h:i A' }}</td>
+              </tr>
+              <tr>
+                <th>Autor:</th>
+                <td>{{ obj.user.get_full_name|default:obj.user.username }}</td>
+              </tr>
+              <tr>
+                <th>Lista de Correo:</th>
+                <td>{{ obj.email_recipient_list.name|default:'-' }}</td>
+              </tr>
             </table>
           </div>
           <div class="col-md-6">
             <h4>Archivo</h4>
             <div class="text-center">
-              <div class="file-icon">
-                {% include 'includes/partials/pdf_avatar.html' %}
-              </div>
+              <div class="file-icon">{% include 'includes/partials/pdf_avatar.html' %}</div>
               <p class="mt-2">{{ obj.file.name|default:'Sin archivo' }}</p>
               {% if obj.file %}
-                <a href="{{ obj.file.url }}" class="btn btn-primary btn-pill" target="_blank">Ver PDF</a>
+                <a href="{{ obj.file.url }}"
+                   class="btn btn-primary btn-pill"
+                   target="_blank">Ver PDF</a>
               {% endif %}
             </div>
           </div>

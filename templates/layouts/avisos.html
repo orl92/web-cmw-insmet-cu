@@ -34,7 +34,9 @@
                   {% if warning.file %}
                     <div class="d-flex justify-content-center align-items-center flex-column">
                       <!-- Contenedor principal para vista previa del PDF -->
-                      <div id="pdfPreviewContainer-{{ forloop.counter }}"  class="pdf-container-mobile" data-pdf-url="{{ warning.absolute_file_url|default:warning.file.url }}">
+                      <div id="pdfPreviewContainer-{{ forloop.counter }}"
+                           class="pdf-container-mobile"
+                           data-pdf-url="{{ warning.absolute_file_url|default:warning.file.url }}">
                         <div id="pdfPages-{{ forloop.counter }}" class="pdf-pages-container"></div>
                       </div>
                     </div>
@@ -42,7 +44,8 @@
                 </div>
                 <!-- Información del autor -->
                 <div class="d-flex align-items-center mt-3">
-                  <span class="avatar avatar-xs rounded-circle me-1" style="background-image: url({{ warning.user.profile.get_avatar }})"></span>
+                  <span class="avatar avatar-xs rounded-circle me-1"
+                        style="background-image: url({{ warning.user.profile.get_avatar }})"></span>
                   <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
                   <span>{{ warning.user.get_full_name }}</span>
                   <span class="text-muted mx-2">•</span>
@@ -51,12 +54,22 @@
                 <!-- Botón para ver PDF -->
                 {% if warning.file %}
                   <div class="mt-4 text-center">
-                    <a href="#" class="btn btn-pill btn-outline-primary" 
-                       data-bs-toggle="modal" 
-                       data-bs-target="#pdfModal" 
+                    <a href="#"
+                       class="btn btn-pill btn-outline-primary"
+                       data-bs-toggle="modal"
+                       data-bs-target="#pdfModal"
                        data-pdf-url="{{ warning.absolute_file_url|default:warning.file.url }}"
                        data-pdf-title="{{ title }} - {{ warning.date|date:'d/m/Y' }}">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                           width="24"
+                           height="24"
+                           viewBox="0 0 24 24"
+                           fill="none"
+                           stroke="currentColor"
+                           stroke-width="2"
+                           stroke-linecap="round"
+                           stroke-linejoin="round"
+                           class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-pdf">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
                         <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
@@ -64,7 +77,8 @@
                         <path d="M17 18h2" />
                         <path d="M20 15h-3v6" />
                         <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z" />
-                      </svg> Ver PDF
+                      </svg>
+                      Ver PDF
                     </a>
                   </div>
                 {% endif %}
@@ -78,7 +92,9 @@
               <div class="card">
                 <div class="card-body">
                   <div class="text-center py-5">
-                    <img src="{% static 'dist/img/webp/boy-refresh.webp' %}" class="img-fluid w-25" alt="No hay publicaciones" />
+                    <img src="{% static 'dist/img/webp/boy-refresh.webp' %}"
+                         class="img-fluid w-25"
+                         alt="No hay publicaciones" />
                     <p class="empty-title mt-4">Nada que mostrar...</p>
                     <p class="empty-subtitle text-secondary">No hay avisos disponibles por el momento.</p>
                   </div>
@@ -90,28 +106,45 @@
       </div>
     </div>
   </div>
-
   <!-- Modal para PDF en pantalla completa -->
-  <div class="modal fade" id="pdfModal" tabindex="-1" aria-labelledby="pdfModalLabel" aria-hidden="true">
+  <div class="modal fade"
+       id="pdfModal"
+       tabindex="-1"
+       aria-labelledby="pdfModalLabel"
+       aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="pdfModalLabel">{{ title }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
         </div>
         <div class="modal-body p-0">
           <div id="modalPdfContainer" class="modal-pdf-container">
             <div id="modalPdfViewer" class="modal-pdf-viewer">
-              <div id="modalPdfPages" class="modal-pdf-pages">
-              </div>
+              <div id="modalPdfPages" class="modal-pdf-pages"></div>
             </div>
             <div class="modal-pdf-controls">
-              <button type="button" id="modalPrevPage" class="btn btn-sm btn-light" aria-label="Página anterior">‹</button>
+              <button type="button"
+                      id="modalPrevPage"
+                      class="btn btn-sm btn-light"
+                      aria-label="Página anterior">‹</button>
               <span id="modalPageInfo" class="modal-page-info">Página 1 de 1</span>
-              <button type="button" id="modalNextPage" class="btn btn-sm btn-light" aria-label="Página siguiente">›</button>
-              <button type="button" id="modalZoomOut" class="btn btn-sm btn-light ms-2" aria-label="Alejar">-</button>
+              <button type="button"
+                      id="modalNextPage"
+                      class="btn btn-sm btn-light"
+                      aria-label="Página siguiente">›</button>
+              <button type="button"
+                      id="modalZoomOut"
+                      class="btn btn-sm btn-light ms-2"
+                      aria-label="Alejar">-</button>
               <span id="modalZoomLevel" class="modal-zoom-level">100%</span>
-              <button type="button" id="modalZoomIn" class="btn btn-sm btn-light" aria-label="Acercar">+</button>
+              <button type="button"
+                      id="modalZoomIn"
+                      class="btn btn-sm btn-light"
+                      aria-label="Acercar">+</button>
               <button type="button" id="modalFitWidth" class="btn btn-sm btn-light ms-2">Ajustar</button>
             </div>
           </div>
@@ -120,7 +153,6 @@
     </div>
   </div>
 {% endblock %}
-
 {% block extrajs %}
   <!-- Incluir PDF.js local -->
   <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>

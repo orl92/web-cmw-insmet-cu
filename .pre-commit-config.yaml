@@ -14,3 +14,9 @@ repos:
       - id: trailing-whitespace
       - id: detect-secrets
         exclude: "static/|staticfiles/|.*\\.min\\.js$|.*\\.map$"
+
+  - repo: https://github.com/djlint/djlint
+    rev: v1.44.0
+    hooks:
+      - id: djlint-lint
+      - id: djlint-reformat

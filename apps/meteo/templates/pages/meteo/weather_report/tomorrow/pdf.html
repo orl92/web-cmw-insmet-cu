@@ -21,22 +21,21 @@
       {% endif %}
       <h1>El Tiempo para Mañana</h1>
     </div>
-
     <div class="section">
-      <strong>Fecha:</strong> {{ weather_tomorrow.date|date:'j \d\e F \d\e Y' }}<br />
-      <strong>Hora:</strong> {{ weather_tomorrow.date|time:'h:i A' }}<br />
+      <strong>Fecha:</strong> {{ weather_tomorrow.date|date:'j \d\e F \d\e Y' }}
+      <br />
+      <strong>Hora:</strong> {{ weather_tomorrow.date|time:'h:i A' }}
+      <br />
       <strong>Autor:</strong> {{ weather_tomorrow.user.get_full_name|default:weather_tomorrow.user.username }}
     </div>
-
     <div class="section">
       <strong>Resumen:</strong>
       <div class="summary">{{ weather_tomorrow.summary|linebreaks }}</div>
     </div>
-
     {% if weather_tomorrow.file %}
-    <div class="section">
-      <strong>Archivo:</strong> {{ weather_tomorrow.file.name }}
-    </div>
+      <div class="section">
+        <strong>Archivo:</strong> {{ weather_tomorrow.file.name }}
+      </div>
     {% endif %}
   </body>
 </html>

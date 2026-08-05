@@ -1,156 +1,155 @@
 {% extends 'layouts/form.html' %}
 {% load static my_filters %}
-
 {% block form %}
-<div class="row">
+  <div class="row">
     <div class="col-md-12 mb-3">
-        <label class="form-label required">Nombre del Grupo</label>
-        <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}"
-               id="{{ form.name.id_for_label }}"
-               name="{{ form.name.name }}" placeholder="Ej: Administradores" required>
-        {% if form.name.errors %}
-            <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
-        {% endif %}
+      <label class="form-label required">Nombre del Grupo</label>
+      <input type="text"
+             class="form-control
+                    {% if form.name.errors %}is-invalid{% endif %}"
+             id="{{ form.name.id_for_label }}"
+             name="{{ form.name.name }}"
+             placeholder="Ej: Administradores"
+             required>
+      {% if form.name.errors %}
+        <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+      {% endif %}
     </div>
-</div>
-
-<div class="row">
+  </div>
+  <div class="row">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h5 class="mb-0">Permisos del Grupo</h5>
-                <p class="text-muted mb-0">Selecciona los permisos que tendrá este grupo</p>
-            </div>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h5 class="mb-0">Permisos del Grupo</h5>
+          <p class="text-muted mb-0">Selecciona los permisos que tendrá este grupo</p>
         </div>
-        
-        {% include 'pages/user_auth/groups/_profile_selector.html' %}
-        
-        <div class="table-responsive">
-            <table class="table table-flush-spacing">
-                <tbody>
-                    <tr>
-                        <td class="text-nowrap fw-medium">
-                            Acceso de Administrador
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-info-circle" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Permite un acceso completo al sistema">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
-                                <path d="M12 9h.01" />
-                                <path d="M11 12h1v4h1" />
-                            </svg>
-                        </td>
-                        <td>
-                            <div class="d-flex justify-content-end">
-                                <div class="form-check mb-0 mt-1">
-                                    <input type="checkbox" 
-                                           name="admin_access" 
-                                           id="admin_access_checkbox"
-                                           class="form-check-input">
-                                    <label class="form-check-label" for="admin_access_checkbox"> 
-                                        Seleccionar todos los permisos
-                                    </label>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% for app_label, app_data in grouped_by_app.items %}
-                    <tr>
-                        <td colspan="2" class="bg-azure-lt">
-                            <strong>{{ app_data.verbose_name }}</strong>
-                            <div class="form-check form-check-inline float-end">
-                                <input type="checkbox"
-                                       class="app-select-all form-check-input"
-                                       id="select-all-{{ app_label }}"
-                                       data-app="{{ app_label }}">
-                                <label class="form-check-label" for="select-all-{{ app_label }}">
-                                    Seleccionar todos
-                                </label>
-                            </div>
-                        </td>
-                    </tr>
-                    {% for model_name, perms in app_data.models.items %}
-                    <tr>
-                        <td class="text-nowrap fw-medium">{{ model_name }}</td>
-                        <td>
-                            <div class="d-flex justify-content-end">
-                                {% if perms.view %}
-                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
-                                    <input type="checkbox"
-                                           name="{{ perms.view.field_name }}"
-                                           value="{{ perms.view.perm.id }}"
-                                           id="{{ perms.view.field_id }}"
-                                           class="form-check-input permission-checkbox perm-{{ app_label }} view">
-                                    <label class="form-check-label text-green fw-medium" for="{{ perms.view.field_id }}">
-                                        Ver
-                                    </label>
-                                </div>
-                                {% endif %}
-                                {% if perms.add %}
-                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
-                                    <input type="checkbox"
-                                           name="{{ perms.add.field_name }}"
-                                           value="{{ perms.add.perm.id }}"
-                                           id="{{ perms.add.field_id }}"
-                                           class="form-check-input permission-checkbox perm-{{ app_label }} add">
-                                    <label class="form-check-label text-blue fw-medium" for="{{ perms.add.field_id }}">
-                                        Añadir
-                                    </label>
-                                </div>
-                                {% endif %}
-                                {% if perms.change %}
-                                <div class="form-check mb-0 mt-1 me-4 me-lg-12">
-                                    <input type="checkbox"
-                                           name="{{ perms.change.field_name }}"
-                                           value="{{ perms.change.perm.id }}"
-                                           id="{{ perms.change.field_id }}"
-                                           class="form-check-input permission-checkbox perm-{{ app_label }} change">
-                                    <label class="form-check-label text-orange fw-medium" for="{{ perms.change.field_id }}">
-                                        Editar
-                                    </label>
-                                </div>
-                                {% endif %}
-                                {% if perms.delete %}
-                                <div class="form-check mb-0 mt-1">
-                                    <input type="checkbox"
-                                           name="{{ perms.delete.field_name }}"
-                                           value="{{ perms.delete.perm.id }}"
-                                           id="{{ perms.delete.field_id }}"
-                                           class="form-check-input permission-checkbox perm-{{ app_label }} delete">
-                                    <label class="form-check-label text-red fw-medium" for="{{ perms.delete.field_id }}">
-                                        Eliminar
-                                    </label>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% empty %}
-                    <tr>
-                        <td colspan="2" class="text-center text-muted">
-                            No se encontraron modelos con permisos definidos
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% if form.permissions.errors %}
-            <div class="alert alert-danger mt-3" role="alert">{{ form.permissions.errors }}</div>
-        {% endif %}
+      </div>
+      {% include 'pages/user_auth/groups/_profile_selector.html' %}
+      <div class="table-responsive">
+        <table class="table table-flush-spacing">
+          <tbody>
+            <tr>
+              <td class="text-nowrap fw-medium">
+                Acceso de Administrador
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     class="icon icon-tabler icons-tabler-outline icon-tabler-info-circle"
+                     data-bs-toggle="tooltip"
+                     data-bs-placement="bottom"
+                     title="Permite un acceso completo al sistema">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+                  <path d="M12 9h.01" />
+                  <path d="M11 12h1v4h1" />
+                </svg>
+              </td>
+              <td>
+                <div class="d-flex justify-content-end">
+                  <div class="form-check mb-0 mt-1">
+                    <input type="checkbox"
+                           name="admin_access"
+                           id="admin_access_checkbox"
+                           class="form-check-input">
+                    <label class="form-check-label" for="admin_access_checkbox">Seleccionar todos los permisos</label>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% for app_label, app_data in grouped_by_app.items %}
+              <tr>
+                <td colspan="2" class="bg-azure-lt">
+                  <strong>{{ app_data.verbose_name }}</strong>
+                  <div class="form-check form-check-inline float-end">
+                    <input type="checkbox"
+                           class="app-select-all form-check-input"
+                           id="select-all-{{ app_label }}"
+                           data-app="{{ app_label }}">
+                    <label class="form-check-label" for="select-all-{{ app_label }}">Seleccionar todos</label>
+                  </div>
+                </td>
+              </tr>
+              {% for model_name, perms in app_data.models.items %}
+                <tr>
+                  <td class="text-nowrap fw-medium">{{ model_name }}</td>
+                  <td>
+                    <div class="d-flex justify-content-end">
+                      {% if perms.view %}
+                        <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                          <input type="checkbox"
+                                 name="{{ perms.view.field_name }}"
+                                 value="{{ perms.view.perm.id }}"
+                                 id="{{ perms.view.field_id }}"
+                                 class="form-check-input permission-checkbox perm-{{ app_label }} view">
+                          <label class="form-check-label text-green fw-medium"
+                                 for="{{ perms.view.field_id }}">Ver</label>
+                        </div>
+                      {% endif %}
+                      {% if perms.add %}
+                        <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                          <input type="checkbox"
+                                 name="{{ perms.add.field_name }}"
+                                 value="{{ perms.add.perm.id }}"
+                                 id="{{ perms.add.field_id }}"
+                                 class="form-check-input permission-checkbox perm-{{ app_label }} add">
+                          <label class="form-check-label text-blue fw-medium"
+                                 for="{{ perms.add.field_id }}">Añadir</label>
+                        </div>
+                      {% endif %}
+                      {% if perms.change %}
+                        <div class="form-check mb-0 mt-1 me-4 me-lg-12">
+                          <input type="checkbox"
+                                 name="{{ perms.change.field_name }}"
+                                 value="{{ perms.change.perm.id }}"
+                                 id="{{ perms.change.field_id }}"
+                                 class="form-check-input permission-checkbox perm-{{ app_label }} change">
+                          <label class="form-check-label text-orange fw-medium"
+                                 for="{{ perms.change.field_id }}">Editar</label>
+                        </div>
+                      {% endif %}
+                      {% if perms.delete %}
+                        <div class="form-check mb-0 mt-1">
+                          <input type="checkbox"
+                                 name="{{ perms.delete.field_name }}"
+                                 value="{{ perms.delete.perm.id }}"
+                                 id="{{ perms.delete.field_id }}"
+                                 class="form-check-input permission-checkbox perm-{{ app_label }} delete">
+                          <label class="form-check-label text-red fw-medium"
+                                 for="{{ perms.delete.field_id }}">Eliminar</label>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% empty %}
+              <tr>
+                <td colspan="2" class="text-center text-muted">No se encontraron modelos con permisos definidos</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if form.permissions.errors %}
+        <div class="alert alert-danger mt-3" role="alert">{{ form.permissions.errors }}</div>
+      {% endif %}
     </div>
-</div>
+  </div>
 {% endblock %}
-
 {% block extrajs %}
-<style>
+  <style>
 input.view:checked { background-color: var(--tblr-green); border-color: var(--tblr-green); }
 input.add:checked { background-color: var(--tblr-blue); border-color: var(--tblr-blue); }
 input.change:checked { background-color: var(--tblr-orange); border-color: var(--tblr-orange); }
 input.delete:checked { background-color: var(--tblr-red); border-color: var(--tblr-red); }
-</style>
-
-<script>
+  </style>
+  <script>
 document.addEventListener('DOMContentLoaded', function() {
     const permissionCheckboxes = document.querySelectorAll('.permission-checkbox');
     const adminAccessCheckbox = document.getElementById('admin_access_checkbox');
@@ -238,5 +237,5 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-</script>
+  </script>
 {% endblock %}

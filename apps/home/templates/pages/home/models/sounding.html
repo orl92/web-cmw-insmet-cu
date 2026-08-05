@@ -1,110 +1,114 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
-
 {% block content %}
-    <div class="col-12">
-        <div class="card mb-4">
-            <div class="card-body">
-                <form id="sounding-form" method="post" class="needs-validation" novalidate>
-                    {% csrf_token %}
-                    <input type="hidden" name="datetime_init" id="datetime-init">
-                    
-                    <div class="row g-3 align-items-end">
-                        <!-- Campos Fecha y Hora -->
-                        <div class="col-md-3">
-                            <div class="row g-2">
-                                <!-- Fecha -->
-                                <div class="col-12">
-                                    <label for="datepicker" class="form-label required">Fecha UTC</label>
-                                    <div class="input-icon">
-                                        <input class="form-control" placeholder="Seleccione una fecha" id="datepicker"
-                                               value="{{ initial_date|default:'' }}">
-                                        <span class="input-icon-addon">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                 stroke-linejoin="round" class="icon icon-1">
-                                                <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
-                                                <path d="M16 3v4"></path>
-                                                <path d="M8 3v4"></path>
-                                                <path d="M4 11h16"></path>
-                                                <path d="M11 15h1"></path>
-                                                <path d="M12 15v3"></path>
-                                            </svg>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-2">
-                            <!-- Hora -->
-                            <div class="mb-0">
-                                <label for="hour-select" class="form-label required">Hora UTC</label>
-                                <select class="form-select" id="hour-select" required>
-                                    <option value="00" selected>00:00</option>
-                                    <option value="06">06:00</option>
-                                    <option value="12">12:00</option>
-                                    <option value="18">18:00</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Campo de municipio -->
-                        <div class="col-md-2 form-field">
-                            <label for="id_town" class="form-label required">Municipio</label>
-                            <select class="form-select" id="id_town" name="town" required>
-                                {% for town in form.town.field.queryset %}
-                                    <option value="{{ town.id }}" 
-                                            data-lat="{{ town.latitude }}" 
-                                            data-long="{{ town.longitude }}"
-                                            {% if form.town.value == town.id %}selected{% endif %}>
-                                        {{ town.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Campo de previsión -->
-                        <div class="col-md-3 form-field">
-                            <div class="mb-0">
-                                <label for="forecast-select" class="form-label required">Previsión</label>
-                                <select class="form-select" id="forecast-select" name="t_index" required>
-                                    <!-- Opciones generadas dinámicamente por JavaScript -->
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Botón de enviar -->
-                        <div class="col-md-2">
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary" id="submit-btn">Generar</button>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Área del gráfico inicialmente oculta -->
-    <div id="plot-area" style="display: none;">
-        <div class="card mt-4">
-            <div class="card-body">
-                <!-- Contenedor para mensajes de error (DENTRO del plot-area) -->
-                <div id="error-container" class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;">
-                    <div class="d-flex align-items-center">
-                        <span id="error-message"></span>
-                    </div>
+  <div class="col-12">
+    <div class="card mb-4">
+      <div class="card-body">
+        <form id="sounding-form" method="post" class="needs-validation" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="datetime_init" id="datetime-init">
+          <div class="row g-3 align-items-end">
+            <!-- Campos Fecha y Hora -->
+            <div class="col-md-3">
+              <div class="row g-2">
+                <!-- Fecha -->
+                <div class="col-12">
+                  <label for="datepicker" class="form-label required">Fecha UTC</label>
+                  <div class="input-icon">
+                    <input class="form-control"
+                           placeholder="Seleccione una fecha"
+                           id="datepicker"
+                           value="{{ initial_date|default:'' }}">
+                    <span class="input-icon-addon">
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                           width="24"
+                           height="24"
+                           viewBox="0 0 24 24"
+                           fill="none"
+                           stroke="currentColor"
+                           stroke-width="2"
+                           stroke-linecap="round"
+                           stroke-linejoin="round"
+                           class="icon icon-1">
+                        <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                        <path d="M16 3v4"></path>
+                        <path d="M8 3v4"></path>
+                        <path d="M4 11h16"></path>
+                        <path d="M11 15h1"></path>
+                        <path d="M12 15v3"></path>
+                      </svg>
+                    </span>
+                  </div>
                 </div>
-
-                <!-- Elemento img para mostrar el gráfico -->
-                <img id="sounding-plot" class="w-100" alt="Sondeo meteorológico" style="display: none;">
+              </div>
             </div>
-        </div>
+            <div class="col-md-2">
+              <!-- Hora -->
+              <div class="mb-0">
+                <label for="hour-select" class="form-label required">Hora UTC</label>
+                <select class="form-select" id="hour-select" required>
+                  <option value="00" selected>00:00</option>
+                  <option value="06">06:00</option>
+                  <option value="12">12:00</option>
+                  <option value="18">18:00</option>
+                </select>
+              </div>
+            </div>
+            <!-- Campo de municipio -->
+            <div class="col-md-2 form-field">
+              <label for="id_town" class="form-label required">Municipio</label>
+              <select class="form-select" id="id_town" name="town" required>
+                {% for town in form.town.field.queryset %}
+                  <option value="{{ town.id }}"
+                          data-lat="{{ town.latitude }}"
+                          data-long="{{ town.longitude }}"
+                          {% if form.town.value == town.id %}selected{% endif %}>{{ town.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <!-- Campo de previsión -->
+            <div class="col-md-3 form-field">
+              <div class="mb-0">
+                <label for="forecast-select" class="form-label required">Previsión</label>
+                <select class="form-select" id="forecast-select" name="t_index" required>
+                  <!-- Opciones generadas dinámicamente por JavaScript -->
+                </select>
+              </div>
+            </div>
+            <!-- Botón de enviar -->
+            <div class="col-md-2">
+              <div class="d-grid">
+                <button type="submit" class="btn btn-primary" id="submit-btn">Generar</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
+  </div>
+  <!-- Área del gráfico inicialmente oculta -->
+  <div id="plot-area" style="display: none;">
+    <div class="card mt-4">
+      <div class="card-body">
+        <!-- Contenedor para mensajes de error (DENTRO del plot-area) -->
+        <div id="error-container"
+             class="alert alert-danger alert-dismissible fade show"
+             role="alert"
+             style="display: none">
+          <div class="d-flex align-items-center">
+            <span id="error-message"></span>
+          </div>
+        </div>
+        <!-- Elemento img para mostrar el gráfico -->
+        <img id="sounding-plot"
+             class="w-100"
+             alt="Sondeo meteorológico"
+             style="display: none">
+      </div>
+    </div>
+  </div>
 {% endblock %}
-
 {% block extrajs %}
-<script src="{% static 'dist/libs/litepicker/dist/litepicker.js' %}"></script>
-<script src="{% static 'dist/js/sounding.js' %}"></script>
+  <script src="{% static 'dist/libs/litepicker/dist/litepicker.js' %}"></script>
+  <script src="{% static 'dist/js/sounding.js' %}"></script>
 {% endblock extrajs %}

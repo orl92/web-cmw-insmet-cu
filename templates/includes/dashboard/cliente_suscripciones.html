@@ -1,98 +1,97 @@
 {% load static %}
-
 {% if is_client %}
-<!-- Mis Suscripciones -->
-<div class="row row-deck row-cards mt-3">
-  <div class="col-12">
-    <h3 class="card-title">Mis Suscripciones</h3>
-  </div>
-  <div class="col">
-    <div class="card card-sm">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="subheader text-muted">Activas</div>
+  <!-- Mis Suscripciones -->
+  <div class="row row-deck row-cards mt-3">
+    <div class="col-12">
+      <h3 class="card-title">Mis Suscripciones</h3>
+    </div>
+    <div class="col">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader text-muted">Activas</div>
+          </div>
+          <div class="h1 mb-0 text-green">{{ client_active_subs|length }}</div>
         </div>
-        <div class="h1 mb-0 text-green">{{ client_active_subs|length }}</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader text-muted">Pendientes de pago</div>
+          </div>
+          <div class="h1 mb-0 text-warning">{{ client_pending_subs|length }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader text-muted">Solicitadas</div>
+          </div>
+          <div class="h1 mb-0 text-info">{{ client_requested_subs|length }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader text-muted">Próximas a vencer</div>
+          </div>
+          <div class="h1 mb-0 text-orange">{{ client_expiring_soon|length }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card card-sm">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="subheader text-muted">Vencidas</div>
+          </div>
+          <div class="h1 mb-0 text-danger">{{ client_expired_subs|length }}</div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col">
-    <div class="card card-sm">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="subheader text-muted">Pendientes de pago</div>
+  <!-- Mis Facturas -->
+  <div class="row row-deck row-cards mt-3">
+    <div class="col-12">
+      <h3 class="card-title">Mis Facturas Recientes</h3>
+    </div>
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          {% if client_invoices %}
+            <div class="table-responsive">
+              <table class="table table-vcenter">
+                <thead>
+                  <tr>
+                    <th>Número</th>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for inv in client_invoices %}
+                    <tr>
+                      <td>{{ inv.number }}</td>
+                      <td>{{ inv.issue_date|date:'d/m/Y' }}</td>
+                      <td>{{ inv.amount }}</td>
+                      <td>{% if inv.is_cancelled %}<span class="badge bg-red-lt">Anulada</span>{% else %}<span class="badge bg-green-lt">Vigente</span>{% endif %}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No tiene facturas registradas.</p>
+          {% endif %}
         </div>
-        <div class="h1 mb-0 text-warning">{{ client_pending_subs|length }}</div>
       </div>
     </div>
   </div>
-  <div class="col">
-    <div class="card card-sm">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="subheader text-muted">Solicitadas</div>
-        </div>
-        <div class="h1 mb-0 text-info">{{ client_requested_subs|length }}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="card card-sm">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="subheader text-muted">Próximas a vencer</div>
-        </div>
-        <div class="h1 mb-0 text-orange">{{ client_expiring_soon|length }}</div>
-      </div>
-    </div>
-  </div>
-  <div class="col">
-    <div class="card card-sm">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="subheader text-muted">Vencidas</div>
-        </div>
-        <div class="h1 mb-0 text-danger">{{ client_expired_subs|length }}</div>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- Mis Facturas -->
-<div class="row row-deck row-cards mt-3">
-  <div class="col-12">
-    <h3 class="card-title">Mis Facturas Recientes</h3>
-  </div>
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body">
-        {% if client_invoices %}
-        <div class="table-responsive">
-          <table class="table table-vcenter">
-            <thead>
-              <tr>
-                <th>Número</th>
-                <th>Fecha</th>
-                <th>Monto</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for inv in client_invoices %}
-              <tr>
-                <td>{{ inv.number }}</td>
-                <td>{{ inv.issue_date|date:'d/m/Y' }}</td>
-                <td>{{ inv.amount }}</td>
-                <td>{% if inv.is_cancelled %}<span class="badge bg-red-lt">Anulada</span>{% else %}<span class="badge bg-green-lt">Vigente</span>{% endif %}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-        <p class="text-muted mb-0">No tiene facturas registradas.</p>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
 {% endif %}

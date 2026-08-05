@@ -21,22 +21,21 @@
       {% endif %}
       <h1>Comentario del Tiempo</h1>
     </div>
-
     <div class="section">
-      <strong>Fecha:</strong> {{ weather_commentary.date|date:'j \d\e F \d\e Y' }}<br />
-      <strong>Hora:</strong> {{ weather_commentary.date|time:'h:i A' }}<br />
+      <strong>Fecha:</strong> {{ weather_commentary.date|date:'j \d\e F \d\e Y' }}
+      <br />
+      <strong>Hora:</strong> {{ weather_commentary.date|time:'h:i A' }}
+      <br />
       <strong>Autor:</strong> {{ weather_commentary.user.get_full_name|default:weather_commentary.user.username }}
     </div>
-
     <div class="section">
       <strong>Comentario:</strong>
       <div class="summary">{{ weather_commentary.summary|linebreaks }}</div>
     </div>
-
     {% if weather_commentary.file %}
-    <div class="section">
-      <strong>Archivo:</strong> {{ weather_commentary.file.name }}
-    </div>
+      <div class="section">
+        <strong>Archivo:</strong> {{ weather_commentary.file.name }}
+      </div>
     {% endif %}
   </body>
 </html>

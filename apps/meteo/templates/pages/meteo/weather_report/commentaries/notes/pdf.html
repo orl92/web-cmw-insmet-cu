@@ -21,22 +21,21 @@
       {% endif %}
       <h1>Nota Meteorológica</h1>
     </div>
-
     <div class="section">
-      <strong>Fecha:</strong> {{ weather_note.date|date:'j \d\e F \d\e Y' }}<br />
-      <strong>Hora:</strong> {{ weather_note.date|time:'h:i A' }}<br />
+      <strong>Fecha:</strong> {{ weather_note.date|date:'j \d\e F \d\e Y' }}
+      <br />
+      <strong>Hora:</strong> {{ weather_note.date|time:'h:i A' }}
+      <br />
       <strong>Autor:</strong> {{ weather_note.user.get_full_name|default:weather_note.user.username }}
     </div>
-
     <div class="section">
       <strong>Nota:</strong>
       <div class="summary">{{ weather_note.summary|linebreaks }}</div>
     </div>
-
     {% if weather_note.file %}
-    <div class="section">
-      <strong>Archivo:</strong> {{ weather_note.file.name }}
-    </div>
+      <div class="section">
+        <strong>Archivo:</strong> {{ weather_note.file.name }}
+      </div>
     {% endif %}
   </body>
 </html>

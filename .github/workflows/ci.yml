@@ -74,3 +74,23 @@ jobs:
 
       - name: Check pending migrations
         run: python manage.py makemigrations --check --dry-run
+
+  templates:
+    name: Templates (djlint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Check template formatting
+        run: djlint . --reformat --check
+
+      - name: Lint templates
+        run: djlint . --lint

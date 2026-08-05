@@ -4,29 +4,75 @@
 {% block title_actions %}
   <div class="col-auto ms-auto d-print-none">
     <div class="d-flex justify-content-end flex-wrap gap-1">
-      <a href="{% url 'publications:list' %}" type="button" class="btn btn-icon btn-outline-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Volver al listado" aria-label="Volver al listado">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-left">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <path d="M5 12l14 0"/>
-          <path d="M5 12l6 6"/>
-          <path d="M5 12l6 -6"/>
+      <a href="{% url 'publications:list' %}"
+         type="button"
+         class="btn btn-icon btn-outline-secondary btn-sm"
+         data-bs-toggle="tooltip"
+         data-bs-placement="bottom"
+         title="Volver al listado"
+         aria-label="Volver al listado">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="24"
+             height="24"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             stroke-linecap="round"
+             stroke-linejoin="round"
+             class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-left">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M5 12l14 0" />
+          <path d="M5 12l6 6" />
+          <path d="M5 12l6 -6" />
         </svg>
       </a>
-      <a href="{% url 'publications:update' publicacion.uuid %}" type="button" class="btn btn-icon btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Editar" aria-label="Editar">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
-          <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
-          <path d="M16 5l3 3"/>
+      <a href="{% url 'publications:update' publicacion.uuid %}"
+         type="button"
+         class="btn btn-icon btn-outline-warning btn-sm"
+         data-bs-toggle="tooltip"
+         data-bs-placement="bottom"
+         title="Editar"
+         aria-label="Editar">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="24"
+             height="24"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             stroke-linecap="round"
+             stroke-linejoin="round"
+             class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+          <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+          <path d="M16 5l3 3" />
         </svg>
       </a>
-      <a href="{% url 'publications:pdf' publicacion.uuid %}" type="button" class="btn btn-icon btn-outline-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Descargar PDF" aria-label="Descargar PDF" target="_blank">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-file-download">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-          <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
-          <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/>
-          <path d="M12 11v6"/>
-          <path d="M9 14l3 3l3 -3"/>
+      <a href="{% url 'publications:pdf' publicacion.uuid %}"
+         type="button"
+         class="btn btn-icon btn-outline-primary btn-sm"
+         data-bs-toggle="tooltip"
+         data-bs-placement="bottom"
+         title="Descargar PDF"
+         aria-label="Descargar PDF"
+         target="_blank">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="24"
+             height="24"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             stroke-linecap="round"
+             stroke-linejoin="round"
+             class="icon icon-tabler icons-tabler-outline icon-tabler-file-download">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+          <path d="M12 11v6" />
+          <path d="M9 14l3 3l3 -3" />
         </svg>
       </a>
     </div>
@@ -41,11 +87,20 @@
           <div class="d-flex align-items-center">
             <div class="me-3">
               <span class="avatar avatar-xl bg-primary-lt text-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-book-2">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                  <path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z"/>
-                  <path d="M19 16h-12a2 2 0 0 0 -2 2"/>
-                  <path d="M9 8h6"/>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="36"
+                     height="36"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="1.5"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     class="icon icon-tabler icons-tabler-outline icon-tabler-book-2">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M19 4v16h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12z" />
+                  <path d="M19 16h-12a2 2 0 0 0 -2 2" />
+                  <path d="M9 8h6" />
                 </svg>
               </span>
             </div>
@@ -53,11 +108,39 @@
               <h2 class="mb-1">{{ publicacion.title }}</h2>
               <div class="d-flex flex-wrap gap-2 text-secondary">
                 <span class="d-inline-flex align-items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       width="16"
+                       height="16"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       class="icon">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />
+                    <path d="M16 3v4" />
+                    <path d="M8 3v4" />
+                    <path d="M4 11h16" />
+                  </svg>
                   {{ publicacion.publication_date|date:"d/m/Y" }}
                 </span>
                 <span class="d-inline-flex align-items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       width="16"
+                       height="16"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       class="icon">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+                    <path d="M12 7v5l3 3" />
+                  </svg>
                   Publicada el {{ publicacion.publication_date|date:"d/m/Y" }}
                 </span>
               </div>
@@ -66,7 +149,6 @@
         </div>
       </div>
     </div>
-
     <div class="col-lg-6">
       <div class="card h-100 detail-card">
         <div class="card-header">
@@ -74,11 +156,10 @@
         </div>
         <div class="card-body d-flex flex-column">
           <div class="d-flex align-items-center mb-3">
-            <div class="me-3">
-              {% include 'includes/partials/pdf_avatar.html' %}
-            </div>
+            <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
             <div class="flex-grow-1">
-              <p class="mb-0 fw-medium text-truncate" title="{{ publicacion.pdf.name }}">{{ publicacion.pdf|filename|default:'Sin archivo' }}</p>
+              <p class="mb-0 fw-medium text-truncate"
+                 title="{{ publicacion.pdf.name }}">{{ publicacion.pdf|filename|default:'Sin archivo' }}</p>
               {% if publicacion.pdf %}
                 <span class="badge bg-secondary-lt mt-1">{{ publicacion.pdf.size|filesizeformat }}</span>
               {% endif %}
@@ -86,12 +167,42 @@
           </div>
           {% if publicacion.pdf %}
             <div class="mt-auto d-flex gap-2">
-              <a href="{{ publicacion.pdf.url }}" class="btn btn-primary btn-pill btn-sm" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"/><path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/></svg>
+              <a href="{{ publicacion.pdf.url }}"
+                 class="btn btn-primary btn-pill btn-sm"
+                 target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="16"
+                     height="16"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     class="icon me-1">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                  <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+                </svg>
                 Ver PDF
               </a>
-              <a href="{% url 'publications:pdf' publicacion.uuid %}" class="btn btn-outline-primary btn-pill btn-sm" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5v12"/><path d="M7 12l5 5l5 -5"/></svg>
+              <a href="{% url 'publications:pdf' publicacion.uuid %}"
+                 class="btn btn-outline-primary btn-pill btn-sm"
+                 target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="16"
+                     height="16"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     class="icon me-1">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M12 5v12" />
+                  <path d="M7 12l5 5l5 -5" />
+                </svg>
                 Descargar
               </a>
             </div>
@@ -99,7 +210,6 @@
         </div>
       </div>
     </div>
-
     <div class="col-lg-6">
       <div class="card h-100 detail-card">
         <div class="card-header">
@@ -110,7 +220,6 @@
         </div>
       </div>
     </div>
-
     <div class="col-lg-6">
       <div class="card h-100 detail-card">
         <div class="card-header">
@@ -143,7 +252,6 @@
         </div>
       </div>
     </div>
-
     <div class="col-lg-6">
       <div class="card h-100 detail-card">
         <div class="card-header">
@@ -170,7 +278,22 @@
             </ul>
           {% else %}
             <div class="text-center py-5 text-secondary">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon mb-2 opacity-50"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.87"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   width="48"
+                   height="48"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="1.5"
+                   stroke-linecap="round"
+                   stroke-linejoin="round"
+                   class="icon mb-2 opacity-50">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                <path d="M21 21v-2a4 4 0 0 0 -3 -3.87" />
+              </svg>
               <div>No hay coautores registrados</div>
             </div>
           {% endif %}
@@ -180,9 +303,9 @@
   </div>
 {% endblock %}
 {% block extracss %}
-<style>
+  <style>
   .detail-card .card-body {
     min-height: 220px;
   }
-</style>
+  </style>
 {% endblock %}

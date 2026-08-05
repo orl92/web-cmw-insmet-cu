@@ -17,15 +17,12 @@
     </title>
     {% include 'includes/base/head.html' %}
   </head>
-  <body class="{% block body %}
-    {% endblock %}">
+  <body class="{% block body %} {% endblock %}">
     <script src="{% static '' %}dist/js/tabler-theme.min.js"></script>
-    {% block content %}
-    {% endblock %}
+    {% block content %}{% endblock %}
     {% include 'includes/base/settings.html' %}
     <!-- Tabler JS -->
-    {% block extrajs %}
-    {% endblock %}
+    {% block extrajs %}{% endblock %}
     <!-- Tabler Core -->
     {% include 'includes/base/scripts.html' %}
     {% include 'includes/base/utils.html' %}

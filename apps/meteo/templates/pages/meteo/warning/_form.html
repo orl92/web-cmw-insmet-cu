@@ -4,39 +4,49 @@
   <div class="row">
     <div class="col-md-8 mb-3">
       <label class="form-label required">{{ form.summary.label }}</label>
-      <input type="text" class="form-control {% if form.summary.errors %}is-invalid{% endif %}"
-             id="{{ form.summary.id_for_label }}" name="{{ form.summary.name }}"
-             value="{{ form.summary.value|default:'' }}" placeholder="Resumen" required>
+      <input type="text"
+             class="form-control
+                    {% if form.summary.errors %}is-invalid{% endif %}"
+             id="{{ form.summary.id_for_label }}"
+             name="{{ form.summary.name }}"
+             value="{{ form.summary.value|default:'' }}"
+             placeholder="Resumen"
+             required>
       {% if form.summary.errors %}
         <div class="invalid-feedback d-block">{{ form.summary.errors.0 }}</div>
       {% endif %}
     </div>
     <div class="col-md-4 mb-3">
       <label class="form-label required">{{ form.valid_until.label }}</label>
-      <input type="datetime-local" class="form-control {% if form.valid_until.errors %}is-invalid{% endif %}"
-             id="{{ form.valid_until.id_for_label }}" name="{{ form.valid_until.name }}"
-             value="{{ form.valid_until.value|iso_datetime|default:'' }}" required>
+      <input type="datetime-local"
+             class="form-control
+                    {% if form.valid_until.errors %}is-invalid{% endif %}"
+             id="{{ form.valid_until.id_for_label }}"
+             name="{{ form.valid_until.name }}"
+             value="{{ form.valid_until.value|iso_datetime|default:'' }}"
+             required>
       {% if form.valid_until.errors %}
         <div class="invalid-feedback d-block">{{ form.valid_until.errors.0 }}</div>
       {% endif %}
     </div>
   </div>
 </fieldset>
-
 <hr class="my-4">
-
 <fieldset class="mb-4">
   <legend class="h4">Adjuntar PDF</legend>
   <div class="card">
     <div class="card-body">
       <div class="d-flex align-items-center">
-        <div class="me-3">
-          {% include 'includes/partials/pdf_avatar.html' %}
-        </div>
+        <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
         <div class="flex-grow-1">
-          <input type="file" class="form-control {% if form.file.errors %}is-invalid{% endif %}"
-                  id="{{ form.file.id_for_label }}" name="{{ form.file.name }}"
-                  accept=".pdf"{% if not object %} required{% endif %}>
+          <input type="file"
+                 class="form-control
+                        {% if form.file.errors %}is-invalid{% endif %}"
+                 id="{{ form.file.id_for_label }}"
+                 name="{{ form.file.name }}"
+                 accept=".pdf"
+                 {% if not object %}
+                   required{% endif %}>
           <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
           {% if form.file.errors %}
             <div class="invalid-feedback d-block mt-2">{{ form.file.errors.0 }}</div>
@@ -45,8 +55,19 @@
       </div>
       {% if object and object.file %}
         <div class="mt-3">
-          <a href="{{ object.file.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
+          <a href="{{ object.file.url }}"
+             target="_blank"
+             class="btn btn-outline-primary btn-sm">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="24"
+                 height="24"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 class="icon icon-tabler icons-tabler-outline icon-tabler-eye">
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
               <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
@@ -58,9 +79,7 @@
     </div>
   </div>
 </fieldset>
-
 <hr class="my-4">
-
 <fieldset class="mb-4">
   <legend class="h4">Notificación</legend>
   <div class="mb-3">

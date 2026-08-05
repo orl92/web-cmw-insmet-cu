@@ -15,28 +15,21 @@
         {{ title }}
       {% endblock %}- Centro Meteorológico Provincial Camagüey.
     </title>
-    {% block extrastyle %}
-    {% endblock %}
+    {% block extrastyle %}{% endblock %}
     {% include 'includes/base/head.html' %}
-    {% block extrahead %}
-    {% endblock %}
+    {% block extrahead %}{% endblock %}
   </head>
-  <body class="{% block body %}
-    {% endblock %}">
+  <body class="{% block body %} {% endblock %}">
     <script src="{% static 'dist/js/tabler-theme.min.js' %}"></script>
     <div class="page">
-      {% block page %}
-      {% endblock %}
+      {% block page %}{% endblock %}
     </div>
-    {% block modal %}
-    {% endblock %}
+    {% block modal %}{% endblock %}
     {% include 'includes/base/settings.html' %}
-
     <!-- Tabler Core -->
     {% include 'includes/base/scripts.html' %}
     {% include 'includes/base/utils.html' %}
     <!-- Tabler JS -->
-    {% block extrajs %}
-    {% endblock %}
+    {% block extrajs %}{% endblock %}
   </body>
 </html>

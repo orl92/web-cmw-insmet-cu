@@ -1,47 +1,54 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
-
 {% block form %}
-<div class="alert alert-info" role="alert">
-  <div class="d-flex">
-    <div>
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon alert-icon">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
-        <path d="M12 9h.01" />
-        <path d="M11 12h1v4h1" />
-      </svg>
-    </div>
-    <div class="ms-3">
-      <h4 class="alert-title">¿Está seguro que desea renovar esta suscripción?</h4>
-      <p class="text-muted mb-0">
-        Al renovar, se creará una nueva solicitud con estado <strong>"Solicitado"</strong> para el siguiente período. 
-        El staff generará una nueva factura y deberá realizar el pago nuevamente.
-      </p>
-    </div>
-  </div>
-</div>
-
-<div class="card mb-3">
-  <div class="card-body">
-    <div class="datagrid">
-      <div class="datagrid-item">
-        <div class="datagrid-title">Cliente</div>
-        <div class="datagrid-content">{{ subscription.customer.company_name }}</div>
+  <div class="alert alert-info" role="alert">
+    <div class="d-flex">
+      <div>
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="24"
+             height="24"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             stroke-linecap="round"
+             stroke-linejoin="round"
+             class="icon alert-icon">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+          <path d="M12 9h.01" />
+          <path d="M11 12h1v4h1" />
+        </svg>
       </div>
-      <div class="datagrid-item">
-        <div class="datagrid-title">Servicio</div>
-        <div class="datagrid-content">{{ subscription.service.title }}</div>
-      </div>
-      <div class="datagrid-item">
-        <div class="datagrid-title">Fecha de inicio actual</div>
-        <div class="datagrid-content">{{ subscription.start_date|date:"d/m/Y H:i" }}</div>
-      </div>
-      <div class="datagrid-item">
-        <div class="datagrid-title">Fecha de expiración actual</div>
-        <div class="datagrid-content">{{ subscription.end_date|date:"d/m/Y H:i" }}</div>
+      <div class="ms-3">
+        <h4 class="alert-title">¿Está seguro que desea renovar esta suscripción?</h4>
+        <p class="text-muted mb-0">
+          Al renovar, se creará una nueva solicitud con estado <strong>"Solicitado"</strong> para el siguiente período.
+          El staff generará una nueva factura y deberá realizar el pago nuevamente.
+        </p>
       </div>
     </div>
   </div>
-</div>
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="datagrid">
+        <div class="datagrid-item">
+          <div class="datagrid-title">Cliente</div>
+          <div class="datagrid-content">{{ subscription.customer.company_name }}</div>
+        </div>
+        <div class="datagrid-item">
+          <div class="datagrid-title">Servicio</div>
+          <div class="datagrid-content">{{ subscription.service.title }}</div>
+        </div>
+        <div class="datagrid-item">
+          <div class="datagrid-title">Fecha de inicio actual</div>
+          <div class="datagrid-content">{{ subscription.start_date|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div class="datagrid-item">
+          <div class="datagrid-title">Fecha de expiración actual</div>
+          <div class="datagrid-content">{{ subscription.end_date|date:"d/m/Y H:i" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

@@ -48,6 +48,7 @@ PRODUCTION=true python manage.py runserver    # producción local (usa DB real, 
 - **Idioma**: español (`es-mx`, `America/Havana`)
 - **Tema**: Tabler (Bootstrap 5), iconos meteorológicos PNG en `static/dist/img/weather_icon/`
 - **URLs**: toda app con URLs usa `app_name` en urls.py y names estandarizados (`app_name:list`, `create`, `detail`, `update`, `delete`, `pdf`). Templates usan `{% url 'app_name:name' %}`, vistas usan `reverse_lazy('app_name:name')`.
+- **Templates (formato)**: indentación de 2 espacios, formateados con djlint (`profile = "django"`, config en `pyproject.toml`). Verificar con `djlint . --reformat --check` y `djlint . --lint` antes de commit (hooks de pre-commit). Los templates de correo en `*/emails/` están excluidos (whitespace-sensitive): NO reindentarlos a mano ni con djlint.
 - **Apps**: todas las apps Django viven en `apps/`. Importar como `from apps.commercial.models import ...`, nunca como `from commercial.models import ...`.
 
 ## Skills

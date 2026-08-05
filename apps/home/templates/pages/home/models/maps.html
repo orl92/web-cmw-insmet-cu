@@ -1,228 +1,322 @@
 {% extends 'layouts/galeria.html' %}
 {% load static %}
-
 {% block content %}
-    <form method="post" id="data-form" class="needs-validation card" novalidate>
-        {% csrf_token %}
-
-        <div class="card-body">
-            <!-- Fila principal con todos los campos -->
-            <div class="row g-3 align-items-end">
-
-                <!-- Fecha -->
-                <div class="col-md-4">
-                    <div class="row g-2">
-                        <div class="col-12">
-                            <label for="datepicker" class="form-label required">Fecha UTC</label>
-                            <div class="input-icon">
-                                <input class="form-control" placeholder="Seleccione una fecha" id="datepicker"
-                                       value="{{ initial_date|default:'' }}">
-                                <span class="input-icon-addon">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                       fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                       stroke-linejoin="round" class="icon icon-1">
-                                      <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
-                                      <path d="M16 3v4"></path>
-                                      <path d="M8 3v4"></path>
-                                      <path d="M4 11h16"></path>
-                                      <path d="M11 15h1"></path>
-                                      <path d="M12 15v3"></path>
-                                  </svg>
-                              </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Hora -->
-                <div class="col-md-2">
-                    <div class="mb-0">
-                        <label for="hour-select" class="form-label required">Hora UTC</label>
-                        <select class="form-select" id="hour-select" required>
-                            <option value="00" selected>00:00</option>
-                            <option value="06">06:00</option>
-                            <option value="12">12:00</option>
-                            <option value="18">18:00</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Variable Meteorológica -->
-                <div class="col-md-4">
-                    <div class="mb-0">
-                        <label class="form-label required" for="id_var_name">Variable Meteorológica</label>
-                        <select class="form-select" name="var_name" id="id_var_name">
-                            {% for value, text in form.var_name.field.choices %}
-                                <option value="{{ value }}"
-                                        {% if form.var_name.value == value %}selected{% endif %}>
-                                    {{ text }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                        {% if form.var_name.errors %}
-                            <div class="text-danger mt-1">
-                                {% for error in form.var_name.errors %}
-                                    <small>{{ error }}</small>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Botones -->
-                <div class="col-md-2">
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Cargar Imágenes</button>
-                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#gifModal">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>Descargar GIF
-                        </button>
-                    </div>
-                </div>
-
+  <form method="post" id="data-form" class="needs-validation card" novalidate>
+    {% csrf_token %}
+    <div class="card-body">
+      <!-- Fila principal con todos los campos -->
+      <div class="row g-3 align-items-end">
+        <!-- Fecha -->
+        <div class="col-md-4">
+          <div class="row g-2">
+            <div class="col-12">
+              <label for="datepicker" class="form-label required">Fecha UTC</label>
+              <div class="input-icon">
+                <input class="form-control"
+                       placeholder="Seleccione una fecha"
+                       id="datepicker"
+                       value="{{ initial_date|default:'' }}">
+                <span class="input-icon-addon">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       width="24"
+                       height="24"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2"
+                       stroke-linecap="round"
+                       stroke-linejoin="round"
+                       class="icon icon-1">
+                    <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z"></path>
+                    <path d="M16 3v4"></path>
+                    <path d="M8 3v4"></path>
+                    <path d="M4 11h16"></path>
+                    <path d="M11 15h1"></path>
+                    <path d="M12 15v3"></path>
+                  </svg>
+                </span>
+              </div>
             </div>
+          </div>
         </div>
-    </form>
-
-    <!-- Modal para descargar GIF -->
-    <div class="modal" id="gifModal" tabindex="-1" aria-labelledby="gifModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="gifModalLabel">Descargar GIF Animado</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="gifDownloadForm">
-                        {% csrf_token %}
-                        <input type="hidden" id="gif_datetime_init" name="datetime_init">
-                        <input type="hidden" id="gif_var_name" name="var_name">
-
-                        <div class="mb-3">
-                            <label for="{{ gif_form.fecha_inicio.id_for_label }}" class="form-label required">
-                                {{ gif_form.fecha_inicio.label }}
-                            </label>
-                            {{ gif_form.fecha_inicio }}
-                            {% if gif_form.fecha_inicio.errors %}
-                                <div class="text-danger mt-1">
-                                    {% for error in gif_form.fecha_inicio.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            <div class="form-text">Formato: AAAAMMDDHH (10 dígitos)</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ gif_form.fecha_fin.id_for_label }}" class="form-label required">
-                                {{ gif_form.fecha_fin.label }}
-                            </label>
-                            {{ gif_form.fecha_fin }}
-                            {% if gif_form.fecha_fin.errors %}
-                                <div class="text-danger mt-1">
-                                    {% for error in gif_form.fecha_fin.errors %}
-                                        <small>{{ error }}</small>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                            <div class="form-text">Formato: AAAAMMDDHH (10 dígitos)</div>
-                        </div>
-
-                        <!-- Mensaje de estado de descarga -->
-                        <div id="download-status" class="alert alert-info d-none">
-                            <div class="d-flex align-items-center">
-                                <div class="spinner-border spinner-border-sm me-2" role="status">
-                                    <span class="visually-hidden">Procesando...</span>
-                                </div>
-                                <span id="status-message">Preparando descarga...</span>
-                            </div>
-                        </div>
-
-                        <div class="alert alert-info">
-                            <small>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 9h.01"/><path d="M11 12h1v4h1"/></svg>
-                                Las imágenes están espaciadas cada 3 horas. Seleccione el rango deseado para el GIF.
-                                <br><strong>Rango máximo: 3 días (72 horas)</strong>
-                            </small>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-outline-secondary me-2" id="clearGifForm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>Limpiar
-                    </button>
-                    <button type="button" class="btn btn-primary" id="confirmDownloadGif">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>Descargar GIF
-                    </button>
-                </div>
-            </div>
+        <!-- Hora -->
+        <div class="col-md-2">
+          <div class="mb-0">
+            <label for="hour-select" class="form-label required">Hora UTC</label>
+            <select class="form-select" id="hour-select" required>
+              <option value="00" selected>00:00</option>
+              <option value="06">06:00</option>
+              <option value="12">12:00</option>
+              <option value="18">18:00</option>
+            </select>
+          </div>
         </div>
+        <!-- Variable Meteorológica -->
+        <div class="col-md-4">
+          <div class="mb-0">
+            <label class="form-label required" for="id_var_name">Variable Meteorológica</label>
+            <select class="form-select" name="var_name" id="id_var_name">
+              {% for value, text in form.var_name.field.choices %}
+                <option value="{{ value }}"
+                        {% if form.var_name.value == value %}selected{% endif %}>{{ text }}</option>
+              {% endfor %}
+            </select>
+            {% if form.var_name.errors %}
+              <div class="text-danger mt-1">
+                {% for error in form.var_name.errors %}
+                  <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Botones -->
+        <div class="col-md-2">
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Cargar Imágenes</button>
+            <button type="button"
+                    class="btn btn-success"
+                    data-bs-toggle="modal"
+                    data-bs-target="#gifModal">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   width="20"
+                   height="20"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2"
+                   stroke-linecap="round"
+                   stroke-linejoin="round"
+                   class="icon me-1">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+                <path d="M7 11l5 5l5 -5" />
+                <path d="M12 4l0 12" />
+              </svg>
+              Descargar GIF
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <!-- Toast de notificación simplificado -->
-    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert"
-         aria-live="assertive" aria-atomic="true"
-         style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: none;">
-        <div class="d-flex">
-            <div class="toast-body">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-2"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/><path d="M9 12l2 2l4 -4"/></svg>
-                <span id="toast-message">GIF descargado exitosamente</span>
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                    onclick="this.parentElement.parentElement.style.display='none'"></button>
+  </form>
+  <!-- Modal para descargar GIF -->
+  <div class="modal"
+       id="gifModal"
+       tabindex="-1"
+       aria-labelledby="gifModalLabel"
+       aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="gifModalLabel">Descargar GIF Animado</h5>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
         </div>
-    </div>
-
-    <div id="plot-area" style="display: none;">
-        <div class="card mt-4">
-            <div class="card-body">
-                <h2 id="plot-title" class="text-center mb-3"></h2>
-
-                <!-- Contenedor para mensajes de error -->
-                <div id="error-container" class="alert alert-danger alert-dismissible fade show" role="alert"
-                     style="display: none;">
-                    <div class="d-flex align-items-center">
-                        <span id="error-message"></span>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="modal-body">
+          <form id="gifDownloadForm">
+            {% csrf_token %}
+            <input type="hidden" id="gif_datetime_init" name="datetime_init">
+            <input type="hidden" id="gif_var_name" name="var_name">
+            <div class="mb-3">
+              <label for="{{ gif_form.fecha_inicio.id_for_label }}"
+                     class="form-label required">{{ gif_form.fecha_inicio.label }}</label>
+              {{ gif_form.fecha_inicio }}
+              {% if gif_form.fecha_inicio.errors %}
+                <div class="text-danger mt-1">
+                  {% for error in gif_form.fecha_inicio.errors %}
+                    <small>{{ error }}</small>
+                  {% endfor %}
                 </div>
-
-                <!-- Galería de imágenes -->
-                <div id="gallery-container" class="row g-2 g-md-3 mt-3 min-vh-50">
-                    <!-- Aquí se cargarán las imágenes en forma de galería -->
-                </div>
-
-                <!-- Estado vacío -->
-                <div id="empty-state" class="text-center py-5 d-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-cloud text-muted mb-3"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878"/></svg>
-                    <h4 class="text-muted">No hay datos disponibles</h4>
-                    <p class="text-muted">No se encontraron imágenes para los parámetros seleccionados.</p>
-                </div>
+              {% endif %}
+              <div class="form-text">Formato: AAAAMMDDHH (10 dígitos)</div>
             </div>
+            <div class="mb-3">
+              <label for="{{ gif_form.fecha_fin.id_for_label }}"
+                     class="form-label required">{{ gif_form.fecha_fin.label }}</label>
+              {{ gif_form.fecha_fin }}
+              {% if gif_form.fecha_fin.errors %}
+                <div class="text-danger mt-1">
+                  {% for error in gif_form.fecha_fin.errors %}
+                    <small>{{ error }}</small>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <div class="form-text">Formato: AAAAMMDDHH (10 dígitos)</div>
+            </div>
+            <!-- Mensaje de estado de descarga -->
+            <div id="download-status" class="alert alert-info d-none">
+              <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                  <span class="visually-hidden">Procesando...</span>
+                </div>
+                <span id="status-message">Preparando descarga...</span>
+              </div>
+            </div>
+            <div class="alert alert-info">
+              <small>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="20"
+                     height="20"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     class="icon me-1">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+                  <path d="M12 9h.01" />
+                  <path d="M11 12h1v4h1" />
+                </svg>
+                Las imágenes están espaciadas cada 3 horas. Seleccione el rango deseado para el GIF.
+                <br>
+                <strong>Rango máximo: 3 días (72 horas)</strong>
+              </small>
+            </div>
+          </form>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button"
+                  class="btn btn-outline-secondary me-2"
+                  id="clearGifForm">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="20"
+                 height="20"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 class="icon me-1">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+              <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+            </svg>
+            Limpiar
+          </button>
+          <button type="button" class="btn btn-primary" id="confirmDownloadGif">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="20"
+                 height="20"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 class="icon me-1">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+              <path d="M7 11l5 5l5 -5" />
+              <path d="M12 4l0 12" />
+            </svg>
+            Descargar GIF
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
+  <!-- Toast de notificación simplificado -->
+  <div id="successToast"
+       class="toast align-items-center text-white bg-success border-0"
+       role="alert"
+       aria-live="assertive"
+       aria-atomic="true"
+       style="position: fixed;
+              top: 20px;
+              right: 20px;
+              z-index: 9999;
+              display: none">
+    <div class="d-flex">
+      <div class="toast-body">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="20"
+             height="20"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2"
+             stroke-linecap="round"
+             stroke-linejoin="round"
+             class="icon me-2">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+          <path d="M9 12l2 2l4 -4" />
+        </svg>
+        <span id="toast-message">GIF descargado exitosamente</span>
+      </div>
+      <button type="button"
+              class="btn-close btn-close-white me-2 m-auto"
+              onclick="this.parentElement.parentElement.style.display='none'"></button>
+    </div>
+  </div>
+  <div id="plot-area" style="display: none;">
+    <div class="card mt-4">
+      <div class="card-body">
+        <h2 id="plot-title" class="text-center mb-3"></h2>
+        <!-- Contenedor para mensajes de error -->
+        <div id="error-container"
+             class="alert alert-danger alert-dismissible fade show"
+             role="alert"
+             style="display: none">
+          <div class="d-flex align-items-center">
+            <span id="error-message"></span>
+          </div>
+          <button type="button"
+                  class="btn-close"
+                  data-bs-dismiss="alert"
+                  aria-label="Close"></button>
+        </div>
+        <!-- Galería de imágenes -->
+        <div id="gallery-container" class="row g-2 g-md-3 mt-3 min-vh-50">
+          <!-- Aquí se cargarán las imágenes en forma de galería -->
+        </div>
+        <!-- Estado vacío -->
+        <div id="empty-state" class="text-center py-5 d-none">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               width="48"
+               height="48"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2"
+               stroke-linecap="round"
+               stroke-linejoin="round"
+               class="icon icon-tabler icon-tabler-cloud text-muted mb-3">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M6.657 18c-2.572 0 -4.657 -2.007 -4.657 -4.483c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486c0 1.927 -1.551 3.487 -3.465 3.487h-11.878" />
+          </svg>
+          <h4 class="text-muted">No hay datos disponibles</h4>
+          <p class="text-muted">No se encontraron imágenes para los parámetros seleccionados.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
-
 {% block extrajs %}
-    <!-- Primero cargamos Litepicker -->
-    <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062"></script>
-    <script src="{% static '' %}dist/libs/fslightbox/index.js?1692870487" defer></script>
-    <!-- Bootstrap JS -->
-    {#    <script src="{% static '' %}dist/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>#}
-    <!-- FontAwesome para íconos -->
-    {#    <script src="{% static '' %}dist/libs/@fortawesome/fontawesome-free/js/all.min.js"></script>#}
-
-    <!-- Configuración para el script de GIF -->
-    <script>
+  <!-- Primero cargamos Litepicker -->
+  <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062"></script>
+  <script src="{% static '' %}dist/libs/fslightbox/index.js?1692870487" defer></script>
+  <!-- Bootstrap JS -->
+  {#    <script src="{% static '' %}dist/libs/bootstrap/dist/js/bootstrap.bundle.min.js"></script>#}
+  <!-- FontAwesome para íconos -->
+  {#    <script src="{% static '' %}dist/libs/@fortawesome/fontawesome-free/js/all.min.js"></script>#}
+  <!-- Configuración para el script de GIF -->
+  <script>
         // Configuración global para el modal de GIF
         window.GIF_DOWNLOAD_CONFIG = {
             downloadUrl: "{% url 'home:models_download_gif' %}",
             fechaInicioId: "{{ gif_form.fecha_inicio.id_for_label }}",
             fechaFinId: "{{ gif_form.fecha_fin.id_for_label }}"
         };
-    </script>
-
-    <!-- Scripts separados -->
-    <script src="{% static '' %}dist/js/maps.js"></script>
-    <script src="{% static '' %}dist/js/gif-download.js"></script>
+  </script>
+  <!-- Scripts separados -->
+  <script src="{% static '' %}dist/js/maps.js"></script>
+  <script src="{% static '' %}dist/js/gif-download.js"></script>
 {% endblock extrajs %}

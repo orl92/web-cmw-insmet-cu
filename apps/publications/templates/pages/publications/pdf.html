@@ -21,10 +21,11 @@
       {% endif %}
       <h1>{{ publicacion.title }}</h1>
     </div>
-
     <div class="section">
-      <strong>Autor:</strong> {{ author.get_full_name|default:author.first_name }} {{ author.last_name }}<br />
-      <strong>Fecha de Publicación:</strong> {{ publicacion.publication_date|date:'j \d\e F \d\e Y' }}<br />
+      <strong>Autor:</strong> {{ author.get_full_name|default:author.first_name }} {{ author.last_name }}
+      <br />
+      <strong>Fecha de Publicación:</strong> {{ publicacion.publication_date|date:'j \d\e F \d\e Y' }}
+      <br />
       {% if coauthors.exists %}
         <strong>Coautores:</strong>
         {% for coauthor in coauthors %}
@@ -33,7 +34,6 @@
         <br />
       {% endif %}
     </div>
-
     <div class="section">
       <strong>Resumen:</strong>
       <div class="summary">{{ publicacion.summary|linebreaks }}</div>

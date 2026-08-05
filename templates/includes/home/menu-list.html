@@ -1,211 +1,239 @@
 {% load my_filters %}
 <ul class="navbar-nav">
-    <!-- Inicio -->
-    <li class="nav-item {% if 'index' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'home:index' %}">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <i class="ti ti-home"></i>
-            </span>
-            <span class="nav-link-title">Inicio</span>
+  <!-- Inicio -->
+  <li class="nav-item {% if 'index' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'home:index' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <i class="ti ti-home"></i>
+      </span>
+      <span class="nav-link-title">Inicio</span>
+    </a>
+  </li>
+  <!-- Tiempo -->
+  <li class="nav-item dropdown
+             {% if 'tiempo' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle"
+       data-bs-toggle="dropdown"
+       data-bs-auto-close="outside"
+       role="button"
+       aria-expanded="false">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <i class="ti ti-temperature-sun"></i>
+      </span>
+      <span class="nav-link-title">El Tiempo</span>
+    </a>
+    <div class="dropdown-menu">
+      <a class="dropdown-item
+                {% if 'weather_today' in segment %}active{% endif %}"
+         href="{% url 'home:weather_today' %}"
+         rel="noopener">Hoy</a>
+      <a class="dropdown-item
+                {% if 'weather_tomorrow' in segment %}active{% endif %}"
+         href="{% url 'home:weather_tomorrow' %}"
+         rel="noopener">Mañana</a>
+      <div class="dropdown-divider"></div>
+      <a class="dropdown-item
+                {% if 'weather_commentary' in segment %}active{% endif %}"
+         href="{% url 'home:weather_commentary' %}"
+         rel="noopener">Comentario del Tiempo</a>
+      <a class="dropdown-item
+                {% if 'weather_note' in segment %}active{% endif %}"
+         href="{% url 'home:weather_note' %}"
+         rel="noopener">Nota Meteorologica</a>
+    </div>
+  </li>
+  <!-- Avisos -->
+  <li class="nav-item dropdown {% if 'aviso' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle"
+       data-bs-toggle="dropdown"
+       data-bs-auto-close="outside"
+       role="button"
+       aria-expanded="false">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <i class="ti ti-alert-triangle"></i>
+      </span>
+      <span class="nav-link-title">Avisos</span>
+      {% with total=early_warning_count|add:tropical_cyclone_count|add:storm_warning_count %}
+        {% if total > 0 %}
+          <span class="badge bg-red-lt ms-2">{{ total }}</span>
+        {% endif %}
+      {% endwith %}
+    </a>
+    <div class="dropdown-menu">
+      <a class="dropdown-item
+                {% if 'warnings_early' in segment %}active{% endif %}"
+         href="{% url 'home:warnings_early' %}"
+         rel="noopener">
+        Alerta Temprana
+        {% if early_warning_count > 0 %}
+          <span class="badge bg-red-lt ms-2">{{ early_warning_count }}</span>
+        {% endif %}
+      </a>
+      <a class="dropdown-item
+                {% if 'warnings_tropical' in segment %}active{% endif %}"
+         href="{% url 'home:warnings_tropical' %}"
+         rel="noopener">
+        Ciclón Tropical
+        {% if tropical_cyclone_count > 0 %}
+          <span class="badge bg-red-lt ms-2">{{ tropical_cyclone_count }}</span>
+        {% endif %}
+      </a>
+      <a class="dropdown-item
+                {% if 'warnings_storm' in segment %}active{% endif %}"
+         href="{% url 'home:warnings_storm' %}"
+         rel="noopener">
+        Tormentas
+        {% if storm_warning_count > 0 %}
+          <span class="badge bg-red-lt ms-2">{{ storm_warning_count }}</span>
+        {% endif %}
+      </a>
+    </div>
+  </li>
+  <!-- Modelos -->
+  <li class="nav-item dropdown
+             {% if 'modelos' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle"
+       data-bs-toggle="dropdown"
+       data-bs-auto-close="outside"
+       role="button"
+       aria-expanded="false">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <i class="ti ti-atom"></i>
+      </span>
+      <span class="nav-link-title">Física de la atmósfera</span>
+    </a>
+    <div class="dropdown-menu">
+      <a class="dropdown-item
+                {% if 'models_maps' in segment %}active{% endif %}"
+         href="{% url 'home:models_maps' %}"
+         rel="noopener">Modelo de pronóstico WRF</a>
+      <a class="dropdown-item
+                {% if 'models_meteogram' in segment %}active{% endif %}"
+         href="{% url 'home:models_meteogram' %}"
+         rel="noopener">Meteograma</a>
+      <a class="dropdown-item
+                {% if 'models_sounding' in segment %}active{% endif %}"
+         href="{% url 'home:models_sounding' %}"
+         rel="noopener">Sondeo (Skew-T)</a>
+      <a class="dropdown-item disabled" href="#" rel="noopener">Boletín aerológico</a>
+    </div>
+  </li>
+  <!-- Servicios -->
+  <li class="nav-item dropdown
+             {% if 'servicios' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle"
+       data-bs-toggle="dropdown"
+       data-bs-auto-close="outside"
+       role="button"
+       aria-expanded="false">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <i class="ti ti-tools"></i>
+      </span>
+      <span class="nav-link-title">Servicios</span>
+      {% if user.is_authenticated and user.commercial_customer and client_pending_actions > 0 %}
+        <span class="status-dot status-dot-animated bg-red d-block ms-2"></span>
+      {% endif %}
+    </a>
+    <div class="dropdown-menu">
+      <!-- Servicios Públicos -->
+      <a class="dropdown-item
+                {% if 'publicos' in segment %}active{% endif %}"
+         href="{% url 'home:services_public' %}"
+         rel="noopener">Servicios Públicos</a>
+      <!-- Servicios Comerciales con badges individuales -->
+      <a class="dropdown-item
+                {% if 'comercial_p' in segment %}active{% endif %}"
+         href="{% url 'home:services_commercial_public' %}"
+         rel="noopener">
+        Servicios Comerciales
+        {% if user.is_authenticated and user.commercial_customer %}
+          {% if client_requested_count > 0 %}
+            <span class="badge bg-blue-lt ms-1">{{ client_requested_count }}</span>
+          {% endif %}
+          {% if client_pending_count > 0 %}
+            <span class="badge bg-orange-lt ms-1">{{ client_pending_count }}</span>
+          {% endif %}
+        {% endif %}
+      </a>
+      <!-- Mis Servicios (solo clientes con servicios activos) -->
+      {% if user.is_authenticated and user.commercial_customer and client_active_count > 0 %}
+        <div class="dropdown-divider"></div>
+        <a class="dropdown-item
+                  {% if 'comerciales' in segment %}active{% endif %}"
+           href="{% url 'home:services_commercial' %}"
+           rel="noopener">
+          Mis Servicios
+          {% if client_expired_count > 0 %}
+            <span class="badge bg-red-lt ms-2">{{ client_expired_count }}</span>
+          {% endif %}
         </a>
-    </li>
-    <!-- Tiempo -->
-    <li class="nav-item dropdown {% if 'tiempo' in parent %}active{% endif %}">
-        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-           role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <i class="ti ti-temperature-sun"></i>
-            </span>
-            <span class="nav-link-title">El Tiempo</span>
-        </a>
-        <div class="dropdown-menu">
-            <a class="dropdown-item {% if 'weather_today' in segment %}active{% endif %}"
-               href="{% url 'home:weather_today' %}" rel="noopener">Hoy
-            </a>
-            <a class="dropdown-item {% if 'weather_tomorrow' in segment %}active{% endif %}"
-               href="{% url 'home:weather_tomorrow' %}" rel="noopener">Mañana
-            </a>
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item {% if 'weather_commentary' in segment %}active{% endif %}"
-               href="{% url 'home:weather_commentary' %}" rel="noopener">
-                Comentario del Tiempo
-            </a>
-            <a class="dropdown-item {% if 'weather_note' in segment %}active{% endif %}"
-               href="{% url 'home:weather_note' %}" rel="noopener">
-                Nota Meteorologica
-            </a>
-        </div>
-    </li>
-    <!-- Avisos -->
-    <li class="nav-item dropdown {% if 'aviso' in parent %}active{% endif %}">
-        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-           role="button" aria-expanded="false"> 
-            <span class="nav-link-icon d-md-none d-lg-inline-block"> 
-                <i class="ti ti-alert-triangle"></i> 
-            </span>
-            <span class="nav-link-title">Avisos</span>
-            {% with total=early_warning_count|add:tropical_cyclone_count|add:storm_warning_count %}
-                {% if total > 0 %}
-                    <span class="badge bg-red-lt ms-2">{{ total }}</span>
-                {% endif %}
-            {% endwith %}
-        </a>
-        <div class="dropdown-menu">
-            <a class="dropdown-item {% if 'warnings_early' in segment %}active{% endif %}"
-               href="{% url 'home:warnings_early' %}" rel="noopener">
-                Alerta Temprana
-                {% if early_warning_count > 0 %}
-                    <span class="badge bg-red-lt ms-2">{{ early_warning_count }}</span>
-                {% endif %}
-            </a>
-            <a class="dropdown-item {% if 'warnings_tropical' in segment %}active{% endif %}"
-               href="{% url 'home:warnings_tropical' %}" rel="noopener">
-                Ciclón Tropical
-                {% if tropical_cyclone_count > 0 %}
-                    <span class="badge bg-red-lt ms-2">{{ tropical_cyclone_count }}</span>
-                {% endif %}
-            </a>
-            <a class="dropdown-item {% if 'warnings_storm' in segment %}active{% endif %}"
-               href="{% url 'home:warnings_storm' %}" rel="noopener">
-                Tormentas
-                {% if storm_warning_count > 0 %}
-                    <span class="badge bg-red-lt ms-2">{{ storm_warning_count }}</span>
-                {% endif %}
-            </a>
-        </div>
-    </li>
-    <!-- Modelos -->
-    <li class="nav-item dropdown {% if 'modelos' in parent %}active{% endif %}">
-        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-           role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <i class="ti ti-atom"></i>
-            </span>
-            <span class="nav-link-title">Física de la atmósfera</span>
-        </a>
-        <div class="dropdown-menu">
-            <a class="dropdown-item {% if 'models_maps' in segment %}active{% endif %}"
-               href="{% url 'home:models_maps' %}" rel="noopener">
-                Modelo de pronóstico WRF
-            </a>
-            <a class="dropdown-item {% if 'models_meteogram' in segment %}active{% endif %}"
-               href="{% url 'home:models_meteogram' %}" rel="noopener">
-                Meteograma
-            </a>
-            <a class="dropdown-item {% if 'models_sounding' in segment %}active{% endif %}"
-               href="{% url 'home:models_sounding' %}" rel="noopener">
-                Sondeo (Skew-T)
-            </a>
-            <a class="dropdown-item disabled"
-               href="#" rel="noopener">
-                Boletín aerológico
-            </a>
-        </div>
-    </li>
-    <!-- Servicios -->
-    <li class="nav-item dropdown {% if 'servicios' in parent %}active{% endif %}">
-        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <i class="ti ti-tools"></i>
-            </span>
-            <span class="nav-link-title">Servicios</span>
-            {% if user.is_authenticated and user.commercial_customer and client_pending_actions > 0 %}
-                <span class="status-dot status-dot-animated bg-red d-block ms-2"></span>
-            {% endif %}
-        </a>
-        <div class="dropdown-menu">
-            <!-- Servicios Públicos -->
-            <a class="dropdown-item {% if 'publicos' in segment %}active{% endif %}"
-            href="{% url 'home:services_public' %}" rel="noopener">
-                Servicios Públicos
-            </a>
-            <!-- Servicios Comerciales con badges individuales -->
-            <a class="dropdown-item {% if 'comercial_p' in segment %}active{% endif %}"
-            href="{% url 'home:services_commercial_public' %}" rel="noopener">
-                Servicios Comerciales
-                {% if user.is_authenticated and user.commercial_customer %}
-                    {% if client_requested_count > 0 %}
-                        <span class="badge bg-blue-lt ms-1">{{ client_requested_count }}</span>
-                    {% endif %}
-                    {% if client_pending_count > 0 %}
-                        <span class="badge bg-orange-lt ms-1">{{ client_pending_count }}</span>
-                    {% endif %}
-                {% endif %}
-            </a>
-            <!-- Mis Servicios (solo clientes con servicios activos) -->
-            {% if user.is_authenticated and user.commercial_customer and client_active_count > 0 %}
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item {% if 'comerciales' in segment %}active{% endif %}"
-            href="{% url 'home:services_commercial' %}" rel="noopener">
-                Mis Servicios
-                {% if client_expired_count > 0 %}
-                    <span class="badge bg-red-lt ms-2">{{ client_expired_count }}</span>
-                {% endif %}
-            </a>
-            {% endif %}
-        </div>
-    </li>
-    <!-- Imágenes Satelitales -->
-    <li class="nav-item {% if 'satelitales' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'home:satellite' %}">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <i class="ti ti-satellite"></i>
-            </span>
-            <span class="nav-link-title">Imágenes Satelitales</span>
-        </a>
-    </li>
-    <!-- Institucion -->
-    <li class="nav-item dropdown {% if 'institucion' in parent %}active{% endif %}">
-        <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-           role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <i class="ti ti-building-bank"></i>
-            </span>
-            <span class="nav-link-title">Institución</span>
-        </a>
-        <div class="dropdown-menu">
-            <a class="dropdown-item {% if 'publicaciones_cientificas' in segment %}active{% endif %}"
-               href="{% url 'home:publications' %}" rel="noopener">
-                Publicaciones Científicas
-            </a>
-            <a class="dropdown-item disabled {% if 'institucion' in segment %}active{% endif %}"
-               href="#" rel="noopener">
-                RRHH
-            </a>
-        </div>
-    </li>
-    <!-- Pagos -->
-{#                    <li class="nav-item {% if 'pago_qr' in segment %}active{% endif %}">#}
-{#                        <a class="nav-link" href="{% url 'home:payment' %}">#}
-{#                        <span class="nav-link-icon d-md-none d-lg-inline-block">#}
-{#                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"#}
-{#                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"#}
-{#                                 stroke-linejoin="round"#}
-{#                                 class="icon icon-tabler icons-tabler-outline icon-tabler-qrcode"><path stroke="none"#}
-{#                                                                                                        d="M0 0h24v24H0z"#}
-{#                                                                                                        fill="none"/><path#}
-{#                                    d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path#}
-{#                                    d="M7 17l0 .01"/><path#}
-{#                                    d="M14 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path#}
-{#                                    d="M7 7l0 .01"/><path#}
-{#                                    d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path#}
-{#                                    d="M17 7l0 .01"/><path d="M14 14l3 0"/><path d="M20 14l0 .01"/><path#}
-{#                                    d="M14 14l0 3"/><path d="M14 20l3 0"/><path d="M17 17l3 0"/><path#}
-{#                                    d="M20 17l0 3"/></svg>#}
-{#                        </span>#}
-{#                            <span class="nav-link-title">Pagos en linea</span>#}
-{#                        </a>#}
-{#                    </li>#}
-
-    <!-- Registro Clientes -->
-    {% if not user.is_authenticated %}
+      {% endif %}
+    </div>
+  </li>
+  <!-- Imágenes Satelitales -->
+  <li class="nav-item {% if 'satelitales' in segment %}active{% endif %}">
+    <a class="nav-link" href="{% url 'home:satellite' %}">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <i class="ti ti-satellite"></i>
+      </span>
+      <span class="nav-link-title">Imágenes Satelitales</span>
+    </a>
+  </li>
+  <!-- Institucion -->
+  <li class="nav-item dropdown
+             {% if 'institucion' in parent %}active{% endif %}">
+    <a class="nav-link dropdown-toggle"
+       data-bs-toggle="dropdown"
+       data-bs-auto-close="outside"
+       role="button"
+       aria-expanded="false">
+      <span class="nav-link-icon d-md-none d-lg-inline-block">
+        <i class="ti ti-building-bank"></i>
+      </span>
+      <span class="nav-link-title">Institución</span>
+    </a>
+    <div class="dropdown-menu">
+      <a class="dropdown-item
+                {% if 'publicaciones_cientificas' in segment %}active{% endif %}"
+         href="{% url 'home:publications' %}"
+         rel="noopener">Publicaciones Científicas</a>
+      <a class="dropdown-item disabled
+                {% if 'institucion' in segment %}active{% endif %}"
+         href="#"
+         rel="noopener">RRHH</a>
+    </div>
+  </li>
+  <!-- Pagos -->
+  {#                    <li class="nav-item {% if 'pago_qr' in segment %}active{% endif %}">#}
+  {#                        <a class="nav-link" href="{% url 'home:payment' %}">#}
+  {#                        <span class="nav-link-icon d-md-none d-lg-inline-block">#}
+  {#                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"#}
+  {#                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"#}
+  {#                                 stroke-linejoin="round"#}
+  {#                                 class="icon icon-tabler icons-tabler-outline icon-tabler-qrcode"><path stroke="none"#}
+  {#                                                                                                        d="M0 0h24v24H0z"#}
+  {#                                                                                                        fill="none"/><path#}
+  {#                                    d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path#}
+  {#                                    d="M7 17l0 .01"/><path#}
+  {#                                    d="M14 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path#}
+  {#                                    d="M7 7l0 .01"/><path#}
+  {#                                    d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"/><path#}
+  {#                                    d="M17 7l0 .01"/><path d="M14 14l3 0"/><path d="M20 14l0 .01"/><path#}
+  {#                                    d="M14 14l0 3"/><path d="M14 20l3 0"/><path d="M17 17l3 0"/><path#}
+  {#                                    d="M20 17l0 3"/></svg>#}
+  {#                        </span>#}
+  {#                            <span class="nav-link-title">Pagos en linea</span>#}
+  {#                        </a>#}
+  {#                    </li>#}
+  <!-- Registro Clientes -->
+  {% if not user.is_authenticated %}
     <li class="nav-item {% if 'registro' in segment %}active{% endif %}">
-        <a class="nav-link" href="{% url 'user_auth:customer_register' %}">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-                <i class="ti ti-users"></i>
-            </span>
-            <span class="nav-link-title">Registro Clientes</span>
-        </a>
+      <a class="nav-link" href="{% url 'user_auth:customer_register' %}">
+        <span class="nav-link-icon d-md-none d-lg-inline-block">
+          <i class="ti ti-users"></i>
+        </span>
+        <span class="nav-link-title">Registro Clientes</span>
+      </a>
     </li>
-    {% endif %}
+  {% endif %}
 </ul>

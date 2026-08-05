@@ -1,5 +1,4 @@
 {% extends 'layouts/form.html' %}
-
 {% block form %}
   <fieldset class="mb-4">
     <legend class="h4">Suscripción</legend>
@@ -27,9 +26,7 @@
       {% endif %}
     </div>
   </fieldset>
-
   <hr class="my-4">
-
   <fieldset class="mb-4">
     <legend class="h4">Período de Vigencia</legend>
     <div class="row">
@@ -58,9 +55,8 @@
     </div>
   </fieldset>
 {% endblock %}
-
 {% block extrajs %}
-<script>
+  <script>
   document.addEventListener('DOMContentLoaded', function() {
     const periodSelect = document.getElementById('id_period');
     const startInput = document.getElementById('id_start_date');
@@ -95,5 +91,5 @@
     periodSelect.addEventListener('change', updateFields);
     updateFields();
   });
-</script>
+  </script>
 {% endblock %}

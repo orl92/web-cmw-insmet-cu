@@ -1,10 +1,9 @@
 {% load my_filters %}
-
 {% if request.user|has_permission:'publications.view_scientific_publication' %}
-<li class="nav-item {% if 'publicaciones' in segment %}active{% endif %}">
+  <li class="nav-item {% if 'publicaciones' in segment %}active{% endif %}">
     <a class="nav-link" href="{% url 'publications:list' %}">
-        <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-article"></i></span>
-        <span class="nav-link-title">Publicaciones</span>
+      <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-article"></i></span>
+      <span class="nav-link-title">Publicaciones</span>
     </a>
-</li>
+  </li>
 {% endif %}
