@@ -54,6 +54,8 @@ PRODUCTION=true python manage.py runserver    # producción local (usa DB real, 
 
 Carga el skill que corresponda según la tarea. Los skills están en `~/.agents/skills/`.
 
+> **Uso automático**: usa los MCP y skills de forma proactiva cuando la tarea lo requiera, sin esperar a que el usuario los pida. Ver reglas globales en `~/.config/opencode/AGENTS.md`.
+
 ### Meta
 - `using-agent-skills` — árbol de decisión completo para descubrir qué skill aplicar
 
@@ -92,6 +94,7 @@ Task arrives →
 
 ### MCP
 - `tabler` — búsqueda de iconos, componentes, layouts, colores y documentación de Tabler.io
+- `context7` — documentación actualizada de librerías/frameworks (Django, DRF, drf-spectacular, etc.). Usarlo siempre que se necesiten APIs, ejemplos o configuración de una librería; formato `use library /django/django`
 
 ## Flujo SDD
 
