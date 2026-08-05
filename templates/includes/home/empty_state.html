@@ -37,6 +37,14 @@
     <path d="M13 16l2 5h1l2 -5" />
     <path d="M6 16v3a2 2 0 1 0 4 0v-3" />
   </svg>
+  {% else %}
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg text-muted mb-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+    <path d="M5 3h10l4 4v12a2 2 0 0 1 -2 2H5a2 2 0 0 1 -2 -2V5a2 2 0 0 1 2 -2" />
+    <path d="M9 7h4" />
+    <path d="M9 11h6" />
+    <path d="M9 15h6" />
+  </svg>
   {% endif %}
   <div>{{ message|default:"No hay datos disponibles." }}</div>
 </div>

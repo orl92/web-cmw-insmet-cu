@@ -80,7 +80,7 @@
               <div class="subheader mb-3">Template Tabler</div>
               <ul class="list-unstyled list-separated gap-2">
                 <li class="nav-item mb-2 fs-5">
-                  <a href="https://github.com/tabler/tabler" class="nav-link p-0 link-secondary" target="_blank" rel="noopener noreferrer" rel="noreferrer">Github</a>
+                  <a href="https://github.com/tabler/tabler" class="nav-link p-0 link-secondary" target="_blank" rel="noopener noreferrer">Github</a>
                 </li>
               </ul>
             </div>
@@ -96,8 +96,6 @@
       </div>
     </div>
   </div>
-</footer>
-<footer class="footer">
   <div class="container">
     <div class="row mt-3">
       <div class="row text-center align-items-center flex-row-reverse">
@@ -139,9 +137,7 @@
         <div class="col-12 col-lg-auto mt-3 mt-lg-0">
           <ul class="list-inline list-inline-dots mb-0">
             <li class="list-inline-item">
-              &copy;<script>
-                      document.write(new Date().getFullYear())
-                    </script>-
+              &copy;{% now 'Y' %} -
               <a href="{% url 'home:index' %}" class="link-secondary">Centro Meteorológico Provincial de Camagüey.</a>
             </li>
           </ul>

@@ -3,7 +3,7 @@
   <div class="card">
     <div class="card-body">
       <h3 class="subheader text-muted fw-medium">{{ region_name }}</h3>
-      {% if latest_forecast %}
+      {% if latest_forecast and region_data %}
         {% with m=region_data.morning a=region_data.afternoon n=region_data.night %}
         <div class="row">
           <div class="col-4 text-center">

@@ -72,6 +72,7 @@
 68. **068 · Restructure templates** — mover templates a cada app; reorganizar includes; actualizar `{% url %}`. (Incluido en 066.)
 69. **Template polish CRUD (transversal, commits 14f3d1b/b8c2704/4ebd53d)** — templates create/update/detail de meteo, user_auth, core y commercial/publications unificados al patrón de `customer/create.html`: fieldsets con `legend.h4`, `<hr>` entre grupos, grid `row`/`col-md-*`, errores `invalid-feedback d-block`. Bugfixes: formset de `EmailRecipient` con campo `-uuid` (no `-id`) para que edición/borrado hagan round-trip; datetime local en suscripciones (reemplaza `toISOString()` que cambiaba UTC); modal de invoice con API `bootstrap.Modal`; `html_name` en formset de coautores (`BoundField.name` era el nombre sin prefijo y rompía el guardado); value bindings en contract; fecha `d/m/Y` en detail de publicaciones. Tests de regresión añadidos (+7): suite 250 tests OK.
 70. **070 · Tests secundarios** — `apps/dashboard/tests/` (acceso staff/cliente, flags de permisos, rangos, KPIs, charts JSON, `serialize_sub` tolera persona natural); `apps/core/tests/test_middleware.py` (`CheckUserProfileMiddleware` + `MaintenanceModeMiddleware`); `apps/core/tests/test_tasks.py` (`send_email_task` vía `call_local` con adjuntos por args y por path); fix `serialize_sub` (crash con `company_name=None`). Suite 278 tests OK.
+71. **081 · Pulido templates home** — footer unificado en un solo `<footer>`; `rel="noreferrer"` duplicado eliminado; `document.write` → `{% now 'Y' %}`; wrapper `navbar-nav` anidado removido; bloque comentado de notificaciones eliminado; brand `<h1>` → `<a>`; guard `region_data` en forecast_region_card; rama `{% else %}` con icono por defecto en empty_state. Suite 283+ tests OK.
 
 ## Siguiente 🔜
 
@@ -85,8 +86,7 @@
 77. **078 · Tema personalizado** — personalización visual: colores de marca, logo, favicon desde admin. Solo spec.md.
 78. **079 · Exportar gráficos** — botón de descarga PNG/PDF para gráficos ApexCharts del dashboard. Solo spec.md.
 79. **080 · Debug Toolbar** — Django Debug Toolbar en entorno de desarrollo. Solo spec.md.
-80. **081 · Pulido templates home** — HTML inválido y redundancias en templates públicas (footer, navbar, h1, empty_state). Spec/plan/tasks listos.
-81. **082 · Rediseño páginas públicas home** — páginas de contenido (tiempo, comentario, nota, avisos, publicaciones) como documentos con PDF embebido + partials DRY (pdf_scripts, weather_article, paginación Tabler, campos UTC). Spec/plan/tasks listos.
+80. **082 · Rediseño páginas públicas home** — páginas de contenido (tiempo, comentario, nota, avisos, publicaciones) como documentos con PDF embebido + partials DRY (pdf_scripts, weather_article, paginación Tabler, campos UTC). Spec/plan/tasks listos.
 
 ## Backlog / ideas 💡
 
