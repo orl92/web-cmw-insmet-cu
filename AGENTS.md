@@ -17,6 +17,19 @@ PRODUCTION=true python manage.py runserver    # producción local (usa DB real, 
 ./run_huey.sh &                               # worker de correos/PDF (Huey)
 ```
 
+## Pre-commit
+
+Los hooks de pre-commit garantizan Ruff, djlint y detect-secrets en cada commit (`.pre-commit-config.yaml`). Instalación (una vez, tras clonar/instalar dev deps):
+
+```bash
+pip install -r requirements-dev.txt   # incluye pre-commit
+pre-commit install                    # activa el hook git
+pre-commit run --all-files            # ejecutar todos los hooks una vez
+```
+
+- Si `detect-secrets` reporta un falso positivo nuevo, actualizar el baseline con `detect-secrets scan --exclude-files "static/|staticfiles/|.*\.min\.js$|.*\.map$|\.venv/" > .secrets.baseline` y commitear el `.secrets.baseline`.
+- El mismo job `pre-commit` corre en CI (`.github/workflows/ci.yml`).
+
 ## Apps + Modelos
 
 | App | Responsabilidad |

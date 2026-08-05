@@ -32,8 +32,6 @@ ignore = []
 "apps/api/data/*.py" = ["E501", "N802", "N803", "N806", "F403", "F405"]
 # Notación meteorológica estándar (T, Td, RM, LM, MW) en generadores de gráficos.
 "apps/home/data/plot_generators.py" = ["N806"]
-# Strings SVG inline de iconos de acción (no rompibles sin reescribir templates).
-"apps/core/templatetags/utils_filters.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "single"
