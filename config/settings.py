@@ -213,6 +213,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 if not MEDIA_ROOT.exists():
     MEDIA_ROOT.mkdir(parents=True)
 
+# Los tests escriben en un MEDIA_ROOT temporal que se autolimpia (evita
+# dejar archivos residuales en media/).
+TEST_RUNNER = 'config.test_runner.IsolatedMediaRunner'
+
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # REST Framework
