@@ -161,10 +161,10 @@ function initLitepicker() {
             format: 'YYYY-MM-DD',
             lang: 'es-ES',
             resetButton: false,
-            buttonText: {
-                previousMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M15 6l-6 6l6 6" /></svg>`,
-                nextMonth: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1"><path d="M9 6l6 6l-6 6" /></svg>`
-            }
+                buttonText: {
+                    previousMonth: '<i class="ti ti-chevron-left" style="font-size:24px;line-height:1"></i>',
+                    nextMonth: '<i class="ti ti-chevron-right" style="font-size:24px;line-height:1"></i>'
+                }
         });
 
         if (!datepickerElement.value) {
