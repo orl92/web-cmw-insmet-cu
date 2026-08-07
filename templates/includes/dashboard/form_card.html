@@ -5,9 +5,7 @@
 -->
 <div class="col-12">
   <div class="card">
-    {% if card_title %}
-      <div class="card-header">
-        <h3 class="card-title">{{ card_title }}</h3>
-      </div>
-    {% endif %}
     <div class="card-body">
+      {% if card_title %}
+        <h3 class="subheader text-muted fw-medium">{{ card_title }}</h3>
+      {% endif %}

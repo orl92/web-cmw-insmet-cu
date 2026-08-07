@@ -2,6 +2,7 @@
 {% load static %}
 {% block form %}
   <div id="form-messages"></div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Cliente' %}
   <div class="row">
     <!-- Cliente -->
     <div class="col-md-6 mb-3">
@@ -39,6 +40,10 @@
       {% endif %}
     </div>
   </div>
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Período de Facturación' %}
   <!-- Fechas y duración -->
   <div class="row">
     <div class="col-md-4 mb-3">
@@ -53,6 +58,9 @@
       <label class="form-label">Días del período</label>
       <input type="text" class="form-control" id="days-count" value="0" readonly />
     </div>
+  </div>
+  </div>
+  </div>
   </div>
   <!-- Bloque dinámico -->
   <div id="dynamic-fields">

@@ -1,6 +1,7 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
 {% block form %}
+  {% include 'includes/dashboard/form_card.html' with card_title='Cambiar Contraseña' %}
   <div class="mb-3">
     <label class="form-label required">{{ form.old_password.label }}</label>
     <input type="password"
@@ -33,5 +34,8 @@
     {% if form.new_password2.errors %}
       <span class="text-danger d-block mb-3">{{ form.new_password2.errors }}</span>
     {% endif %}
+  </div>
+  </div>
+  </div>
   </div>
 {% endblock %}

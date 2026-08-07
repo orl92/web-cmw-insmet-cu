@@ -1,59 +1,54 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
 {% block form %}
-  <div class="card mb-3">
-    <div class="card-body">
-      <h4 class="card-title">Aprobar pago y subir certificado</h4>
-      <div class="datagrid">
-        <div class="datagrid-item">
-          <div class="datagrid-title">Cliente</div>
-          <div class="datagrid-content">{{ object.customer.company_name }}</div>
-        </div>
-        <div class="datagrid-item">
-          <div class="datagrid-title">Servicio</div>
-          <div class="datagrid-content">{{ object.service.title }}</div>
-        </div>
-        <div class="datagrid-item">
-          <div class="datagrid-title">Período</div>
-          <div class="datagrid-content">{{ object.start_date|date:"d/m/Y" }} - {{ object.end_date|date:"d/m/Y" }}</div>
-        </div>
-      </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Aprobar pago y subir certificado' %}
+  <div class="datagrid">
+    <div class="datagrid-item">
+      <div class="datagrid-title">Cliente</div>
+      <div class="datagrid-content">{{ object.customer.company_name }}</div>
+    </div>
+    <div class="datagrid-item">
+      <div class="datagrid-title">Servicio</div>
+      <div class="datagrid-content">{{ object.service.title }}</div>
+    </div>
+    <div class="datagrid-item">
+      <div class="datagrid-title">Período</div>
+      <div class="datagrid-content">{{ object.start_date|date:"d/m/Y" }} - {{ object.end_date|date:"d/m/Y" }}</div>
     </div>
   </div>
-  <div class="mb-3">
-    <label for="pdf-upload" class="form-label required">Archivo PDF</label>
-    <div class="card">
-      <div class="card-body">
-        <div class="mb-3">
-          <div class="d-flex align-items-center">
-            <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
-            <div>
-              <div class="mb-2">
-                <input type="file"
-                       class="form-control"
-                       name="pdf"
-                       id="pdf-upload"
-                       accept=".pdf"
-                       required>
-              </div>
-              <small class="form-hint">Selecciona el archivo PDF del certificado para este cliente.</small>
-            </div>
-          </div>
-        </div>
-        {% if object.pdf %}
-          <div class="mt-2">
-            <a href="{{ object.pdf.url }}"
-               target="_blank"
-               class="btn btn-outline-primary btn-sm">
-              <i class="icon ti ti-download"></i>
-              Ver PDF actual
-            </a>
-          </div>
-        {% endif %}
-        {% if form.pdf.errors %}
-          <span class="text-danger d-block mb-3 mt-2">{{ form.pdf.errors }}</span>
-        {% endif %}
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Archivo PDF' %}
+  <div class="d-flex align-items-center">
+    <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
+    <div class="flex-grow-1">
+      <div class="mb-2">
+        <input type="file"
+               class="form-control
+                      {% if form.pdf.errors %}is-invalid{% endif %}"
+               name="pdf"
+               id="pdf-upload"
+               accept=".pdf"
+               required>
       </div>
+      <small class="form-hint">Selecciona el archivo PDF del certificado para este cliente.</small>
     </div>
+  </div>
+  {% if object.pdf %}
+    <div class="mt-2">
+      <a href="{{ object.pdf.url }}"
+         target="_blank"
+         class="btn btn-outline-primary btn-sm">
+        <i class="icon ti ti-download"></i>
+        Ver PDF actual
+      </a>
+    </div>
+  {% endif %}
+  {% if form.pdf.errors %}
+    <span class="text-danger d-block mb-3 mt-2">{{ form.pdf.errors }}</span>
+  {% endif %}
+  </div>
+  </div>
   </div>
 {% endblock %}

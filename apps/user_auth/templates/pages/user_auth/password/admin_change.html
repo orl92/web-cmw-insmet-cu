@@ -1,5 +1,6 @@
 {% extends 'layouts/form.html' %}
 {% block form %}
+  {% include 'includes/dashboard/form_card.html' with card_title='Establecer Nueva Contraseña' %}
   <div class="mb-3">
     <label class="form-label required" for="id_new_password1">Nueva contraseña</label>
     <input type="password"
@@ -21,5 +22,8 @@
     {% if form.new_password2.errors %}
       <span class="text-danger d-block mb-3">{{ form.new_password2.errors }}</span>
     {% endif %}
+  </div>
+  </div>
+  </div>
   </div>
 {% endblock %}

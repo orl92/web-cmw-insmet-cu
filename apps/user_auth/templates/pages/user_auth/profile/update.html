@@ -2,281 +2,283 @@
 {% load my_filters %}
 {% load static %}
 {% block form %}
-  <div class="mb-4">
-    <ul class="nav nav-tabs" role="tablist">
+  {% include 'includes/dashboard/form_card.html' %}
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link
+                     {% if active_tab == 'personal' %}active{% endif %}"
+              id="personal-tab"
+              data-bs-toggle="tab"
+              data-bs-target="#personal"
+              type="button"
+              role="tab"
+              aria-controls="personal"
+              aria-selected="{% if active_tab == 'personal' %}true{% else %}false{% endif %}">
+        Información Personal
+      </button>
+    </li>
+    {% if is_customer %}
       <li class="nav-item" role="presentation">
         <button class="nav-link
-                       {% if active_tab == 'personal' %}active{% endif %}"
-                id="personal-tab"
+                       {% if active_tab == 'cliente' %}active{% endif %}"
+                id="cliente-tab"
                 data-bs-toggle="tab"
-                data-bs-target="#personal"
+                data-bs-target="#cliente"
                 type="button"
                 role="tab"
-                aria-controls="personal"
-                aria-selected="{% if active_tab == 'personal' %}true{% else %}false{% endif %}">
-          Información Personal
+                aria-controls="cliente"
+                aria-selected="{% if active_tab == 'cliente' %}true{% else %}false{% endif %}">
+          Datos del Cliente
         </button>
       </li>
-      {% if is_customer %}
-        <li class="nav-item" role="presentation">
-          <button class="nav-link
-                         {% if active_tab == 'cliente' %}active{% endif %}"
-                  id="cliente-tab"
-                  data-bs-toggle="tab"
-                  data-bs-target="#cliente"
-                  type="button"
-                  role="tab"
-                  aria-controls="cliente"
-                  aria-selected="{% if active_tab == 'cliente' %}true{% else %}false{% endif %}">
-            Datos del Cliente
-          </button>
-        </li>
-      {% endif %}
-    </ul>
-    <div class="tab-content">
-      <div class="tab-pane fade
-                  {% if active_tab == 'personal' %}show active{% endif %}"
-           id="personal"
-           role="tabpanel"
-           aria-labelledby="personal-tab">
-        <div class="p-3">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label class="form-label required" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
-                <input type="text"
-                       class="form-control
-                              {% if form.first_name.errors %}is-invalid{% endif %}"
-                       id="{{ form.first_name.id_for_label }}"
-                       name="{{ form.first_name.name }}"
-                       value="{{ form.first_name.value|default:'' }}"
-                       required />
-                {% if form.first_name.errors %}
-                  <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
-                {% endif %}
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label class="form-label required" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
-                <input type="text"
-                       class="form-control
-                              {% if form.last_name.errors %}is-invalid{% endif %}"
-                       id="{{ form.last_name.id_for_label }}"
-                       name="{{ form.last_name.name }}"
-                       value="{{ form.last_name.value|default:'' }}"
-                       required />
-                {% if form.last_name.errors %}
-                  <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
-                {% endif %}
-              </div>
+    {% endif %}
+  </ul>
+  <div class="tab-content">
+    <div class="tab-pane fade
+                {% if active_tab == 'personal' %}show active{% endif %}"
+         id="personal"
+         role="tabpanel"
+         aria-labelledby="personal-tab">
+      <div class="p-3">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label required" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+              <input type="text"
+                     class="form-control
+                            {% if form.first_name.errors %}is-invalid{% endif %}"
+                     id="{{ form.first_name.id_for_label }}"
+                     name="{{ form.first_name.name }}"
+                     value="{{ form.first_name.value|default:'' }}"
+                     required />
+              {% if form.first_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
+              {% endif %}
             </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label required" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
-            <input type="email"
-                   class="form-control
-                          {% if form.email.errors %}is-invalid{% endif %}"
-                   id="{{ form.email.id_for_label }}"
-                   name="{{ form.email.name }}"
-                   value="{{ form.email.value|default:'' }}"
-                   required />
-            {% if form.email.errors %}
-              <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
-            {% endif %}
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label required" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+              <input type="text"
+                     class="form-control
+                            {% if form.last_name.errors %}is-invalid{% endif %}"
+                     id="{{ form.last_name.id_for_label }}"
+                     name="{{ form.last_name.name }}"
+                     value="{{ form.last_name.value|default:'' }}"
+                     required />
+              {% if form.last_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
+              {% endif %}
+            </div>
           </div>
-          <div class="mb-3">
-            <h5>Preferencias</h5>
-          </div>
-          <div class="mb-3">
-            <label class="form-check form-switch">
-              <input class="form-check-input
-                            {% if form.newsletter.errors %}is-invalid{% endif %}"
-                     type="checkbox"
-                     name="{{ form.newsletter.name }}"
-                     id="id_newsletter"
-                     {% if form.newsletter.value %}checked{% endif %}>
-              <span class="form-check-label">{{ form.newsletter.label }}</span>
-              <span class="form-check-description">Recibe novedades y noticias por correo electrónico.</span>
-            </label>
-            {% if form.newsletter.errors %}
-              <div class="invalid-feedback d-block">{{ form.newsletter.errors.0 }}</div>
-            {% endif %}
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="avatar-input">{{ form.avatar.label }}</label>
-            <div class="card">
-              <div class="card-body">
-                <div class="mb-3">
-                  <div class="d-flex align-items-center">
-                    <div class="me-3">
-                      <div class="avatar rounded-circle avatar-xl">
-                        <img src="{{ request.user.profile.get_avatar }}"
-                             alt="Avatar"
-                             class="rounded-circle"
-                             style="width: 100%;
-                                    height: 100%;
-                                    object-fit: cover">
-                      </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label required" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+          <input type="email"
+                 class="form-control
+                        {% if form.email.errors %}is-invalid{% endif %}"
+                 id="{{ form.email.id_for_label }}"
+                 name="{{ form.email.name }}"
+                 value="{{ form.email.value|default:'' }}"
+                 required />
+          {% if form.email.errors %}
+            <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <h5>Preferencias</h5>
+        </div>
+        <div class="mb-3">
+          <label class="form-check form-switch">
+            <input class="form-check-input
+                          {% if form.newsletter.errors %}is-invalid{% endif %}"
+                   type="checkbox"
+                   name="{{ form.newsletter.name }}"
+                   id="id_newsletter"
+                   {% if form.newsletter.value %}checked{% endif %}>
+            <span class="form-check-label">{{ form.newsletter.label }}</span>
+            <span class="form-check-description">Recibe novedades y noticias por correo electrónico.</span>
+          </label>
+          {% if form.newsletter.errors %}
+            <div class="invalid-feedback d-block">{{ form.newsletter.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="avatar-input">{{ form.avatar.label }}</label>
+          <div class="card">
+            <div class="card-body">
+              <div class="mb-3">
+                <div class="d-flex align-items-center">
+                  <div class="me-3">
+                    <div class="avatar rounded-circle avatar-xl">
+                      <img src="{{ request.user.profile.get_avatar }}"
+                           alt="Avatar"
+                           class="rounded-circle"
+                           style="width: 100%;
+                                  height: 100%;
+                                  object-fit: cover">
                     </div>
-                    <div>
-                      <div class="mb-2">
-                        <input type="file"
-                               class="form-control
-                                      {% if form.avatar.errors %}is-invalid{% endif %}"
-                               name="{{ form.avatar.name }}"
-                               id="avatar-input"
-                               accept="image/*" />
-                      </div>
-                      <small class="text-muted">Formatos: JPG, PNG, GIF. Tamaño máximo: 2MB.</small>
+                  </div>
+                  <div>
+                    <div class="mb-2">
+                      <input type="file"
+                             class="form-control
+                                    {% if form.avatar.errors %}is-invalid{% endif %}"
+                             name="{{ form.avatar.name }}"
+                             id="avatar-input"
+                             accept="image/*" />
                     </div>
+                    <small class="text-muted">Formatos: JPG, PNG, GIF. Tamaño máximo: 2MB.</small>
                   </div>
                 </div>
-                {% if request.user.profile.avatar %}
-                  <div class="mt-2">
-                    <button type="submit"
-                            name="delete_avatar"
-                            class="btn btn-outline-danger btn-sm">
-                      <i class="icon ti ti-trash"></i>
-                      Eliminar
-                    </button>
-                  </div>
-                {% endif %}
-                {% if form.avatar.errors %}
-                  <div class="invalid-feedback d-block mt-2">{{ form.avatar.errors.0 }}</div>
-                {% endif %}
               </div>
+              {% if request.user.profile.avatar %}
+                <div class="mt-2">
+                  <button type="submit"
+                          name="delete_avatar"
+                          class="btn btn-outline-danger btn-sm">
+                    <i class="icon ti ti-trash"></i>
+                    Eliminar
+                  </button>
+                </div>
+              {% endif %}
+              {% if form.avatar.errors %}
+                <div class="invalid-feedback d-block mt-2">{{ form.avatar.errors.0 }}</div>
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
-      {% if is_customer %}
-        <div class="tab-pane fade
-                    {% if active_tab == 'cliente' %}show active{% endif %}"
-             id="cliente"
-             role="tabpanel"
-             aria-labelledby="cliente-tab">
-          <div class="p-3">
-            {% if client_type == 'juridica' %}
-              <div class="mb-3">
-                <label class="form-label required"
-                       for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}</label>
-                <input type="text"
-                       class="form-control
-                              {% if form.company_name.errors %}is-invalid{% endif %}"
-                       id="{{ form.company_name.id_for_label }}"
-                       name="{{ form.company_name.name }}"
-                       value="{{ form.company_name.value|default:'' }}"
-                       required />
-                {% if form.company_name.errors %}
-                  <div class="invalid-feedback d-block">{{ form.company_name.errors.0 }}</div>
-                {% endif %}
-              </div>
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label class="form-label required" for="{{ form.reeup.id_for_label }}">{{ form.reeup.label }}</label>
-                    <input type="text"
-                           class="form-control
-                                  {% if form.reeup.errors %}is-invalid{% endif %}"
-                           id="{{ form.reeup.id_for_label }}"
-                           name="{{ form.reeup.name }}"
-                           value="{{ form.reeup.value|default:'' }}"
-                           maxlength="12"
-                           pattern="\d{3}\.\d{1,2}\.\d{4,5}"
-                           inputmode="numeric"
-                           required />
-                    {% if form.reeup.errors %}
-                      <div class="invalid-feedback d-block">{{ form.reeup.errors.0 }}</div>
-                    {% endif %}
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label class="form-label required" for="{{ form.nit.id_for_label }}">{{ form.nit.label }}</label>
-                    <input type="text"
-                           class="form-control
-                                  {% if form.nit.errors %}is-invalid{% endif %}"
-                           id="{{ form.nit.id_for_label }}"
-                           name="{{ form.nit.name }}"
-                           value="{{ form.nit.value|default:'' }}"
-                           maxlength="11"
-                           pattern="\d{11}"
-                           inputmode="numeric"
-                           required />
-                    {% if form.nit.errors %}
-                      <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            {% endif %}
+    </div>
+    {% if is_customer %}
+      <div class="tab-pane fade
+                  {% if active_tab == 'cliente' %}show active{% endif %}"
+           id="cliente"
+           role="tabpanel"
+           aria-labelledby="cliente-tab">
+        <div class="p-3">
+          {% if client_type == 'juridica' %}
+            <div class="mb-3">
+              <label class="form-label required"
+                     for="{{ form.company_name.id_for_label }}">{{ form.company_name.label }}</label>
+              <input type="text"
+                     class="form-control
+                            {% if form.company_name.errors %}is-invalid{% endif %}"
+                     id="{{ form.company_name.id_for_label }}"
+                     name="{{ form.company_name.name }}"
+                     value="{{ form.company_name.value|default:'' }}"
+                     required />
+              {% if form.company_name.errors %}
+                <div class="invalid-feedback d-block">{{ form.company_name.errors.0 }}</div>
+              {% endif %}
+            </div>
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label required" for="{{ form.account.id_for_label }}">{{ form.account.label }}</label>
+                  <label class="form-label required" for="{{ form.reeup.id_for_label }}">{{ form.reeup.label }}</label>
                   <input type="text"
                          class="form-control
-                                {% if form.account.errors %}is-invalid{% endif %}"
-                         id="{{ form.account.id_for_label }}"
-                         name="{{ form.account.name }}"
-                         value="{{ form.account.value|default:'' }}"
-                         maxlength="16"
-                         pattern="\d{16}"
+                                {% if form.reeup.errors %}is-invalid{% endif %}"
+                         id="{{ form.reeup.id_for_label }}"
+                         name="{{ form.reeup.name }}"
+                         value="{{ form.reeup.value|default:'' }}"
+                         maxlength="12"
+                         pattern="\d{3}\.\d{1,2}\.\d{4,5}"
                          inputmode="numeric"
                          required />
-                  {% if form.account.errors %}
-                    <div class="invalid-feedback d-block">{{ form.account.errors.0 }}</div>
+                  {% if form.reeup.errors %}
+                    <div class="invalid-feedback d-block">{{ form.reeup.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label required" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                  <label class="form-label required" for="{{ form.nit.id_for_label }}">{{ form.nit.label }}</label>
                   <input type="text"
                          class="form-control
-                                {% if form.phone.errors %}is-invalid{% endif %}"
-                         id="{{ form.phone.id_for_label }}"
-                         name="{{ form.phone.name }}"
-                         value="{{ form.phone.value|default:'' }}"
-                         maxlength="100"
-                         pattern="\d{8}([\s,\-;]+\d{8})*[\s,\-;]*"
+                                {% if form.nit.errors %}is-invalid{% endif %}"
+                         id="{{ form.nit.id_for_label }}"
+                         name="{{ form.nit.name }}"
+                         value="{{ form.nit.value|default:'' }}"
+                         maxlength="11"
+                         pattern="\d{11}"
                          inputmode="numeric"
                          required />
-                  {% if form.phone.errors %}
-                    <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
+                  {% if form.nit.errors %}
+                    <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
                   {% endif %}
                 </div>
               </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label required" for="{{ form.agency_bank.id_for_label }}">{{ form.agency_bank.label }}</label>
-              <input type="text"
-                     class="form-control
-                            {% if form.agency_bank.errors %}is-invalid{% endif %}"
-                     id="{{ form.agency_bank.id_for_label }}"
-                     name="{{ form.agency_bank.name }}"
-                     value="{{ form.agency_bank.value|default:'' }}"
-                     required />
-              {% if form.agency_bank.errors %}
-                <div class="invalid-feedback d-block">{{ form.agency_bank.errors.0 }}</div>
-              {% endif %}
+          {% endif %}
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required" for="{{ form.account.id_for_label }}">{{ form.account.label }}</label>
+                <input type="text"
+                       class="form-control
+                              {% if form.account.errors %}is-invalid{% endif %}"
+                       id="{{ form.account.id_for_label }}"
+                       name="{{ form.account.name }}"
+                       value="{{ form.account.value|default:'' }}"
+                       maxlength="16"
+                       pattern="\d{16}"
+                       inputmode="numeric"
+                       required />
+                {% if form.account.errors %}
+                  <div class="invalid-feedback d-block">{{ form.account.errors.0 }}</div>
+                {% endif %}
+              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label required" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
-              <textarea class="form-control
-                               {% if form.address.errors %}is-invalid{% endif %}"
-                        id="{{ form.address.id_for_label }}"
-                        name="{{ form.address.name }}"
-                        rows="3"
-                        required>{{ form.address.value|default:'' }}</textarea>
-              {% if form.address.errors %}
-                <div class="invalid-feedback d-block">{{ form.address.errors.0 }}</div>
-              {% endif %}
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label required" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+                <input type="text"
+                       class="form-control
+                              {% if form.phone.errors %}is-invalid{% endif %}"
+                       id="{{ form.phone.id_for_label }}"
+                       name="{{ form.phone.name }}"
+                       value="{{ form.phone.value|default:'' }}"
+                       maxlength="100"
+                       pattern="\d{8}([\s,\-;]+\d{8})*[\s,\-;]*"
+                       inputmode="numeric"
+                       required />
+                {% if form.phone.errors %}
+                  <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
+                {% endif %}
+              </div>
             </div>
           </div>
+          <div class="mb-3">
+            <label class="form-label required" for="{{ form.agency_bank.id_for_label }}">{{ form.agency_bank.label }}</label>
+            <input type="text"
+                   class="form-control
+                          {% if form.agency_bank.errors %}is-invalid{% endif %}"
+                   id="{{ form.agency_bank.id_for_label }}"
+                   name="{{ form.agency_bank.name }}"
+                   value="{{ form.agency_bank.value|default:'' }}"
+                   required />
+            {% if form.agency_bank.errors %}
+              <div class="invalid-feedback d-block">{{ form.agency_bank.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label required" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+            <textarea class="form-control
+                             {% if form.address.errors %}is-invalid{% endif %}"
+                      id="{{ form.address.id_for_label }}"
+                      name="{{ form.address.name }}"
+                      rows="3"
+                      required>{{ form.address.value|default:'' }}</textarea>
+            {% if form.address.errors %}
+              <div class="invalid-feedback d-block">{{ form.address.errors.0 }}</div>
+            {% endif %}
+          </div>
         </div>
-      {% endif %}
-    </div>
+      </div>
+    {% endif %}
+  </div>
+  </div>
+  </div>
   </div>
 {% endblock %}
