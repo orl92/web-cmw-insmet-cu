@@ -22,13 +22,17 @@
         <input type="hidden"
                name="{{ form.commercial_registry.html_name }}"
                value="{{ form.commercial_registry.value|default:'' }}" />
-        <button type="button"
-                class="btn btn-outline-secondary"
-                id="btn-open-modal"
-                title="Editar datos de la empresa">
-          <i class="icon ti ti-edit"></i>
-          Editar
-        </button>
+        {% if perms.core.change_companysettings %}
+          <button type="button"
+                  class="btn btn-outline-secondary"
+                  id="btn-open-modal"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modal-company-settings"
+                  title="Editar datos de la empresa">
+            <i class="icon ti ti-edit"></i>
+            Editar
+          </button>
+        {% endif %}
       </div>
       {% if form.commercial_registry.errors %}
         <div class="invalid-feedback d-block">{{ form.commercial_registry.errors.0 }}</div>
@@ -139,61 +143,92 @@
             {% csrf_token %}
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="form-label">Nombre</label>
+                <label class="form-label required">Nombre</label>
                 <input type="text"
                        name="nombre"
                        class="form-control"
-                       value="{{ company.nombre }}">
+                       value="{{ company.nombre }}"
+                       required>
+                <div class="invalid-feedback"></div>
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label">Dirección</label>
+                <label class="form-label required">Dirección</label>
                 <input type="text"
                        name="direccion"
                        class="form-control"
-                       value="{{ company.direccion }}">
+                       value="{{ company.direccion }}"
+                       required>
+                <div class="invalid-feedback"></div>
               </div>
             </div>
             <div class="row">
               <div class="col-md-4 mb-3">
-                <label class="form-label">Código REEUP</label>
+                <label class="form-label required">Código REEUP</label>
                 <input type="text"
                        name="codigo_reeup"
                        class="form-control"
-                       value="{{ company.codigo_reeup }}">
+                       value="{{ company.codigo_reeup }}"
+                       maxlength="12"
+                       pattern="\d{3}\.\d{1,2}\.\d{4,5}"
+                       inputmode="numeric"
+                       required>
+                <div class="invalid-feedback"></div>
               </div>
               <div class="col-md-4 mb-3">
-                <label class="form-label">NIT</label>
-                <input type="text" name="nit" class="form-control" value="{{ company.nit }}">
+                <label class="form-label required">NIT</label>
+                <input type="text"
+                       name="nit"
+                       class="form-control"
+                       value="{{ company.nit }}"
+                       maxlength="11"
+                       pattern="\d{11}"
+                       inputmode="numeric"
+                       required>
+                <div class="invalid-feedback"></div>
               </div>
               <div class="col-md-4 mb-3">
-                <label class="form-label">Registro Comercial</label>
+                <label class="form-label required">Registro Comercial</label>
                 <input type="text"
                        name="registro_comercial"
                        class="form-control"
-                       value="{{ company.registro_comercial }}">
+                       value="{{ company.registro_comercial }}"
+                       required>
+                <div class="invalid-feedback"></div>
               </div>
             </div>
             <div class="row">
               <div class="col-md-4 mb-3">
-                <label class="form-label">Cuenta Bancaria</label>
+                <label class="form-label required">Cuenta Bancaria</label>
                 <input type="text"
                        name="cuenta_bancaria"
                        class="form-control"
-                       value="{{ company.cuenta_bancaria }}">
+                       value="{{ company.cuenta_bancaria }}"
+                       maxlength="16"
+                       pattern="\d{16}"
+                       inputmode="numeric"
+                       required>
+                <div class="invalid-feedback"></div>
               </div>
               <div class="col-md-4 mb-3">
-                <label class="form-label">Agencia Bancaria</label>
+                <label class="form-label required">Agencia Bancaria</label>
                 <input type="text"
                        name="agencia_bancaria"
                        class="form-control"
-                       value="{{ company.agencia_bancaria }}">
+                       value="{{ company.agencia_bancaria }}"
+                       required>
+                <div class="invalid-feedback"></div>
               </div>
               <div class="col-md-4 mb-3">
-                <label class="form-label">Teléfonos</label>
+                <label class="form-label required">Teléfonos</label>
                 <input type="text"
                        name="telefonos"
                        class="form-control"
-                       value="{{ company.telefonos }}">
+                       value="{{ company.telefonos }}"
+                       maxlength="100"
+                       pattern="\d{8}([\s,\-;]+\d{8})*[\s,\-;]*"
+                       inputmode="numeric"
+                       required>
+                <div class="invalid-feedback"></div>
               </div>
             </div>
             <div class="modal-footer">
@@ -211,34 +246,91 @@
 {% block extrajs %}
   <script>
   // ============================================================
-  // Gestión del modal de empresa (sin cambios)
+  // Gestión del modal de empresa (patrón Tabler)
   // ============================================================
   document.addEventListener('DOMContentLoaded', function() {
     var modal = document.getElementById('modal-company-settings');
     if (!modal) return;
 
-    var openBtn = document.getElementById('btn-open-modal');
     var form = document.getElementById('company-settings-form');
+    if (!form) return;
 
-    if (!openBtn || !form) return;
+    var Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+    if (!Bootstrap || !Bootstrap.Modal) {
+      console.error('Bootstrap.Modal no está disponible.');
+      return;
+    }
+    var modalInstance = Bootstrap.Modal.getOrCreateInstance(modal);
+    var toastContainer = document.getElementById('toast-container');
 
-    var modalInstance = null;
-    if (window.bootstrap && window.bootstrap.Modal) {
-      modalInstance = new window.bootstrap.Modal(modal);
+    {# djlint:off #}
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    {# djlint:on #}
+
+    function showToast(message, type, duration) {
+      type = type || 'danger';
+      duration = duration || 5000;
+      var bgClass = 'bg-info';
+      var iconSvg = '<i class="icon ti ti-info-circle"></i>';
+      var title = 'Información';
+      if (type === 'success') {
+        bgClass = 'bg-success';
+        iconSvg = '<i class="icon ti ti-check"></i>';
+        title = 'Éxito';
+      } else if (type === 'danger') {
+        bgClass = 'bg-danger';
+        iconSvg = '<i class="icon ti ti-circle-x"></i>';
+        title = 'Error';
+      }
+      var toastId = 'toast-' + Date.now();
+      var toastHTML = `
+        <div id="${toastId}" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="toast-header ${bgClass} text-white">
+            <span class="me-2">${iconSvg}</span>
+            <strong class="me-auto">${title}</strong>
+            <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('${toastId}').remove()"></button>
+          </div>
+          <div class="toast-body">${escapeHtml(message)}</div>
+        </div>
+      `;
+      if (toastContainer) {
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        setTimeout(function() {
+          var toastElement = document.getElementById(toastId);
+          if (toastElement) {
+            toastElement.classList.remove('show');
+            setTimeout(function() {
+              if (toastElement && toastElement.parentNode) {
+                toastElement.parentNode.removeChild(toastElement);
+              }
+            }, 300);
+          }
+        }, duration);
+      }
     }
 
-    openBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      if (modalInstance) modalInstance.show();
-    });
+    function clearErrors() {
+      form.querySelectorAll('.is-invalid').forEach(function(input) {
+        input.classList.remove('is-invalid');
+      });
+      form.querySelectorAll('.invalid-feedback').forEach(function(feedback) {
+        feedback.textContent = '';
+      });
+    }
+
+    modal.addEventListener('show.bs.modal', clearErrors);
 
     // Envío AJAX del formulario del modal
     form.addEventListener('submit', function(e) {
       e.preventDefault();
+      clearErrors();
+
       var formData = new FormData(form);
       var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
       if (!csrfToken) {
-        alert('Error: token CSRF no encontrado');
+        showToast('Error: token CSRF no encontrado.', 'danger');
         return;
       }
 
@@ -249,8 +341,15 @@
           'X-CSRFToken': csrfToken.value
         }
       })
-      .then(function(response) { return response.json(); })
+      .then(function(response) {
+        if (response.status === 403) {
+          showToast('No tienes permiso para editar los datos de la empresa.', 'danger');
+          return null;
+        }
+        return response.json();
+      })
       .then(function(data) {
+        if (!data) return;
         if (data.success) {
           var registroComercial = formData.get('registro_comercial');
           var hiddenInput = document.querySelector('input[name="commercial_registry"]');
@@ -275,18 +374,27 @@
             }, 4000);
           }
         } else {
-          var errorMsg = '';
+          var nonFieldMessages = [];
           for (var field in data.errors) {
-            if (data.errors.hasOwnProperty(field)) {
-              errorMsg += field + ': ' + data.errors[field].join(', ') + '\n';
+            if (!data.errors.hasOwnProperty(field)) continue;
+            if (field === '__all__') {
+              nonFieldMessages = data.errors[field];
+              continue;
             }
+            var input = form.querySelector('input[name="' + field + '"]');
+            if (!input) continue;
+            var feedback = input.closest('.mb-3') ? input.closest('.mb-3').querySelector('.invalid-feedback') : null;
+            input.classList.add('is-invalid');
+            if (feedback) feedback.textContent = data.errors[field].join(' ');
           }
-          alert('Error al guardar:\n' + errorMsg);
+          if (nonFieldMessages.length) {
+            showToast(nonFieldMessages.join(' '), 'danger');
+          }
         }
       })
       .catch(function(error) {
         console.error('Error en la petición:', error);
-        alert('Error de red o servidor.');
+        showToast('Error de red o servidor.', 'danger');
       });
     });
   });

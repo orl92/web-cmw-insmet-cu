@@ -17,7 +17,7 @@ class CompanySettingsUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Upd
     form_class = CompanySettingsForm
     template_name = 'pages/core/company/settings.html'
     success_url = reverse_lazy('core:company_settings')
-    permission_required = 'core.change_company_settings'
+    permission_required = 'core.change_companysettings'
 
     def get_object(self, queryset=None):
         return CompanySettings.get_instance()
@@ -42,7 +42,9 @@ class CompanySettingsUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Upd
         return redirect(self.success_url)
 
 
-class CompanySettingsAjaxUpdateView(View):
+class CompanySettingsAjaxUpdateView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'core.change_companysettings'
+
     def post(self, request, *args, **kwargs):
         instance = CompanySettings.get_instance()
         form = CompanySettingsForm(request.POST, instance=instance)

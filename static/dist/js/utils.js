@@ -1,5 +1,16 @@
 function showToast(message, type = 'danger', duration = 5000) {
+    const Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+    if (!Bootstrap || !Bootstrap.Toast) {
+      console.error('showToast: Bootstrap no está disponible.');
+      return;
+    }
     const toastId = 'toast-' + Date.now();
+    const safeMessage = String(message)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
     let icon, title;
     switch(type) {
       case 'success':
@@ -27,7 +38,7 @@ function showToast(message, type = 'danger', duration = 5000) {
           <button type="button" class="ms-2 btn-close" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body">
-          ${message}
+          ${safeMessage}
         </div>
       </div>
     `;
@@ -35,7 +46,7 @@ function showToast(message, type = 'danger', duration = 5000) {
     if (toastContainer) {
       toastContainer.insertAdjacentHTML('beforeend', toastHTML);
       const toastElement = document.getElementById(toastId);
-      const toast = new bootstrap.Toast(toastElement, {
+      const toast = new Bootstrap.Toast(toastElement, {
         delay: duration,
         autohide: true
       });
