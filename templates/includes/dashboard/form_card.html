@@ -1,0 +1,13 @@
+<!--
+  Abre una card de sección para formularios basados en layouts/form.html.
+  Uso: incluir este partial y cerrar el body con tres divs:
+    card-body, card y col-12 (el body es el tercer div abierto).
+-->
+<div class="col-12">
+  <div class="card">
+    {% if card_title %}
+      <div class="card-header">
+        <h3 class="card-title">{{ card_title }}</h3>
+      </div>
+    {% endif %}
+    <div class="card-body">

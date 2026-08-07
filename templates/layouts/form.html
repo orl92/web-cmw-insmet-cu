@@ -15,26 +15,30 @@
       </div>
       <form action="."
             method="post"
-            class="card needs-validation"
+            class="needs-validation"
             enctype="multipart/form-data"
             novalidate>
-        <div class="card-body">
-          {% csrf_token %}
-          {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-              {% for error in form.non_field_errors %}
-                <div>{{ error }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <div class="row row-cards">
           {% block form %}
-            <!-- Los campos del formulario se definen en los templates hijos -->
+            <!-- Las secciones del formulario se definen en los templates hijos -->
           {% endblock %}
-        </div>
-        <div class="card-footer">
           {% block form_actions %}
-            <button type="submit" class="btn btn-primary ms-auto">Aceptar</button>
-            <a href="{{ url_list }}" class="btn btn-secondary ms-auto">Cancelar</a>
+            <div class="col-12">
+              <div class="card">
+                <div class="card-footer d-flex justify-content-end gap-2">
+                  <button type="submit" class="btn btn-primary">Aceptar</button>
+                  <a href="{{ url_list }}" class="btn btn-secondary">Cancelar</a>
+                </div>
+              </div>
+            </div>
           {% endblock form_actions %}
         </div>
       </form>

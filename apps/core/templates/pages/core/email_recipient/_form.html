@@ -1,91 +1,92 @@
-<fieldset class="mb-4">
-  <legend class="h4">Información de la Lista</legend>
-  <div class="row">
-    <div class="col-md-6 mb-3">
-      <label class="form-label required" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-      <input type="text"
-             class="form-control
-                    {% if form.name.errors %}is-invalid{% endif %}"
-             id="{{ form.name.id_for_label }}"
-             name="{{ form.name.name }}"
-             placeholder="Nombre de la Lista"
-             value="{{ form.name.value|default:'' }}"
-             required>
-      {% if form.name.errors %}
-        <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
-      {% endif %}
-    </div>
-    <div class="col-md-6 mb-3">
-      <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-      <input type="text"
-             class="form-control
-                    {% if form.description.errors %}is-invalid{% endif %}"
-             id="{{ form.description.id_for_label }}"
-             name="{{ form.description.name }}"
-             placeholder="Descripción (opcional)"
-             value="{{ form.description.value|default:'' }}">
-      {% if form.description.errors %}
-        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
-      {% endif %}
-    </div>
+{% include 'includes/dashboard/form_card.html' with card_title='Información de la Lista' %}
+<div class="row">
+  <div class="col-md-6 mb-3">
+    <label class="form-label required" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+    <input type="text"
+           class="form-control
+                  {% if form.name.errors %}is-invalid{% endif %}"
+           id="{{ form.name.id_for_label }}"
+           name="{{ form.name.name }}"
+           placeholder="Nombre de la Lista"
+           value="{{ form.name.value|default:'' }}"
+           required>
+    {% if form.name.errors %}
+      <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+    {% endif %}
   </div>
-</fieldset>
-<hr class="my-4">
-<fieldset class="mb-4">
-  <legend class="h4">Destinatarios</legend>
-  <small class="form-text text-muted">Añade los destinatarios de la lista.</small>
-  {% if formset.non_form_errors %}
-    <div class="alert alert-danger mt-3">
-      {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
-    </div>
-  {% endif %}
-  {{ formset.management_form }}
-  <div class="table-responsive">
-    <table class="table table-bordered mt-3">
-      <thead>
-        <tr>
-          <th>Correo Electrónico</th>
-          <th class="text-center" style="width: 90px;">Eliminar</th>
-        </tr>
-      </thead>
-      <tbody id="recipient-tbody">
-        {% for recipient_form in formset %}
-          <tr data-index="{{ forloop.counter0 }}">
-            {% if recipient_form.existing %}
-              <input type="hidden"
-                     name="{{ recipient_form.uuid.html_name }}"
-                     value="{{ recipient_form.uuid.value|default:'' }}"
-                     id="{{ recipient_form.uuid.id_for_label }}">
+  <div class="col-md-6 mb-3">
+    <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+    <input type="text"
+           class="form-control
+                  {% if form.description.errors %}is-invalid{% endif %}"
+           id="{{ form.description.id_for_label }}"
+           name="{{ form.description.name }}"
+           placeholder="Descripción (opcional)"
+           value="{{ form.description.value|default:'' }}">
+    {% if form.description.errors %}
+      <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+    {% endif %}
+  </div>
+</div>
+</div>
+</div>
+</div>
+{% include 'includes/dashboard/form_card.html' with card_title='Destinatarios' %}
+<small class="form-text text-muted">Añade los destinatarios de la lista.</small>
+{% if formset.non_form_errors %}
+  <div class="alert alert-danger mt-3">
+    {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+  </div>
+{% endif %}
+{{ formset.management_form }}
+<div class="table-responsive">
+  <table class="table table-bordered mt-3">
+    <thead>
+      <tr>
+        <th>Correo Electrónico</th>
+        <th class="text-center" style="width: 90px;">Eliminar</th>
+      </tr>
+    </thead>
+    <tbody id="recipient-tbody">
+      {% for recipient_form in formset %}
+        <tr data-index="{{ forloop.counter0 }}">
+          {% if recipient_form.existing %}
+            <input type="hidden"
+                   name="{{ recipient_form.uuid.html_name }}"
+                   value="{{ recipient_form.uuid.value|default:'' }}"
+                   id="{{ recipient_form.uuid.id_for_label }}">
+          {% endif %}
+          <td>
+            <input type="email"
+                   class="form-control
+                          {% if recipient_form.email.errors %}is-invalid{% endif %}"
+                   name="{{ recipient_form.email.html_name }}"
+                   value="{{ recipient_form.email.value|default:'' }}"
+                   placeholder="Correo Electrónico">
+            {% if recipient_form.email.errors %}
+              <div class="invalid-feedback d-block">{{ recipient_form.email.errors.0 }}</div>
             {% endif %}
-            <td>
-              <input type="email"
-                     class="form-control
-                            {% if recipient_form.email.errors %}is-invalid{% endif %}"
-                     name="{{ recipient_form.email.html_name }}"
-                     value="{{ recipient_form.email.value|default:'' }}"
-                     placeholder="Correo Electrónico">
-              {% if recipient_form.email.errors %}
-                <div class="invalid-feedback d-block">{{ recipient_form.email.errors.0 }}</div>
-              {% endif %}
-            </td>
-            <td class="align-middle text-center">
-              <input type="checkbox"
-                     name="{{ recipient_form.DELETE.html_name }}"
-                     value="on"
-                     class="recipient-delete"
-                     hidden>
-              <button type="button"
-                      class="btn btn-icon btn-outline-danger btn-sm delete-recipient"
-                      title="Eliminar destinatario">
-                <i class="icon ti ti-trash"></i>
-              </button>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <button type="button"
-          id="add-recipient"
-          class="btn btn-pill btn-outline-success btn-sm mt-3">Añadir Destinatario</button>
-</fieldset>
+          </td>
+          <td class="align-middle text-center">
+            <input type="checkbox"
+                   name="{{ recipient_form.DELETE.html_name }}"
+                   value="on"
+                   class="recipient-delete"
+                   hidden>
+            <button type="button"
+                    class="btn btn-icon btn-outline-danger btn-sm delete-recipient"
+                    title="Eliminar destinatario">
+              <i class="icon ti ti-trash"></i>
+            </button>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<button type="button"
+        id="add-recipient"
+        class="btn btn-pill btn-outline-success btn-sm mt-3">Añadir Destinatario</button>
+</div>
+</div>
+</div>

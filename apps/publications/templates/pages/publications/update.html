@@ -1,322 +1,318 @@
 {% extends 'layouts/form.html' %}
 {% load form_filters %}
 {% block form %}
-  <fieldset class="mb-4">
-    <legend class="h4">Información de la Publicación</legend>
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label required" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.title.errors %}is-invalid{% endif %}"
-               id="{{ form.title.id_for_label }}"
-               name="{{ form.title.name }}"
-               value="{{ form.title.value|default:'' }}"
-               placeholder="Título de la publicación científica"
-               required>
-        {% if form.title.errors %}
-          <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label required"
-               for="{{ form.publication_date.id_for_label }}">{{ form.publication_date.label }}</label>
-        <input type="date"
-               class="form-control
-                      {% if form.publication_date.errors %}is-invalid{% endif %}"
-               id="{{ form.publication_date.id_for_label }}"
-               name="{{ form.publication_date.name }}"
-               value="{{ form.publication_date.value|iso_date|default:'' }}"
-               required>
-        {% if form.publication_date.errors %}
-          <div class="invalid-feedback d-block">{{ form.publication_date.errors.0 }}</div>
-        {% endif %}
-      </div>
-    </div>
-    <div class="mb-3">
-      <label class="form-label required" for="{{ form.summary.id_for_label }}">{{ form.summary.label }}</label>
-      <textarea class="form-control
-                       {% if form.summary.errors %}is-invalid{% endif %}"
-                id="{{ form.summary.id_for_label }}"
-                name="{{ form.summary.name }}"
-                placeholder="Resumen de la publicación"
-                rows="4"
-                required>{{ form.summary.value|default:'' }}</textarea>
-      {% if form.summary.errors %}
-        <div class="invalid-feedback d-block">{{ form.summary.errors.0 }}</div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Información de la Publicación' %}
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.title.errors %}is-invalid{% endif %}"
+             id="{{ form.title.id_for_label }}"
+             name="{{ form.title.name }}"
+             value="{{ form.title.value|default:'' }}"
+             placeholder="Título de la publicación científica"
+             required>
+      {% if form.title.errors %}
+        <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
       {% endif %}
     </div>
-  </fieldset>
-  <hr class="my-4">
-  <fieldset class="mb-4">
-    <legend class="h4">Autor Principal</legend>
-    <small class="form-text text-muted">Información del autor principal de la publicación.</small>
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label required"
-               for="{{ form.author_first_name.id_for_label }}">{{ form.author_first_name.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.author_first_name.errors %}is-invalid{% endif %}"
-               id="{{ form.author_first_name.id_for_label }}"
-               name="{{ form.author_first_name.name }}"
-               value="{{ form.author_first_name.value|default:'' }}"
-               placeholder="Nombres del autor"
-               required>
-        {% if form.author_first_name.errors %}
-          <div class="invalid-feedback d-block">{{ form.author_first_name.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label required"
-               for="{{ form.author_last_name.id_for_label }}">{{ form.author_last_name.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.author_last_name.errors %}is-invalid{% endif %}"
-               id="{{ form.author_last_name.id_for_label }}"
-               name="{{ form.author_last_name.name }}"
-               value="{{ form.author_last_name.value|default:'' }}"
-               placeholder="Apellidos del autor"
-               required>
-        {% if form.author_last_name.errors %}
-          <div class="invalid-feedback d-block">{{ form.author_last_name.errors.0 }}</div>
-        {% endif %}
-      </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label required"
+             for="{{ form.publication_date.id_for_label }}">{{ form.publication_date.label }}</label>
+      <input type="date"
+             class="form-control
+                    {% if form.publication_date.errors %}is-invalid{% endif %}"
+             id="{{ form.publication_date.id_for_label }}"
+             name="{{ form.publication_date.name }}"
+             value="{{ form.publication_date.value|iso_date|default:'' }}"
+             required>
+      {% if form.publication_date.errors %}
+        <div class="invalid-feedback d-block">{{ form.publication_date.errors.0 }}</div>
+      {% endif %}
     </div>
-    <div class="row">
-      <div class="col-md-12 mb-3">
-        <label class="form-label" for="{{ form.author_email.id_for_label }}">{{ form.author_email.label }}</label>
-        <input type="email"
-               class="form-control
-                      {% if form.author_email.errors %}is-invalid{% endif %}"
-               id="{{ form.author_email.id_for_label }}"
-               name="{{ form.author_email.name }}"
-               value="{{ form.author_email.value|default:'' }}"
-               placeholder="Correo electrónico del autor">
-        {% if form.author_email.errors %}
-          <div class="invalid-feedback d-block">{{ form.author_email.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label" for="{{ form.author_institution.id_for_label }}">{{ form.author_institution.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.author_institution.errors %}is-invalid{% endif %}"
-               id="{{ form.author_institution.id_for_label }}"
-               name="{{ form.author_institution.name }}"
-               value="{{ form.author_institution.value|default:'' }}"
-               placeholder="Institución del autor">
-        {% if form.author_institution.errors %}
-          <div class="invalid-feedback d-block">{{ form.author_institution.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="col-md-6 mb-3">
-        <label class="form-label" for="{{ form.author_orcid_id.id_for_label }}">{{ form.author_orcid_id.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.author_orcid_id.errors %}is-invalid{% endif %}"
-               id="{{ form.author_orcid_id.id_for_label }}"
-               name="{{ form.author_orcid_id.name }}"
-               value="{{ form.author_orcid_id.value|default:'' }}"
-               placeholder="ORCID ID del autor">
-        {% if form.author_orcid_id.errors %}
-          <div class="invalid-feedback d-block">{{ form.author_orcid_id.errors.0 }}</div>
-        {% endif %}
-      </div>
-    </div>
-  </fieldset>
-  <hr class="my-4">
-  <fieldset class="mb-4">
-    <div class="mb-3">
-      <label class="form-label" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
-      <div class="card">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
-            <div class="flex-grow-1">
-              <input type="file"
-                     class="form-control
-                            {% if form.pdf.errors %}is-invalid{% endif %}"
-                     id="{{ form.pdf.id_for_label }}"
-                     name="{{ form.pdf.name }}"
-                     accept=".pdf">
-              <small class="text-muted">Solo archivos PDF. Máximo 10MB. Dejar en blanco si no desea cambiar el archivo actual.</small>
-              {% if object.pdf %}
-                <div class="mt-2">
-                  <a href="{{ object.pdf.url }}"
-                     target="_blank"
-                     class="btn btn-outline-primary btn-sm">
-                    <i class="icon ti ti-download"></i>
-                    Ver PDF actual
-                  </a>
-                </div>
-              {% endif %}
-              {% if form.pdf.errors %}
-                <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </fieldset>
-  <hr class="my-4">
-  <fieldset class="mb-4">
-    <legend class="h4">Coautores (Opcional)</legend>
-    <small class="form-text text-muted">Añade los coautores.</small>
-    {% if formset.non_form_errors %}
-      <div class="alert alert-danger mt-3">
-        {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
-      </div>
+  </div>
+  <div class="mb-3">
+    <label class="form-label required" for="{{ form.summary.id_for_label }}">{{ form.summary.label }}</label>
+    <textarea class="form-control
+                     {% if form.summary.errors %}is-invalid{% endif %}"
+              id="{{ form.summary.id_for_label }}"
+              name="{{ form.summary.name }}"
+              placeholder="Resumen de la publicación"
+              rows="4"
+              required>{{ form.summary.value|default:'' }}</textarea>
+    {% if form.summary.errors %}
+      <div class="invalid-feedback d-block">{{ form.summary.errors.0 }}</div>
     {% endif %}
-    {{ formset.management_form }}
-    <div class="d-none d-md-block">
-      <div class="table-responsive">
-        <table class="table table-bordered mt-3" id="coauthors-table-desktop">
-          <thead>
-            <tr>
-              <th>Nombres</th>
-              <th>Apellidos</th>
-              <th>Correo Electrónico</th>
-              <th>Institución</th>
-              <th>ORCID ID</th>
-              <th>Eliminar</th>
-            </tr>
-          </thead>
-          <tbody id="coauthors-table-body-desktop">
-            {% for form in formset %}
-              <tr class="coauthor-row" data-index="{{ forloop.counter0 }}">
-                {% if form.instance.pk %}
-                  <input type="hidden"
-                         name="{{ form.id.html_name }}"
-                         value="{{ form.instance.pk }}"
-                         id="{{ form.id.id_for_label }}">
-                {% endif %}
-                <td>
-                  <input type="text"
-                         class="form-control"
-                         name="{{ form.first_name.html_name }}"
-                         value="{{ form.first_name.value|default:'' }}"
-                         placeholder="Nombres">
-                </td>
-                <td>
-                  <input type="text"
-                         class="form-control"
-                         name="{{ form.last_name.html_name }}"
-                         value="{{ form.last_name.value|default:'' }}"
-                         placeholder="Apellidos">
-                </td>
-                <td>
-                  <input type="email"
-                         class="form-control"
-                         name="{{ form.email.html_name }}"
-                         value="{{ form.email.value|default:'' }}"
-                         placeholder="Correo">
-                </td>
-                <td>
-                  <input type="text"
-                         class="form-control"
-                         name="{{ form.institution.html_name }}"
-                         value="{{ form.institution.value|default:'' }}"
-                         placeholder="Institución">
-                </td>
-                <td>
-                  <input type="text"
-                         class="form-control"
-                         name="{{ form.orcid_id.html_name }}"
-                         value="{{ form.orcid_id.value|default:'' }}"
-                         placeholder="ORCID ID">
-                </td>
-                <td class="align-middle text-center">
-                  <input type="checkbox" name="{{ form.DELETE.html_name }}" value="on" hidden>
-                  <button type="button"
-                          class="btn btn-icon btn-outline-danger btn-sm delete-coauthor"
-                          title="Eliminar coautor">
-                    <i class="icon ti ti-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Autor Principal' %}
+  <small class="form-text text-muted">Información del autor principal de la publicación.</small>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required"
+             for="{{ form.author_first_name.id_for_label }}">{{ form.author_first_name.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.author_first_name.errors %}is-invalid{% endif %}"
+             id="{{ form.author_first_name.id_for_label }}"
+             name="{{ form.author_first_name.name }}"
+             value="{{ form.author_first_name.value|default:'' }}"
+             placeholder="Nombres del autor"
+             required>
+      {% if form.author_first_name.errors %}
+        <div class="invalid-feedback d-block">{{ form.author_first_name.errors.0 }}</div>
+      {% endif %}
     </div>
-    <div class="d-md-none">
-      <div id="coauthors-mobile-container">
-        {% for form in formset %}
-          <div class="card mb-3 coauthor-card" data-index="{{ forloop.counter0 }}">
-            <div class="card-body">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required"
+             for="{{ form.author_last_name.id_for_label }}">{{ form.author_last_name.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.author_last_name.errors %}is-invalid{% endif %}"
+             id="{{ form.author_last_name.id_for_label }}"
+             name="{{ form.author_last_name.name }}"
+             value="{{ form.author_last_name.value|default:'' }}"
+             placeholder="Apellidos del autor"
+             required>
+      {% if form.author_last_name.errors %}
+        <div class="invalid-feedback d-block">{{ form.author_last_name.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      <label class="form-label" for="{{ form.author_email.id_for_label }}">{{ form.author_email.label }}</label>
+      <input type="email"
+             class="form-control
+                    {% if form.author_email.errors %}is-invalid{% endif %}"
+             id="{{ form.author_email.id_for_label }}"
+             name="{{ form.author_email.name }}"
+             value="{{ form.author_email.value|default:'' }}"
+             placeholder="Correo electrónico del autor">
+      {% if form.author_email.errors %}
+        <div class="invalid-feedback d-block">{{ form.author_email.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label" for="{{ form.author_institution.id_for_label }}">{{ form.author_institution.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.author_institution.errors %}is-invalid{% endif %}"
+             id="{{ form.author_institution.id_for_label }}"
+             name="{{ form.author_institution.name }}"
+             value="{{ form.author_institution.value|default:'' }}"
+             placeholder="Institución del autor">
+      {% if form.author_institution.errors %}
+        <div class="invalid-feedback d-block">{{ form.author_institution.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label" for="{{ form.author_orcid_id.id_for_label }}">{{ form.author_orcid_id.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.author_orcid_id.errors %}is-invalid{% endif %}"
+             id="{{ form.author_orcid_id.id_for_label }}"
+             name="{{ form.author_orcid_id.name }}"
+             value="{{ form.author_orcid_id.value|default:'' }}"
+             placeholder="ORCID ID del autor">
+      {% if form.author_orcid_id.errors %}
+        <div class="invalid-feedback d-block">{{ form.author_orcid_id.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Adjuntar PDF' %}
+  <div class="d-flex align-items-center">
+    <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
+    <div class="flex-grow-1">
+      <label class="form-label" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
+      <input type="file"
+             class="form-control
+                    {% if form.pdf.errors %}is-invalid{% endif %}"
+             id="{{ form.pdf.id_for_label }}"
+             name="{{ form.pdf.name }}"
+             accept=".pdf">
+      <small class="text-muted">Solo archivos PDF. Máximo 10MB. Dejar en blanco si no desea cambiar el archivo actual.</small>
+      {% if object.pdf %}
+        <div class="mt-2">
+          <a href="{{ object.pdf.url }}"
+             target="_blank"
+             class="btn btn-outline-primary btn-sm">
+            <i class="icon ti ti-download"></i>
+            Ver PDF actual
+          </a>
+        </div>
+      {% endif %}
+      {% if form.pdf.errors %}
+        <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Coautores (Opcional)' %}
+  <small class="form-text text-muted">Añade los coautores.</small>
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger mt-3">
+      {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+  {{ formset.management_form }}
+  <div class="d-none d-md-block">
+    <div class="table-responsive">
+      <table class="table table-bordered mt-3" id="coauthors-table-desktop">
+        <thead>
+          <tr>
+            <th>Nombres</th>
+            <th>Apellidos</th>
+            <th>Correo Electrónico</th>
+            <th>Institución</th>
+            <th>ORCID ID</th>
+            <th>Eliminar</th>
+          </tr>
+        </thead>
+        <tbody id="coauthors-table-body-desktop">
+          {% for form in formset %}
+            <tr class="coauthor-row" data-index="{{ forloop.counter0 }}">
               {% if form.instance.pk %}
                 <input type="hidden"
                        name="{{ form.id.html_name }}"
-                       value="{{ form.instance.pk }}">
+                       value="{{ form.instance.pk }}"
+                       id="{{ form.id.id_for_label }}">
               {% endif %}
-              <div class="row mb-2">
-                <div class="col-12">
-                  <label class="form-label">Nombres</label>
-                  <input type="text"
-                         class="form-control"
-                         name="{{ form.first_name.html_name }}"
-                         value="{{ form.first_name.value|default:'' }}"
-                         placeholder="Nombres">
-                </div>
+              <td>
+                <input type="text"
+                       class="form-control"
+                       name="{{ form.first_name.html_name }}"
+                       value="{{ form.first_name.value|default:'' }}"
+                       placeholder="Nombres">
+              </td>
+              <td>
+                <input type="text"
+                       class="form-control"
+                       name="{{ form.last_name.html_name }}"
+                       value="{{ form.last_name.value|default:'' }}"
+                       placeholder="Apellidos">
+              </td>
+              <td>
+                <input type="email"
+                       class="form-control"
+                       name="{{ form.email.html_name }}"
+                       value="{{ form.email.value|default:'' }}"
+                       placeholder="Correo">
+              </td>
+              <td>
+                <input type="text"
+                       class="form-control"
+                       name="{{ form.institution.html_name }}"
+                       value="{{ form.institution.value|default:'' }}"
+                       placeholder="Institución">
+              </td>
+              <td>
+                <input type="text"
+                       class="form-control"
+                       name="{{ form.orcid_id.html_name }}"
+                       value="{{ form.orcid_id.value|default:'' }}"
+                       placeholder="ORCID ID">
+              </td>
+              <td class="align-middle text-center">
+                <input type="checkbox" name="{{ form.DELETE.html_name }}" value="on" hidden>
+                <button type="button"
+                        class="btn btn-icon btn-outline-danger btn-sm delete-coauthor"
+                        title="Eliminar coautor">
+                  <i class="icon ti ti-trash"></i>
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="d-md-none">
+    <div id="coauthors-mobile-container">
+      {% for form in formset %}
+        <div class="card mb-3 coauthor-card" data-index="{{ forloop.counter0 }}">
+          <div class="card-body">
+            {% if form.instance.pk %}
+              <input type="hidden"
+                     name="{{ form.id.html_name }}"
+                     value="{{ form.instance.pk }}">
+            {% endif %}
+            <div class="row mb-2">
+              <div class="col-12">
+                <label class="form-label">Nombres</label>
+                <input type="text"
+                       class="form-control"
+                       name="{{ form.first_name.html_name }}"
+                       value="{{ form.first_name.value|default:'' }}"
+                       placeholder="Nombres">
               </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <label class="form-label">Apellidos</label>
-                  <input type="text"
-                         class="form-control"
-                         name="{{ form.last_name.html_name }}"
-                         value="{{ form.last_name.value|default:'' }}"
-                         placeholder="Apellidos">
-                </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-12">
+                <label class="form-label">Apellidos</label>
+                <input type="text"
+                       class="form-control"
+                       name="{{ form.last_name.html_name }}"
+                       value="{{ form.last_name.value|default:'' }}"
+                       placeholder="Apellidos">
               </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <label class="form-label">Correo Electrónico</label>
-                  <input type="email"
-                         class="form-control"
-                         name="{{ form.email.html_name }}"
-                         value="{{ form.email.value|default:'' }}"
-                         placeholder="Correo">
-                </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-12">
+                <label class="form-label">Correo Electrónico</label>
+                <input type="email"
+                       class="form-control"
+                       name="{{ form.email.html_name }}"
+                       value="{{ form.email.value|default:'' }}"
+                       placeholder="Correo">
               </div>
-              <div class="row mb-2">
-                <div class="col-12">
-                  <label class="form-label">Institución</label>
-                  <input type="text"
-                         class="form-control"
-                         name="{{ form.institution.html_name }}"
-                         value="{{ form.institution.value|default:'' }}"
-                         placeholder="Institución">
-                </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-12">
+                <label class="form-label">Institución</label>
+                <input type="text"
+                       class="form-control"
+                       name="{{ form.institution.html_name }}"
+                       value="{{ form.institution.value|default:'' }}"
+                       placeholder="Institución">
               </div>
-              <div class="row mb-3">
-                <div class="col-12">
-                  <label class="form-label">ORCID ID</label>
-                  <input type="text"
-                         class="form-control"
-                         name="{{ form.orcid_id.html_name }}"
-                         value="{{ form.orcid_id.value|default:'' }}"
-                         placeholder="ORCID ID">
-                </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-12">
+                <label class="form-label">ORCID ID</label>
+                <input type="text"
+                       class="form-control"
+                       name="{{ form.orcid_id.html_name }}"
+                       value="{{ form.orcid_id.value|default:'' }}"
+                       placeholder="ORCID ID">
               </div>
-              <div class="row">
-                <div class="col-12 text-end">
-                  <input type="checkbox" name="{{ form.DELETE.html_name }}" value="on" hidden>
-                  <button type="button"
-                          class="btn btn-outline-danger btn-sm delete-coauthor-mobile">Eliminar Coautor</button>
-                </div>
+            </div>
+            <div class="row">
+              <div class="col-12 text-end">
+                <input type="checkbox" name="{{ form.DELETE.html_name }}" value="on" hidden>
+                <button type="button"
+                        class="btn btn-outline-danger btn-sm delete-coauthor-mobile">Eliminar Coautor</button>
               </div>
             </div>
           </div>
-        {% endfor %}
-      </div>
+        </div>
+      {% endfor %}
     </div>
-    <button type="button"
-            id="add-coauthor"
-            class="btn btn-pill btn-outline-success btn-sm mt-3">Añadir Coautor</button>
-  </fieldset>
+  </div>
+  <button type="button"
+          id="add-coauthor"
+          class="btn btn-pill btn-outline-success btn-sm mt-3">Añadir Coautor</button>
+  </div>
+  </div>
+  </div>
 {% endblock form %}
 {% block extracss %}
   <style>

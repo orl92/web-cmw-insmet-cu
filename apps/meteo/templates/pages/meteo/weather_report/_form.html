@@ -1,64 +1,61 @@
 {% load static %}
-<fieldset class="mb-4">
-  <legend class="h4">Información General</legend>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.summary.label }}</label>
-    <input type="text"
+{% include 'includes/dashboard/form_card.html' with card_title='Información General' %}
+<div class="mb-3">
+  <label class="form-label required">{{ form.summary.label }}</label>
+  <input type="text"
+         class="form-control
+                {% if form.summary.errors %}is-invalid{% endif %}"
+         id="{{ form.summary.id_for_label }}"
+         name="{{ form.summary.name }}"
+         value="{{ form.summary.value|default:'' }}"
+         placeholder="Resumen"
+         required>
+  {% if form.summary.errors %}
+    <div class="invalid-feedback d-block">{{ form.summary.errors.0 }}</div>
+  {% endif %}
+</div>
+</div>
+</div>
+</div>
+{% include 'includes/dashboard/form_card.html' with card_title='Adjuntar PDF' %}
+<div class="d-flex align-items-center">
+  <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
+  <div class="flex-grow-1">
+    <input type="file"
            class="form-control
-                  {% if form.summary.errors %}is-invalid{% endif %}"
-           id="{{ form.summary.id_for_label }}"
-           name="{{ form.summary.name }}"
-           value="{{ form.summary.value|default:'' }}"
-           placeholder="Resumen"
-           required>
-    {% if form.summary.errors %}
-      <div class="invalid-feedback d-block">{{ form.summary.errors.0 }}</div>
+                  {% if form.file.errors %}is-invalid{% endif %}"
+           id="{{ form.file.id_for_label }}"
+           name="{{ form.file.name }}"
+           accept=".pdf"
+           {% if not object %}
+             required{% endif %}>
+    <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
+    {% if form.file.errors %}
+      <div class="invalid-feedback d-block mt-2">{{ form.file.errors.0 }}</div>
     {% endif %}
   </div>
-</fieldset>
-<hr class="my-4">
-<fieldset class="mb-4">
-  <legend class="h4">Adjuntar PDF</legend>
-  <div class="card">
-    <div class="card-body">
-      <div class="d-flex align-items-center">
-        <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
-        <div class="flex-grow-1">
-          <input type="file"
-                 class="form-control
-                        {% if form.file.errors %}is-invalid{% endif %}"
-                 id="{{ form.file.id_for_label }}"
-                 name="{{ form.file.name }}"
-                 accept=".pdf"
-                 {% if not object %}
-                   required{% endif %}>
-          <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
-          {% if form.file.errors %}
-            <div class="invalid-feedback d-block mt-2">{{ form.file.errors.0 }}</div>
-          {% endif %}
-        </div>
-      </div>
-      {% if object and object.file %}
-        <div class="mt-3">
-          <a href="{{ object.file.url }}"
-             target="_blank"
-             class="btn btn-outline-primary btn-sm">
-            <i class="icon ti ti-eye"></i>
-            Ver PDF
-          </a>
-        </div>
-      {% endif %}
-    </div>
+</div>
+{% if object and object.file %}
+  <div class="mt-3">
+    <a href="{{ object.file.url }}"
+       target="_blank"
+       class="btn btn-outline-primary btn-sm">
+      <i class="icon ti ti-eye"></i>
+      Ver PDF
+    </a>
   </div>
-</fieldset>
-<hr class="my-4">
-<fieldset class="mb-4">
-  <legend class="h4">Notificación</legend>
-  <div class="mb-3">
-    <label class="form-label required">{{ form.email_recipient_list.label }}</label>
-    {{ form.email_recipient_list }}
-    {% if form.email_recipient_list.errors %}
-      <div class="invalid-feedback d-block">{{ form.email_recipient_list.errors.0 }}</div>
-    {% endif %}
-  </div>
-</fieldset>
+{% endif %}
+</div>
+</div>
+</div>
+{% include 'includes/dashboard/form_card.html' with card_title='Notificación' %}
+<div class="mb-3">
+  <label class="form-label required">{{ form.email_recipient_list.label }}</label>
+  {{ form.email_recipient_list }}
+  {% if form.email_recipient_list.errors %}
+    <div class="invalid-feedback d-block">{{ form.email_recipient_list.errors.0 }}</div>
+  {% endif %}
+</div>
+</div>
+</div>
+</div>

@@ -1,41 +1,84 @@
 {% extends 'layouts/form.html' %}
 {% block form %}
-  <fieldset class="mb-4">
-    <legend class="h4">Credenciales de Acceso</legend>
-    <div class="mb-3">
-      <label class="form-label required">{{ form.username.label }}</label>
-      <input type="text"
-             class="form-control
-                    {% if form.username.errors %}is-invalid{% endif %}"
-             id="{{ form.username.id_for_label }}"
-             name="{{ form.username.name }}"
-             placeholder="Usuario"
-             value="{{ form.username.value|default:'' }}"
-             autofocus
-             required>
+  {% include 'includes/dashboard/form_card.html' with card_title='Información del Usuario' %}
+  <div class="d-flex align-items-center gap-3">
+    <span class="avatar rounded-circle avatar-xl""
+    style="background-image: url({{ object.profile.get_avatar }})"></span>
+    <div>
+      <div class="d-flex align-items-center flex-wrap gap-1">
+        <h3 class="mb-1">{{ object.username }}</h3>
+        {% if object.profile.is_ldap %}
+          <span class="badge badge-outline text-purple"
+            data-bs-toggle="tooltip"
+            data-bs-placement="bottom"
+          title="Usuario LDAP">LDAP</span>
+        {% endif %}
+        {% if object.is_superuser %}
+          <span class="badge badge-outline text-green">Superusuario</span>
+        {% elif object.is_staff %}
+          <span class="badge badge-outline text-blue">Staff</span>
+        {% endif %}
+        {% if not object.is_active %}
+          <span class="badge badge-outline text-red">Inactivo</span>
+        {% endif %}
+      </div>
+      <div class="text-secondary">
+        {{ object.email|default:'—' }}
+        {% if object.last_login %}
+          · Último acceso: {{ object.last_login|date:"d/m/Y H:i" }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Credenciales de Acceso' %}
+  <div class="mb-3">
+    <label class="form-label required">{{ form.username.label }}</label>
+    <input type="text"
+      class="form-control
+      {% if form.username.errors %}is-invalid{% endif %}"
+      id="{{ form.username.id_for_label }}"
+      name="{{ form.username.name }}"
+      placeholder="Usuario"
+      value="{{ form.username.value|default:'' }}"
+      autofocus
+      required>
       {% if form.username.errors %}
         <div class="invalid-feedback d-block">{{ form.username.errors.0 }}</div>
       {% endif %}
     </div>
-    <div class="mb-3">
-      <label class="form-label">{{ form.password.label }}</label>
-      <span class="form-hint mb-3">Las contraseñas no se almacenan en bruto, así que no hay manera de ver la contraseña del usuario, pero se puede cambiar la contraseña mediante <a href="{% url 'user_auth:admin_password_change' object.profile.uuid %}">este formulario</a></span>
+    <div class="alert alert-info" role="alert">
+      <div class="d-flex">
+        <div>
+          <i class="icon ti ti-lock me-2"></i>
+        </div>
+        <div>
+          <h4 class="alert-title">Contraseña</h4>
+          <div class="text-secondary">
+            Las contraseñas no se almacenan en bruto, así que no hay manera de verla.
+            Puedes cambiarla mediante
+            <a href="{% url 'user_auth:admin_password_change' object.profile.uuid %}">este formulario</a>.
+          </div>
+        </div>
+      </div>
     </div>
-  </fieldset>
-  <hr class="my-4">
-  <fieldset class="mb-4">
-    <legend class="h4">Información Personal</legend>
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label required">{{ form.first_name.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.first_name.errors %}is-invalid{% endif %}"
-               id="{{ form.first_name.id_for_label }}"
-               name="{{ form.first_name.name }}"
-               placeholder="Nombre"
-               value="{{ form.first_name.value|default:'' }}"
-               required>
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Información Personal' %}
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.first_name.label }}</label>
+      <input type="text"
+        class="form-control
+        {% if form.first_name.errors %}is-invalid{% endif %}"
+        id="{{ form.first_name.id_for_label }}"
+        name="{{ form.first_name.name }}"
+        placeholder="Nombre"
+        value="{{ form.first_name.value|default:'' }}"
+        required>
         {% if form.first_name.errors %}
           <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
         {% endif %}
@@ -43,124 +86,112 @@
       <div class="col-md-6 mb-3">
         <label class="form-label">{{ form.last_name.label }}</label>
         <input type="text"
-               class="form-control
-                      {% if form.last_name.errors %}is-invalid{% endif %}"
-               id="{{ form.last_name.id_for_label }}"
-               name="{{ form.last_name.name }}"
-               placeholder="Apellidos"
-               value="{{ form.last_name.value|default:'' }}">
-        {% if form.last_name.errors %}
-          <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
+          class="form-control
+          {% if form.last_name.errors %}is-invalid{% endif %}"
+          id="{{ form.last_name.id_for_label }}"
+          name="{{ form.last_name.name }}"
+          placeholder="Apellidos"
+          value="{{ form.last_name.value|default:'' }}">
+          {% if form.last_name.errors %}
+            <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-12 mb-3">
+          <label class="form-label required">{{ form.email.label }}</label>
+          <input type="email"
+            class="form-control
+            {% if form.email.errors %}is-invalid{% endif %}"
+            id="{{ form.email.id_for_label }}"
+            name="{{ form.email.name }}"
+            placeholder="Dirección de correo"
+            value="{{ form.email.value|default:'' }}"
+            required>
+            {% if form.email.errors %}
+              <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Estado de la Cuenta' %}
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <label class="form-check form-switch">
+        <input class="form-check-input
+          {% if form.is_active.errors %}is-invalid{% endif %}"
+          type="checkbox"
+          id="{{ form.is_active.id_for_label }}"
+          name="is_active"
+          {% if form.is_active.value %}checked{% endif %}>
+          <span class="form-check-label">Activo</span>
+          <span class="form-check-description">
+            Indica si el usuario debe ser tratado como activo. Desmarque esta opción en lugar de borrar la cuenta.
+          </span>
+        </label>
+        {% if form.is_active.errors %}
+          <div class="invalid-feedback d-block">{{ form.is_active.errors.0 }}</div>
         {% endif %}
       </div>
-      <div class="col-12 mb-3">
-        <label class="form-label required">{{ form.email.label }}</label>
-        <input type="email"
-               class="form-control
-                      {% if form.email.errors %}is-invalid{% endif %}"
-               id="{{ form.email.id_for_label }}"
-               name="{{ form.email.name }}"
-               placeholder="Dirección de correo"
-               value="{{ form.email.value|default:'' }}"
-               required>
-        {% if form.email.errors %}
-          <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
-        {% endif %}
+      <div class="col-md-4 mb-3">
+        <label class="form-check form-switch">
+          <input class="form-check-input
+            {% if form.is_staff.errors %}is-invalid{% endif %}"
+            type="checkbox"
+            id="{{ form.is_staff.id_for_label }}"
+            name="is_staff"
+            {% if form.is_staff.value %}checked{% endif %}>
+            <span class="form-check-label">Staff</span>
+            <span class="form-check-description">Indica si el usuario puede entrar en este sitio de administración.</span>
+          </label>
+          {% if form.is_staff.errors %}
+            <div class="invalid-feedback d-block">{{ form.is_staff.errors.0 }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-4 mb-3">
+          <label class="form-check form-switch">
+            <input class="form-check-input
+              {% if form.is_superuser.errors %}is-invalid{% endif %}"
+              type="checkbox"
+              id="{{ form.is_superuser.id_for_label }}"
+              name="is_superuser"
+              {% if form.is_superuser.value %}checked{% endif %}>
+              <span class="form-check-label">Superusuario</span>
+              <span class="form-check-description">
+                Indica que este usuario tiene todos los permisos sin asignárselos explícitamente.
+              </span>
+            </label>
+            {% if form.is_superuser.errors %}
+              <div class="invalid-feedback d-block">{{ form.is_superuser.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
-  </fieldset>
-  <hr class="my-4">
-  <fieldset class="mb-4">
-    <legend class="h4">Preferencias</legend>
-    <div class="mb-3">
-      <label class="form-check form-switch">
-        <input class="form-check-input
-                      {% if form.newsletter.errors %}is-invalid{% endif %}"
-               type="checkbox"
-               id="{{ form.newsletter.id_for_label }}"
-               name="newsletter"
-               {% if form.newsletter.value %}checked{% endif %}>
-        <span class="form-check-label">{{ form.newsletter.label }}</span>
-        <span class="form-check-description">Recibe novedades y noticias por correo electrónico.</span>
-      </label>
-      {% if form.newsletter.errors %}
-        <div class="invalid-feedback d-block">{{ form.newsletter.errors.0 }}</div>
-      {% endif %}
-    </div>
-  </fieldset>
-  <hr class="my-4">
-  <fieldset class="mb-4">
-    <legend class="h4">Permisos</legend>
-    <div class="mb-3">
-      <label class="form-check form-switch">
-        <input class="form-check-input
-                      {% if form.is_active.errors %}is-invalid{% endif %}"
-               type="checkbox"
-               id="{{ form.is_active.id_for_label }}"
-               name="is_active"
-               {% if form.is_active.value %}checked{% endif %}>
-        <span class="form-check-label">Activo</span>
-        <span class="form-check-description">
-          Indica si el usuario debe ser tratado como activo. Desmarque esta opción en lugar de borrar la cuenta.
-        </span>
-      </label>
-      {% if form.is_active.errors %}
-        <div class="invalid-feedback d-block">{{ form.is_active.errors.0 }}</div>
-      {% endif %}
-    </div>
-    <div class="mb-3">
-      <label class="form-check form-switch">
-        <input class="form-check-input
-                      {% if form.is_staff.errors %}is-invalid{% endif %}"
-               type="checkbox"
-               id="{{ form.is_staff.id_for_label }}"
-               name="is_staff"
-               {% if form.is_staff.value %}checked{% endif %}>
-        <span class="form-check-label">Staff</span>
-        <span class="form-check-description">Indica si el usuario puede entrar en este sitio de administración.</span>
-      </label>
-      {% if form.is_staff.errors %}
-        <div class="invalid-feedback d-block">{{ form.is_staff.errors.0 }}</div>
-      {% endif %}
-    </div>
-    <div class="mb-3">
-      <label class="form-check form-switch">
-        <input class="form-check-input
-                      {% if form.is_superuser.errors %}is-invalid{% endif %}"
-               type="checkbox"
-               id="{{ form.is_superuser.id_for_label }}"
-               name="is_superuser"
-               {% if form.is_superuser.value %}checked{% endif %}>
-        <span class="form-check-label">Superusuario</span>
-        <span class="form-check-description">
-          Indica que este usuario tiene todos los permisos sin asignárselos explícitamente.
-        </span>
-      </label>
-      {% if form.is_superuser.errors %}
-        <div class="invalid-feedback d-block">{{ form.is_superuser.errors.0 }}</div>
-      {% endif %}
-    </div>
-    <div class="mb-3">
-      <label class="form-label">{{ form.groups.label }}</label>
-      <div class="form-selectgroup form-selectgroup-pills">
-        {% for group in form.groups %}
-          <label class="form-selectgroup-item">
-            <input type="checkbox"
-                   class="form-selectgroup-input"
-                   name="{{ group.data.name }}"
-                   value="{{ group.data.value }}"
-                   id="{{ group.data.attrs.id }}"
-                   {% if group.data.selected %}checked{% endif %}>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Grupos' %}
+  <div class="row g-2">
+    {% for group in form.groups %}
+      <div class="col-md-4">
+        <label class="form-selectgroup-item">
+          <input type="checkbox"
+            class="form-selectgroup-input"
+            name="{{ group.data.name }}"
+            value="{{ group.data.value }}"
+            id="{{ group.data.attrs.id }}"
+            {% if group.data.selected %}checked{% endif %}>
             <span class="form-selectgroup-label">{{ group.data.label }}</span>
           </label>
-        {% endfor %}
-      </div>
-      {% if form.groups.help_text %}
-        <span class="form-hint">{{ form.groups.help_text }}</span>
-      {% endif %}
-      {% if form.groups.errors %}
-        <div class="invalid-feedback d-block">{{ form.groups.errors.0 }}</div>
-      {% endif %}
-    </div>
-  </fieldset>
+        </div>
+    {% endfor %}
+  </div>
+  {% if form.groups.help_text %}
+    <span class="form-hint mt-2">{{ form.groups.help_text }}</span>
+  {% endif %}
+  {% if form.groups.errors %}
+    <div class="invalid-feedback d-block">{{ form.groups.errors.0 }}</div>
+  {% endif %}
+  </div>
+  </div>
+  </div>
 {% endblock form %}

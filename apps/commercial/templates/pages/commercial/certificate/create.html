@@ -1,49 +1,50 @@
 {% extends 'layouts/form.html' %}
 {% block form %}
-  <fieldset class="mb-4">
-    <legend class="h4">Certificado de Suscripción</legend>
-    <div class="mb-3">
-      <label class="form-label required"
-             for="{{ form.subscription.id_for_label }}">{{ form.subscription.label }}</label>
-      <select class="form-control
-                     {% if form.subscription.errors %}is-invalid{% endif %}"
-              id="{{ form.subscription.id_for_label }}"
-              name="{{ form.subscription.name }}"
-              required>
-        <option value="">Seleccione una suscripción</option>
-        {% for sub in form.subscription.field.queryset %}
-          <option value="{{ sub.pk }}"
-                  {% if form.subscription.value|stringformat:"s" == sub.pk|stringformat:"s" %}selected{% endif %}>
-            {{ sub.customer.company_name }} - {{ sub.service.title }}
-          </option>
-        {% endfor %}
-      </select>
-      {% if form.subscription.errors %}
-        <div class="invalid-feedback d-block">{{ form.subscription.errors.0 }}</div>
-      {% endif %}
-    </div>
-    <div class="mb-3">
-      <label class="form-label required" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
-      <div class="card">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
-            <div class="flex-grow-1">
-              <input type="file"
-                     class="form-control
-                            {% if form.pdf.errors %}is-invalid{% endif %}"
-                     id="{{ form.pdf.id_for_label }}"
-                     name="{{ form.pdf.name }}"
-                     accept=".pdf"
-                     required>
-              <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
-              {% if form.pdf.errors %}
-                <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
-              {% endif %}
-            </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Certificado de Suscripción' %}
+  <div class="mb-3">
+    <label class="form-label required"
+           for="{{ form.subscription.id_for_label }}">{{ form.subscription.label }}</label>
+    <select class="form-control
+                   {% if form.subscription.errors %}is-invalid{% endif %}"
+            id="{{ form.subscription.id_for_label }}"
+            name="{{ form.subscription.name }}"
+            required>
+      <option value="">Seleccione una suscripción</option>
+      {% for sub in form.subscription.field.queryset %}
+        <option value="{{ sub.pk }}"
+                {% if form.subscription.value|stringformat:"s" == sub.pk|stringformat:"s" %}selected{% endif %}>
+          {{ sub.customer.company_name }} - {{ sub.service.title }}
+        </option>
+      {% endfor %}
+    </select>
+    {% if form.subscription.errors %}
+      <div class="invalid-feedback d-block">{{ form.subscription.errors.0 }}</div>
+    {% endif %}
+  </div>
+  <div class="mb-3">
+    <label class="form-label required" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
+          <div class="flex-grow-1">
+            <input type="file"
+                   class="form-control
+                          {% if form.pdf.errors %}is-invalid{% endif %}"
+                   id="{{ form.pdf.id_for_label }}"
+                   name="{{ form.pdf.name }}"
+                   accept=".pdf"
+                   required>
+            <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
+            {% if form.pdf.errors %}
+              <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
+            {% endif %}
           </div>
         </div>
       </div>
     </div>
-  </fieldset>
+  </div>
+  </div>
+  </div>
+  </div>
 {% endblock %}
