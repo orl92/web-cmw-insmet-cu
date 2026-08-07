@@ -1,5 +1,3 @@
-import re
-
 from django import forms
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.contrib.auth.models import Group, Permission, User
@@ -7,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 
 from apps.commercial.models import Customer, ServiceSubscription
+from apps.core.validators import validate_account, validate_nit, validate_phones, validate_reeup
 from apps.user_auth.models import Profile
 
 
@@ -67,10 +66,12 @@ class CustomerSignUpForm(UserCreationForm):
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Pérez'}),
     )
     phone = forms.CharField(
-        max_length=8,
+        max_length=100,
         required=True,
-        label='Número de Teléfono',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '51234567'}),
+        label='Teléfonos',
+        widget=forms.TextInput(
+            attrs={'class': 'form-control', 'placeholder': '51234567, 32270000'}
+        ),
     )
     email = forms.EmailField(
         required=True,
@@ -177,10 +178,7 @@ class CustomerSignUpForm(UserCreationForm):
         return username
 
     def clean_phone(self):
-        phone = self.cleaned_data.get('phone')
-        if not re.match(r'^\d{8}$', phone):
-            raise ValidationError('El teléfono debe tener exactamente 8 dígitos numéricos.')
-        return phone
+        return validate_phones(self.cleaned_data.get('phone'))
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup')
@@ -188,8 +186,7 @@ class CustomerSignUpForm(UserCreationForm):
         if client_type == Customer.ClientType.JURIDICA:
             if not reeup:
                 raise ValidationError('El REEUP es obligatorio para personas jurídicas.')
-            if not re.match(r'^\d{3}\.\d{1,2}\.\d{4,5}$', reeup):
-                raise ValidationError('El REEUP debe tener el formato ###.#.#### o ###.##.#####')
+            validate_reeup(reeup)
             if Customer.objects.filter(reeup=reeup).exists():
                 raise ValidationError('Este código REEUP ya está registrado.')
         return reeup
@@ -200,16 +197,14 @@ class CustomerSignUpForm(UserCreationForm):
         if client_type == Customer.ClientType.JURIDICA:
             if not nit:
                 raise ValidationError('El NIT es obligatorio para personas jurídicas.')
-            if not re.match(r'^\d{11}$', nit):
-                raise ValidationError('El NIT debe tener exactamente 11 dígitos numéricos.')
+            validate_nit(nit)
             if Customer.objects.filter(nit=nit).exists():
                 raise ValidationError('Este NIT ya está registrado.')
         return nit
 
     def clean_account(self):
         account = self.cleaned_data.get('account')
-        if not re.match(r'^\d{16}$', account):
-            raise ValidationError('La cuenta bancaria debe tener exactamente 16 dígitos numéricos.')
+        validate_account(account)
         return account
 
     def save(self, commit=True):

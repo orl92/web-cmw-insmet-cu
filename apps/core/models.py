@@ -5,6 +5,8 @@ import uuid
 from django.db import models
 from django.utils import timezone
 
+from apps.core.validators import validate_account, validate_nit, validate_phones, validate_reeup
+
 
 def pdf_upload_path(instance, filename):
     cls_name = instance.__class__.__name__.lower()
@@ -170,11 +172,17 @@ class CompanySettings(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nombre = models.CharField(max_length=255, verbose_name='Nombre de la empresa')
     direccion = models.TextField(verbose_name='Dirección')
-    codigo_reeup = models.CharField(max_length=50, verbose_name='Código REEUP')
-    nit = models.CharField(max_length=50, verbose_name='NIT')
-    cuenta_bancaria = models.CharField(max_length=50, verbose_name='Cuenta bancaria')
+    codigo_reeup = models.CharField(
+        max_length=50, verbose_name='Código REEUP', validators=[validate_reeup]
+    )
+    nit = models.CharField(max_length=50, verbose_name='NIT', validators=[validate_nit])
+    cuenta_bancaria = models.CharField(
+        max_length=50, verbose_name='Cuenta bancaria', validators=[validate_account]
+    )
     agencia_bancaria = models.CharField(max_length=100, verbose_name='Agencia bancaria')
-    telefonos = models.CharField(max_length=100, verbose_name='Teléfonos')
+    telefonos = models.CharField(
+        max_length=100, verbose_name='Teléfonos', validators=[validate_phones]
+    )
     registro_comercial = models.CharField(
         max_length=50,
         verbose_name='Registro Comercial',

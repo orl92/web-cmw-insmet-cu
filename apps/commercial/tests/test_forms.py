@@ -132,6 +132,19 @@ class CustomerFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('phone', form.errors)
 
+    def test_multi_phone_format(self):
+        data = self._valid_juridica_data()
+        data['phone'] = '51234567, 32270000-12345678; 55556666'
+        form = CustomerForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_invalid_multi_phone_has_bad_part(self):
+        data = self._valid_juridica_data()
+        data['phone'] = '51234567, 32270'
+        form = CustomerForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('phone', form.errors)
+
     def test_save_creates_user_and_customer(self):
         data = self._valid_juridica_data()
         form = CustomerForm(data=data)

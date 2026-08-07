@@ -2,11 +2,11 @@ import uuid
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 
 from apps.core.models import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
+from apps.core.validators import validate_account, validate_nit, validate_phones, validate_reeup
 
 
 class Customer(SoftDeleteModel):
@@ -33,12 +33,7 @@ class Customer(SoftDeleteModel):
         null=True,
         unique=True,
         verbose_name='REEUP',
-        validators=[
-            RegexValidator(
-                r'^\d{3}\.\d{1,2}\.\d{4,5}$',
-                'El REEUP debe tener el formato ###.#.#### o ###.##.#####',
-            )
-        ],
+        validators=[validate_reeup],
     )
     nit = models.CharField(
         max_length=11,
@@ -46,19 +41,13 @@ class Customer(SoftDeleteModel):
         null=True,
         unique=True,
         verbose_name='NIT',
-        validators=[
-            RegexValidator(r'^\d{11}$', 'El NIT debe tener exactamente 11 dígitos numéricos.')
-        ],
+        validators=[validate_nit],
     )
     account = models.CharField(
         max_length=16,
         unique=True,
         verbose_name='Cuenta Bancaria',
-        validators=[
-            RegexValidator(
-                r'^\d{16}$', 'La cuenta bancaria debe tener exactamente 16 dígitos numéricos.'
-            )
-        ],
+        validators=[validate_account],
     )
     agency_bank = models.CharField(
         max_length=100, blank=True, null=True, verbose_name='Agencia Bancaria'
@@ -71,11 +60,9 @@ class Customer(SoftDeleteModel):
         related_name='commercial_customer',
     )
     phone = models.CharField(
-        max_length=8,
-        verbose_name='Número de Teléfono',
-        validators=[
-            RegexValidator(r'^\d{8}$', 'El teléfono debe tener exactamente 8 dígitos numéricos.')
-        ],
+        max_length=100,
+        verbose_name='Teléfonos',
+        validators=[validate_phones],
     )
     accept_terms = models.BooleanField(default=False, verbose_name='Aceptó Términos')
 

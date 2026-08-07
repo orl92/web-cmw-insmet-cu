@@ -112,20 +112,20 @@
                     </div>
                     <div class="mb-3">
                       <label class="form-label required">Teléfono</label>
-                      <input type="tel"
+                      <input type="text"
                              class="form-control
                                     {% if form.phone.errors %}is-invalid{% endif %}"
                              name="phone"
-                             placeholder="51234567"
+                             placeholder="51234567, 32270000"
                              value="{{ form.phone.value|default:'' }}"
                              required
-                             maxlength="8"
-                             pattern="[0-9]{8}"
+                             maxlength="100"
+                             pattern="[0-9]{8}([\s,\-;]+[0-9]{8})*[\s,\-;]*"
                              inputmode="numeric">
                       {% if form.phone.errors %}
                         <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
                       {% else %}
-                        <div class="invalid-feedback">El teléfono debe tener 8 dígitos numéricos.</div>
+                        <div class="invalid-feedback">Los teléfonos deben tener 8 dígitos numéricos cada uno, separados por coma, espacio o guion.</div>
                       {% endif %}
                     </div>
                   </div>
@@ -523,10 +523,13 @@
       }, duration);
     }
 
-    // Solo filtra dígitos para phone, nit, account; NO modifica REEUP
+    // Solo filtra dígitos para nit, account; phone conserva separadores (coma, espacio, guion); NO modifica REEUP
     form.addEventListener('input', function(e) {
       const field = e.target;
-      if (['phone', 'nit', 'account'].includes(field.name)) {
+      if (field.name === 'phone') {
+        field.value = field.value.replace(/[^\d\s,\-;]/g, '');
+      }
+      if (['nit', 'account'].includes(field.name)) {
         field.value = field.value.replace(/\D/g, '');
       }
       if (field.classList.contains('is-invalid') && field.checkValidity()) {

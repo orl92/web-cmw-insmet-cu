@@ -142,10 +142,10 @@
                id="{{ form.phone.id_for_label }}"
                name="{{ form.phone.name }}"
                value="{{ form.phone.value|default:'' }}"
-               placeholder="51234567"
-               maxlength="8"
+               placeholder="51234567, 32270000"
+               maxlength="100"
                inputmode="numeric"
-               pattern="[0-9]{8}">
+               pattern="[0-9]{8}([\s,\-;]+[0-9]{8})*[\s,\-;]*">
         {% if form.phone.errors %}
           <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
         {% endif %}
@@ -168,7 +168,10 @@
   <script>
 document.querySelector('.needs-validation').addEventListener('input', function(e) {
   var field = e.target;
-  if (['phone', 'nit', 'account'].includes(field.name)) {
+  if (field.name === 'phone') {
+    field.value = field.value.replace(/[^\d\s,\-;]/g, '');
+  }
+  if (['nit', 'account'].includes(field.name)) {
     field.value = field.value.replace(/\D/g, '');
   }
   if (field.name === 'reeup') {

@@ -46,9 +46,9 @@ class ProfileForm(forms.ModelForm):
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
     )
     phone = forms.CharField(
-        max_length=8,
+        max_length=100,
         required=False,
-        label='Número de Teléfono',
+        label='Teléfonos',
         widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
     newsletter = forms.BooleanField(

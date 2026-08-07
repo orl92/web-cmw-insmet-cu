@@ -182,6 +182,9 @@
                            id="{{ form.reeup.id_for_label }}"
                            name="{{ form.reeup.name }}"
                            value="{{ form.reeup.value|default:'' }}"
+                           maxlength="12"
+                           pattern="\d{3}\.\d{1,2}\.\d{4,5}"
+                           inputmode="numeric"
                            required />
                     {% if form.reeup.errors %}
                       <div class="invalid-feedback d-block">{{ form.reeup.errors.0 }}</div>
@@ -197,6 +200,9 @@
                            id="{{ form.nit.id_for_label }}"
                            name="{{ form.nit.name }}"
                            value="{{ form.nit.value|default:'' }}"
+                           maxlength="11"
+                           pattern="\d{11}"
+                           inputmode="numeric"
                            required />
                     {% if form.nit.errors %}
                       <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
@@ -215,6 +221,9 @@
                          id="{{ form.account.id_for_label }}"
                          name="{{ form.account.name }}"
                          value="{{ form.account.value|default:'' }}"
+                         maxlength="16"
+                         pattern="\d{16}"
+                         inputmode="numeric"
                          required />
                   {% if form.account.errors %}
                     <div class="invalid-feedback d-block">{{ form.account.errors.0 }}</div>
@@ -230,6 +239,9 @@
                          id="{{ form.phone.id_for_label }}"
                          name="{{ form.phone.name }}"
                          value="{{ form.phone.value|default:'' }}"
+                         maxlength="100"
+                         pattern="\d{8}([\s,\-;]+\d{8})*[\s,\-;]*"
+                         inputmode="numeric"
                          required />
                   {% if form.phone.errors %}
                     <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
