@@ -22,6 +22,16 @@ class UserUpdateForm(UserChangeForm):
         label='Recibe novedades por correo',
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
     )
+    groups = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        label='Grupos',
+        required=False,
+        help_text=(
+            'Grupos a los que pertenece el usuario. Los permisos de estos grupos '
+            'se aplican automáticamente.'
+        ),
+    )
 
     class Meta:
         model = User

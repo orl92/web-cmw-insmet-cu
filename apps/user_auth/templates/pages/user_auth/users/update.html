@@ -1,9 +1,4 @@
 {% extends 'layouts/form.html' %}
-{% load static %}
-{% block extrahead %}
-  <link rel="stylesheet"
-        href="{% static 'dist/libs/bootstrap-duallistbox/bootstrap-duallistbox.min.css' %}">
-{% endblock extrahead %}
 {% block form %}
   <fieldset class="mb-4">
     <legend class="h4">Credenciales de Acceso</legend>
@@ -147,43 +142,25 @@
     </div>
     <div class="mb-3">
       <label class="form-label">{{ form.groups.label }}</label>
-      <select class="form-control
-                     {% if form.groups.errors %}is-invalid{% endif %}"
-              multiple="multiple"
-              name="{{ form.groups.name }}"
-              id="{{ form.groups.id_for_label }}"
-              style="height: 150px">
-        {% for choice in form.groups.field.choices %}
-          <option value="{{ choice.0 }}"
-                  {% if choice.0 in form.groups.value %}selected{% endif %}>{{ choice.1 }}</option>
+      <div class="form-selectgroup form-selectgroup-pills">
+        {% for group in form.groups %}
+          <label class="form-selectgroup-item">
+            <input type="checkbox"
+                   class="form-selectgroup-input"
+                   name="{{ group.data.name }}"
+                   value="{{ group.data.value }}"
+                   id="{{ group.data.attrs.id }}"
+                   {% if group.data.selected %}checked{% endif %}>
+            <span class="form-selectgroup-label">{{ group.data.label }}</span>
+          </label>
         {% endfor %}
-      </select>
+      </div>
+      {% if form.groups.help_text %}
+        <span class="form-hint">{{ form.groups.help_text }}</span>
+      {% endif %}
       {% if form.groups.errors %}
         <div class="invalid-feedback d-block">{{ form.groups.errors.0 }}</div>
       {% endif %}
     </div>
   </fieldset>
 {% endblock form %}
-{% block extrajs %}
-  <script src="{% static 'dist/libs/bootstrap-duallistbox/jquery.bootstrap-duallistbox.min.js' %}"></script>
-  <script>
-    jQuery(document).ready(function($) {
-      $('select[multiple]').bootstrapDualListbox({
-        nonSelectedListLabel: 'Grupos disponibles',
-        selectedListLabel: 'Grupos seleccionados',
-        preserveSelectionOnMove: 'moved',
-        moveOnSelect: false,
-        nonSelectedFilter: '',
-        filterTextClear: 'Mostrar todos',
-        filterPlaceHolder: 'Filtrar',
-        moveSelectedLabel: 'Mover seleccionados',
-        moveAllLabel: 'Mover todos',
-        removeSelectedLabel: 'Eliminar seleccionados',
-        removeAllLabel: 'Eliminar todos',
-        infoText: 'Mostrando todos {0}',
-        infoTextFiltered: '<span class="badge bg-warning">Filtrado</span> {0} de {1}',
-        infoTextEmpty: 'Lista vacía'
-      });
-    });
-  </script>
-{% endblock extrajs %}
