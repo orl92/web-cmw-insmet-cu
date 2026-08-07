@@ -61,6 +61,7 @@
           <button type="button"
                   class="btn-close btn-close-white"
                   id="closeHardModalBtn"
+                  data-bs-dismiss="modal"
                   aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -68,7 +69,10 @@
           <p class="text-danger mb-0">⚠️ Esta acción no se puede deshacer.</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="cancelHardModalBtn">Cancelar</button>
+          <button type="button"
+                  class="btn btn-secondary"
+                  id="cancelHardModalBtn"
+                  data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-danger" id="confirmHardDeleteBtn">Sí, eliminar permanentemente</button>
         </div>
       </div>
@@ -90,6 +94,7 @@
           <button type="button"
                   class="btn-close"
                   id="closeSoftModalBtn"
+                  data-bs-dismiss="modal"
                   aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -97,7 +102,10 @@
           <p class="text-muted mb-0">El cliente ya no verá este servicio activo en su panel, pero los datos se conservarán.</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="cancelSoftModalBtn">Cancelar</button>
+          <button type="button"
+                  class="btn btn-secondary"
+                  id="cancelSoftModalBtn"
+                  data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-warning" id="confirmSoftDeleteBtn">Sí, desactivar</button>
         </div>
       </div>
@@ -111,43 +119,15 @@
 
     // Elementos del modal hard delete
     const hardModal = document.getElementById('hardDeleteModal');
-    const closeHardModalBtn = document.getElementById('closeHardModalBtn');
-    const cancelHardModalBtn = document.getElementById('cancelHardModalBtn');
     const confirmHardDeleteBtn = document.getElementById('confirmHardDeleteBtn');
 
     // Elementos del modal soft delete
     const softModal = document.getElementById('softDeleteModal');
-    const closeSoftModalBtn = document.getElementById('closeSoftModalBtn');
-    const cancelSoftModalBtn = document.getElementById('cancelSoftModalBtn');
     const confirmSoftDeleteBtn = document.getElementById('confirmSoftDeleteBtn');
 
-    // Función para mostrar un modal (sin depender de bootstrap.Modal)
-    function showModal(modalElement) {
-      if (!modalElement) return;
-      modalElement.classList.add('show');
-      modalElement.style.display = 'block';
-      modalElement.setAttribute('aria-hidden', 'false');
-      document.body.classList.add('modal-open');
-      // Crear backdrop si no existe
-      let backdrop = document.querySelector('.modal-backdrop');
-      if (!backdrop) {
-        backdrop = document.createElement('div');
-        backdrop.className = 'modal-backdrop fade show';
-        document.body.appendChild(backdrop);
-      }
-    }
-
-    // Función para ocultar un modal
-    function hideModal(modalElement) {
-      if (!modalElement) return;
-      modalElement.classList.remove('show');
-      modalElement.style.display = 'none';
-      modalElement.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('modal-open');
-      // Eliminar backdrop
-      const backdrop = document.querySelector('.modal-backdrop');
-      if (backdrop) backdrop.remove();
-    }
+    const Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+    const hardModalInstance = (Bootstrap && Bootstrap.Modal && hardModal) ? Bootstrap.Modal.getOrCreateInstance(hardModal) : null;
+    const softModalInstance = (Bootstrap && Bootstrap.Modal && softModal) ? Bootstrap.Modal.getOrCreateInstance(softModal) : null;
 
     // Envío del formulario
     function submitForm() {
@@ -160,64 +140,32 @@
         {% if request.user.is_superuser %}
           // Superusuario: evaluar checkbox
           if (hardDeleteCheckbox && hardDeleteCheckbox.checked) {
-            showModal(hardModal);  // Modal de eliminación permanente
-          } else {
-            showModal(softModal);  // Modal de desactivación
+            if (hardModalInstance) hardModalInstance.show();
+          } else if (softModalInstance) {
+            softModalInstance.show();
           }
         {% else %}
           // Usuario normal: directamente soft delete con modal
-          showModal(softModal);
+          if (softModalInstance) softModalInstance.show();
         {% endif %}
       });
     }
 
-    // ----- Lógica para cerrar modales (hard) -----
-    if (closeHardModalBtn) {
-      closeHardModalBtn.addEventListener('click', function() {
-        hideModal(hardModal);
-      });
-    }
-    if (cancelHardModalBtn) {
-      cancelHardModalBtn.addEventListener('click', function() {
-        hideModal(hardModal);
-      });
-    }
     // Confirmar hard delete
     if (confirmHardDeleteBtn) {
       confirmHardDeleteBtn.addEventListener('click', function() {
-        hideModal(hardModal);
+        if (hardModalInstance) hardModalInstance.hide();
         submitForm();
       });
     }
 
-    // ----- Lógica para cerrar modales (soft) -----
-    if (closeSoftModalBtn) {
-      closeSoftModalBtn.addEventListener('click', function() {
-        hideModal(softModal);
-      });
-    }
-    if (cancelSoftModalBtn) {
-      cancelSoftModalBtn.addEventListener('click', function() {
-        hideModal(softModal);
-      });
-    }
     // Confirmar soft delete
     if (confirmSoftDeleteBtn) {
       confirmSoftDeleteBtn.addEventListener('click', function() {
-        hideModal(softModal);
+        if (softModalInstance) softModalInstance.hide();
         submitForm();
       });
     }
-
-    // Opcional: cerrar modal al hacer clic fuera del contenido (backdrop)
-    window.addEventListener('click', function(event) {
-      if (event.target === hardModal) {
-        hideModal(hardModal);
-      }
-      if (event.target === softModal) {
-        hideModal(softModal);
-      }
-    });
   })();
   </script>
 {% endblock %}

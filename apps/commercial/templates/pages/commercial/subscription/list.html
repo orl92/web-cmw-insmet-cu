@@ -249,13 +249,15 @@
           <button type="button"
                   class="btn-close btn-close-white"
                   id="closeConfirmModalBtn"
+                  data-bs-dismiss="modal"
                   aria-label="Close"></button>
         </div>
         <div class="modal-body" id="modalBody"></div>
         <div class="modal-footer">
           <button type="button"
                   class="btn btn-link link-secondary me-auto"
-                  id="cancelConfirmModalBtn">Cancelar</button>
+                  id="cancelConfirmModalBtn"
+                  data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirmar</button>
         </div>
         <form id="subscriptionActionForm" method="post" style="display: none;">
@@ -276,31 +278,11 @@
       const modalBody = document.getElementById('modalBody');
       const confirmBtn = document.getElementById('confirmActionBtn');
       const form = document.getElementById('subscriptionActionForm');
-      const closeConfirmBtn = document.getElementById('closeConfirmModalBtn');
-      const cancelConfirmBtn = document.getElementById('cancelConfirmModalBtn');
+
+      const Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+      const modalInstance = (Bootstrap && Bootstrap.Modal) ? Bootstrap.Modal.getOrCreateInstance(confirmModal) : null;
 
       let currentActionUrl = '';
-
-      function showModal(modal) {
-        modal.classList.add('show');
-        modal.style.display = 'block';
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('modal-open');
-        if (!document.querySelector('.modal-backdrop')) {
-          const backdrop = document.createElement('div');
-          backdrop.className = 'modal-backdrop fade show';
-          document.body.appendChild(backdrop);
-        }
-      }
-
-      function hideModal(modal) {
-        modal.classList.remove('show');
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('modal-open');
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) backdrop.remove();
-      }
 
       document.addEventListener('click', function (e) {
         const btn = e.target.closest('.action-btn');
@@ -321,20 +303,7 @@
           currentActionUrl = '{% url "commercial:suscripcion_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
         }
 
-        showModal(confirmModal);
-      });
-
-      if (closeConfirmBtn) {
-        closeConfirmBtn.addEventListener('click', () => hideModal(confirmModal));
-      }
-      if (cancelConfirmBtn) {
-        cancelConfirmBtn.addEventListener('click', () => hideModal(confirmModal));
-      }
-
-      window.addEventListener('click', function (e) {
-        if (e.target === confirmModal) {
-          hideModal(confirmModal);
-        }
+        if (modalInstance) modalInstance.show();
       });
 
       confirmBtn.addEventListener('click', function () {

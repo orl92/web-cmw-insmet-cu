@@ -6,26 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const confirmBtn = document.getElementById('confirmDeleteBtn');
   const form = document.getElementById('deleteForm');
 
-  function showDeleteModal(modal) {
-    modal.classList.add('show');
-    modal.style.display = 'block';
-    modal.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('modal-open');
-    if (!document.querySelector('.modal-backdrop')) {
-      const backdrop = document.createElement('div');
-      backdrop.className = 'modal-backdrop fade show';
-      document.body.appendChild(backdrop);
-    }
-  }
-
-  function hideDeleteModal(modal) {
-    modal.classList.remove('show');
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-    document.body.classList.remove('modal-open');
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (backdrop) backdrop.remove();
-  }
+  const Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+  const modalInstance = (Bootstrap && Bootstrap.Modal) ? Bootstrap.Modal.getOrCreateInstance(confirmModal) : null;
 
   document.addEventListener('click', function (e) {
     const btn = e.target.closest('.action-btn');
@@ -33,25 +15,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const uuid = btn.dataset.uuid;
     form.action = '{% url delete_url_name "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
-    showDeleteModal(confirmModal);
+    if (modalInstance) modalInstance.show();
   });
 
   confirmBtn.addEventListener('click', function () {
     form.submit();
-  });
-
-  confirmModal.querySelector('.btn-close').addEventListener('click', function () {
-    hideDeleteModal(confirmModal);
-  });
-
-  confirmModal.querySelector('.btn-link').addEventListener('click', function () {
-    hideDeleteModal(confirmModal);
-  });
-
-  window.addEventListener('click', function (e) {
-    if (e.target === confirmModal) {
-      hideDeleteModal(confirmModal);
-    }
   });
 });
 </script>
