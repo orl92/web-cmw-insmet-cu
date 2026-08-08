@@ -1,3 +1,4 @@
+{% load form_filters %}
 {% if form.instance.pk %}
   <input type="hidden"
          name="{{ form.id.html_name }}"
@@ -5,24 +6,28 @@
 {% endif %}
 <div class="mb-3">
   <label class="form-label">Temperatura</label>
-  {{ form.temp }}
+  {{ form.temp|with_invalid }}
   {% if form.temp.errors %}<div class="invalid-feedback d-block">{{ form.temp.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
   <label class="form-label">Tiempo</label>
-  {{ form.weather }}
+  {{ form.weather|with_invalid }}
+  {% if form.weather.errors %}<div class="invalid-feedback d-block">{{ form.weather.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
   <label class="form-label">Dirección del Viento</label>
-  {{ form.wind_dir }}
+  {{ form.wind_dir|with_invalid }}
+  {% if form.wind_dir.errors %}<div class="invalid-feedback d-block">{{ form.wind_dir.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
   <label class="form-label">Velocidad del Viento</label>
-  {{ form.wind_speed }}
+  {{ form.wind_speed|with_invalid }}
+  {% if form.wind_speed.errors %}<div class="invalid-feedback d-block">{{ form.wind_speed.errors.0 }}</div>{% endif %}
 </div>
 {% if has_sea %}
   <div class="mb-3">
     <label class="form-label">Mar</label>
-    {{ form.sea_note }}
+    {{ form.sea_note|with_invalid }}
+    {% if form.sea_note.errors %}<div class="invalid-feedback d-block">{{ form.sea_note.errors.0 }}</div>{% endif %}
   </div>
 {% endif %}

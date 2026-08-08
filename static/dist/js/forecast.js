@@ -21,8 +21,9 @@ function updateForm(data) {
         const el = document.getElementById(id);
         if (el) {
             el.value = value;
-            if (el.litepicker) {
-                el.litepicker.setDate(value);
+            const picker = window.tempusDominus && window.tempusDominus._instances[id];
+            if (picker) {
+                picker.dates.setFromInput(value, 0);
             }
         }
     };

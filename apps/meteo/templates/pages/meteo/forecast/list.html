@@ -48,15 +48,15 @@
             {% csrf_token %}
             <label for="datepicker-icon" class="form-label me-2">Fecha:</label>
             <div class="mb-3 d-flex align-items-center">
-              <div class="input-group input-group-flat mb-2">
-                <span class="input-group-text">
-                  <i class="icon ti ti-calendar-month"></i>
-                </span>
+              <div class="input-group mb-2" data-tempus-container>
+                <span class="input-group-text" data-tempus-trigger><i class="ti ti-calendar"></i></span>
                 <input name="date"
                        class="form-control"
                        placeholder="Select a date"
                        id="datepicker-icon"
-                       value="{{ date }}" />
+                       value="{{ date }}"
+                       data-tempus="date"
+                       autocomplete="off" />
                 <button type="submit" class="btn btn-primary">
                   <i class="icon ti ti-refresh"></i>
                   Actualizar
@@ -310,8 +310,6 @@
   {{ block.super }}
   {% include 'includes/dashboard/modal_delete_js.html' with delete_url_name='meteo:pronostico_delete' %}
   <script src="{% static '' %}dist/libs/datatables/datatables.min.js"></script>
-  <script src="{% static '' %}dist/libs/litepicker/dist/litepicker.js?1684106062"
-          defer></script>
   <script>
     new DataTable('table.display', {
       info: false,
@@ -321,19 +319,6 @@
       language: {
         url: "{% static 'dist/libs/datatables/Spanish.json' %}"
       }
-    })
-  </script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      window.Litepicker &&
-        new Litepicker({
-          element: document.getElementById('datepicker-icon'),
-          buttonText: {
-            previousMonth: `<i class="icon icon-1 ti ti-chevron-left"></i>`,
-            nextMonth: `<i class="icon icon-1 ti ti-chevron-right"></i>`
-          },
-          format: 'YYYY-MM-DD'
-        })
     })
   </script>
 {% endblock %}

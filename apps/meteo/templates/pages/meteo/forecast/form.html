@@ -22,31 +22,8 @@
   {% include 'includes/dashboard/form_card.html' with card_title='Información del Pronóstico' %}
   <div class="row">
     <div class="col-lg-6">
-      <div class="mb-3">
-        <label class="form-label required">{{ form.date.label }}</label>
-        <div class="mb-3">
-          <div class="input-group input-group-flat
-                      {% if form.date.errors %}is-invalid{% endif %}">
-            <span class="input-group-text
-                         {% if form.date.errors %}border-danger{% endif %}"></span>
-            <input type="date"
-                   name="date"
-                   class="form-control
-                          {% if form.date.errors %}is-invalid{% endif %}"
-                   placeholder="aaaa-mm-dd"
-                   id="{{ form.date.id_for_label }}"
-                   value="{{ date }}"
-                   required>
-          </div>
-          {% if form.date.errors %}
-            <div class="invalid-feedback">{{ form.date.errors.0 }}</div>
-          {% endif %}
-        </div>
-      </div>
+      {% include 'includes/dashboard/date_field.html' with field=form.date value=date mode='date' placeholder='aaaa-mm-dd' %}
     </div>
-  </div>
-  </div>
-  </div>
   </div>
   {{ region_formset.management_form }}
   {{ extended_formset.management_form }}
@@ -64,7 +41,7 @@
           <div class="col-lg-4">
             <div class="card card-sm mb-3">
               <div class="card-body">
-                <h3 class="subheader text-muted fw-medium">{{ form.period.value|period_display }}</h3>
+                <h3 class="subheader text-muted fw-medium mb-3">{{ form.period.value|period_display }}</h3>
                 {% include 'includes/dashboard/pronosticos/region_fields.html' with has_sea=has_sea %}
               </div>
             </div>
@@ -85,7 +62,7 @@
       <div class="col-12 col-lg">
         <div class="card card-sm mb-3">
           <div class="card-body">
-            <h3 class="subheader text-muted fw-medium">Día {{ form.day_number.value }}</h3>
+            <h3 class="subheader text-muted fw-medium mb-3">Día {{ form.day_number.value }}</h3>
             {% include 'includes/dashboard/pronosticos/extended_day.html' %}
           </div>
         </div>

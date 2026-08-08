@@ -16,17 +16,7 @@
     {% endif %}
   </div>
   <div class="col-md-4 mb-3">
-    <label class="form-label required">{{ form.valid_until.label }}</label>
-    <input type="datetime-local"
-           class="form-control
-                  {% if form.valid_until.errors %}is-invalid{% endif %}"
-           id="{{ form.valid_until.id_for_label }}"
-           name="{{ form.valid_until.name }}"
-           value="{{ form.valid_until.value|iso_datetime|default:'' }}"
-           required>
-    {% if form.valid_until.errors %}
-      <div class="invalid-feedback d-block">{{ form.valid_until.errors.0 }}</div>
-    {% endif %}
+    {% include 'includes/dashboard/date_field.html' with field=form.valid_until value=form.valid_until.value|iso_datetime mode='datetime' placeholder='aaaa-mm-ddTHH:mm' %}
   </div>
 </div>
 </div>

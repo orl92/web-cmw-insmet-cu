@@ -21,6 +21,14 @@ def add_attrs(value, attrs_str):
     return value.as_widget(attrs=attrs)
 
 
+@register.filter(name='with_invalid')
+def with_invalid(value):
+    if value.errors:
+        attrs = {'class': f'{value.field.widget.attrs.get("class", "")} is-invalid'.strip()}
+        return value.as_widget(attrs=attrs)
+    return value
+
+
 @register.filter
 def filename(value):
     if not value:

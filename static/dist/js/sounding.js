@@ -8,7 +8,6 @@ class SoundingFormHandler {
         this.initElements();
         this.setCurrentDateAndTime();
         this.bindEvents();
-        this.initLitepicker();
         this.setupDatetimeHandlers();
         this.setupTownChangeHandler();
         this.updateForecastOptions();
@@ -58,22 +57,6 @@ class SoundingFormHandler {
 
     bindEvents() {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
-    }
-
-    initLitepicker() {
-        const datepickerElement = document.getElementById('datepicker');
-        if (datepickerElement) {
-            new Litepicker({
-                element: datepickerElement,
-                format: 'YYYY-MM-DD',
-                lang: 'es-ES',
-                resetButton: false,
-                buttonText: {
-                    previousMonth: '<i class="ti ti-chevron-left" style="font-size:24px;line-height:1"></i>',
-                    nextMonth: '<i class="ti ti-chevron-right" style="font-size:24px;line-height:1"></i>'
-                }
-            });
-        }
     }
 
     setupDatetimeHandlers() {

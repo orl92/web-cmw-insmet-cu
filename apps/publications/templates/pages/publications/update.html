@@ -18,18 +18,7 @@
       {% endif %}
     </div>
     <div class="col-md-6 mb-3">
-      <label class="form-label required"
-             for="{{ form.publication_date.id_for_label }}">{{ form.publication_date.label }}</label>
-      <input type="date"
-             class="form-control
-                    {% if form.publication_date.errors %}is-invalid{% endif %}"
-             id="{{ form.publication_date.id_for_label }}"
-             name="{{ form.publication_date.name }}"
-             value="{{ form.publication_date.value|iso_date|default:'' }}"
-             required>
-      {% if form.publication_date.errors %}
-        <div class="invalid-feedback d-block">{{ form.publication_date.errors.0 }}</div>
-      {% endif %}
+      {% include 'includes/dashboard/date_field.html' with field=form.publication_date value=form.publication_date.value|iso_date mode='date' placeholder='aaaa-mm-dd' %}
     </div>
   </div>
   <div class="mb-3">

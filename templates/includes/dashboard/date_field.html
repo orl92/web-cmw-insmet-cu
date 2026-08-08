@@ -1,0 +1,24 @@
+{% if field %}
+  <div class="mb-3">
+    <label class="form-label{% if field.field.required %}
+                    required{% endif %}"
+           for="{{ field.id_for_label }}">{{ field.label }}</label>
+    <div class="input-group{% if field.errors %}
+                  is-invalid{% endif %}"
+         data-tempus-container>
+      <input type="text"
+             class="form-control{% if field.errors %}
+                      is-invalid{% endif %}"
+             id="{{ field.id_for_label }}"
+             name="{{ field.name }}"
+             value="{{ value|default:'' }}"
+             data-tempus="{{ mode|default:'date' }}"
+             placeholder="{{ placeholder }}"
+             autocomplete="off" />
+      <span class="input-group-text" data-tempus-trigger><i class="ti ti-calendar"></i></span>
+    </div>
+    {% if field.errors %}
+      <div class="invalid-feedback d-block">{{ field.errors.0 }}</div>
+    {% endif %}
+  </div>
+{% endif %}

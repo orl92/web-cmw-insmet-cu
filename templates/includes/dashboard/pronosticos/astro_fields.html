@@ -1,38 +1,33 @@
+{% load form_filters %}
 <div class="row">
   <div class="col-lg-4">
     <div class="mb-3">
       <label class="form-label">{{ form.lp.label }}</label>
-      {{ form.lp }}
+      {{ form.lp|with_invalid }}
+      {% if form.lp.errors %}<div class="invalid-feedback d-block">{{ form.lp.errors.0 }}</div>{% endif %}
     </div>
   </div>
   <div class="col-lg-4">
     <div class="mb-3">
       <label class="form-label">{{ form.nlp.label }}</label>
-      {{ form.nlp }}
+      {{ form.nlp|with_invalid }}
+      {% if form.nlp.errors %}<div class="invalid-feedback d-block">{{ form.nlp.errors.0 }}</div>{% endif %}
     </div>
   </div>
   <div class="col-lg-4">
-    <div class="mb-3">
-      <label class="form-label">{{ form.nlpd.label }}</label>
-      {{ form.nlpd }}
-    </div>
+    {% include 'includes/dashboard/date_field.html' with field=form.nlpd value=form.nlpd.value|iso_date mode='date' placeholder='aaaa-mm-dd' %}
   </div>
   <div class="col-lg-4">
-    <div class="mb-3">
-      <label class="form-label">{{ form.sunrise.label }}</label>
-      {{ form.sunrise }}
-    </div>
+    {% include 'includes/dashboard/date_field.html' with field=form.sunrise value=form.sunrise.value|date:'H:i' mode='time' placeholder='HH:mm' %}
   </div>
   <div class="col-lg-4">
-    <div class="mb-3">
-      <label class="form-label">{{ form.sunset.label }}</label>
-      {{ form.sunset }}
-    </div>
+    {% include 'includes/dashboard/date_field.html' with field=form.sunset value=form.sunset.value|date:'H:i' mode='time' placeholder='HH:mm' %}
   </div>
   <div class="col-lg-4">
     <div class="mb-3">
       <label class="form-label">{{ form.uv_index.label }}</label>
-      {{ form.uv_index }}
+      {{ form.uv_index|with_invalid }}
+      {% if form.uv_index.errors %}<div class="invalid-feedback d-block">{{ form.uv_index.errors.0 }}</div>{% endif %}
     </div>
   </div>
 </div>

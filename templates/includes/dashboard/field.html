@@ -1,0 +1,12 @@
+{% if field %}
+  <div class="mb-3">
+    <label class="form-label{% if field.field.required %} required{% endif %}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}
+      <div class="form-hint">{{ field.help_text }}</div>
+    {% endif %}
+    {% if field.errors %}
+      <div class="invalid-feedback d-block">{{ field.errors.0 }}</div>
+    {% endif %}
+  </div>
+{% endif %}

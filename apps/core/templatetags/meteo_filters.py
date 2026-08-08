@@ -49,9 +49,20 @@ PERIOD_NAMES = {
     'madrugada': 'Madrugada',
     'manana': 'Mañana',
     'tarde': 'Tarde',
+    'morning': 'Mañana',
+    'afternoon': 'Tarde',
+    'night': 'Noche',
 }
 
-PERIOD_ORDER = {'noche': 0, 'madrugada': 1, 'manana': 2, 'tarde': 3}
+PERIOD_ORDER = {
+    'noche': 0,
+    'madrugada': 1,
+    'manana': 2,
+    'tarde': 3,
+    'morning': 1,
+    'afternoon': 2,
+    'night': 3,
+}
 
 
 @register.filter

@@ -14,14 +14,14 @@
                 <!-- Fecha -->
                 <div class="col-12">
                   <label for="datepicker" class="form-label required">Fecha UTC</label>
-                  <div class="input-icon">
+                  <div class="input-group" data-tempus-container>
                     <input class="form-control"
                            placeholder="Seleccione una fecha"
                            id="datepicker"
-                           value="{{ initial_date|default:'' }}">
-                    <span class="input-icon-addon">
-                      <i class="icon icon-1 ti ti-calendar-month"></i>
-                    </span>
+                           value="{{ initial_date|default:'' }}"
+                           data-tempus="date"
+                           autocomplete="off">
+                    <span class="input-group-text" data-tempus-trigger><i class="ti ti-calendar"></i></span>
                   </div>
                 </div>
               </div>
@@ -93,6 +93,5 @@
   </div>
 {% endblock %}
 {% block extrajs %}
-  <script src="{% static 'dist/libs/litepicker/dist/litepicker.js' %}"></script>
   <script src="{% static 'dist/js/sounding.js' %}"></script>
 {% endblock extrajs %}

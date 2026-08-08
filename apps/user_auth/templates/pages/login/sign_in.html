@@ -40,7 +40,7 @@
                            autofocus
                            required>
                     {% if form.username.errors %}
-                      <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
+                      <div class="invalid-feedback d-block">{{ form.username.errors.0 }}</div>
                     {% endif %}
                   </div>
                   <div class="mb-2">
@@ -56,7 +56,7 @@
                              required>
                     </div>
                     {% if form.password.errors %}
-                      <div class="invalid-feedback">{{ form.password.errors.0 }}</div>
+                      <div class="invalid-feedback d-block">{{ form.password.errors.0 }}</div>
                     {% endif %}
                   </div>
                   <div class="form-footer">

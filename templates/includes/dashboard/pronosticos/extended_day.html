@@ -1,21 +1,24 @@
+{% load form_filters %}
 {% if form.instance.pk %}
   <input type="hidden"
          name="{{ form.id.html_name }}"
          value="{{ form.instance.pk }}">
 {% endif %}
 <div class="mb-3">
-  <label class="form-label">Fecha</label>
-  {{ form.date }}
+  {% include 'includes/dashboard/date_field.html' with field=form.date value=form.date.value|iso_date mode='date' placeholder='aaaa-mm-dd' %}
 </div>
 <div class="mb-3">
   <label class="form-label">Temp. Mín</label>
-  {{ form.min_temp }}
+  {{ form.min_temp|with_invalid }}
+  {% if form.min_temp.errors %}<div class="invalid-feedback d-block">{{ form.min_temp.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
   <label class="form-label">Temp. Máx</label>
-  {{ form.max_temp }}
+  {{ form.max_temp|with_invalid }}
+  {% if form.max_temp.errors %}<div class="invalid-feedback d-block">{{ form.max_temp.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
   <label class="form-label">Tiempo</label>
-  {{ form.weather }}
+  {{ form.weather|with_invalid }}
+  {% if form.weather.errors %}<div class="invalid-feedback d-block">{{ form.weather.errors.0 }}</div>{% endif %}
 </div>

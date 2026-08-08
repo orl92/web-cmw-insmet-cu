@@ -146,8 +146,8 @@ class MeteoPlotter {
     }
 }
 
-// Función para inicializar el Litepicker
-function initLitepicker() {
+// Función para asignar la fecha por defecto (picker lo gestiona Tempus Dominus via data-tempus)
+function initDatepickerDefault() {
     const today = new Date();
 
     const formatDate = (date) => {
@@ -155,21 +155,8 @@ function initLitepicker() {
     };
 
     const datepickerElement = document.getElementById('datepicker');
-    if (datepickerElement) {
-        const datepicker = new Litepicker({
-            element: datepickerElement,
-            format: 'YYYY-MM-DD',
-            lang: 'es-ES',
-            resetButton: false,
-                buttonText: {
-                    previousMonth: '<i class="ti ti-chevron-left" style="font-size:24px;line-height:1"></i>',
-                    nextMonth: '<i class="ti ti-chevron-right" style="font-size:24px;line-height:1"></i>'
-                }
-        });
-
-        if (!datepickerElement.value) {
-            datepicker.setDate(today);
-        }
+    if (datepickerElement && !datepickerElement.value) {
+        datepickerElement.value = formatDate(today);
     }
 }
 
@@ -266,8 +253,8 @@ function formatErrorMessage(error) {
 
 // Código de inicialización cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', function () {
-    // Inicializar Litepicker primero
-    initLitepicker();
+    // Inicializar fecha por defecto
+    initDatepickerDefault();
 
     const form = document.getElementById('data-form');
 
