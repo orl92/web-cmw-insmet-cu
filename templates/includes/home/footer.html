@@ -1,134 +1,46 @@
 {% load static %}
-<footer class="footer">
+<footer class="footer d-print-none">
   <div class="container">
-    <!-- Sección de referencias con logos -->
-    <div class="row text-center align-items-center">
-      <div class="col-lg">
-        <h4>Referencias</h4>
-        <!-- Carrusel para pantallas pequeñas -->
-        <div id="carouselExampleIndicators"
-             class="carousel slide d-md-none"
-             data-bs-ride="carousel">
-          <div class="carousel-inner">
-            <!-- Primer grupo de logos -->
-            <div class="carousel-item active">
-              <div class="d-flex justify-content-around">
-                <a href="https://www.citma.gob.cu/"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                  <img src="{% static '' %}dist/img/citma.png"
-                       alt="CITMA"
-                       width="110"
-                       height="32"
-                       class="navbar-brand-image" />
-                </a>
-                <a href="https://www.ama.cu/" target="_blank" rel="noopener noreferrer">
-                  <img src="{% static '' %}dist/img/ama.png"
-                       alt="AMA"
-                       width="110"
-                       height="32"
-                       class="navbar-brand-image" />
-                </a>
-                <a href="https://www.insmet.cu/"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                  <img src="{% static '' %}dist/img/insmet.svg"
-                       alt="INSMET"
-                       width="110"
-                       height="32"
-                       class="navbar-brand-image" />
-                </a>
-              </div>
-            </div>
-            <!-- Agrega más "diapositivas" aquí si tienes más grupos de logos -->
-          </div>
-        </div>
-        <!-- Cuadrícula para pantallas grandes -->
-        <div class="row text-center align-items-center d-none d-md-flex">
-          <!-- Primer logo -->
-          <div class="col">
-            <a href="https://www.citma.gob.cu/"
-               target="_blank"
-               rel="noopener noreferrer">
-              <img src="{% static '' %}dist/img/citma.png"
-                   alt="CITMA"
-                   class="img-fluid m-2 navbar-brand-image"
-                   width="110"
-                   height="32" />
-            </a>
-          </div>
-          <!-- Segundo logo -->
-          <div class="col">
-            <a href="https://www.ama.cu/" target="_blank" rel="noopener noreferrer">
-              <img src="{% static '' %}dist/img/ama.png"
-                   alt="AMA"
-                   class="img-fluid m-2 navbar-brand-image"
-                   width="110"
-                   height="32" />
-            </a>
-          </div>
-          <!-- Tercer logo -->
-          <div class="col">
-            <a href="https://www.insmet.cu/"
-               target="_blank"
-               rel="noopener noreferrer">
-              <img src="{% static '' %}dist/img/insmet.svg"
-                   alt="INSMET"
-                   class="img-fluid m-2 navbar-brand-image"
-                   width="110"
-                   height="32" />
-            </a>
-          </div>
-          <!-- Agrega más columnas aquí si tienes más logos -->
-        </div>
-      </div>
-    </div>
-    <hr />
-    <!-- Divisor después de referencias -->
     <div class="py-3">
-      <div class="row g-4">
-        <div class="col-lg-8">
-          <div class="row g-4">
+      <div class="row g-lg-4">
+        <div class="col-lg-7">
+          <div class="row g-lg-4">
             <div class="col-md">
-              <div class="subheader mb-3">Productos y servicios</div>
+              <div class="subheader mb-3">Servicios</div>
               <ul class="list-unstyled list-separated gap-2">
-                <li class="nav-item mb-2 fs-5">
-                  <a href="{% url 'home:services_commercial' %}"
-                     class="nav-link p-0 link-secondary">Servicios Comerciales</a>
+                <li>
+                  <a class="link-secondary" href="{% url 'home:services_commercial' %}">Servicios Comerciales</a>
                 </li>
-                <li class="nav-item mb-2 fs-5">
-                  <a href="{% url 'home:services_public' %}"
-                     class="nav-link p-0 link-secondary">Servicios Públicos</a>
+                <li>
+                  <a class="link-secondary" href="{% url 'home:services_public' %}">Servicios Públicos</a>
                 </li>
-                <li class="nav-item mb-2 fs-5">
-                  <a href="{% url 'doc' %}"
+                <li>
+                  <a class="link-secondary" href="{% url 'doc' %}"
                      target="_blank"
-                     rel="noopener noreferrer"
-                     class="nav-link p-0 link-secondary">DFM12 REST APIs</a>
+                     rel="noopener noreferrer">DFM12 REST APIs</a>
                 </li>
               </ul>
             </div>
             <div class="col-md">
-              <div class="subheader mb-3">Contacte con nosotros</div>
+              <div class="subheader mb-3">Contacto</div>
               <ul class="list-unstyled list-separated gap-2">
-                <li class="nav-item mb-2 fs-5 d-flex align-items-center">
-                  <i class="icon ti ti-phone"></i>
-                  <a href="#" class="nav-link p-0 link-secondary">+53 32 261284</a>
+                <li>
+                  <a class="link-secondary" href="tel:+5332261284">
+                    <i class="icon ti ti-phone me-1"></i>+53 32 261284
+                  </a>
                 </li>
-                <li class="nav-item mb-2 fs-5 d-flex align-items-center">
-                  <i class="icon ti ti-mail"></i>
-                  <a href="#" class="nav-link p-0 link-secondary">direccion@cmw.insmet.cu</a>
+                <li>
+                  <a class="link-secondary" href="mailto:direccion@cmw.insmet.cu">
+                    <i class="icon ti ti-mail me-1"></i>direccion@cmw.insmet.cu
+                  </a>
                 </li>
               </ul>
             </div>
             <div class="col-md">
-              <div class="subheader mb-3">Template Tabler</div>
+              <div class="subheader mb-3">Institución</div>
               <ul class="list-unstyled list-separated gap-2">
-                <li class="nav-item mb-2 fs-5">
-                  <a href="https://github.com/tabler/tabler"
-                     class="nav-link p-0 link-secondary"
-                     target="_blank"
-                     rel="noopener noreferrer">Github</a>
+                <li>
+                  <a class="link-secondary" href="{% url 'home:publications' %}">Publicaciones</a>
                 </li>
               </ul>
             </div>
@@ -142,50 +54,88 @@
           </div>
         </div>
       </div>
+      <hr class="my-3" />
+      <div class="row g-lg-4 justify-content-between mt-2">
+        <div class="col-sm-7 col-md-6 col-lg-4">
+          <h5 class="subheader">Referencias</h5>
+          <div class="d-flex flex-wrap align-items-center gap-4 mt-3">
+            <a href="https://www.citma.gob.cu/"
+               target="_blank"
+               rel="noopener noreferrer">
+              <img src="{% static 'dist/img/citma.png' %}"
+                   alt="CITMA"
+                   width="90"
+                   height="26"
+                   class="navbar-brand-image" />
+            </a>
+            <a href="https://www.ama.cu/" target="_blank" rel="noopener noreferrer">
+              <img src="{% static 'dist/img/ama.png' %}"
+                   alt="AMA"
+                   width="90"
+                   height="26"
+                   class="navbar-brand-image" />
+            </a>
+            <a href="https://www.insmet.cu/"
+               target="_blank"
+               rel="noopener noreferrer">
+              <img src="{% static 'dist/img/insmet.svg' %}"
+                   alt="INSMET"
+                   width="90"
+                   height="26"
+                   class="navbar-brand-image" />
+            </a>
+          </div>
+        </div>
+        <div class="col-sm-5 col-md-6 col-lg-3 text-sm-end">
+          <h5 class="subheader">Síguenos</h5>
+          <ul class="list-inline mb-0 mt-3">
+            <li class="list-inline-item">
+              <a class="btn btn-icon btn-facebook"
+                 href="https://www.facebook.com/insmetcmpcmg?locale=es_LA"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="Facebook">
+                <i class="icon ti ti-brand-facebook"></i>
+              </a>
+            </li>
+            <li class="list-inline-item">
+              <a class="btn btn-icon btn-instagram"
+                 href="https://www.instagram.com/meteorologiacmg"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="Instagram">
+                <i class="icon ti ti-brand-instagram"></i>
+              </a>
+            </li>
+            <li class="list-inline-item">
+              <a class="btn btn-icon btn-twitter"
+                 href="https://x.com/INSMET_CMP_CMG"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="X (Twitter)">
+                <i class="icon ti ti-brand-x"></i>
+              </a>
+            </li>
+            <li class="list-inline-item">
+              <a class="btn btn-icon"
+                 href="https://t.me/meteoalertaCMG"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="Telegram">
+                <i class="icon ti ti-brand-telegram"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
   <div class="container">
-    <div class="row mt-3">
-      <div class="row text-center align-items-center flex-row-reverse">
-        <div class="col-lg-auto ms-lg-auto">
-          <ul class="list-inline list-inline-dots mb-0">
-            <!-- SVG de Instagram -->
-            <a href="https://www.instagram.com/meteorologiacmg?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
-               target="_blank"
-               rel="noopener noreferrer"
-               class="me-2">
-              <i class="icon ti ti-brand-instagram" style="font-size:20px"></i>
-            </a>
-            <!-- SVG de Facebook -->
-            <a href="https://www.facebook.com/insmetcmpcmg?locale=es_LA"
-               target="_blank"
-               rel="noopener noreferrer"
-               class="me-2">
-              <i class="icon ti ti-brand-facebook" style="font-size:20px"></i>
-            </a>
-            <!-- SVG de Twitter -->
-            <a href="https://x.com/INSMET_CMP_CMG"
-               target="_blank"
-               rel="noopener noreferrer"
-               class="me-2">
-              <i class="icon ti ti-brand-x" style="font-size:20px"></i>
-            </a>
-            <!-- SVG de Telegram -->
-            <a href="https://t.me/meteoalertaCMG"
-               target="_blank"
-               rel="noopener noreferrer"
-               class="me-2">
-              <i class="icon ti ti-brand-telegram" style="font-size:20px"></i>
-            </a>
-          </ul>
-        </div>
-        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
-          <ul class="list-inline list-inline-dots mb-0">
-            <li class="list-inline-item">
-              &copy;{% now 'Y' %} -
-              <a href="{% url 'home:index' %}" class="link-secondary">Centro Meteorológico Provincial de Camagüey.</a>
-            </li>
-          </ul>
+    <div class="py-3 border-top text-center text-lg-start">
+      <div class="row g-lg-4">
+        <div class="col-lg text-secondary">
+          &copy;{% now 'Y' %} -
+          <a href="{% url 'home:index' %}" class="link-secondary">Centro Meteorológico Provincial de Camagüey.</a>
         </div>
       </div>
     </div>
