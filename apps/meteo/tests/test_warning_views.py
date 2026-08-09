@@ -8,7 +8,7 @@ from apps.meteo.models import Warning
 
 
 def _disable_maintenance_mode():
-    SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+    SiteConfiguration.objects.update_or_create(defaults={'maintenance_mode': False})
 
 
 class WarningFormDateTests(TestCase):
@@ -38,7 +38,7 @@ class WarningFormDateTests(TestCase):
         url = reverse('meteo:alerta_temprana_update', args=[self.warning.uuid])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'value="2026-08-05T14:30"')
+        self.assertContains(response, 'value="05/08/2026 02:30 PM"')
 
     def test_invalid_post_keeps_submitted_valid_until(self):
         self.client.force_login(self.admin)
@@ -49,4 +49,4 @@ class WarningFormDateTests(TestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'value="2026-08-05T14:30"')
+        self.assertContains(response, 'value="05/08/2026 02:30 PM"')

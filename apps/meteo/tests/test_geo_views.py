@@ -71,4 +71,4 @@ class StationCreateViewTests(TestCase):
         self.assertContains(response, 'id="id_longitude"')
         self.assertEqual(content.count('id="id_latitude"'), 1)
         self.assertNotContains(response, 'type="float"')
-        self.assertContains(response, 'type="number" step="any"')
+        self.assertRegex(content, r'type="number"\s+step="any"')

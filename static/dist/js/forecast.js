@@ -69,11 +69,15 @@ function toPickerTime(time) {
     if (!time || typeof time !== 'string') {
         return '';
     }
+    var hasMeridiem = /am|pm/i.test(time);
     var parts = time.split(':');
     var hour = parseInt(parts[0], 10);
-    var minute = parts[1] || '00';
+    var minute = (parts[1] || '').replace(/[^0-9]/g, '') || '00';
     if (isNaN(hour)) {
         return time;
+    }
+    if (hasMeridiem) {
+        return time.trim().replace(/\s+/g, ' ');
     }
     var meridiem = hour >= 12 ? 'PM' : 'AM';
     var hour12 = hour % 12;

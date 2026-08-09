@@ -49,6 +49,16 @@ def _build_region_initial():
     return initial
 
 
+def _formset_errors(*formsets):
+    """Recolecta los errores de campo y no-de-campo de uno o más formsets."""
+    errors = []
+    for formset in formsets:
+        errors.extend(formset.non_form_errors())
+        for each_form in formset.forms:
+            errors.extend(each_form.errors.values())
+    return errors
+
+
 def _build_extended_initial(date_value):
     initial = []
     for day_num in range(1, 6):
@@ -112,9 +122,14 @@ class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
     success_url = reverse_lazy('meteo:pronostico_list')
 
     def get_date_value(self):
-        date_string = self.request.GET.get('date')
-        if date_string:
-            return datetime.strptime(date_string, '%Y-%m-%d').date()
+        date_string = self.request.POST.get('date') or self.request.GET.get('date')
+        if not date_string:
+            return timezone.now().date()
+        for fmt in ('%d/%m/%Y', '%Y-%m-%d'):
+            try:
+                return datetime.strptime(date_string, fmt).date()
+            except ValueError:
+                continue
         return timezone.now().date()
 
     def get_context_data(self, **kwargs):
@@ -151,15 +166,7 @@ class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
         self.object = form.save(commit=False)
         region_formset = ForecastRegionsFormSet(self.request.POST, instance=self.object)
         extended_formset = ForecastExtendedDayFormSet(self.request.POST, instance=self.object)
-        errors = []
-        if not region_formset.is_valid():
-            errors.extend(
-                error for each_form in region_formset.forms for error in each_form.errors.values()
-            )
-        if not extended_formset.is_valid():
-            errors.extend(
-                error for each_form in extended_formset.forms for error in each_form.errors.values()
-            )
+        errors = _formset_errors(region_formset, extended_formset)
         if errors:
             messages.error(self.request, 'Corrija los errores del formulario.')
             context = self.get_context_data(form=form)
@@ -227,15 +234,7 @@ class ForecastUpdateView(
         self.object = form.save(commit=False)
         region_formset = ForecastRegionsFormSet(self.request.POST, instance=self.object)
         extended_formset = ForecastExtendedDayFormSet(self.request.POST, instance=self.object)
-        errors = []
-        if not region_formset.is_valid():
-            errors.extend(
-                error for each_form in region_formset.forms for error in each_form.errors.values()
-            )
-        if not extended_formset.is_valid():
-            errors.extend(
-                error for each_form in extended_formset.forms for error in each_form.errors.values()
-            )
+        errors = _formset_errors(region_formset, extended_formset)
         if errors:
             messages.error(self.request, 'Corrija los errores del formulario.')
             context = self.get_context_data(form=form)

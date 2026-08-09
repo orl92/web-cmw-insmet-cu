@@ -44,11 +44,27 @@ def _to_date(value):
     if isinstance(value, datetime.date):
         return value
     if isinstance(value, str):
-        try:
-            return datetime.datetime.strptime(value, '%Y-%m-%d').date()
-        except ValueError:
-            return None
+        value = value.strip()
+        for fmt in ('%d/%m/%Y', '%Y-%m-%d'):
+            try:
+                return datetime.datetime.strptime(value, fmt).date()
+            except ValueError:
+                continue
     return None
+
+
+def _excel_serial_to_time(value):
+    """Convierte un número serial de Excel (fracción del día) a 'HH:MM'."""
+    try:
+        fraction = float(value)
+    except (TypeError, ValueError):
+        return ''
+    if not (0 <= fraction < 1):
+        return ''
+    seconds = int(round(fraction * 86400)) % 86400
+    hours, rem = divmod(seconds, 3600)
+    minutes = rem // 60
+    return f'{hours:02d}:{minutes:02d}'
 
 
 def _to_time(value):
@@ -56,6 +72,12 @@ def _to_time(value):
         return value.strftime('%H:%M')
     if isinstance(value, datetime.datetime):
         return value.strftime('%H:%M')
+    if isinstance(value, float):
+        if pd.isna(value):
+            return ''
+        return _excel_serial_to_time(value)
+    if isinstance(value, int):
+        return _excel_serial_to_time(value)
     if isinstance(value, str):
         value = value.strip()
         if value.lower() == 'auto' or not value:
@@ -63,7 +85,10 @@ def _to_time(value):
         try:
             return datetime.datetime.strptime(value, '%H:%M').strftime('%H:%M')
         except ValueError:
-            return value
+            try:
+                return datetime.datetime.strptime(value, '%H:%M:%S').strftime('%H:%M')
+            except ValueError:
+                return value
     return ''
 
 
@@ -265,15 +290,14 @@ def build_template() -> bytes:
     ws.cell(1, 6, 'Válido').font = bold
     ws.cell(1, 7, '')
 
-    # Fila 1: cabeceras de grupo
+    # Fila 1: cabeceras de grupo (1-based: cada grupo ocupa cols j+1..j+3)
     for j, name in GROUP_HEADERS.items():
+        ws.merge_cells(start_row=2, start_column=j + 1, end_row=2, end_column=j + 3)
         c = ws.cell(2, j + 1, name)
         c.font = bold
         c.fill = header_fill
         c.alignment = center
         c.border = border
-    for j in GROUP_PERIODS:
-        ws.merge_cells(start_row=2, start_column=j, end_row=2, end_column=j + 2)
     # Fila 2: periodos
     for j, periods in GROUP_PERIODS.items():
         for off, name in enumerate(periods):

@@ -28,7 +28,7 @@
   {% include 'includes/dashboard/form_card.html' with card_title='Fecha del Pronóstico' %}
   <div class="row">
     <div class="col-lg-6">
-      {% include 'includes/dashboard/date_field.html' with field=form.date value=date|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
+      {% include 'includes/dashboard/date_field.html' with field=form.date value=form.date.value|fmt_date|default:date|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
     </div>
   </div>
   </div>
