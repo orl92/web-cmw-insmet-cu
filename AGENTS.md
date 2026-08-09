@@ -2,16 +2,17 @@
 
 ## Stack
 
-Django 5.2 + DRF + drf-spectacular (OpenAPI), Python 3.8+. Virtual env `.venv/`. UI: Tabler via templates raíz (`templates/` con layouts/ includes/ pages/). DB: SQLite dev, PostgreSQL/MySQL prod. Apps dentro de `apps/`.
+Django 5.2 + DRF + drf-spectacular (OpenAPI), Python 3.12 (CI y ruff apuntan a `py312`). Virtual env `.venv/`. UI: Tabler vía Django Templates; raíz `templates/` con `layouts/` e `includes/`, y páginas en `apps/<app>/templates/pages/`. DB: SQLite dev, PostgreSQL/MySQL prod. Apps dentro de `apps/`.
 
 ## Comandos
 
 ```bash
 source .venv/bin/activate
 pip install -r requirements.txt && python manage.py makemigrations migrate
-python manage.py collectstatic --link --no-input add_stations_data createsuperuser
+python manage.py collectstatic --link --no-input
+python manage.py add_stations_data createsuperuser
 python manage.py runserver                    # desarrollo
-python manage.py test <app>                   # testing selectivo
+python manage.py test apps.<app>              # testing selectivo (label completo, ej: apps.meteo)
 python manage.py test                         # full suite (antes de commit)
 PRODUCTION=true python manage.py runserver    # producción local (usa DB real, SSL, etc.)
 ./run_huey.sh &                               # worker de correos/PDF (Huey)
@@ -30,6 +31,15 @@ pre-commit run --all-files            # ejecutar todos los hooks una vez
 - Si `detect-secrets` reporta un falso positivo nuevo, actualizar el baseline con `detect-secrets scan --exclude-files "static/|staticfiles/|.*\.min\.js$|.*\.map$|\.venv/" > .secrets.baseline` y commitear el `.secrets.baseline`.
 - El mismo job `pre-commit` corre en CI (`.github/workflows/ci.yml`).
 
+## CI — tests selectivos
+
+El job `test` de CI NO corre la suite completa en cada PR (tarda demasiado):
+
+- **PR**: un job `detect` (`dorny/paths-filter@v3`) detecta qué apps cambiaron (`apps/<app>/**`) y el job `test` corre solo `python manage.py test apps.<app> ...` para las afectadas.
+- **Push a main / merge**: siempre corre la suite completa (`python manage.py test`) como red de seguridad.
+- Cambios globales (`config/**`, `manage.py`, `requirements*.txt`, `pyproject.toml`, `.github/**`, `templates/**`, `static/**`) fuerzan la suite completa.
+- Los labels de app deben ir como ruta completa (`apps.meteo`, no `meteo`): en Django 5.2 el label corto ya no resuelve el paquete de tests.
+
 ## Apps + Modelos
 
 | App | Responsabilidad |
@@ -40,9 +50,8 @@ pre-commit run --all-files            # ejecutar todos los hooks una vez
 | `apps/core/` | FileHandlerMixin, SoftDeleteModel, utils, error views, CompanySettings, SiteConfiguration, EmailRecipientList/Recipient, templatetags, context_processors, middleware, mail_send |
 | `apps/dashboard/` | Solo DashboardView principal (vista agregada del panel) |
 | `apps/commercial/` | Customer, Service, ServiceSubscription, Invoice/InvoiceItem, Contract, Certificate — servicios comerciales y facturación |
-| `apps/meteo/` | Forecasts/ForecastRegions/ForecastExtendedDay, Warning (con warning_type), WeatherReport (today/tomorrow/commentary/note) |
-| `apps/geo/` | Province, Town, Station |
-| `apps/home/` | Páginas públicas: tiempo, modelos, satélites, servicios, institucion |
+| `apps/meteo/` | Forecasts/ForecastRegions/ForecastExtendedDay, Warning (con warning_type), WeatherReport (today/tomorrow/commentary/note), Province, Town, Station |
+| `apps/home/` | Páginas públicas: tiempo, modelos, satélites, servicios, institución |
 | `apps/publications/` | ScientificPublication, Author — publicaciones científicas |
 | `spec/` | SDD features en `features/NNN-nombre/` con `{spec,plan,tasks}.md` |
 
@@ -71,35 +80,7 @@ Carga el skill que corresponda según la tarea. Los skills están en `~/.agents/
 > **Uso automático**: usa los MCP y skills de forma proactiva cuando la tarea lo requiera, sin esperar a que el usuario los pida. Ver reglas globales en `~/.config/opencode/AGENTS.md`.
 
 ### Meta
-- `using-agent-skills` — árbol de decisión completo para descubrir qué skill aplicar
-
-### Lifecycle mapping (intent → skill)
-
-```
-Task arrives →
-  ├── No sabes qué quieres? ──────── interview-me
-  ├── Concepto vago? ────────────── idea-refine
-  ├── Feature nueva / cambio? ───── spec-driven-development
-  ├── Spec lista, falta plan? ───── planning-and-task-breakdown
-  ├── Implementar código? ───────── incremental-implementation
-  │   ├── UI/frontend? ─────────── frontend-ui-engineering
-  │   ├── API/interfaz? ────────── api-and-interface-design
-  │   ├── Duda técnica? ────────── doubt-driven-development
-  │   └── Documentación oficial? ─ source-driven-development
-  ├── Tests? ────────────────────── test-driven-development
-  │   └── Browser testing? ─────── browser-testing-with-devtools
-  ├── Bug / error? ──────────────── debugging-and-error-recovery
-  ├── Code review? ──────────────── code-review-and-quality
-  │   ├── Muy complejo? ───────── code-simplification
-  │   ├── Seguridad? ──────────── security-and-hardening
-  │   └── Performance? ────────── performance-optimization
-  ├── Commit / branch? ──────────── git-workflow-and-versioning
-  ├── CI/CD? ────────────────────── ci-cd-and-automation
-  ├── Migrar / sunset? ──────────── deprecation-and-migration
-  ├── Docs / ADRs? ──────────────── documentation-and-adrs
-  ├── Telemetría / logs? ────────── observability-and-instrumentation
-  └── Deploy? ───────────────────── shipping-and-launch
-```
+- `using-agent-skills` — árbol de decisión para descubrir qué skill aplicar según la tarea
 
 ### Skills complementarias del proyecto
 - `django-expert` — modelos, ORM, DRF, auth, tests, performance Django
@@ -120,7 +101,7 @@ Cada feature sigue este flujo usando los skills:
 2. Cargar `planning-and-task-breakdown` → escribir `plan.md` + `tasks.md`
 3. Cargar `incremental-implementation` → implementar un task a la vez
 4. Si hay cambios de modelo: `python manage.py makemigrations`
-5. Verificar: `python manage.py check && python manage.py test <app>`
+5. Verificar: `python manage.py check && python manage.py test apps.<app>`
 6. Si no existe test para el cambio, crearlo
 7. Actualizar `spec/constitution/roadmap.md` moviendo la feature a "Hecho"
 8. Commit descriptivo (incluir número y nombre de la feature)

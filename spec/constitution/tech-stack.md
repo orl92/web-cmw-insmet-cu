@@ -2,100 +2,85 @@
 
 ## Tecnologías
 
-- **Lenguaje:** Python 3.8+
-- **Framework:** Django 5.2, Django REST Framework 3.16
+- **Lenguaje:** Python 3.12 (CI y ruff apuntan a `py312`)
+- **Framework:** Django 5.2, Django REST Framework 3.17, drf-spectacular + drf-spectacular-sidecar (Swagger UI, Redoc)
 - **Base de datos:** SQLite (desarrollo), PostgreSQL o MySQL (producción con SSL configurable)
-- **UI:** Tabler mediante Django Templates en `templates/` raíz
-- **API docs:** drf-spectacular + drf-spectacular-sidecar (Swagger UI, Redoc)
-- **PDF:** xhtml2pdf, reportlab, pyHanko, wkhtmltopdf (requiere `libcairo2-dev`)
+- **UI:** Tabler (Bootstrap 5) mediante Django Templates
+- **PDF:** xhtml2pdf, pdfkit, pyHanko, reportlab (requiere `libcairo2-dev` en CI)
 - **Modelos meteorológicos:** MetPy, matplotlib, numpy, pandas, xarray
-- **Auth:** LDAP opcional via ldap3; fallback a ModelBackend de Django
-- **Estáticos:** WhiteNoise `CompressedManifestStaticFilesStorage` en producción
-- **Tests:** `python manage.py test` (todos los `tests.py` son stubs actualmente)
+- **Excel:** openpyxl (generación), xlrd (lectura de `*.xls`)
+- **Auth:** LDAP opcional via `ldap3`; fallback a `ModelBackend` de Django
+- **Tareas asíncronas:** Huey + SqliteHuey (NO Celery)
+- **Estáticos:** `static/` dev, `staticfiles/` prod con WhiteNoise
+- **Tests:** `python manage.py test apps.<app>` (label completo); suite completa antes de commit
 - **Despliegue:** Nginx + Gunicorn (`gunicorn.sh`) + Supervisor
 
-## Archivos / módulos clave
+## Estructura
 
-- `config/settings.py` — settings con auto-detección de entorno, auto-generación de `.env`, descifrado de SECRET_KEY con Fernet, validación de configuración de producción
-- `config/urls.py` — rutas raíz: `login/`, `admin/`, `api/`, `accounts/`, `dashboard/`, `home/`
-- `apps/api/urls.py` — endpoints REST: `/api/doc/`, `/api/redoc/`, `/api/schema/`, stations, station-observation, forecast
-- `apps/dashboard/models.py` — modelos del dominio: Forecasts, avisos, servicios, clientes, facturación
-- `apps/publications/models.py` — ScientificPublication, Author
-- `apps/accounts/ldap3_backend.py` — backend de autenticación LDAP personalizado con ldap3
-- `apps/accounts/middleware/check_user_profile.py` — middleware de verificación de perfil
-- `apps/dashboard/middleware/maintenance_mode.py` — bloquea no-superusers en modo mantenimiento
-- `apps/common/utils.py` — `FileHandlerMixin`, upload paths, error views, utilidades de weather icons
+- `config/` — settings, urls root, wsgi/asgi, huey
+- `apps/api/` — REST endpoints: `/api/doc/`, `/api/redoc/`, stations, observations, forecasts
+- `apps/user_auth/` — Profile, login/logout, users/groups, LDAP (`backends.py`), password management
+- `apps/core/` — `FileHandlerMixin`, `SoftDeleteModel`, utils (`log_action`, iconos weather, `mail_send`, error views), SiteConfiguration, CompanySettings, EmailRecipientList/Recipient, templatetags, context_processors, middleware
+- `apps/dashboard/` — vista agregada del panel
+- `apps/commercial/` — Customer, Service, ServiceSubscription, Invoice/InvoiceItem, Contract, Certificate
+- `apps/meteo/` — Forecasts/ForecastRegions/ForecastExtendedDay, Warning, WeatherReport, Province, Town, Station; utils para parser Excel
+- `apps/home/` — páginas públicas: tiempo, modelos, satélites, servicios, institución
+- `apps/publications/` — ScientificPublication, Author
 
 ## Comandos
 
 - `source .venv/bin/activate && python manage.py runserver` — entorno local (dev)
 - `PRODUCTION=true python manage.py runserver` — simula producción local
-- `python manage.py test` — ejecuta tests
+- `python manage.py test apps.<app>` — testing selectivo
 - `python manage.py add_stations_data` — carga inicial de estaciones
 - `python manage.py import_ldap_users` — importa usuarios desde LDAP
 - `python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --link --no-input` — setup completo
+- `./run_huey.sh &` — worker de correos/PDF
 
 ## Modelo de datos / dominio
 
-- **Forecasts** — 3 regiones (north/interior/south) × 3 períodos (mañana/tarde/noche) con temperatura, tiempo, viento, mar + 5 días extendido + datos astronómicos (luna, sol, UV)
-- **BaseWarning** (abstracta) — `uuid`, `user`, `summary`, `file` (PDF), `valid_until`, `email_recipient_list`; heredan EarlyWarning, TropicalCyclone, StormWarning
-- **WeatherToday / WeatherTomorrow / WeatherCommentary / WeatherNote** — reportes con PDF y lista de correo
-- **Customer ↔ User** (OneToOne) — cliente con datos fiscales cubanos (REEUP, NIT, cuenta bancaria)
+- **Forecasts** — 3 regiones (north/interior/south) × 3 períodos (mañana/tarde/noche) con temperatura, tiempo, viento, mar + 5 días extendido + datos astronómicos (luna, sol, UV); `ForecastRegions` y `ForecastExtendedDay` normalizados
+- **Warning** — modelo unificado con `warning_type` (early/tropical_cyclone/storm); `uuid`, `user`, `summary`, `file` (PDF), `valid_until`, `email_recipient_list`
+- **WeatherReport** — reportes por tipo (today/tomorrow/commentary/note) con PDF y lista de correo
+- **Province / Town / Station** — geografía y estaciones meteorológicas
+- **Customer** — cliente con datos fiscales cubanos (REEUP, NIT, cuenta bancaria), `client_type` (natural/jurídica)
 - **Service** — público o comercial; con precio (CUP), código, PDF e imagen
-- **ServiceSubscription** — soft delete (`record_active`), estados: requested → pending → paid → expired; `is_active` property
+- **ServiceSubscription** — soft delete (`record_active`), estados: requested → pending → paid → expired
 - **Invoice / InvoiceItem** — facturación con cálculo automático de importe
+- **Contract / Certificate** — servicios comerciales con PDF
 - **CompanySettings** — singleton (`pk=1`); datos fiscales de la empresa
 - **SiteConfiguration** — flag `maintenance_mode`
-- **Profile** — vinculado a User por señal post_save; avatar redimensionado a 300×300 cuadrado
+- **Profile** — vinculado a User por señal post_save; `newsletter` sincronizado con EmailRecipientList
 - **ScientificPublication / Author** — publicaciones con coautores, ORCID, PDF
 
 ## Convenciones
 
 - **Idioma**: todo el texto visible (verbose_name, help_text, mensajes UI, documentación) en español (`es-mx`, `America/Havana`)
 - **UUIDs**: todos los modelos expuestos en URLs usan `uuid.UUIDField` como identificador en lugar de PK numérica
-- **Archivos**: `FileHandlerMixin` para borrar automáticamente archivos del media al actualizar/eliminar el registro; las rutas se generan con `pdf_upload_path` / `image_upload_path` en `common/utils.py`
-- **Permisos**: todos los modelos del dashboard usan `default_permissions = ()` + 4 permisos custom (`view_*`, `add_*`, `change_*`, `delete_*`)
-- **URLs**: toda app usa `app_name` en urls.py y nombres estandarizados: `list`, `create`, `detail`, `update`, `delete`, `pdf`. Templates usan `{% url 'app_name:name' %}`, vistas usan `reverse_lazy('app_name:name')`.
-- **Apps**: todas las apps Django viven en `apps/`. Importar siempre como `from apps.dashboard.models import ...`, nunca `from dashboard.models import ...`.
-- **Templates**: en `templates/` raíz (no por app); layouts, includes y pages
-- **Estáticos**: `static/` en desarrollo, `staticfiles/` en producción con WhiteNoise
-- **Migrations**: NO están versionadas (excluidas en `.gitignore`); ejecutar `makemigrations` siempre en setup
+- **Archivos**: `FileHandlerMixin` para borrar automáticamente archivos del media al actualizar/eliminar el registro
+- **Permisos**: `default_permissions = ()` + 4 permisos custom (`view_*`, `add_*`, `change_*`, `delete_*`)
+- **URLs**: toda app usa `app_name` en urls.py y nombres estandarizados: `list`, `create`, `detail`, `update`, `delete`, `pdf`. Templates usan `{% url 'app_name:name' %}`, vistas usan `reverse_lazy('app_name:name')`
+- **Apps**: todas las apps Django viven en `apps/`. Importar siempre como `from apps.meteo.models import ...`, nunca `from meteo.models import ...`
+- **Templates**: raíz `templates/` con `layouts/` e `includes/`; páginas en `apps/<app>/templates/pages/`; indentación de 2 espacios con djlint (`profile = "django"`); emails whitespace-sensitive excluidos
+- **Paginación**: `paginate_by = 20` solo en vistas SIN DataTables
+- **Migrations**: NO versionadas (excluidas en `.gitignore`); ejecutar `makemigrations` siempre en setup
+- **Soft delete**: `SoftDeleteModel` en modelos de negocio sensibles (Customer, Service, ServiceSubscription, Invoice, Contract, Certificate, Warning); NO forzar en modelos auxiliares (InvoiceItem, ForecastRegions, EmailRecipient)
 
 ## Estilo visual
 
 - **Tema:** Tabler (https://tabler.io) — plantilla Bootstrap 5
-- **Layouts base:** `templates/layouts/base.html` (dashboard), `templates/layouts/home.html` (público), `templates/layouts/base-auth.html` (login)
-- **Iconos meteorológicos:** imágenes PNG en `static/dist/img/weather_icon/` y `static/dist/img/moon_faces/`
+- **Layouts base:** `templates/layouts/base.html` (dashboard), `home.html` (público), `base-auth.html` (login), `form.html`, `list.html`, `maintenance.html`
+- **Iconos:** webfont Tabler (`<i class="icon ti ti-*">`); iconos meteorológicos PNG en `static/dist/img/weather_icon/`
+- **Modales:** mecanismo nativo de Tabler (data API / `Bootstrap.Modal`)
 
 ## Skills del agente
 
-Skills instalados en `~/.agents/skills/`. Se cargan automáticamente según el contexto vía el árbol de decisión de `using-agent-skills`.
-
-### 24 skills de addyosmani/agent-skills
-| Fase | Skills |
-|------|--------|
-| Meta | `using-agent-skills` |
-| Define | `interview-me`, `idea-refine`, `spec-driven-development` |
-| Plan | `planning-and-task-breakdown` |
-| Build | `incremental-implementation`, `test-driven-development`, `context-engineering`, `source-driven-development`, `doubt-driven-development`, `frontend-ui-engineering`, `api-and-interface-design` |
-| Verify | `browser-testing-with-devtools`, `debugging-and-error-recovery` |
-| Review | `code-review-and-quality`, `code-simplification`, `security-and-hardening`, `performance-optimization` |
-| Ship | `git-workflow-and-versioning`, `ci-cd-and-automation`, `deprecation-and-migration`, `documentation-and-adrs`, `observability-and-instrumentation`, `shipping-and-launch` |
-
-### Skills complementarias del proyecto
-- `django-expert` — modelos, ORM, DRF, auth, tests, performance Django
-- `frontend-design` — diseño visual distintivo (tipografía, paleta, layout, identidad)
-- `web-design-guidelines` — auditoría de UI contra Web Interface Guidelines (accesibilidad, buenas prácticas visuales)
-
-
-### MCP
-- `tabler` — búsqueda de iconos, componentes, layouts y documentación de Tabler.io
-
-El worker de tareas asíncronas usa **Huey** (no Celery). No aplicar skills de Celery.
+Skills instalados en `~/.agents/skills/`. Se cargan según la tarea vía `using-agent-skills`. Skills complementarias del proyecto: `django-expert`, `frontend-design`, `web-design-guidelines`. MCP: `tabler`, `context7`. Ver AGENTS.md.
 
 ## Límites duros
 
 - No añadir dependencias npm o frontend JS framework sin aprobación (todo es Django Templates + Tabler)
 - No exponer `.env`, `db.sqlite3`, o `media/` en el repositorio
 - No eliminar `FileHandlerMixin` de modelos que usan campos FileField/ImageField (pérdida de datos)
-- No cambiar `default_permissions = ()` en modelos del dashboard sin redefinir los 4 permisos custom
+- No cambiar `default_permissions = ()` en modelos sin redefinir los 4 permisos custom
+- No saltarse el flujo SDD (spec → plan → tasks → implementación → roadmap)

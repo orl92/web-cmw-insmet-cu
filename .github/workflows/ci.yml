@@ -14,8 +14,46 @@ permissions:
   contents: read
 
 jobs:
+  detect:
+    name: Detect affected apps
+    runs-on: ubuntu-latest
+    outputs:
+      meteo: ${{ steps.paths.outputs.meteo }}
+      api: ${{ steps.paths.outputs.api }}
+      user_auth: ${{ steps.paths.outputs.user_auth }}
+      core: ${{ steps.paths.outputs.core }}
+      dashboard: ${{ steps.paths.outputs.dashboard }}
+      commercial: ${{ steps.paths.outputs.commercial }}
+      home: ${{ steps.paths.outputs.home }}
+      publications: ${{ steps.paths.outputs.publications }}
+      full: ${{ steps.paths.outputs.full }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: paths
+        with:
+          filters: |
+            meteo: 'apps/meteo/**'
+            api: 'apps/api/**'
+            user_auth: 'apps/user_auth/**'
+            core: 'apps/core/**'
+            dashboard: 'apps/dashboard/**'
+            commercial: 'apps/commercial/**'
+            home: 'apps/home/**'
+            publications: 'apps/publications/**'
+            full:
+              - 'config/**'
+              - 'manage.py'
+              - 'requirements*.txt'
+              - 'pyproject.toml'
+              - '.github/**'
+              - 'templates/**'
+              - 'static/**'
+
   test:
     name: Tests (Django)
+    needs: detect
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,13 +63,37 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Install system dependencies (pycairo)
+        run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Django system check
         run: python manage.py check
 
-      - name: Run test suite
+      - name: Run affected app tests (PR)
+        if: github.event_name == 'pull_request' && needs.detect.outputs.full == 'false'
+        run: |
+          LABELS=""
+          [ "${{ needs.detect.outputs.meteo }}" = "true" ] && LABELS="$LABELS apps.meteo"
+          [ "${{ needs.detect.outputs.api }}" = "true" ] && LABELS="$LABELS apps.api"
+          [ "${{ needs.detect.outputs.user_auth }}" = "true" ] && LABELS="$LABELS apps.user_auth"
+          [ "${{ needs.detect.outputs.core }}" = "true" ] && LABELS="$LABELS apps.core"
+          [ "${{ needs.detect.outputs.dashboard }}" = "true" ] && LABELS="$LABELS apps.dashboard"
+          [ "${{ needs.detect.outputs.commercial }}" = "true" ] && LABELS="$LABELS apps.commercial"
+          [ "${{ needs.detect.outputs.home }}" = "true" ] && LABELS="$LABELS apps.home"
+          [ "${{ needs.detect.outputs.publications }}" = "true" ] && LABELS="$LABELS apps.publications"
+          if [ -z "$LABELS" ]; then
+            echo "No se detectaron apps afectadas; se corre la suite completa como seguridad."
+            python manage.py test
+          else
+            echo "Apps afectadas:$LABELS"
+            python manage.py test $LABELS
+          fi
+
+      - name: Run full test suite (push to main)
+        if: github.event_name == 'push' || needs.detect.outputs.full == 'true'
         run: python manage.py test
 
   lint:
@@ -61,6 +123,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+
+      - name: Install system dependencies (pycairo)
+        run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
 
       - name: Install dependencies
         run: |
