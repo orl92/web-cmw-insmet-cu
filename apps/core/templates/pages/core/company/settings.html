@@ -1,5 +1,6 @@
 {% extends 'layouts/dashboard.html' %}
 {% load static %}
+{% load form_filters %}
 {% block title_actions %}
 {% endblock title_actions %}
 {% block content %}
@@ -18,14 +19,14 @@
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label required">{{ form.nombre.label }}</label>
-              {{ form.nombre }}
+              {{ form.nombre|with_invalid }}
               {% if form.nombre.errors %}
                 <div class="invalid-feedback d-block">{{ form.nombre.errors.0 }}</div>
               {% endif %}
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label required">{{ form.direccion.label }}</label>
-              {{ form.direccion }}
+              {{ form.direccion|with_invalid }}
               {% if form.direccion.errors %}
                 <div class="invalid-feedback d-block">{{ form.direccion.errors.0 }}</div>
               {% endif %}
@@ -34,21 +35,21 @@
           <div class="row">
             <div class="col-md-4 mb-3">
               <label class="form-label required">{{ form.codigo_reeup.label }}</label>
-              {{ form.codigo_reeup }}
+              {{ form.codigo_reeup|with_invalid }}
               {% if form.codigo_reeup.errors %}
                 <div class="invalid-feedback d-block">{{ form.codigo_reeup.errors.0 }}</div>
               {% endif %}
             </div>
             <div class="col-md-4 mb-3">
               <label class="form-label required">{{ form.nit.label }}</label>
-              {{ form.nit }}
+              {{ form.nit|with_invalid }}
               {% if form.nit.errors %}
                 <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
               {% endif %}
             </div>
             <div class="col-md-4 mb-3">
               <label class="form-label required">{{ form.registro_comercial.label }}</label>
-              {{ form.registro_comercial }}
+              {{ form.registro_comercial|with_invalid }}
               {% if form.registro_comercial.errors %}
                 <div class="invalid-feedback d-block">{{ form.registro_comercial.errors.0 }}</div>
               {% endif %}
@@ -57,21 +58,21 @@
           <div class="row">
             <div class="col-md-4 mb-3">
               <label class="form-label required">{{ form.cuenta_bancaria.label }}</label>
-              {{ form.cuenta_bancaria }}
+              {{ form.cuenta_bancaria|with_invalid }}
               {% if form.cuenta_bancaria.errors %}
                 <div class="invalid-feedback d-block">{{ form.cuenta_bancaria.errors.0 }}</div>
               {% endif %}
             </div>
             <div class="col-md-4 mb-3">
               <label class="form-label required">{{ form.agencia_bancaria.label }}</label>
-              {{ form.agencia_bancaria }}
+              {{ form.agencia_bancaria|with_invalid }}
               {% if form.agencia_bancaria.errors %}
                 <div class="invalid-feedback d-block">{{ form.agencia_bancaria.errors.0 }}</div>
               {% endif %}
             </div>
             <div class="col-md-4 mb-3">
               <label class="form-label required">{{ form.telefonos.label }}</label>
-              {{ form.telefonos }}
+              {{ form.telefonos|with_invalid }}
               {% if form.telefonos.errors %}
                 <div class="invalid-feedback d-block">{{ form.telefonos.errors.0 }}</div>
               {% endif %}

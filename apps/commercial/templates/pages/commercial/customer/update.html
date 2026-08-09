@@ -51,6 +51,7 @@
                placeholder="XXX.X.XXXXX"
                maxlength="12"
                pattern="\d{3}\.\d{1,2}\.\d{4,5}"
+               data-sanitize="reeup"
                autocomplete="off"
                title="Formato: 3 dígitos, punto, 1 ó 2 dígitos, punto, 4 ó 5 dígitos">
         {% if form.reeup.errors %}
@@ -68,6 +69,7 @@
                placeholder="12345678901"
                maxlength="11"
                inputmode="numeric"
+               data-sanitize="nit"
                pattern="[0-9]{11}">
         {% if form.nit.errors %}
           <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
@@ -91,6 +93,7 @@
              placeholder="1234567890123456"
              maxlength="16"
              inputmode="numeric"
+             data-sanitize="account"
              pattern="[0-9]{16}">
       {% if form.account.errors %}
         <div class="invalid-feedback d-block">{{ form.account.errors.0 }}</div>
@@ -138,6 +141,7 @@
              placeholder="51234567, 32270000"
              maxlength="100"
              inputmode="numeric"
+             data-sanitize="phone"
              pattern="[0-9]{8}([\s,\-;]+[0-9]{8})*[\s,\-;]*">
       {% if form.phone.errors %}
         <div class="invalid-feedback d-block">{{ form.phone.errors.0 }}</div>
@@ -161,21 +165,6 @@
   </div>
   </div>
   <script>
-document.querySelector('.needs-validation').addEventListener('input', function(e) {
-  var field = e.target;
-  if (field.name === 'phone') {
-    field.value = field.value.replace(/[^\d\s,\-;]/g, '');
-  }
-  if (['nit', 'account'].includes(field.name)) {
-    field.value = field.value.replace(/\D/g, '');
-  }
-  if (field.name === 'reeup') {
-    field.value = field.value.replace(/[^\d.]/g, '');
-  }
-  if (field.classList.contains('is-invalid') && field.checkValidity()) {
-    field.classList.remove('is-invalid');
-  }
-});
 function toggleClientType(value) {
   var container = document.getElementById('juridica-fields');
   var inputs = container.querySelectorAll('input');

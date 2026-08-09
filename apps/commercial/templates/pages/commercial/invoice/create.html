@@ -157,7 +157,7 @@
                        class="form-control"
                        value="{{ company.nombre }}"
                        required>
-                <div class="invalid-feedback"></div>
+                <div class="invalid-feedback">El nombre de la empresa es obligatorio.</div>
               </div>
               <div class="col-md-6 mb-3">
                 <label class="form-label required">Dirección</label>
@@ -166,7 +166,7 @@
                        class="form-control"
                        value="{{ company.direccion }}"
                        required>
-                <div class="invalid-feedback"></div>
+                <div class="invalid-feedback">La dirección es obligatoria.</div>
               </div>
             </div>
             <div class="row">
@@ -179,8 +179,9 @@
                        maxlength="12"
                        pattern="\d{3}\.\d{1,2}\.\d{4,5}"
                        inputmode="numeric"
+                       data-sanitize="reeup"
                        required>
-                <div class="invalid-feedback"></div>
+                <div class="invalid-feedback">El código REEUP debe tener el formato 3 dígitos, punto, 1 ó 2 dígitos, punto, 4 ó 5 dígitos.</div>
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label required">NIT</label>
@@ -191,8 +192,9 @@
                        maxlength="11"
                        pattern="\d{11}"
                        inputmode="numeric"
+                       data-sanitize="nit"
                        required>
-                <div class="invalid-feedback"></div>
+                <div class="invalid-feedback">El NIT debe tener 11 dígitos numéricos.</div>
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label required">Registro Comercial</label>
@@ -201,7 +203,7 @@
                        class="form-control"
                        value="{{ company.registro_comercial }}"
                        required>
-                <div class="invalid-feedback"></div>
+                <div class="invalid-feedback">El registro comercial es obligatorio.</div>
               </div>
             </div>
             <div class="row">
@@ -214,8 +216,9 @@
                        maxlength="16"
                        pattern="\d{16}"
                        inputmode="numeric"
+                       data-sanitize="account"
                        required>
-                <div class="invalid-feedback"></div>
+                <div class="invalid-feedback">La cuenta bancaria debe tener 16 dígitos numéricos.</div>
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label required">Agencia Bancaria</label>
@@ -224,7 +227,7 @@
                        class="form-control"
                        value="{{ company.agencia_bancaria }}"
                        required>
-                <div class="invalid-feedback"></div>
+                <div class="invalid-feedback">La agencia bancaria es obligatoria.</div>
               </div>
               <div class="col-md-4 mb-3">
                 <label class="form-label required">Teléfonos</label>
@@ -235,8 +238,9 @@
                        maxlength="100"
                        pattern="\d{8}([\s,\-;]+\d{8})*[\s,\-;]*"
                        inputmode="numeric"
+                       data-sanitize="phone"
                        required>
-                <div class="invalid-feedback"></div>
+                <div class="invalid-feedback">Los teléfonos deben tener 8 dígitos numéricos cada uno, separados por coma, espacio o guion.</div>
               </div>
             </div>
             <div class="modal-footer">
@@ -333,6 +337,11 @@
     // Envío AJAX del formulario del modal
     form.addEventListener('submit', function(e) {
       e.preventDefault();
+
+      if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+      }
       clearErrors();
 
       var formData = new FormData(form);

@@ -27,6 +27,7 @@ class CompanySettingsForm(forms.ModelForm):
                     'maxlength': '12',
                     'pattern': r'\d{3}\.\d{1,2}\.\d{4,5}',
                     'inputmode': 'numeric',
+                    'data-sanitize': 'reeup',
                 }
             ),
             'nit': forms.TextInput(
@@ -36,6 +37,7 @@ class CompanySettingsForm(forms.ModelForm):
                     'maxlength': '11',
                     'pattern': r'\d{11}',
                     'inputmode': 'numeric',
+                    'data-sanitize': 'nit',
                 }
             ),
             'cuenta_bancaria': forms.TextInput(
@@ -45,6 +47,7 @@ class CompanySettingsForm(forms.ModelForm):
                     'maxlength': '16',
                     'pattern': r'\d{16}',
                     'inputmode': 'numeric',
+                    'data-sanitize': 'account',
                 }
             ),
             'agencia_bancaria': forms.TextInput(attrs={'class': 'form-control'}),
@@ -55,6 +58,7 @@ class CompanySettingsForm(forms.ModelForm):
                     'maxlength': '100',
                     'pattern': r'\d{8}([\s,\-;]+\d{8})*',
                     'inputmode': 'numeric',
+                    'data-sanitize': 'phone',
                 }
             ),
             'registro_comercial': forms.TextInput(attrs={'class': 'form-control'}),
