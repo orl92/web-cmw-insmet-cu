@@ -1,37 +1,41 @@
 import math
 
 from django import template
+from django.templatetags.static import static
 
-from apps.core.models import CODIGOS_SIN_VARIACION, TIEMPO_IMG_BASE_MAP
+from apps.core.utils import (
+    MOON_IMG_MAP,
+    SUN_IMG_MAP,
+    get_img_path,
+)
 
 register = template.Library()
 
 WEATHER_DESCRIPTIONS = {
-    'despejado': 'Despejado',
-    'mayormente_despejado': 'Mayormente despejado',
-    'parcialmente_nublado': 'Parcialmente nublado',
-    'mayormente_nublado': 'Mayormente nublado',
-    'nublado': 'Nublado',
-    'lluvias': 'Lluvias',
-    'lluvias_debiles': 'Lluvias débiles',
-    'chubascos': 'Chubascos',
-    'chubascos_electricos': 'Chubascos eléctricos',
-    'chubascos_lluvias': 'Chubascos y lluvias',
-    'tormenta': 'Tormenta eléctrica',
+    'PN': 'Poco nublado',
+    'PARCN': 'Parcialmente nublado',
+    'N': 'Nublado',
+    'AIS CHUB': 'Aislados chubascos',
+    'ALG CHUB': 'Algunos chubascos',
+    'NUM CHUB': 'Numerosos chubascos',
+    'ALG TORM': 'Algunas tormentas',
+    'NUM TORM': 'Numerosas tormentas',
 }
 
 MOON_DESCRIPTIONS = {
-    'nueva': 'Luna nueva',
-    'creciente': 'Luna creciente',
-    'cuarto_creciente': 'Cuarto creciente',
-    'creciente_gibosa': 'Creciente gibosa',
-    'llena': 'Luna llena',
-    'menguante_gibosa': 'Menguante gibosa',
-    'cuarto_menguante': 'Cuarto menguante',
-    'menguante': 'Luna menguante',
+    'Luna Nueva': 'Luna Nueva',
+    'Creciente': 'Creciente',
+    'Cuarto Creciente': 'Cuarto Creciente',
+    'Gibosa Creciente': 'Gibosa Creciente',
+    'Luna Llena': 'Luna Llena',
+    'Gibosa Menguante': 'Gibosa Menguante',
+    'Cuarto Menguante': 'Cuarto Menguante',
+    'Menguante': 'Menguante',
 }
 
 SUN_DESCRIPTIONS = {
+    'sunrise': 'Amanecer',
+    'sunset': 'Puesta de sol',
     'amanecer': 'Amanecer',
     'atardecer': 'Atardecer',
 }
@@ -92,29 +96,26 @@ def period_name(code):
 
 @register.filter
 def weather_img(code, period=''):
-    base = TIEMPO_IMG_BASE_MAP.get(code, 'default')
-    if period:
-        period = period.lower()
-        if period in CODIGOS_SIN_VARIACION or code in ('noche', 'madrugada'):
-            return f'dist/img/weather_icon/{base}.png'
-        if period in ('noche', 'madrugada'):
-            return (
-                f'dist/img/weather_icon/{base}_noche.png'
-                if code in ('despejado', 'mayormente_despejado')
-                else f'dist/img/weather_icon/{base}.png'
-            )
-        return f'dist/img/weather_icon/{base}.png'
-    return f'dist/img/weather_icon/{base}.png'
+    path = get_img_path(code, period or 'afternoon')
+    if path:
+        return path
+    return static('dist/img/weather_icon/nublado.png')
 
 
 @register.filter
 def moon_img(phase):
-    return f'dist/img/weather_icon/luna_{phase}.png'
+    file_path = MOON_IMG_MAP.get(phase)
+    if file_path:
+        return static(file_path)
+    return static('dist/img/moon_faces/new_moon.png')
 
 
 @register.filter
 def sun_img(event):
-    return f'dist/img/weather_icon/{event}.png'
+    file_path = SUN_IMG_MAP.get(event)
+    if file_path:
+        return static(file_path)
+    return static('dist/img/sun/sunrise.png')
 
 
 @register.filter

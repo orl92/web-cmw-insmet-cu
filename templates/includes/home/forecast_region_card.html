@@ -16,11 +16,24 @@
                      data-bs-placement="bottom"
                      title="{{ m.weather|get_tiempo_description }}" />
               </div>
-              <h3 class="text-success">{{ m.temp }}°C</h3>
-              <p class="mb-1">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
+              <h3 class="text-success"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  title="Temperatura: {{ m.temp }}°C">{{ m.temp }}°C</h3>
+              <p class="mb-1"
+                 data-bs-toggle="tooltip"
+                 data-bs-placement="bottom"
+                 title="Viento: {{ m.wind_speed }} km/h Dirección: {{ m.wind_dir }}">{{ m.wind_dir }} {{ m.wind_speed }} km/h</p>
               {% if show_sea %}
-                <p class="mb-1">
+                <p class="mb-1"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="bottom"
+                   title="Mar: {{ m.sea|get_mar_description }}">
                   <strong>Mar:</strong> {{ m.sea }}
+                </p>
+              {% else %}
+                <p class="mb-1 invisible">
+                  <strong>Mar:</strong>
                 </p>
               {% endif %}
             </div>
@@ -34,11 +47,24 @@
                      data-bs-placement="bottom"
                      title="{{ a.weather|get_tiempo_description }}" />
               </div>
-              <h3 class="text-danger">{{ a.temp }}°C</h3>
-              <p class="mb-1">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
+              <h3 class="text-danger"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  title="Temperatura: {{ a.temp }}°C">{{ a.temp }}°C</h3>
+              <p class="mb-1"
+                 data-bs-toggle="tooltip"
+                 data-bs-placement="bottom"
+                 title="Viento: {{ a.wind_speed }} km/h Dirección: {{ a.wind_dir }}">{{ a.wind_dir }} {{ a.wind_speed }} km/h</p>
               {% if show_sea %}
-                <p class="mb-1">
+                <p class="mb-1"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="bottom"
+                   title="Mar: {{ a.sea|get_mar_description }}">
                   <strong>Mar:</strong> {{ a.sea }}
+                </p>
+              {% else %}
+                <p class="mb-1 invisible">
+                  <strong>Mar:</strong>
                 </p>
               {% endif %}
             </div>
@@ -52,11 +78,24 @@
                      data-bs-placement="bottom"
                      title="{{ n.weather|get_tiempo_description }}" />
               </div>
-              <h3 class="text-info">{{ n.temp }}°C</h3>
-              <p class="mb-1">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
+              <h3 class="text-info"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  title="Temperatura: {{ n.temp }}°C">{{ n.temp }}°C</h3>
+              <p class="mb-1"
+                 data-bs-toggle="tooltip"
+                 data-bs-placement="bottom"
+                 title="Viento: {{ n.wind_speed }} km/h Dirección: {{ n.wind_dir }}">{{ n.wind_dir }} {{ n.wind_speed }} km/h</p>
               {% if show_sea %}
-                <p class="mb-1">
+                <p class="mb-1"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="bottom"
+                   title="Mar: {{ n.sea|get_mar_description }}">
                   <strong>Mar:</strong> {{ n.sea }}
+                </p>
+              {% else %}
+                <p class="mb-1 invisible">
+                  <strong>Mar:</strong>
                 </p>
               {% endif %}
             </div>

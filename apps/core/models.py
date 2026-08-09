@@ -127,24 +127,6 @@ MAR_CHOICES = [
     ('9', '9 — Excepcional'),
 ]
 
-TIEMPO_IMG_BASE_MAP = {
-    'despejado': 'despejado',
-    'mayormente_despejado': 'mayormente_despejado',
-    'parcialmente_nublado': 'parcialmente_nublado',
-    'mayormente_nublado': 'nublado',
-    'nublado': 'nublado',
-    'lluvias': 'lluvia',
-    'lluvias_debiles': 'lluvia',
-    'chubascos': 'chubascos',
-    'chubascos_electricos': 'chubascos',
-    'chubascos_lluvias': 'chubascos',
-    'tormenta': 'tormenta',
-}
-
-CODIGOS_SIN_VARIACION = {'variable', 'calmado'}
-
-PERIOD_SUFFIXES = {'noche', 'madrugada', 'manana', 'tarde'}
-
 
 class SiteConfiguration(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

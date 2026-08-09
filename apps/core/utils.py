@@ -26,13 +26,13 @@ PERIOD_SUFFIXES = {'morning': 'm', 'afternoon': 'a', 'night': 'n'}
 
 MOON_IMG_MAP = {
     'Luna Nueva': 'dist/img/moon_faces/new_moon.png',
-    'Creciente': 'dist/img/moon_faces/waning_crescent_moon.png',
+    'Creciente': 'dist/img/moon_faces/waxing_crescent_moon.png',
     'Cuarto Creciente': 'dist/img/moon_faces/first_quarter_moon.png',
-    'Gibosa Creciente': 'dist/img/moon_faces/waning_gibbous_moon.png',
+    'Gibosa Creciente': 'dist/img/moon_faces/waxing_gibbous_moon.png',
     'Luna Llena': 'dist/img/moon_faces/full_moon.png',
-    'Gibosa Menguante': 'dist/img/moon_faces/waxing_gibbous_moon.png',
+    'Gibosa Menguante': 'dist/img/moon_faces/waning_gibbous_moon.png',
     'Cuarto Menguante': 'dist/img/moon_faces/last_quarter_moon.png',
-    'Menguante': 'dist/img/moon_faces/waxing_crescent_moon.png',
+    'Menguante': 'dist/img/moon_faces/waning_crescent_moon.png',
 }
 
 SUN_IMG_MAP = {
