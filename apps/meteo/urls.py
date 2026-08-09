@@ -22,6 +22,11 @@ urlpatterns = [
     ),
     path('pronosticos/excel-json/', forecast.ExcelJSONView.as_view(), name='excel_json'),
     path(
+        'pronosticos/plantilla-excel/',
+        forecast.ForecastExcelTemplateView.as_view(),
+        name='excel_template',
+    ),
+    path(
         'pronosticos/exportar/csv/',
         exports.ForecastCSVExportView.as_view(),
         name='pronostico_export_csv',

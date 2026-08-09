@@ -10,12 +10,16 @@
              class="form-control{% if field.errors %}
                       is-invalid{% endif %}"
              id="{{ field.id_for_label }}"
-             name="{{ field.name }}"
+             name="{{ field.html_name }}"
              value="{{ value|default:'' }}"
              data-tempus="{{ mode|default:'date' }}"
-             placeholder="{{ placeholder }}"
+             placeholder="{{ placeholder|default:'' }}"
              autocomplete="off" />
-      <span class="input-group-text" data-tempus-trigger><i class="ti ti-calendar"></i></span>
+      <span class="input-group-text" data-tempus-trigger>
+        <i class="ti
+                  {% if mode == 'time' %}
+                    ti-clock{% elif mode == 'datetime' %}ti-calendar-clock{% else %}ti-calendar{% endif %}"></i>
+      </span>
     </div>
     {% if field.errors %}
       <div class="invalid-feedback d-block">{{ field.errors.0 }}</div>

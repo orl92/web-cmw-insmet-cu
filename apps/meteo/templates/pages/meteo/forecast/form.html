@@ -1,29 +1,38 @@
 {% extends 'layouts/form.html' %}
-{% load static my_filters %}
+{% load static my_filters form_filters meteo_filters %}
 {% block title_actions %}
   <div class="col-12 col-md-auto order-md-last">
-    <div class="d-flex justify-content-center">
+    <div class="d-flex justify-content-center gap-2">
+      <a href="{% url 'meteo:excel_template' %}"
+         class="btn btn-outline-secondary"
+         title="Descargar plantilla para llenar"
+         aria-label="Descargar plantilla">
+        <i class="ti ti-download"></i>
+        <span class="d-none d-sm-inline">Plantilla</span>
+      </a>
       <form id="uploadForm" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="page-pretitle">
-          Cargar desde Excel
-          <input type="file"
-                 class="form-control"
-                 id="excelFile"
-                 name="excelFile"
-                 accept=".xlsx, .xls"
-                 data-upload-url="{% url 'meteo:excel_json' %}">
-        </div>
+        <span class="page-pretitle d-inline me-2">Cargar desde Excel</span>
+        <input type="file"
+               class="form-control"
+               id="excelFile"
+               name="excelFile"
+               accept=".xlsx, .xls"
+               data-upload-url="{% url 'meteo:excel_json' %}">
+        <div id="excelError" class="d-none text-danger small mt-1"></div>
       </form>
     </div>
   </div>
 {% endblock title_actions %}
 {% block form %}
-  {% include 'includes/dashboard/form_card.html' with card_title='Información del Pronóstico' %}
+  {% include 'includes/dashboard/form_card.html' with card_title='Fecha del Pronóstico' %}
   <div class="row">
     <div class="col-lg-6">
-      {% include 'includes/dashboard/date_field.html' with field=form.date value=date mode='date' placeholder='aaaa-mm-dd' %}
+      {% include 'includes/dashboard/date_field.html' with field=form.date value=date|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
     </div>
+  </div>
+  </div>
+  </div>
   </div>
   {{ region_formset.management_form }}
   {{ extended_formset.management_form }}

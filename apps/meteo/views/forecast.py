@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-import pandas as pd
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
@@ -8,7 +7,7 @@ from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     UserPassesTestMixin,
 )
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -23,6 +22,9 @@ from apps.meteo.forms.forecast import (
     ForecastsForm,
 )
 from apps.meteo.models import Forecasts
+from apps.meteo.utils.excel_forecast import build_template, parse_excel
+
+APPLICATION_SPREADSHEET = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 REGION_MAP = {'north': 'n', 'interior': 'i', 'south': 's'}
 PERIOD_MAP = {'morning': 'm', 'afternoon': 'a', 'night': 'n'}
@@ -80,18 +82,26 @@ class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['url_list'] = reverse_lazy('meteo:pronostico_list')
         context['is_superuser'] = self.request.user.is_superuser
 
-        date_string = self.request.GET.get('date')
-        if date_string:
-            date = datetime.strptime(date_string, '%Y-%m-%d').date()
-        else:
-            date = timezone.now().date()
+        date = self._parse_date_filter(self.request.GET.get('date'))
 
-        context['date'] = date.strftime('%Y-%m-%d')
+        context['date'] = date.strftime('%d/%m/%Y')
+        context['date_iso'] = date.strftime('%Y-%m-%d')
         forecasts = Forecasts.objects.filter(date=date).prefetch_related('regions', 'extended_days')
         context['forecasts'] = forecasts
         context['has_data'] = forecasts.exists()
         context['url_export'] = reverse_lazy('meteo:pronostico_export_csv')
         return context
+
+    @staticmethod
+    def _parse_date_filter(date_string):
+        if not date_string:
+            return timezone.now().date()
+        for fmt in ('%d/%m/%Y', '%Y-%m-%d'):
+            try:
+                return datetime.strptime(date_string, fmt).date()
+            except ValueError:
+                continue
+        return timezone.now().date()
 
 
 class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -138,13 +148,28 @@ class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
         return context
 
     def form_valid(self, form):
-        self.object = form.save()
+        self.object = form.save(commit=False)
         region_formset = ForecastRegionsFormSet(self.request.POST, instance=self.object)
         extended_formset = ForecastExtendedDayFormSet(self.request.POST, instance=self.object)
-        if region_formset.is_valid():
-            region_formset.save()
-        if extended_formset.is_valid():
-            extended_formset.save()
+        errors = []
+        if not region_formset.is_valid():
+            errors.extend(
+                error for each_form in region_formset.forms for error in each_form.errors.values()
+            )
+        if not extended_formset.is_valid():
+            errors.extend(
+                error for each_form in extended_formset.forms for error in each_form.errors.values()
+            )
+        if errors:
+            messages.error(self.request, 'Corrija los errores del formulario.')
+            context = self.get_context_data(form=form)
+            context['region_formset'] = region_formset
+            context['extended_formset'] = extended_formset
+            return self.render_to_response(context)
+
+        self.object.save()
+        region_formset.save()
+        extended_formset.save()
 
         log_action(
             user=self.request.user,
@@ -199,13 +224,28 @@ class ForecastUpdateView(
         return context
 
     def form_valid(self, form):
-        self.object = form.save()
+        self.object = form.save(commit=False)
         region_formset = ForecastRegionsFormSet(self.request.POST, instance=self.object)
         extended_formset = ForecastExtendedDayFormSet(self.request.POST, instance=self.object)
-        if region_formset.is_valid():
-            region_formset.save()
-        if extended_formset.is_valid():
-            extended_formset.save()
+        errors = []
+        if not region_formset.is_valid():
+            errors.extend(
+                error for each_form in region_formset.forms for error in each_form.errors.values()
+            )
+        if not extended_formset.is_valid():
+            errors.extend(
+                error for each_form in extended_formset.forms for error in each_form.errors.values()
+            )
+        if errors:
+            messages.error(self.request, 'Corrija los errores del formulario.')
+            context = self.get_context_data(form=form)
+            context['region_formset'] = region_formset
+            context['extended_formset'] = extended_formset
+            return self.render_to_response(context)
+
+        self.object.save()
+        region_formset.save()
+        extended_formset.save()
 
         log_action(
             user=self.request.user,
@@ -248,30 +288,15 @@ class ExcelJSONView(View):
         if not excel:
             return JsonResponse({'error': 'No se envió el archivo'}, status=400)
 
-        try:
-            xls = pd.ExcelFile(excel)
+        data = parse_excel(excel)
+        if 'error' in data:
+            return JsonResponse({'error': data['error']}, status=400)
+        return JsonResponse(data)
 
-            df_regions = pd.read_excel(xls, 'Pronóstico')
-            regions = df_regions.to_dict(orient='records')
 
-            df_extended = pd.read_excel(xls, 'Extendido')
-            extended = df_extended.to_dict(orient='records')
-
-            df_astro = pd.read_excel(xls, 'Astronomía')
-            astro = df_astro.iloc[0].to_dict() if not df_astro.empty else {}
-
-            return JsonResponse(
-                {
-                    'date': str(astro.get('date', '')),
-                    'regions': regions,
-                    'extended': extended,
-                    'lp': astro.get('lp', ''),
-                    'nlp': astro.get('nlp', ''),
-                    'nlpd': astro.get('nlpd', ''),
-                    'sunrise': str(astro.get('sunrise', '')),
-                    'sunset': str(astro.get('sunset', '')),
-                    'uv_index': str(astro.get('uv_index', '')),
-                }
-            )
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+class ForecastExcelTemplateView(LoginRequiredMixin, View):
+    def get(self, request):
+        content = build_template()
+        response = HttpResponse(content, content_type=APPLICATION_SPREADSHEET)
+        response['Content-Disposition'] = 'attachment; filename="plantilla_pronostico.xlsx"'
+        return response

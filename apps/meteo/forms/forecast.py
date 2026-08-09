@@ -2,6 +2,7 @@ import datetime
 
 from django import forms
 from django.forms import inlineformset_factory
+from django.forms.models import BaseInlineFormSet
 
 from apps.meteo.models import ForecastExtendedDay, ForecastRegions, Forecasts
 
@@ -23,6 +24,34 @@ ForecastRegionsFormSet = inlineformset_factory(
     },
 )
 
+
+class BaseForecastExtendedDayFormSet(BaseInlineFormSet):
+    """Fuerza que la fecha de cada día extendido sea la del pronóstico + day_number."""
+
+    def clean(self):
+        super().clean()
+        forecast = self.instance
+        forecast_date = getattr(forecast, 'date', None)
+        if not forecast or not forecast_date:
+            return
+        for form in self.forms:
+            if not form.cleaned_data or form.errors:
+                continue
+            day_number = form.cleaned_data.get('day_number')
+            date = form.cleaned_data.get('date')
+            if not day_number or not date:
+                continue
+            expected = forecast_date + datetime.timedelta(days=int(day_number))
+            if date != expected:
+                form.add_error(
+                    'date',
+                    (
+                        f'La fecha debe ser el día {day_number} después del pronóstico '
+                        f'({expected.strftime("%d/%m/%Y")}).'
+                    ),
+                )
+
+
 ForecastExtendedDayFormSet = inlineformset_factory(
     Forecasts,
     ForecastExtendedDay,
@@ -30,6 +59,7 @@ ForecastExtendedDayFormSet = inlineformset_factory(
     extra=5,
     max_num=5,
     can_delete=False,
+    formset=BaseForecastExtendedDayFormSet,
     widgets={
         'day_number': forms.HiddenInput(),
         'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
