@@ -38,7 +38,7 @@
       {% endif %}
     </div>
     <div class="col-md-6 mb-3">
-      {% include 'includes/dashboard/date_field.html' with field=form.date value=form.date.value|iso_date mode='date' placeholder='aaaa-mm-dd' %}
+      {% include 'includes/dashboard/date_field.html' with field=form.date value=form.date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
     </div>
   </div>
   <div class="mb-3">

@@ -137,7 +137,7 @@ class ScientificPublicationUpdateViewTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'value="2026-05-10"')
+        self.assertContains(response, 'value="10/05/2026"')
 
     def test_invalid_post_keeps_submitted_date(self):
         self.client.force_login(self.admin)
@@ -145,7 +145,7 @@ class ScientificPublicationUpdateViewTests(TestCase):
         data['title'] = ''
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'value="2026-05-10"')
+        self.assertContains(response, 'value="10/05/2026"')
 
     def test_post_preserves_coauthor(self):
         self.client.force_login(self.admin)

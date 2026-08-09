@@ -4,7 +4,7 @@
   <div class="col-auto ms-auto d-print-none">
     <div class="d-flex justify-content-end flex-wrap gap-1">
       {% if has_data %}
-        <a href="{{ url_export }}?date={{ date }}"
+        <a href="{{ url_export }}?date={{ date_iso }}"
            type="button"
            class="btn btn-icon btn-outline-success btn-sm"
            data-bs-toggle="tooltip"
@@ -52,7 +52,7 @@
                 <span class="input-group-text" data-tempus-trigger><i class="ti ti-calendar"></i></span>
                 <input name="date"
                        class="form-control"
-                       placeholder="Select a date"
+                       placeholder="dd/mm/aaaa"
                        id="datepicker-icon"
                        value="{{ date }}"
                        data-tempus="date"
@@ -176,7 +176,7 @@
                 <tbody>
                   {% for day in forecast.extended_forecast %}
                     <tr>
-                      <td>{{ day.date }}</td>
+                      <td>{{ day.date|date:'d/m/Y' }}</td>
                       <td>{{ day.min_temp }}</td>
                       <td>{{ day.max_temp }}</td>
                       <td>{{ day.weather }}</td>
@@ -201,17 +201,17 @@
                     <td>Fase Lunar</td>
                     <td>{{ forecast.lp }}</td>
                     <td>{{ forecast.nlp }}</td>
-                    <td>{{ forecast.nlpd }}</td>
+                    <td>{{ forecast.nlpd|date:'d/m/Y' }}</td>
                   </tr>
                   <tr>
                     <td>Salida Sol</td>
-                    <td>{{ forecast.sunrise }}</td>
+                    <td>{{ forecast.sunrise|time:'g:i A'|default:'–' }}</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
                   </tr>
                   <tr>
                     <td>Puesta Sol</td>
-                    <td>{{ forecast.sunset }}</td>
+                    <td>{{ forecast.sunset|time:'g:i A'|default:'–' }}</td>
                     <td>&nbsp;</td>
                     <td>&nbsp;</td>
                   </tr>

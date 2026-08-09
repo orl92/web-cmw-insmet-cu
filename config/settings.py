@@ -213,6 +213,22 @@ TIME_ZONE = 'America/Havana'
 USE_I18N = True
 USE_TZ = True
 
+TIME_INPUT_FORMATS = ['%H:%M:%S', '%H:%M:%S.%f', '%H:%M', '%I:%M %p', '%I:%M %P']
+DATETIME_INPUT_FORMATS = [
+    '%d/%m/%Y %H:%M:%S',
+    '%d/%m/%Y %H:%M:%S.%f',
+    '%d/%m/%Y %H:%M',
+    '%d/%m/%y %H:%M:%S',
+    '%d/%m/%y %H:%M:%S.%f',
+    '%d/%m/%y %H:%M',
+    '%d/%m/%Y %I:%M %p',
+    '%d/%m/%y %I:%M %p',
+    '%Y-%m-%d %H:%M:%S',
+    '%Y-%m-%d %H:%M:%S.%f',
+    '%Y-%m-%d %H:%M',
+    '%Y-%m-%d',
+]
+
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'

@@ -25,7 +25,7 @@
       <div class="text-secondary">
         {{ object.email|default:'—' }}
         {% if object.last_login %}
-          · Último acceso: {{ object.last_login|date:"d/m/Y H:i" }}
+          · Último acceso: {{ object.last_login|date:"d/m/Y h:i A" }}
         {% endif %}
       </div>
     </div>

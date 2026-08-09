@@ -14,8 +14,8 @@
          data-bs-placement="bottom"
          title="{{ object.summary }}">{{ object.summary|truncatechars:60 }}</div>
   </td>
-  <td>{{ object.date|date:"d/m/Y H:i" }}</td>
-  <td>{{ object.valid_until|date:"d/m/Y H:i" }}</td>
+  <td>{{ object.date|date:"d/m/Y h:i A" }}</td>
+  <td>{{ object.valid_until|date:"d/m/Y h:i A" }}</td>
   <td>
     {% if object.valid_until >= now %}
       <span class="badge badge-outline text-green">Vigente</span>

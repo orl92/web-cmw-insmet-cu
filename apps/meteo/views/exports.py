@@ -94,8 +94,8 @@ class ForecastCSVExportView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     forecast.lp,
                     forecast.nlp,
                     forecast.nlpd.strftime('%d/%m/%Y') if forecast.nlpd else '',
-                    forecast.sunrise.strftime('%H:%M') if forecast.sunrise else '',
-                    forecast.sunset.strftime('%H:%M') if forecast.sunset else '',
+                    forecast.sunrise.strftime('%I:%M %p') if forecast.sunrise else '',
+                    forecast.sunset.strftime('%I:%M %p') if forecast.sunset else '',
                     forecast.uv_index,
                 ]
             )

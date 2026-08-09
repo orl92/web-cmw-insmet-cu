@@ -5,7 +5,7 @@
          value="{{ form.instance.pk }}">
 {% endif %}
 <div class="mb-3">
-  {% include 'includes/dashboard/date_field.html' with field=form.date value=form.date.value|iso_date mode='date' placeholder='aaaa-mm-dd' %}
+  {% include 'includes/dashboard/date_field.html' with field=form.date value=form.date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
 </div>
 <div class="mb-3">
   <label class="form-label">Temp. Mín</label>

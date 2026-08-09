@@ -13,7 +13,7 @@
 {% block row %}
   <td>{{ object.title }}</td>
   <td>${{ object.price|floatformat:2 }}</td>
-  <td>{{ object.date|date:"d/m/Y H:i" }}</td>
+  <td>{{ object.date|date:"d/m/Y h:i A" }}</td>
   <td>{{ object.user.get_full_name|default:object.user.username }}</td>
   <td>
     {% if object.service_type == 'commercial' %}

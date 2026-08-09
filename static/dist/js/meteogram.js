@@ -684,7 +684,9 @@ class MeteogramFormHandler {
         const hourValue = document.getElementById('hour-select').value;
 
         if (dateValue && hourValue) {
-            const formattedDate = dateValue.replace(/-/g, '') + hourValue;
+            const formattedDate = (window.pickerDateToId
+                ? window.pickerDateToId(dateValue)
+                : dateValue.replace(/-/g, '')) + hourValue;
             document.getElementById('datetime-init').value = formattedDate;
         }
     }
@@ -706,8 +708,12 @@ class MeteogramFormHandler {
     }
 
     setDefaultValues() {
-        const today = new Date().toISOString().split('T')[0];
-        if (this.datepicker) this.datepicker.value = today;
+        const today = new Date();
+        if (this.datepicker) {
+            this.datepicker.value = window.formatPickerDate
+                ? window.formatPickerDate(today)
+                : today.toISOString().split('T')[0];
+        }
         if (this.hourSelect) this.hourSelect.value = '00';
 
         setTimeout(() => {

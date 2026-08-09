@@ -10,7 +10,7 @@
 {% block row %}
   <td>{{ object.subscription.customer.company_name }}</td>
   <td>{{ object.subscription.service.title }}</td>
-  <td>{{ object.issued_date|date:"d/m/Y H:i" }}</td>
+  <td>{{ object.issued_date|date:"d/m/Y h:i A" }}</td>
   <td>
     {% if object.record_active %}
       <span class="badge badge-outline text-green">Activo</span>

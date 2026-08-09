@@ -45,7 +45,9 @@ class SoundingFormHandler {
 
         // Solo establecer valores si no existen ya (por ejemplo, de parámetros URL)
         if (this.datePicker && !this.datePicker.value) {
-            this.datePicker.value = currentDate;
+            this.datePicker.value = window.formatPickerDate
+                ? window.formatPickerDate(now)
+                : currentDate;
         }
 
         if (this.hourSelect && !this.hourSelect.value) {
@@ -96,7 +98,9 @@ class SoundingFormHandler {
         const dateValue = this.datePicker.value;
         const hourValue = this.hourSelect.value;
         if (dateValue && hourValue) {
-            const formattedDate = dateValue.replace(/-/g, '') + hourValue;
+            const formattedDate = (window.pickerDateToId
+                ? window.pickerDateToId(dateValue)
+                : dateValue.replace(/-/g, '')) + hourValue;
             this.datetimeInitEl.value = formattedDate;
         }
     }
@@ -109,7 +113,10 @@ class SoundingFormHandler {
 
         if (!dateValue || !hourValue) return;
 
-        const baseDate = new Date(`${dateValue}T${hourValue}:00Z`);
+        const isoDate = window.pickerDateToIso
+            ? window.pickerDateToIso(dateValue)
+            : dateValue;
+        const baseDate = new Date(`${isoDate}T${hourValue}:00Z`);
         if (isNaN(baseDate.getTime())) return;
 
         this.forecastSelect.innerHTML = '';
@@ -162,7 +169,15 @@ class SoundingFormHandler {
 
             if (datetimeInit && datetimeInit.length === 10) {
                 const datePart = datetimeInit.substring(0, 8);
-                const formattedDate = `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
+                const formattedDate = window.formatPickerDate
+                    ? window.formatPickerDate(
+                        new Date(
+                            parseInt(datePart.substring(0, 4), 10),
+                            parseInt(datePart.substring(4, 6), 10) - 1,
+                            parseInt(datePart.substring(6, 8), 10)
+                        )
+                    )
+                    : `${datePart.substring(0, 4)}-${datePart.substring(4, 6)}-${datePart.substring(6, 8)}`;
 
                 if (this.datePicker) this.datePicker.value = formattedDate;
                 if (this.hourSelect) this.hourSelect.value = datetimeInit.substring(8, 10);

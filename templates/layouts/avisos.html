@@ -49,7 +49,7 @@
                   <span class="text-muted me-2 d-none d-sm-inline">Autor:</span>
                   <span>{{ warning.user.get_full_name }}</span>
                   <span class="text-muted mx-2">•</span>
-                  <span class="text-muted">{{ warning.date|date:'d/m/Y H:i' }}</span>
+                  <span class="text-muted">{{ warning.date|date:'d/m/Y h:i A' }} · {{ warning.valid_until|date:'d/m/Y h:i A' }}</span>
                 </div>
                 <!-- Botón para ver PDF -->
                 {% if warning.file %}

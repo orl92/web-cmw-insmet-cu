@@ -58,7 +58,7 @@ class MapaView(TemplateView):
     def get_default_date(self):
         """Obtener fecha por defecto para el datepicker"""
         now = datetime.now()
-        return now.strftime('%Y-%m-%d')
+        return now.strftime('%d/%m/%Y')
 
     def post(self, request, *args, **kwargs):
         try:

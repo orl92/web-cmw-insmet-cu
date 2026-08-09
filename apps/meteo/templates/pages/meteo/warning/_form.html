@@ -16,7 +16,7 @@
     {% endif %}
   </div>
   <div class="col-md-4 mb-3">
-    {% include 'includes/dashboard/date_field.html' with field=form.valid_until value=form.valid_until.value|iso_datetime mode='datetime' placeholder='aaaa-mm-ddTHH:mm' %}
+    {% include 'includes/dashboard/date_field.html' with field=form.valid_until value=form.valid_until.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm am' %}
   </div>
 </div>
 </div>

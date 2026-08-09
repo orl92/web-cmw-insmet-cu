@@ -95,7 +95,9 @@ class GifDownloadManager {
         const varNameValue = document.getElementById('id_var_name').value;
 
         // Formatear datetime_init
-        const formattedDate = dateValue.replace(/-/g, '');
+        const formattedDate = window.pickerDateToId
+            ? window.pickerDateToId(dateValue)
+            : dateValue.replace(/-/g, '');
         const datetimeInit = formattedDate + hourValue;
 
         // Actualizar campos ocultos

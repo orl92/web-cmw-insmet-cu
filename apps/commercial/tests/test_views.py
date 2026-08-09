@@ -403,7 +403,7 @@ class ContractCreateViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'value="CONT-002"')
-        self.assertContains(response, f'value="{date.today().isoformat()}"')
+        self.assertContains(response, f'value="{date.today().strftime("%d/%m/%Y")}"')
         self.assertContains(response, 'value="REG-002"')
 
 

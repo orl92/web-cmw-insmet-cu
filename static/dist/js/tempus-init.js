@@ -17,10 +17,91 @@ document.addEventListener('DOMContentLoaded', function () {
 
   window.tempusDominus._instances = window.tempusDominus._instances || {};
 
+  // Convierte el valor visible del datepicker (dd/mm/yyyy o yyyy-mm-dd) a
+  // formato compacto YYYYMMDD para construir strings tipo datetime_init.
+  window.pickerDateToId = function (value) {
+    if (!value) {
+      return '';
+    }
+    var s = String(value).trim();
+    var parts = s.split('/');
+    if (parts.length === 3) {
+      return parts[2] + parts[1] + parts[0];
+    }
+    parts = s.split('-');
+    if (parts.length === 3) {
+      return parts[0] + parts[1] + parts[2];
+    }
+    return '';
+  };
+
+  // Convierte un Date a string dd/mm/yyyy (formato visible del picker).
+  window.formatPickerDate = function (date) {
+    return (
+      pad(date.getDate()) +
+      '/' +
+      pad(date.getMonth() + 1) +
+      '/' +
+      date.getFullYear()
+    );
+  };
+
+  // Convierte el valor visible del datepicker (dd/mm/yyyy o yyyy-mm-dd) a
+  // ISO (yyyy-mm-dd) para construir objetos Date de forma segura.
+  window.pickerDateToIso = function (value) {
+    if (!value) {
+      return '';
+    }
+    var s = String(value).trim();
+    var parts = s.split('/');
+    if (parts.length === 3) {
+      return parts[2] + '-' + parts[1] + '-' + parts[0];
+    }
+    parts = s.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return s;
+    }
+    return '';
+  };
+
   function currentTheme() {
     return document.documentElement.getAttribute('data-bs-theme') === 'dark'
       ? 'dark'
       : 'light';
+  }
+
+  function pad(value) {
+    return String(value).padStart(2, '0');
+  }
+
+  function canonicalFormat(date, mode) {
+    var dd = pad(date.getDate());
+    var mm = pad(date.getMonth() + 1);
+    var yyyy = date.getFullYear();
+    var hours = date.getHours();
+    var meridiem = hours >= 12 ? 'PM' : 'AM';
+    var hour12 = hours % 12;
+    if (hour12 === 0) {
+      hour12 = 12;
+    }
+    var hhmm = hour12 + ':' + pad(date.getMinutes()) + ' ' + meridiem;
+    if (mode === 'date') {
+      return dd + '/' + mm + '/' + yyyy;
+    }
+    if (mode === 'time') {
+      return hhmm;
+    }
+    return dd + '/' + mm + '/' + yyyy + ' ' + hhmm;
+  }
+
+  function formatByMode(mode) {
+    if (mode === 'time') {
+      return 'h:mm a';
+    }
+    if (mode === 'datetime') {
+      return 'dd/MM/yyyy h:mm a';
+    }
+    return 'dd/MM/yyyy';
   }
 
   function buildOptions(mode) {
@@ -36,7 +117,6 @@ document.addEventListener('DOMContentLoaded', function () {
       seconds: false,
     };
     var viewMode = 'calendar';
-    var format = 'yyyy-MM-dd';
     if (mode === 'datetime') {
       components.calendar = true;
       components.date = true;
@@ -46,14 +126,13 @@ document.addEventListener('DOMContentLoaded', function () {
       components.clock = true;
       components.hours = true;
       components.minutes = true;
-      format = "yyyy-MM-dd'T'HH:mm";
     } else if (mode === 'time') {
       viewMode = 'clock';
       components.clock = true;
       components.hours = true;
       components.minutes = true;
-      format = 'HH:mm';
     } else {
+      viewMode = 'calendar';
       components.calendar = true;
       components.date = true;
       components.month = true;
@@ -61,13 +140,15 @@ document.addEventListener('DOMContentLoaded', function () {
       components.decades = true;
     }
     return {
+      useCurrent: mode === 'date' ? false : true,
+      promptTimeOnDateChange: mode === 'date' ? false : true,
       display: {
         viewMode: viewMode,
         components: components,
         theme: currentTheme(),
         icons: { type: 'icons', ...icons },
       },
-      localization: { locale: 'es', format: format },
+      localization: { locale: 'es', format: formatByMode(mode) },
     };
   }
 
@@ -78,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.tempusDominus._instances[input.id] = picker;
     picker.subscribe(tempusDominus.Namespace.events.change, function (e) {
       if (e.date) {
-        input.value = picker.dates.picked[0].format(picker.options.localization.format);
+        input.value = canonicalFormat(e.date, mode);
       }
     });
     var trigger = pickerElement.querySelector('[data-tempus-trigger]');

@@ -150,13 +150,11 @@ class MeteoPlotter {
 function initDatepickerDefault() {
     const today = new Date();
 
-    const formatDate = (date) => {
-        return date.toISOString().split('T')[0];
-    };
-
     const datepickerElement = document.getElementById('datepicker');
     if (datepickerElement && !datepickerElement.value) {
-        datepickerElement.value = formatDate(today);
+        datepickerElement.value = window.formatPickerDate
+            ? window.formatPickerDate(today)
+            : today.toISOString().split('T')[0];
     }
 }
 
@@ -182,7 +180,9 @@ async function submitFormWithDefaultValues() {
     // Construir datetime_init a partir de los campos de fecha y hora
     const dateValue = document.getElementById('datepicker').value;
     const hourValue = document.getElementById('hour-select').value;
-    const formattedDate = dateValue.replace(/-/g, '');
+    const formattedDate = window.pickerDateToId
+        ? window.pickerDateToId(dateValue)
+        : dateValue.replace(/-/g, '');
     const datetimeInit = formattedDate + hourValue;
 
     const formData = {

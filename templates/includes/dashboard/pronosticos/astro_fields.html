@@ -15,13 +15,13 @@
     </div>
   </div>
   <div class="col-lg-4">
-    {% include 'includes/dashboard/date_field.html' with field=form.nlpd value=form.nlpd.value|iso_date mode='date' placeholder='aaaa-mm-dd' %}
+    {% include 'includes/dashboard/date_field.html' with field=form.nlpd value=form.nlpd.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
   </div>
   <div class="col-lg-4">
-    {% include 'includes/dashboard/date_field.html' with field=form.sunrise value=form.sunrise.value|date:'H:i' mode='time' placeholder='HH:mm' %}
+    {% include 'includes/dashboard/date_field.html' with field=form.sunrise value=form.sunrise.value|date:'g:i A' mode='time' placeholder='06:30 am' %}
   </div>
   <div class="col-lg-4">
-    {% include 'includes/dashboard/date_field.html' with field=form.sunset value=form.sunset.value|date:'H:i' mode='time' placeholder='HH:mm' %}
+    {% include 'includes/dashboard/date_field.html' with field=form.sunset value=form.sunset.value|date:'g:i A' mode='time' placeholder='07:30 pm' %}
   </div>
   <div class="col-lg-4">
     <div class="mb-3">

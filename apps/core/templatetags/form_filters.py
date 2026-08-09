@@ -37,6 +37,15 @@ def filename(value):
     return re.sub(r'^[0-9a-f-]{36}_', '', name)
 
 
+@register.filter(name='fmt_date')
+def fmt_date(value):
+    """Formatea date/datetime/ISO-string a dd/mm/aaaa."""
+    date_val = _coerce_date(value)
+    if date_val is None:
+        return value if isinstance(value, str) else ''
+    return date_val.strftime('%d/%m/%Y')
+
+
 @register.filter
 def iso_date(value):
     if isinstance(value, date):
@@ -45,7 +54,42 @@ def iso_date(value):
 
 
 @register.filter
+def fmt_datetime(value):
+    if isinstance(value, datetime):
+        return value.strftime('%d/%m/%Y %I:%M %p')
+    dt = _coerce_datetime(value)
+    if dt is None:
+        return value if isinstance(value, str) else ''
+    return dt.strftime('%d/%m/%Y %I:%M %p')
+
+
+@register.filter
 def iso_datetime(value):
     if isinstance(value, datetime):
         return value.strftime('%Y-%m-%dT%H:%M')
     return value
+
+
+def _coerce_date(value):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value, '%Y-%m-%d').date()
+        except ValueError:
+            return None
+    return None
+
+
+def _coerce_datetime(value):
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+            try:
+                return datetime.strptime(value, fmt)
+            except ValueError:
+                continue
+    return None

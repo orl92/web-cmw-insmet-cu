@@ -30,9 +30,9 @@
     <td data-bs-toggle="tooltip"
         data-bs-placement="bottom"
         title="{{ subscription.service.title }}">{{ subscription.service.title|truncatechars:30 }}</td>
-    <td>{{ subscription.start_date|date:"d/m/Y H:i" }}</td>
+    <td>{{ subscription.start_date|date:"d/m/Y h:i A" }}</td>
     <td>
-      {{ subscription.end_date|date:"d/m/Y H:i" }}
+      {{ subscription.end_date|date:"d/m/Y h:i A" }}
       {% if subscription.end_date < now %}
         <span class="badge badge-outline text-red ms-1">Vencido</span>
       {% endif %}
