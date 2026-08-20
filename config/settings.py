@@ -8,6 +8,8 @@ from pathlib import Path
 
 from cryptography.fernet import Fernet
 from django.contrib.messages import constants as messages
+from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,6 +22,9 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 
 def decrypt_secret_key(encrypted_secret_key, encryption_key):
+    if not encrypted_secret_key or not encryption_key:
+        return None
+
     cipher_suite = Fernet(encryption_key.encode())
     return cipher_suite.decrypt(encrypted_secret_key.encode()).decode()
 
@@ -28,6 +33,17 @@ SECRET_KEY = decrypt_secret_key(
     os.getenv('SECRET_KEY'),
     os.getenv('ENCRYPTION_KEY'),
 )
+
+if SECRET_KEY is None:
+    if IS_PRODUCTION:
+        raise ImproperlyConfigured(
+            'SECRET_KEY y ENCRYPTION_KEY no están definidas. '
+            'Ejecute `python manage.py generate_env` (o `--production`) '
+            'para generar el archivo .env.'
+        )
+    # Sin .env en desarrollo: clave temporal por sesión para permitir
+    # arrancar comandos como generate_env antes de que exista .env.
+    SECRET_KEY = get_random_secret_key()
 
 # Security
 if not DEBUG:
