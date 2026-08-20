@@ -24,9 +24,19 @@ Los hooks de pre-commit garantizan Ruff, djlint y detect-secrets en cada commit 
 
 ```bash
 pip install -r requirements-dev.txt   # incluye pre-commit
-pre-commit install                    # activa el hook git
+pre-commit install --install-hooks    # activa el hook git Y descarga los entornos de hooks (una vez, no en el primer commit)
 pre-commit run --all-files            # ejecutar todos los hooks una vez
 ```
+
+> **⚠️ IMPORTANTE (PC nueva / red con proxy):** usa SIEMPRE `pre-commit install --install-hooks` en el setup, no `pre-commit install` a secas. Los entornos de hooks (ruff, djlint, detect-secrets) se descargan desde PyPI en la primera ejecución; si se deja para el primer commit, un fallo de red puede colgar el commit y **pre-commit stash los archivos modificados sin stagear en un patch temporal que puede perderse si el proceso se interrumpe** (ver más abajo).
+>
+> Si la instalación falla con `Could not find a version that satisfies ...` / `No matching distribution found` / timeouts, el problema suele ser el proxy de red (verificar con `pip config list`). Es intermitente: reintentar `pre-commit install --install-hooks` suele resolver. Para hacerlo más resiliente, añade a `~/.pip/pip.conf` (o `~/.config/pip/pip.conf`):
+> ```ini
+> [global]
+> timeout = 120
+> retries = 10
+> ```
+> Y antes de cualquier `pre-commit run` / commit con hooks, asegúrate de que el working tree esté limpio o haz `git stash` manual: pre-commit guarda los archivos modificados sin stagear en un patch temporal antes de correr los hooks y, si el proceso muere (Ctrl-C, timeout, crash), esos cambios quedan fuera del working tree y el patch se pierde con `pre-commit clean`.
 
 - Si `detect-secrets` reporta un falso positivo nuevo, actualizar el baseline con `detect-secrets scan --exclude-files "static/|staticfiles/|.*\.min\.js$|.*\.map$|\.venv/" > .secrets.baseline` y commitear el `.secrets.baseline`.
 - El mismo job `pre-commit` corre en CI (`.github/workflows/ci.yml`).
