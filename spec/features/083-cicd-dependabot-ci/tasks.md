@@ -34,3 +34,11 @@
 - [x] **T14** `python manage.py check` y suite completa OK (283 tests). Revisión del diff: ruff no debe haber cambiado lógica, solo estilo.
 - [x] **T15** Actualizar `spec/constitution/roadmap.md`: 083 → Hecho; nota "Branch protection y auto-merge de Dependabot se activan en GitHub Settings (no versionable)".
 - [x] **T16** Commit descriptivo (083). El push lo hace el usuario en VS Code.
+
+## Fase E — Alineación de versiones (ver 093-deps-docs-alineacion)
+
+- [ ] Verificar por qué `requirements.txt` sigue en `Django==5.1.4` (¿se revirtió la actualización a 5.2.16?)
+- [ ] Decidir en 093: subir a 5.2.x o fijar 5.1.4 como soportada
+- [ ] Alinear AGENTS.md y SECURITY.md con la versión real
+- [ ] Fijar TODAS las deps con `==` (hoy la mayoría sin versión)
+- [ ] Eliminar `dotenv`/`str2bool` si no se usan

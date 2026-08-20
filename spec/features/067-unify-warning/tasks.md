@@ -11,3 +11,10 @@
 - [ ] Eliminar modelos legacy
 - [ ] Tests
 - [ ] Menú lateral con 3 entradas
+
+## Fase 2 — Soft delete Warning (ver 090-soft-delete-integridad)
+
+- [ ] `Warning` hereda `SoftDeleteModel` (hoy solo `models.Model`; AGENTS.md lo exige)
+- [ ] `WarningDeleteView` → soft delete
+- [ ] Migración `record_active`/`deleted_at` en Warning
+- [ ] Verificar listado no muestre warnings borrados

@@ -27,3 +27,9 @@
 - [ ] `python manage.py test`
 - [ ] Hacer request OPTIONS a `/api/stations/` y verificar header
       `Access-Control-Allow-Origin`
+
+## Fase 2 — Rate limiting real (ver 088-seguridad-critica)
+
+- [ ] `config/settings.py` — Agregar `DEFAULT_THROTTLE_CLASSES` en `REST_FRAMEWORK` (hoy solo hay `DEFAULT_THROTTLE_RATES`, sin clases → el limit no aplica)
+- [ ] Test: anon >100/h a `/api/stations/` → 429
+- [ ] Throttle por IP en proxys de imagen/GIF públicos (django-ratelimit o manual)

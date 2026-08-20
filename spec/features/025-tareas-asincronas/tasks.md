@@ -10,3 +10,9 @@
 - [x] Tests para tareas (integrados: 136 tests pasan)
 - [x] `python manage.py check && python manage.py test`
 - [x] Actualizar roadmap
+
+## Fase 2 — Registro en ready() (ver 089-operacion-produccion)
+
+- [ ] `apps/core/apps.py` — `ready()` importa `apps.core.tasks` (hoy está vacío; `huey_consumer` ve 0 tareas)
+- [ ] Registrar tasks de otras apps si existen (commercial, meteo, user_auth)
+- [ ] Verificar: `huey_consumer config.huey.huey` loguea las tareas al arrancar

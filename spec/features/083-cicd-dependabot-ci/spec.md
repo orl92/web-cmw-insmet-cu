@@ -30,7 +30,8 @@ Sustituye el workflow de CodeQL (imposible de ejecutar en repo privado con cuent
 - [x] `.pre-commit-config.yaml` con Ruff + `check-merge-conflict` + `end-of-file-fixer` + `detect-secrets`. Sin djlint.
 - [x] `SECURITY.md` real (no template por defecto): versión soportada, cómo reportar vulnerabilidad.
 - [x] Suite completa (283 tests) sigue OK tras el lint.
-- [x] Dependencias con vulnerabilidades actualizadas: Django 5.2.16, cryptography 50.0.0, pillow 12.3.0, pypdf 6.14.2.
+- [x] Dependencias con vulnerabilidades actualizadas: cryptography 50.0.0, pillow 12.3.0, pypdf 6.14.2.
+- [ ] **Django 5.2.16 NO aplicado** — `requirements.txt` sigue en `Django==5.1.4`. Verificar si se revirtió y decidir en 093-deps-docs-alineacion (subir a 5.2.x o fijar 5.1.4 como versión soportada y corregir AGENTS.md/SECURITY.md).
 - [x] Roadmap actualizado: 083 → Hecho; nota de configuración manual en GitHub Settings (branch protection, auto-merge de Dependabot).
 
 ## Notas de seguridad (bandit y pip-audit)

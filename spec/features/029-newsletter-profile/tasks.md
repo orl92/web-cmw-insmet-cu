@@ -14,3 +14,10 @@
 - [ ] 12. Verificar: `python manage.py check && python manage.py test`.
 - [ ] 13. Actualizar roadmap.md.
 - [ ] 14. Commit.
+
+## Fase 2 — Wiring de señales (ver 091-newsletter-signals-wiring)
+
+- [ ] `apps/user_auth/apps.py` — `ready()` con `from . import signals` (las señales NUNCA se registraron)
+- [ ] Verificar imports de señales contra modelos actuales (refactor 066 movió accounts→user_auth)
+- [ ] Unicidad `EmailRecipient(email, list)` para `get_or_create` seguro
+- [ ] Tests: newsletter True crea EmailRecipient; False lo elimina; cambio de email actualiza
