@@ -85,31 +85,35 @@ El job `test` de CI NO corre la suite completa en cada PR (tarda demasiado):
 
 ## Skills
 
-Carga el skill que corresponda según la tarea. Los skills están en `~/.agents/skills/`.
+La lista `<available_skills>` del sistema es la fuente autoritativa de skills cargadas en la sesión. Las skills de proyecto viven en `.opencode/skills/` (viajan con el repo en cualquier clon); las globales en `~/.config/opencode/skills/`.
 
-> **Uso automático**: usa los MCP y skills de forma proactiva cuando la tarea lo requiera, sin esperar a que el usuario los pida. Ver reglas globales en `~/.config/opencode/AGENTS.md`.
+> **Uso automático**: usa MCPs y skills de forma proactiva cuando la tarea lo requiera, sin esperar a que el usuario los pida. Ver reglas globales en `~/.config/opencode/AGENTS.md`.
 
-### Meta
-- `using-agent-skills` — árbol de decisión para descubrir qué skill aplicar según la tarea
-
-### Skills complementarias del proyecto
+### Skills del proyecto (`.opencode/skills/`)
+- `using-agent-skills` — árbol de decisión para elegir la skill correcta según la tarea
 - `django-expert` — modelos, ORM, DRF, auth, tests, performance Django
-- `frontend-design` — diseño visual con identidad
+- `frontend-design` — diseño visual con identidad (Tabler.io)
 - `web-design-guidelines` — auditoría de accesibilidad y UI
 
+### Skills globales (opencode)
+- **SDD**: `sdd-init`, `sdd-explore`, `sdd-propose`, `sdd-spec`, `sdd-design`, `sdd-tasks`, `sdd-apply`, `sdd-verify`, `sdd-archive`, `sdd-onboard`
+- **Git/PR**: `branch-pr`, `chained-pr`, `work-unit-commits`, `issue-creation`, `systemic-issue-triage`
+- **Revisión**: `judgment-day`, `rdd-defect-workflow`, `go-testing`, `gentle-ai-bench`
+- **Meta**: `skill-creator`, `skill-improver`, `skill-registry`, `cognitive-doc-design`, `comment-writer`, `customize-opencode`
+
 ### MCP
-- `tabler` — búsqueda de iconos, componentes, layouts, colores y documentación de Tabler.io
 - `context7` — documentación actualizada de librerías/frameworks (Django, DRF, drf-spectacular, etc.). Usarlo siempre que se necesiten APIs, ejemplos o configuración de una librería; formato `use library /django/django`
+- `engram` — memoria persistente del proyecto (decisiones, descubrimientos, convenciones)
 
 ## Flujo SDD
 
 > **⚠️ REGLA INVIOLABLE**: No se puede saltar ningún paso de este flujo. Cada feature nueva debe pasar por **spec → plan → tasks → implementación → actualizar roadmap** antes de empezar la siguiente. Saltarse la actualización del roadmap rompe el flujo de trabajo y queda documentación huérfana.
 
-Cada feature sigue este flujo usando los skills:
+Cada feature sigue este flujo:
 
-1. Cargar `spec-driven-development` → escribir `spec/features/NNN-nombre/spec.md`
-2. Cargar `planning-and-task-breakdown` → escribir `plan.md` + `tasks.md`
-3. Cargar `incremental-implementation` → implementar un task a la vez
+1. Escribir `spec/features/NNN-nombre/spec.md`
+2. Escribir `plan.md` + `tasks.md`
+3. Implementar un task a la vez
 4. Si hay cambios de modelo: `python manage.py makemigrations`
 5. Verificar: `python manage.py check && python manage.py test apps.<app>`
 6. Si no existe test para el cambio, crearlo
