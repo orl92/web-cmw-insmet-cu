@@ -4,14 +4,21 @@ description: "Trigger: accesibilidad, auditoría UI, WCAG, contraste, usabilidad
 license: Apache-2.0
 metadata:
   author: "yoelvismr"
-  version: "1.0"
+  version: "1.1"
 ---
 
 # Skill: web-design-guidelines
 
 ## Activation Contract
 
-Cargar al auditar accesibilidad, contraste, navegación por teclado, HTML semántico o usabilidad de cualquier vista.
+Cargar al auditar accesibilidad, contraste, navegación por teclado, HTML semántico o usabilidad de cualquier vista. Frases típicas: "revisá mi UI", "check accessibility", "audit design", "review UX".
+
+## How It Works
+
+1. Leer los archivos especificados (o pedir al usuario el archivo/patrón si no los da).
+2. Verificar contra las reglas de abajo (autocontenidas, siempre disponibles).
+3. Opcional: si hay red disponible, refrescar las reglas desde Web Interface Guidelines (fuente de reglas oficiales, formato de salida incluido) en `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md` — usar solo como complemento, nunca como requisito.
+4. Reportar hallazgos en el formato terso `archivo:línea`.
 
 ## Hard Rules
 
@@ -40,10 +47,11 @@ Cargar al auditar accesibilidad, contraste, navegación por teclado, HTML semán
 
 ## Output Contract
 
-- Lista de hallazgos con severidad y ubicación.
+- Lista de hallazgos con severidad y ubicación en `archivo:línea`.
 - Correcciones aplicadas (si el alcance lo pide).
 - Re-verificación de los puntos corregidos.
 
 ## References
 
 - `../../AGENTS.md` — convenciones UI (Tabler, español, templates).
+- Web Interface Guidelines (opcional, requiere red): `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md`
