@@ -171,6 +171,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+.atl/
 .pytest_cache/
 nosetests.xml
 coverage.xml
