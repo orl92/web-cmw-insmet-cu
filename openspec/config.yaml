@@ -1,0 +1,79 @@
+schema: spec-driven
+
+context: |
+  Project: web-cmw-insmet-cu (Centro Meteorológico Provincial Camagüey)
+  Stack: Django 5.1.4 (pinned in requirements.txt; AGENTS.md and
+         spec/constitution/tech-stack.md claim 5.2 — DISCREPANCY to verify),
+         DRF 3.17, drf-spectacular + sidecar, Python 3.12.
+  Architecture: Monolith Django; apps live under apps/ (api, user_auth, core,
+                dashboard, commercial, meteo, home, publications); config/ holds
+                settings, root urls, wsgi/asgi, Huey.
+  UI: Tabler (Bootstrap 5) via Django Templates; djlint-formatted (2-space indent).
+  Persistence: SQLite (dev), PostgreSQL/MySQL (prod). Async: Huey (not Celery).
+  Testing: Django unittest via `python manage.py test apps.<app>`; NO pytest.
+  Lint/Format: ruff + ruff-format; djlint for templates; pre-commit hooks.
+  CI: GitHub Actions — per-app tests on PR (dorny/paths-filter), full suite on
+      push to main; plus lint, security (pip-audit + makemigrations --check),
+      templates (djlint), precommit jobs.
+  Git identity: Yoelvis Mariné Ramos <yoelvismr@gmail.com>.
+  Network: proxy http://10.20.10.5:3128 (documented by orchestrator).
+  Existing SDD docs: spec/features (87 historical specs) + spec/constitution
+      (roadmap.md, tech-stack.md, mission.md) — INTENTIONALLY UNTOUCHED by init.
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow existing code patterns (apps live in apps/, import as from apps.<app>...)
+      - Respect default_permissions=() + 4 custom (view/add/change/delete) on models
+      - Use uuid kwarg (not pk) in URLs of UUIDField models
+      - Apply FileHandlerMixin + SoftDeleteModel per project conventions
+    tdd: true
+    test_command: "python manage.py test apps.<app>"
+  verify:
+    test_command: "python manage.py test"
+    build_command: "python manage.py check"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: true
+  runner: django_unittest
+  test_command_selective: "python manage.py test apps.<app>"
+  test_command_full: "python manage.py test"
+  pytest: false
+  coverage_tool: none
+  coverage_threshold: 0
+  linter: ruff
+  formatter: ruff-format
+  template_linter: djlint
+  type_checker: none
+  precommit_hooks:
+    - ruff (--fix)
+    - ruff-format
+    - detect-secrets (baseline .secrets.baseline)
+    - djlint-django
+    - djlint-reformat-django
+    - pre-commit-hooks: check-merge-conflict, end-of-file-fixer, trailing-whitespace
+  ci:
+    pr: per-app tests via dorny/paths-filter (apps.<app>)
+    push_main: full suite (python manage.py test)
+    extra_jobs: [lint, security (pip-audit + makemigrations --check), templates, precommit]
+  layers:
+    - unit: apps/*/tests/test_*.py (Django TestCase)
+    - integration: apps/api/tests/test_api.py (DRF APITestCase)
+  gotchas:
+    - "Django pinned to 5.1.4 in requirements.txt but AGENTS.md/tech-stack.md claim 5.2 — verify before assuming 5.2 APIs."
+    - "App test labels must be full dotted path (apps.meteo); short label no longer resolves in Django 5.2+."
+    - "Migrations are NOT versioned (.gitignore); always run makemigrations in setup."
+    - "pre-commit hooks download from PyPI on first run; use `pre-commit install --install-hooks` (not bare `pre-commit install`) behind proxy."

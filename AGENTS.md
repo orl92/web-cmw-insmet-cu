@@ -109,16 +109,18 @@ La lista `<available_skills>` del sistema es la fuente autoritativa de skills ca
 
 > **⚠️ REGLA INVIOLABLE**: No se puede saltar ningún paso de este flujo. Cada feature nueva debe pasar por **spec → plan → tasks → implementación → actualizar roadmap** antes de empezar la siguiente. Saltarse la actualización del roadmap rompe el flujo de trabajo y queda documentación huérfana.
 
-Cada feature sigue este flujo:
+Cada feature sigue este flujo (layout **OpenSpec**; gentle-ai lee `openspec/changes/`):
 
-1. Escribir `spec/features/NNN-nombre/spec.md`
-2. Escribir `plan.md` + `tasks.md`
+1. Crear `openspec/changes/NNN-nombre/proposal.md` (motivación + solución + criterios de aceptación)
+2. Crear `design.md` (plan técnico) + `tasks.md` (checkboxes `- [ ]`/`- [x]`) + `specs/NNN-nombre/spec.md` (requisitos delta)
 3. Implementar un task a la vez
 4. Si hay cambios de modelo: `python manage.py makemigrations`
 5. Verificar: `python manage.py check && python manage.py test apps.<app>`
 6. Si no existe test para el cambio, crearlo
 7. Actualizar `spec/constitution/roadmap.md` moviendo la feature a "Hecho"
 8. Commit descriptivo (incluir número y nombre de la feature)
+
+> El historial de features anteriores (001–087) vive en `openspec/archive/spec-features/` (solo lectura). Las features activas van en `openspec/changes/`. El bootstrap de OpenSpec (`openspec/config.yaml`, `.atl/skill-registry.md`) lo genera `gentle-ai` vía el skill `sdd-init`.
 
 Antes de codificar, si hace falta clarificar, preguntar: ¿tipo de cambio? ¿app(s) afectada(s)? ¿cambios de DB? ¿URLs/permisos? ¿templates? ¿criterios de aceptación? ¿número de feature?
 
