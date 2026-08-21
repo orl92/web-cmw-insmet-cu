@@ -32,7 +32,9 @@
 - [x] **Mantener** `config/custom_email_backend.py` (`CustomSTARTTLSBackend`): el correo del proyecto usa certificado autofirmado → requiere desactivar verificación TLS. No es dead code: `settings.py` lee `EMAIL_BACKEND` desde env.
 - [x] `apps/core/management/commands/generate_env.py` — Escribe `EMAIL_BACKEND` apuntando al backend custom cuando el correo es autofirmado (modo interactivo pregunta; `--production` lo usa por defecto).
 - [x] `config/settings.py` — Confirmar `EMAIL_USE_TLS=True` en el backend SMTP.
-- [x] `apps/core/management/commands/generate_env.py` — **Modo interactivo**: pregunta prod/dev, luego va variable por variable mostrando el default y permitiendo sobreescribir; para passwords/correos permite ingresar el valor real (getpass). FTP y email incluidos.
+- [x] `apps/core/management/commands/generate_env.py` — **Modo interactivo**: pregunta prod/dev, luego va variable por variable mostrando el default y permitiendo sobreescribir; para passwords/correos permite ingresar el valor real (getpass). FTP, email y **BD incluidos**.
+- [x] `generate_env.py` — **Menú de motor de BD**: dev → `sqlite3 | postgresql | mysql`; prod → `postgresql | mysql`. SQLite en dev escribe `DB_ENGINE=sqlite3` + `DB_NAME=db.sqlite3` (corrige bug de SQLite en memoria que tenía el bloque dev previo).
+- [x] `generate_env.py` — **Regeneración**: si `.env` existe, se regenera usando los valores actuales como defaults (Enter = mantener); `SECRET_KEY`/`ENCRYPTION_KEY` se conservan para no invalidar sesiones.
 
 ## Verificación
 

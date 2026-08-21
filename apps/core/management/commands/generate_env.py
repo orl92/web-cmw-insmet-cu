@@ -23,17 +23,37 @@ class Command(BaseCommand):
     # Utilidad de entrada interactiva (con fallback a default en EOF)
     # ------------------------------------------------------------------
     def prompt(self, label, default='', secret=False):
-        suffix = f' [{default}]' if default not in ('', None) else ''
+        effective = default
+        if getattr(self, 'existing', None):
+            effective = self.existing.get(label, default)
+        suffix = ''
+        if not secret and effective not in ('', None):
+            suffix = f' [{effective}]'
         try:
             if secret:
-                self.stdout.write(f'{label}{suffix}: ', ending='')
-                val = getpass.getpass('') or default
+                self.stdout.write(f'{label}: ', ending='')
+                val = getpass.getpass('') or effective
             else:
                 self.stdout.write(f'{label}{suffix}: ', ending='')
-                val = input('') or default
+                val = input('') or effective
         except EOFError:
-            val = default
+            val = effective
         return val
+
+    def _load_env(self, path):
+        data = {}
+        try:
+            with open(path, encoding='utf-8') as fh:
+                for line in fh:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    if '=' in line:
+                        key, _, value = line.partition('=')
+                        data[key.strip()] = value.strip()
+        except OSError:
+            pass
+        return data
 
     def prompt_bool(self, label, default=True):
         default_str = 's' if default else 'n'
@@ -43,6 +63,18 @@ class Command(BaseCommand):
         return ans == 's'
 
     def handle(self, *args, **options):
+        env_path = settings.BASE_DIR / '.env'
+        self.existing = {}
+        if env_path.exists():
+            self.existing = self._load_env(env_path)
+            self.stdout.write(
+                self.style.WARNING(
+                    '⚠️ El archivo .env ya existe. Se REGENERARÁ usando los valores\n'
+                    '   actuales como defaults; presione Enter para mantenerlos o\n'
+                    '   escriba el nuevo valor. SECRET_KEY/ENCRYPTION_KEY se conservan.'
+                )
+            )
+
         if options['production']:
             production = True
             interactive = False
@@ -50,21 +82,20 @@ class Command(BaseCommand):
             production = False
             interactive = False
         else:
-            choice = self.prompt('¿Entorno? (1) Producción   (2) Desarrollo', '2')
+            default_env = '1' if self.existing.get('DEBUG') == 'False' else '2'
+            choice = self.prompt('¿Entorno? (1) Producción   (2) Desarrollo', default_env)
             production = choice.strip() == '1'
             interactive = True
 
-        env_path = settings.BASE_DIR / '.env'
-        if env_path.exists():
-            self.stdout.write(
-                self.style.WARNING('⚠️ El archivo .env ya existe. No se sobrescribirá.')
-            )
-            return
-
-        secret_key = get_random_secret_key()
-        encryption_key = Fernet.generate_key()
-        cipher_suite = Fernet(encryption_key)
-        encrypted_secret_key = cipher_suite.encrypt(secret_key.encode()).decode()
+        if self.existing.get('SECRET_KEY') and self.existing.get('ENCRYPTION_KEY'):
+            # Reuse existing keys so sessions/cookies are not invalidated
+            encrypted_secret_key = self.existing['SECRET_KEY']
+            encryption_key = self.existing['ENCRYPTION_KEY']
+        else:
+            secret_key = get_random_secret_key()
+            encryption_key = Fernet.generate_key()
+            encrypted_secret_key = Fernet(encryption_key).encrypt(secret_key.encode()).decode()
+            encryption_key = encryption_key.decode()
 
         try:
             with open(env_path, 'w', encoding='utf-8') as f:
@@ -84,7 +115,7 @@ class Command(BaseCommand):
                 f.write('# =====================\n')
                 f.write(f'DEBUG={"False" if production else "True"}\n')
                 f.write(f'SECRET_KEY={encrypted_secret_key}\n')
-                f.write(f'ENCRYPTION_KEY={encryption_key.decode()}\n\n')
+                f.write(f'ENCRYPTION_KEY={encryption_key}\n\n')
 
                 # --- Dominio ---
                 f.write('# =====================\n')
@@ -238,41 +269,59 @@ class Command(BaseCommand):
         f.write('# =====================\n')
         f.write('# CONFIGURACIÓN DE BASE DE DATOS\n')
         f.write('# =====================\n')
-        if production:
-            if interactive:
-                engine = self.prompt('DB_ENGINE', 'postgresql')
-                name = self.prompt('DB_NAME', 'web_db')
-                user = self.prompt('DB_USER', 'postgres')
-                db_cred = self.prompt('DB_PASS', 'contraseña_segura', secret=True)
-                host = self.prompt('DB_HOST', 'localhost')
-                port = self.prompt('DB_PORT', '5432')
+        if interactive:
+            if production:
+                options = [('postgresql', 'PostgreSQL'), ('mysql', 'MySQL')]
             else:
-                engine, name, user, db_cred, host, port = (
-                    'postgresql',
-                    'web_db',
-                    'postgres',
-                    'contraseña_segura',
-                    'localhost',
-                    '5432',
-                )
-            f.write(f'DB_ENGINE={engine}\n')
-            f.write(f'DB_NAME={name}\n')
-            f.write(f'DB_USER={user}\n')
-            f.write(f'DB_PASS={db_cred}\n')
-            f.write(f'DB_HOST={host}\n')
-            f.write(f'DB_PORT={port}\n')
-            f.write('DB_SSL_MODE=prefer\n')
-            f.write('# DB_SSL_ROOT_CERT=/ruta/ca.crt\n\n')
+                options = [
+                    ('sqlite3', 'SQLite (archivo local)'),
+                    ('postgresql', 'PostgreSQL'),
+                    ('mysql', 'MySQL'),
+                ]
+            self.stdout.write('Motor de base de datos:')
+            for i, (_val, desc) in enumerate(options, 1):
+                self.stdout.write(f'  {i}. {desc}')
+            existing_engine = self.existing.get(
+                'DB_ENGINE', 'postgresql' if production else 'sqlite3'
+            )
+            default_idx = next(
+                (i for i, (v, _) in enumerate(options, 1) if v == existing_engine), 1
+            )
+            choice = self.prompt('Seleccione motor (número)', str(default_idx))
+            try:
+                idx = int(choice) - 1
+                engine = options[idx][0]
+            except (ValueError, IndexError):
+                engine = options[0][0]
         else:
-            f.write('# Desarrollo usa SQLite por defecto\n')
+            engine = 'postgresql' if production else 'sqlite3'
+
+        if engine == 'sqlite3':
             f.write('DB_ENGINE=sqlite3\n')
-            f.write('# Para PostgreSQL descomentar:\n')
-            f.write('# DB_ENGINE=postgresql\n')
-            f.write('# DB_NAME=web_db_dev\n')
-            f.write('# DB_USER=postgres\n')
-            f.write('# DB_PASS=postgres\n')
-            f.write('# DB_HOST=localhost\n')
-            f.write('# DB_PORT=5432\n\n')
+            f.write('DB_NAME=db.sqlite3\n')
+            f.write('# DB_USER=\n# DB_PASS=\n# DB_HOST=\n# DB_PORT=\n\n')
+            return
+
+        if interactive:
+            name = self.prompt('DB_NAME', 'web_db')
+            user = self.prompt('DB_USER', 'postgres')
+            db_cred = self.prompt('DB_PASS', 'contraseña_segura', secret=True)
+            host = self.prompt('DB_HOST', 'localhost')
+            port = self.prompt('DB_PORT', '5432' if engine == 'postgresql' else '3306')
+        else:
+            name = 'web_db'
+            user = 'postgres'
+            db_cred = 'contraseña_segura'
+            host = 'localhost'
+            port = '5432' if engine == 'postgresql' else '3306'
+        f.write(f'DB_ENGINE={engine}\n')
+        f.write(f'DB_NAME={name}\n')
+        f.write(f'DB_USER={user}\n')
+        f.write(f'DB_PASS={db_cred}\n')
+        f.write(f'DB_HOST={host}\n')
+        f.write(f'DB_PORT={port}\n')
+        f.write('DB_SSL_MODE=prefer\n')
+        f.write('# DB_SSL_ROOT_CERT=/ruta/ca.crt\n\n')
 
     def _write_ldap_config(self, f, production, interactive):
         f.write('# =====================\n')
