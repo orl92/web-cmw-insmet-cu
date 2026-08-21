@@ -72,13 +72,6 @@ class Command(BaseCommand):
         self.existing = {}
         if env_path.exists():
             self.existing = self._load_env(env_path)
-            self.stdout.write(
-                self.style.WARNING(
-                    '⚠️ El archivo .env ya existe. Se REGENERARÁ usando los valores\n'
-                    '   actuales como defaults; presione Enter para mantenerlos o\n'
-                    '   escriba el nuevo valor. SECRET_KEY/ENCRYPTION_KEY se conservan.'
-                )
-            )
 
         if options['production']:
             production = True
@@ -91,6 +84,20 @@ class Command(BaseCommand):
             choice = self.prompt('¿Entorno? (1) Producción   (2) Desarrollo', default_env)
             production = choice.strip() == '1'
             interactive = True
+
+        # Si ya existe .env, en modo interactivo PREGUNTAMOS antes de sobrescribir
+        # (default NO para no cargarse un .env afinado a mano). En no-interactivo
+        # se regenera usando los valores actuales como defaults.
+        if env_path.exists() and interactive:
+            regenerate = self.prompt_bool(
+                'El archivo .env ya existe. ¿Regenerarlo? (se perderán cambios manuales)',
+                default=False,
+            )
+            if not regenerate:
+                self.stdout.write(
+                    self.style.WARNING('ℹ️ Manteniendo .env existente. No se sobrescribe.')
+                )
+                return
 
         # Rotación de claves: por defecto se conservan (no invalidar sesiones).
         # Si están comprometidas, rotar (prompt interactivo o --rotate-keys).
@@ -174,8 +181,6 @@ class Command(BaseCommand):
                     )
                 if production:
                     f.write(f'EXTERNAL_HOSTNAME={hostname}\n')
-                else:
-                    f.write(f'# EXTERNAL_HOSTNAME={hostname}\n')
                 f.write(f'ALLOWED_HOSTS={allowed}\n')
                 f.write(f'CSRF_TRUSTED_ORIGINS={csrf}\n\n')
 
@@ -211,8 +216,6 @@ class Command(BaseCommand):
                 f.write('# =====================\n')
                 f.write('# CONFIGURACIÓN DE CACHE\n')
                 f.write('# =====================\n')
-                f.write('# CACHE_BACKEND=django.core.cache.backends.redis.RedisCache\n')
-                f.write('# CACHE_LOCATION=redis://localhost:6379/1\n')
                 f.write('CACHE_BACKEND=django.core.cache.backends.locmem.LocMemCache\n\n')
 
             self.stdout.write(self.style.SUCCESS('✅ Archivo .env creado exitosamente'))
@@ -237,6 +240,30 @@ class Command(BaseCommand):
         f.write('# =====================\n')
         f.write('# CONFIGURACIÓN DE EMAIL\n')
         f.write('# =====================\n')
+        # Preguntar PRIMERO si se usará correo. Si no, no escribir nada.
+        if interactive:
+            use_email = self.prompt_bool('¿Configurar correo (email)?', default=not production)
+        else:
+            use_email = True
+        if not use_email:
+            f.write('# Correo desactivado (no se escriben variables de email).\n\n')
+            return
+
+        # Elegir backend: consola (solo dev) o servidor real (SMTP).
+        if interactive and not production:
+            self.stdout.write('Backend de correo:')
+            self.stdout.write('  1. Consola (no requiere servidor; solo desarrollo)')
+            self.stdout.write('  2. Servidor real (SMTP)')
+            choice = self.prompt('Seleccione', '1')
+            backend_console = choice.strip() == '1'
+        else:
+            backend_console = False  # producción exige servidor real
+
+        if backend_console:
+            f.write('EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend\n\n')
+            return
+
+        # Servidor real
         if interactive:
             autofirmado = self.prompt_bool(
                 '¿El servidor de correo usa certificado autofirmado?', default=True
@@ -258,12 +285,10 @@ class Command(BaseCommand):
             email_cred = 'tu_contraseña_segura'
             from_email = "'Centro Meteorológico Camagüey <user@tu-dominio.com>'"
 
-        if autofirmado:
-            f.write(f'EMAIL_BACKEND={CUSTOM_EMAIL_BACKEND}\n')
-        elif production:
-            f.write('EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend\n')
-        else:
-            f.write('EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend\n')
+        backend = (
+            CUSTOM_EMAIL_BACKEND if autofirmado else 'django.core.mail.backends.smtp.EmailBackend'
+        )
+        f.write(f'EMAIL_BACKEND={backend}\n')
         f.write(f'EMAIL_USE_TLS={str(use_tls)}\n')
         f.write(f'EMAIL_HOST={host}\n')
         f.write(f'EMAIL_PORT={port}\n')
@@ -325,9 +350,7 @@ class Command(BaseCommand):
             engine = 'postgresql' if production else 'sqlite3'
 
         if engine == 'sqlite3':
-            f.write('DB_ENGINE=sqlite3\n')
-            f.write('DB_NAME=db.sqlite3\n')
-            f.write('# DB_USER=\n# DB_PASS=\n# DB_HOST=\n# DB_PORT=\n\n')
+            f.write('DB_ENGINE=sqlite3\n\n')
             return
 
         if interactive:
@@ -348,24 +371,16 @@ class Command(BaseCommand):
         f.write(f'DB_PASS={db_cred}\n')
         f.write(f'DB_HOST={host}\n')
         f.write(f'DB_PORT={port}\n')
-        f.write('DB_SSL_MODE=prefer\n')
-        f.write('# DB_SSL_ROOT_CERT=/ruta/ca.crt\n\n')
+        f.write('DB_SSL_MODE=prefer\n\n')
 
     def _write_ldap_config(self, f, production, interactive):
         f.write('# =====================\n')
         f.write('# CONFIGURACIÓN LDAP (OPCIONAL)\n')
         f.write('# =====================\n')
+        # Preguntar PRIMERO si se usará LDAP. Si no, no escribir nada.
         usar_ldap = self.prompt_bool('¿Configurar LDAP?', default=False) if interactive else False
         if not usar_ldap:
-            f.write('# LDAP desactivado. Para activar, completa los valores abajo.\n')
-            f.write('# LDAP_SERVER_URI=ldap://localhost:389\n')
-            f.write('# LDAP_START_TLS=False\n')
-            f.write('# LDAP_BIND_DN=cn=admin,dc=example,dc=org\n')
-            f.write('# LDAP_BIND_PASSWORD=admin\n')
-            f.write('# LDAP_USER_SEARCH_BASE=ou=users,dc=example,dc=org\n')
-            f.write('# LDAP_GROUP_SEARCH_BASE=ou=groups,dc=example,dc=org\n')
-            f.write('# LDAP_STAFF_GROUP=cn=staff,ou=groups,dc=example,dc=org\n')
-            f.write('# LDAP_SUPERUSER_GROUP=cn=superuser,ou=groups,dc=example,dc=org\n\n')
+            f.write('# LDAP desactivado (no se escriben variables de LDAP).\n\n')
             return
         if production:
             f.write('# --- OpenLDAP (Linux) ---\n')
@@ -387,5 +402,5 @@ class Command(BaseCommand):
             f.write('LDAP_GROUP_SEARCH_BASE=ou=groups,dc=example,dc=org\n')
             f.write('LDAP_STAFF_GROUP=cn=staff,ou=groups,dc=example,dc=org\n')
             f.write('LDAP_SUPERUSER_GROUP=cn=superuser,ou=groups,dc=example,dc=org\n')
-        f.write('# LDAP_USER_ATTR_MAP=first_name:givenName,last_name:sn,email:mail\n')
-        f.write('# LDAP_CACHE_TIMEOUT=3600\n\n')
+        f.write('LDAP_USER_ATTR_MAP=first_name:givenName,last_name:sn,email:mail\n')
+        f.write('LDAP_CACHE_TIMEOUT=3600\n\n')

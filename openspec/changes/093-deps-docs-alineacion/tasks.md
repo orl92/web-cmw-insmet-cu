@@ -9,13 +9,15 @@
 - [ ] AGENTS.md y docs — Corregir la versión de Django que se menciona (5.2 → real instalada, o subir la dep).
 - [ ] `pip install -r requirements.txt` limpio (o `--dry-run`) funciona.
 
-## Alineación env
+## Alineación env (generate_env UX)
 
-- [ ] Auditar `config/settings.py` — listar todos los `os.getenv` con sus defaults.
-- [ ] Comparar con `env.sample` y `apps/core/management/commands/generate_env.py`.
-- [ ] `env.sample` — Corregir `DB_USERNAME`→`DB_USER`; dominio `SITE_URL` a `web.cmw.insmet.cu`; agregar variables faltantes (`FTP_OBS_HOST/USER/PASS`, `CORS_ALLOWED_ORIGINS`); eliminar variables que settings ignora.
-- [ ] `generate_env.py` — Generar el mismo conjunto que env.sample.
-- [ ] Verificar compatibilidad con `.env` existente (aceptar alias o documentar migración).
+- [x] Decisión: `env.sample` se elimina; `generate_env.py` es la única fuente de `.env` (evita drift entre ambos).
+- [x] `generate_env.py` — Preguntar primero si se usa correo/LDAP/DB; solo escribir las vars del camino elegido (sin bloques comentados `# VAR=`).
+- [x] `generate_env.py` — Email dev: elegir backend consola o servidor real; consola NO escribe vars de host/usuario.
+- [x] `generate_env.py` — Prod: correo exige servidor real (nunca consola); DB solo postgresql/mysql (nunca sqlite3).
+- [x] `generate_env.py` — Regeneración: si `.env` existe, preguntar `¿Regenerar?` con default **N** (no pisar config afinada a mano).
+- [x] Eliminar `env.sample` del repo (tracked).
+- [ ] Auditar `config/settings.py` — listar `os.getenv` y validar que `generate_env.py` cubre los reales (ya sin env.sample).
 
 ## Choices unificados
 

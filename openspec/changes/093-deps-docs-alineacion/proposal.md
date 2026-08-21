@@ -35,3 +35,14 @@ Auditoría de consistencia encontró deudas técnicas de alineación:
 - [ ] Choices de warning/estado unificados en un solo lugar.
 - [ ] Dependencias sin uso eliminadas.
 - [ ] `python manage.py check` y `python manage.py test` pasan.
+
+## Decisión de implementación (2026-08-21)
+
+La sección "Alineación env" se resolvió **eliminando `env.sample`** en lugar de alinearlo:
+`generate_env.py` es la única fuente de `.env` (evita el drift entre dos artefactos).
+El comando se rediseñó para preguntar primero si se usa correo/LDAP/DB y solo escribir
+las variables del camino elegido, sin bloques comentados (`# VAR=`). En desarrollo el correo
+ofrece backend de consola o servidor real; en producción el correo exige servidor real y la
+BD solo postgresql/mysql (nunca sqlite3). La regeneración pregunta `¿Regenerar?` con default
+**N** para no pisar un `.env` afinado a mano. Ver tasks.md (sección "Alineación env (generate_env UX)").
+Los ítems de versionado de Django y choices unificados siguen pendientes.
