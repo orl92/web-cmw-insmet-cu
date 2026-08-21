@@ -2,8 +2,8 @@ schema: spec-driven
 
 context: |
   Project: web-cmw-insmet-cu (Centro Meteorológico Provincial Camagüey)
-  Stack: Django 5.1.4 (pinned in requirements.txt; tech-stack.md now corrected
-         to 5.1.4 — no discrepancy),
+  Stack: Django 5.1.4 (pinned in requirements.txt; legacy tech-stack.md removed
+         in fresh-start — single source of truth is requirements.txt + AGENTS.md),
          DRF 3.17, drf-spectacular + sidecar, Python 3.12.
   Architecture: Monolith Django; apps live under apps/ (api, user_auth, core,
                 dashboard, commercial, meteo, home, publications); config/ holds
