@@ -95,6 +95,7 @@
 - **057 · Seguridad post-auditoría** — `LoginRequiredMixin`, `verify=True` en requests, excepciones específicas.
 - **065 · Settings y seguridad** — CORS headers para API REST. ⚠️ **Fase 2 pendiente**: rate limiting real (throttle classes; ver 088).
 - **088 · Seguridad crítica** — credenciales FTP movidas a `.env` + rotación manual documentada, rate limiting real (throttle classes + anon 100/h), auth en endpoints expuestos (ExcelJSON con login+permiso, ajax_pending_subscriptions con login+permiso+ownership, proxys de imagen con rate limit IP), fix ASGI (`'config.settings'`), open redirect saneado en login, backend de correo custom cableado para certificado autofirmado, `generate_env.py` interactivo (prod/dev + valores reales).
+- **089 · Operación en producción** — `whitenoise`/`gunicorn` en requirements (pinneados), `SECURE_PROXY_SSL_HEADER` + políticas modernas (referrer/coop) y eliminado `SECURE_BROWSER_XSS_FILTER` deprecado, tasks Huey registradas en `CoreConfig.ready()`, `DEBUG` default `False` + `get_database_config()` fail-closed (DB obligatoria en prod, fallback SQLite en dev), `gunicorn.sh`/`README` sin root (usuario `webcmp`), tests de configuración de producción.
 
 ### Performance
 - **058 · Performance y JS** — `select_related` en list views, `.catch()` en fetch, `print()` → logging, FontAwesome a Tabler Icons.
@@ -120,7 +121,6 @@
 
 ### 🔒 Bloque auditoría 2026 (nuevas)
 
-- **089 · Operación en producción** — whitenoise/gunicorn en requirements, `SECURE_PROXY_SSL_HEADER` + headers, registro de tasks Huey en `ready()`, fail-closed sin `.env`, gunicorn sin root.
 - **090 · Soft delete e integridad** — `SoftDeleteManager` (filtra `record_active`), cleanup de archivos en `hard_delete()`, Warning con soft delete, race conditions (facturas, SiteConfiguration singleton).
 - **091 · Newsletter signals wiring** — registrar señales de newsletter en `ready()`, unicidad `EmailRecipient`, tests de sync.
 - **092 · Performance y paginación** — N+1 en serializers API (Prefetch), paginación real en listados, índices, cache en context processor, templatetags.
