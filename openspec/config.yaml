@@ -17,10 +17,10 @@ context: |
       templates (djlint), precommit jobs.
   Git identity: Yoelvis Mariné Ramos <yoelvismr@gmail.com>.
   Network: proxy http://10.20.10.5:3128 (documented by orchestrator).
-  Existing SDD docs: NONE outside openspec/. Historical specs were removed
-      (fresh-start); only openspec/changes/ holds the 9 live pending features.
-      openspec/constitution/ (roadmap.md, tech-stack.md, mission.md) are PROJECT
-      docs carried from the old spec/constitution — NOT managed by gentle-ai.
+  Existing SDD docs: NONE. Historical specs and the old constitution/
+      (roadmap, tech-stack, mission) were removed in the fresh-start; only
+      openspec/changes/ holds the 9 live pending features. Project context lives
+      in AGENTS.md.
 
 rules:
   proposal:

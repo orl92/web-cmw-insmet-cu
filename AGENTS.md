@@ -119,7 +119,7 @@ Cada cambio nuevo sigue este flujo (layout **OpenSpec**; gentle-ai lee `openspec
 6. Marcar tasks `[x]` y commitear (incluir número y nombre del cambio)
 7. Al cerrar: `gentle-ai sdd-archive` promueve los specs y archiva el cambio
 
-> El bootstrap (`openspec/config.yaml`, `openspec/constitution/`, `.atl/skill-registry.md`) lo genera `gentle-ai` vía el skill `sdd-init`.
+> El bootstrap (`openspec/config.yaml`, `.atl/skill-registry.md`) lo genera `gentle-ai` vía el skill `sdd-init`.
 
 Antes de codificar, si hace falta clarificar, preguntar: ¿tipo de cambio? ¿app(s) afectada(s)? ¿cambios de DB? ¿URLs/permisos? ¿templates? ¿criterios de aceptación? ¿número de feature?
 
