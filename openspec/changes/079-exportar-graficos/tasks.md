@@ -1,4 +1,8 @@
 # Tasks — 079-exportar-graficos
 
-- [x] Migrado desde spec/features a openspec/changes (layout OpenSpec).
-- [ ] Revisar spec original y decidir pendientes (mantener/retomar).
+## Tasks
+
+- [ ] Anadir boton Exportar PNG por chart ApexCharts (static/dist/js/dashboard.js)
+- [ ] Incluir leyenda/titulo en la imagen exportada
+- [ ] Resolucion minima configurable
+- [ ] Verificar con tests

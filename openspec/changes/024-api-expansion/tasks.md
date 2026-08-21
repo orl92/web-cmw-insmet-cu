@@ -1,6 +1,0 @@
-- [ ] Crear serializers para EarlyWarning, TropicalCyclone, StormWarning, WeatherReport, ScientificPublication, Service
-- [ ] Crear views en api/views.py
-- [ ] Crear URL patterns en api/urls.py
-- [ ] Documentar en drf-spectacular
-- [ ] Tests de API
-- [ ] `python manage.py check && python manage.py test`

@@ -1,3 +1,0 @@
-- [ ] Verificar que alertas_activas.html no usa filtros de my_filters
-- [ ] Eliminar `{% load my_filters %}`
-- [ ] `python manage.py test dashboard`

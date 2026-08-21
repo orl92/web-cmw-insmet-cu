@@ -1,7 +1,0 @@
-- [x] Leer `publicaciones/pdf_template.html` como referencia
-- [x] Crear `pages/dashboard/tiempo/hoy/pdf_template.html`
-- [x] Crear `pages/dashboard/tiempo/manana/pdf_template.html`
-- [x] Crear `pages/dashboard/comentarios/tiempo/pdf_template.html`
-- [x] Crear `pages/dashboard/comentarios/nota_meteorologica/pdf_template.html`
-- [ ] Test: cada URL PDF retorna 200 + Content-Type: application/pdf (pendiente — Feature 012)
-- [x] `python manage.py check && python manage.py test`

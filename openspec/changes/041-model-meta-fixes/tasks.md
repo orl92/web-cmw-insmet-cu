@@ -1,5 +1,0 @@
-- [ ] Agregar `Meta.ordering` a SiteConfiguration, CompanySettings, Province, Town, Station, Forecasts, EmailRecipientList, EmailRecipient
-- [ ] Agregar `default_permissions = ()` y permisos custom a Contract.Meta
-- [ ] Agregar singleton enforcement a CompanySettings
-- [ ] `python manage.py makemigrations`
-- [ ] `python manage.py test`

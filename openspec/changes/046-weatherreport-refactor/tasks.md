@@ -1,5 +1,0 @@
-- [ ] Renombrar type → report_type en WeatherReport model
-- [ ] Actualizar referencias en forms, vistas, templates, API
-- [ ] Optimizar form_valid() (eliminar triple save)
-- [ ] `python manage.py makemigrations`
-- [ ] `python manage.py test`

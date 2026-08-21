@@ -1,4 +1,8 @@
 # Tasks — 078-tema-personalizado
 
-- [x] Migrado desde spec/features a openspec/changes (layout OpenSpec).
-- [ ] Revisar spec original y decidir pendientes (mantener/retomar).
+## Tasks
+
+- [ ] Definir paleta --tblr-* custom en CSS del proyecto
+- [ ] Adaptar dark mode a la paleta de marca
+- [ ] Logo/favicon del CMP Camaguey
+- [ ] Verificar con djlint --check y check

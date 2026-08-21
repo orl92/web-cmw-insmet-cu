@@ -1,9 +1,0 @@
-- [x] Agregar `huey.db` a `.gitignore`
-- [x] Remover imports no usados en `dashboard/tests/test_views.py`
-  - [x] `Invoice`, `Service`, `ServiceSubscription`, `StormWarning`
-- [x] Remover `.filter(pk=1).update(maintenance_mode=False)` redundante en:
-  - [x] `api/tests/test_api.py` (8 ocurrencias)
-  - [x] `dashboard/tests/test_views.py` (1 ocurrencia)
-  - [x] `accounts/tests/test_views.py` (1 ocurrencia)
-- [x] `python manage.py check && python manage.py test`
-- [x] Actualizar roadmap

@@ -1,7 +1,0 @@
-- [ ] Crear `dashboard/views/dashboard/dashboard.py` con DashboardView + _region_temp + serialize_sub + paid_direct/paid_via_items
-- [ ] Crear `dashboard/views/dashboard/excel_json.py` con ExcelJSONView + import pandas
-- [ ] Crear `dashboard/views/dashboard/maintenance.py` con MaintenanceModeToggleView
-- [ ] Agregar `.prefetch_related('user_set')` en query de grupos
-- [ ] Actualizar imports en `dashboard/urls.py`
-- [ ] `python manage.py check`
-- [ ] `python manage.py test dashboard`

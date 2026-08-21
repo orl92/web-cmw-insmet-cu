@@ -1,8 +1,0 @@
-- [ ] Crear `form_filters.py` con add_class, add_attrs, filename
-- [ ] Crear `meteo_filters.py` con todos los filtros meteorológicos
-- [ ] Crear `perm_filters.py` con filtros de permisos (sin in_group_permissions)
-- [ ] Crear `utils_filters.py` con get_dict_value, action_description, get_icon_for_action, time_since
-- [ ] Refactorizar `my_filters.py` a re-exportador (from .submodulo import *)
-- [ ] En `list.html`: parametrizar `id="example"` → `id="{{ list_id|default:'example' }}"`
-- [ ] `python manage.py check`
-- [ ] `python manage.py test dashboard`

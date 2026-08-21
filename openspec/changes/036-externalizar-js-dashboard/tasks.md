@@ -1,6 +1,0 @@
-- [ ] Agregar data-* attributes en dashboard.html para datos de charts
-- [ ] Crear `static/dist/js/dashboard.js` con lógica ApexCharts
-- [ ] Crear `static/dist/css/dashboard.css` con estilos de charts
-- [ ] Vincular estáticos en dashboard.html ({% static %})
-- [ ] `python manage.py collectstatic --link --no-input`
-- [ ] `python manage.py test dashboard`

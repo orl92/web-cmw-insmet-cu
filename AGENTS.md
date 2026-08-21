@@ -105,22 +105,21 @@ La lista `<available_skills>` del sistema es la fuente autoritativa de skills ca
 - `context7` — documentación actualizada de librerías/frameworks (Django, DRF, drf-spectacular, etc.). Usarlo siempre que se necesiten APIs, ejemplos o configuración de una librería; formato `use library /django/django`
 - `engram` — memoria persistente del proyecto (decisiones, descubrimientos, convenciones)
 
-## Flujo SDD
+## Flujo SDD (gentle-ai / OpenSpec)
 
-> **⚠️ REGLA INVIOLABLE**: No se puede saltar ningún paso de este flujo. Cada feature nueva debe pasar por **spec → plan → tasks → implementación → actualizar roadmap** antes de empezar la siguiente. Saltarse la actualización del roadmap rompe el flujo de trabajo y queda documentación huérfana.
+El proyecto ya existía antes de adoptar gentle-ai; la herramienta se usa para refinar y evolucionar el código de forma trazable. El código ya construido es el repo en sí; los **cambios activos** (work pendiente) viven en `openspec/changes/` como features OpenSpec. No se versiona historial de features previas.
 
-Cada feature sigue este flujo (layout **OpenSpec**; gentle-ai lee `openspec/changes/`):
+Cada cambio nuevo sigue este flujo (layout **OpenSpec**; gentle-ai lee `openspec/changes/`):
 
-1. Crear `openspec/changes/NNN-nombre/proposal.md` (motivación + solución + criterios de aceptación)
-2. Crear `design.md` (plan técnico) + `tasks.md` (checkboxes `- [ ]`/`- [x]`) + `specs/NNN-nombre/spec.md` (requisitos delta)
+1. `openspec/changes/NNN-nombre/proposal.md` (motivación + solución + criterios de aceptación)
+2. `design.md` (plan técnico) + `tasks.md` (checkboxes `- [ ]`/`- [x]`) + `specs/NNN-nombre/spec.md` (requisitos delta)
 3. Implementar un task a la vez
 4. Si hay cambios de modelo: `python manage.py makemigrations`
-5. Verificar: `python manage.py check && python manage.py test apps.<app>`
-6. Si no existe test para el cambio, crearlo
-7. Actualizar `openspec/constitution/roadmap.md` moviendo la feature a "Hecho"
-8. Commit descriptivo (incluir número y nombre de la feature)
+5. Verificar: `python manage.py check && python manage.py test apps.<app>`; crear test si falta
+6. Marcar tasks `[x]` y commitear (incluir número y nombre del cambio)
+7. Al cerrar: `gentle-ai sdd-archive` promueve los specs y archiva el cambio
 
-> Todas las features (001–093) viven en `openspec/changes/`; gentle-ai las lee desde ahí. El bootstrap de OpenSpec (`openspec/config.yaml`, `openspec/constitution/`, `.atl/skill-registry.md`) lo genera `gentle-ai` vía el skill `sdd-init`. El histórico de features generadas por auditoría quedó en `openspec/archive/CHANGELOG.md`.
+> El bootstrap (`openspec/config.yaml`, `openspec/constitution/`, `.atl/skill-registry.md`) lo genera `gentle-ai` vía el skill `sdd-init`.
 
 Antes de codificar, si hace falta clarificar, preguntar: ¿tipo de cambio? ¿app(s) afectada(s)? ¿cambios de DB? ¿URLs/permisos? ¿templates? ¿criterios de aceptación? ¿número de feature?
 

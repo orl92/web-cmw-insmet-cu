@@ -1,4 +1,8 @@
 # Tasks — 074-cache-redis
 
-- [x] Migrado desde spec/features a openspec/changes (layout OpenSpec).
-- [ ] Revisar spec original y decidir pendientes (mantener/retomar).
+## Tasks
+
+- [ ] Anadir redis y django-redis a requirements.txt
+- [ ] Configurar CACHES (Redis + fallback LocMemCache) en config/settings
+- [ ] Cachear fragments del dashboard y querysets calientes
+- [ ] Verificar con check y tests

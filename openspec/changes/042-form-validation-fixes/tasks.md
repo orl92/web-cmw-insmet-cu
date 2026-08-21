@@ -1,6 +1,0 @@
-- [ ] Corregir CustomerUpdateForm.clean_reeup() — validar unicidad excluyendo propio pk
-- [ ] Corregir CustomerUpdateForm.clean_nit() — validar unicidad excluyendo propio pk
-- [ ] Corregir CustomerForm.clean_account() — validar unicidad
-- [ ] Corregir InvoiceForm customer queryset — filtrar record_active=True
-- [ ] Corregir InvoiceItemForm service queryset — filtrar record_active=True
-- [ ] `python manage.py test`

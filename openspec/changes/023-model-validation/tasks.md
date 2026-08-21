@@ -1,8 +1,0 @@
-- [ ] Agregar clean() a Forecasts
-- [ ] Agregar clean() a ServiceSubscription
-- [ ] Agregar clean() a Invoice
-- [ ] Agregar clean() a InvoiceItem
-- [ ] Agregar clean() a Customer (validación REEUP/NIT)
-- [ ] Verificar que forms llaman full_clean()
-- [ ] Tests para cada validación
-- [ ] `python manage.py check && python manage.py test`

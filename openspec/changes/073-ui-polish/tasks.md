@@ -1,4 +1,9 @@
 # Tasks — 073-ui-polish
 
-- [x] Migrado desde spec/features a openspec/changes (layout OpenSpec).
-- [ ] Revisar spec original y decidir pendientes (mantener/retomar).
+## Tasks
+
+- [ ] Cablear toasts unificados (templates/includes/base/utils.html) en todas las vistas que los necesiten
+- [ ] Anadir spinner de carga en DataTables (config de loading/buttonspinner)
+- [ ] Anadir spinner inline en botones POST de formularios comerciales
+- [ ] Hacer tablas comerciales responsivas (<768px, table-responsive)
+- [ ] Verificar con python manage.py test y djlint --check

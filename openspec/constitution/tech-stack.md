@@ -3,7 +3,7 @@
 ## Tecnologías
 
 - **Lenguaje:** Python 3.12 (CI y ruff apuntan a `py312`)
-- **Framework:** Django 5.2, Django REST Framework 3.17, drf-spectacular + drf-spectacular-sidecar (Swagger UI, Redoc)
+- **Framework:** Django 5.1.4 (pinneado en requirements.txt; upgrade a 5.2 en evaluación), Django REST Framework 3.17, drf-spectacular + drf-spectacular-sidecar (Swagger UI, Redoc)
 - **Base de datos:** SQLite (desarrollo), PostgreSQL o MySQL (producción con SSL configurable)
 - **UI:** Tabler (Bootstrap 5) mediante Django Templates
 - **PDF:** xhtml2pdf, pdfkit, pyHanko, reportlab (requiere `libcairo2-dev` en CI)
@@ -83,4 +83,4 @@ Skills instalados en `~/.agents/skills/`. Se cargan según la tarea vía `using-
 - No exponer `.env`, `db.sqlite3`, o `media/` en el repositorio
 - No eliminar `FileHandlerMixin` de modelos que usan campos FileField/ImageField (pérdida de datos)
 - No cambiar `default_permissions = ()` en modelos sin redefinir los 4 permisos custom
-- No saltarse el flujo SDD (spec → plan → tasks → implementación → roadmap)
+- No saltarse el flujo SDD (proposal → design → tasks → implementación → archive en openspec)

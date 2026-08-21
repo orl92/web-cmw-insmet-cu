@@ -1,9 +1,0 @@
-- [ ] Verificar referencias activas a modelos WeatherToday, WeatherTomorrow, WeatherCommentary, WeatherNote
-- [ ] Eliminar modelos viejos de dashboard/models.py
-- [ ] Verificar URLs activas de comentarios/
-- [ ] Eliminar archivos de views de comentarios/
-- [ ] Eliminar templates huerfanas si existen
-- [ ] Reemplazar print() con logger en email_recipient/views.py
-- [ ] Eliminar import timedelta no usado en pronosticos/views.py
-- [ ] Eliminar getSeaConditionTitle() duplicado en home-forecast.js
-- [ ] `python manage.py test`
