@@ -196,6 +196,12 @@ server {
 }
 ```
 
+> **Cookies seguras tras el proxy:** Django ahora lee `SECURE_PROXY_SSL_HEADER`
+> (`X-Forwarded-Proto`) en producción, por lo que `request.is_secure()` se
+> resuelve como `True` detrás de Nginx y las cookies de sesión/CSRF seguras se
+> envían correctamente. Mantenga `proxy_set_header X-Forwarded-Proto $scheme;`
+> en la configuración de Nginx (arriba); no lo elimine.
+
 #### Comentar el contenido de:
 
 ```ini
@@ -217,10 +223,13 @@ NAME="webcmp"
 DJANGODIR=$(cd `dirname $0` && pwd)
 SOCKFILE=/tmp/gunicorn-webcmp.sock
 LOGDIR=${DJANGODIR}/logs/gunicorn.log
-USER=root
-GROUP=root
+# El servicio NO debe correr como root. El usuario dedicado (webcmp) debe ser
+# el propietario del venv (o ejecutar ./gunicorn.sh como ese usuario) para poder
+# escribir el socket y servir estáticos/media.
+USER=${GUNICORN_USER:-webcmp}
+GROUP=${GUNICORN_GROUP:-webcmp}
 NUM_WORKERS=5
-DJANGO_WSGI_MODULE=core.wsgi
+DJANGO_WSGI_MODULE=config.wsgi
 
 rm -frv $SOCKFILE
 
@@ -237,6 +246,16 @@ exec ${DJANGODIR}/.venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
   --log-file=$LOGDIR
 ```
 
+> **Usuario no-root:** cree el usuario dedicado y asígnele la propiedad de los
+> directorios que Gunicorn necesita escribir:
+> ```bash
+> useradd -r -s /bin/false webcmp
+> chown -R webcmp:webcmp /var/www/web-cmw-insmet-cu/.venv \
+>   /var/www/web-cmw-insmet-cu/media \
+>   /var/www/web-cmw-insmet-cu/staticfiles \
+>   /var/www/web-cmw-insmet-cu/logs
+> ```
+
 ## 3. Configurar Supervisor
 
 ```bash
@@ -249,7 +268,7 @@ sudo nano /etc/supervisor/conf.d/webcmp.conf
 [program:webcmp]
 command=/var/www/web-cmw-insmet-cu/gunicorn.sh
 directory=/var/www/web-cmw-insmet-cu
-user=root
+user=webcmp
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/webcmp.err.log
@@ -272,7 +291,7 @@ Agregar un segundo programa en `/etc/supervisor/conf.d/webcmp.conf`:
 [program:webcmp-huey]
 command=/var/www/web-cmw-insmet-cu/.venv/bin/huey_consumer.py config.huey.huey
 directory=/var/www/web-cmw-insmet-cu
-user=root
+user=webcmp
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/webcmp-huey.err.log

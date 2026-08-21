@@ -3,8 +3,11 @@ NAME="webcmp"
 DJANGODIR=$(cd `dirname $0` && pwd)
 SOCKFILE=/tmp/gunicorn-webcmp.sock
 LOGDIR=${DJANGODIR}/logs/gunicorn.log
-USER=root
-GROUP=root
+# El usuario del servicio NO debe ser root. El usuario dedicado (p.ej. webcmp)
+# debe ser el propietario del venv, media/, staticfiles/ y logs/ para poder
+# escribir el socket y servir estáticos.
+USER=${GUNICORN_USER:-webcmp}
+GROUP=${GUNICORN_GROUP:-webcmp}
 NUM_WORKERS=5
 DJANGO_WSGI_MODULE=config.wsgi
 

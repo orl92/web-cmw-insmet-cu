@@ -18,7 +18,7 @@ load_dotenv(BASE_DIR / '.env')
 
 IS_PRODUCTION = 'PRODUCTION' in os.environ
 
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 
 def decrypt_secret_key(encrypted_secret_key, encryption_key):
@@ -47,14 +47,16 @@ if SECRET_KEY is None:
 
 # Security
 if not DEBUG:
-    SECURE_SSL_REDIRECT = False
-    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_SSL_REDIRECT = False  # Nginx termina TLS y redirige a HTTPS; Django no lo hace.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_REFERRER_POLICY = 'same-origin'
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 
 ALLOWED_HOSTS = [
     h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()
@@ -143,13 +145,25 @@ TEMPLATES = [
 
 # Database
 def get_database_config():
-    if DEBUG:
+    if IS_PRODUCTION and 'DB_ENGINE' not in os.environ:
+        raise ImproperlyConfigured(
+            'Falta la configuración de la base de datos. Defina DB_ENGINE (y DB_NAME, '
+            'DB_USER, DB_HOST, DB_PASS) en el archivo .env. '
+            'Ejecute `python manage.py generate_env --production` para generarlo.'
+        )
+
+    if DEBUG or 'DB_ENGINE' not in os.environ:
         return {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
                 'NAME': BASE_DIR / 'db.sqlite3',
             }
         }
+
+    if not all(os.getenv(k) for k in ('DB_NAME', 'DB_USER', 'DB_HOST', 'DB_PASS')):
+        raise ImproperlyConfigured(
+            'Para producción defina DB_NAME, DB_USER, DB_HOST y DB_PASS en el archivo .env.'
+        )
 
     db_engine = os.getenv('DB_ENGINE', '').strip().lower()
     db_config = {

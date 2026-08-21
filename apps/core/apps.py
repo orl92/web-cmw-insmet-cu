@@ -7,4 +7,4 @@ class CoreConfig(AppConfig):
     verbose_name = 'Configuración'
 
     def ready(self):
-        pass
+        pass  # registra las tareas Huey al arrancar la app
