@@ -11,8 +11,6 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import CreateView, ListView, UpdateView, View
 
 from apps.core.utils import log_action
@@ -280,8 +278,9 @@ class ForecastDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return redirect('meteo:pronostico_list')
 
 
-@method_decorator(csrf_exempt, name='dispatch')
-class ExcelJSONView(View):
+class ExcelJSONView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'meteo.change_forecast'
+
     def post(self, request):
         excel = request.FILES.get('excelFile')
         if not excel:

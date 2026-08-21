@@ -11,7 +11,7 @@
 3. **Auth endpoints** — `ExcelJSONView` con LoginRequired + permiso; `ajax_pending_subscriptions` con login + ownership check; `django-ratelimit` en proxys/imágenes (o throttle manual por IP en DescargarGifView).
 4. **ASGI** — typo fix de una línea.
 5. **Open redirect** — helper de validación de `next` en login.
-6. **Email backend** — eliminar `config/custom_email_backend.py`, quitar `CUSTOM_EMAIL_BACKEND` de `generate_env.py`, confirmar `EMAIL_USE_TLS=True` en settings.
+6. **Email backend (certificado autofirmado)** — mantener `config/custom_email_backend.py` (el correo del proyecto usa certificado autofirmado); `settings.py` ya lee `EMAIL_BACKEND` desde env; `generate_env.py` lo escribe apuntando al backend custom cuando el correo es autofirmado. `EMAIL_USE_TLS=True` se mantiene. Además, `generate_env.py` se vuelve interactivo (prod/dev + valores reales).
 
 ## Riesgos
 

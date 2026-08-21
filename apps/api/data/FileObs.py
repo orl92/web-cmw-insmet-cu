@@ -18,11 +18,12 @@ class FileObs:
     _download_lock = threading.Lock()
 
     def __init__(self):
-        # Configuración
-        self.HOST = '10.0.100.224'
-        self.USER = 'estaciones'
-        self.PASS = 'CasaB2024*'
-        self.PORT = '990'
+        from django.conf import settings
+
+        self.HOST = settings.FTP_OBS_HOST
+        self.USER = settings.FTP_OBS_USER
+        self.PASS = settings.FTP_OBS_PASS
+        self.PORT = settings.FTP_OBS_PORT
         self.REMOTE_DIR = '/Reportes Procesados'
         self.TEMP_DIR = './media/temp'
         self.FINAL_DIR = './media/obs'

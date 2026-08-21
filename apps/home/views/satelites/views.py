@@ -1,7 +1,10 @@
 import requests
 from django.http import HttpResponse, HttpResponseForbidden
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import TemplateView
+
+from apps.core.utils import rate_limit_ip
 
 # Create your views here.
 
@@ -17,6 +20,7 @@ class SateliteView(TemplateView):
         return context
 
 
+@method_decorator(rate_limit_ip(limit=300, window=3600, key_prefix='rl_proxy_sat'), name='dispatch')
 class ProxyImageView(View):
     ALLOWED_BASE_URL = 'https://tropic.ssec.wisc.edu/'
     ALLOWED_PATHS = [

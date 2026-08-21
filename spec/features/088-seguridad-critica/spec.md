@@ -9,7 +9,7 @@ Auditoría de seguridad encontró problemas activos y explotables:
 3. **Endpoints públicos sin auth**: `ExcelJSONView` (`apps/meteo/views/forecast.py:283`, `csrf_exempt`, parsea Excel arbitrario sin login), `ajax_pending_subscriptions` (`apps/commercial/views/invoices.py:405`, fuga de datos de cualquier cliente sin login), proxys de imagen/GIF (`apps/home/views/modelos/views.py` y `satelites/views.py:20`), `DescargarGifView` (baja 25 imágenes por request).
 4. **Bug ASGI**: `config/asgi.py:14` usa `'config .settings'` (espacio) → cualquier deploy ASGI falla.
 5. **Open redirect** en `apps/user_auth/views/login.py:23-25` (`next` sin validación de host permitido).
-6. **Backend de correo desactiva verificación TLS** (`config/custom_email_backend.py:18-19`, `ssl.CERT_NONE`) y además es dead code (settings nunca lee `CUSTOM_EMAIL_BACKEND`).
+6. **Backend de correo para certificado autofirmado** — `config/custom_email_backend.py` (`CustomSTARTTLSBackend`) desactiva la verificación TLS (`ssl.CERT_NONE`) porque el servidor de correo del proyecto usa un certificado autofirmado. NO es dead code: `config/settings.py` lee `EMAIL_BACKEND` desde env, y `generate_env.py` lo escribe apuntando al backend custom cuando el correo es autofirmado. El hallazgo original Q lo marcó como dead code porque el `.env` no seteaba `EMAIL_BACKEND`.
 
 ## Solución
 
@@ -36,8 +36,10 @@ Auditoría de seguridad encontró problemas activos y explotables:
 ### 5. Open redirect
 - Validar el parámetro `next` contra el host actual (o lista `ALLOWED_HOSTS`): solo permitir rutas relativas que no empiecen con `//` ni contengan `://`.
 
-### 6. Backend de correo
-- Decidir: conectar `CUSTOM_EMAIL_BACKEND` a settings (si se quiere) o **eliminar el archivo** y su variable de `generate_env.py`. Recomendación: eliminar (es dead code y desactiva TLS). El backend SMTP estándar de Django con `EMAIL_USE_TLS=True` cubre el caso.
+### 6. Backend de correo (certificado autofirmado)
+- Mantener `config/custom_email_backend.py` (`CustomSTARTTLSBackend`): el servidor de correo del proyecto usa certificado autofirmado, por lo que se requiere desactivar la verificación TLS.
+- `config/settings.py` ya lee `EMAIL_BACKEND` desde env; `generate_env.py` (modo interactivo) lo escribe apuntando al backend custom cuando el correo es autofirmado.
+- `EMAIL_USE_TLS=True` se mantiene en settings.
 
 ## Rate limiting para endpoints públicos
 

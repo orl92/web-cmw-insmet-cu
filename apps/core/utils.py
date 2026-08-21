@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 
 from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
@@ -50,6 +51,28 @@ def log_action(user, obj, action_flag, message):
         action_flag=action_flag,
         change_message=message,
     )
+
+
+def rate_limit_ip(limit=300, window=3600, key_prefix='rl'):
+    """Limita requests por IP usando el cache de Django (LocMemCache por defecto)."""
+
+    def decorator(view):
+        @wraps(view)
+        def wrapper(request, *args, **kwargs):
+            from django.core.cache import cache
+            from django.http import HttpResponse
+
+            ip = request.META.get('REMOTE_ADDR', 'unknown')
+            cache_key = f'{key_prefix}:{ip}'
+            count = cache.get(cache_key, 0)
+            if count >= limit:
+                return HttpResponse('Too Many Requests', status=429)
+            cache.set(cache_key, count + 1, timeout=window)
+            return view(request, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def get_img_path(weather_code, period='afternoon'):

@@ -10,10 +10,12 @@ from urllib.parse import unquote, urlencode, urlparse
 import requests
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import TemplateView
 from PIL import Image
 
+from apps.core.utils import rate_limit_ip
 from apps.home.data.plot_generators import generate_skewt
 from apps.home.forms import GifDownloadForm, MeteoDataForm, MeteogramForm, SoundingForm
 from apps.meteo.models import Town
@@ -344,6 +346,7 @@ class SoundingView(TemplateView):
             )
 
 
+@method_decorator(rate_limit_ip(limit=300, window=3600, key_prefix='rl_proxy'), name='dispatch')
 class ImageProxyModeloView(View):
     """
     Vista basada en clase para proxy de imágenes que evita problemas de CORS.
@@ -492,6 +495,7 @@ class ImageProxyModeloView(View):
         return {}
 
 
+@method_decorator(rate_limit_ip(limit=60, window=3600, key_prefix='rl_gif'), name='dispatch')
 class DescargarGifView(View):
     """
     Vista para descargar GIF animado de datos meteorológicos

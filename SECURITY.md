@@ -37,6 +37,18 @@ Se consideran dentro del alcance: el código del repositorio (`apps/`, `config/`
 
 **Fuera de alcance:** configuraciones del servidor (Nginx, Gunicorn, Supervisor), credenciales de producción, y vulnerabilidades en infraestructura de terceros (GitHub Actions, hosts).
 
+## Rotación de credenciales FTP (FileObs)
+
+Las credenciales FTP de observaciones (`FTP_OBS_HOST`, `FTP_OBS_USER`, `FTP_OBS_PASS`) estuvieron **versionadas en el historial de git** (en `apps/api/data/FileObs.py`). Ya no viven en el código, pero se consideran **comprometidas** por haber estado expuestas.
+
+Pasos de rotación obligatoria:
+
+1. Cambiar la contraseña en el servidor FTP de observaciones (host definido en `FTP_OBS_HOST`) cuando haya acceso al servidor.
+2. Actualizar `FTP_OBS_PASS` (y demás `FTP_OBS_*`) en el `.env` de producción.
+3. Reiniciar el worker/consumidor que usa `FileObs` para que tome la nueva configuración.
+
+> No incluir la contraseña actual en documentación versionada ni en commits.
+
 ## Buenas prácticas del proyecto
 
 - El CI ejecuta `pip-audit` (vulnerabilidades de dependencias) y `bandit` (SAST estático) en cada push/PR.

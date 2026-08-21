@@ -272,8 +272,18 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
     'DEFAULT_THROTTLE_RATES': {'anon': '100/hour', 'user': '1000/hour'},
 }
+
+# FTP de observaciones (FileObs)
+FTP_OBS_HOST = os.getenv('FTP_OBS_HOST')
+FTP_OBS_USER = os.getenv('FTP_OBS_USER')
+FTP_OBS_PASS = os.getenv('FTP_OBS_PASS')
+FTP_OBS_PORT = os.getenv('FTP_OBS_PORT', '990')
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Centro Meteorológico Camagüey',

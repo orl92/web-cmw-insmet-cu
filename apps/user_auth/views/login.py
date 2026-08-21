@@ -11,6 +11,15 @@ LOGIN_ACTION = 4
 LOGOUT_ACTION = 5
 
 
+def _safe_next_url(next_url):
+    """Solo permite rutas relativas internas; bloquea open redirect."""
+    if not next_url:
+        return ''
+    if next_url.startswith('//') or '://' in next_url:
+        return ''
+    return next_url
+
+
 class LoginFormView(LoginView):
     template_name = 'pages/login/sign_in.html'
 
@@ -22,7 +31,7 @@ class LoginFormView(LoginView):
     def get_success_url(self):
         next_url = self.request.POST.get('next') or self.request.GET.get('next')
         if next_url:
-            return next_url
+            return _safe_next_url(next_url)
         if self.request.user.is_staff:
             return reverse_lazy('dashboard:index')
         return reverse_lazy('home:index')

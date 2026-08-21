@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
+from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin,
@@ -402,13 +403,18 @@ class ResendInvoiceEmailView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return redirect('commercial:factura_list')
 
 
+@login_required
+@permission_required('commercial.view_servicesubscription')
 def ajax_pending_subscriptions(request):
     customer_id = request.GET.get('customer')
     if not customer_id:
         return HttpResponse('')
-    subs = ServiceSubscription.objects.filter(
+    qs = ServiceSubscription.objects.filter(
         customer_id=customer_id, payment_status__in=['requested', 'pending'], record_active=True
     ).select_related('service')
+    if not request.user.is_staff and not request.user.is_superuser:
+        qs = qs.filter(customer__user=request.user)
+    subs = qs
     if not subs.exists():
         return HttpResponse('<p class="text-muted">No hay suscripciones pendientes.</p>')
     html = ''
