@@ -2,8 +2,8 @@ schema: spec-driven
 
 context: |
   Project: web-cmw-insmet-cu (Centro Meteorológico Provincial Camagüey)
-  Stack: Django 5.1.4 (pinned in requirements.txt; AGENTS.md and
-         spec/constitution/tech-stack.md claim 5.2 — DISCREPANCY to verify),
+  Stack: Django 5.1.4 (pinned in requirements.txt; tech-stack.md now corrected
+         to 5.1.4 — no discrepancy),
          DRF 3.17, drf-spectacular + sidecar, Python 3.12.
   Architecture: Monolith Django; apps live under apps/ (api, user_auth, core,
                 dashboard, commercial, meteo, home, publications); config/ holds
@@ -17,8 +17,10 @@ context: |
       templates (djlint), precommit jobs.
   Git identity: Yoelvis Mariné Ramos <yoelvismr@gmail.com>.
   Network: proxy http://10.20.10.5:3128 (documented by orchestrator).
-  Existing SDD docs: spec/features (87 historical specs) + spec/constitution
-      (roadmap.md, tech-stack.md, mission.md) — INTENTIONALLY UNTOUCHED by init.
+  Existing SDD docs: NONE outside openspec/. Historical specs were removed
+      (fresh-start); only openspec/changes/ holds the 9 live pending features.
+      openspec/constitution/ (roadmap.md, tech-stack.md, mission.md) are PROJECT
+      docs carried from the old spec/constitution — NOT managed by gentle-ai.
 
 rules:
   proposal:
@@ -73,7 +75,7 @@ testing:
     - unit: apps/*/tests/test_*.py (Django TestCase)
     - integration: apps/api/tests/test_api.py (DRF APITestCase)
   gotchas:
-    - "Django pinned to 5.1.4 in requirements.txt but AGENTS.md/tech-stack.md claim 5.2 — verify before assuming 5.2 APIs."
+    - "Django is pinned to 5.1.4 in requirements.txt (tech-stack.md corrected); do not assume 5.2 APIs."
     - "App test labels must be full dotted path (apps.meteo); short label no longer resolves in Django 5.2+."
     - "Migrations are NOT versioned (.gitignore); always run makemigrations in setup."
     - "pre-commit hooks download from PyPI on first run; use `pre-commit install --install-hooks` (not bare `pre-commit install`) behind proxy."
