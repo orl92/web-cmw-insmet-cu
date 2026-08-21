@@ -63,7 +63,7 @@ El job `test` de CI NO corre la suite completa en cada PR (tarda demasiado):
 | `apps/meteo/` | Forecasts/ForecastRegions/ForecastExtendedDay, Warning (con warning_type), WeatherReport (today/tomorrow/commentary/note), Province, Town, Station |
 | `apps/home/` | Páginas públicas: tiempo, modelos, satélites, servicios, institución |
 | `apps/publications/` | ScientificPublication, Author — publicaciones científicas |
-| `spec/` | SDD features en `features/NNN-nombre/` con `{spec,plan,tasks}.md` |
+| `openspec/changes/` | SDD features (OpenSpec); gentle-ai lee este directorio |
 
 ## Convenciones
 
@@ -117,10 +117,10 @@ Cada feature sigue este flujo (layout **OpenSpec**; gentle-ai lee `openspec/chan
 4. Si hay cambios de modelo: `python manage.py makemigrations`
 5. Verificar: `python manage.py check && python manage.py test apps.<app>`
 6. Si no existe test para el cambio, crearlo
-7. Actualizar `spec/constitution/roadmap.md` moviendo la feature a "Hecho"
+7. Actualizar `openspec/constitution/roadmap.md` moviendo la feature a "Hecho"
 8. Commit descriptivo (incluir número y nombre de la feature)
 
-> El historial de features anteriores (001–087) vive en `openspec/archive/spec-features/` (solo lectura). Las features activas van en `openspec/changes/`. El bootstrap de OpenSpec (`openspec/config.yaml`, `.atl/skill-registry.md`) lo genera `gentle-ai` vía el skill `sdd-init`.
+> Todas las features (001–093) viven en `openspec/changes/`; gentle-ai las lee desde ahí. El bootstrap de OpenSpec (`openspec/config.yaml`, `openspec/constitution/`, `.atl/skill-registry.md`) lo genera `gentle-ai` vía el skill `sdd-init`. El histórico de features generadas por auditoría quedó en `openspec/archive/CHANGELOG.md`.
 
 Antes de codificar, si hace falta clarificar, preguntar: ¿tipo de cambio? ¿app(s) afectada(s)? ¿cambios de DB? ¿URLs/permisos? ¿templates? ¿criterios de aceptación? ¿número de feature?
 
