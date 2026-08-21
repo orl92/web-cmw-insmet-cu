@@ -18,6 +18,11 @@ class Command(BaseCommand):
         parser.add_argument(
             '--development', action='store_true', help='Desarrollo (no interactivo)'
         )
+        parser.add_argument(
+            '--rotate-keys',
+            action='store_true',
+            help='Regenera SECRET_KEY/ENCRYPTION_KEY (usar si estan comprometidos)',
+        )
 
     # ------------------------------------------------------------------
     # Utilidad de entrada interactiva (con fallback a default en EOF)
@@ -87,11 +92,34 @@ class Command(BaseCommand):
             production = choice.strip() == '1'
             interactive = True
 
-        if self.existing.get('SECRET_KEY') and self.existing.get('ENCRYPTION_KEY'):
-            # Reuse existing keys so sessions/cookies are not invalidated
+        # Rotación de claves: por defecto se conservan (no invalidar sesiones).
+        # Si están comprometidas, rotar (prompt interactivo o --rotate-keys).
+        rotate_keys = bool(options.get('rotate_keys'))
+        has_keys = bool(self.existing.get('SECRET_KEY') and self.existing.get('ENCRYPTION_KEY'))
+        if interactive and has_keys:
+            rotate_keys = self.prompt_bool(
+                '¿Rotar (regenerar) SECRET_KEY/ENCRYPTION_KEY? (solo si estan comprometidos)',
+                default=False,
+            )
+
+        if has_keys and not rotate_keys:
+            # Conservar claves existentes para no invalidar sesiones/cookies
             encrypted_secret_key = self.existing['SECRET_KEY']
             encryption_key = self.existing['ENCRYPTION_KEY']
         else:
+            if rotate_keys:
+                self.stdout.write(
+                    self.style.WARNING(
+                        '🔄 Rotando SECRET_KEY/ENCRYPTION_KEY. Sesiones y cookies '
+                        'firmadas quedarán invalidadas (esperado al comprometerse).'
+                    )
+                )
+            elif self.existing:
+                self.stdout.write(
+                    self.style.WARNING(
+                        '⚠️ No se encontraron SECRET_KEY/ENCRYPTION_KEY válidos; se generan nuevos.'
+                    )
+                )
             secret_key = get_random_secret_key()
             encryption_key = Fernet.generate_key()
             encrypted_secret_key = Fernet(encryption_key).encrypt(secret_key.encode()).decode()
