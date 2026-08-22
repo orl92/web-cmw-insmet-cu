@@ -8,19 +8,26 @@ Covers change 015-home-templates-ui:
 - Phase 2: layouts/avisos.html delegates previews and modal to the shared
   partials with unique per-warning container ids, drops the `.markdown` card
   body and duplicate <h1>, and keeps no inline viewer init script.
+- Phase 3: pages/home/institution/publications.html renders each publication
+  preview through the shared partial (unique ids + data-pdf-url), drops its
+  manual `new PDFViewer(...)` init loop, keeps exactly one shared modal with
+  the download fallback, and its "Ver PDF" trigger carries data-pdf-url +
+  data-pdf-title for manager delegation.
 """
 
 import re
-from datetime import timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.loader import render_to_string
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.meteo.models import Warning as MeteoWarning
+from apps.publications.models import Author, ScientificPublication
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PDF_VIEWER_JS = REPO_ROOT / 'static' / 'dist' / 'js' / 'pdf-viewer.js'
@@ -258,3 +265,81 @@ class AvisosLayoutSharedPartialTests(TestCase):
         # library loads + workerSrc config must remain for the viewer to work.
         self.assertNotIn('Inicializando visores de PDF para avisos', html)
         self.assertIn('dist/js/pdf-viewer.js', html)
+
+
+class PublicationsSharedPartialTests(TestCase):
+    """Tasks 3.1-3.2 — publications.html delegates to the shared partials.
+
+    Spec scenario "Publications preview auto-initializes": each preview
+    container carries data-pdf-url (unique ids via preview_suffix) and no
+    `new PDFViewer({` init loop remains; the manager opens the modal from
+    the trigger's data-pdf-url / data-pdf-title via show.bs.modal.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.author = Author.objects.create(first_name='Ada', last_name='Lovelace')
+
+    def _create_publication(self, title='Paper A', with_pdf=True):
+        pdf = None
+        if with_pdf:
+            pdf = SimpleUploadedFile('test.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        return ScientificPublication.objects.create(
+            title=title,
+            author=self.author,
+            summary='Resumen de la publicación',
+            publication_date=date.today(),
+            pdf=pdf,
+        )
+
+    def _get_page(self):
+        return self.client.get(reverse('home:publications'))
+
+    def test_preview_renders_through_partial_with_data_pdf_url(self):
+        pub = self._create_publication()
+        response = self._get_page()
+        self.assertContains(response, 'id="pdfPreviewContainer-1"')
+        self.assertContains(response, 'id="pdfPages-1"')
+        self.assertContains(response, f'data-pdf-url="{pub.pdf.url}"')
+
+    def test_each_publication_gets_its_own_preview_container(self):
+        self._create_publication(title='Paper A')
+        self._create_publication(title='Paper B')
+        response = self._get_page()
+        self.assertContains(response, 'id="pdfPreviewContainer-1"')
+        self.assertContains(response, 'id="pdfPreviewContainer-2"')
+
+    def test_only_publications_with_pdf_render_a_preview_container(self):
+        pub = self._create_publication(title='Con PDF')
+        self._create_publication(title='Sin PDF', with_pdf=False)
+        html = self._get_page().content.decode()
+        self.assertEqual(1, html.count('pdfPreviewContainer'))
+        self.assertIn(f'data-pdf-url="{pub.pdf.url}"', html)
+
+    def test_no_per_template_viewer_init_script(self):
+        self._create_publication()
+        html = self._get_page().content.decode()
+        self.assertNotIn('new PDFViewer({', html)
+        # Library loads + workerSrc config must remain for the viewer to work.
+        self.assertIn('dist/js/pdf-viewer.js', html)
+        self.assertIn('pdf.worker.min.js', html)
+
+    def test_modal_comes_from_shared_partial_exactly_once(self):
+        self._create_publication()
+        html = self._get_page().content.decode()
+        # Task 3.2: exactly one modal — the shared partial with its
+        # Phase 1 download fallback link ("Descargar PDF").
+        self.assertEqual(1, html.count('id="pdfModal"'))
+        self.assertIn('id="modalDownloadLink"', html)
+        self.assertIn('Descargar PDF', html)
+
+    def test_ver_pdf_trigger_carries_url_and_title(self):
+        pub = self._create_publication(title='Deep Learning Paper')
+        html = self._get_page().content.decode()
+        # The manager's show.bs.modal handler reads both attributes to
+        # auto-load the modal (loadNewPDF), so the trigger needs both.
+        pattern = (
+            rf'data-pdf-url="{re.escape(pub.pdf.url)}"'
+            rf'[^>]*data-pdf-title="Deep Learning Paper"'
+        )
+        self.assertRegex(html, pattern)

@@ -49,10 +49,10 @@ Chain strategy: chained
 
 ## Phase 3: Publicaciones  (~40 lines)
 
-- [ ] 3.1 In `apps/home/templates/pages/home/institution/publications.html` replace
+- [x] 3.1 In `apps/home/templates/pages/home/institution/publications.html` replace
       the manual `new PDFViewer({…}).init()` loop (lines 101-107) and inline preview
       markup (lines 34-42) with `pdf_preview.html` (container carries `data-pdf-url`).
-- [ ] 3.2 Keep the existing `pdf_modal.html` include (line 88); ensure the
+- [x] 3.2 Keep the existing `pdf_modal.html` include (line 88); ensure the
       download-fallback link renders.
 
 ## Phase 4: Reportes (today / tomorrow / weather / note)  (~120 lines)
