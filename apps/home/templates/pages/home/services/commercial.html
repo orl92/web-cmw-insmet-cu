@@ -1,5 +1,8 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
+{% block extrahead %}
+  <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}" />
+{% endblock %}
 {% block content %}
   <div class="col-md">
     <div class="row row-cards">
@@ -18,8 +21,8 @@
                   <div class="card-body ps-0">
                     <div class="row">
                       <div class="col">
-                        <h3 class="mb-0"><a>{{ subscription.service.title }}</a></h3>
-                        <p class="mb-0 text-secondary"><a>{{ subscription.service.summary }}</a></p>
+                        <h3 class="mb-0">{{ subscription.service.title }}</h3>
+                        <p class="mb-0 text-secondary">{{ subscription.service.summary }}</p>
                       </div>
                     </div>
                     <div class="row">
@@ -92,58 +95,57 @@
   </div>
   <!-- Paginación (si existe) -->
   {% if is_paginated %}
-    <div class="pagination">
-      <span class="step-links">
+    <div class="d-flex justify-content-center">
+      <ul class="pagination">
         {% if page_obj.has_previous %}
-          <a href="?page=1">&laquo; primera</a>
-          <a href="?page={{ page_obj.previous_page_number }}">anterior</a>
+          <li class="page-item">
+            <a class="page-link" href="?page=1" aria-label="Primera">
+              <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.previous_page_number }}"
+               aria-label="Página anterior">
+              <span aria-hidden="true">&lsaquo;</span>
+            </a>
+          </li>
         {% endif %}
-        <span class="current">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.</span>
+        {% for page_number in page_obj.paginator.page_range %}
+          {% if page_number == page_obj.number %}
+            <li class="page-item active" aria-current="page">
+              <span class="page-link">{{ page_number }}</span>
+            </li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_number }}">{{ page_number }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
         {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}">siguiente</a>
-          <a href="?page={{ page_obj.paginator.num_pages }}">última &raquo;</a>
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.next_page_number }}"
+               aria-label="Página siguiente">
+              <span aria-hidden="true">&rsaquo;</span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page_obj.paginator.num_pages }}"
+               aria-label="Última">
+              <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+          </li>
         {% endif %}
-      </span>
+      </ul>
     </div>
   {% endif %}
   {% include 'includes/home/pdf_modal.html' with modal_title='PDF - Servicio Comercial' %}
 {% endblock %}
 {% block extrajs %}
-  <!-- Incluir PDF.js local -->
+  <!-- Librerías del visor PDF; el manager se auto-inicializa en DOMContentLoaded -->
   <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
-  <!-- Incluir archivos separados -->
-  <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}" />
   <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";
-
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof PDFViewer !== 'undefined') {
-            window.viewer = new PDFViewer({
-                modalPdfUrl: '',
-                modalPagesId: 'modalPdfPages',
-                modalPageInfoId: 'modalPageInfo',
-                modalZoomLevelId: 'modalZoomLevel',
-                modalPrevPageId: 'modalPrevPage',
-                modalNextPageId: 'modalNextPage',
-                modalZoomOutId: 'modalZoomOut',
-                modalZoomInId: 'modalZoomIn',
-                modalFitWidthId: 'modalFitWidth'
-            });
-            window.viewer.init();
-        }
-
-        document.querySelectorAll('[data-bs-toggle="modal"][data-pdf-url]').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const url = this.dataset.pdfUrl;
-                const title = this.dataset.pdfTitle;
-                document.getElementById('pdfModalLabel').textContent = title || 'PDF';
-                if (window.viewer && window.viewer.loadPdf) {
-                    window.viewer.loadPdf(url);
-                }
-            });
-        });
-    });
-  </script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";</script>
 {% endblock %}

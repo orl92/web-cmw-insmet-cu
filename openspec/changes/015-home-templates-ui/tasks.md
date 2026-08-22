@@ -66,13 +66,13 @@ Chain strategy: chained
 
 ## Phase 5: Servicios (public + commercial)  (~90 lines)
 
-- [ ] 5.1 `services/public.html`: replace manual `.pagination` `<a href="?page=…">`
+- [x] 5.1 `services/public.html`: replace manual `.pagination` `<a href="?page=…">`
       (84-98) with Tabler `.pagination > .page-item > .page-link` bound to `page_obj`.
-- [ ] 5.2 `services/public.html`: change `<h3 class="mb-0"><a>{{service.title}}</a></h3>`
+- [x] 5.2 `services/public.html`: change `<h3 class="mb-0"><a>{{service.title}}</a></h3>`
       and `<p><a>{{service.summary}}</a></p>` (22-23) to `<h3>`/`<p>` (no `<a>`).
-- [ ] 5.3 `services/public.html`: delete the `window.viewer` + `loadPdf` JS block
+- [x] 5.3 `services/public.html`: delete the `window.viewer` + `loadPdf` JS block
       (111-140); manager handles modal via `data-pdf-url`/`data-pdf-title`.
-- [ ] 5.4 `services/commercial.html`: Tabler pagination (94-108); `<h3>`/`<p>` titles
+- [x] 5.4 `services/commercial.html`: Tabler pagination (94-108); `<h3>`/`<p>` titles
       (21-22); delete `loadPdf` JS (120-147).
 
 ## Phase 6: Satélites  (~30 lines)

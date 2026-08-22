@@ -134,38 +134,30 @@ class PdfViewerJsAccessibilityTests(TestCase):
 class NoDeadLoadPdfCallsTests(TestCase):
     """Spec: no file shipped by this change may call `loadPdf(`.
 
-    Scoped to the Phase 1 deliverables (shared partials + viewer script).
-    The full-repo sweep belongs to final verification (task 9.2), once
-    later phases delete the legacy callers in services templates.
+    Scoped through Phase 4 to the shared partials + viewer script because the
+    legacy callers lived in the services templates slated for Phase 5. With
+    Phase 5 (015-home-templates-ui) those callers are deleted, so the sweep
+    now covers every shipped ``*.html`` and ``*.js`` file (spec scenario
+    "Repo contains no loadPdf invocations").
     """
 
-    PHASE1_FILES = (
-        REPO_ROOT / 'templates' / 'includes' / 'home' / 'pdf_preview.html',
-        REPO_ROOT / 'templates' / 'includes' / 'home' / 'pdf_modal.html',
-        REPO_ROOT / 'static' / 'dist' / 'js' / 'pdf-viewer.js',
+    SHIPPED_CODE_ROOTS = (
+        REPO_ROOT / 'templates',
+        REPO_ROOT / 'apps',
+        REPO_ROOT / 'static',
     )
 
-    def test_phase1_deliverables_contain_no_loadpdf_invocations(self):
+    def _shipped_html_and_js_files(self):
+        for root in self.SHIPPED_CODE_ROOTS:
+            yield from (path for pattern in ('*.html', '*.js') for path in root.rglob(pattern))
+
+    def test_shipped_code_contains_no_loadpdf_invocations(self):
         offenders = [
             str(path.relative_to(REPO_ROOT))
-            for path in self.PHASE1_FILES
+            for path in self._shipped_html_and_js_files()
             if 'loadPdf(' in path.read_text(encoding='utf-8')
         ]
         self.assertEqual([], offenders)
-
-    def test_dead_callers_are_documented_outside_phase1_scope(self):
-        # Sanity for the scoping decision itself: legacy callers live only in
-        # the services templates slated for removal in a later phase.
-        legacy = [
-            path
-            for name in ('services/public.html', 'services/commercial.html')
-            if 'loadPdf('
-            in (REPO_ROOT / 'apps' / 'home' / 'templates' / 'pages' / 'home' / name).read_text(
-                encoding='utf-8'
-            )
-            for path in [REPO_ROOT / 'apps' / 'home' / 'templates' / 'pages' / 'home' / name]
-        ]
-        self.assertEqual(2, len(legacy))
 
 
 class PdfPreviewPartialContainerIdTests(TestCase):
