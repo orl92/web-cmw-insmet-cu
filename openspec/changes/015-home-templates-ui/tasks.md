@@ -77,23 +77,23 @@ Chain strategy: chained
 
 ## Phase 6: Satélites  (~30 lines)
 
-- [ ] 6.1 `apps/home/.../satellites/satellites.html`: add `role="img"` + `aria-label`
+- [x] 6.1 `apps/home/.../satellites/satellites.html`: add `role="img"` + `aria-label`
       to the two `data-fslightbox` gallery anchor groups (6-64, 69-107); move caption
       text into `aria-label` (decorative background divs get `aria-hidden`).
 
 ## Phase 7: Index  (~50 lines)
 
-- [ ] 7.1 `apps/home/.../index.html`: give the UV `<svg>` (153-175) `role="img"` +
-      `<title>`/`<desc>`; mark the repeated decorative arcs `aria-hidden="true"`.
-- [ ] 7.2 Enable the amCharts 5 accessibility module on the station chart; verify the
-      import path exists in `dist/libs/amcharts`.
-- [ ] 7.3 Move inline `style="height:450px;"` from `#chartdiv` (224) and
-      `#station-details` (233) into `forecast.css` as utility classes.
+- [x] 7.1 `apps/home/.../index.html`: give the UV `<svg>` (153-175) `role="img"` +
+       `<title>`/`<desc>`; mark the repeated decorative arcs `aria-hidden="true"`.
+- [x] 7.2 amCharts 5 accessibility module NOT enabled: bundled dist has no ESM
+       accessibility module path and no `enableFeature` API; left a note in extrajs.
+- [x] 7.3 Move inline `style="height:450px;"` from `#chartdiv` (224) and
+       `#station-details` (233) into `forecast.css` as utility classes.
 
 ## Phase 8: Maps  (~10 lines)
 
-- [ ] 8.1 `apps/home/.../models/maps.html`: delete the two `{# … #}` commented
-      `<script>` lines (209 bootstrap bundle, 211 fontawesome).
+- [x] 8.1 `apps/home/.../models/maps.html`: delete the two `{# … #}` commented
+       `<script>` lines (209 bootstrap bundle, 211 fontawesome).
 
 ## Phase 9: Verification  (tests ~70 lines)
 
