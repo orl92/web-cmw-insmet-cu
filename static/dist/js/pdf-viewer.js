@@ -52,6 +52,10 @@ class PDFViewer {
             canvas.className = this.isModal ? 'modal-pdf-canvas' : 'pdf-page-canvas';
             canvas.dataset.instanceId = this.instanceId;
 
+            // Accesibilidad: el canvas es la representación visual de la página
+            canvas.setAttribute('role', 'img');
+            canvas.setAttribute('aria-label', `Página ${page.pageNumber} del documento`);
+
             // Estilos
             canvas.style.display = 'block';
             canvas.style.margin = '0 auto';
@@ -319,6 +323,12 @@ class PDFViewer {
         const modalTitle = document.getElementById('pdfModalLabel');
         if (modalTitle) {
             modalTitle.textContent = title;
+        }
+
+        // Actualizar el enlace de descarga con el PDF activo
+        const downloadLink = document.getElementById('modalDownloadLink');
+        if (downloadLink) {
+            downloadLink.href = url;
         }
 
         // Resetear estado

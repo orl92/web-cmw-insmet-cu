@@ -1,0 +1,10 @@
+<div class="d-flex justify-content-center align-items-center flex-column">
+  <div id="pdfPreviewContainer"
+       class="pdf-container-mobile"
+       data-pdf-url="{{ pdf_url }}">
+    <div id="pdfPages" class="pdf-pages-container"></div>
+  </div>
+  <a href="{{ pdf_url }}"
+     class="btn btn-sm btn-link mt-2"
+     aria-label="Descargar PDF: {{ pdf_title|default:'PDF' }}">Descargar PDF</a>
+</div>

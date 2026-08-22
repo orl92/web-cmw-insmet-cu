@@ -18,13 +18,33 @@
             <div id="modalPdfPages" class="modal-pdf-pages"></div>
           </div>
           <div class="modal-pdf-controls">
-            <button type="button" id="modalPrevPage" class="btn btn-sm btn-light">‹</button>
-            <span id="modalPageInfo" class="modal-page-info">Página 1 de 1</span>
-            <button type="button" id="modalNextPage" class="btn btn-sm btn-light">›</button>
-            <button type="button" id="modalZoomOut" class="btn btn-sm btn-light ms-2">-</button>
+            <button type="button"
+                    id="modalPrevPage"
+                    class="btn btn-sm btn-light"
+                    aria-label="Página anterior">‹</button>
+            <span id="modalPageInfo" class="modal-page-info" aria-live="polite">Página 1 de 1</span>
+            <button type="button"
+                    id="modalNextPage"
+                    class="btn btn-sm btn-light"
+                    aria-label="Página siguiente">›</button>
+            <button type="button"
+                    id="modalZoomOut"
+                    class="btn btn-sm btn-light ms-2"
+                    aria-label="Alejar">-</button>
             <span id="modalZoomLevel" class="modal-zoom-level">100%</span>
-            <button type="button" id="modalZoomIn" class="btn btn-sm btn-light">+</button>
-            <button type="button" id="modalFitWidth" class="btn btn-sm btn-light ms-2">Ajustar</button>
+            <button type="button"
+                    id="modalZoomIn"
+                    class="btn btn-sm btn-light"
+                    aria-label="Acercar">+</button>
+            <button type="button"
+                    id="modalFitWidth"
+                    class="btn btn-sm btn-light ms-2"
+                    aria-label="Ajustar al ancho">Ajustar</button>
+            <a id="modalDownloadLink"
+               class="btn btn-sm btn-link ms-2 text-white"
+               href="#"
+               download
+               aria-label="Descargar PDF">Descargar PDF</a>
           </div>
         </div>
       </div>
