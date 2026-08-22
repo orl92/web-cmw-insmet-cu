@@ -303,3 +303,134 @@ class ServiceAPITests(APITestCase):
         self.assertIn('uuid', item)
         self.assertIn('title', item)
         self.assertIn('service_type', item)
+
+
+class StationListQueryCountTests(APITestCase):
+    """Regression guard: province must be joined, not queried per station."""
+
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        prov = Province.objects.create(name='Camaguey', code='CM')
+        for i in range(5):
+            Station.objects.create(
+                name=f'Station{i}', number=100 + i, province=prov, latitude=1, longitude=1
+            )
+        cls.url = reverse('station-list')
+
+    def test_query_count_is_constant(self):
+        # 1 (SiteConfiguration middleware) + 1 (stations joined with province)
+        with self.assertNumQueries(2):
+            self.client.get(self.url)
+
+
+class WarningListQueryCountTests(APITestCase):
+    """Regression guard: user must be joined, not queried per warning."""
+
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        user = User.objects.create_user('wuser')
+        for wtype in ('early', 'tropical_cyclone', 'storm'):
+            for i in range(5):
+                MeteoWarning.objects.create(
+                    user=user,
+                    warning_type=wtype,
+                    summary=f'{wtype}-{i}',
+                    valid_until=timezone.now() + timedelta(days=1),
+                )
+        cls.urls = {
+            'early': reverse('early-warning-list'),
+            'tropical_cyclone': reverse('tropical-cyclone-list'),
+            'storm': reverse('storm-warning-list'),
+        }
+
+    def test_query_count_is_constant(self):
+        # 1 (SiteConfiguration) + 1 (warnings joined with user) per endpoint
+        for url in self.urls.values():
+            with self.assertNumQueries(2):
+                self.client.get(url)
+
+
+class WeatherReportListQueryCountTests(APITestCase):
+    """Regression guard: user must be joined, not queried per report."""
+
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        user = User.objects.create_user('wuser')
+        for i in range(5):
+            WeatherReport.objects.create(user=user, report_type='today', summary=f'R{i}')
+        cls.url = reverse('weather-report-list', args=['today'])
+
+    def test_query_count_is_constant(self):
+        # 1 (SiteConfiguration) + 1 (reports joined with user)
+        with self.assertNumQueries(2):
+            self.client.get(self.url)
+
+
+class ScientificPublicationListQueryCountTests(APITestCase):
+    """Regression guard: author joined + coauthors prefetched, not N+1."""
+
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        author = Author.objects.create(first_name='John', last_name='Doe')
+        coauthor = Author.objects.create(first_name='Jane', last_name='Smith')
+        for i in range(5):
+            pub = ScientificPublication.objects.create(
+                title=f'Paper{i}', summary='Abstract', publication_date=date.today(), author=author
+            )
+            pub.coauthors.add(coauthor)
+        cls.url = reverse('publication-list')
+
+    def test_query_count_is_constant(self):
+        # 1 (SiteConfiguration) + 1 (author join) + 1 (coauthors prefetch)
+        with self.assertNumQueries(3):
+            self.client.get(self.url)
+
+
+class ForecastListQueryCountTests(APITestCase):
+    """Regression guard: regions/extended_days prefetched, not re-queried."""
+
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        today = date.today()
+        forecast = Forecasts.objects.create(
+            date=today,
+            lp='Luna Nueva',
+            nlp='Cuarto Creciente',
+            nlpd=today + timedelta(days=7),
+            sunrise=time(6, 30),
+            sunset=time(18, 30),
+            uv_index=5,
+        )
+        from apps.meteo.models import ForecastExtendedDay, ForecastRegions
+
+        for period in ('morning', 'afternoon', 'night'):
+            ForecastRegions.objects.create(
+                forecast=forecast,
+                region='north',
+                period=period,
+                temp=20,
+                weather='PN',
+                wind_dir='N',
+                wind_speed='5',
+            )
+        for i in range(1, 4):
+            ForecastExtendedDay.objects.create(
+                forecast=forecast,
+                day_number=i,
+                date=today + timedelta(days=i),
+                min_temp=20,
+                max_temp=30,
+                weather='PN',
+            )
+        cls.url = reverse('forecast', args=[today.isoformat()])
+
+    def test_query_count_is_constant(self):
+        # 1 (SiteConfiguration) + forecast + regions prefetch + extended_days prefetch
+        # + serializer overhead; calibrated, must stay constant as rows grow.
+        with self.assertNumQueries(8):
+            self.client.get(self.url)

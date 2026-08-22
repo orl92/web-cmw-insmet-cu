@@ -43,29 +43,30 @@ The DRF `ListAPIView` endpoints in `apps/api/views.py` SHALL issue a constant
 - **When** the change is applied
 - **Then** these two endpoints MUST NOT require modification
 
-## Requirement: `WarningListView` MUST pre-join relations and paginate server-side
+## Requirement: `WarningListView` MUST pre-join relations (DataTables client-side pagination preserved)
 
 The `WarningListView` in `apps/meteo/views/warning.py` SHALL pre-join the
-relations its template walks and SHALL apply the configured `paginate_by`
-server-side.
+relations its template walks. The view renders a DataTables grid
+(`layouts/list.html`) and paginates client-side (loads all records), so the
+configured `paginate_by` does NOT trigger server-side pagination — that is the
+correct, intended behavior.
 
-### Scenario: Warning HTML list resolves user and profile without N+1
+### Scenario: Warning HTML list resolves user without N+1
 - **Given** `WarningListView.get_queryset` at `apps/meteo/views/warning.py:90-91`
-- **When** the template `templates/layouts/avisos.html:48,50` reads
-  `warning.user.profile.get_avatar` and `warning.user.get_full_name`
-- **Then** the queryset MUST use `select_related('user', 'user__profile')`
+- **When** the template `layouts/list.html` (DataTables) reads
+  `object.user.get_full_name` (`warning/early_warning/list.html:26`)
+- **Then** the queryset MUST use `select_related('user')`
   (`Profile.user` is `OneToOneField(User, related_name='profile')`,
-  `apps/user_auth/models.py:20`)
+  `apps/user_auth/models.py:20`; the template does NOT read `profile`, so
+  `user__profile` is not required here)
 
-### Scenario: Warning HTML list applies server-side pagination
-- **Given** `WarningListView` sets `paginate_by = 20`
-  (`apps/meteo/views/warning.py:74`) and `templates/layouts/avisos.html` is a
-  **non-DataTables** card layout that iterates `objects`
+### Scenario: Warning HTML list preserves DataTables client-side pagination
+- **Given** `WarningListView` renders a DataTables grid (`layouts/list.html`)
+  that loads all records and paginates client-side
 - **When** the list is rendered
-- **Then** the view MUST NOT replace the context with the full queryset
-  (`apps/meteo/views/warning.py:103` MUST be removed/adjusted) and the template
-  MUST iterate the paginated `page_obj` and render the pagination control
-  (`templates/includes/pagination.html` consumes `page_obj`)
+- **Then** the view MUST keep `context['objects'] = self.get_queryset()`
+  (overriding `page_obj` with the full queryset is the correct behavior for
+  DataTables) and MUST NOT be changed to server-side pagination
 
 ## Requirement: Query counts MUST be guarded by regression tests
 
@@ -87,7 +88,7 @@ regress.
   (COUNT + one paginated page, with `user`/`user__profile` joined)
 
 ### Scenario: Tests use the full app label
-- **Given** Django 5.2 in this project (per `AGENTS.md`)
+- **Given** Django 5.1.4 in this project (per `requirements.txt`; authoritative over `AGENTS.md`)
 - **When** the suite is executed
 - **Then** it MUST be invoked as `python manage.py test apps.api apps.meteo`
   (short labels are not resolved)

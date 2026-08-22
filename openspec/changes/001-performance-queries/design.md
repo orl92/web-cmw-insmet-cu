@@ -33,7 +33,7 @@ Model relations confirmed: `Station.province` FK (`apps/meteo/models.py:385`);
 
 | View | Queryset / relation | Pagination | Defect |
 |---|---|---|---|
-| `WarningListView` | `Warning.objects.filter(warning_type=...)` — `warning.py:90-91`; template reads `warning.user.profile.get_avatar`, `warning.user.get_full_name` — `templates/layouts/avisos.html:48,50` | `paginate_by = 20` (`warning.py:74`) but `context['objects'] = self.get_queryset()` (`warning.py:103`); `avisos.html` is a card layout with **no** `new DataTable` | N+1 on `User` + `Profile`; **dead server-side pagination** |
+| `WarningListView` | `Warning.objects.filter(warning_type=...)` — `warning.py:90-91`; template `layouts/list.html` (DataTables) reads `object.user.get_full_name` — `warning/early_warning/list.html:26` | `paginate_by = 20` (`warning.py:74`) but view uses DataTables client-side pagination (loads all records) | N+1 on `User` only (template does NOT read `profile`) |
 | `StationListView` | `select_related('province')` — `station.py:31` | extends `layouts/list.html` (DataTables) | Correct by convention |
 | `WeatherReportListView` | `select_related('user')` — `weather_report.py:152` | extends `layouts/list.html` (DataTables) | Correct by convention |
 | `ForecastsListView` | `prefetch_related('regions','extended_days')` — `forecast.py:97` | extends `layouts/list.html` (DataTables) | Correct by convention |
@@ -80,7 +80,9 @@ queryset = ScientificPublication.objects.select_related('author').prefetch_relat
 
 `ForecastAPIView` and `ServiceListAPIView` are left unchanged.
 
-### 4.2 meteo HTML (`apps/meteo/views/warning.py`)
+### 4.2 meteo HTML (`apps/meteo/views/warning.py`) — CORRECTED during apply
+
+> **Correction:** The original plan assumed `WarningListView` renders `templates/layouts/avisos.html` with dead server-side pagination. In reality it renders `layouts/list.html` (a DataTables grid) and paginates client-side, reading only `object.user.get_full_name`. Only `select_related('user')` was required; the `get_context_data` / `avisos.html` steps were evaluated and NOT applied (see tasks.md Phase 2).
 
 ```python
 def get_queryset(self):

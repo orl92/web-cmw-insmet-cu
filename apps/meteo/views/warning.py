@@ -88,7 +88,7 @@ class WarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return [self.get_config()['template_list']]
 
     def get_queryset(self):
-        return Warning.objects.filter(warning_type=self.get_warning_type())
+        return Warning.objects.select_related('user').filter(warning_type=self.get_warning_type())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
