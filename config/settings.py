@@ -120,6 +120,12 @@ MIDDLEWARE = [
     'apps.core.middleware.MaintenanceModeMiddleware',
 ]
 
+if DEBUG and not IS_PRODUCTION:
+    INSTALLED_APPS += ['debug_toolbar']
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    INTERNAL_IPS = ['127.0.0.1', '::1']
+    DEBUG_TOOLBAR_CONFIG = {'IS_RUNNING_TESTS': False}
+
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 
