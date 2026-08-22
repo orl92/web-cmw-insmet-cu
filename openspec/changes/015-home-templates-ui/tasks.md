@@ -57,12 +57,12 @@ Chain strategy: chained
 
 ## Phase 4: Reportes (today / tomorrow / weather / note)  (~120 lines)
 
-- [ ] 4.1 `apps/home/.../weather/today.html`: drop `.markdown` (10), duplicate `<h1>`
+- [x] 4.1 `apps/home/.../weather/today.html`: drop `.markdown` (10), duplicate `<h1>`
       (11), inline init `<script>` (82-103); use `pdf_preview.html` + `pdf_modal.html`.
-- [ ] 4.2 `apps/home/.../weather/tomorrow.html`: same edits (10, 11, 82-93).
-- [ ] 4.3 `apps/home/.../commentaries/weather.html`: same edits (10, 11, 82-93).
-- [ ] 4.4 `apps/home/.../commentaries/note.html`: same edits (10, 11, 82-92).
-- [ ] 4.5 Render `summary`/`sanitize_html` consistently; keep `page_header` title.
+- [x] 4.2 `apps/home/.../weather/tomorrow.html`: same edits (10, 11, 82-93).
+- [x] 4.3 `apps/home/.../commentaries/weather.html`: same edits (10, 11, 82-93).
+- [x] 4.4 `apps/home/.../commentaries/note.html`: same edits (10, 11, 82-92).
+- [x] 4.5 Render `summary`/`sanitize_html` consistently; keep `page_header` title.
 
 ## Phase 5: Servicios (public + commercial)  (~90 lines)
 

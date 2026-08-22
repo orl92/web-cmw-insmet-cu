@@ -13,6 +13,11 @@ Covers change 015-home-templates-ui:
   manual `new PDFViewer(...)` init loop, keeps exactly one shared modal with
   the download fallback, and its "Ver PDF" trigger carries data-pdf-url +
   data-pdf-title for manager delegation.
+- Phase 4: today/tomorrow/commentary/note report pages render semantically
+  (no `.markdown` card body, no duplicate in-card <h1>) through the shared
+  partials with a data-pdf-url container, an init-free extrajs block that
+  still loads the libraries + workerSrc, a trigger carrying url+title, and a
+  unified `{{ <report>.summary|sanitize_html }}` rendering (task 4.5).
 """
 
 import re
@@ -27,6 +32,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.meteo.models import Warning as MeteoWarning
+from apps.meteo.models import WeatherReport
 from apps.publications.models import Author, ScientificPublication
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -343,3 +349,137 @@ class PublicationsSharedPartialTests(TestCase):
             rf'[^>]*data-pdf-title="Deep Learning Paper"'
         )
         self.assertRegex(html, pattern)
+
+
+class ReportsSharedPartialTests(TestCase):
+    """Tasks 4.1-4.5 — report pages delegate to the shared partials.
+
+    Spec scenario "Report render is semantic and unified": no `.markdown`
+    card body, no duplicate in-card <h1> (the title comes from page_header),
+    `pdfPreviewContainer` carrying data-pdf-url, and no per-template viewer
+    init script. The "Ver PDF" trigger carries data-pdf-url + data-pdf-title,
+    and all four templates render the same expression
+    `{{ <report>.summary|sanitize_html }}` (task 4.5).
+    """
+
+    REPORT_PAGES = (
+        ('today', 'home:weather_today'),
+        ('tomorrow', 'home:weather_tomorrow'),
+        ('commentary', 'home:weather_commentary'),
+        ('note', 'home:weather_note'),
+    )
+
+    PAGE_TITLES = {
+        'today': 'El Tiempo para Hoy',
+        'tomorrow': 'El Tiempo para Mañana',
+        'commentary': 'Comentario del Tiempo',
+        'note': 'Nota Meteorológica',
+    }
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            'author', 'author@test.com', 'pass', first_name='A', last_name='U'
+        )
+
+    def _create_report(self, report_type, **overrides):
+        fields = dict(
+            user=self.user,
+            summary='Resumen consistente del reporte',
+            file='report_pdfs/informe.pdf',
+            report_type=report_type,
+        )
+        fields.update(overrides)
+        return WeatherReport.objects.create(**fields)
+
+    def _get_page(self, url_name):
+        return self.client.get(reverse(url_name))
+
+    def test_preview_renders_through_shared_partial_with_data_pdf_url(self):
+        for report_type, url_name in self.REPORT_PAGES:
+            with self.subTest(report=report_type):
+                report = self._create_report(report_type)
+                html = self._get_page(url_name).content.decode()
+                # Scoped to the container element itself: the "Ver PDF"
+                # button also carries data-pdf-url, so an unscoped search
+                # would pass even without the shared partial.
+                pattern = (
+                    rf'id="pdfPreviewContainer"'
+                    rf'[^>]*data-pdf-url="{re.escape(report.file.url)}"'
+                )
+                self.assertRegex(html, pattern)
+                self.assertIn('id="pdfPages"', html)
+
+    def test_card_body_drops_markdown_class(self):
+        for report_type, url_name in self.REPORT_PAGES:
+            with self.subTest(report=report_type):
+                self._create_report(report_type)
+                self.assertNotContains(self._get_page(url_name), 'card-body markdown')
+
+    def test_no_duplicate_h1_title_comes_from_page_header(self):
+        for report_type, url_name in self.REPORT_PAGES:
+            with self.subTest(report=report_type):
+                self._create_report(report_type)
+                response = self._get_page(url_name)
+                # No second <h1> in the card: page_header owns the title.
+                self.assertNotContains(response, '<h1')
+                html = response.content.decode()
+                title = re.escape(self.PAGE_TITLES[report_type])
+                pattern = rf'<h2 class="page-title">\s*{title}\s*</h2>'
+                self.assertRegex(html, pattern)
+
+    def test_no_per_template_viewer_init_script(self):
+        for report_type, url_name in self.REPORT_PAGES:
+            with self.subTest(report=report_type):
+                self._create_report(report_type)
+                html = self._get_page(url_name).content.decode()
+                self.assertNotIn('new PDFViewer({', html)
+                # Library loads + workerSrc config must remain for the manager.
+                self.assertIn('dist/js/pdf-viewer.js', html)
+                self.assertIn('pdf.worker.min.js', html)
+
+    def test_modal_comes_from_shared_partial_exactly_once(self):
+        for report_type, url_name in self.REPORT_PAGES:
+            with self.subTest(report=report_type):
+                self._create_report(report_type)
+                html = self._get_page(url_name).content.decode()
+                self.assertEqual(1, html.count('id="pdfModal"'))
+                self.assertIn('id="modalDownloadLink"', html)
+
+    def test_ver_pdf_trigger_carries_url_and_title(self):
+        for report_type, url_name in self.REPORT_PAGES:
+            with self.subTest(report=report_type):
+                report = self._create_report(report_type)
+                html = self._get_page(url_name).content.decode()
+                pattern = (
+                    rf'data-pdf-url="{re.escape(report.file.url)}"'
+                    rf'[^>]*data-pdf-title="[^"]+"'
+                )
+                self.assertRegex(html, pattern)
+
+    def test_summary_rendered_not_content_for_all_reports(self):
+        # Task 4.5: unified rendering — summary wins over content everywhere.
+        for report_type, url_name in self.REPORT_PAGES:
+            with self.subTest(report=report_type):
+                self._create_report(
+                    report_type,
+                    summary='Resumen consistente del reporte',
+                    content='Contenido alterno que no debe mostrarse',
+                )
+                response = self._get_page(url_name)
+                self.assertContains(response, 'Resumen consistente del reporte')
+                self.assertNotContains(response, 'Contenido alterno que no debe mostrarse')
+
+    def test_all_four_templates_render_summary_with_sanitize_filter(self):
+        base = REPO_ROOT / 'apps' / 'home' / 'templates' / 'pages' / 'home'
+        expected = {
+            'weather/today.html': '{{ weather_today.summary|sanitize_html }}',
+            'weather/tomorrow.html': '{{ weather_tomorrow.summary|sanitize_html }}',
+            'commentaries/weather.html': '{{ weather_commentary.summary|sanitize_html }}',
+            'commentaries/note.html': '{{ weather_note.summary|sanitize_html }}',
+        }
+        for rel_path, expression in expected.items():
+            with self.subTest(template=rel_path):
+                source = (base / rel_path).read_text(encoding='utf-8')
+                self.assertIn(expression, source)
+                self.assertNotIn('.content|default:', source)
