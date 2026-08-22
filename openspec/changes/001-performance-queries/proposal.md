@@ -2,12 +2,12 @@
 
 ## Intent
 
-Eliminate N+1 query patterns and silently-bypassed pagination in the `apps/api`
-DRF list endpoints and the `apps/meteo` HTML list views, by applying
-`select_related` / `prefetch_related` wherever serializers or templates walk
-foreign-key / many-to-many relations, restoring real server-side pagination
-where it was defeated, and adding query-count instrumentation
-(`assertNumQueries`) so the optimizations cannot regress.
+Eliminate N+1 query patterns in the `apps/api` DRF list endpoints and the
+`apps/meteo` HTML list views, by applying `select_related` / `prefetch_related`
+wherever serializers or templates walk foreign-key / many-to-many relations, and
+adding query-count instrumentation (`assertNumQueries`) so the optimizations
+cannot regress. The `WarningListView` (a DataTables view) keeps its client-side
+pagination; only its `user` relation is pre-joined.
 
 ## Scope In
 
@@ -15,8 +15,9 @@ where it was defeated, and adding query-count instrumentation
   endpoints: `StationListAPIView`, `EarlyWarningListAPIView`,
   `TropicalCycloneListAPIView`, `StormWarningListAPIView`,
   `WeatherReportListAPIView`, `ScientificPublicationListAPIView`.
-- `apps/meteo/views/warning.py` — `WarningListView` (N+1 on `user` /
-  `user__profile`, and dead server-side pagination).
+- `apps/meteo/views/warning.py` — `WarningListView` (N+1 on `user`; renders a
+  DataTables grid with client-side pagination, so the `context['objects']`
+  full-queryset override is intentional, not a defect).
 - New regression tests under `apps/api/tests/` and `apps/meteo/tests/`
   asserting bounded query counts.
 
@@ -72,23 +73,17 @@ where it was defeated, and adding query-count instrumentation
 ### B. meteo HTML view (`apps/meteo/views/warning.py`)
 
 - `WarningListView.get_queryset` (lines 90-91) returns
-  `Warning.objects.filter(warning_type=...)` with no `select_related`. Template
-  `templates/layouts/avisos.html:48,50` accesses `warning.user.profile.get_avatar`
-  and `warning.user.get_full_name` → N+1 on `User` and on `Profile`
-  (`Profile.user` is `OneToOneField(User, related_name='profile')`,
-  `apps/user_auth/models.py:20`). **Fix:** `.select_related('user', 'user__profile')`.
-- `WarningListView` sets `paginate_by = 20` (line 74) but `get_context_data`
-  overrides `context['objects'] = self.get_queryset()` (line 103) with the full,
-  non-paginated queryset. `avisos.html` is a **card layout, not DataTables**
-  (no `new DataTable` anywhere in the template) and iterates `objects` → server-side
-  pagination is silently bypassed and every warning is loaded/rendered per request.
-  **Fix:** let the `ListView` provide the paginated `page_obj` / `object_list`
-  (remove the override, or set `context['objects'] = context['page_obj']`) and
-  render the existing pagination partial `templates/includes/pagination.html`
-  (which consumes `page_obj`, see `templates/includes/pagination.html:1-23`).
-  This is the only genuine dead-pagination defect within `apps/meteo` scope;
-  `StationListView` / `WeatherReportListView` / `ForecastsListView` are DataTables
-  views and are correct as-is.
+  `Warning.objects.filter(warning_type=...)` with no `select_related`. The template
+  `layouts/list.html` (a DataTables grid) reads `object.user.get_full_name`
+  (`warning/early_warning/list.html:26`) → N+1 on `User` only (it does NOT read
+  `profile`). **Fix:** `.select_related('user')`.
+- `WarningListView` sets `paginate_by = 20` (line 74) and `get_context_data`
+  overrides `context['objects'] = self.get_queryset()` (line 103) with the full
+  queryset. This is **correct and intended**: the view renders a DataTables grid
+  that loads all records and paginates client-side (project convention: "vistas
+  con DataTables cargan todos los registros"), so there is no server-side
+  pagination to restore. `avisos.html` is a separate card layout used only by the
+  public home warning pages, not by this view. No change to `get_context_data`.
 
 ### C. Query instrumentation (`assertNumQueries`)
 
@@ -98,7 +93,7 @@ where it was defeated, and adding query-count instrumentation
   `test_performance.py`) asserting a bounded query count for `WarningListView`
   before/after the `select_related` + pagination fix.
 - Tests are executed with the full app label: `python manage.py test apps.api apps.meteo`
-  (Django 5.2 does not resolve short labels — see `AGENTS.md`).
+  (Django 5.1.4 does not resolve short labels — see `requirements.txt`).
 
 ## Acceptance Criteria
 
@@ -109,11 +104,11 @@ where it was defeated, and adding query-count instrumentation
 - [ ] `WeatherReportListAPIView` resolves `user` in one joined query.
 - [ ] `ScientificPublicationListAPIView` resolves `author` and `coauthors` in at
       most two queries (author join + coauthors prefetch).
-- [ ] `WarningListView` resolves `user` and `user__profile` in a single joined
-      query (proven by a new `assertNumQueries` test).
-- [ ] `WarningListView` applies real server-side pagination: `page_obj` is present,
-      the template iterates the current page, and rows loaded per request equal
-      `paginate_by` (20).
+- [ ] `WarningListView` resolves `user` in a single joined query (proven by a new
+      `assertNumQueries` test).
+- [ ] `WarningListView` preserves its DataTables client-side pagination: the
+      `context['objects']` full-queryset override is intentional and the view loads
+      all records for client-side paging.
 - [ ] New `assertNumQueries` tests pass for all affected endpoints / views under
       `apps.api` and `apps.meteo`.
 - [ ] `python manage.py check` and

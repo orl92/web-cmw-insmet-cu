@@ -86,21 +86,15 @@ queryset = ScientificPublication.objects.select_related('author').prefetch_relat
 
 ```python
 def get_queryset(self):
-    return Warning.objects.select_related('user', 'user__profile').filter(
+    return Warning.objects.select_related('user').filter(
         warning_type=self.get_warning_type())
-
-def get_context_data(self, **kwargs):
-    context = super().get_context_data(**kwargs)
-    # do NOT replace objects with the full queryset; keep the paginated page
-    context['objects'] = context['page_obj']   # iterable + exposes pagination
-    ...
+# get_context_data is intentionally left unchanged: the view renders a
+# DataTables grid and paginates client-side, so context['objects'] must
+# stay the full queryset (overriding it with page_obj would break paging).
 ```
 
-Then add the pagination partial to `templates/layouts/avisos.html`, e.g. near the
-end of the list:
-`{% include 'includes/pagination.html' %}` (the partial already consumes
-`page_obj`, see `templates/includes/pagination.html:1-23`). Because `page_obj` is
-itself iterable, `{% for warning in objects %}` keeps working unchanged.
+No `avisos.html` pagination partial is added — that template is used only by the
+public home warning pages, which do not provide `page_obj`.
 
 ### 4.3 Instrumentation (tests)
 

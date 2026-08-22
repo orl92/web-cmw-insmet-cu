@@ -78,14 +78,16 @@ regress.
   `ForecastAPITests`)
 - **When** the change is applied
 - **Then** `assertNumQueries` cases MUST exist asserting the bounded counts:
-  station=1, each warning endpoint=1, weather-report=1, publication=2,
-  forecast=3
+  station=2, each warning endpoint=2, weather-report=2, publication=3,
+  forecast=8 (the +1 constant is the `SiteConfiguration` query emitted by
+  `MaintenanceModeMiddleware`; calibrate to your environment)
 
 ### Scenario: Warning HTML list is covered by a query-count test
-- **Given** `apps/meteo/tests/`
+- **Given** `apps/meteo/tests/test_performance.py`
 - **When** the change is applied
 - **Then** a `TestCase` MUST assert `WarningListView` uses a bounded query count
-  (COUNT + one paginated page, with `user`/`user__profile` joined)
+  (COUNT + full record set loaded for DataTables client-side paging, with `user`
+  joined)
 
 ### Scenario: Tests use the full app label
 - **Given** Django 5.1.4 in this project (per `requirements.txt`; authoritative over `AGENTS.md`)
