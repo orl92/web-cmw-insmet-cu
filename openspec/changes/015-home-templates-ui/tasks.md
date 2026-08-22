@@ -35,14 +35,17 @@ Chain strategy: chained
 
 ## Phase 2: Avisos  (~70 lines)
 
-- [ ] 2.1 In `templates/layouts/avisos.html` replace inline modal (lines 92-137)
+- [x] 2.1 In `templates/layouts/avisos.html` replace inline modal (lines 92-137)
       with `{% include 'includes/home/pdf_modal.html' with modal_title=title %}`.
-- [ ] 2.2 Replace per-warning preview markup (lines 33-44) with
+- [x] 2.2 Replace per-warning preview markup (lines 33-44) with
       `{% include 'includes/home/pdf_preview.html' with pdf_url=… pdf_title=… %}`.
-- [ ] 2.3 Remove `.markdown` from `card-body` (line 14) and the duplicate `<h1>`
+      Unique ids preserved via optional `preview_suffix=forloop.counter`
+      (`pdfPreviewContainer-N` / `pdfPages-N`), as expected by the manager.
+- [x] 2.3 Remove `.markdown` from `card-body` (line 14) and the duplicate `<h1>`
       (line 15); rely on the `page_header` block (`home.html:14`).
-- [ ] 2.4 Delete the redundant `extrajs` init block (lines 139-152) — the manager
-      auto-runs on `DOMContentLoaded`.
+- [x] 2.4 Delete the redundant init listener from the `extrajs` block — the manager
+      auto-runs on `DOMContentLoaded`. Library `<script>` tags + `workerSrc` config
+      are kept: no layout loads them globally, so removing them would break PDFs.
 
 ## Phase 3: Publicaciones  (~40 lines)
 

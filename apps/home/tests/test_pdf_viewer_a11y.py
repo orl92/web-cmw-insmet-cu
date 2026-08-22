@@ -1,18 +1,26 @@
 """Accessibility contract tests for the shared PDF viewer partials and JS.
 
-Covers change 015-home-templates-ui Phase 1:
-- pdf_preview.html renders the auto-initializable preview container
-- pdf_modal.html toolbar controls expose accessible names
-- The rendered canvas carries role="img" + aria-label (set in pdf-viewer.js)
-- No dead `loadPdf(` invocations exist in templates or JS
-- Real methods `loadPDF`/`loadNewPDF` remain in pdf-viewer.js
+Covers change 015-home-templates-ui:
+- Phase 1: pdf_preview.html renders the auto-initializable preview container,
+  pdf_modal.html toolbar controls expose accessible names, the rendered canvas
+  carries role="img" + aria-label (set in pdf-viewer.js), no dead `loadPdf(`
+  invocations exist in partials or JS, real methods loadPDF/loadNewPDF remain.
+- Phase 2: layouts/avisos.html delegates previews and modal to the shared
+  partials with unique per-warning container ids, drops the `.markdown` card
+  body and duplicate <h1>, and keeps no inline viewer init script.
 """
 
 import re
+from datetime import timedelta
 from pathlib import Path
 
+from django.contrib.auth.models import User
 from django.template.loader import render_to_string
 from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+
+from apps.meteo.models import Warning as MeteoWarning
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 PDF_VIEWER_JS = REPO_ROOT / 'static' / 'dist' / 'js' / 'pdf-viewer.js'
@@ -145,3 +153,108 @@ class NoDeadLoadPdfCallsTests(TestCase):
             for path in [REPO_ROOT / 'apps' / 'home' / 'templates' / 'pages' / 'home' / name]
         ]
         self.assertEqual(2, len(legacy))
+
+
+class PdfPreviewPartialContainerIdTests(TestCase):
+    """Task 2.2 — pdf_preview.html must support unique per-object container ids.
+
+    The avisos layout loops over warnings, so every preview needs a distinct
+    id (`pdfPreviewContainer-N`) for PDFViewerManager.initializeAll() to pick
+    it up via `[id^="pdfPreviewContainer-"]` (pdf-viewer.js:440). Without a
+    suffix the partial keeps the exact Phase 1 ids.
+    """
+
+    def _render(self, **context):
+        return render_to_string('includes/home/pdf_preview.html', context)
+
+    def test_default_ids_preserved_without_suffix(self):
+        html = self._render(pdf_url='/media/reports/aviso.pdf')
+        self.assertIn('id="pdfPreviewContainer"', html)
+        self.assertIn('id="pdfPages"', html)
+        self.assertIn('data-pdf-url="/media/reports/aviso.pdf"', html)
+
+    def test_suffix_yields_unique_container_and_pages_ids(self):
+        html = self._render(pdf_url='/media/warnings/a.pdf', preview_suffix=3)
+        self.assertIn('id="pdfPreviewContainer-3"', html)
+        self.assertIn('id="pdfPages-3"', html)
+        self.assertIn('data-pdf-url="/media/warnings/a.pdf"', html)
+
+    def test_download_fallback_survives_suffixed_render(self):
+        html = self._render(
+            pdf_url='/media/warnings/b.pdf',
+            pdf_title='Aviso 02',
+            preview_suffix=2,
+        )
+        self.assertIn('href="/media/warnings/b.pdf"', html)
+        self.assertIn('aria-label="Descargar PDF: Aviso 02"', html)
+
+
+class AvisosLayoutSharedPartialTests(TestCase):
+    """Tasks 2.1-2.4 — layouts/avisos.html delegates to the shared partials.
+
+    Spec scenario "Avisos render is deduplicated and semantic": the rendered
+    page carries the shared preview containers and modal include, drops the
+    `.markdown` card body and the duplicate <h1>, and keeps no inline viewer
+    init script (the manager auto-runs on DOMContentLoaded).
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            'author', 'author@test.com', 'pass', first_name='A', last_name='U'
+        )
+
+    def _create_warning(self):
+        return MeteoWarning.objects.create(
+            warning_type='early',
+            user=self.user,
+            summary='Resumen del aviso de prueba',
+            file='warning_pdfs/aviso.pdf',
+            valid_until=timezone.now() + timedelta(days=1),
+        )
+
+    def _get_page(self):
+        return self.client.get(reverse('home:warnings_early'))
+
+    def test_preview_renders_through_partial_with_pdf_url(self):
+        self._create_warning()
+        response = self._get_page()
+        self.assertContains(response, 'id="pdfPreviewContainer-1"')
+        self.assertContains(response, 'id="pdfPages-1"')
+        self.assertContains(
+            response,
+            'data-pdf-url="http://testserver/media/warning_pdfs/aviso.pdf"',
+        )
+
+    def test_each_warning_gets_its_own_preview_container(self):
+        self._create_warning()
+        self._create_warning()
+        response = self._get_page()
+        self.assertContains(response, 'id="pdfPreviewContainer-1"')
+        self.assertContains(response, 'id="pdfPreviewContainer-2"')
+
+    def test_modal_comes_from_shared_partial_exactly_once(self):
+        self._create_warning()
+        html = self._get_page().content.decode()
+        # Exactly one modal: the shared partial, not a duplicated inline copy.
+        self.assertEqual(1, html.count('id="pdfModal"'))
+        # Partial-only marker: the download fallback link added in Phase 1.
+        self.assertIn('id="modalDownloadLink"', html)
+
+    def test_card_body_drops_markdown_class(self):
+        self._create_warning()
+        self.assertNotContains(self._get_page(), 'card-body markdown')
+
+    def test_no_duplicate_h1_in_content(self):
+        self._create_warning()
+        # The title lives in page_header (layouts/home.html); no second <h1>.
+        self.assertNotContains(self._get_page(), '<h1')
+
+    def test_no_per_template_viewer_init_script(self):
+        self._create_warning()
+        html = self._get_page().content.decode()
+        self.assertNotIn('new PDFViewer({', html)
+        # Task 2.4: the redundant DOMContentLoaded no-op listener is gone;
+        # library loads + workerSrc config must remain for the viewer to work.
+        self.assertNotIn('Inicializando visores de PDF para avisos', html)
+        self.assertIn('dist/js/pdf-viewer.js', html)

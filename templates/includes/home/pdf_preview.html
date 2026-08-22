@@ -1,8 +1,10 @@
 <div class="d-flex justify-content-center align-items-center flex-column">
-  <div id="pdfPreviewContainer"
+  {# Optional preview_suffix keeps container ids unique when looping (pdfPreviewContainer-N / pdfPages-N), as expected by PDFViewerManager.initializeAll(). #}
+  <div id="pdfPreviewContainer{% if preview_suffix %}-{{ preview_suffix }}{% endif %}"
        class="pdf-container-mobile"
        data-pdf-url="{{ pdf_url }}">
-    <div id="pdfPages" class="pdf-pages-container"></div>
+    <div id="pdfPages{% if preview_suffix %}-{{ preview_suffix }}{% endif %}"
+         class="pdf-pages-container"></div>
   </div>
   <a href="{{ pdf_url }}"
      class="btn btn-sm btn-link mt-2"
