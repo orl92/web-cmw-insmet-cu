@@ -39,6 +39,6 @@ handler403 = My403View.as_view()
 handler404 = My404View.as_view()
 handler500 = My500View.as_view()
 
-if settings.DEBUG and not settings.IS_PRODUCTION:
+if getattr(settings, 'DEBUG_TOOLBAR_ENABLED', False):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += [path('__debug__/', include('debug_toolbar.urls'))]
