@@ -97,18 +97,18 @@ Chain strategy: chained
 
 ## Phase 9: Verification  (tests ~70 lines)
 
-- [ ] 9.1 Add `apps/home/tests/` render assertions: avisos/publications/today contain
-      `pdfPreviewContainer` + `pdfModal`; `pdf_modal.html` controls carry
-      `aria-label="Página anterior"` etc.
-- [ ] 9.2 Grep-based assertion: rendered output (and repo) contains zero `loadPdf(`.
-- [ ] 9.3 Assertion: satellite gallery anchors carry `role="img"`; UV `<svg>` carries
-      `role="img"` + `<title>`.
-- [ ] 9.4 Assertion: services render uses `.pagination .page-item .page-link` and has
-      no `<h3><a>` / `<p><a>`.
-- [ ] 9.5 Run `djlint . --reformat --check` and `djlint . --lint` on all touched
-      templates — both pass.
-- [ ] 9.6 Run `python manage.py test apps.home` — all pass.
-- [ ] 9.7 Run `python manage.py check` — no system check errors.
+- [x] 9.1 Add `apps/home/tests/` render assertions: avisos/publications/today contain
+       `pdfPreviewContainer` + `pdfModal`; `pdf_modal.html` controls carry
+       `aria-label="Página anterior"` etc.
+- [x] 9.2 Grep-based assertion: rendered output (and repo) contains zero `loadPdf(`.
+- [x] 9.3 Assertion: satellite gallery anchors carry `role="img"`; UV `<svg>` carries
+       `role="img"` + `<title>`.
+- [x] 9.4 Assertion: services render uses `.pagination .page-item .page-link` and has
+       no `<h3><a>` / `<p><a>`.
+- [x] 9.5 Run `djlint . --reformat --check` and `djlint . --lint` on all touched
+       templates — both pass (0 errors).
+- [x] 9.6 Run `python manage.py test apps.home` — all pass (125 tests).
+- [x] 9.7 Run `python manage.py check` — no system check errors.
 
 ## Phase 10: Commit
 
