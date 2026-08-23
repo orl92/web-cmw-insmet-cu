@@ -5,22 +5,26 @@
          value="{{ form.instance.pk }}">
 {% endif %}
 <div class="mb-3">
-  <label class="form-label">Temperatura</label>
+  <label class="form-label{% if form.temp.field.required %}
+                  required{% endif %}">Temperatura</label>
   {{ form.temp|with_invalid }}
   {% if form.temp.errors %}<div class="invalid-feedback d-block">{{ form.temp.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
-  <label class="form-label">Tiempo</label>
+  <label class="form-label{% if form.weather.field.required %}
+                  required{% endif %}">Tiempo</label>
   {{ form.weather|with_invalid }}
   {% if form.weather.errors %}<div class="invalid-feedback d-block">{{ form.weather.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
-  <label class="form-label">Dirección del Viento</label>
+  <label class="form-label{% if form.wind_dir.field.required %}
+                  required{% endif %}">Dirección del Viento</label>
   {{ form.wind_dir|with_invalid }}
   {% if form.wind_dir.errors %}<div class="invalid-feedback d-block">{{ form.wind_dir.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
-  <label class="form-label">Velocidad del Viento</label>
+  <label class="form-label{% if form.wind_speed.field.required %}
+                  required{% endif %}">Velocidad del Viento</label>
   {{ form.wind_speed|with_invalid }}
   {% if form.wind_speed.errors %}<div class="invalid-feedback d-block">{{ form.wind_speed.errors.0 }}</div>{% endif %}
 </div>

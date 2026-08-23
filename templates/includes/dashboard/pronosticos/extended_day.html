@@ -8,17 +8,20 @@
   {% include 'includes/dashboard/date_field.html' with field=form.date value=form.date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
 </div>
 <div class="mb-3">
-  <label class="form-label">Temp. Mín</label>
+  <label class="form-label{% if form.min_temp.field.required %}
+                  required{% endif %}">Temp. Mín</label>
   {{ form.min_temp|with_invalid }}
   {% if form.min_temp.errors %}<div class="invalid-feedback d-block">{{ form.min_temp.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
-  <label class="form-label">Temp. Máx</label>
+  <label class="form-label{% if form.max_temp.field.required %}
+                  required{% endif %}">Temp. Máx</label>
   {{ form.max_temp|with_invalid }}
   {% if form.max_temp.errors %}<div class="invalid-feedback d-block">{{ form.max_temp.errors.0 }}</div>{% endif %}
 </div>
 <div class="mb-3">
-  <label class="form-label">Tiempo</label>
+  <label class="form-label{% if form.weather.field.required %}
+                  required{% endif %}">Tiempo</label>
   {{ form.weather|with_invalid }}
   {% if form.weather.errors %}<div class="invalid-feedback d-block">{{ form.weather.errors.0 }}</div>{% endif %}
 </div>

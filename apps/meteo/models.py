@@ -2,7 +2,7 @@ import uuid
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 
 from apps.core.models import EmailRecipientList, FileHandlerMixin, pdf_upload_path
@@ -132,7 +132,10 @@ class ForecastRegions(models.Model):
     region = models.CharField(max_length=10, choices=REGION_CHOICES)
     period = models.CharField(max_length=10, choices=PERIOD_CHOICES)
     period_order = models.IntegerField(default=0, editable=False)
-    temp = models.IntegerField(verbose_name='Temperatura')
+    temp = models.IntegerField(
+        verbose_name='Temperatura',
+        validators=[MinValueValidator(-20), MaxValueValidator(60)],
+    )
     weather = models.CharField(
         max_length=10, choices=Forecasts.TIEMPO_CHOICES, verbose_name='Tiempo'
     )
@@ -178,8 +181,14 @@ class ForecastExtendedDay(models.Model):
     forecast = models.ForeignKey(Forecasts, on_delete=models.CASCADE, related_name='extended_days')
     day_number = models.IntegerField(verbose_name='Día')
     date = models.DateField(verbose_name='Fecha')
-    min_temp = models.IntegerField(verbose_name='Temperatura Mínima')
-    max_temp = models.IntegerField(verbose_name='Temperatura Máxima')
+    min_temp = models.IntegerField(
+        verbose_name='Temperatura Mínima',
+        validators=[MinValueValidator(-20), MaxValueValidator(60)],
+    )
+    max_temp = models.IntegerField(
+        verbose_name='Temperatura Máxima',
+        validators=[MinValueValidator(-20), MaxValueValidator(60)],
+    )
     weather = models.CharField(
         max_length=10, choices=Forecasts.TIEMPO_CHOICES, verbose_name='Tiempo'
     )

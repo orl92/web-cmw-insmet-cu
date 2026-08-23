@@ -1,5 +1,5 @@
 import re
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from django import template
 
@@ -68,6 +68,24 @@ def iso_datetime(value):
     if isinstance(value, datetime):
         return value.strftime('%Y-%m-%dT%H:%M')
     return value
+
+
+@register.filter
+def to_time_value(value):
+    """Valor 24h (HH:MM) para el widget de hora; deja el string ya enviado intacto.
+
+    En la carga inicial el valor es un objeto time/datetime -> 'HH:MM' (24h),
+    que Tempus parsea sin depender del locale. Tras un error de validación el
+    valor ya es el string enviado (p.ej. '18:30') y se respeta tal cual.
+    Django lo parsea con %H:%M.
+    """
+    if value in (None, ''):
+        return ''
+    if isinstance(value, datetime):
+        return value.strftime('%H:%M')
+    if isinstance(value, time):
+        return value.strftime('%H:%M')
+    return str(value)
 
 
 def _coerce_date(value):
