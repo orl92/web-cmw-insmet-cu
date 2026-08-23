@@ -157,18 +157,22 @@
                      height="134"
                      viewBox="5 -12 171 178"
                      fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-240 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round">
+                     xmlns="http://www.w3.org/2000/svg"
+                     role="img"
+                     aria-labelledby="uv-svg-title uv-svg-desc">
+                  <title id="uv-svg-title">Índice UV: {{ latest_forecast.uv_index }}</title>
+                  <desc id="uv-svg-desc">Medidor semicircular del índice de radiación ultravioleta, con arcos de color que van del verde al púrpura según el nivel de exposición.</desc>
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-240 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round" aria-hidden="true">
                   </path>
-                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-243 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round">
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-243 90.5 80)" fill="none" stroke="#73AA24" stroke-width="8" stroke-linecap="round" aria-hidden="true">
                   </path>
-                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-178 90.5 80)" fill="none" stroke="#FDE300" stroke-width="8" stroke-linecap="round">
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-178 90.5 80)" fill="none" stroke="#FDE300" stroke-width="8" stroke-linecap="round" aria-hidden="true">
                   </path>
-                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-115 90.5 80)" fill="none" stroke="#FF8C00" stroke-width="8" stroke-linecap="round">
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-115 90.5 80)" fill="none" stroke="#FF8C00" stroke-width="8" stroke-linecap="round" aria-hidden="true">
                   </path>
-                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-52 90.5 80)" fill="none" stroke="#D13438" stroke-width="8" stroke-linecap="round">
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(-52 90.5 80)" fill="none" stroke="#D13438" stroke-width="8" stroke-linecap="round" aria-hidden="true">
                   </path>
-                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(13 90.5 80)" fill="none" stroke="#5C2E91" stroke-width="8" stroke-linecap="round">
+                  <path d="M 90.5 80 m 76 0 a 76 76 0 0 1 -32 62.3 " transform="rotate(13 90.5 80)" fill="none" stroke="#5C2E91" stroke-width="8" stroke-linecap="round" aria-hidden="true">
                   </path>
                   <circle cx="{{ latest_forecast.uv_index|uv_cx }}" cy="{{ latest_forecast.uv_index|uv_cy }}" r="10" fill="{{ latest_forecast.uv_index|uv_color }}"></circle>
                   <circle cx="{{ latest_forecast.uv_index|uv_cx }}" cy="{{ latest_forecast.uv_index|uv_cy }}" r="11.5" stroke="white" stroke-width="3"></circle>
@@ -221,7 +225,7 @@
     <div class="card">
       <div class="card-body">
         <h3 class="subheader text-muted fw-medium">Estaciones</h3>
-        <div class="container" id="chartdiv" style="height: 450px;"></div>
+        <div class="container chart-height-450" id="chartdiv"></div>
       </div>
     </div>
   </div>
@@ -230,7 +234,7 @@
     <div class="card">
       <div class="card-body">
         <h3 class="subheader text-muted fw-medium">Observación</h3>
-        <div class="container" id="station-details" style="height: 450px;">
+        <div class="container chart-height-450" id="station-details">
           <p id="station-date"
              class="h3 mb-4 text-center"
              data-bs-toggle="tooltip"
@@ -286,6 +290,13 @@
 </div>
 {% endblock %}
 {% block extrajs %}
+  {# 7.2 amCharts 5 accessibility module: NOT enabled. #}
+  {# The bundled dist (static/dist/libs/amcharts/dist/*.js) is a monolithic global #}
+  {# build. There is no separate ESM accessibility module (no es2015/ or features/ #}
+  {# path) and no enableFeature("Accessibility", true) API in the bundle, so an #}
+  {# import would break the chart. Revisit when upgrading to the npm/ESM amCharts 5 #}
+  {# build, where `import { Accessibility } from "@amcharts/amcharts5"` plus #}
+  {# `root.enableFeature("Accessibility", true)` becomes available. #}
   <script src="{% static 'dist/libs/amcharts/dist/index.js' %}"></script>
   <script src="{% static 'dist/libs/amcharts/dist/map.js' %}"></script>
   <script src="{% static 'dist/libs/amcharts/dist/themes/Animated.js' %}"></script>

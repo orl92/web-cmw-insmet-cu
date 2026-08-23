@@ -1,4 +1,14 @@
 /* ============================================= */
+/* SECCIONES UTILITARIAS                         */
+/* ============================================= */
+/* Altura fija para el contenedor del mapa de estaciones y el panel de
+   detalles (Fase 7.3 de 015-home-templates-ui). Sustituye el style inline
+   height:450px que antes llevaban #chartdiv y #station-details. */
+.chart-height-450 {
+    height: 450px;
+}
+
+/* ============================================= */
 /* SECCIÓN 1: EFECTOS HOVER GENERALES            */
 /* ============================================= */
 /* Añadimos la clase .weather-icon-region para aplicar hover a los iconos de regiones */
