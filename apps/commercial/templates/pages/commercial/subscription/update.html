@@ -1,4 +1,5 @@
 {% extends 'layouts/form.html' %}
+{% load form_filters %}
 {% block form %}
   {% include 'includes/dashboard/form_card.html' with card_title='Suscripción' %}
   <div class="row">
@@ -30,18 +31,10 @@
   {% include 'includes/dashboard/form_card.html' with card_title='Período de Vigencia' %}
   <div class="row">
     <div class="col-md-6 mb-3">
-      <label class="form-label" for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
-      {{ form.start_date }}
-      {% if form.start_date.errors %}
-        <div class="invalid-feedback d-block">{{ form.start_date.errors.0 }}</div>
-      {% endif %}
+      {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm' %}
     </div>
     <div class="col-md-6 mb-3">
-      <label class="form-label" for="{{ form.end_date.id_for_label }}">{{ form.end_date.label }}</label>
-      {{ form.end_date }}
-      {% if form.end_date.errors %}
-        <div class="invalid-feedback d-block">{{ form.end_date.errors.0 }}</div>
-      {% endif %}
+      {% include 'includes/dashboard/date_field.html' with field=form.end_date value=form.end_date.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm' %}
     </div>
   </div>
   <div class="mb-3">
@@ -63,10 +56,31 @@
     const startInput = document.getElementById('id_start_date');
     const endInput = document.getElementById('id_end_date');
 
-    function toLocalDateTimeValue(date) {
+    function toIsoDateTime(date) {
       const pad = n => String(n).padStart(2, '0');
       return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
         'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+    }
+
+    function setPickerValue(input, isoDateTimeStr) {
+      const dt = new Date(isoDateTimeStr);
+      const picker = window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id];
+      if (picker && picker.dates && typeof picker.dates.setValue === 'function') {
+        picker.dates.setValue(dt);
+      }
+      // window.formatPickerDateTime se define en tempus-init (DOMContentLoaded); si
+      // aún no existe —el script corre durante el parseo— formateamos localmente.
+      if (typeof window.formatPickerDateTime === 'function') {
+        input.value = window.formatPickerDateTime(dt);
+      } else {
+        const pad = n => String(n).padStart(2, '0');
+        let h = dt.getHours();
+        const meridiem = h >= 12 ? 'PM' : 'AM';
+        let h12 = h % 12;
+        if (h12 === 0) h12 = 12;
+        input.value = pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() +
+          ' ' + h12 + ':' + pad(dt.getMinutes()) + ' ' + meridiem;
+      }
     }
 
     function updateFields() {
@@ -79,12 +93,12 @@
         endInput.disabled = true;
         if (!startInput.value) {
           const now = new Date();
-          startInput.value = toLocalDateTimeValue(now);
+          setPickerValue(startInput, toIsoDateTime(now));
           if (val === '1m') now.setDate(now.getDate() + 30);
           else if (val === '3m') now.setDate(now.getDate() + 90);
           else if (val === '6m') now.setDate(now.getDate() + 180);
           else if (val === '1y') now.setDate(now.getDate() + 365);
-          if (val !== 'custom') endInput.value = toLocalDateTimeValue(now);
+          if (val !== 'custom') setPickerValue(endInput, toIsoDateTime(now));
         }
       }
     }

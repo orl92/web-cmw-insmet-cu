@@ -46,6 +46,26 @@ document.addEventListener('DOMContentLoaded', function () {
     );
   };
 
+  // Convierte un Date a string dd/mm/yyyy hh:mm AM/PM (formato visible del picker datetime).
+  window.formatPickerDateTime = function (date) {
+    const meridiem = date.getHours() >= 12 ? 'PM' : 'AM';
+    let h = date.getHours() % 12;
+    if (h === 0) h = 12;
+    return (
+      pad(date.getDate()) +
+      '/' +
+      pad(date.getMonth() + 1) +
+      '/' +
+      date.getFullYear() +
+      ' ' +
+      h +
+      ':' +
+      pad(date.getMinutes()) +
+      ' ' +
+      meridiem
+    );
+  };
+
   // Convierte el valor visible del datepicker (dd/mm/yyyy o yyyy-mm-dd) a
   // ISO (yyyy-mm-dd) para construir objetos Date de forma segura.
   window.pickerDateToIso = function (value) {
@@ -74,36 +94,55 @@ document.addEventListener('DOMContentLoaded', function () {
     return String(value).padStart(2, '0');
   }
 
-  // e.date es un DateTime de Luxon (TD6), NO un Date de JS: usa .hour/.minute/etc.
+  // Normaliza el valor del evento change (e.date) a un Date de JS.
+  // TD6 puede entregar un DateTime de Luxon (con toJSDate), un Date de JS, o un
+  // array. Normalizar siempre a Date de JS evita depender de la forma interna.
+  function toJsDate(value) {
+    if (!value) return null;
+    if (typeof value.toJSDate === 'function') return value.toJSDate(); // Luxon
+    if (value instanceof Date) return value; // Date de JS
+    if (Array.isArray(value) && value.length) return toJsDate(value[0]);
+    // Objeto con campos sueltos (p.ej. {year, month, day, hour, minute}).
+    if (typeof value.year === 'number' && typeof value.month === 'number') {
+      var d = value.day != null ? value.day : value.date != null ? value.date : 1;
+      var h = value.hour != null ? value.hour : 0;
+      var m = value.minute != null ? value.minute : 0;
+      return new Date(value.year, value.month - 1, d, h, m);
+    }
+    return null;
+  }
+
+  // Formatea SIEMPRE desde un Date de JS (getDate/getMonth/...), jamás desde
+  // getters de Luxon, para evitar divergencias de forma según el modo.
   function canonicalFormat(date, mode) {
-    var dd = pad(date.day);
-    var mm = pad(date.month);
-    var yyyy = date.year;
-    var hours = date.hour;
-    var meridiem = hours >= 12 ? 'PM' : 'AM';
-    var hour12 = hours % 12;
-    if (hour12 === 0) {
-      hour12 = 12;
-    }
-    var hhmm12 = hour12 + ':' + pad(date.minute) + ' ' + meridiem;
-    var hhmm24 = pad(hours) + ':' + pad(date.minute);
-    if (mode === 'date') {
-      return dd + '/' + mm + '/' + yyyy;
-    }
+    var dt = toJsDate(date);
+    if (!dt) return '';
+    var dd = pad(dt.getDate());
+    var mm = pad(dt.getMonth() + 1);
+    var yyyy = dt.getFullYear();
     if (mode === 'time') {
-      // 24h: locale-independiente, sin meridiano; Django parsea %H:%M.
-      return hhmm24;
+      // 24h HH:MM; Django parsea %H:%M.
+      return pad(dt.getHours()) + ':' + pad(dt.getMinutes());
     }
-    return dd + '/' + mm + '/' + yyyy + ' ' + hhmm12;
+    if (mode === 'datetime') {
+      // dd/MM/yyyy hh:mm AM/PM; Django parsea %d/%m/%Y %I:%M %p.
+      var h = dt.getHours();
+      var meridiem = h >= 12 ? 'PM' : 'AM';
+      var h12 = h % 12;
+      if (h12 === 0) h12 = 12;
+      return (
+        dd + '/' + mm + '/' + yyyy + ' ' + h12 + ':' + pad(dt.getMinutes()) + ' ' + meridiem
+      );
+    }
+    return dd + '/' + mm + '/' + yyyy;
   }
 
   function formatByMode(mode) {
     if (mode === 'time') {
-      // 24h: locale-independiente.
-      return 'H:mm';
+      return 'HH:mm';
     }
     if (mode === 'datetime') {
-      return 'dd/MM/yyyy h:mm a';
+      return 'dd/MM/yyyy hh:mm a';
     }
     return 'dd/MM/yyyy';
   }
@@ -152,11 +191,9 @@ document.addEventListener('DOMContentLoaded', function () {
         theme: currentTheme(),
         icons: { type: 'icons', ...icons },
       },
-      localization:
-        // Hora en 24h (HH:MM): locale-independiente; Django parsea %H:%M.
-        mode === 'time'
-          ? { locale: 'en', format: 'H:mm' }
-          : { locale: 'es', format: formatByMode(mode) },
+      // Locale en/24h y formato explícito: locale-independiente; los formularios
+      // parsean %H:%M, %d/%m/%Y %I:%M %p y %d/%m/%Y respectivamente.
+      localization: { locale: 'en', format: formatByMode(mode) },
     };
   }
 

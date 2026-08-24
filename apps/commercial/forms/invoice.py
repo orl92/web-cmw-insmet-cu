@@ -48,11 +48,13 @@ class InvoiceForm(forms.Form):
     )
     start_date = forms.DateField(
         label='Fecha de inicio',
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
     end_date = forms.DateField(
         label='Fecha de fin',
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
     commercial_registry = forms.CharField(
         max_length=50,

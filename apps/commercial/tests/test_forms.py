@@ -476,6 +476,27 @@ class SubscriptionFormTests(TestCase):
         )
         self.assertFalse(form.is_valid())
 
+    def test_tempus_datetime_format_parses(self):
+        form = SubscriptionForm(
+            data={
+                'customer': self.customer.pk,
+                'service': self.service.pk,
+                'period': 'custom',
+                'payment_status': 'requested',
+                'start_date': '23/08/2026 06:30 PM',
+                'end_date': '23/09/2026 11:45 AM',
+            }
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(
+            form.cleaned_data['start_date'].strftime('%Y-%m-%d %H:%M'),
+            '2026-08-23 18:30',
+        )
+        self.assertEqual(
+            form.cleaned_data['end_date'].strftime('%Y-%m-%d %H:%M'),
+            '2026-09-23 11:45',
+        )
+
 
 class ContractFormTests(TestCase):
     @classmethod

@@ -1,4 +1,5 @@
 {% extends 'layouts/form.html' %}
+{% load form_filters %}
 {% load static %}
 {% block form %}
   <div id="form-messages"></div>
@@ -47,12 +48,10 @@
   <!-- Fechas y duración -->
   <div class="row">
     <div class="col-md-4 mb-3">
-      <label class="form-label">{{ form.start_date.label }}</label>
-      {{ form.start_date }}
+      {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
     </div>
     <div class="col-md-4 mb-3">
-      <label class="form-label">{{ form.end_date.label }}</label>
-      {{ form.end_date }}
+      {% include 'includes/dashboard/date_field.html' with field=form.end_date value=form.end_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
     </div>
     <div class="col-md-4 mb-3">
       <label class="form-label">Días del período</label>
@@ -431,12 +430,51 @@
   const endDateInput = document.getElementById('id_end_date');
   const daysCountInput = document.getElementById('days-count');
 
+  // Convierte el valor visible del picker (dd/mm/yyyy) a Date.
+  // Usa window.pickerDateToIso cuando está disponible (lo define tempus-init en
+  // DOMContentLoaded). Si aún no existe —el script corre durante el parseo, antes
+  // de ese evento— aplica el mismo parseo local para no depender del orden de carga.
+  function parsePickerDate(value) {
+    let iso = '';
+    if (typeof window.pickerDateToIso === 'function') {
+      iso = window.pickerDateToIso(value);
+    } else if (value) {
+      const s = String(value).trim();
+      const parts = s.split('/');
+      if (parts.length === 3) {
+        iso = parts[2] + '-' + parts[1] + '-' + parts[0];
+      } else if (s.split('-').length === 3 && s.split('-')[0].length === 4) {
+        iso = s;
+      }
+    }
+    if (!iso) return null;
+    const d = new Date(iso + 'T00:00:00');
+    return isNaN(d) ? null : d;
+  }
+
+  // Fija la fecha en el picker Tempus (y en el input) a partir de un ISO yyyy-mm-dd.
+  function setPickerValue(input, isoDateStr) {
+    const dt = new Date(isoDateStr + 'T00:00:00');
+    const picker = window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id];
+    if (picker && picker.dates && typeof picker.dates.setValue === 'function') {
+      picker.dates.setValue(dt);
+    }
+    // window.formatPickerDate se define en tempus-init (DOMContentLoaded); si aún
+    // no existe, formateamos localmente (dd/mm/aaaa) para no depender del orden.
+    if (typeof window.formatPickerDate === 'function') {
+      input.value = window.formatPickerDate(dt);
+    } else {
+      const pad = n => String(n).padStart(2, '0');
+      input.value = pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear();
+    }
+    updateDaysFromInputs();
+  }
+
   // ========== Helpers ==========
   function calculateDays(start, end) {
-    if (!start || !end) return 0;
-    const s = new Date(start + 'T00:00:00');
-    const e = new Date(end + 'T00:00:00');
-    if (isNaN(s) || isNaN(e)) return 0;
+    const s = parsePickerDate(start);
+    const e = parsePickerDate(end);
+    if (!s || !e) return 0;
     const diff = e - s;
     return diff >= 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
   }
@@ -449,20 +487,34 @@
     });
   }
 
-  // *** MEJORA: actualización en tiempo real al cambiar fechas (input + change para máxima compatibilidad e inmediatez) ***
+  // *** MEJORA: actualización en tiempo real al cambiar fechas (picker + input) ***
+  function wirePicker(input) {
+    // El picker se crea en DOMContentLoaded (tempus-init). Si aún no existe,
+    // reintentamos en DOMContentLoaded (que corre después de tempus-init).
+    function subscribe() {
+      if (!window.tempusDominus || !window.tempusDominus._instances) return;
+      const picker = window.tempusDominus._instances[input.id];
+      if (picker && picker.subscribe && window.tempusDominus.Namespace) {
+        picker.subscribe(window.tempusDominus.Namespace.events.change, updateDaysFromInputs);
+      }
+    }
+    subscribe();
+    if (!(window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id])) {
+      document.addEventListener('DOMContentLoaded', subscribe);
+    }
+    input.addEventListener('change', updateDaysFromInputs);
+    input.addEventListener('input', updateDaysFromInputs);
+  }
   if (startDateInput && endDateInput) {
-    startDateInput.addEventListener('change', updateDaysFromInputs);
-    startDateInput.addEventListener('input', updateDaysFromInputs);
-    endDateInput.addEventListener('change', updateDaysFromInputs);
-    endDateInput.addEventListener('input', updateDaysFromInputs);
+    wirePicker(startDateInput);
+    wirePicker(endDateInput);
     updateDaysFromInputs(); // valor inicial
   }
   // ***********************************************************************************************************************
 
   function setPeriodFields(start, end) {
-    startDateInput.value = start;
-    endDateInput.value = end;
-    updateDaysFromInputs();
+    setPickerValue(startDateInput, start);
+    setPickerValue(endDateInput, end);
   }
 
   // ========== Tooltip helpers ==========
@@ -575,9 +627,8 @@
     manualContainer.style.display = 'block';
     const today = new Date().toISOString().split('T')[0];
     const nextMonth = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
-    startDateInput.value = today;
-    endDateInput.value = nextMonth;
-    updateDaysFromInputs();
+    setPickerValue(startDateInput, today);
+    setPickerValue(endDateInput, nextMonth);
   }
 
   // ========== Carga de suscripciones ==========

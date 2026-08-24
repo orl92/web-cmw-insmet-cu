@@ -21,16 +21,21 @@ class SubscriptionForm(forms.ModelForm):
         required=False,
     )
 
+    start_date = forms.DateTimeField(
+        input_formats=['%d/%m/%Y %I:%M %p', '%Y-%m-%dT%H:%M', '%d/%m/%Y %H:%M'],
+        widget=forms.DateTimeInput(attrs={'class': 'form-control'}),
+        required=False,
+    )
+    end_date = forms.DateTimeField(
+        input_formats=['%d/%m/%Y %I:%M %p', '%Y-%m-%dT%H:%M', '%d/%m/%Y %H:%M'],
+        widget=forms.DateTimeInput(attrs={'class': 'form-control'}),
+        required=False,
+    )
+
     class Meta:
         model = ServiceSubscription
         fields = ['customer', 'service', 'start_date', 'end_date', 'payment_status', 'period']
         widgets = {
-            'start_date': forms.DateTimeInput(
-                attrs={'type': 'datetime-local', 'class': 'form-control', 'id': 'id_start_date'}
-            ),
-            'end_date': forms.DateTimeInput(
-                attrs={'type': 'datetime-local', 'class': 'form-control', 'id': 'id_end_date'}
-            ),
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'service': forms.Select(attrs={'class': 'form-control'}),
             'payment_status': forms.Select(attrs={'class': 'form-control'}),
