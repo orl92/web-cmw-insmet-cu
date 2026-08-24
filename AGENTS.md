@@ -4,6 +4,21 @@
 
 Django 5.2 + DRF + drf-spectacular (OpenAPI), Python 3.12 (CI y ruff apuntan a `py312`). Virtual env `.venv/`. UI: Tabler vía Django Templates; raíz `templates/` con `layouts/` e `includes/`, y páginas en `apps/<app>/templates/pages/`. DB: SQLite dev, PostgreSQL/MySQL prod. Apps dentro de `apps/`.
 
+**Restricción de frontend:** JS 100% vanilla, **SIN Node.js, SIN bundlers ni paso de build**. Las librerías de terceros (Tabler, Tempus Dominus, etc.) se vendorean como `*.min.js` en `static/dist/libs/` y se sirven directo. No introducir npm, transpilación ni tooling JS en el proyecto.
+
+## Misión, alcance y límites duros
+
+**Misión:** portal web del Centro Meteorológico Provincial Camagüey (CMP) — portal público meteorológico + dashboard administrativo (pronósticos, avisos, servicios comerciales, facturación, publicaciones) + API REST para terceros.
+
+**No es:** una SPA / frontend desacoplado (React/Vue/Angular), una red social o foro, ni un proyecto OSS genérico — está diseñado específicamente para el CMP Camagüey.
+
+**Límites duros (no negociables):**
+- No commitear secretos ni datos: `.env`, `db.sqlite3` ni `media/` (ya excluidos en `.gitignore`).
+- No introducir dependencias npm, bundlers o frameworks JS (todo es Django Templates + Tabler + JS vanilla vendoreado en `static/dist/libs/`).
+- No quitar `FileHandlerMixin` de modelos con `FileField`/`ImageField` (pérdida de archivos en media).
+- No cambiar `default_permissions = ()` sin redefinir los 4 permisos custom (`view_*`/`add_*`/`change_*`/`delete_*`).
+- No saltarse el flujo SDD para features (proposal → design → tasks → implementación → archive en `openspec/changes/`).
+
 ## Comandos
 
 ```bash
@@ -133,6 +148,40 @@ Estos items NO los cubren los skills genéricos. Verificarlos siempre:
 - [ ] Soft delete: filtrar `record_active=True` (usa el manager por defecto, no `all_objects`)
 - [ ] Tareas/imports Huey registrados en `AppConfig.ready()`
 - [ ] Migraciones ejecutadas y NO versionadas (`.gitignore`)
+
+## Modelo de dominio (referencia rápida)
+
+- **Forecasts**: 3 regiones (north/interior/south) × 3 períodos (mañana/tarde/noche) + 5 días extendido + datos astronómicos (luna, sol, UV). `ForecastRegions` y `ForecastExtendedDay` normalizados.
+- **Warning**: modelo unificado con `warning_type` (early/tropical_cyclone/storm); `uuid`, `user`, `summary`, `file` (PDF), `valid_until`, `email_recipient_list`.
+- **WeatherReport**: por tipo (today/tomorrow/commentary/note) con PDF y lista de correo.
+- **Province / Town / Station**: geografía y estaciones meteorológicas.
+- **Customer**: datos fiscales cubanos (REEUP, NIT, cuenta bancaria), `client_type` (natural/jurídica).
+- **Service**: público o comercial; precio (CUP), código, PDF e imagen.
+- **ServiceSubscription**: soft delete (`record_active`); estados `requested → pending → paid → expired`.
+- **Invoice / InvoiceItem**: facturación con cálculo automático de importe.
+- **Contract / Certificate**: servicios comerciales con PDF.
+- **CompanySettings**: singleton (`pk=1`); datos fiscales de la empresa.
+- **SiteConfiguration**: flag `maintenance_mode`.
+- **Profile**: vinculado a User por señal `post_save`; `newsletter` sincronizado con `EmailRecipientList`.
+- **ScientificPublication / Author**: publicaciones con coautores, ORCID, PDF.
+
+## Layouts base (UI)
+
+- `templates/layouts/base.html` (dashboard), `home.html` (público), `base-auth.html` (login), `form.html`, `list.html`, `maintenance.html`.
+- Iconos: webfont Tabler (`<i class="icon ti ti-*">`); iconos meteorológicos PNG en `static/dist/img/weather_icon/`.
+- Modales: mecanismo nativo de Tabler (data API / `Bootstrap.Modal`).
+
+## Roadmap / Backlog (snapshot histórico)
+
+> Tracking vivo en `openspec/changes/`. Esta lista es un snapshot de la constitución eliminada (commit `a66238d`); verificar vigencia antes de usarlo.
+
+**Activas (históricas):** 071 Performance queries (N+1, índices, cache) · 073 UI polish (toasts/spinners/tablas) · 074 Redis cache · 075 Monitoreo tareas Huey · 076 Auditoría de actividad · 077 Operaciones masivas · 078 Tema personalizado · 079 Exportar gráficos · 080 Debug Toolbar (dev).
+
+**Backlog / ideas:** CSP (django-csp) · 2FA/MFA para staff · validación de archivos subidos (magic bytes/tamaño) · health check `/health/` · búsqueda global en navbar · Auth API (JWT) · WebSockets/notificaciones en tiempo real · i18n EN del portal público.
+
+## Revisión antes de commit
+
+Antes de cada commit (o push/PR), lanzar un subagente de revisión que lea el diff y los archivos cambiados, detecte bugs/errores y los resuelva antes de commitear. Verificar luego con djlint, tests Django y `manage.py check`.
 
 ## API + Deploy + Locale
 
