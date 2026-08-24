@@ -197,7 +197,17 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
-  document.querySelectorAll('[data-tempus]').forEach(function (input) {
+  // === Inicialización de pickers Tempus Dominus ===
+  // Se crean UNA SOLA VEZ aquí, sobre los [data-tempus] presentes en DOMContentLoaded.
+  // NO hay observer para nodos agregados después de la carga. Si en el futuro se
+  // inyecta un [data-tempus] por JS (AJAX/htmx/fetch), inicializarlo con
+  // initPicker(input) o añadir un MutationObserver que llame initPicker para cada
+  // nodo nuevo — SIEMPRE con guarda anti-doble-init (ver abajo).
+  function initPicker(input) {
+    if (!input) return;
+    if (window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id]) {
+      return; // ya inicializado: evita doble picker / doble suscripción
+    }
     var pickerElement = input.parentElement;
     var mode = input.getAttribute('data-tempus') || 'date';
     // Backstop fiable: TD6 no siempre aplica localization por instancia, así
@@ -225,7 +235,9 @@ document.addEventListener('DOMContentLoaded', function () {
         picker.toggle();
       });
     }
-  });
+  }
+
+  document.querySelectorAll('[data-tempus]').forEach(initPicker);
 
   var observer = new MutationObserver(function () {
     Object.keys(window.tempusDominus._instances).forEach(function (id) {

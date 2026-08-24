@@ -171,6 +171,12 @@ Estos items NO los cubren los skills genéricos. Verificarlos siempre:
 - Iconos: webfont Tabler (`<i class="icon ti ti-*">`); iconos meteorológicos PNG en `static/dist/img/weather_icon/`.
 - Modales: mecanismo nativo de Tabler (data API / `Bootstrap.Modal`).
 
+## Tempus Dominus (date pickers)
+
+- Pickers inicializados en `static/dist/js/tempus-init.js`, **una sola vez** en `DOMContentLoaded` sobre los `[data-tempus]` presentes.
+- `tempus-init.js` define sus globals (`window.pickerDateToIso`, `window.formatPickerDate`, `window.formatPickerDateTime`) y `window.tempusDominus._instances` DENTRO de `DOMContentLoaded`; los scripts de plantilla corren antes → usan fallback local y difieren la suscripción al picker.
+- **Restricción conocida:** no hay observer para nodos agregados tras la carga. Si en el futuro se inyecta un `[data-tempus]` por JS (AJAX/htmx/fetch), inicializarlo con `initPicker(input)` (función en `tempus-init.js`) o añadir un `MutationObserver` que llame `initPicker` para cada nodo nuevo, **con guarda anti-doble-init** (`if (window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id]) return;`). Ver comentario en `tempus-init.js`.
+
 ## Roadmap / Backlog (snapshot histórico)
 
 > Tracking vivo en `openspec/changes/`. Esta lista es un snapshot de la constitución eliminada (commit `a66238d`); verificar vigencia antes de usarlo.
