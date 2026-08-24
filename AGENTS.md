@@ -119,6 +119,7 @@ La lista `<available_skills>` del sistema es la fuente autoritativa de skills ca
 ### MCP
 - `context7` — documentación actualizada de librerías/frameworks (Django, DRF, drf-spectacular, etc.). Usarlo siempre que se necesiten APIs, ejemplos o configuración de una librería; formato `use library /django/django`
 - `engram` — memoria persistente del proyecto (decisiones, descubrimientos, convenciones)
+- `tabler` — server MCP de Tabler.io (proyecto comunitario, MIT) para buscar íconos, componentes, layouts, paleta y docs de Tabler. Es un server stdio local (`npx -y tabler-mcp-server`) configurado en el opencode del agente, NO en el repo. Las sugerencias de CDN que genera se ignoran, porque el proyecto vendorea Tabler en `static/dist/libs/`.
 
 ## Flujo SDD (gentle-ai / OpenSpec)
 
