@@ -68,7 +68,7 @@ uritemplate
 uritools
 urllib3
 webencodings
-whitenoise==6.7.0
+whitenoise==6.12.0
 xarray
 xhtml2pdf
 openpyxl
