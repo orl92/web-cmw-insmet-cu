@@ -75,7 +75,7 @@ def to_time_value(value):
     """Valor 12h (hh:mm AM/PM) para el picker de hora; normaliza el string ya enviado.
 
     En la carga inicial el valor es un objeto time/datetime -> 'hh:mm AM/PM', que
-    Tempus (modo time, locale 'en') parsea con el formato 'hh:mm a'. Tras un error
+    Tempus (modo time, locale 'en') parsea con el formato 'hh:mm T'. Tras un error
     de validación el valor ya es el string enviado: si es parseable (12h o 24h) se
     normaliza a 12h AM/PM; si no, se respeta tal cual. Django lo parsea con %I:%M %p.
     """

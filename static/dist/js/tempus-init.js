@@ -143,10 +143,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function formatByMode(mode) {
     if (mode === 'time') {
-      return 'hh:mm a';
+      // Token 'T' (meridiem en mayúsculas). NOTA: 'a' NO es un token válido en
+      // Tempus Dominus v6, se renderizaría como el literal "a"/"p".
+      return 'hh:mm T';
     }
     if (mode === 'datetime') {
-      return 'dd/MM/yyyy hh:mm a';
+      return 'dd/MM/yyyy hh:mm T';
     }
     return 'dd/MM/yyyy';
   }
@@ -195,9 +197,10 @@ document.addEventListener('DOMContentLoaded', function () {
         theme: currentTheme(),
         icons: { type: 'icons', ...icons },
       },
-      // Locale 'en' + formato explícito: locale-independiente. Los formularios
-      // parsean %I:%M %p (hora, 12h AM/PM; %H:%M como fallback), %d/%m/%Y %I:%M %p
-      // (fecha-hora) y %d/%m/%Y (fecha) respectivamente.
+      // Locale 'en' + formato explícito (token 'T' = meridiem AM/PM):
+      // locale-independiente. Los formularios parsean %I:%M %p (hora, 12h
+      // AM/PM; %H:%M como fallback), %d/%m/%Y %I:%M %p (fecha-hora) y %d/%m/%Y
+      // (fecha) respectivamente.
       localization: { locale: 'en', format: formatByMode(mode) },
     };
   }
