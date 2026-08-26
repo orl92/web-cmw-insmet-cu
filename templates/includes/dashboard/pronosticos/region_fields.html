@@ -30,7 +30,8 @@
 </div>
 {% if has_sea %}
   <div class="mb-3">
-    <label class="form-label">Mar</label>
+    <label class="form-label{% if form.sea_note.field.required %}
+                   required{% endif %}">Mar</label>
     {{ form.sea_note|with_invalid }}
     {% if form.sea_note.errors %}<div class="invalid-feedback d-block">{{ form.sea_note.errors.0 }}</div>{% endif %}
   </div>

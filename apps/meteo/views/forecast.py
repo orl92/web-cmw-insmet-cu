@@ -19,14 +19,13 @@ from apps.meteo.forms.forecast import (
     ForecastRegionsFormSet,
     ForecastsForm,
 )
-from apps.meteo.models import Forecasts
+from apps.meteo.models import REGION_HAS_SEA, Forecasts
 from apps.meteo.utils.excel_forecast import build_template, parse_excel
 
 APPLICATION_SPREADSHEET = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 REGION_MAP = {'north': 'n', 'interior': 'i', 'south': 's'}
 PERIOD_MAP = {'morning': 'm', 'afternoon': 'a', 'night': 'n'}
-REGION_HAS_SEA = {'north': True, 'interior': False, 'south': True}
 
 
 def _build_region_initial():

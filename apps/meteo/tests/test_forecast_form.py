@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from apps.meteo.forms.forecast import (
     ForecastExtendedDayFormSet,
+    ForecastRegionsForm,
     ForecastRegionsFormSet,
     ForecastsForm,
 )
@@ -158,3 +159,31 @@ class ForecastEditRenderTests(TestCase):
         self.assertContains(resp, 'value="06:40 AM"')
         self.assertContains(resp, 'value="07:30 PM"')
         self.assertNotContains(resp, '6:40 a')
+
+
+class ForecastRegionsSeaNoteRequiredTests(TestCase):
+    def _form(self, region, sea_note=''):
+        return ForecastRegionsForm(
+            data={
+                'region': region,
+                'period': 'morning',
+                'temp': '28',
+                'weather': 'N',
+                'wind_dir': 'N',
+                'wind_speed': '5',
+                'sea_note': sea_note,
+            }
+        )
+
+    def test_coast_requires_sea_note(self):
+        form = self._form('north', sea_note='')
+        self.assertFalse(form.is_valid())
+        self.assertIn('sea_note', form.errors)
+
+    def test_interior_does_not_require_sea_note(self):
+        form = self._form('interior', sea_note='')
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_coast_valid_with_sea_note(self):
+        form = self._form('south', sea_note='TQ')
+        self.assertTrue(form.is_valid(), form.errors)

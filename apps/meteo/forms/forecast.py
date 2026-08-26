@@ -4,24 +4,57 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.forms.models import BaseInlineFormSet
 
-from apps.meteo.models import ForecastExtendedDay, ForecastRegions, Forecasts
+from apps.meteo.models import (
+    REGION_HAS_SEA,
+    ForecastExtendedDay,
+    ForecastRegions,
+    Forecasts,
+)
+
+
+class ForecastRegionsForm(forms.ModelForm):
+    """Formulario por región. 'Mar' (sea_note) es obligatorio solo en costas."""
+
+    class Meta:
+        model = ForecastRegions
+        fields = [
+            'region',
+            'period',
+            'temp',
+            'weather',
+            'wind_dir',
+            'wind_speed',
+            'sea_note',
+        ]
+        widgets = {
+            'region': forms.HiddenInput(),
+            'period': forms.HiddenInput(),
+            'temp': forms.NumberInput(attrs={'class': 'form-control', 'min': -20, 'max': 60}),
+            'weather': forms.Select(attrs={'class': 'form-select'}),
+            'wind_dir': forms.Select(attrs={'class': 'form-select'}),
+            'wind_speed': forms.TextInput(attrs={'class': 'form-control'}),
+            'sea_note': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        region = self.initial.get('region')
+        if region is None and self.data:
+            region = self.data.get(self.add_prefix('region'))
+        if region is None and self.instance.pk:
+            region = self.instance.region
+        # El mar solo existe en costas (north/south); el interior no lo tiene.
+        if REGION_HAS_SEA.get(region):
+            self.fields['sea_note'].required = True
+
 
 ForecastRegionsFormSet = inlineformset_factory(
     Forecasts,
     ForecastRegions,
-    fields=['region', 'period', 'temp', 'weather', 'wind_dir', 'wind_speed', 'sea_note'],
+    form=ForecastRegionsForm,
     extra=9,
     max_num=9,
     can_delete=False,
-    widgets={
-        'region': forms.HiddenInput(),
-        'period': forms.HiddenInput(),
-        'temp': forms.NumberInput(attrs={'class': 'form-control', 'min': -20, 'max': 60}),
-        'weather': forms.Select(attrs={'class': 'form-select'}),
-        'wind_dir': forms.Select(attrs={'class': 'form-select'}),
-        'wind_speed': forms.TextInput(attrs={'class': 'form-control'}),
-        'sea_note': forms.Select(attrs={'class': 'form-select'}),
-    },
 )
 
 

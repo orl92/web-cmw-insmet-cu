@@ -418,3 +418,7 @@ class Station(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# Regiones con litoral (tienen estado de mar); el interior no.
+REGION_HAS_SEA = {'north': True, 'interior': False, 'south': True}
