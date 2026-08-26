@@ -137,9 +137,10 @@ class ForecastExtendedDayValidationTests(TestCase):
 
 
 class ForecastEditRenderTests(TestCase):
-    def test_edit_renders_24h_time_value(self):
-        # El valor inicial va en 24h (HH:MM): Tempus y Django lo parsean sin
-        # depender del locale del navegador (sin meridiano "a. m.").
+    def test_edit_renders_12h_ampm_time_value(self):
+        # El valor inicial va en 12h (hh:mm AM/PM), igual que los campos de
+        # fecha-hora, para que Tempus (modo time, locale 'en') lo parsee sin
+        # depender del locale del navegador (sin meridiano "a. m." / "p. m.").
         forecast = Forecasts.objects.create(
             date='2026-08-23',
             lp='Luna Nueva',
@@ -154,6 +155,6 @@ class ForecastEditRenderTests(TestCase):
         )
         self.client.force_login(user)
         resp = self.client.get(reverse('meteo:pronostico_update', args=[forecast.uuid]))
-        self.assertContains(resp, 'value="06:40"')
-        self.assertContains(resp, 'value="19:30"')
+        self.assertContains(resp, 'value="06:40 AM"')
+        self.assertContains(resp, 'value="07:30 PM"')
         self.assertNotContains(resp, '6:40 a')

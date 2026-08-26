@@ -121,8 +121,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var mm = pad(dt.getMonth() + 1);
     var yyyy = dt.getFullYear();
     if (mode === 'time') {
-      // 24h HH:MM; Django parsea %H:%M.
-      return pad(dt.getHours()) + ':' + pad(dt.getMinutes());
+      // 12h hh:mm AM/PM; Django parsea %I:%M %p.
+      var h = dt.getHours();
+      var meridiem = h >= 12 ? 'PM' : 'AM';
+      var h12 = h % 12;
+      if (h12 === 0) h12 = 12;
+      return h12 + ':' + pad(dt.getMinutes()) + ' ' + meridiem;
     }
     if (mode === 'datetime') {
       // dd/MM/yyyy hh:mm AM/PM; Django parsea %d/%m/%Y %I:%M %p.
@@ -139,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function formatByMode(mode) {
     if (mode === 'time') {
-      return 'HH:mm';
+      return 'hh:mm a';
     }
     if (mode === 'datetime') {
       return 'dd/MM/yyyy hh:mm a';
@@ -191,8 +195,9 @@ document.addEventListener('DOMContentLoaded', function () {
         theme: currentTheme(),
         icons: { type: 'icons', ...icons },
       },
-      // Locale en/24h y formato explícito: locale-independiente; los formularios
-      // parsean %H:%M, %d/%m/%Y %I:%M %p y %d/%m/%Y respectivamente.
+      // Locale 'en' + formato explícito: locale-independiente. Los formularios
+      // parsean %I:%M %p (hora, 12h AM/PM; %H:%M como fallback), %d/%m/%Y %I:%M %p
+      // (fecha-hora) y %d/%m/%Y (fecha) respectivamente.
       localization: { locale: 'en', format: formatByMode(mode) },
     };
   }

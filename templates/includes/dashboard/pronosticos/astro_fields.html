@@ -18,10 +18,10 @@
     {% include 'includes/dashboard/date_field.html' with field=form.nlpd value=form.nlpd.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
   </div>
   <div class="col-lg-4">
-    {% include 'includes/dashboard/date_field.html' with field=form.sunrise value=form.sunrise.value|to_time_value mode='time' placeholder='06:30' %}
+      {% include 'includes/dashboard/date_field.html' with field=form.sunrise value=form.sunrise.value|to_time_value mode='time' placeholder='06:30 AM' %}
   </div>
   <div class="col-lg-4">
-    {% include 'includes/dashboard/date_field.html' with field=form.sunset value=form.sunset.value|to_time_value mode='time' placeholder='19:30' %}
+      {% include 'includes/dashboard/date_field.html' with field=form.sunset value=form.sunset.value|to_time_value mode='time' placeholder='07:30 PM' %}
   </div>
   <div class="col-lg-4">
     <div class="mb-3">
