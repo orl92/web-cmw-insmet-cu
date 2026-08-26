@@ -2,14 +2,15 @@
 <div class="row">
   <div class="col-lg-4">
     <div class="mb-3">
-      <label class="form-label">{{ form.lp.label }}</label>
+      <label class="form-label{% if form.lp.field.required %} required{% endif %}">{{ form.lp.label }}</label>
       {{ form.lp|with_invalid }}
       {% if form.lp.errors %}<div class="invalid-feedback d-block">{{ form.lp.errors.0 }}</div>{% endif %}
     </div>
   </div>
   <div class="col-lg-4">
     <div class="mb-3">
-      <label class="form-label">{{ form.nlp.label }}</label>
+      <label class="form-label{% if form.nlp.field.required %}
+                      required{% endif %}">{{ form.nlp.label }}</label>
       {{ form.nlp|with_invalid }}
       {% if form.nlp.errors %}<div class="invalid-feedback d-block">{{ form.nlp.errors.0 }}</div>{% endif %}
     </div>
@@ -18,14 +19,15 @@
     {% include 'includes/dashboard/date_field.html' with field=form.nlpd value=form.nlpd.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
   </div>
   <div class="col-lg-4">
-      {% include 'includes/dashboard/date_field.html' with field=form.sunrise value=form.sunrise.value|to_time_value mode='time' placeholder='06:30 AM' %}
+    {% include 'includes/dashboard/date_field.html' with field=form.sunrise value=form.sunrise.value|to_time_value mode='time' placeholder='06:30 AM' %}
   </div>
   <div class="col-lg-4">
-      {% include 'includes/dashboard/date_field.html' with field=form.sunset value=form.sunset.value|to_time_value mode='time' placeholder='07:30 PM' %}
+    {% include 'includes/dashboard/date_field.html' with field=form.sunset value=form.sunset.value|to_time_value mode='time' placeholder='07:30 PM' %}
   </div>
   <div class="col-lg-4">
     <div class="mb-3">
-      <label class="form-label">{{ form.uv_index.label }}</label>
+      <label class="form-label{% if form.uv_index.field.required %}
+                      required{% endif %}">{{ form.uv_index.label }}</label>
       {{ form.uv_index|with_invalid }}
       {% if form.uv_index.errors %}<div class="invalid-feedback d-block">{{ form.uv_index.errors.0 }}</div>{% endif %}
     </div>
