@@ -42,4 +42,8 @@
       </form>
     </div>
   </div>
+  {% include 'includes/home/document_pdf_modal.html' %}
+  <script src="{% static 'dist/js/document-modal.js' %}"></script>
+  <script src="{% static 'dist/libs/fslightbox/index.js' %}" defer></script>
+  {% block modal %}{% endblock %}
 {% endblock %}

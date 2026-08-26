@@ -37,12 +37,15 @@
 </div>
 {% if object and object.file %}
   <div class="mt-3">
-    <a href="{{ object.file.url }}"
-       target="_blank"
-       class="btn btn-outline-primary btn-sm">
+    <button type="button"
+            class="btn btn-outline-primary btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#documentPdfModal"
+            data-pdf-url="{{ object.file.url }}"
+            data-pdf-title="{{ object.summary|default:'Reporte' }}">
       <i class="icon ti ti-eye"></i>
       Ver PDF
-    </a>
+    </button>
   </div>
 {% endif %}
 </div>

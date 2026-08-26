@@ -110,12 +110,15 @@
             <small class="text-muted">Solo archivos PDF. Máximo 10MB. Dejar en blanco si no desea cambiar el archivo actual.</small>
             {% if object.pdf %}
               <div class="mt-2">
-                <a href="{{ object.pdf.url }}"
-                   target="_blank"
-                   class="btn btn-outline-primary btn-sm">
+                <button type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#documentPdfModal"
+                        data-pdf-url="{{ object.pdf.url }}"
+                        data-pdf-title="{{ object.title|default:'Servicio' }}">
                   <i class="icon ti ti-download"></i>
                   Ver PDF actual
-                </a>
+                </button>
               </div>
             {% endif %}
             {% if form.pdf.errors %}
@@ -156,8 +159,8 @@
             <small class="text-muted">Formatos: JPG, PNG, GIF. Máximo 2MB. Dejar en blanco si no desea cambiar la imagen actual.</small>
             {% if object.image %}
               <div class="mt-2">
-                <a href="{{ object.get_image_url }}"
-                   target="_blank"
+                <a data-fslightbox="gallery"
+                   href="{{ object.get_image_url }}"
                    class="btn btn-outline-primary btn-sm">
                   <i class="icon ti ti-eye"></i>
                   Ver imagen actual

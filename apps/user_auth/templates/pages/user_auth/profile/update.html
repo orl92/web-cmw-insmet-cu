@@ -133,7 +133,13 @@
                 </div>
               </div>
               {% if request.user.profile.avatar %}
-                <div class="mt-2">
+                <div class="mt-2 d-flex gap-2">
+                  <a data-fslightbox="gallery"
+                     href="{{ request.user.profile.get_avatar }}"
+                     class="btn btn-outline-primary btn-sm">
+                    <i class="icon ti ti-eye"></i>
+                    Ver imagen actual
+                  </a>
                   <button type="submit"
                           name="delete_avatar"
                           class="btn btn-outline-danger btn-sm">

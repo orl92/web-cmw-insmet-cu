@@ -35,16 +35,21 @@
       <small class="form-hint">Selecciona el archivo PDF del certificado para este cliente.</small>
     </div>
   </div>
-  {% if object.pdf %}
-    <div class="mt-2">
-      <a href="{{ object.pdf.url }}"
-         target="_blank"
-         class="btn btn-outline-primary btn-sm">
-        <i class="icon ti ti-download"></i>
-        Ver PDF actual
-      </a>
-    </div>
-  {% endif %}
+  {% with cert=object.certificates.first %}
+    {% if cert and cert.pdf %}
+      <div class="mt-2">
+        <button type="button"
+                class="btn btn-outline-primary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#documentPdfModal"
+                data-pdf-url="{{ cert.pdf.url }}"
+                data-pdf-title="{{ object.service.title|default:'Certificado' }}">
+          <i class="icon ti ti-download"></i>
+          Ver certificado actual
+        </button>
+      </div>
+    {% endif %}
+  {% endwith %}
   {% if form.pdf.errors %}
     <span class="text-danger d-block mb-3 mt-2">{{ form.pdf.errors }}</span>
   {% endif %}
