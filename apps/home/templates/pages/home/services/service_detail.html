@@ -1,5 +1,6 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
+{% load my_filters %}
 {% block content %}
   <div class="card">
     <div class="card-body">
@@ -10,7 +11,7 @@
                  class="img-fluid rounded w-100"
                  alt="{{ service.title }}"
                  style="max-height: 300px;
-                        object-fit: cover">
+                        object-fit: contain">
           {% else %}
             <div class="bg-light text-secondary d-flex align-items-center justify-content-center rounded w-100"
                  style="height: 300px">
@@ -23,7 +24,7 @@
           <div class="mb-3 text-muted">
             <div class="mb-2">
               <i class="icon me-1 ti ti-calendar-event"></i>
-              Período estándar: <strong>30 días</strong>
+              Período estándar: <strong>{{ service.PERIOD_DAYS }} días</strong>
             </div>
             {% if service.service_type == 'commercial' %}
               <div class="mb-2">
@@ -32,7 +33,7 @@
               </div>
               <div class="mb-2">
                 <i class="icon me-1 ti ti-point"></i>
-                Monto estimado (30 días): <strong class="text-primary">${{ estimated_total|floatformat:2 }} CUP</strong>
+                Monto estimado ({{ service.PERIOD_DAYS }} días): <strong class="text-primary">${{ estimated_total|floatformat:2 }} CUP</strong>
               </div>
             {% else %}
               <div class="mb-2">
@@ -41,7 +42,7 @@
               </div>
             {% endif %}
           </div>
-          <p>{{ service.summary }}</p>
+          <p>{{ service.summary|sanitize_html }}</p>
           <p class="text-muted mb-2">Publicado por: {{ service.user.get_full_name }}</p>
         </div>
       </div>
@@ -114,6 +115,26 @@
             Para solicitar este servicio, debes <a href="{% url 'user_auth:login' %}?next={{ request.path }}"
     class="alert-link">iniciar sesión</a>.
           </div>
+        </div>
+      {% endif %}
+      {% if related_services %}
+        <hr class="my-4">
+        <h4 class="mb-3">Servicios relacionados</h4>
+        <div class="row row-cards">
+          {% for related in related_services %}
+            <div class="col-sm-6 col-lg-3">
+              <div class="card card-sm">
+                <div class="card-body">
+                  <div class="fw-bold">{{ related.title }}</div>
+                  <div class="text-secondary small text-truncate">{{ related.summary }}</div>
+                  <div class="mt-2">
+                    <a href="{% url 'home:services_commercial_detail' related.uuid %}"
+                       class="btn btn-sm btn-outline-primary">Ver</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
         </div>
       {% endif %}
     </div>

@@ -1,8 +1,6 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
-{% block extrahead %}
-  <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}" />
-{% endblock %}
+{% block extrahead %}{% endblock %}
 {% block content %}
   <div class="col-md">
     <div class="row row-cards">
@@ -42,15 +40,15 @@
                         <div class="col-md-auto">
                           <div class="mt-3 badges">
                             {% if service.pdf %}
-                              <a href="#"
-                                 class="btn btn-pill btn-outline-primary"
-                                 data-bs-toggle="modal"
-                                 data-bs-target="#pdfModal"
-                                 data-pdf-url="{{ service.pdf.url }}"
-                                 data-pdf-title="{{ service.title }}">
+                              <button type="button"
+                                      class="btn btn-pill btn-outline-primary"
+                                      data-bs-toggle="modal"
+                                      data-bs-target="#documentPdfModal"
+                                      data-pdf-url="{{ service.pdf.url }}"
+                                      data-pdf-title="{{ service.title }}">
                                 <i class="icon ti ti-eye"></i>
                                 Ver PDF
-                              </a>
+                              </button>
                             {% else %}
                               <span class="text-muted">Sin PDF</span>
                             {% endif %}
@@ -131,11 +129,8 @@
       </ul>
     </div>
   {% endif %}
-  {% include 'includes/home/pdf_modal.html' with modal_title='PDF - Servicio' %}
+  {% include 'includes/home/document_pdf_modal.html' %}
 {% endblock %}
 {% block extrajs %}
-  <!-- Librerías del visor PDF; el manager se auto-inicializa en DOMContentLoaded -->
-  <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
-  <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
-  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";</script>
+  <script src="{% static 'dist/js/document-modal.js' %}"></script>
 {% endblock %}

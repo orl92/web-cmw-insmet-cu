@@ -1,9 +1,7 @@
 {% extends 'layouts/home.html' %}
 {% load static %}
 {% load my_filters %}
-{% block extrahead %}
-  <link rel="stylesheet" href="{% static 'dist/css/pdf-viewer.css' %}" />
-{% endblock %}
+{% block extrahead %}{% endblock %}
 {% block content %}
   <div class="col-md">
     <div class="row row-cards">
@@ -22,7 +20,7 @@
               </div>
               <div class="mt-3">
                 {% if weather_commentary.file %}
-                  {% include 'includes/home/pdf_preview.html' with pdf_url=weather_commentary.file.url pdf_title='Comentario del Tiempo' %}
+                  {% include 'includes/home/document_card.html' with title='Comentario del Tiempo' pdf_url=weather_commentary.file.url pdf_title='Comentario del Tiempo' %}
                 {% endif %}
               </div>
               <p class="mt-3">{{ weather_commentary.summary|sanitize_html }}</p>
@@ -32,20 +30,6 @@
                 <span class="text-muted me-2 d-sm-inline">Autor:</span>
                 <span class="text-muted">{{ weather_commentary.user.get_full_name }}</span>
               </div>
-              <!-- Botón para ver PDF si existe -->
-              {% if weather_commentary.file %}
-                <div class="mt-4 text-center">
-                  <a href="#"
-                     class="btn btn-pill btn-outline-primary"
-                     data-bs-toggle="modal"
-                     data-bs-target="#pdfModal"
-                     data-pdf-url="{{ weather_commentary.file.url }}"
-                     data-pdf-title="Comentario del Tiempo">
-                    <i class="icon ti ti-file-type-pdf"></i>
-                    Ver PDF
-                  </a>
-                </div>
-              {% endif %}
             </div>
           </div>
         {% else %}
@@ -69,11 +53,8 @@
     </div>
   </div>
   <!-- Modal para PDF en pantalla completa -->
-  {% include 'includes/home/pdf_modal.html' with modal_title='PDF - Comentario del Tiempo' %}
+  {% include 'includes/home/document_pdf_modal.html' %}
 {% endblock %}
 {% block extrajs %}
-  <!-- Librerías del visor PDF; el manager se auto-inicializa en DOMContentLoaded -->
-  <script src="{% static 'dist/libs/PDF/pdf.min.js' %}"></script>
-  <script src="{% static 'dist/js/pdf-viewer.js' %}"></script>
-  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'dist/libs/PDF/pdf.worker.min.js' %}";</script>
+  <script src="{% static 'dist/js/document-modal.js' %}"></script>
 {% endblock %}

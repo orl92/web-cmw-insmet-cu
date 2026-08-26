@@ -1,23 +1,23 @@
-"""Accessibility contract tests for the shared PDF viewer partials and JS.
+"""Accessibility contract tests for the uniform native PDF modal pattern.
 
-Covers change 015-home-templates-ui:
-- Phase 1: pdf_preview.html renders the auto-initializable preview container,
-  pdf_modal.html toolbar controls expose accessible names, the rendered canvas
-  carries role="img" + aria-label (set in pdf-viewer.js), no dead `loadPdf(`
-  invocations exist in partials or JS, real methods loadPDF/loadNewPDF remain.
-- Phase 2: layouts/avisos.html delegates previews and modal to the shared
-  partials with unique per-warning container ids, drops the `.markdown` card
-  body and duplicate <h1>, and keeps no inline viewer init script.
-- Phase 3: pages/home/institution/publications.html renders each publication
-  preview through the shared partial (unique ids + data-pdf-url), drops its
-  manual `new PDFViewer(...)` init loop, keeps exactly one shared modal with
-  the download fallback, and its "Ver PDF" trigger carries data-pdf-url +
-  data-pdf-title for manager delegation.
-- Phase 4: today/tomorrow/commentary/note report pages render semantically
-  (no `.markdown` card body, no duplicate in-card <h1>) through the shared
-  partials with a data-pdf-url container, an init-free extrajs block that
-  still loads the libraries + workerSrc, a trigger carrying url+title, and a
-  unified `{{ <report>.summary|sanitize_html }}` rendering (task 4.5).
+Covers change 016-public-ui-ux (legacy PDF.js system removed):
+
+- The single shared partial `templates/includes/home/document_card.html` renders
+  an `<article class="card">` whose "Ver PDF" control is a `<button>` (not
+  `href="#"`), carrying `data-bs-toggle="modal" data-bs-target="#documentPdfModal"
+  data-pdf-url data-pdf-title`.
+- `templates/includes/home/document_pdf_modal.html` provides exactly one modal
+  (`id="documentPdfModal"`) with a lazy native `<object type="application/pdf">`
+  (`id="documentPdfObject"`) and a `<a id="documentPdfDownload" download>` fallback.
+- `static/dist/js/document-modal.js` lazy-sets the object `data` (and the
+  download `href`) on `show.bs.modal` from the trigger's attributes, and clears
+  them on hide — no double fetch, no PDF.js.
+- Every PDF-bearing public template (avisos, tiempo, commentaries, note,
+  publications, services public/commercial) delegates to these shared partials
+  and loads only `document-modal.js`; there are NO remaining references to the
+  old PDF.js assets (`pdf-viewer.js`, `pdf.min.js`, `pdf.worker.min.js`,
+  `pdf-viewer.css`, `pdf_preview.html`, `pdf_modal.html`, `pdfPreviewContainer`,
+  `modalDownloadLink`, `new PDFViewer(`).
 """
 
 import re
@@ -26,7 +26,6 @@ from pathlib import Path
 
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.template.loader import render_to_string
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -36,110 +35,23 @@ from apps.meteo.models import WeatherReport
 from apps.publications.models import Author, ScientificPublication
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-PDF_VIEWER_JS = REPO_ROOT / 'static' / 'dist' / 'js' / 'pdf-viewer.js'
 
-
-class PdfPreviewPartialTests(TestCase):
-    """Task 1.1 — templates/includes/home/pdf_preview.html."""
-
-    def _render(self, **context):
-        return render_to_string('includes/home/pdf_preview.html', context)
-
-    def test_preview_renders_auto_init_container_with_pdf_url(self):
-        html = self._render(pdf_url='/media/reports/aviso.pdf', pdf_title='Aviso 01')
-        self.assertIn('id="pdfPreviewContainer"', html)
-        self.assertIn('id="pdfPages"', html)
-        self.assertIn('data-pdf-url="/media/reports/aviso.pdf"', html)
-
-    def test_preview_renders_download_fallback_with_accessible_name(self):
-        html = self._render(pdf_url='/media/reports/aviso.pdf', pdf_title='Aviso 01')
-        self.assertIn('href="/media/reports/aviso.pdf"', html)
-        self.assertIn('aria-label="Descargar PDF: Aviso 01"', html)
-        self.assertIn('Descargar PDF', html)
-
-    def test_preview_triangulates_with_distinct_context_values(self):
-        html = self._render(
-            pdf_url='/media/publications/paper.pdf',
-            pdf_title='Paper científico',
-        )
-        self.assertIn('data-pdf-url="/media/publications/paper.pdf"', html)
-        self.assertIn('aria-label="Descargar PDF: Paper científico"', html)
-
-
-class PdfModalPartialTests(TestCase):
-    """Task 1.2 — accessible names on the five toolbar controls + fallback link."""
-
-    def setUp(self):
-        self.html = render_to_string('includes/home/pdf_modal.html')
-
-    def test_toolbar_controls_have_aria_labels(self):
-        expected_labels = (
-            ('modalPrevPage', 'Página anterior'),
-            ('modalNextPage', 'Página siguiente'),
-            ('modalZoomOut', 'Alejar'),
-            ('modalZoomIn', 'Acercar'),
-            ('modalFitWidth', 'Ajustar al ancho'),
-        )
-        for control_id, label in expected_labels:
-            with self.subTest(control=control_id):
-                # The button carrying this id must also carry its accessible name.
-                pattern = rf'id="{control_id}"[^>]*aria-label="{re.escape(label)}"'
-                self.assertRegex(self.html, pattern)
-
-    def test_has_download_fallback_link(self):
-        self.assertIn('id="modalDownloadLink"', self.html)
-        self.assertIn('aria-label="Descargar PDF"', self.html)
-
-    def test_page_info_is_announced_politely(self):
-        # Task 1.3 (markup half): page info is an aria-live region so screen
-        # readers announce page changes without interrupting.
-        pattern = r'id="modalPageInfo"[^>]*aria-live="polite"'
-        self.assertRegex(self.html, pattern)
-
-
-class PdfViewerJsAccessibilityTests(TestCase):
-    """Tasks 1.3 and 1.4 — canvas text alternative, download wiring, real API.
-
-    There is no JS test runner in this project (django_unittest only), so the
-    JS contract is asserted against the shipped source file, mirroring the
-    spec's grep-based scenarios.
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.js = PDF_VIEWER_JS.read_text(encoding='utf-8')
-
-    def test_render_page_canvas_is_labeled_as_image(self):
-        self.assertIn("canvas.setAttribute('role', 'img')", self.js)
-
-    def test_render_page_canvas_label_names_the_current_page(self):
-        match = re.search(
-            r"canvas\.setAttribute\(\s*'aria-label',\s*`Página \$\{([^}]+)\} del documento`\s*\)",
-            self.js,
-        )
-        self.assertIsNotNone(match, 'renderPage must set a per-page aria-label')
-        self.assertIn('pageNumber', match.group(1))
-
-    def test_load_new_pdf_wires_modal_download_link(self):
-        # The modal download fallback must receive the active PDF URL.
-        self.assertIn('modalDownloadLink', self.js)
-        self.assertRegex(self.js, r'\.href\s*=\s*url\b')
-
-    def test_real_methods_are_preserved(self):
-        self.assertIn('async loadPDF(', self.js)
-        self.assertIn('async loadNewPDF(', self.js)
+# Legacy PDF.js markers that must no longer appear in shipped code.
+LEGACY_MARKERS = (
+    'pdf-viewer.js',
+    'pdf.min.js',
+    'pdf.worker.min.js',
+    'pdf-viewer.css',
+    'pdf_preview.html',
+    'pdf_modal.html',
+    'pdfPreviewContainer',
+    'modalDownloadLink',
+    'new PDFViewer(',
+)
 
 
 class NoDeadLoadPdfCallsTests(TestCase):
-    """Spec: no file shipped by this change may call `loadPdf(`.
-
-    Scoped through Phase 4 to the shared partials + viewer script because the
-    legacy callers lived in the services templates slated for Phase 5. With
-    Phase 5 (015-home-templates-ui) those callers are deleted, so the sweep
-    now covers every shipped ``*.html`` and ``*.js`` file (spec scenario
-    "Repo contains no loadPdf invocations").
-    """
+    """Spec: no shipped *.html/*.js references the removed PDF.js assets."""
 
     SHIPPED_CODE_ROOTS = (
         REPO_ROOT / 'templates',
@@ -151,6 +63,29 @@ class NoDeadLoadPdfCallsTests(TestCase):
         for root in self.SHIPPED_CODE_ROOTS:
             yield from (path for pattern in ('*.html', '*.js') for path in root.rglob(pattern))
 
+    def test_shipped_code_contains_no_legacy_pdf_js_markers(self):
+        offenders = []
+        for path in self._shipped_html_and_js_files():
+            text = path.read_text(encoding='utf-8')
+            # Skip the legacy files themselves (deleted by the cleanup pass).
+            rel = str(path.relative_to(REPO_ROOT))
+            if rel in (
+                'static/dist/js/pdf-viewer.js',
+                'static/dist/css/pdf-viewer.css',
+                'static/dist/libs/PDF/pdf.min.js',
+                'static/dist/libs/PDF/pdf.worker.min.js',
+                'templates/includes/home/pdf_preview.html',
+                'templates/includes/home/pdf_modal.html',
+            ):
+                continue
+            # `document_pdf_modal.html` legitimately contains the substring
+            # "pdf_modal.html"; strip it so the legacy marker check is exact.
+            cleaned = text.replace('document_pdf_modal.html', '')
+            for marker in LEGACY_MARKERS:
+                if marker in cleaned:
+                    offenders.append(f'{rel}: {marker}')
+        self.assertEqual([], offenders)
+
     def test_shipped_code_contains_no_loadpdf_invocations(self):
         offenders = [
             str(path.relative_to(REPO_ROOT))
@@ -160,48 +95,8 @@ class NoDeadLoadPdfCallsTests(TestCase):
         self.assertEqual([], offenders)
 
 
-class PdfPreviewPartialContainerIdTests(TestCase):
-    """Task 2.2 — pdf_preview.html must support unique per-object container ids.
-
-    The avisos layout loops over warnings, so every preview needs a distinct
-    id (`pdfPreviewContainer-N`) for PDFViewerManager.initializeAll() to pick
-    it up via `[id^="pdfPreviewContainer-"]` (pdf-viewer.js:440). Without a
-    suffix the partial keeps the exact Phase 1 ids.
-    """
-
-    def _render(self, **context):
-        return render_to_string('includes/home/pdf_preview.html', context)
-
-    def test_default_ids_preserved_without_suffix(self):
-        html = self._render(pdf_url='/media/reports/aviso.pdf')
-        self.assertIn('id="pdfPreviewContainer"', html)
-        self.assertIn('id="pdfPages"', html)
-        self.assertIn('data-pdf-url="/media/reports/aviso.pdf"', html)
-
-    def test_suffix_yields_unique_container_and_pages_ids(self):
-        html = self._render(pdf_url='/media/warnings/a.pdf', preview_suffix=3)
-        self.assertIn('id="pdfPreviewContainer-3"', html)
-        self.assertIn('id="pdfPages-3"', html)
-        self.assertIn('data-pdf-url="/media/warnings/a.pdf"', html)
-
-    def test_download_fallback_survives_suffixed_render(self):
-        html = self._render(
-            pdf_url='/media/warnings/b.pdf',
-            pdf_title='Aviso 02',
-            preview_suffix=2,
-        )
-        self.assertIn('href="/media/warnings/b.pdf"', html)
-        self.assertIn('aria-label="Descargar PDF: Aviso 02"', html)
-
-
 class AvisosLayoutSharedPartialTests(TestCase):
-    """Tasks 2.1-2.4 — layouts/avisos.html delegates to the shared partials.
-
-    Spec scenario "Avisos render is deduplicated and semantic": the rendered
-    page carries the shared preview containers and modal include, drops the
-    `.markdown` card body and the duplicate <h1>, and keeps no inline viewer
-    init script (the manager auto-runs on DOMContentLoaded).
-    """
+    """Tasks 2.1-2.4 — layouts/avisos.html delegates to the shared partials."""
 
     @classmethod
     def setUpTestData(cls):
@@ -224,27 +119,26 @@ class AvisosLayoutSharedPartialTests(TestCase):
     def test_preview_renders_through_partial_with_pdf_url(self):
         self._create_warning()
         response = self._get_page()
-        self.assertContains(response, 'id="pdfPreviewContainer-1"')
-        self.assertContains(response, 'id="pdfPages-1"')
         self.assertContains(
             response,
             'data-pdf-url="http://testserver/media/warning_pdfs/aviso.pdf"',
         )
+        self.assertContains(response, 'id="documentPdfModal"')
 
     def test_each_warning_gets_its_own_preview_container(self):
         self._create_warning()
         self._create_warning()
-        response = self._get_page()
-        self.assertContains(response, 'id="pdfPreviewContainer-1"')
-        self.assertContains(response, 'id="pdfPreviewContainer-2"')
+        html = self._get_page().content.decode()
+        self.assertEqual(
+            2, html.count('data-pdf-url="http://testserver/media/warning_pdfs/aviso.pdf"')
+        )
+        self.assertEqual(1, html.count('id="documentPdfModal"'))
 
     def test_modal_comes_from_shared_partial_exactly_once(self):
         self._create_warning()
         html = self._get_page().content.decode()
-        # Exactly one modal: the shared partial, not a duplicated inline copy.
-        self.assertEqual(1, html.count('id="pdfModal"'))
-        # Partial-only marker: the download fallback link added in Phase 1.
-        self.assertIn('id="modalDownloadLink"', html)
+        self.assertEqual(1, html.count('id="documentPdfModal"'))
+        self.assertIn('id="documentPdfDownload"', html)
 
     def test_card_body_drops_markdown_class(self):
         self._create_warning()
@@ -252,27 +146,20 @@ class AvisosLayoutSharedPartialTests(TestCase):
 
     def test_no_duplicate_h1_in_content(self):
         self._create_warning()
-        # The title lives in page_header (layouts/home.html); no second <h1>.
         self.assertNotContains(self._get_page(), '<h1')
 
     def test_no_per_template_viewer_init_script(self):
         self._create_warning()
         html = self._get_page().content.decode()
         self.assertNotIn('new PDFViewer({', html)
-        # Task 2.4: the redundant DOMContentLoaded no-op listener is gone;
-        # library loads + workerSrc config must remain for the viewer to work.
         self.assertNotIn('Inicializando visores de PDF para avisos', html)
-        self.assertIn('dist/js/pdf-viewer.js', html)
+        self.assertIn('dist/js/document-modal.js', html)
+        self.assertNotIn('dist/js/pdf-viewer.js', html)
+        self.assertNotIn('pdf.worker.min.js', html)
 
 
 class PublicationsSharedPartialTests(TestCase):
-    """Tasks 3.1-3.2 — publications.html delegates to the shared partials.
-
-    Spec scenario "Publications preview auto-initializes": each preview
-    container carries data-pdf-url (unique ids via preview_suffix) and no
-    `new PDFViewer({` init loop remains; the manager opens the modal from
-    the trigger's data-pdf-url / data-pdf-title via show.bs.modal.
-    """
+    """Publications list delegates to the shared document card + modal."""
 
     @classmethod
     def setUpTestData(cls):
@@ -293,66 +180,39 @@ class PublicationsSharedPartialTests(TestCase):
     def _get_page(self):
         return self.client.get(reverse('home:publications'))
 
-    def test_preview_renders_through_partial_with_data_pdf_url(self):
-        pub = self._create_publication()
-        response = self._get_page()
-        self.assertContains(response, 'id="pdfPreviewContainer-1"')
-        self.assertContains(response, 'id="pdfPages-1"')
-        self.assertContains(response, f'data-pdf-url="{pub.pdf.url}"')
-
-    def test_each_publication_gets_its_own_preview_container(self):
-        self._create_publication(title='Paper A')
-        self._create_publication(title='Paper B')
-        response = self._get_page()
-        self.assertContains(response, 'id="pdfPreviewContainer-1"')
-        self.assertContains(response, 'id="pdfPreviewContainer-2"')
-
-    def test_only_publications_with_pdf_render_a_preview_container(self):
-        pub = self._create_publication(title='Con PDF')
-        self._create_publication(title='Sin PDF', with_pdf=False)
-        html = self._get_page().content.decode()
-        self.assertEqual(1, html.count('pdfPreviewContainer'))
-        self.assertIn(f'data-pdf-url="{pub.pdf.url}"', html)
-
-    def test_no_per_template_viewer_init_script(self):
+    def test_shared_modal_and_loader_present(self):
         self._create_publication()
-        html = self._get_page().content.decode()
-        self.assertNotIn('new PDFViewer({', html)
-        # Library loads + workerSrc config must remain for the viewer to work.
-        self.assertIn('dist/js/pdf-viewer.js', html)
-        self.assertIn('pdf.worker.min.js', html)
+        response = self._get_page()
+        self.assertContains(response, 'id="documentPdfModal"')
+        self.assertContains(response, 'id="documentPdfDownload"')
+        self.assertContains(response, 'dist/js/document-modal.js')
+        # Legacy PDF.js assets must be gone.
+        self.assertNotContains(response, 'dist/js/pdf-viewer.js')
+        self.assertNotContains(response, 'pdf.worker.min.js')
+        html = response.content.decode()
+        self.assertNotIn('pdfPreviewContainer', html)
 
-    def test_modal_comes_from_shared_partial_exactly_once(self):
-        self._create_publication()
-        html = self._get_page().content.decode()
-        # Task 3.2: exactly one modal — the shared partial with its
-        # Phase 1 download fallback link ("Descargar PDF").
-        self.assertEqual(1, html.count('id="pdfModal"'))
-        self.assertIn('id="modalDownloadLink"', html)
-        self.assertIn('Descargar PDF', html)
-
-    def test_ver_pdf_trigger_carries_url_and_title(self):
+    def test_ver_pdf_button_carries_url_and_title(self):
         pub = self._create_publication(title='Deep Learning Paper')
         html = self._get_page().content.decode()
-        # The manager's show.bs.modal handler reads both attributes to
-        # auto-load the modal (loadNewPDF), so the trigger needs both.
+        # The trigger is now a <button> (no href="#") carrying both attributes.
         pattern = (
             rf'data-pdf-url="{re.escape(pub.pdf.url)}"'
-            rf'[^>]*data-pdf-title="Deep Learning Paper"'
+            rf'[^>]*data-pdf-title="{re.escape(pub.title)}"'
         )
         self.assertRegex(html, pattern)
 
+    def test_only_publications_with_pdf_render_a_trigger(self):
+        self._create_publication(title='Con PDF')
+        self._create_publication(title='Sin PDF', with_pdf=False)
+        html = self._get_page().content.decode()
+        # Exactly one shared modal, regardless of publication count.
+        self.assertEqual(1, html.count('id="documentPdfModal"'))
+        self.assertNotIn('pdfPreviewContainer', html)
+
 
 class ReportsSharedPartialTests(TestCase):
-    """Tasks 4.1-4.5 — report pages delegate to the shared partials.
-
-    Spec scenario "Report render is semantic and unified": no `.markdown`
-    card body, no duplicate in-card <h1> (the title comes from page_header),
-    `pdfPreviewContainer` carrying data-pdf-url, and no per-template viewer
-    init script. The "Ver PDF" trigger carries data-pdf-url + data-pdf-title,
-    and all four templates render the same expression
-    `{{ <report>.summary|sanitize_html }}` (task 4.5).
-    """
+    """Report pages (today/tomorrow/commentary/note) delegate to the shared partials."""
 
     REPORT_PAGES = (
         ('today', 'home:weather_today'),
@@ -392,15 +252,10 @@ class ReportsSharedPartialTests(TestCase):
             with self.subTest(report=report_type):
                 report = self._create_report(report_type)
                 html = self._get_page(url_name).content.decode()
-                # Scoped to the container element itself: the "Ver PDF"
-                # button also carries data-pdf-url, so an unscoped search
-                # would pass even without the shared partial.
-                pattern = (
-                    rf'id="pdfPreviewContainer"'
-                    rf'[^>]*data-pdf-url="{re.escape(report.file.url)}"'
-                )
-                self.assertRegex(html, pattern)
-                self.assertIn('id="pdfPages"', html)
+                self.assertIn(f'data-pdf-url="{report.file.url}"', html)
+                # Native <object> modal pattern for every report type.
+                self.assertIn('id="documentPdfModal"', html)
+                self.assertIn('id="documentPdfDownload"', html)
 
     def test_card_body_drops_markdown_class(self):
         for report_type, url_name in self.REPORT_PAGES:
@@ -413,7 +268,6 @@ class ReportsSharedPartialTests(TestCase):
             with self.subTest(report=report_type):
                 self._create_report(report_type)
                 response = self._get_page(url_name)
-                # No second <h1> in the card: page_header owns the title.
                 self.assertNotContains(response, '<h1')
                 html = response.content.decode()
                 title = re.escape(self.PAGE_TITLES[report_type])
@@ -426,17 +280,18 @@ class ReportsSharedPartialTests(TestCase):
                 self._create_report(report_type)
                 html = self._get_page(url_name).content.decode()
                 self.assertNotIn('new PDFViewer({', html)
-                # Library loads + workerSrc config must remain for the manager.
-                self.assertIn('dist/js/pdf-viewer.js', html)
-                self.assertIn('pdf.worker.min.js', html)
+                # Native <object> modal loader everywhere.
+                self.assertIn('dist/js/document-modal.js', html)
+                self.assertNotIn('dist/js/pdf-viewer.js', html)
+                self.assertNotIn('pdf.worker.min.js', html)
 
     def test_modal_comes_from_shared_partial_exactly_once(self):
         for report_type, url_name in self.REPORT_PAGES:
             with self.subTest(report=report_type):
                 self._create_report(report_type)
                 html = self._get_page(url_name).content.decode()
-                self.assertEqual(1, html.count('id="pdfModal"'))
-                self.assertIn('id="modalDownloadLink"', html)
+                self.assertEqual(1, html.count('id="documentPdfModal"'))
+                self.assertIn('id="documentPdfDownload"', html)
 
     def test_ver_pdf_trigger_carries_url_and_title(self):
         for report_type, url_name in self.REPORT_PAGES:
@@ -450,7 +305,6 @@ class ReportsSharedPartialTests(TestCase):
                 self.assertRegex(html, pattern)
 
     def test_summary_rendered_not_content_for_all_reports(self):
-        # Task 4.5: unified rendering — summary wins over content everywhere.
         for report_type, url_name in self.REPORT_PAGES:
             with self.subTest(report=report_type):
                 self._create_report(
@@ -463,15 +317,14 @@ class ReportsSharedPartialTests(TestCase):
                 self.assertNotContains(response, 'Contenido alterno que no debe mostrarse')
 
     def test_all_four_templates_render_summary_with_sanitize_filter(self):
-        base = REPO_ROOT / 'apps' / 'home' / 'templates' / 'pages' / 'home'
-        expected = {
-            'weather/today.html': '{{ weather_today.summary|sanitize_html }}',
-            'weather/tomorrow.html': '{{ weather_tomorrow.summary|sanitize_html }}',
-            'commentaries/weather.html': '{{ weather_commentary.summary|sanitize_html }}',
-            'commentaries/note.html': '{{ weather_note.summary|sanitize_html }}',
-        }
-        for rel_path, expression in expected.items():
-            with self.subTest(template=rel_path):
-                source = (base / rel_path).read_text(encoding='utf-8')
-                self.assertIn(expression, source)
-                self.assertNotIn('.content|default:', source)
+        for report_type, url_name in self.REPORT_PAGES:
+            with self.subTest(report=report_type):
+                self._create_report(
+                    report_type,
+                    summary='Resumen seguro<script>alert(1)</script>',
+                )
+                response = self._get_page(url_name)
+                self.assertContains(response, 'Resumen seguro')
+                # The literal malicious payload must be neutralized (escaped),
+                # not executed. Legit <script src=...> library tags are fine.
+                self.assertNotContains(response, '<script>alert(1)</script>')

@@ -49,9 +49,8 @@
                 </div>
                 <p class="mt-2">{{ object.pdf.name|default:'Sin archivo' }}</p>
                 {% if object.pdf %}
-                  <a href="{% url 'commercial:certificado_pdf' object.uuid %}"
-                     class="btn btn-primary btn-pill"
-                     target="_blank">Ver PDF</a>
+                  {% url 'commercial:certificado_pdf' object.uuid as pdf_url %}
+                  {% include 'includes/home/document_card.html' with title=object.subscription.service.title pdf_url=pdf_url pdf_title=object.pdf.name %}
                 {% endif %}
               </div>
             </div>
@@ -60,4 +59,8 @@
       </div>
     </div>
   </div>
+  {% include 'includes/home/document_pdf_modal.html' %}
+{% endblock %}
+{% block extrajs %}
+  <script src="{% static 'dist/js/document-modal.js' %}"></script>
 {% endblock %}

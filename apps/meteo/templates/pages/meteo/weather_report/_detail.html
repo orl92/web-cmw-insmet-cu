@@ -41,9 +41,7 @@
               <div class="file-icon">{% include 'includes/partials/pdf_avatar.html' %}</div>
               <p class="mt-2">{{ obj.file.name|default:'Sin archivo' }}</p>
               {% if obj.file %}
-                <a href="{{ obj.file.url }}"
-                   class="btn btn-primary btn-pill"
-                   target="_blank">Ver PDF</a>
+                {% include 'includes/home/document_card.html' with title=title pdf_url=obj.file.url pdf_title=obj.file.name %}
               {% endif %}
             </div>
           </div>
@@ -62,3 +60,5 @@
     </div>
   </div>
 </div>
+{% include 'includes/home/document_pdf_modal.html' %}
+<script src="{% static 'dist/js/document-modal.js' %}"></script>

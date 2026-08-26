@@ -12,9 +12,12 @@ class ScientificPublicationListView(ListView):
         context['title'] = 'Publicaciones Científicas'
         context['parent'] = 'institucion'
         context['segment'] = 'publicaciones_cientificas'
-        context['objects'] = (
+        objects = (
             ScientificPublication.objects.all()
             .select_related('author')
             .prefetch_related('coauthors')
         )
+        for obj in objects:
+            obj.pdf_url = obj.pdf.url if obj.pdf else ''
+        context['objects'] = objects
         return context

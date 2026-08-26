@@ -78,7 +78,13 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         context['title'] = self.service.title
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
-        context['estimated_total'] = self.service.price * 30 if self.service.price else 0
+        price = self.service.price
+        context['estimated_total'] = price * Service.PERIOD_DAYS if price else 0
+        context['related_services'] = (
+            Service.objects.filter(service_type=Service.COMMERCIAL)
+            .exclude(uuid=self.service.uuid)
+            .order_by('title')[:4]
+        )
 
         if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
             customer = self.request.user.commercial_customer

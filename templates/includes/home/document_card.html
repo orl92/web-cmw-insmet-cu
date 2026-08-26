@@ -1,0 +1,34 @@
+{% load my_filters %}
+<article class="card">
+  <div class="card-body">
+    {% if badge %}
+      <span class="badge bg-primary mb-2">{{ badge }}</span>
+    {% endif %}
+    <h3 class="card-title">{{ title }}</h3>
+    {% if summary %}
+      <p class="text-secondary">{{ summary|sanitize_html }}</p>
+    {% endif %}
+    <div class="list-inline list-inline-dots text-secondary mb-3">
+      {% if publisher %}
+        <span class="list-inline-item">
+          <i class="icon ti ti-user"></i> {{ publisher }}
+        </span>
+      {% endif %}
+      {% if date %}
+        <span class="list-inline-item">
+          <i class="icon ti ti-calendar-time"></i> {{ date }}
+        </span>
+      {% endif %}
+    </div>
+    {% if pdf_url %}
+      <button type="button"
+              class="btn btn-pill btn-outline-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#documentPdfModal"
+              data-pdf-url="{{ pdf_url }}"
+              data-pdf-title="{{ pdf_title|default:title }}">
+        <i class="icon ti ti-file-type-pdf"></i> Ver PDF
+      </button>
+    {% endif %}
+  </div>
+</article>

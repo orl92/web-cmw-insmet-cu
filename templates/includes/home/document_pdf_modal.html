@@ -1,0 +1,31 @@
+<div class="modal modal-blur fade"
+     id="documentPdfModal"
+     tabindex="-1"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="documentPdfModalLabel">{{ pdf_title|default:"Documento" }}</h5>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <object id="documentPdfObject"
+                type="application/pdf"
+                data="{{ pdf_url|default:'' }}"
+                class="w-100 border rounded"
+                style="height:80vh"
+                aria-label="Documento PDF">
+          <a id="documentPdfDownload"
+             href="{{ pdf_url|default:'' }}"
+             download
+             class="btn btn-primary">
+            <i class="icon ti ti-download"></i> Descargar
+          </a>
+        </object>
+      </div>
+    </div>
+  </div>
+</div>

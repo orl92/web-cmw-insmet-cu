@@ -81,20 +81,7 @@
             </div>
           </div>
           {% if publicacion.pdf %}
-            <div class="mt-auto d-flex gap-2">
-              <a href="{{ publicacion.pdf.url }}"
-                 class="btn btn-primary btn-pill btn-sm"
-                 target="_blank">
-                <i class="icon me-1 ti ti-eye"></i>
-                Ver PDF
-              </a>
-              <a href="{% url 'publications:pdf' publicacion.uuid %}"
-                 class="btn btn-outline-primary btn-pill btn-sm"
-                 target="_blank">
-                <i class="icon me-1 ti ti-download"></i>
-                Descargar
-              </a>
-            </div>
+            {% include 'includes/home/document_card.html' with title=publicacion.title pdf_url=publicacion.pdf.url pdf_title=publicacion.pdf.name %}
           {% endif %}
         </div>
       </div>
@@ -175,6 +162,7 @@
       </div>
     </div>
   </div>
+  {% include 'includes/home/document_pdf_modal.html' %}
 {% endblock %}
 {% block extracss %}
   <style>
@@ -182,4 +170,7 @@
     min-height: 220px;
   }
   </style>
+{% endblock %}
+{% block extrajs %}
+  <script src="{% static 'dist/js/document-modal.js' %}"></script>
 {% endblock %}

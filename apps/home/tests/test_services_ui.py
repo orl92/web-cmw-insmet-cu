@@ -48,9 +48,11 @@ class ServicesPublicUiTests(TestCase):
         return self.client.get(reverse('home:services_public'), query)
 
     def test_renders_tabler_pagination_bound_to_page_obj(self):
-        # 11 public services with paginate_by=10 -> two pages, is_paginated True.
-        self._create_services(self.PAGINATE_BY + 1)
-        html = self._get_page().content.decode()
+        # 21 public services with paginate_by=10 -> three pages. Request the
+        # middle page so both the previous ("Página anterior") and next
+        # ("Página siguiente") pagination links render with real aria-labels.
+        self._create_services(self.PAGINATE_BY * 2 + 1)
+        html = self._get_page(page=2).content.decode()
         self.assertIn('<ul class="pagination"', html)
         self.assertRegex(html, r'<li class="page-item[^"]*">\s*<a class="page-link"')
         self.assertIn('aria-label="Página anterior"', html)
@@ -142,8 +144,10 @@ class ServicesCommercialUiTests(TestCase):
         return self.client.get(reverse('home:services_commercial'), query)
 
     def test_renders_tabler_pagination_bound_to_page_obj(self):
-        self._login_with_subscriptions(self.PAGINATE_BY + 1)
-        html = self._get_page().content.decode()
+        # 3 pages of subscriptions; request the middle page so both previous
+        # and next pagination links render with real aria-labels.
+        self._login_with_subscriptions(self.PAGINATE_BY * 2 + 1)
+        html = self._get_page(page=2).content.decode()
         self.assertIn('<ul class="pagination"', html)
         self.assertRegex(html, r'<li class="page-item[^"]*">\s*<a class="page-link"')
         self.assertIn('aria-label="Página anterior"', html)

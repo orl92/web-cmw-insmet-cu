@@ -91,6 +91,8 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
         (COMMERCIAL, 'Comercial'),
     ]
 
+    PERIOD_DAYS = 30
+
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha')
     user = models.ForeignKey(

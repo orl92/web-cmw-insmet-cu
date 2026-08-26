@@ -4,15 +4,17 @@ from apps.meteo.models import Warning
 
 
 class WarningForm(forms.ModelForm):
+    valid_until = forms.DateTimeField(
+        input_formats=['%d/%m/%Y %I:%M %p', '%Y-%m-%dT%H:%M', '%d/%m/%Y %H:%M'],
+        widget=forms.DateTimeInput(attrs={'class': 'form-control'}),
+        label='Válido hasta',
+    )
+
     class Meta:
         model = Warning
         fields = ['summary', 'valid_until', 'file', 'email_recipient_list']
         widgets = {
             'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),
-            'valid_until': forms.DateTimeInput(
-                attrs={'type': 'datetime-local', 'class': 'form-control'},
-                format='%Y-%m-%dT%H:%M',
-            ),
         }
 
     def __init__(self, *args, **kwargs):
