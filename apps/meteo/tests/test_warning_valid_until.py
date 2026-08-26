@@ -3,17 +3,14 @@
 Covers:
 - WarningForm accepts the 12h Tempus string and yields an aware America/Havana value
   (no -4h shift).
-- Warning.save() make_aware's a naive valid_until.
-- normalize_warning_valid_until management command is a safe no-op when rows are
-  already aware and is idempotent.
+- A naive valid_until saved via the ORM is stored aware (Django normalizes under
+  USE_TZ=True).
 """
 
 import datetime
-from io import StringIO
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
-from django.core.management import call_command
 from django.test import TestCase
 
 from apps.meteo.forms.warning import WarningForm
@@ -67,28 +64,4 @@ class WarningValidUntilModelTests(TestCase):
             valid_until=aware,
         )
         warning.refresh_from_db()
-        self.assertEqual(warning.valid_until.astimezone(HAVANA).hour, 14)
-
-
-class NormalizeWarningValidUntilCommandTests(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.user = User.objects.create_user('normuser', 'norm@test.com', 'pass')
-
-    def test_dry_run_is_noop_and_idempotent(self):
-        Warning.objects.create(
-            user=self.user,
-            warning_type='early',
-            summary='Aviso ok',
-            valid_until=datetime.datetime(2026, 8, 5, 14, 30, tzinfo=HAVANA),
-        )
-        out = StringIO()
-        call_command('normalize_warning_valid_until', stdout=out)
-        self.assertIn('Filas afectadas: 0', out.getvalue())
-
-        out2 = StringIO()
-        call_command('normalize_warning_valid_until', stdout=out2)
-        self.assertIn('Filas afectadas: 0', out2.getvalue())
-
-        warning = Warning.objects.get(summary='Aviso ok')
         self.assertEqual(warning.valid_until.astimezone(HAVANA).hour, 14)

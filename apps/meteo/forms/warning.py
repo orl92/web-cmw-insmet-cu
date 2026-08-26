@@ -12,7 +12,7 @@ class WarningForm(forms.ModelForm):
 
     class Meta:
         model = Warning
-        fields = ['summary', 'valid_until', 'file', 'email_recipient_list']
+        fields = ['title', 'summary', 'valid_until', 'file', 'email_recipient_list']
         widgets = {
             'email_recipient_list': forms.Select(attrs={'class': 'form-select'}),
         }

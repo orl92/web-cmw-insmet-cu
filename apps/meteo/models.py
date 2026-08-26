@@ -1,11 +1,9 @@
 import uuid
-from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
-from django.utils import timezone
 
 from apps.core.models import EmailRecipientList, FileHandlerMixin, pdf_upload_path
 
@@ -316,11 +314,6 @@ class Warning(FileHandlerMixin, models.Model):
     )
 
     file_fields = ['file']
-
-    def save(self, *args, **kwargs):
-        if self.valid_until and self.valid_until.tzinfo is None:
-            self.valid_until = timezone.make_aware(self.valid_until, ZoneInfo('America/Havana'))
-        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Aviso'
