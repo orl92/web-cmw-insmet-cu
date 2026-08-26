@@ -65,3 +65,11 @@ class WarningValidUntilModelTests(TestCase):
         )
         warning.refresh_from_db()
         self.assertEqual(warning.valid_until.astimezone(HAVANA).hour, 14)
+
+
+class WarningDateTimeWidgetRenderTests(TestCase):
+    def test_initial_render_uses_english_ampm(self):
+        form = WarningForm(initial={'valid_until': datetime.datetime(2026, 8, 5, 14, 30)})
+        rendered = form.as_p()
+        self.assertIn('value="05/08/2026 02:30 PM"', rendered)
+        self.assertNotIn('a. m.', rendered)

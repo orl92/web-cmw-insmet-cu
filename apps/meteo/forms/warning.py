@@ -1,12 +1,13 @@
 from django import forms
 
+from apps.core.widgets import TempusAwareDateTimeInput
 from apps.meteo.models import Warning
 
 
 class WarningForm(forms.ModelForm):
     valid_until = forms.DateTimeField(
         input_formats=['%d/%m/%Y %I:%M %p', '%Y-%m-%dT%H:%M', '%d/%m/%Y %H:%M'],
-        widget=forms.DateTimeInput(attrs={'class': 'form-control'}),
+        widget=TempusAwareDateTimeInput(attrs={'class': 'form-control'}),
         label='Válido hasta',
     )
 

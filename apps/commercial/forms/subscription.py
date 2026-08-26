@@ -4,6 +4,7 @@ from django import forms
 from django.utils import timezone
 
 from apps.commercial.models import Certificate, Service, ServiceSubscription
+from apps.core.widgets import TempusAwareDateTimeInput
 
 
 class SubscriptionForm(forms.ModelForm):
@@ -23,12 +24,12 @@ class SubscriptionForm(forms.ModelForm):
 
     start_date = forms.DateTimeField(
         input_formats=['%d/%m/%Y %I:%M %p', '%Y-%m-%dT%H:%M', '%d/%m/%Y %H:%M'],
-        widget=forms.DateTimeInput(attrs={'class': 'form-control'}),
+        widget=TempusAwareDateTimeInput(attrs={'class': 'form-control'}),
         required=False,
     )
     end_date = forms.DateTimeField(
         input_formats=['%d/%m/%Y %I:%M %p', '%Y-%m-%dT%H:%M', '%d/%m/%Y %H:%M'],
-        widget=forms.DateTimeInput(attrs={'class': 'form-control'}),
+        widget=TempusAwareDateTimeInput(attrs={'class': 'form-control'}),
         required=False,
     )
 
