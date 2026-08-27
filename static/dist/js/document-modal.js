@@ -19,3 +19,21 @@ document.addEventListener('DOMContentLoaded', function () {
     if (download) download.href = '';
   });
 });
+
+// Inicializar tooltips en los botones que abren el modal PDF (#documentPdfModal).
+// Estos botones llevan data-bs-toggle="modal", por lo que el data-api de tooltips
+// (selector [data-bs-toggle="tooltip"]) no los inicializa; lo hacemos manualmente.
+document.addEventListener('DOMContentLoaded', function () {
+  var pdfTriggers = document.querySelectorAll('[data-pdf-url]');
+  if (!pdfTriggers.length) return;
+  var Bs = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+  if (!Bs || !Bs.Tooltip) return;
+  pdfTriggers.forEach(function (el) {
+    if (Bs.Tooltip.getInstance(el)) return;
+    var title =
+      el.getAttribute('data-bs-original-title') ||
+      el.getAttribute('aria-label') ||
+      'Ver PDF';
+    new Bs.Tooltip(el, { title: title });
+  });
+});

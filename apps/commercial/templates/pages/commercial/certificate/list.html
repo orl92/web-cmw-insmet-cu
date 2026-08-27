@@ -25,17 +25,20 @@
        data-bs-toggle="tooltip"
        data-bs-placement="bottom"
        aria-label="Descargar PDF"
-       data-bs-original-title="Descargar PDF"
-       target="_blank">
+       data-bs-original-title="Descargar PDF">
       <i class="icon ti ti-file-download"></i>
     </a>
     <button type="button"
-            class="btn btn-outline-primary btn-sm"
+            class="btn btn-icon btn-outline-primary btn-sm"
             data-bs-toggle="modal"
             data-bs-target="#documentPdfModal"
             data-pdf-url="{% url 'commercial:certificado_pdf' object.uuid %}"
-            data-pdf-title="Certificado #{{ object.pk }}">
-      <i class="icon ti ti-file-text"></i> Ver PDF
+            data-pdf-title="Certificado #{{ object.pk }}"
+            data-bs-toggle="tooltip"
+            data-bs-placement="bottom"
+            aria-label="Ver PDF"
+            data-bs-original-title="Ver PDF">
+      <i class="icon ti ti-file-text"></i>
     </button>
     {% if object.record_active and perms.commercial.delete_certificate %}
       <button type="button"

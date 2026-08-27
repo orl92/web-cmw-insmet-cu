@@ -97,7 +97,7 @@ def get_sun_img_path(sun_event):
     return static(file_path) if file_path else ''
 
 
-def mail_send(request, alert_obj, subject, url):
+def mail_send(request, alert_obj, subject, url, attachment_name=None):
     from django.conf import settings
     from django.template.loader import render_to_string
 
@@ -128,6 +128,7 @@ def mail_send(request, alert_obj, subject, url):
         html_message,
         settings.DEFAULT_FROM_EMAIL,
         recipient_emails,
+        attachment_name=attachment_name,
         attachment_path=pdf_attachment,
     )
 

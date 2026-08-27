@@ -43,7 +43,8 @@ def send_email_task(
     attachment_path=None,
 ):
     if attachment_path and os.path.isfile(attachment_path):
-        attachment_name = os.path.basename(attachment_path)
+        if not attachment_name:
+            attachment_name = os.path.basename(attachment_path)
         with open(attachment_path, 'rb') as f:
             attachment_content = f.read()
         attachment_mime = 'application/pdf'

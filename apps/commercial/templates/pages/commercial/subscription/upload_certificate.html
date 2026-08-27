@@ -39,13 +39,16 @@
     {% if cert and cert.pdf %}
       <div class="mt-2">
         <button type="button"
-                class="btn btn-outline-primary btn-sm"
+                class="btn btn-icon btn-outline-primary btn-sm"
                 data-bs-toggle="modal"
                 data-bs-target="#documentPdfModal"
                 data-pdf-url="{{ cert.pdf.url }}"
-                data-pdf-title="{{ object.service.title|default:'Certificado' }}">
-          <i class="icon ti ti-download"></i>
-          Ver certificado actual
+                data-pdf-title="{{ object.service.title|default:'Certificado' }}"
+                data-bs-toggle="tooltip"
+                data-bs-placement="bottom"
+                aria-label="Ver PDF"
+                data-bs-original-title="Ver PDF">
+          <i class="icon ti ti-file-text"></i>
         </button>
       </div>
     {% endif %}

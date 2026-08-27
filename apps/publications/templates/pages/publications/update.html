@@ -130,13 +130,16 @@
       {% if object.pdf %}
         <div class="mt-2">
           <button type="button"
-                  class="btn btn-outline-primary btn-sm"
+                  class="btn btn-icon btn-outline-primary btn-sm"
                   data-bs-toggle="modal"
                   data-bs-target="#documentPdfModal"
                   data-pdf-url="{{ object.pdf.url }}"
-                  data-pdf-title="{{ object.title|default:'Publicación' }}">
-            <i class="icon ti ti-download"></i>
-            Ver PDF actual
+                  data-pdf-title="{{ object.title|default:'Publicación' }}"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  aria-label="Ver PDF"
+                  data-bs-original-title="Ver PDF">
+            <i class="icon ti ti-file-text"></i>
           </button>
         </div>
       {% endif %}

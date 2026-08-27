@@ -356,7 +356,12 @@ def enviar_correo_certificado(subscription, request=None):
     email.content_subtype = 'html'
 
     if certificate.pdf:
-        email.attach_file(certificate.pdf.path)
+        with certificate.pdf.storage.open(certificate.pdf.name, 'rb') as f:
+            email.attach(
+                f'certificado_{certificate.issued_date:%Y-%m-%d}.pdf',
+                f.read(),
+                'application/pdf',
+            )
 
     try:
         email.send()

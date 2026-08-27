@@ -201,7 +201,13 @@ class WeatherReportCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
         messages.success(
             self.request, f'{cfg["title_create"]} ha sido creado con éxito.', extra_tags='success'
         )
-        mail_send(self.request, self.object, cfg['subject_create'], cfg['mail_url'])
+        mail_send(
+            self.request,
+            self.object,
+            cfg['subject_create'],
+            cfg['mail_url'],
+            attachment_name=f"{cfg['pdf_filename_prefix']}_{self.object.date.strftime('%Y-%m-%d')}.pdf",
+        )
 
         return redirect(self.get_success_url())
 
@@ -267,7 +273,13 @@ class WeatherReportUpdateView(
         )
 
         if has_changes:
-            mail_send(self.request, self.object, cfg['subject_update'], cfg['mail_url'])
+            mail_send(
+                self.request,
+                self.object,
+                cfg['subject_update'],
+                cfg['mail_url'],
+                attachment_name=f"{cfg['pdf_filename_prefix']}_{self.object.date.strftime('%Y-%m-%d')}.pdf",
+            )
 
         messages.success(
             self.request,

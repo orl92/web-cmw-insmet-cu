@@ -33,16 +33,20 @@
          data-bs-placement="bottom"
          aria-label="Descargar PDF"
          data-bs-original-title="Descargar PDF"
-         target="_blank">
+         download="alerta-{{ object.date|date:'Y-m-d' }}.pdf">
         <i class="icon ti ti-file-download"></i>
       </a>
       <button type="button"
-              class="btn btn-outline-primary btn-sm"
+              class="btn btn-icon btn-outline-primary btn-sm"
               data-bs-toggle="modal"
               data-bs-target="#documentPdfModal"
               data-pdf-url="{{ object.file.url }}"
-              data-pdf-title="Alerta: {{ object.summary|truncatechars:40 }}">
-        <i class="icon ti ti-file-text"></i> Ver PDF
+              data-pdf-title="Alerta: {{ object.summary|truncatechars:40 }}"
+              data-bs-toggle="tooltip"
+              data-bs-placement="bottom"
+              aria-label="Ver PDF"
+              data-bs-original-title="Ver PDF">
+        <i class="icon ti ti-file-text"></i>
       </button>
     {% endif %}
     <a href="{% url 'meteo:tormenta_update' object.uuid %}"

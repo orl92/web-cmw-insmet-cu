@@ -76,7 +76,11 @@ class CertificatePDFView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if not certificate.pdf:
             messages.error(request, 'Este certificado no tiene archivo PDF.')
             return redirect('commercial:certificado_list')
-        return FileResponse(certificate.pdf.open(), content_type='application/pdf')
+        response = FileResponse(certificate.pdf.open(), content_type='application/pdf')
+        response['Content-Disposition'] = (
+            f'attachment; filename="certificado_{certificate.issued_date:%Y-%m-%d}.pdf"'
+        )
+        return response
 
 
 class CertificateDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):

@@ -79,16 +79,20 @@
                data-bs-toggle="tooltip"
                data-bs-placement="bottom"
                title="Descargar Factura"
-               download>
+               download="factura-{{ invoice.number }}-{{ invoice.issue_date|date:'Y-m-d' }}.pdf">
               <i class="icon ti ti-invoice"></i>
             </a>
             <button type="button"
-                    class="btn btn-outline-primary btn-sm"
+                    class="btn btn-icon btn-outline-primary btn-sm"
                     data-bs-toggle="modal"
                     data-bs-target="#documentPdfModal"
                     data-pdf-url="{{ invoice.pdf.url }}"
-                    data-pdf-title="Factura {{ invoice.number }}">
-              <i class="icon ti ti-file-text"></i> Ver PDF
+                    data-pdf-title="Factura {{ invoice.number }}"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    aria-label="Ver PDF"
+                    data-bs-original-title="Ver PDF">
+              <i class="icon ti ti-file-text"></i>
             </button>
           {% endif %}
         {% endwith %}
@@ -101,16 +105,20 @@
                  data-bs-toggle="tooltip"
                  data-bs-placement="bottom"
                  title="Descargar Certificado"
-                 download>
+                 download="certificado-{{ certificate.issued_date|date:'Y-m-d' }}.pdf">
                 <i class="icon ti ti-certificate"></i>
               </a>
               <button type="button"
-                      class="btn btn-outline-primary btn-sm"
+                      class="btn btn-icon btn-outline-primary btn-sm"
                       data-bs-toggle="modal"
                       data-bs-target="#documentPdfModal"
                       data-pdf-url="{{ certificate.pdf.url }}"
-                      data-pdf-title="Certificado">
-                <i class="icon ti ti-file-text"></i> Ver PDF
+                      data-pdf-title="Certificado"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      aria-label="Ver PDF"
+                      data-bs-original-title="Ver PDF">
+                <i class="icon ti ti-file-text"></i>
               </button>
               <a href="{% url 'commercial:certificado_resend' subscription.uuid %}"
                  class="btn btn-icon btn-outline-warning btn-sm"
@@ -202,16 +210,20 @@
                  data-bs-toggle="tooltip"
                  data-bs-placement="bottom"
                  title="Descargar Certificado"
-                 download>
+                 download="certificado-{{ certificate.issued_date|date:'Y-m-d' }}.pdf">
                 <i class="icon ti ti-certificate"></i>
               </a>
               <button type="button"
-                      class="btn btn-outline-primary btn-sm"
+                      class="btn btn-icon btn-outline-primary btn-sm"
                       data-bs-toggle="modal"
                       data-bs-target="#documentPdfModal"
                       data-pdf-url="{{ certificate.pdf.url }}"
-                      data-pdf-title="Certificado">
-                <i class="icon ti ti-file-text"></i> Ver PDF
+                      data-pdf-title="Certificado"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      aria-label="Ver PDF"
+                      data-bs-original-title="Ver PDF">
+                <i class="icon ti ti-file-text"></i>
               </button>
               <a href="{% url 'commercial:certificado_resend' subscription.uuid %}"
                  class="btn btn-icon btn-outline-warning btn-sm"
@@ -235,16 +247,20 @@
                  data-bs-toggle="tooltip"
                  data-bs-placement="bottom"
                  title="Descargar Factura"
-                 download>
+                 download="factura-{{ invoice.number }}-{{ invoice.issue_date|date:'Y-m-d' }}.pdf">
                 <i class="icon ti ti-invoice"></i>
               </a>
               <button type="button"
-                      class="btn btn-outline-primary btn-sm"
+                      class="btn btn-icon btn-outline-primary btn-sm"
                       data-bs-toggle="modal"
                       data-bs-target="#documentPdfModal"
                       data-pdf-url="{{ invoice.pdf.url }}"
-                      data-pdf-title="Factura {{ invoice.number }}">
-                <i class="icon ti ti-file-text"></i> Ver PDF
+                      data-pdf-title="Factura {{ invoice.number }}"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      aria-label="Ver PDF"
+                      data-bs-original-title="Ver PDF">
+                <i class="icon ti ti-file-text"></i>
               </button>
             {% endif %}
           {% endwith %}

@@ -124,7 +124,11 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
 
     if invoice.pdf and invoice.pdf.storage.exists(invoice.pdf.name):
         with invoice.pdf.storage.open(invoice.pdf.name, 'rb') as f:
-            email.attach(f'factura_{invoice.number}.pdf', f.read(), 'application/pdf')
+            email.attach(
+                f'factura_{invoice.number}_{invoice.issue_date:%Y-%m-%d}.pdf',
+                f.read(),
+                'application/pdf',
+            )
 
     if subscription and subscription.payment_method == 'qr':
         from django.contrib.staticfiles import finders

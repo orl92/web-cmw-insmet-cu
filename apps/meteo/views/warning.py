@@ -148,7 +148,13 @@ class WarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
         messages.success(
             self.request, f'{cfg["title_create"]} ha sido creado con éxito.', extra_tags='success'
         )
-        mail_send(self.request, self.object, cfg['subject_create'], cfg['mail_url'])
+        mail_send(
+            self.request,
+            self.object,
+            cfg['subject_create'],
+            cfg['mail_url'],
+            attachment_name=f"alerta_{self.object.date.strftime('%Y-%m-%d')}.pdf",
+        )
 
         return response
 
@@ -213,7 +219,13 @@ class WarningUpdateView(
         )
 
         if has_changes:
-            mail_send(self.request, self.object, cfg['subject_update'], cfg['mail_url'])
+            mail_send(
+                self.request,
+                self.object,
+                cfg['subject_update'],
+                cfg['mail_url'],
+                attachment_name=f"alerta_{self.object.date.strftime('%Y-%m-%d')}.pdf",
+            )
 
         messages.success(
             self.request,

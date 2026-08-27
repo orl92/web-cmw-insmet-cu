@@ -23,12 +23,16 @@
         <i class="icon ti ti-edit"></i>
       </a>
       <button type="button"
-              class="btn btn-outline-primary btn-sm"
+              class="btn btn-icon btn-outline-primary btn-sm"
               data-bs-toggle="modal"
               data-bs-target="#documentPdfModal"
               data-pdf-url="{% url 'publications:pdf' publicacion.uuid %}"
-              data-pdf-title="{{ publicacion.title }}">
-        <i class="icon ti ti-file-text"></i> Ver PDF
+              data-pdf-title="{{ publicacion.title }}"
+              data-bs-toggle="tooltip"
+              data-bs-placement="bottom"
+              aria-label="Ver PDF"
+              data-bs-original-title="Ver PDF">
+        <i class="icon ti ti-file-text"></i>
       </button>
     </div>
   </div>
