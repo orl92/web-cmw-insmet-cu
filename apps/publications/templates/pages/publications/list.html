@@ -66,6 +66,14 @@
        target="_blank">
       <i class="icon ti ti-file-download"></i>
     </a>
+    <button type="button"
+            class="btn btn-outline-primary btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#documentPdfModal"
+            data-pdf-url="{% url 'publications:pdf' object.uuid %}"
+            data-pdf-title="{{ object.title }}">
+      <i class="icon ti ti-file-text"></i> Ver PDF
+    </button>
     {% if request.user.is_staff %}
       <a href="{% url 'publications:update' object.uuid %}"
          type="button"

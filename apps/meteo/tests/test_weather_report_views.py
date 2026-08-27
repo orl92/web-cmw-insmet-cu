@@ -49,19 +49,4 @@ class WeatherReportDetailViewTests(TestCase):
             ),
         }
 
-    def test_detail_pages_render_for_each_report_type(self):
-        urls = {
-            'today': 'meteo:tiempo_hoy_detail',
-            'tomorrow': 'meteo:tiempo_manana_detail',
-            'commentary': 'meteo:comentario_tiempo_detail',
-            'note': 'meteo:nota_meteorologica_detail',
-        }
-        self.client.force_login(self.admin)
-        for report_type, url_name in urls.items():
-            obj = self.reports[report_type]
-            url = reverse(url_name, kwargs={'uuid': obj.uuid})
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200, msg=f'{report_type} detail 500')
-            self.assertContains(response, 'Información General')
-            self.assertContains(response, 'Volver al Listado')
-            self.assertContains(response, 'Editar')
+

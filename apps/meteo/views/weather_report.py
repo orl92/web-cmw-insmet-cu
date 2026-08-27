@@ -36,12 +36,10 @@ REPORT_CONFIG = {
         'url_create': 'meteo:tiempo_hoy_create',
         'url_update': 'meteo:tiempo_hoy_update',
         'url_delete': 'meteo:tiempo_hoy_delete',
-        'url_detail': 'meteo:tiempo_hoy_detail',
         'url_pdf': 'meteo:tiempo_hoy_pdf',
         'template_list': 'pages/meteo/weather_report/today/list.html',
         'template_create': 'pages/meteo/weather_report/today/create.html',
         'template_update': 'pages/meteo/weather_report/today/update.html',
-        'template_detail': 'pages/meteo/weather_report/today/detail.html',
         'template_pdf': 'pages/meteo/weather_report/today/pdf.html',
         'subject_create': 'El Tiempo para Hoy',
         'subject_update': 'El Tiempo para Hoy Actualizado',
@@ -62,12 +60,10 @@ REPORT_CONFIG = {
         'url_create': 'meteo:tiempo_manana_create',
         'url_update': 'meteo:tiempo_manana_update',
         'url_delete': 'meteo:tiempo_manana_delete',
-        'url_detail': 'meteo:tiempo_manana_detail',
         'url_pdf': 'meteo:tiempo_manana_pdf',
         'template_list': 'pages/meteo/weather_report/tomorrow/list.html',
         'template_create': 'pages/meteo/weather_report/tomorrow/create.html',
         'template_update': 'pages/meteo/weather_report/tomorrow/update.html',
-        'template_detail': 'pages/meteo/weather_report/tomorrow/detail.html',
         'template_pdf': 'pages/meteo/weather_report/tomorrow/pdf.html',
         'subject_create': 'El Tiempo para Mañana',
         'subject_update': 'El Tiempo para Mañana Actualizado',
@@ -88,12 +84,10 @@ REPORT_CONFIG = {
         'url_create': 'meteo:comentario_tiempo_create',
         'url_update': 'meteo:comentario_tiempo_update',
         'url_delete': 'meteo:comentario_tiempo_delete',
-        'url_detail': 'meteo:comentario_tiempo_detail',
         'url_pdf': 'meteo:comentario_tiempo_pdf',
         'template_list': 'pages/meteo/weather_report/commentaries/weather/list.html',
         'template_create': 'pages/meteo/weather_report/commentaries/weather/create.html',
         'template_update': 'pages/meteo/weather_report/commentaries/weather/update.html',
-        'template_detail': 'pages/meteo/weather_report/commentaries/weather/detail.html',
         'template_pdf': 'pages/meteo/weather_report/commentaries/weather/pdf.html',
         'subject_create': 'Comentario del Tiempo',
         'subject_update': 'Comentario del Tiempo Actualizado',
@@ -114,12 +108,10 @@ REPORT_CONFIG = {
         'url_create': 'meteo:nota_meteorologica_create',
         'url_update': 'meteo:nota_meteorologica_update',
         'url_delete': 'meteo:nota_meteorologica_delete',
-        'url_detail': 'meteo:nota_meteorologica_detail',
         'url_pdf': 'meteo:nota_meteorologica_pdf',
         'template_list': 'pages/meteo/weather_report/commentaries/notes/list.html',
         'template_create': 'pages/meteo/weather_report/commentaries/notes/create.html',
         'template_update': 'pages/meteo/weather_report/commentaries/notes/update.html',
-        'template_detail': 'pages/meteo/weather_report/commentaries/notes/detail.html',
         'template_pdf': 'pages/meteo/weather_report/commentaries/notes/pdf.html',
         'subject_create': 'Nota Meteorológica',
         'subject_update': 'Nota Meteorológica Actualizada',
@@ -324,42 +316,6 @@ class WeatherReportDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View)
         except Exception as e:
             messages.error(request, str(e))
         return redirect(cfg['url_list'])
-
-
-class WeatherReportDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    model = WeatherReport
-
-    def get_report_type(self):
-        return self.kwargs.get('report_type', 'today')
-
-    def get_config(self):
-        return REPORT_CONFIG[self.get_report_type()]
-
-    @property
-    def permission_required(self):
-        cfg = self.get_config()
-        return f'meteo.view_{cfg["perm_prefix"]}'
-
-    def get_template_names(self):
-        return [self.get_config()['template_detail']]
-
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(WeatherReport, uuid=uuid)
-
-    def get_context_object_name(self, obj):
-        return self.get_config()['context_name']
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        cfg = self.get_config()
-        context['title'] = cfg['title_detail']
-        context['parent'] = cfg['parent']
-        context['segment'] = cfg['segment']
-        context['url_list'] = reverse_lazy(cfg['url_list'])
-        context['url_update'] = cfg['url_update']
-        context['url_pdf'] = cfg['url_pdf']
-        return context
 
 
 class WeatherReportPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):

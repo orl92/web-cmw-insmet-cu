@@ -36,6 +36,14 @@
          target="_blank">
         <i class="icon ti ti-file-download"></i>
       </a>
+      <button type="button"
+              class="btn btn-outline-primary btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#documentPdfModal"
+              data-pdf-url="{{ object.file.url }}"
+              data-pdf-title="Alerta: {{ object.summary|truncatechars:40 }}">
+        <i class="icon ti ti-file-text"></i> Ver PDF
+      </button>
     {% endif %}
     <a href="{% url 'meteo:alerta_temprana_update' object.uuid %}"
        type="button"

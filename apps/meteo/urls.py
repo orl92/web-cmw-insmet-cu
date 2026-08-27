@@ -48,12 +48,6 @@ urlpatterns = [
         name='tiempo_hoy_create',
     ),
     path(
-        'tiempo/hoy/<uuid:uuid>/',
-        weather_report.WeatherReportDetailView.as_view(),
-        {'report_type': 'today'},
-        name='tiempo_hoy_detail',
-    ),
-    path(
         'tiempo/hoy/<uuid:uuid>/editar/',
         weather_report.WeatherReportUpdateView.as_view(),
         {'report_type': 'today'},
@@ -83,12 +77,6 @@ urlpatterns = [
         weather_report.WeatherReportCreateView.as_view(),
         {'report_type': 'tomorrow'},
         name='tiempo_manana_create',
-    ),
-    path(
-        'tiempo/manana/<uuid:uuid>/',
-        weather_report.WeatherReportDetailView.as_view(),
-        {'report_type': 'tomorrow'},
-        name='tiempo_manana_detail',
     ),
     path(
         'tiempo/manana/<uuid:uuid>/editar/',
@@ -122,12 +110,6 @@ urlpatterns = [
         name='comentario_tiempo_create',
     ),
     path(
-        'comentarios/tiempo/<uuid:uuid>/',
-        weather_report.WeatherReportDetailView.as_view(),
-        {'report_type': 'commentary'},
-        name='comentario_tiempo_detail',
-    ),
-    path(
         'comentarios/tiempo/<uuid:uuid>/editar/',
         weather_report.WeatherReportUpdateView.as_view(),
         {'report_type': 'commentary'},
@@ -157,12 +139,6 @@ urlpatterns = [
         weather_report.WeatherReportCreateView.as_view(),
         {'report_type': 'note'},
         name='nota_meteorologica_create',
-    ),
-    path(
-        'comentarios/nota-meteorologica/<uuid:uuid>/',
-        weather_report.WeatherReportDetailView.as_view(),
-        {'report_type': 'note'},
-        name='nota_meteorologica_detail',
     ),
     path(
         'comentarios/nota-meteorologica/<uuid:uuid>/editar/',

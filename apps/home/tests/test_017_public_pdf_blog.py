@@ -152,47 +152,4 @@ class DashboardDetailModalTests(TestCase):
         self.assertIn('Ver PDF', html)
         self.assertNotIn('target="_blank">Ver PDF', html)
 
-    def test_weather_report_detail_renders_modal_and_ver_pdf_button(self):
-        wr = WeatherReport.objects.create(
-            user=self.superuser,
-            summary='Reporte de prueba',
-            file='report_pdfs/informe.pdf',
-            report_type='today',
-        )
-        html = self.client.get(reverse('meteo:tiempo_hoy_detail', args=[wr.uuid])).content.decode()
-        self.assertIn('id="documentPdfModal"', html)
-        self.assertIn('Ver PDF', html)
-        self.assertNotIn('target="_blank">Ver PDF', html)
 
-
-class CertificateDetailBlogTests(TestCase):
-    """Task 6 — certificado detail delegates to document_card + modal."""
-
-    @classmethod
-    def setUpTestData(cls):
-        cls.superuser = User.objects.create_superuser(
-            'admin2', 'admin2@test.com', 'pass', first_name='Ad', last_name='Min'
-        )
-
-    def setUp(self):
-        self.client.force_login(self.superuser)
-        customer_user = User.objects.create_user('cust', 'cust@test.com', 'pass')
-        customer = Customer.objects.create(
-            user=customer_user, account='123456', address='Calle X', phone='555'
-        )
-        service = Service.objects.create(
-            user=self.superuser, title='Servicio de prueba', summary='Resumen servicio'
-        )
-        subscription = ServiceSubscription.objects.create(customer=customer, service=service)
-        self.cert = Certificate.objects.create(
-            subscription=subscription,
-            pdf=SimpleUploadedFile('cert.pdf', b'%PDF-1.4', content_type='application/pdf'),
-        )
-
-    def test_certificate_detail_renders_modal_and_ver_pdf_button(self):
-        html = self.client.get(
-            reverse('commercial:certificado_detail', args=[self.cert.uuid])
-        ).content.decode()
-        self.assertIn('id="documentPdfModal"', html)
-        self.assertIn('Ver PDF', html)
-        self.assertNotIn('target="_blank">Ver PDF', html)

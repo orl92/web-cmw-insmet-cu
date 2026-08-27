@@ -3,7 +3,6 @@ from django.urls import path
 from apps.commercial.views.certificates import (
     CertificateCreateView,
     CertificateDeleteView,
-    CertificateDetailView,
     CertificateListView,
     CertificatePDFView,
 )
@@ -127,11 +126,6 @@ urlpatterns = [
     # Certificados
     path('certificados/', CertificateListView.as_view(), name='certificado_list'),
     path('crear/certificado/', CertificateCreateView.as_view(), name='certificado_create'),
-    path(
-        'detalle/certificado/<uuid:uuid>/',
-        CertificateDetailView.as_view(),
-        name='certificado_detail',
-    ),
     path('certificado/<uuid:uuid>/pdf/', CertificatePDFView.as_view(), name='certificado_pdf'),
     path(
         'eliminar/certificado/<uuid:uuid>/',

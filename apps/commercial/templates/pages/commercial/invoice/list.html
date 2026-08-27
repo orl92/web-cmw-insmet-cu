@@ -66,6 +66,14 @@
            download>
           <i class="icon ti ti-download"></i>
         </a>
+        <button type="button"
+                class="btn btn-outline-primary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#documentPdfModal"
+                data-pdf-url="{{ invoice.pdf.url }}"
+                data-pdf-title="Factura {{ invoice.number }}">
+          <i class="icon ti ti-file-text"></i> Ver PDF
+        </button>
       {% endif %}
       <!-- Reenviar correo (solo si no se envió y no está anulada) -->
       {% if not invoice.email_sent and not invoice.is_cancelled %}

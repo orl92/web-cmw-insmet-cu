@@ -19,15 +19,6 @@
     {% endif %}
   </td>
   <td class="text-end">
-    <a href="{% url 'commercial:certificado_detail' object.uuid %}"
-       type="button"
-       class="btn btn-icon btn-outline-info btn-sm"
-       data-bs-toggle="tooltip"
-       data-bs-placement="bottom"
-       aria-label="Detalle"
-       data-bs-original-title="Detalle">
-      <i class="icon ti ti-eye"></i>
-    </a>
     <a href="{% url 'commercial:certificado_pdf' object.uuid %}"
        type="button"
        class="btn btn-icon btn-outline-primary btn-sm"
@@ -38,6 +29,14 @@
        target="_blank">
       <i class="icon ti ti-file-download"></i>
     </a>
+    <button type="button"
+            class="btn btn-outline-primary btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#documentPdfModal"
+            data-pdf-url="{% url 'commercial:certificado_pdf' object.uuid %}"
+            data-pdf-title="Certificado #{{ object.pk }}">
+      <i class="icon ti ti-file-text"></i> Ver PDF
+    </button>
     {% if object.record_active and perms.commercial.delete_certificate %}
       <button type="button"
               class="btn btn-icon btn-outline-danger btn-sm action-btn"

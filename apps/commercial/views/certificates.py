@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView, ListView, View
+from django.views.generic import CreateView, ListView, View
 
 from apps.commercial.forms.certificate import CertificateForm
 from apps.commercial.models import Certificate
@@ -65,26 +65,6 @@ class CertificateCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
         context['parent'] = ''
         context['segment'] = 'certificados'
         context['url_list'] = self.success_url
-        return context
-
-
-class CertificateDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    model = Certificate
-    template_name = 'pages/commercial/certificate/detail.html'
-    permission_required = 'commercial.view_certificate'
-
-    def get_object(self, queryset=None):
-        return get_object_or_404(
-            Certificate.objects.select_related('subscription__customer', 'subscription__service'),
-            uuid=self.kwargs['uuid'],
-        )
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Detalle del Certificado'
-        context['parent'] = ''
-        context['segment'] = 'certificados'
-        context['url_list'] = reverse_lazy('commercial:certificado_list')
         return context
 
 

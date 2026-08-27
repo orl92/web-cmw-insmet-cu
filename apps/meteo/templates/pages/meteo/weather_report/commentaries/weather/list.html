@@ -11,15 +11,6 @@
   <td>{{ object.date|time:'h:i A' }}</td>
   <td>{{ object.user.get_full_name|default:object.user.username }}</td>
   <td class="text-end">
-    <a href="{% url 'meteo:comentario_tiempo_detail' object.uuid %}"
-       type="button"
-       class="btn btn-icon btn-outline-info btn-sm"
-       data-bs-toggle="tooltip"
-       data-bs-placement="bottom"
-       aria-label="Ver"
-       data-bs-original-title="Ver">
-      <i class="icon ti ti-eye"></i>
-    </a>
     <a href="{% url 'meteo:comentario_tiempo_pdf' object.uuid %}"
        type="button"
        class="btn btn-icon btn-outline-primary btn-sm"
@@ -30,6 +21,14 @@
        target="_blank">
       <i class="icon ti ti-file-download"></i>
     </a>
+    <button type="button"
+            class="btn btn-outline-primary btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#documentPdfModal"
+            data-pdf-url="{% url 'meteo:comentario_tiempo_pdf' object.uuid %}"
+            data-pdf-title="Comentario del Tiempo {{ object.date|date:'d/m/Y' }}">
+      <i class="icon ti ti-file-text"></i> Ver PDF
+    </button>
     <a href="{% url 'meteo:comentario_tiempo_update' object.uuid %}"
        type="button"
        class="btn btn-icon btn-outline-warning btn-sm"

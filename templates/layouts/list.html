@@ -40,10 +40,13 @@
       </table>
     </div>
   </div>
+  {% include 'includes/home/document_pdf_modal.html' %}
 {% endblock %}
 {% block extrajs %}
   <!-- Libs JS -->
   <script src="{% static 'dist/libs/datatables/datatables.min.js' %}"></script>
+  <script src="{% static 'dist/js/document-modal.js' %}"></script>
+  <script src="{% static 'dist/libs/fslightbox/index.js' %}" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       new DataTable('#{{ list_id|default:'example' }}', {

@@ -22,16 +22,14 @@
          aria-label="Editar">
         <i class="icon ti ti-edit"></i>
       </a>
-      <a href="{% url 'publications:pdf' publicacion.uuid %}"
-         type="button"
-         class="btn btn-icon btn-outline-primary btn-sm"
-         data-bs-toggle="tooltip"
-         data-bs-placement="bottom"
-         title="Descargar PDF"
-         aria-label="Descargar PDF"
-         target="_blank">
-        <i class="icon ti ti-file-download"></i>
-      </a>
+      <button type="button"
+              class="btn btn-outline-primary btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#documentPdfModal"
+              data-pdf-url="{% url 'publications:pdf' publicacion.uuid %}"
+              data-pdf-title="{{ publicacion.title }}">
+        <i class="icon ti ti-file-text"></i> Ver PDF
+      </button>
     </div>
   </div>
 {% endblock title_actions %}
