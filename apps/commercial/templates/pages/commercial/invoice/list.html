@@ -55,9 +55,9 @@
       {% endif %}
     </td>
     <td class="text-end">
-      <!-- Descargar PDF (se genera bajo demanda si aún no existe) -->
+      <!-- Descargar Factura (se genera bajo demanda si aún no existe) -->
       <a href="{% url 'commercial:factura_download' invoice.uuid %}"
-         class="btn btn-icon btn-outline-primary btn-sm"
+         class="btn btn-icon btn-outline-success btn-sm"
          data-bs-toggle="tooltip"
          data-bs-placement="bottom"
          aria-label="Descargar Factura"
