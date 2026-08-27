@@ -57,20 +57,19 @@
     <td class="text-end">
       <!-- Descargar PDF -->
       {% if invoice.pdf %}
-        <a href="{{ invoice.pdf.url }}"
+        <a href="{% url 'commercial:factura_download' invoice.uuid %}"
            class="btn btn-icon btn-outline-primary btn-sm"
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
            aria-label="Descargar Factura"
-           data-bs-original-title="Descargar Factura"
-           download="factura-{{ invoice.number }}-{{ invoice.issue_date|date:'Y-m-d' }}.pdf">
+           data-bs-original-title="Descargar Factura">
           <i class="icon ti ti-download"></i>
         </a>
         <button type="button"
                 class="btn btn-icon btn-outline-primary btn-sm"
                 data-bs-toggle="modal"
                 data-bs-target="#documentPdfModal"
-                data-pdf-url="{{ invoice.pdf.url }}"
+                data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
                 data-pdf-title="Factura {{ invoice.number }}"
                 data-bs-toggle="tooltip"
                 data-bs-placement="bottom"

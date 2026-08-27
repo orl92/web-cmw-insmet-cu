@@ -1,6 +1,14 @@
 from django.urls import path
 
-from apps.meteo.views import exports, forecast, province, station, town, warning, weather_report
+from apps.meteo.views import (
+    exports,
+    forecast,
+    province,
+    station,
+    town,
+    warning,
+    weather_report,
+)
 
 app_name = 'meteo'
 
@@ -59,12 +67,6 @@ urlpatterns = [
         {'report_type': 'today'},
         name='tiempo_hoy_delete',
     ),
-    path(
-        'tiempo/hoy/<uuid:uuid>/pdf/',
-        weather_report.WeatherReportPDFView.as_view(),
-        {'report_type': 'today'},
-        name='tiempo_hoy_pdf',
-    ),
     # Tomorrow
     path(
         'tiempo/manana/',
@@ -90,12 +92,6 @@ urlpatterns = [
         {'report_type': 'tomorrow'},
         name='tiempo_manana_delete',
     ),
-    path(
-        'tiempo/manana/<uuid:uuid>/pdf/',
-        weather_report.WeatherReportPDFView.as_view(),
-        {'report_type': 'tomorrow'},
-        name='tiempo_manana_pdf',
-    ),
     # Commentary
     path(
         'comentarios/tiempo/',
@@ -120,12 +116,6 @@ urlpatterns = [
         weather_report.WeatherReportDeleteView.as_view(),
         {'report_type': 'commentary'},
         name='comentario_tiempo_delete',
-    ),
-    path(
-        'comentarios/tiempo/<uuid:uuid>/pdf/',
-        weather_report.WeatherReportPDFView.as_view(),
-        {'report_type': 'commentary'},
-        name='comentario_tiempo_pdf',
     ),
     # Note
     path(
@@ -153,10 +143,9 @@ urlpatterns = [
         name='nota_meteorologica_delete',
     ),
     path(
-        'comentarios/nota-meteorologica/<uuid:uuid>/pdf/',
-        weather_report.WeatherReportPDFView.as_view(),
-        {'report_type': 'note'},
-        name='nota_meteorologica_pdf',
+        'tiempo/<uuid:uuid>/pdf/',
+        weather_report.WeatherReportFileDownloadView.as_view(),
+        name='reporte_download',
     ),
     # ──────────────────────────────────────────────
     # Warnings (early, storm, tropical_cyclone)
@@ -235,6 +224,11 @@ urlpatterns = [
         warning.WarningDeleteView.as_view(),
         {'warning_type': 'tropical_cyclone'},
         name='ciclon_tropical_delete',
+    ),
+    path(
+        'avisos/alerta/<uuid:uuid>/pdf/',
+        warning.WarningPDFDownloadView.as_view(),
+        name='alerta_download',
     ),
     # ──────────────────────────────────────────────
     # Province

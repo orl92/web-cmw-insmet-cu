@@ -310,7 +310,8 @@ class ScientificPublicationPDFView(LoginRequiredMixin, PermissionRequiredMixin, 
             response = HttpResponse(result.getvalue(), content_type='application/pdf')
             fecha_str = publicacion.publication_date.strftime('%Y-%m-%d')
             filename = f'publicacion_{publicacion.title[:50]}_{fecha_str}.pdf'
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            disposition = 'inline' if request.GET.get('inline') else 'attachment'
+            response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
             return response
         return HttpResponse('Error al generar el PDF', status=400)
 

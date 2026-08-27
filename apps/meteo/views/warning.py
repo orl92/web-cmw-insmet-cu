@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.views.generic import CreateView, ListView, UpdateView, View
 
 from apps.core.utils import log_action, mail_send
+from apps.core.views import ServeModelFileView
 from apps.meteo.forms.warning import WarningForm
 from apps.meteo.models import Warning
 
@@ -271,3 +272,12 @@ class WarningDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
         except Exception as e:
             messages.error(request, str(e))
         return redirect(cfg['url_list'])
+
+
+class WarningPDFDownloadView(ServeModelFileView):
+    model = Warning
+    field = 'file'
+    permission_required = 'meteo.view_warning'
+
+    def get_filename(self, obj):
+        return f'alerta_{obj.date:%Y-%m-%d}.pdf'

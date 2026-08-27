@@ -26,21 +26,20 @@
   <td>{{ object.user.get_full_name|default:object.user }}</td>
   <td class="text-end">
     {% if object.file %}
-      <a href="{{ object.file.url }}"
+      <a href="{% url 'meteo:alerta_download' object.uuid %}"
          type="button"
          class="btn btn-icon btn-outline-primary btn-sm"
          data-bs-toggle="tooltip"
          data-bs-placement="bottom"
          aria-label="Descargar PDF"
-         data-bs-original-title="Descargar PDF"
-         download="alerta-{{ object.date|date:'Y-m-d' }}.pdf">
+         data-bs-original-title="Descargar PDF">
         <i class="icon ti ti-file-download"></i>
       </a>
       <button type="button"
               class="btn btn-icon btn-outline-primary btn-sm"
               data-bs-toggle="modal"
               data-bs-target="#documentPdfModal"
-              data-pdf-url="{{ object.file.url }}"
+              data-pdf-url="{% url 'meteo:alerta_download' object.uuid %}?inline=1"
               data-pdf-title="Alerta: {{ object.summary|truncatechars:40 }}"
               data-bs-toggle="tooltip"
               data-bs-placement="bottom"

@@ -30,6 +30,7 @@ from apps.commercial.views.invoice_utils import enviar_correo_factura
 from apps.core.models import CompanySettings
 from apps.core.tasks import generate_invoice_pdf_and_email_task
 from apps.core.utils import log_action
+from apps.core.views import ServeModelFileView
 
 logger = logging.getLogger(__name__)
 
@@ -308,6 +309,15 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             except (ValueError, IndexError):
                 pass
         return f'{year}-0001'
+
+
+class InvoicePDFDownloadView(ServeModelFileView):
+    model = Invoice
+    field = 'pdf'
+    permission_required = 'commercial.view_invoice'
+
+    def get_filename(self, obj):
+        return f'factura_{obj.number}_{obj.issue_date:%Y-%m-%d}.pdf'
 
 
 class CancelInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):

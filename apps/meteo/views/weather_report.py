@@ -1,9 +1,3 @@
-import base64
-import os
-from io import BytesIO
-
-import xhtml2pdf.pisa as pisa
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
@@ -11,12 +5,12 @@ from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     UserPassesTestMixin,
 )
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.template.loader import get_template
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DetailView, ListView, UpdateView, View
+from django.views.generic import CreateView, ListView, UpdateView, View
+
+from apps.core.views import ServeModelFileView
 
 from apps.core.utils import log_action, mail_send
 from apps.meteo.forms.weather_report import WeatherReportForm
@@ -36,7 +30,6 @@ REPORT_CONFIG = {
         'url_create': 'meteo:tiempo_hoy_create',
         'url_update': 'meteo:tiempo_hoy_update',
         'url_delete': 'meteo:tiempo_hoy_delete',
-        'url_pdf': 'meteo:tiempo_hoy_pdf',
         'template_list': 'pages/meteo/weather_report/today/list.html',
         'template_create': 'pages/meteo/weather_report/today/create.html',
         'template_update': 'pages/meteo/weather_report/today/update.html',
@@ -60,7 +53,6 @@ REPORT_CONFIG = {
         'url_create': 'meteo:tiempo_manana_create',
         'url_update': 'meteo:tiempo_manana_update',
         'url_delete': 'meteo:tiempo_manana_delete',
-        'url_pdf': 'meteo:tiempo_manana_pdf',
         'template_list': 'pages/meteo/weather_report/tomorrow/list.html',
         'template_create': 'pages/meteo/weather_report/tomorrow/create.html',
         'template_update': 'pages/meteo/weather_report/tomorrow/update.html',
@@ -84,7 +76,6 @@ REPORT_CONFIG = {
         'url_create': 'meteo:comentario_tiempo_create',
         'url_update': 'meteo:comentario_tiempo_update',
         'url_delete': 'meteo:comentario_tiempo_delete',
-        'url_pdf': 'meteo:comentario_tiempo_pdf',
         'template_list': 'pages/meteo/weather_report/commentaries/weather/list.html',
         'template_create': 'pages/meteo/weather_report/commentaries/weather/create.html',
         'template_update': 'pages/meteo/weather_report/commentaries/weather/update.html',
@@ -108,7 +99,6 @@ REPORT_CONFIG = {
         'url_create': 'meteo:nota_meteorologica_create',
         'url_update': 'meteo:nota_meteorologica_update',
         'url_delete': 'meteo:nota_meteorologica_delete',
-        'url_pdf': 'meteo:nota_meteorologica_pdf',
         'template_list': 'pages/meteo/weather_report/commentaries/notes/list.html',
         'template_create': 'pages/meteo/weather_report/commentaries/notes/create.html',
         'template_update': 'pages/meteo/weather_report/commentaries/notes/update.html',
@@ -330,46 +320,20 @@ class WeatherReportDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View)
         return redirect(cfg['url_list'])
 
 
-class WeatherReportPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class WeatherReportFileDownloadView(ServeModelFileView):
     model = WeatherReport
+    field = 'file'
 
-    def get_report_type(self):
-        return self.kwargs.get('report_type', 'today')
+    _PREFIX_MAP = {
+        'today': 'tiempo_hoy',
+        'tomorrow': 'tiempo_manana',
+        'commentary': 'comentario_tiempo',
+        'note': 'nota_meteorologica',
+    }
 
-    def get_config(self):
-        return REPORT_CONFIG[self.get_report_type()]
+    def get_permission_required(self, obj):
+        return f'meteo.view_weather_{obj.report_type}'
 
-    @property
-    def permission_required(self):
-        cfg = self.get_config()
-        return f'meteo.view_{cfg["perm_prefix"]}'
-
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(WeatherReport, uuid=uuid)
-
-    def get(self, request, *args, **kwargs):
-        obj = self.get_object()
-        cfg = self.get_config()
-
-        logo_path = os.path.join(settings.BASE_DIR, 'static/dist/img/logo.png')
-        logo_base64 = self.get_image_base64(logo_path)
-
-        template = get_template(cfg['template_pdf'])
-        context = {cfg['context_name']: obj, 'logo_base64': logo_base64}
-        html = template.render(context)
-
-        result = BytesIO()
-        pdf = pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
-
-        if not pdf.err:
-            response = HttpResponse(result.getvalue(), content_type='application/pdf')
-            filename = f'{cfg["pdf_filename_prefix"]}_{obj.date.strftime("%Y-%m-%d")}.pdf'
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            return response
-        return HttpResponse('Error al generar el PDF', status=400)
-
-    @staticmethod
-    def get_image_base64(image_path):
-        with open(image_path, 'rb') as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+    def get_filename(self, obj):
+        prefix = self._PREFIX_MAP.get(obj.report_type, 'reporte')
+        return f'{prefix}_{obj.date:%Y-%m-%d}.pdf'

@@ -34,6 +34,7 @@ from apps.commercial.views.invoices import (
     InvoiceCreateView,
     InvoiceHardDeleteView,
     InvoiceListView,
+    InvoicePDFDownloadView,
     ResendInvoiceEmailView,
     ajax_pending_subscriptions,
 )
@@ -146,6 +147,7 @@ urlpatterns = [
     path('facturacion/', InvoiceListView.as_view(), name='factura_list'),
     path('crear/factura/', InvoiceCreateView.as_view(), name='factura_create'),
     path('anular/factura/<uuid:uuid>/', CancelInvoiceView.as_view(), name='factura_cancel'),
+    path('factura/<uuid:uuid>/pdf/', InvoicePDFDownloadView.as_view(), name='factura_download'),
     path('eliminar/factura/<uuid:uuid>/', InvoiceHardDeleteView.as_view(), name='factura_delete'),
     path(
         'reenviar/correo/factura/<uuid:uuid>/',

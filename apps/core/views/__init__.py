@@ -11,6 +11,7 @@ from apps.core.views.email_recipients import (
 )
 from apps.core.views.exports import CSVExportView
 from apps.core.views.maintenance import MaintenanceModeToggleView
+from apps.core.views.serve_file import ServeModelFileView
 
 __all__ = [
     'CompanySettingsAjaxUpdateView',
@@ -22,4 +23,5 @@ __all__ = [
     'EmailRecipientListUpdateView',
     'CSVExportView',
     'MaintenanceModeToggleView',
+    'ServeModelFileView',
 ]

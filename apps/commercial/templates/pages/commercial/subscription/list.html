@@ -74,19 +74,18 @@
         <!-- Descargar factura (si existe) -->
         {% with invoice=subscription.invoices.first %}
           {% if invoice and invoice.pdf %}
-            <a href="{{ invoice.pdf.url }}"
+            <a href="{% url 'commercial:factura_download' invoice.uuid %}"
                class="btn btn-icon btn-outline-info btn-sm"
                data-bs-toggle="tooltip"
                data-bs-placement="bottom"
-               title="Descargar Factura"
-               download="factura-{{ invoice.number }}-{{ invoice.issue_date|date:'Y-m-d' }}.pdf">
+               title="Descargar Factura">
               <i class="icon ti ti-invoice"></i>
             </a>
             <button type="button"
                     class="btn btn-icon btn-outline-primary btn-sm"
                     data-bs-toggle="modal"
                     data-bs-target="#documentPdfModal"
-                    data-pdf-url="{{ invoice.pdf.url }}"
+                    data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
                     data-pdf-title="Factura {{ invoice.number }}"
                     data-bs-toggle="tooltip"
                     data-bs-placement="bottom"
@@ -100,19 +99,18 @@
         {% if subscription.payment_status == 'paid' %}
           {% with certificate=subscription.certificates.first %}
             {% if certificate and certificate.pdf %}
-              <a href="{{ certificate.pdf.url }}"
+              <a href="{% url 'commercial:certificado_pdf' certificate.uuid %}"
                  class="btn btn-icon btn-outline-success btn-sm"
                  data-bs-toggle="tooltip"
                  data-bs-placement="bottom"
-                 title="Descargar Certificado"
-                 download="certificado-{{ certificate.issued_date|date:'Y-m-d' }}.pdf">
+                 title="Descargar Certificado">
                 <i class="icon ti ti-certificate"></i>
               </a>
               <button type="button"
                       class="btn btn-icon btn-outline-primary btn-sm"
                       data-bs-toggle="modal"
                       data-bs-target="#documentPdfModal"
-                      data-pdf-url="{{ certificate.pdf.url }}"
+                      data-pdf-url="{% url 'commercial:certificado_pdf' certificate.uuid %}?inline=1"
                       data-pdf-title="Certificado"
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
@@ -205,19 +203,18 @@
         {% if subscription.payment_status == 'paid' %}
           {% with certificate=subscription.certificates.first %}
             {% if certificate and certificate.pdf %}
-              <a href="{{ certificate.pdf.url }}"
+              <a href="{% url 'commercial:certificado_pdf' certificate.uuid %}"
                  class="btn btn-icon btn-outline-success btn-sm"
                  data-bs-toggle="tooltip"
                  data-bs-placement="bottom"
-                 title="Descargar Certificado"
-                 download="certificado-{{ certificate.issued_date|date:'Y-m-d' }}.pdf">
+                 title="Descargar Certificado">
                 <i class="icon ti ti-certificate"></i>
               </a>
               <button type="button"
                       class="btn btn-icon btn-outline-primary btn-sm"
                       data-bs-toggle="modal"
                       data-bs-target="#documentPdfModal"
-                      data-pdf-url="{{ certificate.pdf.url }}"
+                      data-pdf-url="{% url 'commercial:certificado_pdf' certificate.uuid %}?inline=1"
                       data-pdf-title="Certificado"
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
@@ -242,19 +239,18 @@
         {% elif subscription.payment_status == 'pending' %}
           {% with invoice=subscription.invoices.first %}
             {% if invoice and invoice.pdf %}
-              <a href="{{ invoice.pdf.url }}"
+              <a href="{% url 'commercial:factura_download' invoice.uuid %}"
                  class="btn btn-icon btn-outline-info btn-sm"
                  data-bs-toggle="tooltip"
                  data-bs-placement="bottom"
-                 title="Descargar Factura"
-                 download="factura-{{ invoice.number }}-{{ invoice.issue_date|date:'Y-m-d' }}.pdf">
+                 title="Descargar Factura">
                 <i class="icon ti ti-invoice"></i>
               </a>
               <button type="button"
                       class="btn btn-icon btn-outline-primary btn-sm"
                       data-bs-toggle="modal"
                       data-bs-target="#documentPdfModal"
-                      data-pdf-url="{{ invoice.pdf.url }}"
+                      data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
                       data-pdf-title="Factura {{ invoice.number }}"
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"

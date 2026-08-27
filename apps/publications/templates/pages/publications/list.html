@@ -69,7 +69,7 @@
             class="btn btn-icon btn-outline-primary btn-sm"
             data-bs-toggle="modal"
             data-bs-target="#documentPdfModal"
-            data-pdf-url="{% url 'publications:pdf' object.uuid %}"
+            data-pdf-url="{% url 'publications:pdf' object.uuid %}?inline=1"
             data-pdf-title="{{ object.title }}"
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"

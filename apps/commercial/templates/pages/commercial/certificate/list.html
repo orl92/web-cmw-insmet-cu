@@ -32,7 +32,7 @@
             class="btn btn-icon btn-outline-primary btn-sm"
             data-bs-toggle="modal"
             data-bs-target="#documentPdfModal"
-            data-pdf-url="{% url 'commercial:certificado_pdf' object.uuid %}"
+            data-pdf-url="{% url 'commercial:certificado_pdf' object.uuid %}?inline=1"
             data-pdf-title="Certificado #{{ object.pk }}"
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"
