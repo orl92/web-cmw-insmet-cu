@@ -45,17 +45,6 @@
     {% endwith %}
   </td>
   <td class="text-end">
-    {% if request.user.is_staff %}
-      <a href="{% url 'publications:detail' object.uuid %}"
-         type="button"
-         class="btn btn-icon btn-outline-info btn-sm"
-         data-bs-toggle="tooltip"
-         data-bs-placement="bottom"
-         aria-label="Ver"
-         data-bs-original-title="Ver">
-        <i class="icon ti ti-eye"></i>
-      </a>
-    {% endif %}
     <a href="{% url 'publications:pdf' object.uuid %}"
        type="button"
        class="btn btn-icon btn-outline-primary btn-sm"

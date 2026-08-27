@@ -1,9 +1,3 @@
-import base64
-import os
-from io import BytesIO
-
-import xhtml2pdf.pisa as pisa
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.mixins import (
@@ -13,19 +7,17 @@ from django.contrib.auth.mixins import (
 )
 from django.db import transaction
 from django.forms import modelformset_factory
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
-from django.template.loader import get_template
 from django.urls import reverse_lazy
 from django.views.generic import (
     CreateView,
-    DetailView,
     ListView,
     UpdateView,
     View,
 )
 
 from apps.core.utils import log_action
+from apps.core.views import ServeModelFileView
 from apps.publications.forms import CoauthorForm, ScientificPublicationForm
 from apps.publications.models import Author, ScientificPublication
 
@@ -260,69 +252,11 @@ class ScientificPublicationDeleteView(LoginRequiredMixin, PermissionRequiredMixi
         return redirect('publications:list')
 
 
-class ScientificPublicationDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class ScientificPublicationFileDownloadView(ServeModelFileView):
     model = ScientificPublication
-    template_name = 'pages/publications/detail.html'
-    permission_required = 'publications.view_scientific_publication'
-    context_object_name = 'publicacion'
-
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(ScientificPublication, uuid=uuid)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Detalle de la Publicación Científica'
-        context['parent'] = ''
-        context['segment'] = 'publicaciones'
-        context['url_list'] = reverse_lazy('publications:list')
-        context['publicacion'] = (
-            ScientificPublication.objects.select_related('author')
-            .prefetch_related('coauthors')
-            .get(uuid=self.kwargs.get('uuid'))
-        )
-        return context
-
-
-class ScientificPublicationPDFView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    model = ScientificPublication
+    field = 'pdf'
     permission_required = 'publications.view_scientific_publication'
 
-    def get(self, request, *args, **kwargs):
-        publicacion = self.get_object()
-
-        logo_path = os.path.join(settings.BASE_DIR, 'static/dist/img/logo.png')
-        logo_base64 = self.get_image_base64(logo_path)
-
-        template = get_template('pages/publications/pdf.html')
-        context = {
-            'publicacion': publicacion,
-            'logo_base64': logo_base64,
-            'author': publicacion.author,
-            'coauthors': publicacion.coauthors.all(),
-        }
-        html = template.render(context)
-
-        result = BytesIO()
-        pdf = pisa.pisaDocument(BytesIO(html.encode('UTF-8')), result)
-
-        if not pdf.err:
-            response = HttpResponse(result.getvalue(), content_type='application/pdf')
-            fecha_str = publicacion.publication_date.strftime('%Y-%m-%d')
-            filename = f'publicacion_{publicacion.title[:50]}_{fecha_str}.pdf'
-            disposition = 'inline' if request.GET.get('inline') else 'attachment'
-            response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
-            return response
-        return HttpResponse('Error al generar el PDF', status=400)
-
-    def get_object(self, queryset=None):
-        uuid = self.kwargs.get('uuid')
-        return get_object_or_404(ScientificPublication, uuid=uuid)
-
-    @staticmethod
-    def get_image_base64(image_path):
-        try:
-            with open(image_path, 'rb') as image_file:
-                return base64.b64encode(image_file.read()).decode('utf-8')
-        except FileNotFoundError:
-            return ''
+    def get_filename(self, obj):
+        fecha_str = obj.publication_date.strftime('%Y-%m-%d')
+        return f'publicacion_{obj.title[:50]}_{fecha_str}.pdf'

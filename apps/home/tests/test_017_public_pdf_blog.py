@@ -126,30 +126,6 @@ class PublicationsBlogGridTests(TestCase):
             self.assertIn('Sin PDF', html)
 
 
-class DashboardDetailModalTests(TestCase):
-    """Task 6 — dashboard detail pages delegate to document_card + modal."""
 
-    @classmethod
-    def setUpTestData(cls):
-        cls.superuser = User.objects.create_superuser(
-            'admin', 'admin@test.com', 'pass', first_name='Ad', last_name='Min'
-        )
-        cls.author = Author.objects.create(first_name='Ada', last_name='Lovelace')
-
-    def setUp(self):
-        self.client.force_login(self.superuser)
-
-    def test_publication_detail_renders_modal_and_ver_pdf_button(self):
-        pub = ScientificPublication.objects.create(
-            title='Publicación detalle',
-            author=self.author,
-            summary='Resumen',
-            publication_date=date.today(),
-            pdf=SimpleUploadedFile('p.pdf', b'%PDF-1.4', content_type='application/pdf'),
-        )
-        html = self.client.get(reverse('publications:detail', args=[pub.uuid])).content.decode()
-        self.assertIn('id="documentPdfModal"', html)
-        self.assertIn('Ver PDF', html)
-        self.assertNotIn('target="_blank">Ver PDF', html)
 
 

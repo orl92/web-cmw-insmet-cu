@@ -161,52 +161,35 @@ class ScientificPublicationUpdateViewTests(TestCase):
         self.assertEqual(self.pub.coauthors.count(), 0)
 
 
-class ScientificPublicationDetailViewTests(TestCase):
+class ScientificPublicationFileDownloadViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         disable_maintenance_mode()
-        cls.admin = _make_superuser('pubadmin3')
+        cls.admin = _make_superuser('pubadmin4')
         cls.author = Author.objects.create(
-            first_name='Autor',
-            last_name='Principal',
-            email='autor@example.com',
-            institution='CMP Camagüey',
-        )
-        cls.coauthor = Author.objects.create(
-            first_name='Coautor',
-            last_name='Secundario',
-            email='coautor@example.com',
+            first_name='Autor', last_name='Servido', email='autor@example.com'
         )
         cls.pub = ScientificPublication.objects.create(
             author=cls.author,
-            title='Publicación detalle',
+            title='Publicación servida',
             publication_date='2026-05-10',
-            summary='Resumen de detalle',
+            summary='Resumen',
             pdf=_pdf('articulo_final.pdf'),
         )
-        cls.pub.coauthors.add(cls.coauthor)
-        cls.url = reverse('publications:detail', args=[cls.pub.uuid])
 
-    def test_get_renders_detail_200(self):
+    def test_get_serves_uploaded_pdf(self):
         self.client.force_login(self.admin)
-        response = self.client.get(self.url)
+        response = self.client.get(reverse('publications:pdf', args=[self.pub.uuid]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Publicación detalle')
-        self.assertContains(response, 'Autor Principal')
-        self.assertContains(response, 'Coautores')
-        self.assertContains(response, 'Coautor Secundario')
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', response['Content-Disposition'])
+        # Must stream the uploaded bytes, not a freshly generated document.
+        self.assertEqual(b''.join(response.streaming_content), b'%PDF-1.4 test content')
 
-    def test_detail_renders_clean_filename_not_full_path(self):
+    def test_inline_preview_uses_inline_disposition(self):
         self.client.force_login(self.admin)
-        response = self.client.get(self.url)
-        self.assertContains(response, 'articulo_final.pdf')
-        self.assertContains(response, 'Ver PDF')
-        self.assertContains(
-            response,
-            reverse('publications:pdf', args=[self.pub.uuid]),
+        response = self.client.get(
+            reverse('publications:pdf', args=[self.pub.uuid]) + '?inline=1'
         )
-
-    def test_detail_does_not_show_usuario_item(self):
-        self.client.force_login(self.admin)
-        response = self.client.get(self.url)
-        self.assertNotContains(response, 'datagrid-title">Usuario</div>')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('inline', response['Content-Disposition'])
