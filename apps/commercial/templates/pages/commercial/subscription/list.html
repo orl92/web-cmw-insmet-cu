@@ -73,7 +73,7 @@
         <!-- Botones para staff -->
         <!-- Descargar factura (si existe) -->
         {% with invoice=subscription.invoices.first %}
-          {% if invoice and invoice.pdf %}
+          {% if invoice %}
             <a href="{% url 'commercial:factura_download' invoice.uuid %}"
                class="btn btn-icon btn-outline-info btn-sm"
                data-bs-toggle="tooltip"
@@ -238,7 +238,7 @@
           {% endwith %}
         {% elif subscription.payment_status == 'pending' %}
           {% with invoice=subscription.invoices.first %}
-            {% if invoice and invoice.pdf %}
+            {% if invoice %}
               <a href="{% url 'commercial:factura_download' invoice.uuid %}"
                  class="btn btn-icon btn-outline-info btn-sm"
                  data-bs-toggle="tooltip"

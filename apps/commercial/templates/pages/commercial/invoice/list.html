@@ -55,29 +55,27 @@
       {% endif %}
     </td>
     <td class="text-end">
-      <!-- Descargar PDF -->
-      {% if invoice.pdf %}
-        <a href="{% url 'commercial:factura_download' invoice.uuid %}"
-           class="btn btn-icon btn-outline-primary btn-sm"
-           data-bs-toggle="tooltip"
-           data-bs-placement="bottom"
-           aria-label="Descargar Factura"
-           data-bs-original-title="Descargar Factura">
-          <i class="icon ti ti-download"></i>
-        </a>
-        <button type="button"
-                class="btn btn-icon btn-outline-primary btn-sm"
-                data-bs-toggle="modal"
-                data-bs-target="#documentPdfModal"
-                data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
-                data-pdf-title="Factura {{ invoice.number }}"
-                data-bs-toggle="tooltip"
-                data-bs-placement="bottom"
-                aria-label="Ver PDF"
-                data-bs-original-title="Ver PDF">
-          <i class="icon ti ti-file-text"></i>
-        </button>
-      {% endif %}
+      <!-- Descargar PDF (se genera bajo demanda si aún no existe) -->
+      <a href="{% url 'commercial:factura_download' invoice.uuid %}"
+         class="btn btn-icon btn-outline-primary btn-sm"
+         data-bs-toggle="tooltip"
+         data-bs-placement="bottom"
+         aria-label="Descargar Factura"
+         data-bs-original-title="Descargar Factura">
+        <i class="icon ti ti-download"></i>
+      </a>
+      <button type="button"
+              class="btn btn-icon btn-outline-primary btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#documentPdfModal"
+              data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
+              data-pdf-title="Factura {{ invoice.number }}"
+              data-bs-toggle="tooltip"
+              data-bs-placement="bottom"
+              aria-label="Ver PDF"
+              data-bs-original-title="Ver PDF">
+        <i class="icon ti ti-file-text"></i>
+      </button>
       <!-- Reenviar correo (solo si no se envió y no está anulada) -->
       {% if not invoice.email_sent and not invoice.is_cancelled %}
         <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}"

@@ -319,6 +319,34 @@ class InvoicePDFDownloadView(ServeModelFileView):
     def get_filename(self, obj):
         return f'factura_{obj.number}_{obj.issue_date:%Y-%m-%d}.pdf'
 
+    def get(self, request, uuid):
+        invoice = self.get_object()
+        if not getattr(invoice, self.field):
+            # El PDF se genera por una tarea Huey; si no existe (p. ej. el
+            # worker no corre en dev) lo generamos bajo demanda para no
+            # ocultar los botones de Descargar / Ver PDF en el listado.
+            self._generate_pdf_if_missing(invoice)
+        return super().get(request, uuid)
+
+    def _generate_pdf_if_missing(self, invoice):
+        from apps.commercial.views.invoice_utils import generate_invoice_pdf_standalone
+
+        customer = invoice.customer
+        items = list(invoice.items.all())
+        start_date = invoice.subscription.start_date if invoice.subscription else invoice.issue_date
+        end_date = invoice.subscription.end_date if invoice.subscription else invoice.issue_date
+        try:
+            generate_invoice_pdf_standalone(
+                invoice, customer, start_date, end_date, '', items
+            )
+            invoice.refresh_from_db(fields=[self.field])
+        except Exception as exc:  # pragma: no cover - depends on wkhtmltopdf
+            logger.exception(
+                'Fallo la generación bajo demanda del PDF de la factura %s: %s',
+                invoice.uuid,
+                exc,
+            )
+
 
 class CancelInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = 'commercial.delete_invoice'

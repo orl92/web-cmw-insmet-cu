@@ -3,8 +3,10 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from unittest.mock import patch
 from django.urls import reverse
 from django.utils import timezone
 
@@ -336,6 +338,22 @@ class CancelInvoiceViewTests(TestCase):
         self.client.post(url, follow=True)
         self.invoice.refresh_from_db()
         self.assertTrue(self.invoice.is_cancelled)
+
+    @patch('apps.commercial.views.invoice_utils.generate_invoice_pdf_standalone')
+    def test_download_generates_pdf_if_missing(self, mock_gen):
+        def _fake_gen(invoice, customer, start, end, reg, items):
+            invoice.pdf.save('factura_test.pdf', ContentFile(b'%PDF-1.4 test'))
+
+        mock_gen.side_effect = _fake_gen
+        self.client.force_login(self.admin)
+        url = reverse('commercial:factura_download', args=[self.invoice.uuid])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertEqual(b''.join(response.streaming_content), b'%PDF-1.4 test')
+        # Se generó bajo demanda porque el PDF no existía.
+        mock_gen.assert_called_once()
 
 
 class ContractListViewTests(TestCase):
