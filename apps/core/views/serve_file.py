@@ -1,8 +1,22 @@
+import re
+from urllib.parse import quote
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.views import View
+
+
+def _ascii_filename(name):
+    """ASCII-safe fallback for the Content-Disposition ``filename`` param.
+
+    Non-ASCII bytes or raw spaces in ``filename="..."`` can make some
+    browsers ignore the whole header and fall back to inline (opening the
+    PDF instead of downloading). The real Unicode name travels in
+    ``filename*`` (RFC 5987); this keeps the primary param valid ASCII.
+    """
+    return re.sub(r'[^A-Za-z0-9_.-]', '_', name)
 
 
 class ServeModelFileView(LoginRequiredMixin, View):
@@ -42,5 +56,9 @@ class ServeModelFileView(LoginRequiredMixin, View):
         disposition = 'inline' if request.GET.get('inline') else 'attachment'
         filename = self.get_filename(obj)
         response = FileResponse(f.open(), content_type='application/pdf')
-        response['Content-Disposition'] = f'{disposition}; filename="{filename}"'
+        ascii_name = _ascii_filename(filename)
+        encoded = quote(filename)
+        response['Content-Disposition'] = (
+            f"{disposition}; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
+        )
         return response

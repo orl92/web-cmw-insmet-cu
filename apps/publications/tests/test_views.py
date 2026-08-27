@@ -182,7 +182,14 @@ class ScientificPublicationFileDownloadViewTests(TestCase):
         response = self.client.get(reverse('publications:pdf', args=[self.pub.uuid]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
-        self.assertIn('attachment', response['Content-Disposition'])
+        disposition = response['Content-Disposition']
+        # attachment forces download (never opens in the browser).
+        self.assertIn('attachment', disposition)
+        # RFC 5987 encoded name carries the real Unicode title; the primary
+        # filename must stay ASCII so the header is never misparsed as inline.
+        self.assertIn('filename*=UTF-8', disposition)
+        # ASCII fallback keeps the header valid (accent -> '_').
+        self.assertIn('publicacion_Publicaci_n_servida_', disposition)
         # Must stream the uploaded bytes, not a freshly generated document.
         self.assertEqual(b''.join(response.streaming_content), b'%PDF-1.4 test content')
 
@@ -193,3 +200,4 @@ class ScientificPublicationFileDownloadViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn('inline', response['Content-Disposition'])
+        self.assertIn('filename*=UTF-8', response['Content-Disposition'])
