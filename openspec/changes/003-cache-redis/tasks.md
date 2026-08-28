@@ -22,3 +22,4 @@
 - [x] `python manage.py check` passes
 - [x] `python manage.py test apps.api apps.dashboard apps.core` is green
 - [x] Confirm `rate_limit_ip` (`apps/core/utils.py:56-75`) still works against the (now shared) default cache
+- [x] Add test covering USE_REDIS_CACHE=True backend selection (CACHE-1)

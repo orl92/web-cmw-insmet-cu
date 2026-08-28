@@ -2,11 +2,13 @@ from unittest.mock import patch
 
 from django.conf import settings
 from django.core.cache import caches
+from django.core.cache.backends.redis import RedisCache
 from django.http import HttpResponse
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 
 from apps.core.cache_utils import safe_cache_get, safe_cache_set
 from apps.core.utils import rate_limit_ip
+from config.settings import build_caches
 
 
 class SafeCacheDegradationTests(TestCase):
@@ -38,6 +40,26 @@ class CacheBackendConfigTests(TestCase):
             'django.core.cache.backends.locmem.LocMemCache',
         )
         self.assertEqual(caches['default'].__class__.__name__, 'LocMemCache')
+
+    def test_build_caches_selects_redis_when_enabled(self):
+        # Positive branch (CACHE-1): USE_REDIS_CACHE=True must yield RedisCache
+        # as the selected backend, driven by the REDIS_URL argument.
+        config = build_caches(True, 'redis://127.0.0.1:6379/1')
+        self.assertEqual(
+            config['default']['BACKEND'],
+            'django.core.cache.backends.redis.RedisCache',
+        )
+        self.assertEqual(config['default']['LOCATION'], 'redis://127.0.0.1:6379/1')
+
+    def test_redis_backend_instantiates_lazily_without_live_server(self):
+        # The selected RedisCache must be instantiable WITHOUT a running Redis.
+        # Django's RedisCache is lazy: it only parses the URL and imports redis
+        # at construction, deferring the real connection until first use.
+        with override_settings(CACHES=build_caches(True, 'redis://127.0.0.1:6379/1')):
+            backend = caches['default']
+            self.assertIsInstance(backend, RedisCache)
+            # Laziness proof: client not opened until a command touches Redis.
+            self.assertIsNone(getattr(backend, '_client', None))
 
 
 class RateLimitIpRegressionTests(TestCase):

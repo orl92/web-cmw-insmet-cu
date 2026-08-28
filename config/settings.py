@@ -29,17 +29,31 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 # ---------------------------------------------------------------------------
 USE_REDIS_CACHE = os.getenv('USE_REDIS_CACHE', 'False') == 'True'
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-    },
-}
+REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1')
 
-if USE_REDIS_CACHE:
-    CACHES['default'] = {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+
+def build_caches(use_redis, redis_url):
+    """Construye el dict CACHES de forma determinista y testeable.
+
+    Por defecto usa LocMemCache (sin servidor Redis, para dev/CI). Cuando
+    *use_redis* es True se selecciona el backend RedisCache nativo de Django
+    (>= 4.0); su conexión es perezosa, por lo que no requiere un Redis activo
+    hasta que el cache se usa realmente.
+    """
+    caches = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        },
     }
+    if use_redis:
+        caches['default'] = {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': redis_url,
+        }
+    return caches
+
+
+CACHES = build_caches(USE_REDIS_CACHE, REDIS_URL)
 
 
 def decrypt_secret_key(encrypted_secret_key, encryption_key):
