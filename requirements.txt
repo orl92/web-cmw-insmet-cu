@@ -9,7 +9,7 @@ contourpy
 cryptography
 cssselect2
 cycler
-Django==5.2.16
+Django==6.1
 djangorestframework
 dotenv
 drf-redesign
