@@ -12,6 +12,7 @@ from django.views.generic import TemplateView
 
 from apps.commercial.models import Customer, Invoice, InvoiceItem, ServiceSubscription
 from apps.core.cache_utils import safe_cache_get, safe_cache_set
+from apps.core.models import TaskExecutionLog
 from apps.meteo.models import Forecasts, Warning
 
 
@@ -393,4 +394,44 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 expire_date__gt=timezone.now()
             ).count()
 
+        return context
+
+
+class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'pages/dashboard/tasks.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        now = timezone.now()
+        stale_threshold_minutes = 5
+
+        qs = TaskExecutionLog.objects.all()
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        executions = qs[:500]
+
+        stale_count = TaskExecutionLog.objects.filter(
+            status=TaskExecutionLog.STATUS_ENQUEUED,
+            enqueued_at__lt=now - timezone.timedelta(minutes=stale_threshold_minutes),
+        ).count()
+        error_count = TaskExecutionLog.objects.filter(
+            status=TaskExecutionLog.STATUS_ERROR
+        ).count()
+
+        context.update(
+            {
+                'title': 'Monitoreo de tareas',
+                'parent': 'dashboard',
+                'segment': 'task_monitoring',
+                'executions': executions,
+                'status_choices': TaskExecutionLog.STATUS_CHOICES,
+                'stale_threshold_minutes': stale_threshold_minutes,
+                'stale_count': stale_count,
+                'error_count': error_count,
+            }
+        )
         return context

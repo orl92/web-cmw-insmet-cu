@@ -8,7 +8,7 @@ from config.huey import huey
 logger = logging.getLogger(__name__)
 
 
-@huey.task()
+@huey.task(retries=3, retry_delay=30, retry_backoff=True)
 def generate_invoice_pdf_and_email_task(invoice_uuid, site_url):
     from apps.commercial.models import Invoice
     from apps.commercial.views.invoice_utils import (
@@ -31,7 +31,7 @@ def generate_invoice_pdf_and_email_task(invoice_uuid, site_url):
     enviar_correo_factura(invoice, customer, base_url=site_url)
 
 
-@huey.task()
+@huey.task(retries=3, retry_delay=30, retry_backoff=True)
 def send_email_task(
     subject,
     html_message,
@@ -57,8 +57,5 @@ def send_email_task(
     email.content_subtype = 'html'
     if attachment_name and attachment_content and attachment_mime:
         email.attach(attachment_name, attachment_content, attachment_mime)
-    try:
-        email.send()
-        logger.info(f'Correo enviado: {subject}')
-    except Exception as e:
-        logger.error(f'Error enviando correo: {e}')
+    email.send()
+    logger.info(f'Correo enviado: {subject}')

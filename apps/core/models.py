@@ -243,3 +243,45 @@ class EmailRecipient(models.Model):
 
     def __str__(self):
         return self.email
+
+
+class TaskExecutionLog(models.Model):
+    STATUS_ENQUEUED = 'ENQUEUED'
+    STATUS_EXECUTING = 'EXECUTING'
+    STATUS_SUCCESS = 'SUCCESS'
+    STATUS_ERROR = 'ERROR'
+    STATUS_RETRYING = 'RETRYING'
+    STATUS_REVOKED = 'REVOKED'
+    STATUS_CHOICES = [
+        (STATUS_ENQUEUED, 'Enqueued'),
+        (STATUS_EXECUTING, 'Executing'),
+        (STATUS_SUCCESS, 'Success'),
+        (STATUS_ERROR, 'Error'),
+        (STATUS_RETRYING, 'Retrying'),
+        (STATUS_REVOKED, 'Revoked'),
+    ]
+
+    task_id = models.CharField(max_length=255, db_index=True)
+    task_name = models.CharField(max_length=255)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ENQUEUED)
+    enqueued_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveIntegerField(default=0)
+    error_message = models.TextField(blank=True)
+    traceback = models.TextField(blank=True)
+    args_repr = models.CharField(max_length=512, blank=True)
+
+    class Meta:
+        ordering = ['-enqueued_at']
+        indexes = [models.Index(fields=['status', 'enqueued_at'])]
+        default_permissions = ()
+        permissions = [
+            ('view_taskExecutionLog', 'Can view task execution log'),
+            ('add_taskExecutionLog', 'Can add task execution log'),
+            ('change_taskExecutionLog', 'Can change task execution log'),
+            ('delete_taskExecutionLog', 'Can delete task execution log'),
+        ]
+
+    def __str__(self):
+        return f'{self.task_name} {self.status} ({self.task_id})'

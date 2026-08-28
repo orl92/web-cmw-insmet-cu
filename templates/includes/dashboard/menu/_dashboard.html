@@ -5,6 +5,14 @@
       <span class="nav-link-title">Dashboard</span>
     </a>
   </li>
+  {% if request.user.is_superuser %}
+    <li class="nav-item {% if segment == 'task_monitoring' %}active{% endif %}">
+      <a class="nav-link" href="{% url 'dashboard:tasks' %}">
+        <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="icon ti ti-activity"></i></span>
+        <span class="nav-link-title">Monitoreo de tareas</span>
+      </a>
+    </li>
+  {% endif %}
 {% else %}
   <li class="nav-item">
     <a class="nav-link" href="{% url 'home:index' %}">

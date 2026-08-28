@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from apps.core.models import CompanySettings, EmailRecipient, EmailRecipientList, SiteConfiguration
+from apps.core.models import (
+    CompanySettings,
+    EmailRecipient,
+    EmailRecipientList,
+    SiteConfiguration,
+    TaskExecutionLog,
+)
 
 
 @admin.register(SiteConfiguration)
@@ -22,3 +28,16 @@ class EmailRecipientInline(admin.TabularInline):
 class EmailRecipientListAdmin(admin.ModelAdmin):
     inlines = [EmailRecipientInline]
     list_display = ('name',)
+
+
+@admin.register(TaskExecutionLog)
+class TaskExecutionLogAdmin(admin.ModelAdmin):
+    list_display = ('task_name', 'status', 'attempts', 'enqueued_at', 'finished_at')
+    list_filter = ('status',)
+    readonly_fields = [f.name for f in TaskExecutionLog._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
