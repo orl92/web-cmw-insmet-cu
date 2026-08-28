@@ -3,6 +3,6 @@ bandit==1.9.4
 pip-audit==2.10.1
 djlint==1.44.2
 pre-commit==4.6.2
-django-debug-toolbar==4.4.2
+django-debug-toolbar==7.1.1
 setuptools
 wheel
