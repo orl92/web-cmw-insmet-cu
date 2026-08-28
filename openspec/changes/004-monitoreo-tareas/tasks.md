@@ -39,3 +39,6 @@ Phased, completable in one session each. Anchored to current code (see `design.m
       log + traceback, retry config assertions, no-swallow assertion — per `design.md` §8.
 - [x] 5.2 Run `python manage.py check && python manage.py test apps.core`; fix failures.
 - [x] 5.3 Run `djlint . --reformat --check` and `djlint . --lint` on the new template; `ruff` clean.
+- [x] 5.4 Add tests for stale-queue banner, non-superuser block, and admin `status` filter
+      (`apps/core/tests/test_task_monitoring_views.py`) — closes verify gaps TASK-VIEW-1
+      (stale-queue red banner, non-superuser blocked) and TASK-ADMIN-1 (admin `status` filter).
