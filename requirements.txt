@@ -19,7 +19,7 @@ flexcache
 flexparser
 fonttools
 freetype-py
-gunicorn==22.0.0
+gunicorn==26.1.0
 html5lib
 idna
 inflection
