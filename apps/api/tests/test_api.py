@@ -1,6 +1,7 @@
 from datetime import date, time, timedelta
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -319,6 +320,7 @@ class StationListQueryCountTests(APITestCase):
         cls.url = reverse('station-list')
 
     def test_query_count_is_constant(self):
+        cache.clear()
         # 1 (SiteConfiguration middleware) + 1 (stations joined with province)
         with self.assertNumQueries(2):
             self.client.get(self.url)
@@ -346,6 +348,7 @@ class WarningListQueryCountTests(APITestCase):
         }
 
     def test_query_count_is_constant(self):
+        cache.clear()
         # 1 (SiteConfiguration) + 1 (warnings joined with user) per endpoint
         for url in self.urls.values():
             with self.assertNumQueries(2):
@@ -364,6 +367,7 @@ class WeatherReportListQueryCountTests(APITestCase):
         cls.url = reverse('weather-report-list', args=['today'])
 
     def test_query_count_is_constant(self):
+        cache.clear()
         # 1 (SiteConfiguration) + 1 (reports joined with user)
         with self.assertNumQueries(2):
             self.client.get(self.url)
@@ -385,6 +389,7 @@ class ScientificPublicationListQueryCountTests(APITestCase):
         cls.url = reverse('publication-list')
 
     def test_query_count_is_constant(self):
+        cache.clear()
         # 1 (SiteConfiguration) + 1 (author join) + 1 (coauthors prefetch)
         with self.assertNumQueries(3):
             self.client.get(self.url)
@@ -430,6 +435,7 @@ class ForecastListQueryCountTests(APITestCase):
         cls.url = reverse('forecast', args=[today.isoformat()])
 
     def test_query_count_is_constant(self):
+        cache.clear()
         # 1 (SiteConfiguration) + forecast + regions prefetch + extended_days prefetch
         # + serializer overhead; calibrated, must stay constant as rows grow.
         with self.assertNumQueries(8):

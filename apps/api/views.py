@@ -15,6 +15,7 @@ from apps.api.serializers import (
     WeatherReportSerializer,
 )
 from apps.commercial.models import Service
+from apps.core.cache_utils import build_api_cache_key, safe_cache_get, safe_cache_set
 from apps.meteo.models import (
     Forecasts,
     Station,
@@ -28,7 +29,35 @@ from apps.publications.models import ScientificPublication
 ALLOWED_REPORT_TYPES = {'today', 'tomorrow', 'commentary', 'note'}
 
 
-class StationObservationView(GenericAPIView):
+class CacheAPIMixin:
+    """Cache read-only ``AllowAny`` GET responses by request path + query string.
+
+    Only successful (HTTP 200) responses are cached; errors (400/404) are never
+    stored. Cache reads/writes go through ``safe_cache_get``/``safe_cache_set`` so
+    a Redis outage degrades to a live (uncached) response instead of a 500.
+
+    ``cache_timeout`` is overridden per endpoint: 60s for volatile sources
+    (observations, warnings) and 300s for stable sources (stations, publications,
+    services, forecast).
+    """
+
+    cache_timeout = 300
+
+    def get(self, request, *args, **kwargs):
+        key = build_api_cache_key(request)
+        cached = safe_cache_get(key)
+        if cached is not None:
+            data, status_code = cached
+            return Response(data, status=status_code)
+        response = super().get(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            safe_cache_set(key, (response.data, response.status_code), self.cache_timeout)
+        return response
+
+
+class StationObservationView(CacheAPIMixin, GenericAPIView):
+    cache_timeout = 60
+
     """
     ### Vista de Observación de Estación Meteorológica
     Recupera datos de observación para una estación específica a una hora determinada.
@@ -92,7 +121,8 @@ class StationObservationView(GenericAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class StationListAPIView(ListAPIView):
+class StationListAPIView(CacheAPIMixin, ListAPIView):
+    cache_timeout = 300
     """
     ### Vista de Listado de Estaciones
     Esta vista proporciona una lista de todas las estaciones.
@@ -106,7 +136,8 @@ class StationListAPIView(ListAPIView):
     permission_classes = [AllowAny]
 
 
-class ForecastAPIView(GenericAPIView):
+class ForecastAPIView(CacheAPIMixin, GenericAPIView):
+    cache_timeout = 300
     """
     ### Vista de API de Pronóstico
     Esta vista recupera los datos de pronóstico.
@@ -140,7 +171,8 @@ class ForecastAPIView(GenericAPIView):
         return Response(serializer.data)
 
 
-class EarlyWarningListAPIView(ListAPIView):
+class EarlyWarningListAPIView(CacheAPIMixin, ListAPIView):
+    cache_timeout = 60
     serializer_class = WarningSerializer
     permission_classes = [AllowAny]
 
@@ -150,7 +182,8 @@ class EarlyWarningListAPIView(ListAPIView):
         )
 
 
-class TropicalCycloneListAPIView(ListAPIView):
+class TropicalCycloneListAPIView(CacheAPIMixin, ListAPIView):
+    cache_timeout = 60
     serializer_class = WarningSerializer
     permission_classes = [AllowAny]
 
@@ -160,7 +193,8 @@ class TropicalCycloneListAPIView(ListAPIView):
         )
 
 
-class StormWarningListAPIView(ListAPIView):
+class StormWarningListAPIView(CacheAPIMixin, ListAPIView):
+    cache_timeout = 60
     serializer_class = WarningSerializer
     permission_classes = [AllowAny]
 
@@ -170,7 +204,8 @@ class StormWarningListAPIView(ListAPIView):
         )
 
 
-class WeatherReportListAPIView(ListAPIView):
+class WeatherReportListAPIView(CacheAPIMixin, ListAPIView):
+    cache_timeout = 300
     serializer_class = WeatherReportSerializer
     permission_classes = [AllowAny]
 
@@ -181,13 +216,15 @@ class WeatherReportListAPIView(ListAPIView):
         return WeatherReport.objects.select_related('user').filter(report_type=report_type)
 
 
-class ScientificPublicationListAPIView(ListAPIView):
+class ScientificPublicationListAPIView(CacheAPIMixin, ListAPIView):
+    cache_timeout = 300
     queryset = ScientificPublication.objects.select_related('author').prefetch_related('coauthors')
     serializer_class = ScientificPublicationSerializer
     permission_classes = [AllowAny]
 
 
-class ServiceListAPIView(ListAPIView):
+class ServiceListAPIView(CacheAPIMixin, ListAPIView):
+    cache_timeout = 300
     queryset = Service.objects.filter(service_type='public')
     serializer_class = ServiceSerializer
     permission_classes = [AllowAny]

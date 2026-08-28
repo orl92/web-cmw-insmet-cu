@@ -20,6 +20,27 @@ IS_PRODUCTION = 'PRODUCTION' in os.environ
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
+# ---------------------------------------------------------------------------
+# Cache backend (change 003-cache-redis)
+# By default the app uses Django's in-process LocMemCache so dev/CI run with no
+# Redis server. When USE_REDIS_CACHE=True the shared RedisCache backend is used
+# (LOCATION driven by REDIS_URL). The native Django >= 4.0 Redis backend only
+# requires the `redis` (redis-py) package -- no django-redis dependency.
+# ---------------------------------------------------------------------------
+USE_REDIS_CACHE = os.getenv('USE_REDIS_CACHE', 'False') == 'True'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    },
+}
+
+if USE_REDIS_CACHE:
+    CACHES['default'] = {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+    }
+
 
 def decrypt_secret_key(encrypted_secret_key, encryption_key):
     if not encrypted_secret_key or not encryption_key:

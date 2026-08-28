@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.views.generic import TemplateView
 
 from apps.commercial.models import Customer, Invoice, InvoiceItem, ServiceSubscription
+from apps.core.cache_utils import safe_cache_get, safe_cache_set
 from apps.meteo.models import Forecasts, Warning
 
 
@@ -47,6 +48,156 @@ paid_via_items = Exists(
 )
 
 
+def _income_num_months(income_range, now):
+    if income_range == '1m':
+        return 1
+    if income_range == '3m':
+        return 3
+    if income_range == '6m':
+        return 6
+    if income_range == 'all':
+        earliest = Invoice.objects.filter(is_cancelled=False).order_by('issue_date').first()
+        if earliest and earliest.issue_date:
+            return max((now - earliest.issue_date).days // 30, 1)
+        return 12
+    return 12
+
+
+def _build_forecast_series(start_date):
+    """Expensive, user-agnostic forecast series. Cached by the caller."""
+    forecasts = Forecasts.objects.filter(date__gte=start_date).order_by('date')
+    total_forecasts = forecasts.count()
+    if total_forecasts > 30:
+        step = total_forecasts // 30
+        forecast_ids = forecasts.values_list('id', flat=True)
+        sampled_ids = forecast_ids[::step]
+        forecasts = Forecasts.objects.filter(id__in=sampled_ids).order_by('date')
+    has_forecasts = forecasts.exists()
+    if not has_forecasts:
+        return {'has_forecasts': False}
+    forecasts_list = list(forecasts)
+    return {
+        'has_forecasts': True,
+        'temperature_labels': json.dumps([f.date.strftime('%d/%m') for f in forecasts_list]),
+        'max_temperatures_north': json.dumps(
+            [_region_temp(f, 'north', 'afternoon') for f in forecasts_list]
+        ),
+        'min_temperatures_north': json.dumps(
+            [_region_temp(f, 'north', 'night') for f in forecasts_list]
+        ),
+        'max_temperatures_south': json.dumps(
+            [_region_temp(f, 'south', 'afternoon') for f in forecasts_list]
+        ),
+        'min_temperatures_south': json.dumps(
+            [_region_temp(f, 'south', 'night') for f in forecasts_list]
+        ),
+        'max_temperatures_inland': json.dumps(
+            [_region_temp(f, 'interior', 'afternoon') for f in forecasts_list]
+        ),
+        'min_temperatures_inland': json.dumps(
+            [_region_temp(f, 'interior', 'night') for f in forecasts_list]
+        ),
+    }
+
+
+def _build_alerts_block():
+    """Expensive, user-agnostic latest-alerts aggregation. Cached by the caller."""
+    now = timezone.now()
+    latest_early = (
+        Warning.objects.filter(warning_type='early', valid_until__gte=now).order_by('-date').first()
+    )
+    latest_cyclone = (
+        Warning.objects.filter(warning_type='tropical_cyclone', valid_until__gte=now)
+        .order_by('-date')
+        .first()
+    )
+    latest_storm = (
+        Warning.objects.filter(warning_type='storm', valid_until__gte=now).order_by('-date').first()
+    )
+    return {
+        'early_warnings': [latest_early] if latest_early else [],
+        'tropical_cyclones': [latest_cyclone] if latest_cyclone else [],
+        'storm_warnings': [latest_storm] if latest_storm else [],
+    }
+
+
+def _build_commercial_income(income_range):
+    """Expensive, user-agnostic commercial income chart. Cached by the caller."""
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    num_months = _income_num_months(income_range, now)
+    income_start = month_start - timezone.timedelta(days=num_months * 30)
+
+    billed_qs = (
+        Invoice.objects.filter(is_cancelled=False, issue_date__gte=income_start)
+        .values('issue_date__year', 'issue_date__month')
+        .annotate(total=Sum('amount'))
+        .order_by('issue_date__year', 'issue_date__month')
+    )
+    paid_qs = (
+        Invoice.objects.filter(is_cancelled=False, issue_date__gte=income_start)
+        .filter(paid_direct | paid_via_items)
+        .values('issue_date__year', 'issue_date__month')
+        .annotate(total=Sum('amount'))
+        .order_by('issue_date__year', 'issue_date__month')
+    )
+
+    billed_map = {}
+    paid_map = {}
+    for entry in billed_qs:
+        billed_map[(entry['issue_date__year'], entry['issue_date__month'])] = float(entry['total'])
+    for entry in paid_qs:
+        paid_map[(entry['issue_date__year'], entry['issue_date__month'])] = float(entry['total'])
+
+    months_labels = []
+    billed_data = []
+    paid_data = []
+    for i in range(num_months - 1, -1, -1):
+        m = now.month - i
+        y = now.year
+        while m < 1:
+            m += 12
+            y -= 1
+        months_labels.append(f'{m:02d}/{y}')
+        billed_data.append(billed_map.get((y, m), 0))
+        paid_data.append(paid_map.get((y, m), 0))
+
+    return {
+        'income_months': json.dumps(months_labels),
+        'income_billed_data': json.dumps(billed_data),
+        'income_paid_data': json.dumps(paid_data),
+    }
+
+
+def build_shared_kpis(time_range, income_range, *, forecast=False, alerts=False, commercial=False):
+    """Return user-agnostic Dashboard aggregates, cached per (range, income_range).
+
+    Only the expensive shared aggregations are cached (forecast series, alerts,
+    commercial income chart). Per-client data is NEVER placed here, so there is
+    no cross-user leakage. Cached values are JSON strings / counts (picklable for
+    Redis). Reads/writes use safe_cache_* so a Redis outage degrades to live compute.
+    """
+    cache_key = f'dashboard:kpi:{time_range}:{income_range}'
+    shared = safe_cache_get(cache_key) or {}
+    if forecast and 'forecast' not in shared:
+        series = _build_forecast_series(
+            timezone.now().date()
+            - timezone.timedelta(
+                days=30 if time_range == '30d' else 90 if time_range == '3m' else 7
+            )
+        )
+        if series.get('has_forecasts'):
+            shared['forecast'] = series
+            safe_cache_set(cache_key, shared, 300)
+    if alerts and 'alerts' not in shared:
+        shared['alerts'] = _build_alerts_block()
+        safe_cache_set(cache_key, shared, 300)
+    if commercial and 'commercial' not in shared:
+        shared['commercial'] = _build_commercial_income(income_range)
+        safe_cache_set(cache_key, shared, 300)
+    return shared
+
+
 class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'pages/dashboard/index.html'
 
@@ -65,15 +216,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         user = self.request.user
 
         time_range = self.request.GET.get('range', '7d')
-
-        if time_range == '30d':
-            days = 30
-        elif time_range == '3m':
-            days = 90
-        else:
-            days = 7
-
-        start_date = timezone.now().date() - timezone.timedelta(days=days)
+        income_range = self.request.GET.get('income_range', '12m')
 
         context.update(
             {
@@ -101,6 +244,14 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         )
 
         now = timezone.now()
+
+        shared = build_shared_kpis(
+            time_range,
+            income_range,
+            forecast=context['show_forecast'],
+            alerts=context['show_alerts'],
+            commercial=context['show_commercial'],
+        )
 
         if context['is_client']:
             try:
@@ -136,131 +287,19 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             except ObjectDoesNotExist:
                 context['latest_forecast'] = None
 
-            forecasts = Forecasts.objects.filter(date__gte=start_date).order_by('date')
+            if 'forecast' in shared:
+                context.update(shared['forecast'])
 
-            total_forecasts = forecasts.count()
-            if total_forecasts > 30:
-                step = total_forecasts // 30
-                forecast_ids = forecasts.values_list('id', flat=True)
-                sampled_ids = forecast_ids[::step]
-                forecasts = Forecasts.objects.filter(id__in=sampled_ids).order_by('date')
-
-            context['has_forecasts'] = forecasts.exists()
-
-            if context['has_forecasts']:
-                forecasts_list = list(forecasts)
-
-                context['temperature_labels'] = json.dumps(
-                    [f.date.strftime('%d/%m') for f in forecasts_list]
-                )
-                context['max_temperatures_north'] = json.dumps(
-                    [_region_temp(f, 'north', 'afternoon') for f in forecasts_list]
-                )
-                context['min_temperatures_north'] = json.dumps(
-                    [_region_temp(f, 'north', 'night') for f in forecasts_list]
-                )
-                context['max_temperatures_south'] = json.dumps(
-                    [_region_temp(f, 'south', 'afternoon') for f in forecasts_list]
-                )
-                context['min_temperatures_south'] = json.dumps(
-                    [_region_temp(f, 'south', 'night') for f in forecasts_list]
-                )
-                context['max_temperatures_inland'] = json.dumps(
-                    [_region_temp(f, 'interior', 'afternoon') for f in forecasts_list]
-                )
-                context['min_temperatures_inland'] = json.dumps(
-                    [_region_temp(f, 'interior', 'night') for f in forecasts_list]
-                )
-
-        if context['show_alerts']:
-            latest_early = (
-                Warning.objects.filter(warning_type='early', valid_until__gte=now)
-                .order_by('-date')
-                .first()
-            )
-            latest_cyclone = (
-                Warning.objects.filter(warning_type='tropical_cyclone', valid_until__gte=now)
-                .order_by('-date')
-                .first()
-            )
-            latest_storm = (
-                Warning.objects.filter(warning_type='storm', valid_until__gte=now)
-                .order_by('-date')
-                .first()
-            )
-
-            context['latest_alerts'] = {
-                'early_warnings': [latest_early] if latest_early else [],
-                'tropical_cyclones': [latest_cyclone] if latest_cyclone else [],
-                'storm_warnings': [latest_storm] if latest_storm else [],
-            }
+        if context['show_alerts'] and 'alerts' in shared:
+            context['latest_alerts'] = shared['alerts']
 
         if context['show_commercial']:
             month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
-            income_range = self.request.GET.get('income_range', '12m')
             context['selected_income_range'] = income_range
 
-            if income_range == '1m':
-                num_months = 1
-            elif income_range == '3m':
-                num_months = 3
-            elif income_range == '6m':
-                num_months = 6
-            elif income_range == 'all':
-                earliest = Invoice.objects.filter(is_cancelled=False).order_by('issue_date').first()
-                if earliest and earliest.issue_date:
-                    delta = now - earliest.issue_date
-                    num_months = max(delta.days // 30, 1)
-                else:
-                    num_months = 12
-            else:
-                num_months = 12
-
-            income_start = month_start - timezone.timedelta(days=num_months * 30)
-
-            billed_qs = (
-                Invoice.objects.filter(is_cancelled=False, issue_date__gte=income_start)
-                .values('issue_date__year', 'issue_date__month')
-                .annotate(total=Sum('amount'))
-                .order_by('issue_date__year', 'issue_date__month')
-            )
-
-            paid_qs = (
-                Invoice.objects.filter(is_cancelled=False, issue_date__gte=income_start)
-                .filter(paid_direct | paid_via_items)
-                .values('issue_date__year', 'issue_date__month')
-                .annotate(total=Sum('amount'))
-                .order_by('issue_date__year', 'issue_date__month')
-            )
-
-            billed_map = {}
-            paid_map = {}
-            for entry in billed_qs:
-                billed_map[(entry['issue_date__year'], entry['issue_date__month'])] = float(
-                    entry['total']
-                )
-            for entry in paid_qs:
-                paid_map[(entry['issue_date__year'], entry['issue_date__month'])] = float(
-                    entry['total']
-                )
-
-            months_labels = []
-            billed_data = []
-            paid_data = []
-            for i in range(num_months - 1, -1, -1):
-                m = now.month - i
-                y = now.year
-                while m < 1:
-                    m += 12
-                    y -= 1
-                months_labels.append(f'{m:02d}/{y}')
-                billed_data.append(billed_map.get((y, m), 0))
-                paid_data.append(paid_map.get((y, m), 0))
-
-            context['income_months'] = json.dumps(months_labels)
-            context['income_billed_data'] = json.dumps(billed_data)
-            context['income_paid_data'] = json.dumps(paid_data)
+            if 'commercial' in shared:
+                context.update(shared['commercial'])
 
             context['active_subs'] = ServiceSubscription.objects.filter(
                 payment_status='paid', end_date__gt=now, record_active=True

@@ -214,9 +214,10 @@ class Command(BaseCommand):
 
                 # --- Cache ---
                 f.write('# =====================\n')
-                f.write('# CONFIGURACIÓN DE CACHE\n')
+                f.write('# CONFIGURACIÓN DE CACHE (Redis)\n')
                 f.write('# =====================\n')
-                f.write('CACHE_BACKEND=django.core.cache.backends.locmem.LocMemCache\n\n')
+                f.write('REDIS_URL=redis://127.0.0.1:6379/1\n')
+                f.write(f'USE_REDIS_CACHE={"True" if production else "False"}\n\n')
 
             self.stdout.write(self.style.SUCCESS('✅ Archivo .env creado exitosamente'))
             self.stdout.write(f'📁 Ubicación: {env_path}')

@@ -51,6 +51,7 @@ pytz
 PyYAML
 referencing
 reportlab
+redis==5.2.1
 requests
 rlPyCairo
 rpds-py
