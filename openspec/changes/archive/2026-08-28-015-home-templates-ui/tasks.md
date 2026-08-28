@@ -112,5 +112,5 @@ Chain strategy: chained
 
 ## Phase 10: Commit
 
-- [ ] 10.1 Commit per phase with a conventional message referencing `015-home-templates-ui`
+- [x] 10.1 Commit per phase with a conventional message referencing `015-home-templates-ui`
       (e.g. `feat(home): unified accessible pdf viewer partial (015-home-templates-ui)`).
