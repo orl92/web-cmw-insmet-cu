@@ -23,7 +23,7 @@
 {% endblock title_actions %}
 {% block content %}
   <div class="card">
-    <div class="card-body p-4 table-responsive" style="border-radius: 10px;">
+    <div class="card-body p-4 table-responsive rounded-3">
       <table id="{{ list_id|default:'example' }}" class="table" style="width:100%">
         <thead>
           <tr>
@@ -50,6 +50,7 @@
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       new DataTable('#{{ list_id|default:'example' }}', {
+        processing: true,
         language: {
           url: "{% static 'dist/libs/datatables/Spanish.json' %}"
         }

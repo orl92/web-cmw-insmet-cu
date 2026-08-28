@@ -41,7 +41,7 @@
 {% endblock title_actions %}
 {% block content %}
   <div class="card">
-    <div class="card-body p-4 table-responsive" style="border-radius: 10px;">
+    <div class="card-body p-4 table-responsive rounded-3">
       <div class="row">
         <div class="col-lg-6">
           <form method="get" action=".">
@@ -49,7 +49,7 @@
             <label for="datepicker-icon" class="form-label me-2">Fecha:</label>
             <div class="mb-3 d-flex align-items-center">
               <div class="input-group mb-2" data-tempus-container>
-                <span class="input-group-text" data-tempus-trigger><i class="ti ti-calendar"></i></span>
+                <span class="input-group-text" data-tempus-trigger><i class="icon ti ti-calendar"></i></span>
                 <input name="date"
                        class="form-control"
                        placeholder="dd/mm/aaaa"
@@ -312,6 +312,7 @@
   <script src="{% static '' %}dist/libs/datatables/datatables.min.js"></script>
   <script>
     new DataTable('table.display', {
+      processing: true,
       info: false,
       searching: false,
       paging: false,

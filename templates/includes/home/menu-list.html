@@ -4,7 +4,7 @@
   <li class="nav-item {% if 'index' in segment %}active{% endif %}">
     <a class="nav-link" href="{% url 'home:index' %}">
       <span class="nav-link-icon d-md-none d-lg-inline-block">
-        <i class="ti ti-home"></i>
+        <i class="icon ti ti-home"></i>
       </span>
       <span class="nav-link-title">Inicio</span>
     </a>
@@ -18,7 +18,7 @@
        role="button"
        aria-expanded="false">
       <span class="nav-link-icon d-md-none d-lg-inline-block">
-        <i class="ti ti-temperature-sun"></i>
+        <i class="icon ti ti-temperature-sun"></i>
       </span>
       <span class="nav-link-title">El Tiempo</span>
     </a>
@@ -50,7 +50,7 @@
        role="button"
        aria-expanded="false">
       <span class="nav-link-icon d-md-none d-lg-inline-block">
-        <i class="ti ti-alert-triangle"></i>
+        <i class="icon ti ti-alert-triangle"></i>
       </span>
       <span class="nav-link-title">Avisos</span>
       {% with total=early_warning_count|add:tropical_cyclone_count|add:storm_warning_count %}
@@ -98,7 +98,7 @@
        role="button"
        aria-expanded="false">
       <span class="nav-link-icon d-md-none d-lg-inline-block">
-        <i class="ti ti-atom"></i>
+        <i class="icon ti ti-atom"></i>
       </span>
       <span class="nav-link-title">Física de la atmósfera</span>
     </a>
@@ -127,7 +127,7 @@
        role="button"
        aria-expanded="false">
       <span class="nav-link-icon d-md-none d-lg-inline-block">
-        <i class="ti ti-tools"></i>
+        <i class="icon ti ti-tools"></i>
       </span>
       <span class="nav-link-title">Servicios</span>
       {% if user.is_authenticated and user.commercial_customer and client_pending_actions > 0 %}
@@ -174,7 +174,7 @@
   <li class="nav-item {% if 'satelitales' in segment %}active{% endif %}">
     <a class="nav-link" href="{% url 'home:satellite' %}">
       <span class="nav-link-icon d-md-none d-lg-inline-block">
-        <i class="ti ti-satellite"></i>
+        <i class="icon ti ti-satellite"></i>
       </span>
       <span class="nav-link-title">Imágenes Satelitales</span>
     </a>
@@ -188,7 +188,7 @@
        role="button"
        aria-expanded="false">
       <span class="nav-link-icon d-md-none d-lg-inline-block">
-        <i class="ti ti-building-bank"></i>
+        <i class="icon ti ti-building-bank"></i>
       </span>
       <span class="nav-link-title">Institución</span>
     </a>
@@ -217,7 +217,7 @@
     <li class="nav-item {% if 'registro' in segment %}active{% endif %}">
       <a class="nav-link" href="{% url 'user_auth:customer_register' %}">
         <span class="nav-link-icon d-md-none d-lg-inline-block">
-          <i class="ti ti-users"></i>
+          <i class="icon ti ti-users"></i>
         </span>
         <span class="nav-link-title">Registro Clientes</span>
       </a>

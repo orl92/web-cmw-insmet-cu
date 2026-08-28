@@ -3,10 +3,6 @@
 {% block body %}d-flex flex-column{% endblock %}
 {% block content %}
   <div class="page page-center">
-    <!-- Contenedor de toasts -->
-    <div class="toast-container position-fixed top-0 end-0 p-3"
-         id="toast-container"
-         style="z-index: 1060"></div>
     <div class="container container-normal py-4">
       <div class="row align-items-center g-4">
         <div class="col-lg">
@@ -476,55 +472,10 @@
     const currentStepSpan = document.getElementById('current-step');
     const form = document.getElementById('registration-form');
     const acceptTerms = document.getElementById('accept-terms');
-    const toastContainer = document.getElementById('toast-container');
 
     let termsToastShown = false;
 
-    // Toast de notificaciones
-    function showToast(message, type = 'success', duration = 5000) {
-      let bgClass, iconSvg, title;
-      switch(type) {
-        case 'success':
-          bgClass = 'bg-success';
-          iconSvg = '<i class="icon ti ti-check"></i>';
-          title = 'Éxito';
-          break;
-        case 'danger':
-          bgClass = 'bg-danger';
-          iconSvg = '<i class="icon ti ti-info-circle"></i>';
-          title = 'Error';
-          break;
-        case 'info':
-          bgClass = 'bg-info';
-          iconSvg = '<i class="icon ti ti-info-circle"></i>';
-          title = 'Información';
-          break;
-        default:
-          bgClass = 'bg-info';
-          iconSvg = '<i class="icon ti ti-info-circle"></i>';
-          title = 'Información';
-      }
-
-      const toastId = 'toast-' + Date.now();
-      const toastHTML = `
-        <div id="${toastId}" class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-          <div class="toast-header ${bgClass} text-white">
-            <span class="me-2">${iconSvg}</span>
-            <strong class="me-auto">${title}</strong>
-            <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('${toastId}').remove()"></button>
-          </div>
-          <div class="toast-body">${message}</div>
-        </div>
-      `;
-      toastContainer.insertAdjacentHTML('beforeend', toastHTML);
-      setTimeout(() => {
-        const toastElement = document.getElementById(toastId);
-        if (toastElement) {
-          toastElement.classList.remove('show');
-          setTimeout(() => toastElement?.parentNode?.removeChild(toastElement), 300);
-        }
-      }, duration);
-    }
+    // Toast: delegado a showToast() global (static/dist/js/utils.js)
 
     // El filtrado de dígitos se maneja de forma declarativa con data-sanitize
     // (static/dist/js/input-sanitize.js): phone, nit, account. REEUP NO se modifica.
@@ -578,7 +529,7 @@
         submitBtn.style.display = 'inline-block';
         updateSubmitButtonState();
         if (!termsToastShown) {
-          showToast('Para completar el registro, debes aceptar los Términos y Condiciones.', 'info', 5000);
+          window.showToast('Para completar el registro, debes aceptar los Términos y Condiciones.', 'info', 5000);
           termsToastShown = true;
         }
       } else {
@@ -601,7 +552,7 @@
     if (acceptTerms) {
       acceptTerms.addEventListener('change', function() {
         if (this.checked) {
-          showToast('¡Gracias por aceptar nuestros términos!', 'success', 3000);
+          window.showToast('¡Gracias por aceptar nuestros términos!', 'success', 3000);
         }
         updateSubmitButtonState();
       });
@@ -611,7 +562,7 @@
       if (acceptTerms && !acceptTerms.checked) {
         e.preventDefault();
         acceptTerms.classList.add('is-invalid');
-        showToast('Debes aceptar los Términos y Condiciones.', 'danger');
+        window.showToast('Debes aceptar los Términos y Condiciones.', 'danger');
         submitBtn.disabled = true;
         if (currentStep !== 4) { currentStep = 4; updateStepDisplay(); }
         acceptTerms.focus();
