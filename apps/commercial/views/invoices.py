@@ -205,6 +205,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 f'Factura por lote {invoice.number} - Cliente: '
                 f'{customer.company_name} - Monto: ${total:.2f}'
             ),
+            request=self.request,
         )
 
         site_url = self.request.build_absolute_uri('/')
@@ -281,6 +282,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 f'Factura manual {invoice.number} - Cliente: '
                 f'{customer.company_name} - Monto: ${total:.2f}'
             ),
+            request=self.request,
         )
 
         site_url = self.request.build_absolute_uri('/')
@@ -336,9 +338,7 @@ class InvoicePDFDownloadView(ServeModelFileView):
         start_date = invoice.subscription.start_date if invoice.subscription else invoice.issue_date
         end_date = invoice.subscription.end_date if invoice.subscription else invoice.issue_date
         try:
-            generate_invoice_pdf_standalone(
-                invoice, customer, start_date, end_date, '', items
-            )
+            generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, '', items)
             invoice.refresh_from_db(fields=[self.field])
         except Exception as exc:  # pragma: no cover - depends on wkhtmltopdf
             logger.exception(

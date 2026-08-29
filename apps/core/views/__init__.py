@@ -1,3 +1,4 @@
+from apps.core.views.activity_log import ActivityLogListView
 from apps.core.views.company_settings import (
     CompanySettingsAjaxUpdateView,
     CompanySettingsUpdateView,
@@ -14,6 +15,7 @@ from apps.core.views.maintenance import MaintenanceModeToggleView
 from apps.core.views.serve_file import ServeModelFileView
 
 __all__ = [
+    'ActivityLogListView',
     'CompanySettingsAjaxUpdateView',
     'CompanySettingsUpdateView',
     'EmailRecipientListCreateView',

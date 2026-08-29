@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from apps.core.models import (
+    ActivityLog,
     CompanySettings,
     EmailRecipient,
     EmailRecipientList,
@@ -40,4 +41,21 @@ class TaskExecutionLogAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ActivityLog)
+class ActivityLogAdmin(admin.ModelAdmin):
+    list_display = ('action_time', 'user', 'action_flag', 'object_repr')
+    list_filter = ('user', 'action_flag', 'action_time')
+    search_fields = ('object_repr', 'message', 'ip_address')
+    readonly_fields = [f.name for f in ActivityLog._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
         return False

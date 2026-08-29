@@ -2,6 +2,8 @@ import os
 import re
 import uuid
 
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 
@@ -285,3 +287,58 @@ class TaskExecutionLog(models.Model):
 
     def __str__(self):
         return f'{self.task_name} {self.status} ({self.task_id})'
+
+
+class ActivityLog(models.Model):
+    ACTIVITY_ADDITION = 1
+    ACTIVITY_CHANGE = 2
+    ACTIVITY_DELETION = 3
+    ACTIVITY_LOGIN = 4
+    ACTIVITY_LOGOUT = 5
+    ACTIVITY_FLAG_CHOICES = (
+        (ACTIVITY_ADDITION, 'Adición'),
+        (ACTIVITY_CHANGE, 'Cambio'),
+        (ACTIVITY_DELETION, 'Eliminación'),
+        (ACTIVITY_LOGIN, 'Inicio de sesión'),
+        (ACTIVITY_LOGOUT, 'Cierre de sesión'),
+    )
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name='activity_logs',
+        verbose_name='Usuario',
+    )
+    action_flag = models.PositiveSmallIntegerField(
+        choices=ACTIVITY_FLAG_CHOICES, verbose_name='Tipo de acción', db_index=True
+    )
+    content_type = models.ForeignKey(
+        ContentType, null=True, on_delete=models.SET_NULL, verbose_name='Tipo de contenido'
+    )
+    object_id = models.CharField(max_length=255, null=True, verbose_name='ID del objeto')
+    object_repr = models.TextField(verbose_name='Representación del objeto')
+    message = models.TextField(verbose_name='Mensaje')
+    ip_address = models.GenericIPAddressField(null=True, verbose_name='Dirección IP')
+    user_agent = models.TextField(null=True, verbose_name='User-Agent')
+    action_time = models.DateTimeField(
+        auto_now_add=True, verbose_name='Fecha y hora', db_index=True
+    )
+
+    class Meta:
+        db_table = 'core_activity_log'
+        verbose_name = 'Registro de actividad'
+        verbose_name_plural = 'Registros de actividad'
+        ordering = ['-action_time']
+        default_permissions = ()
+        permissions = [
+            ('view_activitylog', 'Ver'),
+            ('add_activitylog', 'Añadir'),
+            ('change_activitylog', 'Editar'),
+            ('delete_activitylog', 'Eliminar'),
+        ]
+        indexes = [models.Index(fields=['action_flag', 'action_time'])]
+
+    def __str__(self):
+        return f'{self.get_action_flag_display()} - {self.object_repr}'

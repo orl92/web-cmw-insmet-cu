@@ -1,6 +1,7 @@
 from django.urls import path
 
 from apps.core.views import (
+    ActivityLogListView,
     CompanySettingsAjaxUpdateView,
     CompanySettingsUpdateView,
     EmailRecipientListCreateView,
@@ -40,4 +41,5 @@ urlpatterns = [
     path(
         'toggle-maintenance/', MaintenanceModeToggleView.as_view(), name='toggle_maintenance_mode'
     ),
+    path('auditoria/', ActivityLogListView.as_view(), name='activity_log'),
 ]

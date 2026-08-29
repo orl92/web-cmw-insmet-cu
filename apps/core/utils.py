@@ -2,12 +2,13 @@ import os
 from functools import wraps
 
 from django.contrib.admin.models import LogEntry
+from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import render
 from django.templatetags.static import static
 from django.views import View
 
-from apps.core.models import CompanySettings
+from apps.core.models import ActivityLog, CompanySettings
 
 # Mapa de códigos meteorológicos a nombres base de archivos
 TIEMPO_IMG_BASE_MAP = {
@@ -42,7 +43,7 @@ SUN_IMG_MAP = {
 }
 
 
-def log_action(user, obj, action_flag, message):
+def log_action(user, obj, action_flag, message, request=None):
     LogEntry.objects.log_action(
         user_id=user.pk,
         content_type_id=ContentType.objects.get_for_model(obj).pk,
@@ -51,6 +52,21 @@ def log_action(user, obj, action_flag, message):
         action_flag=action_flag,
         change_message=message,
     )
+    ActivityLog.objects.create(
+        user=user if isinstance(user, User) else None,
+        action_flag=action_flag,
+        content_type=ContentType.objects.get_for_model(obj),
+        object_id=str(obj.pk),
+        object_repr=str(obj),
+        message=message,
+        ip_address=request.META.get('REMOTE_ADDR') if request else None,
+        user_agent=request.META.get('HTTP_USER_AGENT', '') if request else '',
+    )
+
+
+def log_activity_from_request(request, obj, action_flag, message):
+    """Registra la acción capturando IP y User-Agent desde el request."""
+    return log_action(request.user, obj, action_flag, message, request=request)
 
 
 def rate_limit_ip(limit=300, window=3600, key_prefix='rl'):

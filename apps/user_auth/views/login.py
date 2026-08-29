@@ -5,7 +5,7 @@ from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 
-from apps.core.utils import log_action
+from apps.core.utils import log_activity_from_request
 
 LOGIN_ACTION = 4
 LOGOUT_ACTION = 5
@@ -38,7 +38,9 @@ class LoginFormView(LoginView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        log_action(self.request.user, self.request.user, LOGIN_ACTION, 'El usuario inició sesión.')
+        log_activity_from_request(
+            self.request, self.request.user, LOGIN_ACTION, 'El usuario inició sesión.'
+        )
         messages.success(self.request, 'Has iniciado sesión correctamente.', extra_tags='success')
         return response
 
@@ -48,8 +50,8 @@ class LogoutRedirectView(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         if self.request.user.is_authenticated:
-            log_action(
-                self.request.user, self.request.user, LOGOUT_ACTION, 'El usuario cerró sesión.'
+            log_activity_from_request(
+                self.request, self.request.user, LOGOUT_ACTION, 'El usuario cerró sesión.'
             )
             messages.info(self.request, 'Has cerrado sesión con éxito.')
             logout(self.request)
