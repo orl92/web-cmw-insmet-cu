@@ -2,6 +2,11 @@
 {% load static %}
 {% load my_filters %}
 {% block columns %}
+  <th class="bulk-check-col" style="width:40px">
+    <input type="checkbox"
+           class="form-check-input bulk-select-all"
+           aria-label="Seleccionar todos">
+  </th>
   {% if request.user.is_staff %}
     <th>Cliente</th>
   {% endif %}
@@ -17,6 +22,12 @@
 {% endblock %}
 {% block row %}
   {% with subscription=object %}
+    <td class="bulk-check-col">
+      <input type="checkbox"
+             class="form-check-input bulk-row-checkbox"
+             data-uuid="{{ subscription.uuid }}"
+             aria-label="Seleccionar">
+    </td>
     {% if request.user.is_staff %}
       <td>
         <a href="{% url 'commercial:cliente_update' subscription.customer.uuid %}"
@@ -70,8 +81,6 @@
     {% endif %}
     <td class="text-end">
       {% if request.user.is_staff %}
-        <!-- Botones para staff -->
-        <!-- Descargar factura (si existe) -->
         {% with invoice=subscription.invoices.first %}
           {% if invoice %}
             <a href="{% url 'commercial:factura_download' invoice.uuid %}"
@@ -95,7 +104,6 @@
             </button>
           {% endif %}
         {% endwith %}
-        <!-- Descargar certificado (solo si el pago está aprobado y existe PDF) -->
         {% if subscription.payment_status == 'paid' %}
           {% with certificate=subscription.certificates.first %}
             {% if certificate and certificate.pdf %}
@@ -128,7 +136,6 @@
             {% endif %}
           {% endwith %}
         {% endif %}
-        <!-- Botones de gestión -->
         <a href="{% url 'commercial:suscripcion_update' subscription.uuid %}"
            class="btn btn-icon btn-outline-warning btn-sm"
            data-bs-toggle="tooltip"
@@ -136,7 +143,6 @@
            title="Editar">
           <i class="icon ti ti-edit"></i>
         </a>
-        <!-- Anular (soft delete) – abre modal -->
         {% if subscription.record_active and perms.commercial.delete_subscription %}
           <button type="button"
                   class="btn btn-icon btn-outline-danger btn-sm action-btn"
@@ -150,7 +156,6 @@
             <i class="icon ti ti-trash"></i>
           </button>
         {% endif %}
-        <!-- Eliminar permanentemente (solo superusuario y suscripción ya desactivada) -->
         {% if is_superuser and not subscription.record_active %}
           <button type="button"
                   class="btn btn-icon btn-outline-danger btn-sm action-btn"
@@ -181,7 +186,6 @@
              title="Aprobar Pago">
             <i class="icon ti ti-circle-check"></i>
           </a>
-          <!-- Botón regenerar factura (solo si existe al menos una factura) -->
           {% if subscription.invoices.exists %}
             <form method="post"
                   action="{% url 'commercial:factura_regenerate' subscription.uuid %}"
@@ -199,7 +203,6 @@
           {% endif %}
         {% endif %}
       {% else %}
-        <!-- Cliente -->
         {% if subscription.payment_status == 'paid' %}
           {% with certificate=subscription.certificates.first %}
             {% if certificate and certificate.pdf %}
@@ -279,8 +282,50 @@
     </td>
   {% endwith %}
 {% endblock %}
+{% block bulk_toolbar %}
+  <div class="bulk-toolbar d-none"
+       id="bulkToolbar"
+       style="margin-bottom:0.5rem">
+    <div class="card">
+      <div class="card-body py-2 px-3">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="text-muted" id="bulkCount">0 seleccionados</span>
+          <div class="vr"></div>
+          {% if perms.commercial.view_subscription %}
+            <button type="button"
+                    class="btn btn-outline-success btn-sm bulk-action-btn"
+                    data-action="export"
+                    data-bulk-url="{% url 'commercial:suscripcion_bulk' %}">
+              <i class="icon ti ti-file-download me-1"></i> Exportar
+            </button>
+          {% endif %}
+          {% if perms.commercial.delete_subscription %}
+            <button type="button"
+                    class="btn btn-outline-danger btn-sm bulk-action-btn bulk-action-delete"
+                    data-action="delete"
+                    data-bulk-url="{% url 'commercial:suscripcion_bulk' %}"
+                    data-confirm-title="Desactivar suscripciones"
+                    data-confirm-message="¿Está seguro de desactivar las suscripciones seleccionadas? Se conservarán en la base de datos.">
+              <i class="icon ti ti-trash me-1"></i> Desactivar
+            </button>
+          {% endif %}
+          {% if perms.commercial.change_subscription %}
+            <button type="button"
+                    class="btn btn-outline-primary btn-sm bulk-action-btn bulk-action-update"
+                    data-action="update"
+                    data-bulk-url="{% url 'commercial:suscripcion_bulk' %}"
+                    data-confirm-title="Actualizar pagos"
+                    data-confirm-message="¿Está seguro de marcar las suscripciones seleccionadas como pagadas?">
+              <i class="icon ti ti-check me-1"></i> Marcar pagado
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% include 'includes/bulk_confirm_modal.html' %}
+{% endblock %}
 {% block modal %}
-  <!-- Modal de confirmación para anular/eliminar suscripción -->
   <div class="modal modal-blur fade"
        id="confirmSubscriptionActionModal"
        tabindex="-1"
@@ -315,45 +360,109 @@
   {{ block.super }}
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      const confirmModal = document.getElementById('confirmSubscriptionActionModal');
-      if (!confirmModal) return;
+      /* --- Single-record subscription modal --- */
+      var confirmModal = document.getElementById('confirmSubscriptionActionModal');
+      if (confirmModal) {
+        var modalTitle = document.getElementById('modalTitle');
+        var modalBody = document.getElementById('modalBody');
+        var confirmBtn = document.getElementById('confirmActionBtn');
+        var form = document.getElementById('subscriptionActionForm');
+        var Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+        var modalInstance = (Bootstrap && Bootstrap.Modal) ? Bootstrap.Modal.getOrCreateInstance(confirmModal) : null;
+        var currentActionUrl = '';
+        document.addEventListener('click', function (e) {
+          var btn = e.target.closest('.action-btn');
+          if (!btn) return;
+          var action = btn.dataset.action;
+          var uuid = btn.dataset.uuid;
+          var customer = btn.dataset.customer;
+          var service = btn.dataset.service;
+          if (action === 'anular') {
+            modalTitle.textContent = 'Anular suscripción';
+            modalBody.innerHTML = '<p>\u00BFEst\u00e1 seguro de anular la suscripci\u00f3n de <strong>' + customer + '</strong> para el servicio <strong>' + service + '</strong>?</p><p class="text-muted">El registro se desactivar\u00e1 pero se conservar\u00e1 en la base de datos.</p>';
+            currentActionUrl = '{% url "commercial:suscripcion_cancel" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          } else if (action === 'eliminar') {
+            modalTitle.textContent = 'Eliminar permanentemente';
+            modalBody.innerHTML = '<p>\u00BFEst\u00e1 seguro de <strong class="text-danger">eliminar permanentemente</strong> la suscripci\u00f3n de <strong>' + customer + '</strong> para el servicio <strong>' + service + '</strong>?</p><p class="text-danger">Esta acci\u00f3n no se puede deshacer.</p>';
+            currentActionUrl = '{% url "commercial:suscripcion_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          }
+          if (modalInstance) modalInstance.show();
+        });
+        confirmBtn.addEventListener('click', function () {
+          if (currentActionUrl) { form.action = currentActionUrl; form.submit(); }
+        });
+      }
 
-      const modalTitle = document.getElementById('modalTitle');
-      const modalBody = document.getElementById('modalBody');
-      const confirmBtn = document.getElementById('confirmActionBtn');
-      const form = document.getElementById('subscriptionActionForm');
+      /* --- Bulk selection --- */
+      var selectAll = document.querySelector('.bulk-select-all');
+      var toolbar = document.getElementById('bulkToolbar');
+      var countEl = document.getElementById('bulkCount');
 
-      const Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
-      const modalInstance = (Bootstrap && Bootstrap.Modal) ? Bootstrap.Modal.getOrCreateInstance(confirmModal) : null;
+      function updateBulkCount() {
+        var checked = document.querySelectorAll('.bulk-row-checkbox:checked').length;
+        if (countEl) countEl.textContent = checked + ' seleccionados';
+        if (toolbar) toolbar.classList.toggle('d-none', checked === 0);
+      }
 
-      let currentActionUrl = '';
+      if (selectAll) {
+        selectAll.addEventListener('change', function () {
+          document.querySelectorAll('.bulk-row-checkbox').forEach(function (cb) { cb.checked = selectAll.checked; });
+          updateBulkCount();
+        });
+      }
 
-      document.addEventListener('click', function (e) {
-        const btn = e.target.closest('.action-btn');
-        if (!btn) return;
-
-        const action = btn.dataset.action;
-        const uuid = btn.dataset.uuid;
-        const customer = btn.dataset.customer;
-        const service = btn.dataset.service;
-
-        if (action === 'anular') {
-          modalTitle.textContent = 'Anular suscripción';
-          modalBody.innerHTML = `<p>¿Está seguro de anular la suscripción de <strong>${customer}</strong> para el servicio <strong>${service}</strong>?</p><p class="text-muted">El registro se desactivará pero se conservará en la base de datos.</p>`;
-          currentActionUrl = '{% url "commercial:suscripcion_cancel" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
-        } else if (action === 'eliminar') {
-          modalTitle.textContent = 'Eliminar permanentemente';
-          modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> la suscripción de <strong>${customer}</strong> para el servicio <strong>${service}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
-          currentActionUrl = '{% url "commercial:suscripcion_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+      document.addEventListener('change', function (e) {
+        if (e.target.classList && e.target.classList.contains('bulk-row-checkbox')) {
+          updateBulkCount();
+          var total = document.querySelectorAll('.bulk-row-checkbox').length;
+          var checked = document.querySelectorAll('.bulk-row-checkbox:checked').length;
+          if (selectAll) selectAll.checked = (total > 0 && checked === total);
         }
-
-        if (modalInstance) modalInstance.show();
       });
 
-      confirmBtn.addEventListener('click', function () {
-        if (currentActionUrl) {
-          form.action = currentActionUrl;
-          form.submit();
+      /* --- Bulk action buttons --- */
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.bulk-action-btn');
+        if (!btn) return;
+        var uuids = Array.from(document.querySelectorAll('.bulk-row-checkbox:checked')).map(function (cb) { return cb.dataset.uuid; });
+        if (uuids.length === 0) { alert('Seleccione al menos un registro.'); return; }
+        var action = btn.dataset.action;
+        var bulkUrl = btn.dataset.bulkUrl;
+        if (action === 'export') {
+          var csrfToken = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+          fetch(bulkUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({action: 'export', uuids: uuids})
+          }).then(function (r) {
+            if (!r.ok) throw new Error(r.statusText);
+            return r.blob();
+          }).then(function (blob) {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url; a.download = 'export.csv';
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
+          }).catch(function (err) { alert('Error al exportar: ' + err.message); });
+        } else if (action === 'delete' || action === 'update') {
+          window.__bulkActionConfirm = function () {
+            var csrfToken = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+            var body = (action === 'update')
+              ? JSON.stringify({action: action, uuids: uuids, field: 'payment_status', value: 'paid'})
+              : JSON.stringify({action: action, uuids: uuids});
+            fetch(bulkUrl, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+              body: body
+            }).then(function (r) { return r.json(); }).then(function (data) {
+              if (data.error) { alert(data.error); return; }
+              alert('Procesados: ' + data.processed + ', omitidos: ' + data.skipped);
+              window.location.reload();
+            }).catch(function (err) { alert('Error: ' + err.message); });
+          };
+          window.__bulkConfirmTitle = btn.dataset.confirmTitle || 'Confirmar acción';
+          window.__bulkConfirmMsg = btn.dataset.confirmMessage || '¿Está seguro de realizar esta acción?';
+          window.__bulkActionShowModal();
         }
       });
     });

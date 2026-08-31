@@ -1,5 +1,11 @@
 from django.urls import path
 
+from apps.commercial.views.bulk import (
+    CertificateBulkActionView,
+    CustomerBulkActionView,
+    InvoiceBulkActionView,
+    ServiceSubscriptionBulkActionView,
+)
 from apps.commercial.views.certificates import (
     CertificateCreateView,
     CertificateDeleteView,
@@ -175,5 +181,26 @@ urlpatterns = [
         'certificados/exportar/csv/',
         CertificateCSVExportView.as_view(),
         name='certificado_export_csv',
+    ),
+    # Acciones masivas (bulk operations)
+    path(
+        'clientes/acciones-masivas/',
+        CustomerBulkActionView.as_view(),
+        name='cliente_bulk',
+    ),
+    path(
+        'suscripciones/acciones-masivas/',
+        ServiceSubscriptionBulkActionView.as_view(),
+        name='suscripcion_bulk',
+    ),
+    path(
+        'facturacion/acciones-masivas/',
+        InvoiceBulkActionView.as_view(),
+        name='factura_bulk',
+    ),
+    path(
+        'certificados/acciones-masivas/',
+        CertificateBulkActionView.as_view(),
+        name='certificado_bulk',
     ),
 ]

@@ -1,0 +1,51 @@
+{# Bulk confirmation modal for destructive actions (delete / update). #}
+{# Expects window.__bulkConfirmTitle, window.__bulkConfirmMsg, #}
+{# and window.__bulkActionConfirm callback to be set before show. #}
+<div class="modal modal-blur fade"
+     id="bulkConfirmModal"
+     tabindex="-1"
+     role="dialog"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="bulkConfirmModalTitle"></h5>
+        <button type="button"
+                class="btn-close btn-close-white"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="bulkConfirmModalBody"></div>
+      <div class="modal-footer">
+        <button type="button"
+                class="btn btn-link link-secondary me-auto"
+                data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="bulkConfirmModalBtn">Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var bulkModal = document.getElementById('bulkConfirmModal');
+    if (!bulkModal) return;
+    var titleEl = document.getElementById('bulkConfirmModalTitle');
+    var bodyEl = document.getElementById('bulkConfirmModalBody');
+    var confirmBtn = document.getElementById('bulkConfirmModalBtn');
+    var Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+    var modalInstance = (Bootstrap && Bootstrap.Modal) ? Bootstrap.Modal.getOrCreateInstance(bulkModal) : null;
+
+    window.__bulkActionShowModal = function () {
+      titleEl.textContent = window.__bulkConfirmTitle || 'Confirmar acción';
+      bodyEl.innerHTML = '<p>' + (window.__bulkConfirmMsg || '¿Está seguro de realizar esta acción?') + '</p>';
+      if (modalInstance) modalInstance.show();
+    };
+
+    confirmBtn.addEventListener('click', function () {
+      if (modalInstance) modalInstance.hide();
+      if (typeof window.__bulkActionConfirm === 'function') {
+        window.__bulkActionConfirm();
+      }
+    });
+  });
+</script>
