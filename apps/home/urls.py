@@ -10,6 +10,7 @@ from apps.home.views.modelos.views import (
     ImageProxyModeloView,
     MapaView,
     MeteogramView,
+    SoundingExportView,
     SoundingView,
 )
 from apps.home.views.pago.views import PagoView
@@ -61,6 +62,11 @@ urlpatterns = [
     path('modelo/mapas/', MapaView.as_view(), name='models_maps'),
     path('modelo/meteogram/', MeteogramView.as_view(), name='models_meteogram'),
     path('modelo/sounding/', SoundingView.as_view(), name='models_sounding'),
+    path(
+        'modelo/sounding/export/<str:fmt>/',
+        SoundingExportView.as_view(),
+        name='models_sounding_export',
+    ),
     # Servicios Públicos
     path('servicios/publicos/', PublicServicesListView.as_view(), name='services_public'),
     # Servicios Comerciales

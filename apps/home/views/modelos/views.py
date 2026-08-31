@@ -16,7 +16,7 @@ from django.views.generic import TemplateView
 from PIL import Image
 
 from apps.core.utils import rate_limit_ip
-from apps.home.data.plot_generators import generate_skewt
+from apps.home.data.plot_generators import generate_skewt, generate_skewt_file
 from apps.home.forms import GifDownloadForm, MeteoDataForm, MeteogramForm, SoundingForm
 from apps.meteo.models import Town
 
@@ -344,6 +344,62 @@ class SoundingView(TemplateView):
             return JsonResponse(
                 {'status': 'error', 'message': 'Error al generar el gráfico.'}, status=500
             )
+
+
+class SoundingExportView(View):
+    """
+    Vista para exportar el gráfico Skew-T + hodógrafo en PNG / PDF / SVG.
+
+    Reutiliza el flujo de obtención de datos y generación de sondeos de
+    ``SoundingView.post`` y lo devuelve como un archivo descargable.
+    """
+
+    ALLOWED_FMT = {'png', 'pdf', 'svg'}
+
+    CONTENT_TYPES = {
+        'png': 'image/png',
+        'pdf': 'application/pdf',
+        'svg': 'image/svg+xml',
+    }
+
+    def get(self, request, *args, **kwargs):
+        fmt = kwargs.get('fmt', '')
+
+        # Validar formato contra la lista blanca (única frontera de seguridad)
+        if fmt not in self.ALLOWED_FMT:
+            return HttpResponse('Formato de exportación no soportado', status=400)
+
+        try:
+            town = Town.objects.filter(latitude=21.3786, longitude=-77.9186).first()
+            if not town:
+                return HttpResponse('No se pudo determinar la ubicación', status=500)
+
+            params = {
+                'datetime_init': f'{datetime.now().strftime("%Y%m%d")}00',
+                'lat': town.latitude,
+                'long': town.longitude,
+                't_index': 0,
+            }
+            api_url = f'https://modelo.cmw.insmet.cu/api/sounding/?{urlencode(params)}'
+
+            response = requests.get(api_url, timeout=10, verify=False)  # nosec B501
+            response.raise_for_status()
+            sounding_data = response.json()
+
+            file_bytes = generate_skewt_file(sounding_data, fmt)
+
+            stamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            filename = f'sounding_{stamp}.{fmt}'
+            http_response = HttpResponse(file_bytes, content_type=self.CONTENT_TYPES[fmt])
+            http_response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return http_response
+
+        except requests.exceptions.RequestException:
+            logger.error('Error al conectar con la API de sondeo', exc_info=True)
+            return HttpResponse('Error al conectar con la API de sondeo.', status=502)
+        except Exception:
+            logger.error('Error al generar el gráfico de exportación', exc_info=True)
+            return HttpResponse('Error al generar el gráfico.', status=500)
 
 
 @method_decorator(rate_limit_ip(limit=300, window=3600, key_prefix='rl_proxy'), name='dispatch')

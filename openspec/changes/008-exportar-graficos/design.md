@@ -79,6 +79,26 @@ placed next to `models_sounding` (`apps/home/urls.py:63`).
 (or `image/svg+xml` for the SVG variant). This reuses the established pattern and avoids
 introducing a second PDF library.
 
+> **Note (apply):** the actual report templates under
+> `apps/meteo/templates/pages/meteo/weather_report/<type>/pdf.html` embed images via
+> `<img src="data:image/png;base64,{{ logo_base64 }}" ...>`, but no Python code populates
+> `logo_base64` today and **no `pisaDocument` / `xhtml2pdf` / `get_image_base64` code exists
+> in the repo** (xhtml2pdf is a declared dependency in `requirements.txt` but never imported;
+> the `weather_report.py:395/405` references in the proposal are against an earlier revision
+> of the file, which is now only 339 lines). Because `generate_skewt` already returns a base64
+> PNG string and the report engine (when implemented) consumes `data:image/...;base64,`
+> URIs, embedding the figure is a pure template concern:
+>
+> ```html
+> <img src="data:image/png;base64,{{ skewt_base64 }}" alt="Sondeo" />
+> ```
+>
+> with `skewt_base64` sourced from `generate_skewt_file(sounding_data, 'png')` (base64-wrapped)
+> in whichever view supplies context to the PDF template. PNG is preferred for PDF embeds to
+> bound file size (SVG of the colormapped hodograph can be large). No production wiring was
+> added in this change because no report pipeline exists to wire into; the pattern is documented
+> for the future report-implementation task.
+
 ## Data Flow
 
 ```

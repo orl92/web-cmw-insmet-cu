@@ -14,8 +14,12 @@ from metpy.units import units
 logger = logging.getLogger(__name__)
 
 
-def generate_skewt(sounding_data):
-    """Genera un diagrama Skew-T y Hodógrafo a partir de datos de sondeo"""
+def generate_skewt_file(sounding_data, fmt='png'):
+    """Generate Skew-T + hodograph figure and return raw bytes in the given format.
+
+    Supported formats: ``'png'``, ``'pdf'``, ``'svg'`` (anything matplotlib supports
+    via ``savefig``).  PNG uses 300 DPI; vector formats ignore the DPI parameter.
+    """
     try:
         # Validar datos de entrada
         if not sounding_data or not all(
@@ -340,14 +344,19 @@ def generate_skewt(sounding_data):
             ha='center',
         )
 
-        # Convertir a base64
+        # Serialize figure to bytes in the requested format
         buf = BytesIO()
-        plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+        plt.savefig(buf, format=fmt, bbox_inches='tight', dpi=300 if fmt == 'png' else None)
         plt.close()
 
-        logger.info('Skew-T generado exitosamente')
-        return base64.b64encode(buf.getvalue()).decode('utf-8')
+        logger.info('Skew-T generado exitosamente (%s)', fmt)
+        return buf.getvalue()
 
     except Exception as e:
         logger.exception(f'Error generando Skew-T: {str(e)}')
         raise
+
+
+def generate_skewt(sounding_data):
+    """Genera un diagrama Skew-T y Hodógrafo y retorna base64 PNG (backward compat)."""
+    return base64.b64encode(generate_skewt_file(sounding_data, 'png')).decode('utf-8')
