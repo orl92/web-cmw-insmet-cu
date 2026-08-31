@@ -130,9 +130,32 @@ MAR_CHOICES = [
 ]
 
 
-class SiteConfiguration(models.Model):
+THEME_BASE_CHOICES = [
+    ('slate', 'Slate'),
+    ('gray', 'Gray'),
+    ('zinc', 'Zinc'),
+    ('neutral', 'Neutral'),
+    ('stone', 'Stone'),
+]
+
+
+class SiteConfiguration(FileHandlerMixin):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     maintenance_mode = models.BooleanField(default=True, verbose_name='Modo mantenimiento')
+    primary_color = models.CharField(
+        max_length=7, default='#0b6e99', verbose_name='Color primario'
+    )
+    theme_base = models.CharField(
+        max_length=10, choices=THEME_BASE_CHOICES, default='gray', verbose_name='Base del tema'
+    )
+    brand_logo = models.ImageField(
+        upload_to='brand/', null=True, blank=True, verbose_name='Logo de marca'
+    )
+    favicon = models.ImageField(
+        upload_to='brand/', null=True, blank=True, verbose_name='Favicon'
+    )
+
+    file_fields = ['brand_logo', 'favicon']
 
     class Meta:
         verbose_name = 'Configuración del sitio'
@@ -140,11 +163,20 @@ class SiteConfiguration(models.Model):
         default_permissions = ()
         permissions = [
             ('view_siteconfiguration', 'Ver'),
+            ('add_siteconfiguration', 'Añadir'),
             ('change_siteconfiguration', 'Editar'),
+            ('delete_siteconfiguration', 'Eliminar'),
         ]
 
     def __str__(self):
         return 'Configuración del sitio'
+
+    @classmethod
+    def get_instance(cls):
+        instance = cls.objects.first()
+        if not instance:
+            instance = cls.objects.create(maintenance_mode=False)
+        return instance
 
     def save(self, *args, **kwargs):
         if not self.pk and SiteConfiguration.objects.exists():

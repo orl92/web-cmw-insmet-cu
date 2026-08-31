@@ -9,9 +9,9 @@
 	document.addEventListener("DOMContentLoaded", function () {
 		var themeConfig = {
 			theme: "light",
-			"theme-base": "gray",
+			"theme-base": "{{ site_branding.theme_base }}",
 			"theme-font": "sans-serif",
-			"theme-primary": "blue",
+			"theme-primary": "{{ site_branding.primary_color }}",
 			"theme-radius": "1",
 		};
 		var url = new URL(window.location);

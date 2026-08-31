@@ -1,0 +1,19 @@
+/*
+ * CMP Camagüey — Brand overrides for Tabler
+ * Ocean-blue / coastal-green palette.
+ * Loaded after tabler.min.css so cascade wins.
+ */
+
+:root {
+  --tblr-primary: #0b6e99;
+  --tblr-primary-rgb: 11, 110, 153;
+  --tblr-link: #0b6e99;
+  --tblr-secondary: #1a8a5c;
+}
+
+[data-bs-theme="dark"] {
+  --tblr-primary: #2a9fd6;
+  --tblr-primary-rgb: 42, 159, 214;
+  --tblr-link: #2a9fd6;
+  --tblr-secondary: #28a745;
+}

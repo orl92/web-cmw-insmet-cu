@@ -52,6 +52,9 @@ class MaintenanceModeMiddleware:
 
     def __call__(self, request):
         site_config = SiteConfiguration.objects.first()
+        # Reuse the singleton fetch for the rest of the request (e.g. the
+        # site_branding context processor) to avoid a redundant DB query.
+        request.site_config = site_config
         if (
             request.user.is_authenticated
             and not request.user.is_superuser
