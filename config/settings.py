@@ -21,7 +21,7 @@ IS_PRODUCTION = 'PRODUCTION' in os.environ
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # ---------------------------------------------------------------------------
-# Cache backend (change 003-cache-redis)
+# Cache backend
 # By default the app uses Django's in-process LocMemCache so dev/CI run with no
 # Redis server. When USE_REDIS_CACHE=True the shared RedisCache backend is used
 # (LOCATION driven by REDIS_URL). The native Django >= 4.0 Redis backend only
@@ -158,7 +158,7 @@ MIDDLEWARE = [
 ]
 
 # ---------------------------------------------------------------------------
-# Content Security Policy (CSP) — django-csp (change 011-csp)
+# Content Security Policy (CSP) — django-csp
 # ---------------------------------------------------------------------------
 # The policy restricts resource origins to 'self' while allowing documented
 # exceptions for inline scripts/styles (interim, nonce refactor pending) and
