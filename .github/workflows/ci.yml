@@ -72,6 +72,11 @@ jobs:
       - name: Django system check
         run: python manage.py check
 
+      - name: Generate and apply migrations
+        run: |
+          python manage.py makemigrations
+          python manage.py migrate
+
       - name: Run affected app tests (PR)
         if: github.event_name == 'pull_request' && needs.detect.outputs.full == 'false'
         run: |
@@ -137,8 +142,13 @@ jobs:
         # proyecto usa pdfkit.from_string con HTML generado internamente. Sin fix disponible.
         run: pip-audit -r requirements.txt --ignore-vuln PYSEC-2026-2860
 
-      - name: Check pending migrations
-        run: python manage.py makemigrations --check --dry-run
+      # Migrations are NOT versioned in this repo (.gitignore excludes
+      # **/migrations/*). In a fresh checkout there are none, so generate
+      # + apply them from the current models before the deployment check.
+      - name: Generate and apply migrations
+        run: |
+          python manage.py makemigrations
+          python manage.py migrate
 
   templates:
     name: Templates (djlint)
