@@ -47,6 +47,12 @@ class CoreConfig(AppConfig):
     verbose_name = 'Configuración'
 
     def ready(self):
+        from pathlib import Path
+
+        from django.conf import settings
+
+        Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+
         from apps.core.models import TaskExecutionLog
 
         @huey.signal(huey_signals.SIGNAL_ENQUEUED)

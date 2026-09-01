@@ -362,8 +362,8 @@ else:
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-if not MEDIA_ROOT.exists():
-    MEDIA_ROOT.mkdir(parents=True)
+# media/ is created at startup via apps.core.apps.CoreConfig.ready()
+# (idempotent exist_ok mkdir). No manual step required.
 
 # Los tests escriben en un MEDIA_ROOT temporal que se autolimpia (evita
 # dejar archivos residuales en media/).
