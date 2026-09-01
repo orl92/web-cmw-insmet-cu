@@ -227,6 +227,6 @@ class ScientificPublicationListAPIView(CacheAPIMixin, ListAPIView):
 
 class ServiceListAPIView(CacheAPIMixin, ListAPIView):
     cache_timeout = 300
-    queryset = Service.objects.filter(service_type='public')
+    queryset = Service.objects.filter(service_type='public').order_by('-date').order_by('-date')
     serializer_class = ServiceSerializer
     permission_classes = [AllowAny]

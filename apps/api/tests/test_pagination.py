@@ -10,10 +10,12 @@ from datetime import date, time, timedelta
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.commercial.models import Service
 from apps.core.models import SiteConfiguration
 from apps.meteo.models import Forecasts, Station
 from apps.meteo.models import Warning as MeteoWarning
@@ -167,3 +169,51 @@ class OpenAPISchemaPaginationTests(APITestCase):
         self.assertIn('$ref', content['items'])
         self.assertNotIn('results', content)
         self.assertNotIn('count', content)
+
+
+class PublicServicesOrderedTests(APITestCase):
+    """Requirement: the public services list is ordered newest-first (010 follow-up).
+
+    Registers the `.order_by('-date')` fix that removes the
+    ``UnorderedObjectListWarning`` on the Service queryset.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        cls.user = User.objects.create_user('svcuser')
+        cls.url = '/api/services/'
+
+    def setUp(self):
+        # CacheAPIMixin cachea /api/services/ 300s y el cache locMem persiste
+        # entre métodos del mismo TestCase; lo limpiamos para isolación real.
+        cache.clear()
+
+    def _create_service(self, title, age_days):
+        service = Service.objects.create(
+            user=self.user,
+            title=title,
+            summary=f'Resumen de {title}',
+            service_type='public',
+        )
+        # auto_now_add no puede fijarse a mano; lo respaldamos con update()
+        # para forzar fechas distintas y un orden determinista.
+        Service.objects.filter(pk=service.pk).update(date=timezone.now() - timedelta(days=age_days))
+        return service
+
+    def test_services_are_ordered_newest_first(self):
+        self._create_service('Servicio Viejo', age_days=10)
+        self._create_service('Servicio Medio', age_days=5)
+        self._create_service('Servicio Nuevo', age_days=0)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        titles = [item['title'] for item in response.data['results']]
+        self.assertEqual(titles, ['Servicio Nuevo', 'Servicio Medio', 'Servicio Viejo'])
+
+    def test_services_paginated_envelope(self):
+        self._create_service('Único Servicio', age_days=0)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for key in ('count', 'next', 'previous', 'results'):
+            self.assertIn(key, response.data)
+        self.assertEqual(response.data['count'], 1)
