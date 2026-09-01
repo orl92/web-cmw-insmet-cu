@@ -10,6 +10,7 @@ from apps.core.views import (
     EmailRecipientListListView,
     EmailRecipientListUpdateView,
     MaintenanceModeToggleView,
+    SiteConfigurationUpdateView,
 )
 
 app_name = 'core'
@@ -17,6 +18,7 @@ app_name = 'core'
 urlpatterns = [
     path('empresa/', CompanySettingsUpdateView.as_view(), name='company_settings'),
     path('empresa/ajax/', CompanySettingsAjaxUpdateView.as_view(), name='company_settings_ajax'),
+    path('configuracion-sitio/', SiteConfigurationUpdateView.as_view(), name='site_configuration'),
     path('listas-correo/', EmailRecipientListListView.as_view(), name='email_recipient_list'),
     path(
         'listas-correo/crear/',

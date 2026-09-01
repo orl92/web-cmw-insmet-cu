@@ -1,0 +1,58 @@
+{% extends 'layouts/dashboard.html' %}
+{% load static %}
+{% load form_filters %}
+{% block title_actions %}
+{% endblock title_actions %}
+{% block content %}
+  <div class="row row-cards">
+    <div class="col-12">
+      <form method="post" class="card" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        <div class="card-body">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">{{ form.primary_color.label }}</label>
+              {{ form.primary_color|with_invalid }}
+              {% if form.primary_color.errors %}
+                <div class="invalid-feedback d-block">{{ form.primary_color.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label required">{{ form.theme_base.label }}</label>
+              {{ form.theme_base|with_invalid }}
+              {% if form.theme_base.errors %}
+                <div class="invalid-feedback d-block">{{ form.theme_base.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.brand_logo.label }}</label>
+              {{ form.brand_logo|with_invalid }}
+              {% if form.brand_logo.errors %}
+                <div class="invalid-feedback d-block">{{ form.brand_logo.errors.0 }}</div>
+              {% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ form.favicon.label }}</label>
+              {{ form.favicon|with_invalid }}
+              {% if form.favicon.errors %}
+                <div class="invalid-feedback d-block">{{ form.favicon.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="card-footer text-end">
+          <button type="submit" class="btn btn-primary">Aceptar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

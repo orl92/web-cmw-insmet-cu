@@ -13,6 +13,7 @@ from apps.core.views.email_recipients import (
 from apps.core.views.exports import CSVExportView
 from apps.core.views.maintenance import MaintenanceModeToggleView
 from apps.core.views.serve_file import ServeModelFileView
+from apps.core.views.site_configuration import SiteConfigurationUpdateView
 
 __all__ = [
     'ActivityLogListView',
@@ -26,4 +27,5 @@ __all__ = [
     'CSVExportView',
     'MaintenanceModeToggleView',
     'ServeModelFileView',
+    'SiteConfigurationUpdateView',
 ]
