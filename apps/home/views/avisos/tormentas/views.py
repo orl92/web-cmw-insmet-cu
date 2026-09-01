@@ -11,7 +11,7 @@ class StormListView(ListView):
     def get_queryset(self):
         return MeteoWarning.objects.filter(
             warning_type='storm', valid_until__gte=timezone.now()
-        ).select_related('user')
+        ).select_related('user', 'user__profile')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
