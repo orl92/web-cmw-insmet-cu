@@ -22,9 +22,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.commercial.models import Certificate, Customer, Service, ServiceSubscription
 from apps.meteo.models import Warning as MeteoWarning
-from apps.meteo.models import WeatherReport
 from apps.publications.models import Author, ScientificPublication
 
 
@@ -124,8 +122,3 @@ class PublicationsBlogGridTests(TestCase):
             self.assertNotIn('Sin PDF', html.split('data-pdf-url', 1)[0])
         else:
             self.assertIn('Sin PDF', html)
-
-
-
-
-

@@ -10,9 +10,8 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, ListView, UpdateView, View
 
-from apps.core.views import ServeModelFileView
-
 from apps.core.utils import log_action, mail_send
+from apps.core.views import ServeModelFileView
 from apps.meteo.forms.weather_report import WeatherReportForm
 from apps.meteo.models import WeatherReport
 
@@ -196,7 +195,7 @@ class WeatherReportCreateView(LoginRequiredMixin, PermissionRequiredMixin, Creat
             self.object,
             cfg['subject_create'],
             cfg['mail_url'],
-            attachment_name=f"{cfg['pdf_filename_prefix']}_{self.object.date.strftime('%Y-%m-%d')}.pdf",
+            attachment_name=f'{cfg["pdf_filename_prefix"]}_{self.object.date.strftime("%Y-%m-%d")}.pdf',
         )
 
         return redirect(self.get_success_url())
@@ -268,7 +267,7 @@ class WeatherReportUpdateView(
                 self.object,
                 cfg['subject_update'],
                 cfg['mail_url'],
-                attachment_name=f"{cfg['pdf_filename_prefix']}_{self.object.date.strftime('%Y-%m-%d')}.pdf",
+                attachment_name=f'{cfg["pdf_filename_prefix"]}_{self.object.date.strftime("%Y-%m-%d")}.pdf',
             )
 
         messages.success(

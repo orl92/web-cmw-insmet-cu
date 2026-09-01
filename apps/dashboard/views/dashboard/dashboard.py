@@ -418,9 +418,7 @@ class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             status=TaskExecutionLog.STATUS_ENQUEUED,
             enqueued_at__lt=now - timezone.timedelta(minutes=stale_threshold_minutes),
         ).count()
-        error_count = TaskExecutionLog.objects.filter(
-            status=TaskExecutionLog.STATUS_ERROR
-        ).count()
+        error_count = TaskExecutionLog.objects.filter(status=TaskExecutionLog.STATUS_ERROR).count()
 
         context.update(
             {

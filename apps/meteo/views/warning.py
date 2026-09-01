@@ -154,7 +154,7 @@ class WarningCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView)
             self.object,
             cfg['subject_create'],
             cfg['mail_url'],
-            attachment_name=f"alerta_{self.object.date.strftime('%Y-%m-%d')}.pdf",
+            attachment_name=f'alerta_{self.object.date.strftime("%Y-%m-%d")}.pdf',
         )
 
         return response
@@ -225,7 +225,7 @@ class WarningUpdateView(
                 self.object,
                 cfg['subject_update'],
                 cfg['mail_url'],
-                attachment_name=f"alerta_{self.object.date.strftime('%Y-%m-%d')}.pdf",
+                attachment_name=f'alerta_{self.object.date.strftime("%Y-%m-%d")}.pdf',
             )
 
         messages.success(

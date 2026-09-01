@@ -170,25 +170,25 @@ MIDDLEWARE = [
 # class `csp.middleware.CSPMiddleware` (the 3.x `ContentSecurityPolicyMiddleware`
 # class and flat dict were renamed/restructured in the 4.0 migration).
 _CONTENT_SECURITY_POLICY_DIRECTIVES = {
-    "default-src": ["'self'"],
-    "base-uri": ["'self'"],
-    "frame-ancestors": ["'self'"],
-    "object-src": ["'none'"],
+    'default-src': ["'self'"],
+    'base-uri': ["'self'"],
+    'frame-ancestors': ["'self'"],
+    'object-src': ["'none'"],
     # 'unsafe-inline' required: 41 inline <script> blocks
     # (e.g. templates/includes/base/scripts.html:8,
     #  templates/includes/dashboard/footer.html:41).
     # Nonce migration is a tracked follow-up.
-    "script-src": ["'self'", "'unsafe-inline'"],
+    'script-src': ["'self'", "'unsafe-inline'"],
     # 'unsafe-inline' required: inline <style> blocks
     # (e.g. templates/includes/base/head.html:15).
-    "style-src": ["'self'", "'unsafe-inline'"],
+    'style-src': ["'self'", "'unsafe-inline'"],
     # jsdelivr required for meteogram.js:128,255 weather-symbol SVGs.
-    "img-src": ["'self'", "data:", "https://cdn.jsdelivr.net"],
-    "font-src": ["'self'"],
-    "connect-src": ["'self'"],
+    'img-src': ["'self'", 'data:', 'https://cdn.jsdelivr.net'],
+    'font-src': ["'self'"],
+    'connect-src': ["'self'"],
 }
 
-CONTENT_SECURITY_POLICY = {"DIRECTIVES": _CONTENT_SECURITY_POLICY_DIRECTIVES}
+CONTENT_SECURITY_POLICY = {'DIRECTIVES': _CONTENT_SECURITY_POLICY_DIRECTIVES}
 
 # CSP_REPORT_ONLY (env var, project os.getenv helper — no environs dependency):
 # when 'True' the middleware emits Content-Security-Policy-Report-Only INSTEAD of

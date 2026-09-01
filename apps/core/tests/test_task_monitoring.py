@@ -64,13 +64,9 @@ class TaskMonitoringTests(TestCase):
 
     def test_retry_config(self):
         self.assertGreaterEqual(self._retry_count(send_email_task), 1)
-        self.assertGreaterEqual(
-            self._retry_count(generate_invoice_pdf_and_email_task), 1
-        )
+        self.assertGreaterEqual(self._retry_count(generate_invoice_pdf_and_email_task), 1)
 
-    @override_settings(
-        EMAIL_BACKEND='apps.core.tests.test_task_monitoring.FailingEmailBackend'
-    )
+    @override_settings(EMAIL_BACKEND='apps.core.tests.test_task_monitoring.FailingEmailBackend')
     def test_send_email_no_swallow(self):
         def run():
             send_email_task(

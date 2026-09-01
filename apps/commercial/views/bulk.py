@@ -60,9 +60,7 @@ class BulkActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
         uuids = body.get('uuids', [])
 
         if action not in ('export', 'delete', 'update'):
-            return JsonResponse(
-                {'error': f'Unknown action: {action}'}, status=400
-            )
+            return JsonResponse({'error': f'Unknown action: {action}'}, status=400)
 
         if not uuids or not isinstance(uuids, list):
             return JsonResponse(
@@ -119,11 +117,13 @@ class BulkActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 request=request,
             )
 
-        return JsonResponse({
-            'status': 'ok',
-            'processed': processed,
-            'skipped': max(0, total - processed),
-        })
+        return JsonResponse(
+            {
+                'status': 'ok',
+                'processed': processed,
+                'skipped': max(0, total - processed),
+            }
+        )
 
     def _handle_update(self, request, body, uuids):
         field = body.get('field', '')
@@ -164,11 +164,13 @@ class BulkActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 request=request,
             )
 
-        return JsonResponse({
-            'status': 'ok',
-            'processed': processed,
-            'skipped': max(0, total - processed),
-        })
+        return JsonResponse(
+            {
+                'status': 'ok',
+                'processed': processed,
+                'skipped': max(0, total - processed),
+            }
+        )
 
 
 class CustomerBulkActionView(BulkActionView):

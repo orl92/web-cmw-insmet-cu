@@ -36,8 +36,11 @@ def _make_user(username='testuser', is_staff=False, **kwargs):
 
 def _make_superuser(username='admin'):
     return User.objects.create_superuser(
-        username, f'{username}@example.com', 'adminpass',
-        first_name='Admin', last_name='Super',
+        username,
+        f'{username}@example.com',
+        'adminpass',
+        first_name='Admin',
+        last_name='Super',
     )
 
 
@@ -79,9 +82,7 @@ class BulkExportTests(TestCase):
             'action': 'export',
             'uuids': [str(self.customer.uuid)],
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp['Content-Type'], 'text/csv; charset=utf-8')
         content = resp.content.decode('utf-8-sig')
@@ -95,9 +96,7 @@ class BulkExportTests(TestCase):
             'action': 'export',
             'uuids': [str(self.sub.uuid)],
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8-sig')
         self.assertIn('Servicio', content)
@@ -115,9 +114,7 @@ class BulkExportTests(TestCase):
             'action': 'export',
             'uuids': [str(invoice.uuid)],
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8-sig')
         self.assertIn('Número', content)
@@ -152,9 +149,7 @@ class BulkDeleteTests(TestCase):
             'action': 'delete',
             'uuids': [str(self.customer1.uuid), str(self.customer2.uuid)],
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body['processed'], 2)
@@ -167,12 +162,8 @@ class BulkDeleteTests(TestCase):
         self.assertIsNotNone(self.customer1.deleted_at)
         self.assertIsNotNone(self.customer2.deleted_at)
         # Verify records still exist (soft delete, not hard delete)
-        self.assertTrue(
-            Customer.objects.filter(pk=self.customer1.pk).exists()
-        )
-        self.assertTrue(
-            Customer.objects.filter(pk=self.customer2.pk).exists()
-        )
+        self.assertTrue(Customer.objects.filter(pk=self.customer1.pk).exists())
+        self.assertTrue(Customer.objects.filter(pk=self.customer2.pk).exists())
 
     def test_bulk_delete_skips_unknown_uuids(self):
         self.client.force_login(self.admin)
@@ -183,9 +174,7 @@ class BulkDeleteTests(TestCase):
             'action': 'delete',
             'uuids': [str(self.customer1.uuid), fake_uuid],
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body['processed'], 1)
@@ -201,9 +190,7 @@ class BulkDeleteTests(TestCase):
             'action': 'delete',
             'uuids': [str(self.customer1.uuid)],
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body['processed'], 0)
@@ -226,27 +213,21 @@ class BulkPermissionTests(TestCase):
     def test_unauthenticated_returns_redirect(self):
         url = reverse('commercial:cliente_bulk')
         data = {'action': 'export', 'uuids': [str(self.customer.uuid)]}
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 302)
 
     def test_no_permission_returns_403_for_delete(self):
         self.client.force_login(self.user)
         url = reverse('commercial:cliente_bulk')
         data = {'action': 'delete', 'uuids': [str(self.customer.uuid)]}
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 403)
 
     def test_no_permission_returns_403_for_export(self):
         self.client.force_login(self.user)
         url = reverse('commercial:cliente_bulk')
         data = {'action': 'export', 'uuids': [str(self.customer.uuid)]}
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 403)
 
 
@@ -260,27 +241,21 @@ class BulkInputSafetyTests(TestCase):
         self.client.force_login(self.admin)
         url = reverse('commercial:cliente_bulk')
         data = {'action': 'unknown', 'uuids': ['some-uuid']}
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 400)
 
     def test_empty_uuids_returns_400(self):
         self.client.force_login(self.admin)
         url = reverse('commercial:cliente_bulk')
         data = {'action': 'export', 'uuids': []}
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 400)
 
     def test_missing_uuids_returns_400(self):
         self.client.force_login(self.admin)
         url = reverse('commercial:cliente_bulk')
         data = {'action': 'export'}
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 400)
 
     def test_invalid_json_returns_400(self):
@@ -326,9 +301,7 @@ class BulkUpdateTests(TestCase):
             'field': 'payment_status',
             'value': 'paid',
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body['processed'], 1)
@@ -345,9 +318,7 @@ class BulkUpdateTests(TestCase):
             'field': 'customer',
             'value': '1',
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 400)
 
     def test_bulk_update_rejects_invalid_value(self):
@@ -360,9 +331,7 @@ class BulkUpdateTests(TestCase):
             'field': 'payment_status',
             'value': 'invalid_status',
         }
-        resp = self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        resp = self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertEqual(resp.status_code, 400)
 
 
@@ -390,9 +359,7 @@ class BulkAuditTests(TestCase):
             'action': 'delete',
             'uuids': [str(self.customer.uuid)],
         }
-        self.client.post(
-            url, json.dumps(data), content_type='application/json'
-        )
+        self.client.post(url, json.dumps(data), content_type='application/json')
         self.assertGreater(LogEntry.objects.count(), initial_count)
         entry = LogEntry.objects.latest('id')
         self.assertEqual(entry.user_id, self.admin.pk)

@@ -122,7 +122,7 @@ The core deliverable (select_related user__profile join, defensively correct) is
 
 **WARNING**: None
 
-**SUGGESTION**: 
+**SUGGESTION**:
 - Consider updating `spec.md` REQ-3 scenario "avatar" to reflect the current template reality (document_card include, no avatar) for archival accuracy. Not blocking.
 
 ### Verdict

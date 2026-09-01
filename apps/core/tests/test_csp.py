@@ -9,6 +9,7 @@ NOTE: django-csp 4.x (pinned by requirements.txt) renamed the middleware to
 `DIRECTIVES` sub-dict. The design draft referenced the 3.x names; tests and
 implementation follow the installed 4.x API (documented deviation).
 """
+
 from django.conf import settings
 from django.test import TestCase, override_settings
 
@@ -105,7 +106,7 @@ class CSPHeaderPresenceTest(TestCase):
         """REQ-3: CSP header must contain img-src with cdn.jsdelivr.net."""
         response = self.client.get('/')
         header = response.headers.get('Content-Security-Policy', '')
-        self.assertIn('img-src \'self\' data: https://cdn.jsdelivr.net', header)
+        self.assertIn("img-src 'self' data: https://cdn.jsdelivr.net", header)
 
     def test_csp_header_contains_object_src(self):
         """Hardening: CSP header must contain object-src 'none'."""
@@ -154,4 +155,4 @@ class CSPReportOnlyTest(TestCase):
         header = self.client.get('/modelo/meteogram/').headers.get(
             'Content-Security-Policy-Report-Only', ''
         )
-        self.assertIn('img-src \'self\' data: https://cdn.jsdelivr.net', header)
+        self.assertIn("img-src 'self' data: https://cdn.jsdelivr.net", header)

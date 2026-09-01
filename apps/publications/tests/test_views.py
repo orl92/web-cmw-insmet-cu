@@ -195,9 +195,7 @@ class ScientificPublicationFileDownloadViewTests(TestCase):
 
     def test_inline_preview_uses_inline_disposition(self):
         self.client.force_login(self.admin)
-        response = self.client.get(
-            reverse('publications:pdf', args=[self.pub.uuid]) + '?inline=1'
-        )
+        response = self.client.get(reverse('publications:pdf', args=[self.pub.uuid]) + '?inline=1')
         self.assertEqual(response.status_code, 200)
         self.assertIn('inline', response['Content-Disposition'])
         self.assertIn('filename*=UTF-8', response['Content-Disposition'])

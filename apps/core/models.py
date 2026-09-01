@@ -142,18 +142,14 @@ THEME_BASE_CHOICES = [
 class SiteConfiguration(FileHandlerMixin):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     maintenance_mode = models.BooleanField(default=True, verbose_name='Modo mantenimiento')
-    primary_color = models.CharField(
-        max_length=7, default='#0b6e99', verbose_name='Color primario'
-    )
+    primary_color = models.CharField(max_length=7, default='#0b6e99', verbose_name='Color primario')
     theme_base = models.CharField(
         max_length=10, choices=THEME_BASE_CHOICES, default='gray', verbose_name='Base del tema'
     )
     brand_logo = models.ImageField(
         upload_to='brand/', null=True, blank=True, verbose_name='Logo de marca'
     )
-    favicon = models.ImageField(
-        upload_to='brand/', null=True, blank=True, verbose_name='Favicon'
-    )
+    favicon = models.ImageField(upload_to='brand/', null=True, blank=True, verbose_name='Favicon')
 
     file_fields = ['brand_logo', 'favicon']
 

@@ -20,7 +20,7 @@ class TempusAwareDateTimeInput(DateTimeInput):
             meridiem = 'PM' if h >= 12 else 'AM'
             h12 = h % 12 or 12
             return (
-                f"{value.day:02d}/{value.month:02d}/{value.year} "
-                f"{h12:02d}:{value.minute:02d} {meridiem}"
+                f'{value.day:02d}/{value.month:02d}/{value.year} '
+                f'{h12:02d}:{value.minute:02d} {meridiem}'
             )
         return super().format_value(value)

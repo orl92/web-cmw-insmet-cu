@@ -13,12 +13,8 @@ class ToTimeValueTest(TestCase):
         self.assertEqual(form_filters.to_time_value(time(12, 0)), '12:00 PM')
 
     def test_datetime_object_renders_12h_ampm(self):
-        self.assertEqual(
-            form_filters.to_time_value(datetime(2026, 8, 5, 2, 15)), '02:15 AM'
-        )
-        self.assertEqual(
-            form_filters.to_time_value(datetime(2026, 8, 5, 14, 30)), '02:30 PM'
-        )
+        self.assertEqual(form_filters.to_time_value(datetime(2026, 8, 5, 2, 15)), '02:15 AM')
+        self.assertEqual(form_filters.to_time_value(datetime(2026, 8, 5, 14, 30)), '02:30 PM')
 
     def test_empty_returns_empty(self):
         self.assertEqual(form_filters.to_time_value(None), '')

@@ -59,6 +59,6 @@ class ServeModelFileView(LoginRequiredMixin, View):
         ascii_name = _ascii_filename(filename)
         encoded = quote(filename)
         response['Content-Disposition'] = (
-            f"{disposition}; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
+            f'{disposition}; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded}'
         )
         return response

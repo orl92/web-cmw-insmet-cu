@@ -34,9 +34,7 @@ def _tb(exc):
     if exc is None:
         return ''
     try:
-        return ''.join(
-            traceback.format_exception(type(exc), exc, exc.__traceback__)
-        )[:4000]
+        return ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))[:4000]
     except Exception:
         return str(exc)
 

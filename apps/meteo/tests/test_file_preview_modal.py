@@ -22,9 +22,9 @@ from apps.meteo.models import Warning, WeatherReport
 
 User = get_user_model()
 
-PDF_BYTES = b"%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF"
+PDF_BYTES = b'%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF'
 PNG_BYTES = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
 )
 
 
@@ -36,42 +36,42 @@ def assert_file_anchor_not_blank_tab(test_case, content, file_url):
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
 class MeteoFilePreviewModalTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_superuser("admin3", "admin3@example.com", "pass")
-        self.user.first_name = "Admin"
-        self.user.last_name = "Test"
-        self.user.email = "admin3@example.com"
+        self.user = User.objects.create_superuser('admin3', 'admin3@example.com', 'pass')
+        self.user.first_name = 'Admin'
+        self.user.last_name = 'Test'
+        self.user.email = 'admin3@example.com'
         self.user.save()
 
         self.warning = Warning.objects.create(
-            warning_type="early",
-            summary="Resumen de aviso",
+            warning_type='early',
+            summary='Resumen de aviso',
             user=self.user,
             valid_until=timezone.now() + timedelta(days=1),
-            file=SimpleUploadedFile("doc.pdf", PDF_BYTES, "application/pdf"),
+            file=SimpleUploadedFile('doc.pdf', PDF_BYTES, 'application/pdf'),
         )
         self.report = WeatherReport.objects.create(
-            report_type="today",
-            summary="Resumen de reporte",
+            report_type='today',
+            summary='Resumen de reporte',
             user=self.user,
-            file=SimpleUploadedFile("doc.pdf", PDF_BYTES, "application/pdf"),
+            file=SimpleUploadedFile('doc.pdf', PDF_BYTES, 'application/pdf'),
         )
 
     def test_alerta_temprana_update_no_blank_tab_and_pdf_modal(self):
         self.client.force_login(self.user)
-        url = reverse("meteo:alerta_temprana_update", kwargs={"uuid": self.warning.uuid})
+        url = reverse('meteo:alerta_temprana_update', kwargs={'uuid': self.warning.uuid})
         resp = self.client.get(url)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIn(b"documentPdfModal", resp.content)
-        self.assertIn(b"data-pdf-url=", resp.content)
+        self.assertIn(b'documentPdfModal', resp.content)
+        self.assertIn(b'data-pdf-url=', resp.content)
         assert_file_anchor_not_blank_tab(self, resp.content, self.warning.file.url)
 
     def test_tiempo_hoy_update_no_blank_tab_and_pdf_modal(self):
         self.client.force_login(self.user)
-        url = reverse("meteo:tiempo_hoy_update", kwargs={"uuid": self.report.uuid})
+        url = reverse('meteo:tiempo_hoy_update', kwargs={'uuid': self.report.uuid})
         resp = self.client.get(url)
 
         self.assertEqual(resp.status_code, 200)
-        self.assertIn(b"documentPdfModal", resp.content)
-        self.assertIn(b"data-pdf-url=", resp.content)
+        self.assertIn(b'documentPdfModal', resp.content)
+        self.assertIn(b'data-pdf-url=', resp.content)
         assert_file_anchor_not_blank_tab(self, resp.content, self.report.file.url)

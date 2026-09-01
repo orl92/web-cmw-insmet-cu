@@ -26,15 +26,15 @@
   <td>{{ object.user.get_full_name|default:object.user }}</td>
   <td class="text-end">
     {% if object.file %}
-       <a href="{% url 'meteo:alerta_download' object.uuid %}"
-          type="button"
-          class="btn btn-icon btn-outline-success btn-sm"
-          data-bs-toggle="tooltip"
-          data-bs-placement="bottom"
-          aria-label="Descargar Alerta"
-          data-bs-original-title="Descargar Alerta">
-         <i class="icon ti ti-download"></i>
-       </a>
+      <a href="{% url 'meteo:alerta_download' object.uuid %}"
+         type="button"
+         class="btn btn-icon btn-outline-success btn-sm"
+         data-bs-toggle="tooltip"
+         data-bs-placement="bottom"
+         aria-label="Descargar Alerta"
+         data-bs-original-title="Descargar Alerta">
+        <i class="icon ti ti-download"></i>
+      </a>
       <button type="button"
               class="btn btn-icon btn-outline-primary btn-sm"
               data-bs-toggle="modal"
