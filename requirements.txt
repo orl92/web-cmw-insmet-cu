@@ -9,7 +9,7 @@ contourpy
 cryptography
 cssselect2
 cycler
-Django==5.1.4
+Django==5.2.17
 djangorestframework
 dotenv
 drf-redesign
@@ -78,4 +78,4 @@ ldap3
 pdfkit
 huey
 django-cors-headers
-django-csp>=4.0,<5.0
+django-csp
