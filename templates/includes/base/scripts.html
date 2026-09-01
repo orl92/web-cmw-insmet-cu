@@ -6,9 +6,12 @@
 <script src="{% static 'dist/js/tempus-init.js' %}"></script>
 <script src="{% static 'dist/js/input-sanitize.js' %}"></script>
 <script>
-	// Named theme-primary swatches from tabler-themes.min.css presets.
-	// Values must match the `[data-bs-theme-primary=...]` presets exactly so
-	// named choices render the same color in the inline --tblr-* variables.
+	// The floating theme switch was removed: font, radius, base and primary
+	// color are now admin-only and come from the SiteConfiguration model.
+	// The visitor can only toggle light/dark via the navbar (tabler-theme.min.js).
+	// This block re-applies the model values on DOMContentLoaded so the DOM
+	// stays consistent even if the head inline script ran before the page
+	// rendered (the head script already applied them before first paint).
 	var themeSwatches = {
 		blue: "#066fd1",
 		azure: "#4299e1",
@@ -21,88 +24,34 @@
 		lime: "#74b816",
 		green: "#2fb344",
 		teal: "#0ca678",
-		cyan: "#17a2b8",
+		cyan: "#17a2b8"
 	};
 	var hexToRgb = function (hex) {
 		hex = hex.replace("#", "");
 		var n = parseInt(hex, 16);
 		return (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255);
 	};
-	// Sets the rendered primary color from a hex value: the data attribute
-	// (Tabler preset) AND inline --tblr-* variables (wins over any stylesheet).
-	var applyTheme = function (hex) {
-		var root = document.documentElement;
-		root.setAttribute("data-bs-theme-primary", hex);
-		root.style.setProperty("--tblr-primary", hex);
-		root.style.setProperty("--tblr-primary-rgb", hexToRgb(hex));
-	};
 	document.addEventListener("DOMContentLoaded", function () {
-		var themeConfig = {
-			theme: "light",
+		var config = {
 			"theme-base": "{{ site_branding.theme_base }}",
 			"theme-font": "{{ site_branding.theme_font }}",
 			"theme-primary": "{{ site_branding.primary_color }}",
-			"theme-radius": "{{ site_branding.theme_radius }}",
+			"theme-radius": "{{ site_branding.theme_radius }}"
 		};
-		var url = new URL(window.location);
-		var form = document.getElementById("offcanvas-settings");
-		var resetButton = document.getElementById("reset-changes");
-		var checkItems = function () {
-			for (var key in themeConfig) {
-				var value = window.localStorage["tabler-" + key] || themeConfig[key];
-				if (!!value) {
-					var radios = form.querySelectorAll(`[name="${key}"]`);
-					if (!!radios) {
-						radios.forEach((radio) => {
-							radio.checked = radio.value === value;
-						});
-					}
+		var root = document.documentElement;
+		var primary = config["theme-primary"];
+		for (var key in config) {
+			var value = config[key];
+			if (!!value) {
+				if (key === "theme-primary") {
+					var hex = themeSwatches[value] || value;
+					root.setAttribute("data-bs-theme-primary", hex);
+					root.style.setProperty("--tblr-primary", hex);
+					root.style.setProperty("--tblr-primary-rgb", hexToRgb(hex));
+				} else {
+					root.setAttribute("data-bs-" + key, value);
 				}
 			}
-		};
-		// Renders every themeConfig key as a `data-bs-<key>` attribute on
-		// <html> — value prefers the stored visitor override, else the model.
-		// Mirrors what the floating switch's change handler does so a seeded
-		// base renders identically to a user-selected one. Then marks radios.
-		var applyConfig = function () {
-			for (var key in themeConfig) {
-				var value = window.localStorage["tabler-" + key] || themeConfig[key];
-				if (!!value) {
-					document.documentElement.setAttribute("data-bs-" + key, value);
-				}
-			}
-			checkItems();
-		};
-		form.addEventListener("change", function (event) {
-			var target = event.target,
-				name = target.name,
-				value = target.value;
-			for (var key in themeConfig) {
-				if (name === key) {
-					document.documentElement.setAttribute("data-bs-" + key, value);
-					window.localStorage.setItem("tabler-" + key, value);
-					if (key === "theme-primary") {
-						applyTheme(themeSwatches[value] || value);
-					}
-					url.searchParams.set(key, value);
-				}
-			}
-			window.history.pushState({}, "", url);
-		});
-		resetButton.addEventListener("click", function () {
-			for (var key in themeConfig) {
-				var value = themeConfig[key];
-				document.documentElement.removeAttribute("data-bs-" + key);
-				window.localStorage.removeItem("tabler-" + key);
-				url.searchParams.delete(key);
-			}
-			document.documentElement.style.removeProperty("--tblr-primary");
-			document.documentElement.style.removeProperty("--tblr-primary-rgb");
-			applyTheme(themeConfig["theme-primary"]);
-			applyConfig();
-			window.history.pushState({}, "", url);
-		});
-		applyTheme(themeConfig["theme-primary"]);
-		applyConfig();
+		}
 	});
 </script>

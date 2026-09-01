@@ -38,6 +38,40 @@
               <div class="invalid-feedback d-block">{{ form.theme_radius.errors.0 }}</div>
             {% endif %}
           </div>
+          <div class="col-12 mt-2">
+            <button type="button"
+                    class="btn btn-outline-danger"
+                    data-bs-toggle="modal"
+                    data-bs-target="#reset-theme-modal">
+              <i class="icon ti ti-refresh"></i>
+              Restablecer valores por defecto
+            </button>
+            <small class="text-muted d-block mt-2">Vuelve el color primario, la base, la familia tipográfica y el radio de esquina a sus valores iniciales.</small>
+          </div>
+          <div class="modal fade"
+               id="reset-theme-modal"
+               tabindex="-1"
+               aria-labelledby="reset-theme-modal-title"
+               aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="reset-theme-modal-title">Restablecer tema</h5>
+                  <button type="button"
+                          class="btn-close"
+                          data-bs-dismiss="modal"
+                          aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                  <p>¿Seguro que desea restablecer el tema a los valores por defecto? Se perderán los cambios previos en color primario, base, tipografía y radio de esquina.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                  <button type="submit" name="reset_theme_defaults" class="btn btn-danger">Restablecer</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -163,16 +197,35 @@
         rel="stylesheet" />
   <script src="{% static 'dist/libs/coloris/coloris.min.js' %}"></script>
   <script>
+    // Coloris color picker (Tabler pattern). The selected color stays INSIDE
+    // the input; the picker opens with the spectrum plus the Tabler swatch
+    // row below. No alpha channel (theme primary is applied solid).
     document.addEventListener('DOMContentLoaded', function () {
       if (window.Coloris) {
+        var css = window.getComputedStyle(document.body);
+        var tabler = function (name, fallback) {
+          return css.getPropertyValue('--tblr-' + name).trim() || fallback;
+        };
         window.Coloris({
           el: '[data-coloris]',
+          selectInput: false,
           format: 'hex',
           alpha: false,
-          swatches: ['#2b4b9b', '#4299e1', '#4263eb', '#ae3ec9', '#d6336c',
-            '#d63939', '#f76707', '#f59f00', '#74b816', '#2fb344', '#0ca678',
-            '#17a2b8'],
           focusInput: true,
+          swatches: [
+            tabler('blue', '#066fd1'),
+            tabler('azure', '#4299e1'),
+            tabler('indigo', '#4263eb'),
+            tabler('purple', '#ae3ec9'),
+            tabler('pink', '#d6336c'),
+            tabler('red', '#d63939'),
+            tabler('orange', '#f76707'),
+            tabler('yellow', '#f59f00'),
+            tabler('lime', '#74b816'),
+            tabler('green', '#2fb344'),
+            tabler('teal', '#0ca678'),
+            tabler('cyan', '#17a2b8'),
+          ],
         });
       }
     });

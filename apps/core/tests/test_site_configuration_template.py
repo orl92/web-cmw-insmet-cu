@@ -73,7 +73,7 @@ class SiteConfigurationTemplateTests(TestCase):
         response = self._get_edit_page()
         self.assertContains(response, 'id_theme_font')
         self.assertContains(response, 'id_theme_radius')
-        # The floating-theme options come from the model now.
+        # Font and radius are admin-only, so their options come from the model.
         self.assertContains(response, 'Sans-serif')
         self.assertContains(response, 'Radio de esquina')
 
@@ -83,6 +83,12 @@ class SiteConfigurationTemplateTests(TestCase):
         self.assertContains(response, 'data-coloris')
         self.assertContains(response, 'dist/libs/coloris/coloris.min.js')
         self.assertContains(response, 'dist/libs/coloris/coloris.min.css')
+
+    def test_reset_theme_defaults_button_and_modal(self):
+        response = self._get_edit_page()
+        self.assertContains(response, 'Restablecer valores por defecto')
+        self.assertContains(response, 'reset-theme-modal')
+        self.assertContains(response, 'reset_theme_defaults')
 
     def test_brand_logo_hint_present(self):
         response = self._get_edit_page()

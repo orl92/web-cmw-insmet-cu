@@ -97,3 +97,28 @@ class SiteConfigurationViewTests(TestCase):
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'formato #RRGGBB')
+
+    def test_reset_theme_defaults_restores_defaults(self):
+        user = User.objects.create_user(
+            'admin_site4',
+            'admin_site4@example.com',
+            'password',
+            first_name='Admin',
+            last_name='Site',
+        )
+        user.user_permissions.add(*self._permissions('core', 'change_siteconfiguration'))
+        self.client.force_login(user)
+        site = SiteConfiguration.get_instance()
+        site.primary_color = '#123456'
+        site.theme_base = 'zinc'
+        site.theme_font = 'serif'
+        site.theme_radius = '2'
+        site.save()
+        response = self.client.post(self.url, {'reset_theme_defaults': 'Restablecer'})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse('core:site_configuration'))
+        site.refresh_from_db()
+        self.assertEqual(site.primary_color, '#2b4b9b')
+        self.assertEqual(site.theme_base, 'gray')
+        self.assertEqual(site.theme_font, 'sans-serif')
+        self.assertEqual(site.theme_radius, '1')

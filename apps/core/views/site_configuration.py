@@ -57,6 +57,23 @@ class SiteConfigurationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, U
                 self.request, 'El favicon ha sido eliminado con éxito.', extra_tags='danger'
             )
             return redirect(self.success_url)
+        if 'reset_theme_defaults' in request.POST:
+            site = self.get_object()
+            site.primary_color = '#2b4b9b'
+            site.theme_base = 'gray'
+            site.theme_font = 'sans-serif'
+            site.theme_radius = '1'
+            site.save()
+            log_action(
+                user=request.user,
+                obj=site,
+                action_flag=CHANGE,
+                message='Tema restablecido a los valores por defecto',
+            )
+            messages.success(
+                self.request, 'El tema ha sido restablecido a los valores por defecto.'
+            )
+            return redirect(self.success_url)
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):

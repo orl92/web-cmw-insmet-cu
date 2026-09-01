@@ -30,6 +30,9 @@
 </style>
 <!-- Aplica el tema antes del primer paint para evitar parpadeo (FOUC). -->
 <script>
+	// Font, radius, base and primary come from the admin-only
+	// SiteConfiguration model (the visitor switch was removed). Light/dark is
+	// handled separately by tabler-theme.min.js via ?theme=... / localStorage.
 	(function () {
 		var swatches = {
 			blue: "#066fd1",
@@ -51,7 +54,6 @@
 			return (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255);
 		};
 		var model = {
-			"theme": "light",
 			"theme-base": "{{ site_branding.theme_base }}",
 			"theme-font": "{{ site_branding.theme_font }}",
 			"theme-radius": "{{ site_branding.theme_radius }}",
@@ -59,7 +61,7 @@
 		};
 		var root = document.documentElement;
 		for (var key in model) {
-			var value = window.localStorage["tabler-" + key] || model[key];
+			var value = model[key];
 			if (!!value) {
 				if (key === "theme-primary") {
 					var hex = swatches[value] || value;
