@@ -60,6 +60,19 @@
 				}
 			}
 		};
+		// Renders every themeConfig key as a `data-bs-<key>` attribute on
+		// <html> — value prefers the stored visitor override, else the model.
+		// Mirrors what the floating switch's change handler does so a seeded
+		// base renders identically to a user-selected one. Then marks radios.
+		var applyConfig = function () {
+			for (var key in themeConfig) {
+				var value = window.localStorage["tabler-" + key] || themeConfig[key];
+				if (!!value) {
+					document.documentElement.setAttribute("data-bs-" + key, value);
+				}
+			}
+			checkItems();
+		};
 		form.addEventListener("change", function (event) {
 			var target = event.target,
 				name = target.name,
@@ -86,10 +99,10 @@
 			document.documentElement.style.removeProperty("--tblr-primary");
 			document.documentElement.style.removeProperty("--tblr-primary-rgb");
 			applyTheme(themeConfig["theme-primary"]);
-			checkItems();
+			applyConfig();
 			window.history.pushState({}, "", url);
 		});
 		applyTheme(themeConfig["theme-primary"]);
-		checkItems();
+		applyConfig();
 	});
 </script>
