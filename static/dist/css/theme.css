@@ -1,19 +1,12 @@
 /*
  * CMP Camagüey — Brand overrides for Tabler
- * Ocean-blue / coastal-green palette.
- * Loaded after tabler.min.css so cascade wins.
+ * Brand-blue palette. Loaded after tabler.min.css so cascade wins.
+ * The light-mode primary is applied at runtime from SiteConfiguration
+ * (see templates/includes/base/scripts.html), so it is not hardcoded here.
  */
 
-:root {
-  --tblr-primary: #0b6e99;
-  --tblr-primary-rgb: 11, 110, 153;
-  --tblr-link: #0b6e99;
-  --tblr-secondary: #1a8a5c;
-}
-
 [data-bs-theme="dark"] {
-  --tblr-primary: #2a9fd6;
-  --tblr-primary-rgb: 42, 159, 214;
-  --tblr-link: #2a9fd6;
-  --tblr-secondary: #28a745;
+  --tblr-primary: #2b4b9b;
+  --tblr-primary-rgb: 43, 75, 155;
+  --tblr-link: #2b4b9b;
 }
