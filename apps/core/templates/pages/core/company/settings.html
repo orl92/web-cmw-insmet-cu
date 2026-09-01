@@ -1,88 +1,73 @@
-{% extends 'layouts/dashboard.html' %}
-{% load static %}
+{% extends 'layouts/form.html' %}
 {% load form_filters %}
-{% block title_actions %}
-{% endblock title_actions %}
-{% block content %}
-  <div class="row row-cards">
-    <div class="col-12">
-      <form method="post" class="card" novalidate>
-        {% csrf_token %}
-        <div class="card-body">
-          {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-              {% for error in form.non_field_errors %}
-                <div>{{ error }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label required">{{ form.nombre.label }}</label>
-              {{ form.nombre|with_invalid }}
-              {% if form.nombre.errors %}
-                <div class="invalid-feedback d-block">{{ form.nombre.errors.0 }}</div>
-              {% endif %}
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label required">{{ form.direccion.label }}</label>
-              {{ form.direccion|with_invalid }}
-              {% if form.direccion.errors %}
-                <div class="invalid-feedback d-block">{{ form.direccion.errors.0 }}</div>
-              {% endif %}
-            </div>
+{% block form %}
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="subheader text-muted fw-medium mb-3">Datos de la empresa</h3>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label required">{{ form.nombre.label }}</label>
+            {{ form.nombre|with_invalid }}
+            {% if form.nombre.errors %}
+              <div class="invalid-feedback d-block">{{ form.nombre.errors.0 }}</div>
+            {% endif %}
           </div>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label required">{{ form.codigo_reeup.label }}</label>
-              {{ form.codigo_reeup|with_invalid }}
-              {% if form.codigo_reeup.errors %}
-                <div class="invalid-feedback d-block">{{ form.codigo_reeup.errors.0 }}</div>
-              {% endif %}
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label required">{{ form.nit.label }}</label>
-              {{ form.nit|with_invalid }}
-              {% if form.nit.errors %}
-                <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
-              {% endif %}
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label required">{{ form.registro_comercial.label }}</label>
-              {{ form.registro_comercial|with_invalid }}
-              {% if form.registro_comercial.errors %}
-                <div class="invalid-feedback d-block">{{ form.registro_comercial.errors.0 }}</div>
-              {% endif %}
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label required">{{ form.cuenta_bancaria.label }}</label>
-              {{ form.cuenta_bancaria|with_invalid }}
-              {% if form.cuenta_bancaria.errors %}
-                <div class="invalid-feedback d-block">{{ form.cuenta_bancaria.errors.0 }}</div>
-              {% endif %}
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label required">{{ form.agencia_bancaria.label }}</label>
-              {{ form.agencia_bancaria|with_invalid }}
-              {% if form.agencia_bancaria.errors %}
-                <div class="invalid-feedback d-block">{{ form.agencia_bancaria.errors.0 }}</div>
-              {% endif %}
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label required">{{ form.telefonos.label }}</label>
-              {{ form.telefonos|with_invalid }}
-              {% if form.telefonos.errors %}
-                <div class="invalid-feedback d-block">{{ form.telefonos.errors.0 }}</div>
-              {% endif %}
-            </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label required">{{ form.direccion.label }}</label>
+            {{ form.direccion|with_invalid }}
+            {% if form.direccion.errors %}
+              <div class="invalid-feedback d-block">{{ form.direccion.errors.0 }}</div>
+            {% endif %}
           </div>
         </div>
-        <div class="card-footer text-end">
-          <button type="submit" class="btn btn-primary">Aceptar</button>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label required">{{ form.codigo_reeup.label }}</label>
+            {{ form.codigo_reeup|with_invalid }}
+            {% if form.codigo_reeup.errors %}
+              <div class="invalid-feedback d-block">{{ form.codigo_reeup.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label required">{{ form.nit.label }}</label>
+            {{ form.nit|with_invalid }}
+            {% if form.nit.errors %}
+              <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label required">{{ form.registro_comercial.label }}</label>
+            {{ form.registro_comercial|with_invalid }}
+            {% if form.registro_comercial.errors %}
+              <div class="invalid-feedback d-block">{{ form.registro_comercial.errors.0 }}</div>
+            {% endif %}
+          </div>
         </div>
-      </form>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label required">{{ form.cuenta_bancaria.label }}</label>
+            {{ form.cuenta_bancaria|with_invalid }}
+            {% if form.cuenta_bancaria.errors %}
+              <div class="invalid-feedback d-block">{{ form.cuenta_bancaria.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label required">{{ form.agencia_bancaria.label }}</label>
+            {{ form.agencia_bancaria|with_invalid }}
+            {% if form.agencia_bancaria.errors %}
+              <div class="invalid-feedback d-block">{{ form.agencia_bancaria.errors.0 }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label required">{{ form.telefonos.label }}</label>
+            {{ form.telefonos|with_invalid }}
+            {% if form.telefonos.errors %}
+              <div class="invalid-feedback d-block">{{ form.telefonos.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 {% endblock %}
