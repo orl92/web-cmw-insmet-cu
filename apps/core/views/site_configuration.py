@@ -60,7 +60,7 @@ class SiteConfigurationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, U
         if 'reset_theme_defaults' in request.POST:
             site = self.get_object()
             site.primary_color = '#2b4b9b'
-            site.theme_base = 'gray'
+            site.theme_base = 'neutral'
             site.theme_font = 'sans-serif'
             site.theme_radius = '1'
             site.save()

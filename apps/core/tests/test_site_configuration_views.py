@@ -119,6 +119,6 @@ class SiteConfigurationViewTests(TestCase):
         self.assertEqual(response.url, reverse('core:site_configuration'))
         site.refresh_from_db()
         self.assertEqual(site.primary_color, '#2b4b9b')
-        self.assertEqual(site.theme_base, 'gray')
+        self.assertEqual(site.theme_base, 'neutral')
         self.assertEqual(site.theme_font, 'sans-serif')
         self.assertEqual(site.theme_radius, '1')

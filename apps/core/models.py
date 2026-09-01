@@ -159,7 +159,10 @@ class SiteConfiguration(FileHandlerMixin):
     maintenance_mode = models.BooleanField(default=True, verbose_name='Modo mantenimiento')
     primary_color = models.CharField(max_length=7, default='#2b4b9b', verbose_name='Color primario')
     theme_base = models.CharField(
-        max_length=10, choices=THEME_BASE_CHOICES, default='gray', verbose_name='Base del tema'
+        max_length=10,
+        choices=THEME_BASE_CHOICES,
+        default='neutral',
+        verbose_name='Base del tema',
     )
     theme_font = models.CharField(
         max_length=20,

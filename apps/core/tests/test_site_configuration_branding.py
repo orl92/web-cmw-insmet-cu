@@ -7,7 +7,7 @@ class SiteConfigurationBrandingModelTests(TestCase):
     def test_branding_fields_exist_with_defaults(self):
         site = SiteConfiguration.objects.create(maintenance_mode=False)
         self.assertEqual(site.primary_color, '#2b4b9b')
-        self.assertEqual(site.theme_base, 'gray')
+        self.assertEqual(site.theme_base, 'neutral')
         self.assertFalse(site.brand_logo)
         self.assertFalse(site.favicon)
 

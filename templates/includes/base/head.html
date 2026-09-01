@@ -73,5 +73,14 @@
 				}
 			}
 		}
+		// Apply the visitor light/dark choice before first paint too, so a
+		// saved dark mode does not flash the light palette first.
+		var theme = new URLSearchParams(window.location.search).get("theme") ||
+			localStorage.getItem("tabler-theme") || "light";
+		if (theme === "dark") {
+			root.setAttribute("data-bs-theme", "dark");
+		} else {
+			root.removeAttribute("data-bs-theme");
+		}
 	})();
 </script>
