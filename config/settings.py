@@ -127,6 +127,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
+    'csp',
     'drf_redesign',
     'rest_framework',
     'drf_spectacular',
@@ -149,11 +150,58 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'csp.middleware.CSPMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'apps.core.middleware.CheckUserProfileMiddleware',
     'apps.core.middleware.MaintenanceModeMiddleware',
 ]
+
+# ---------------------------------------------------------------------------
+# Content Security Policy (CSP) — django-csp (change 011-csp)
+# ---------------------------------------------------------------------------
+# The policy restricts resource origins to 'self' while allowing documented
+# exceptions for inline scripts/styles (interim, nonce refactor pending) and
+# external weather-symbol images from cdn.jsdelivr.net.
+# See openspec/changes/011-csp/design.md for full rationale.
+#
+# NOTE (deviation from design draft): django-csp 4.x uses the
+# `CONTENT_SECURITY_POLICY` dict with a `DIRECTIVES` sub-dict and the middleware
+# class `csp.middleware.CSPMiddleware` (the 3.x `ContentSecurityPolicyMiddleware`
+# class and flat dict were renamed/restructured in the 4.0 migration).
+_CONTENT_SECURITY_POLICY_DIRECTIVES = {
+    "default-src": ["'self'"],
+    "base-uri": ["'self'"],
+    "frame-ancestors": ["'self'"],
+    "object-src": ["'none'"],
+    # 'unsafe-inline' required: 41 inline <script> blocks
+    # (e.g. templates/includes/base/scripts.html:8,
+    #  templates/includes/dashboard/footer.html:41).
+    # Nonce migration is a tracked follow-up.
+    "script-src": ["'self'", "'unsafe-inline'"],
+    # 'unsafe-inline' required: inline <style> blocks
+    # (e.g. templates/includes/base/head.html:15).
+    "style-src": ["'self'", "'unsafe-inline'"],
+    # jsdelivr required for meteogram.js:128,255 weather-symbol SVGs.
+    "img-src": ["'self'", "data:", "https://cdn.jsdelivr.net"],
+    "font-src": ["'self'"],
+    "connect-src": ["'self'"],
+}
+
+CONTENT_SECURITY_POLICY = {"DIRECTIVES": _CONTENT_SECURITY_POLICY_DIRECTIVES}
+
+# CSP_REPORT_ONLY (env var, project os.getenv helper — no environs dependency):
+# when 'True' the middleware emits Content-Security-Policy-Report-Only INSTEAD of
+# the enforced header, so staging can observe violations without enforcement.
+# Default False = enforced policy in production.
+# NOTE: django-csp 4.0 removed the `CSP_REPORT_ONLY` settings flag (it now emits
+# a csp.E001 system-check error); the env toggle drives the 4.0
+# CONTENT_SECURITY_POLICY_REPORT_ONLY dict instead.
+if os.getenv('CSP_REPORT_ONLY', 'False') == 'True':
+    CONTENT_SECURITY_POLICY = None
+    CONTENT_SECURITY_POLICY_REPORT_ONLY = {
+        'DIRECTIVES': _CONTENT_SECURITY_POLICY_DIRECTIVES,
+    }
 
 DEBUG_TOOLBAR_ENABLED = DEBUG and not IS_PRODUCTION
 if DEBUG_TOOLBAR_ENABLED:
