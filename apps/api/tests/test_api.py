@@ -147,11 +147,11 @@ class EarlyWarningAPITests(APITestCase):
     def test_list_returns_only_active(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_has_expected_fields(self):
         response = self.client.get(self.url)
-        item = response.data[0]
+        item = response.data['results'][0]
         self.assertIn('uuid', item)
         self.assertIn('summary', item)
         self.assertIn('user', item)
@@ -173,11 +173,11 @@ class TropicalCycloneAPITests(APITestCase):
     def test_list_returns_active(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_has_expected_fields(self):
         response = self.client.get(self.url)
-        item = response.data[0]
+        item = response.data['results'][0]
         self.assertIn('uuid', item)
         self.assertIn('date', item)
 
@@ -198,7 +198,7 @@ class StormWarningAPITests(APITestCase):
     def test_list_returns_active(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), 1)
 
 
 class WeatherReportAPITests(APITestCase):
@@ -217,17 +217,19 @@ class WeatherReportAPITests(APITestCase):
     def test_valid_type_returns_reports(self):
         response = self.client.get(reverse('weather-report-list', args=['today']))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_invalid_type_returns_empty(self):
         url = reverse('weather-report-list', args=['invalid'])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(len(response.data['results']), 0)
 
     def test_filters_by_type(self):
-        today = self.client.get(reverse('weather-report-list', args=['today'])).data
-        tomorrow = self.client.get(reverse('weather-report-list', args=['tomorrow'])).data
+        today = self.client.get(reverse('weather-report-list', args=['today'])).data['results']
+        tomorrow = self.client.get(reverse('weather-report-list', args=['tomorrow'])).data[
+            'results'
+        ]
         self.assertEqual(len(today), 1)
         self.assertEqual(len(tomorrow), 1)
         self.assertEqual(today[0]['report_type'], 'today')
@@ -235,7 +237,7 @@ class WeatherReportAPITests(APITestCase):
 
     def test_has_expected_fields(self):
         response = self.client.get(reverse('weather-report-list', args=['today']))
-        item = response.data[0]
+        item = response.data['results'][0]
         self.assertIn('uuid', item)
         self.assertIn('report_type', item)
         self.assertIn('summary', item)
@@ -257,11 +259,11 @@ class ScientificPublicationAPITests(APITestCase):
     def test_list_returns_publications(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_has_expected_fields(self):
         response = self.client.get(self.url)
-        item = response.data[0]
+        item = response.data['results'][0]
         self.assertIn('title', item)
         self.assertIn('author', item)
         self.assertIn('publication_date', item)
@@ -290,17 +292,17 @@ class ServiceAPITests(APITestCase):
     def test_list_returns_only_public(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_excludes_commercial(self):
         response = self.client.get(self.url)
-        titles = [s['title'] for s in response.data]
+        titles = [s['title'] for s in response.data['results']]
         self.assertIn('Gratuito', titles)
         self.assertNotIn('Pago', titles)
 
     def test_has_expected_fields(self):
         response = self.client.get(self.url)
-        item = response.data[0]
+        item = response.data['results'][0]
         self.assertIn('uuid', item)
         self.assertIn('title', item)
         self.assertIn('service_type', item)
@@ -349,9 +351,9 @@ class WarningListQueryCountTests(APITestCase):
 
     def test_query_count_is_constant(self):
         cache.clear()
-        # 1 (SiteConfiguration) + 1 (warnings joined with user) per endpoint
+        # 1 (SiteConfiguration) + 1 (warnings joined with user) + 1 (pagination count)
         for url in self.urls.values():
-            with self.assertNumQueries(2):
+            with self.assertNumQueries(3):
                 self.client.get(url)
 
 
@@ -368,8 +370,8 @@ class WeatherReportListQueryCountTests(APITestCase):
 
     def test_query_count_is_constant(self):
         cache.clear()
-        # 1 (SiteConfiguration) + 1 (reports joined with user)
-        with self.assertNumQueries(2):
+        # 1 (SiteConfiguration) + 1 (reports joined with user) + 1 (pagination count)
+        with self.assertNumQueries(3):
             self.client.get(self.url)
 
 
@@ -390,8 +392,8 @@ class ScientificPublicationListQueryCountTests(APITestCase):
 
     def test_query_count_is_constant(self):
         cache.clear()
-        # 1 (SiteConfiguration) + 1 (author join) + 1 (coauthors prefetch)
-        with self.assertNumQueries(3):
+        # 1 (SiteConfiguration) + 1 (author join) + 1 (coauthors prefetch) + 1 (pagination count)
+        with self.assertNumQueries(4):
             self.client.get(self.url)
 
 

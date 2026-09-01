@@ -134,6 +134,8 @@ class StationListAPIView(CacheAPIMixin, ListAPIView):
     queryset = Station.objects.select_related('province')
     serializer_class = StationSerializer
     permission_classes = [AllowAny]
+    # Keep /api/stations/ a flat array for map_station.js (data.forEach).
+    pagination_class = None
 
 
 class ForecastAPIView(CacheAPIMixin, GenericAPIView):
