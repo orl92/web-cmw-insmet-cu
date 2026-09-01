@@ -1,0 +1,99 @@
+from io import BytesIO
+
+from django.contrib.auth.models import User
+from django.core.files import File
+from django.test import TestCase
+from django.urls import reverse
+
+from apps.core.models import SiteConfiguration
+
+
+def _make_image(name):
+    """PNG-ish file of minimal size, good enough for FieldFile.url rendering."""
+    from PIL import Image
+
+    buf = BytesIO()
+    Image.new('RGB', (16, 16), '#2b4b9b').save(buf, format='PNG')
+    buf.seek(0)
+    return name, buf
+
+
+class SiteConfigurationTemplateTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        cls.user = User.objects.create_superuser(
+            'site_admin',
+            'site_admin@example.com',
+            'password',
+            first_name='Site',
+            last_name='Admin',
+        )
+
+    def setUp(self):
+        self.client.force_login(self.user)
+        self.url = reverse('core:site_configuration')
+
+    def _permission(self):
+        from django.contrib.auth.models import Permission
+
+        return Permission.objects.get(
+            content_type__app_label='core', codename='change_siteconfiguration'
+        )
+
+    def _get_edit_page(self):
+        site = SiteConfiguration.get_instance()
+        site.maintenance_mode = False
+        site.save()
+        return self.client.get(self.url)
+
+    def test_uses_form_layout_shell(self):
+        response = self._get_edit_page()
+        self.assertEqual(response.status_code, 200)
+        # The page must use the standard form shell (multipart + novalidate),
+        # which the template now obtains by extending layouts/form.html.
+        self.assertContains(response, 'enctype="multipart/form-data"')
+        self.assertContains(response, 'novalidate')
+
+    def test_two_section_cards_rendered(self):
+        response = self._get_edit_page()
+        # Section titles as set by the two form_card includes.
+        self.assertContains(response, 'Colores y tema')
+        self.assertContains(response, 'Identidad')
+
+    def test_primary_and_theme_base_side_by_side(self):
+        response = self._get_edit_page()
+        # Both color/theme field widgets render with their ids.
+        self.assertContains(response, 'id_primary_color')
+        self.assertContains(response, 'id_theme_base')
+        # Both select/color fields sit in side-by-side col-md-6 cells.
+        self.assertGreaterEqual(response.content.count(b'col-md-6'), 2)
+
+    def test_brand_logo_hint_present(self):
+        response = self._get_edit_page()
+        self.assertContains(
+            response,
+            'Formatos: JPG, PNG, GIF. No se admiten SVG. Dejar en blanco si no desea '
+            'cambiar el logo actual.',
+        )
+
+    def test_favicon_preview_and_link_when_set(self):
+        site = SiteConfiguration.get_instance()
+        name, buf = _make_image('favicon.png')
+        site.favicon = File(buf, name=name)
+        site.save()
+        response = self._get_edit_page()
+        self.assertContains(response, 'id_favicon')
+        self.assertContains(response, 'Ver imagen actual')
+        self.assertContains(response, site.favicon.url)
+        self.assertContains(response, 'data-fslightbox')
+
+    def test_favicon_hint_present_when_unset(self):
+        site = SiteConfiguration.get_instance()
+        site.favicon.delete(save=True)
+        response = self._get_edit_page()
+        self.assertContains(
+            response,
+            'Formatos: JPG, PNG, GIF. No se admiten SVG. Dejar en blanco si no desea '
+            'cambiar el favicon actual.',
+        )
