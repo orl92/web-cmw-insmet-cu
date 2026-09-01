@@ -138,6 +138,21 @@ THEME_BASE_CHOICES = [
     ('stone', 'Stone'),
 ]
 
+THEME_FONT_CHOICES = [
+    ('sans-serif', 'Sans-serif'),
+    ('serif', 'Serif'),
+    ('monospace', 'Monospace'),
+    ('comic', 'Comic'),
+]
+
+THEME_RADIUS_CHOICES = [
+    ('0', '0'),
+    ('0.5', '0.5'),
+    ('1', '1'),
+    ('1.5', '1.5'),
+    ('2', '2'),
+]
+
 
 class SiteConfiguration(FileHandlerMixin):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -145,6 +160,18 @@ class SiteConfiguration(FileHandlerMixin):
     primary_color = models.CharField(max_length=7, default='#2b4b9b', verbose_name='Color primario')
     theme_base = models.CharField(
         max_length=10, choices=THEME_BASE_CHOICES, default='gray', verbose_name='Base del tema'
+    )
+    theme_font = models.CharField(
+        max_length=20,
+        choices=THEME_FONT_CHOICES,
+        default='sans-serif',
+        verbose_name='Familia tipográfica',
+    )
+    theme_radius = models.CharField(
+        max_length=4,
+        choices=THEME_RADIUS_CHOICES,
+        default='1',
+        verbose_name='Radio de esquina',
     )
     brand_logo = models.ImageField(
         upload_to='brand/', null=True, blank=True, verbose_name='Logo de marca'

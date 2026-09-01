@@ -8,6 +8,8 @@ def _valid_data():
     return {
         'primary_color': '#2b4b9b',
         'theme_base': 'gray',
+        'theme_font': 'sans-serif',
+        'theme_radius': '1',
     }
 
 

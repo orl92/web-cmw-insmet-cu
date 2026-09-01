@@ -69,6 +69,21 @@ class SiteConfigurationTemplateTests(TestCase):
         # Both select/color fields sit in side-by-side col-md-6 cells.
         self.assertGreaterEqual(response.content.count(b'col-md-6'), 2)
 
+    def test_theme_font_and_radius_fields_rendered(self):
+        response = self._get_edit_page()
+        self.assertContains(response, 'id_theme_font')
+        self.assertContains(response, 'id_theme_radius')
+        # The floating-theme options come from the model now.
+        self.assertContains(response, 'Sans-serif')
+        self.assertContains(response, 'Radio de esquina')
+
+    def test_primary_color_uses_coloris_picker(self):
+        response = self._get_edit_page()
+        # primary_color is a coloris-driven text input (not the native swatch).
+        self.assertContains(response, 'data-coloris')
+        self.assertContains(response, 'dist/libs/coloris/coloris.min.js')
+        self.assertContains(response, 'dist/libs/coloris/coloris.min.css')
+
     def test_brand_logo_hint_present(self):
         response = self._get_edit_page()
         self.assertContains(

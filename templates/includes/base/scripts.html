@@ -40,9 +40,9 @@
 		var themeConfig = {
 			theme: "light",
 			"theme-base": "{{ site_branding.theme_base }}",
-			"theme-font": "sans-serif",
+			"theme-font": "{{ site_branding.theme_font }}",
 			"theme-primary": "{{ site_branding.primary_color }}",
-			"theme-radius": "1",
+			"theme-radius": "{{ site_branding.theme_radius }}",
 		};
 		var url = new URL(window.location);
 		var form = document.getElementById("offcanvas-settings");
