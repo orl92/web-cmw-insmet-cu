@@ -1,79 +1,143 @@
 {% extends 'layouts/form.html' %}
 {% load form_filters %}
 {% block form %}
-  {% include 'includes/dashboard/form_card.html' with card_title='Colores y tema' %}
-  <div class="row">
-    <div class="col-md-6 mb-3">
-      <label class="form-label required"
-             for="{{ form.primary_color.id_for_label }}">{{ form.primary_color.label }}</label>
-      {{ form.primary_color|with_invalid }}
-      {% if form.primary_color.errors %}
-        <div class="invalid-feedback d-block">{{ form.primary_color.errors.0 }}</div>
-      {% endif %}
-    </div>
-    <div class="col-md-6 mb-3">
-      <label class="form-label required" for="{{ form.theme_base.id_for_label }}">{{ form.theme_base.label }}</label>
-      {{ form.theme_base|with_invalid }}
-      {% if form.theme_base.errors %}
-        <div class="invalid-feedback d-block">{{ form.theme_base.errors.0 }}</div>
-      {% endif %}
-    </div>
-  </div>
-  </div>
-  </div>
-  </div>
-  {% include 'includes/dashboard/form_card.html' with card_title='Identidad' %}
-  <div class="row">
-    <div class="col-md-6 mb-3">
-      <label class="form-label" for="{{ form.brand_logo.id_for_label }}">{{ form.brand_logo.label }}</label>
-      {{ form.brand_logo|with_invalid }}
-      {% if form.brand_logo.errors %}
-        <div class="invalid-feedback d-block">{{ form.brand_logo.errors.0 }}</div>
-      {% endif %}
-      <small class="text-muted">Formatos: JPG, PNG, GIF. No se admiten SVG. Dejar en blanco si no desea cambiar el logo actual.</small>
-    </div>
-  </div>
-  <div class="mb-3">
-    <label class="form-label" for="{{ form.favicon.id_for_label }}">{{ form.favicon.label }}</label>
+  <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="me-3">
-            <div class="avatar avatar-xl rounded"
-                 style="width: 64px;
-                        height: 64px;
-                        overflow: hidden">
-              {% if object.favicon %}
-                <img src="{{ object.favicon.url }}"
-                     alt="Favicon"
-                     style="width: 100%;
-                            height: 100%;
-                            object-fit: cover">
-              {% endif %}
-            </div>
-          </div>
-          <div class="flex-grow-1">
-            {{ form.favicon|with_invalid }}
-            {% if form.favicon.errors %}
-              <div class="invalid-feedback d-block mt-2">{{ form.favicon.errors.0 }}</div>
+        <h3 class="subheader text-muted fw-medium mb-3">Colores y tema</h3>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label required"
+                   for="{{ form.primary_color.id_for_label }}">{{ form.primary_color.label }}</label>
+            {{ form.primary_color|with_invalid }}
+            {% if form.primary_color.errors %}
+              <div class="invalid-feedback d-block">{{ form.primary_color.errors.0 }}</div>
             {% endif %}
-            <small class="text-muted">Formatos: JPG, PNG, GIF. No se admiten SVG. Dejar en blanco si no desea cambiar el favicon actual.</small>
-            {% if object.favicon %}
-              <div class="mt-2">
-                <a data-fslightbox="site-favicon"
-                   href="{{ object.favicon.url }}"
-                   class="btn btn-outline-primary btn-sm">
-                  <i class="icon ti ti-eye"></i>
-                  Ver imagen actual
-                </a>
-              </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label required" for="{{ form.theme_base.id_for_label }}">{{ form.theme_base.label }}</label>
+            {{ form.theme_base|with_invalid }}
+            {% if form.theme_base.errors %}
+              <div class="invalid-feedback d-block">{{ form.theme_base.errors.0 }}</div>
             {% endif %}
           </div>
         </div>
       </div>
     </div>
   </div>
-  </div>
-  </div>
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="subheader text-muted fw-medium mb-3">Identidad</h3>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="{{ form.brand_logo.id_for_label }}">{{ form.brand_logo.label }}</label>
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-center">
+                  <div class="me-3">
+                    <div class="avatar avatar-xl rounded"
+                         style="width: 64px;
+                                height: 64px;
+                                overflow: hidden">
+                      {% if object.brand_logo %}
+                        <img src="{{ object.brand_logo.url }}"
+                             alt="Logo"
+                             style="width: 100%;
+                                    height: 100%;
+                                    object-fit: cover">
+                      {% else %}
+                        <i class="icon ti ti-photo text-muted w-100 h-100 d-flex align-items-center justify-content-center"></i>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <input type="file"
+                           class="form-control
+                                  {% if form.brand_logo.errors %}is-invalid{% endif %}"
+                           name="{{ form.brand_logo.name }}"
+                           id="{{ form.brand_logo.id_for_label }}"
+                           accept="image/*" />
+                    <small class="text-muted d-block mt-2">Formatos: JPG, PNG, GIF. No se admiten SVG. Dejar en blanco si no desea cambiar el logo actual.</small>
+                    {% if form.brand_logo.errors %}
+                      <div class="invalid-feedback d-block mt-2">{{ form.brand_logo.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                {% if object.brand_logo %}
+                  <div class="mt-2 d-flex gap-2">
+                    <a data-fslightbox="site-brand-logo"
+                       href="{{ object.brand_logo.url }}"
+                       class="btn btn-outline-primary btn-sm">
+                      <i class="icon ti ti-eye"></i>
+                      Ver imagen actual
+                    </a>
+                    <button type="submit"
+                            name="delete_logo"
+                            class="btn btn-outline-danger btn-sm">
+                      <i class="icon ti ti-trash"></i>
+                      Eliminar
+                    </button>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="{{ form.favicon.id_for_label }}">{{ form.favicon.label }}</label>
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-center">
+                  <div class="me-3">
+                    <div class="avatar avatar-xl rounded"
+                         style="width: 64px;
+                                height: 64px;
+                                overflow: hidden">
+                      {% if object.favicon %}
+                        <img src="{{ object.favicon.url }}"
+                             alt="Favicon"
+                             style="width: 100%;
+                                    height: 100%;
+                                    object-fit: cover">
+                      {% else %}
+                        <i class="icon ti ti-photo text-muted w-100 h-100 d-flex align-items-center justify-content-center"></i>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="flex-grow-1">
+                    <input type="file"
+                           class="form-control
+                                  {% if form.favicon.errors %}is-invalid{% endif %}"
+                           name="{{ form.favicon.name }}"
+                           id="{{ form.favicon.id_for_label }}"
+                           accept="image/*" />
+                    <small class="text-muted d-block mt-2">Formatos: JPG, PNG, GIF. No se admiten SVG. Dejar en blanco si no desea cambiar el favicon actual.</small>
+                    {% if form.favicon.errors %}
+                      <div class="invalid-feedback d-block mt-2">{{ form.favicon.errors.0 }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                {% if object.favicon %}
+                  <div class="mt-2 d-flex gap-2">
+                    <a data-fslightbox="site-favicon"
+                       href="{{ object.favicon.url }}"
+                       class="btn btn-outline-primary btn-sm">
+                      <i class="icon ti ti-eye"></i>
+                      Ver imagen actual
+                    </a>
+                    <button type="submit"
+                            name="delete_favicon"
+                            class="btn btn-outline-danger btn-sm">
+                      <i class="icon ti ti-trash"></i>
+                      Eliminar
+                    </button>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 {% endblock %}

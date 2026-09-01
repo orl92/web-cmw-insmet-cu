@@ -28,6 +28,37 @@ class SiteConfigurationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, U
         context['url_list'] = reverse_lazy('core:site_configuration')
         return context
 
+    def post(self, request, *args, **kwargs):
+        if 'delete_logo' in request.POST:
+            site = self.get_object()
+            site.brand_logo.delete(save=False)
+            site.save()
+            log_action(
+                user=request.user,
+                obj=site,
+                action_flag=CHANGE,
+                message='Logo del sitio eliminado',
+            )
+            messages.success(
+                self.request, 'El logo ha sido eliminado con éxito.', extra_tags='danger'
+            )
+            return redirect(self.success_url)
+        if 'delete_favicon' in request.POST:
+            site = self.get_object()
+            site.favicon.delete(save=False)
+            site.save()
+            log_action(
+                user=request.user,
+                obj=site,
+                action_flag=CHANGE,
+                message='Favicon del sitio eliminado',
+            )
+            messages.success(
+                self.request, 'El favicon ha sido eliminado con éxito.', extra_tags='danger'
+            )
+            return redirect(self.success_url)
+        return super().post(request, *args, **kwargs)
+
     def form_valid(self, form):
         self.object = form.save()
         log_action(

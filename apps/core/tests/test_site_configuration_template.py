@@ -97,3 +97,65 @@ class SiteConfigurationTemplateTests(TestCase):
             'Formatos: JPG, PNG, GIF. No se admiten SVG. Dejar en blanco si no desea '
             'cambiar el favicon actual.',
         )
+
+    def test_logo_and_favicon_side_by_side(self):
+        response = self._get_edit_page()
+        self.assertContains(response, 'id_brand_logo')
+        self.assertContains(response, 'id_favicon')
+        # brand_logo and favicon each live in their own col-md-6 cell, side by side.
+        self.assertGreaterEqual(response.content.count(b'id_brand_logo'), 1)
+        self.assertIn(
+            b'id_brand_logo', response.content
+        ) and self.assertIn(b'id_favicon', response.content)
+
+    def test_no_clearable_widget_cartel(self):
+        """Django's ClearableFileInput 'Current:'/'Borrar' box must NOT render."""
+        site = SiteConfiguration.get_instance()
+        name, buf = _make_image('brand_logo.png')
+        site.brand_logo = File(buf, name=name)
+        name2, buf2 = _make_image('favicon.png')
+        site.favicon = File(buf2, name=name2)
+        site.save()
+        response = self._get_edit_page()
+        self.assertNotContains(response, 'Actualmente:')
+        self.assertNotContains(response, 'currently')
+
+    def test_logo_eliminar_button_present_when_set(self):
+        site = SiteConfiguration.get_instance()
+        name, buf = _make_image('brand_logo.png')
+        site.brand_logo = File(buf, name=name)
+        site.save()
+        response = self._get_edit_page()
+        self.assertContains(response, 'name="delete_logo"')
+        self.assertContains(response, 'Eliminar')
+
+    def test_favicon_eliminar_button_present_when_set(self):
+        site = SiteConfiguration.get_instance()
+        name, buf = _make_image('favicon.png')
+        site.favicon = File(buf, name=name)
+        site.save()
+        response = self._get_edit_page()
+        self.assertContains(response, 'name="delete_favicon"')
+        self.assertContains(response, 'Eliminar')
+
+    def test_delete_logo_action_removes_file(self):
+        site = SiteConfiguration.get_instance()
+        name, buf = _make_image('brand_logo.png')
+        site.brand_logo = File(buf, name=name)
+        site.save()
+        self.assertTrue(site.brand_logo)
+        response = self.client.post(self.url, {'delete_logo': 'Eliminar'})
+        self.assertRedirects(response, self.url)
+        site.refresh_from_db()
+        self.assertFalse(bool(site.brand_logo))
+
+    def test_delete_favicon_action_removes_file(self):
+        site = SiteConfiguration.get_instance()
+        name, buf = _make_image('favicon.png')
+        site.favicon = File(buf, name=name)
+        site.save()
+        self.assertTrue(site.favicon)
+        response = self.client.post(self.url, {'delete_favicon': 'Eliminar'})
+        self.assertRedirects(response, self.url)
+        site.refresh_from_db()
+        self.assertFalse(bool(site.favicon))

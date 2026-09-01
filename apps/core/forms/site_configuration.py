@@ -16,8 +16,8 @@ class SiteConfigurationForm(forms.ModelForm):
                 attrs={'type': 'color', 'class': 'form-control form-control-color'}
             ),
             'theme_base': forms.Select(attrs={'class': 'form-select'}),
-            'brand_logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'favicon': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'brand_logo': forms.FileInput(attrs={'class': 'form-control'}),
+            'favicon': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
     def clean_primary_color(self):
