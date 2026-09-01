@@ -38,7 +38,7 @@ def get_icon_for_action(action_flag):
         6: 'ti-settings',
     }
     classes = icons.get(action_flag, 'ti-info-circle text-secondary')
-    return mark_safe(f'<i class="icon ti {classes}"></i>')
+    return mark_safe(f'<i class="icon ti {classes}"></i>')  # nosec B703
 
 
 @register.filter
