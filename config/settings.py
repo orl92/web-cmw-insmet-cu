@@ -369,7 +369,14 @@ if not MEDIA_ROOT.exists():
 # dejar archivos residuales en media/).
 TEST_RUNNER = 'config.test_runner.IsolatedMediaRunner'
 
-X_FRAME_OPTIONS = 'SAMEORIGIN'
+# Clickjacking protection: DENY (no first-party view is embedded in a frame;
+# change 013-check-deploy-ci resolves security.W019 for real).
+X_FRAME_OPTIONS = 'DENY'
+
+# security.W008 is intentionally silenced: Nginx terminates TLS and performs
+# the HTTPS redirect, so Django intentionally leaves SECURE_SSL_REDIRECT=False
+# (setting it here would double-redirect and break the proxy contract).
+SILENCED_SYSTEM_CHECKS = ['security.W008']
 
 # REST Framework
 REST_FRAMEWORK = {

@@ -32,3 +32,26 @@ jobs:
 
       - name: Run Bandit
         run: bandit -r apps config manage.py -ll -x "*test*.py,*migrations*"
+
+  # Django deployment checks gate (change 013-check-deploy-ci). Runs
+  # `manage.py check --deploy` on a fresh checkout (no .env; DEBUG defaults to
+  # False so the production security block is active) and fails the pipeline on
+  # any deployment WARNING/ERROR. security.W008 (SECURE_SSL_REDIRECT) is
+  # expected to be silenced in settings because Nginx terminates TLS and
+  # performs the HTTPS redirect; Django must not redirect too.
+  deploy-check:
+    name: Django deploy check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dev dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run Django deployment system checks
+        run: python manage.py check --deploy --fail-level WARNING
