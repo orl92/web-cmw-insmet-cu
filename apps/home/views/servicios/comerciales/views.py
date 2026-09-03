@@ -31,7 +31,7 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Mis Servicios Comerciales'
+        context['title'] = 'Mis Servicios'
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
         return context
@@ -48,7 +48,7 @@ class PublicCommercialServicesListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = 'Servicios Comerciales'
+        context['title'] = 'Comerciales'
         context['parent'] = 'servicios'
         context['segment'] = 'comercial_p'
         context['now'] = timezone.now()
