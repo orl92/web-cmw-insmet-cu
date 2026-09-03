@@ -49,6 +49,7 @@ from apps.commercial.views.services import (
     ServiceDeleteView,
     ServiceHardDeleteView,
     ServiceListView,
+    ServicePDFDownloadView,
     ServiceUpdateView,
 )
 from apps.commercial.views.subscriptions import (
@@ -94,6 +95,7 @@ urlpatterns = [
         name='servicio_hard_delete',
     ),
     path('servicios/exportar/csv/', ServiceCSVExportView.as_view(), name='servicio_export_csv'),
+    path('servicios/<uuid:uuid>/pdf/', ServicePDFDownloadView.as_view(), name='servicio_pdf'),
     # Suscripciones
     path('suscripciones/', SubscriptionListView.as_view(), name='suscripcion_list'),
     path('crear/suscripcion/', SubscriptionCreateView.as_view(), name='suscripcion_create'),

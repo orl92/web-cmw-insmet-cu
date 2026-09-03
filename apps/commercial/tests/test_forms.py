@@ -280,7 +280,7 @@ class ServiceFormTests(TestCase):
         )
         self.assertTrue(form.is_valid(), form.errors)
 
-    def test_public_service_rejects_image(self):
+    def test_public_service_allows_image(self):
         pdf = SimpleUploadedFile(
             'doc.pdf',
             b'PDF',
@@ -288,20 +288,19 @@ class ServiceFormTests(TestCase):
         )
         image = SimpleUploadedFile(
             'img.png',
-            b'PNG',
+            _make_png(),
             content_type='image/png',
         )
         form = ServiceForm(
             user=self.user,
             data={
-                'title': 'Bad Public',
-                'summary': 'Should fail',
+                'title': 'Public With Image',
+                'summary': 'A public service carrying an image',
                 'service_type': 'public',
             },
             files={'pdf': pdf, 'image': image},
         )
-        self.assertFalse(form.is_valid())
-        self.assertIn('image', form.errors)
+        self.assertTrue(form.is_valid(), form.errors)
 
     def test_public_service_requires_pdf(self):
         form = ServiceForm(
@@ -594,16 +593,40 @@ class PaymentMethodFormTests(TestCase):
             data={
                 'payment_method': 'qr',
                 'start_date': date.today().isoformat(),
-                'end_date': (date.today() + timedelta(days=30)).isoformat(),
+                'quantity': 1,
             }
         )
         self.assertTrue(form.is_valid(), form.errors)
 
-    def test_requires_dates(self):
+    def test_requires_quantity(self):
         form = PaymentMethodForm(data={'payment_method': 'transfer'})
         self.assertFalse(form.is_valid())
         self.assertIn('start_date', form.errors)
-        self.assertIn('end_date', form.errors)
+        self.assertIn('quantity', form.errors)
+
+    def test_quantity_min_one(self):
+        form = PaymentMethodForm(
+            data={
+                'payment_method': 'qr',
+                'start_date': date.today().isoformat(),
+                'quantity': 0,
+            }
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('quantity', form.errors)
+
+    def test_has_no_end_date_field(self):
+        form = PaymentMethodForm(data={})
+        self.assertNotIn('end_date', form.fields)
+        self.assertIn('quantity', form.fields)
+
+    def test_quantity_label_by_category_pronostico(self):
+        form = PaymentMethodForm(category='pronostico')
+        self.assertIn('días', form.fields['quantity'].label)
+
+    def test_quantity_label_by_category_agrometeo(self):
+        form = PaymentMethodForm(category='agrometeo')
+        self.assertIn('meses', form.fields['quantity'].label)
 
 
 class InvoiceFormTests(TestCase):

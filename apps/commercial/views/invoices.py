@@ -146,7 +146,6 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def process_batch_invoice(
         self, customer, start_date, end_date, commercial_registry, subscriptions
     ):
-        days_count = (end_date - start_date).days
         invoice = Invoice.objects.create(
             subscription=None, customer=customer, amount=0, number=self.generate_invoice_number()
         )
@@ -154,13 +153,16 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         items = []
         for sub in subscriptions:
             price = sub.service.price or 0
-            amount = price * days_count
+            quantity = sub.quantity
+            amount = price * quantity
+            unidad_medida = 'MES' if sub.service.service_category == 'agrometeo' else 'DÍA'
             item = InvoiceItem.objects.create(
                 invoice=invoice,
                 subscription=sub,
                 codigo=sub.service.code or '',
                 descripcion=sub.service.title,
-                cantidad=days_count,
+                cantidad=quantity,
+                unidad_medida=unidad_medida,
                 precio=price,
                 importe=amount,
             )
@@ -219,7 +221,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             context['items_formset'] = items_formset
             return self.render_to_response(context)
 
-        days_count = (end_date - start_date).days
+        quantity = 1  # default para facturación manual
 
         invoice = Invoice.objects.create(
             subscription=None, customer=customer, amount=0, number=self.generate_invoice_number()
@@ -232,6 +234,8 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
                 cd = item_form.cleaned_data
                 service = cd['service']
+                cantidad = cd.get('cantidad') or quantity
+                unidad_medida = 'MES' if service.service_category == 'agrometeo' else 'DÍA'
 
                 sub = ServiceSubscription.objects.create(
                     customer=customer,
@@ -242,6 +246,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     end_date=timezone.make_aware(datetime.combine(end_date, datetime.min.time())),
                     payment_status='pending',
                     record_active=True,
+                    quantity=cantidad,
                 )
 
                 if first_sub is None:
@@ -252,13 +257,13 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     subscription=sub,
                     codigo=cd.get('codigo', service.code or ''),
                     descripcion=service.title,
-                    cantidad=days_count,
-                    unidad_medida=cd.get('unidad_medida', 'U'),
+                    cantidad=cantidad,
+                    unidad_medida=cd.get('unidad_medida') or unidad_medida,
                     precio=cd['precio'],
-                    importe=days_count * cd['precio'],
+                    importe=cantidad * cd['precio'],
                 )
                 items.append(item)
-                total += days_count * cd['precio']
+                total += cantidad * cd['precio']
 
                 log_action(
                     user=self.request.user,
@@ -442,7 +447,7 @@ class ResendInvoiceEmailView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
 
 @login_required
-@permission_required('commercial.view_servicesubscription')
+@permission_required('commercial.view_subscription')
 def ajax_pending_subscriptions(request):
     customer_id = request.GET.get('customer')
     if not customer_id:
@@ -466,6 +471,7 @@ def ajax_pending_subscriptions(request):
           <input class="form-check-input subscription-check" type="checkbox"
                  name="subscriptions" value="{sub.pk}"
                  id="sub_{sub.pk}" data-start="{start_str}" data-end="{end_str}"
+                 data-quantity="{sub.quantity}"
                  data-service="{sub.service.title}" data-days="{days}" data-summary="{summary}">
           <label class="form-check-label" for="sub_{sub.pk}">
             <strong>{sub.service.title}</strong>

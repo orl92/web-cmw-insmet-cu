@@ -21,8 +21,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.commercial.models import Certificate, Customer, Service, ServiceSubscription
+from apps.core.models import SiteConfiguration
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _disable_maintenance_mode():
+    SiteConfiguration.objects.update_or_create(defaults={'maintenance_mode': False})
 
 
 class ServicesPublicUiTests(TestCase):
@@ -77,17 +82,18 @@ class ServicesPublicUiTests(TestCase):
     def test_titles_render_as_headings_not_links(self):
         self._create_services(2)
         html = self._get_page().content.decode()
-        self.assertIn('<h3 class="mb-0">Servicio público 0</h3>', html)
-        self.assertIn('<p class="mb-0 text-secondary">Resumen del servicio 0</p>', html)
-        self.assertNotContains(self._get_page(), '<h3 class="mb-0"><a>')
-        self.assertNotContains(self._get_page(), '<p class="mb-0 text-secondary"><a>')
+        self.assertIn('<h3 class="mb-0 card-title">Servicio público 0</h3>', html)
+        self.assertIn('<p class="text-secondary mt-2">Resumen del servicio 0</p>', html)
+        self.assertNotContains(self._get_page(), '<h3 class="mb-0 card-title"><a>')
+        self.assertNotContains(self._get_page(), '<p class="text-secondary mt-2"><a>')
 
     def test_ver_pdf_trigger_keeps_data_pdf_url_and_title(self):
         self._create_services(1)
         service = Service.objects.get(title='Servicio público 0')
         html = self._get_page().content.decode()
+        pdf_url = reverse('home:service_pdf', args=[service.uuid]) + '?inline=1'
         pattern = (
-            rf'data-pdf-url="{re.escape(service.pdf.url)}"'
+            rf'data-pdf-url="{re.escape(pdf_url)}"'
             rf'[^>]*data-pdf-title="Servicio público 0"'
         )
         self.assertRegex(html, pattern)
@@ -163,10 +169,83 @@ class ServicesCommercialUiTests(TestCase):
 
     def test_ver_pdf_trigger_keeps_data_pdf_url_and_title(self):
         subscriptions = self._login_with_subscriptions(1)
-        certificate_url = subscriptions[0].certificates.first().pdf.url
+        certificate = subscriptions[0].certificates.first()
+        cert_url = reverse('commercial:certificado_pdf', args=[certificate.uuid]) + '?inline=1'
         html = self._get_page().content.decode()
         pattern = (
-            rf'data-pdf-url="{re.escape(certificate_url)}"'
+            rf'data-pdf-url="{re.escape(cert_url)}"'
             rf'[^>]*data-pdf-title="Servicio comercial 0"'
         )
         self.assertRegex(html, pattern)
+
+
+class ServicesCommercialStaffButtonTests(TestCase):
+    """Task 6.3 — staff/management buttons on the public commercial view."""
+
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance_mode()
+        cls.provider = User.objects.create_user(
+            'provider2', 'provider2@test.com', 'pass', first_name='Vendedor', last_name='Dos'
+        )
+        cls.staff = User.objects.create_user(
+            'staffcom',
+            'staffcom@test.com',
+            'pass',
+            is_staff=True,
+            first_name='Staff',
+            last_name='Com',
+        )
+        cls.anon_service = Service.objects.create(
+            user=cls.provider,
+            title='Comercial anónimo',
+            summary='Sum',
+            service_type=Service.COMMERCIAL,
+        )
+
+    def _get_page(self):
+        return self.client.get(reverse('home:services_commercial_public'))
+
+    def test_staff_sees_edit_and_new_service_buttons(self):
+        update_url = reverse('commercial:servicio_update', args=[self.anon_service.uuid])
+        self.client.force_login(self.staff)
+        html = self._get_page().content.decode()
+        self.assertIn('Editar', html)
+        self.assertIn(update_url, html)
+        self.assertIn('Nuevo servicio', html)
+        self.assertIn(reverse('commercial:servicio_create'), html)
+
+    def test_anonymous_sees_no_management_buttons(self):
+        self.client.logout()
+        html = self._get_page().content.decode()
+        self.assertNotIn('Editar', html)
+        self.assertNotIn('Nuevo servicio', html)
+
+    def test_pending_non_qr_shows_invoice_guidance(self):
+        client_user = User.objects.create_user(
+            'clientnonq',
+            'clientnonq@test.com',
+            'pass',
+            first_name='C',
+            last_name='P',
+        )
+        customer = Customer.objects.create(
+            user=client_user,
+            client_type=Customer.ClientType.NATURAL,
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='12345678',
+        )
+        ServiceSubscription.objects.create(
+            customer=customer,
+            service=self.anon_service,
+            payment_status='pending',
+            payment_method='transfer',
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=10),
+        )
+        self.client.force_login(client_user)
+        html = self._get_page().content.decode()
+        self.assertIn('Ver factura', html)
+        self.assertIn(reverse('commercial:factura_list'), html)

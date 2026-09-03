@@ -38,11 +38,12 @@
   {% with cert=object.certificates.first %}
     {% if cert and cert.pdf %}
       <div class="mt-2">
+        {% url 'commercial:certificado_pdf' cert.uuid as cert_pdf_url %}
         <button type="button"
                 class="btn btn-icon btn-outline-primary btn-sm"
                 data-bs-toggle="modal"
                 data-bs-target="#documentPdfModal"
-                data-pdf-url="{{ cert.pdf.url }}"
+                data-pdf-url="{{ cert_pdf_url }}?inline=1"
                 data-pdf-title="{{ object.service.title|default:'Certificado' }}"
                 data-bs-toggle="tooltip"
                 data-bs-placement="bottom"

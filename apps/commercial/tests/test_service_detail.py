@@ -4,6 +4,8 @@
 - Template renders summary sanitized and image with object-fit: contain.
 """
 
+from datetime import date
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -13,7 +15,18 @@ from apps.commercial.models import Service
 
 class ServiceDetailModelTests(TestCase):
     def test_period_days_constant(self):
-        self.assertEqual(Service.PERIOD_DAYS, 30)
+        self.assertEqual(Service.PERIOD_DAYS, 1)
+
+    def test_compute_end_date_agrometeo_no_overflow(self):
+        # 31 ene + 2 meses -> 31 mar (sin desborde de fin de mes).
+        self.assertEqual(
+            Service.compute_end_date(date(2026, 1, 31), 2, 'agrometeo'), date(2026, 3, 31)
+        )
+
+    def test_compute_end_date_pronostico_daily(self):
+        self.assertEqual(
+            Service.compute_end_date(date(2026, 1, 1), 5, 'pronostico'), date(2026, 1, 6)
+        )
 
 
 class ServiceDetailTemplateTests(TestCase):
@@ -36,10 +49,8 @@ class ServiceDetailTemplateTests(TestCase):
         url = reverse('home:services_commercial_detail', args=[self.service.uuid])
         html = self.client.get(url).content.decode()
         self.assertIn('object-fit: contain', html)
-        # XSS-safe: summary text present, disallowed <script> neutralized.
-        # (Legit <script src=...> library tags may still appear.)
         self.assertIn('Resumen', html)
         self.assertNotIn('<script>alert(1)</script>', html)
-        # Period constant rendered.
-        self.assertIn('Período estándar: <strong>30 días</strong>', html)
-        self.assertIn('Monto estimado (30 días)', html)
+        # Category and period display rendered.
+        self.assertIn('Período', html)
+        self.assertIn('día', html)

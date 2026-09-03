@@ -6,7 +6,16 @@ from apps.commercial.models import Service
 class ServiceForm(forms.ModelForm):
     class Meta:
         model = Service
-        fields = ['title', 'summary', 'service_type', 'pdf', 'image', 'code', 'price']
+        fields = [
+            'title',
+            'summary',
+            'service_type',
+            'service_category',
+            'pdf',
+            'image',
+            'code',
+            'price',
+        ]
         widgets = {
             'pdf': forms.FileInput(attrs={'accept': '.pdf'}),
             'image': forms.FileInput(attrs={'accept': 'image/*'}),
@@ -17,6 +26,9 @@ class ServiceForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['code'].required = False
         self.fields['price'].required = False
+        # service_category has a model default ('pronostico'), so it must not be
+        # required in the form; leaving it unset falls back to the default.
+        self.fields['service_category'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
@@ -34,8 +46,6 @@ class ServiceForm(forms.ModelForm):
             cleaned_data['price'] = None
             if not pdf and not existing_pdf:
                 self.add_error('pdf', 'Para servicios públicos es obligatorio un archivo PDF.')
-            if image:
-                self.add_error('image', 'Los servicios públicos no deben tener imagen.')
         elif service_type == Service.COMMERCIAL:
             if not code:
                 self.add_error(

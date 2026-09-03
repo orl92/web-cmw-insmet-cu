@@ -15,6 +15,7 @@ from apps.commercial.models import (
     Contract,
     Customer,
     Invoice,
+    InvoiceItem,
     Service,
     ServiceSubscription,
 )
@@ -582,3 +583,188 @@ class CSVExportViewTests(TestCase):
         url = reverse('commercial:certificado_export_csv')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+
+def _make_customer(username):
+    customer = Customer.objects.create(
+        client_type='natural',
+        user=_make_user(username),
+        account='1234567890123456',
+        agency_bank='BANDEC',
+        address='Calle 10',
+        phone='12345678',
+    )
+    return customer
+
+
+def _build_request(user, method='GET', path='/'):
+    """Build a GET request with the user attached, plus messages storage."""
+    from django.contrib.messages.storage.fallback import FallbackStorage
+    from django.test import RequestFactory
+
+    factory = RequestFactory()
+    request = factory.get(path)
+    request.user = user
+    request.session = {}
+    messages = FallbackStorage(request)
+    request._messages = messages
+    return request
+
+
+class AjaxPendingSubscriptionsTests(TestCase):
+    """Task 6.4 — corrected permission + data-quantity on AJAX endpoint."""
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.customer = _make_customer('ajcust')
+        service = Service.objects.create(
+            user=_make_user('ajprov'),
+            title='Agro Svc',
+            summary='Sum',
+            service_type='commercial',
+            service_category='agrometeo',
+            price=Decimal('120.00'),
+        )
+        cls.sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=service,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
+            quantity=2,
+            payment_status='pending',
+        )
+        cls.url = reverse('commercial:ajax_pending_subscriptions')
+
+    def test_staff_with_view_subscription_gets_200(self):
+        staff = _make_user('staffajax', is_staff=True)
+        ct = ContentType.objects.get_for_model(ServiceSubscription)
+        perm = ct.permission_set.get(codename='view_subscription')
+        staff.user_permissions.add(perm)
+        self.client.force_login(staff)
+        response = self.client.get(self.url, {'customer': self.customer.pk})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-quantity="2"')
+
+    def test_anonymous_redirects_to_login(self):
+        self.client.logout()
+        response = self.client.get(self.url, {'customer': self.customer.pk})
+        self.assertEqual(response.status_code, 302)
+
+
+class BatchInvoiceQuantityTests(TestCase):
+    """Task 6.5 — process_batch_invoice uses quantity × price and period unit."""
+
+    def test_agrometeo_batch_uses_monthly_quantity(self):
+        from apps.commercial.views.invoices import InvoiceCreateView
+
+        customer = _make_customer('batchcust')
+        provider = _make_user('batchprov')
+        service = Service.objects.create(
+            user=provider,
+            title='Agro',
+            summary='S',
+            service_type='commercial',
+            service_category='agrometeo',
+            code='B001',
+            price=Decimal('100.00'),
+        )
+        sub = ServiceSubscription.objects.create(
+            customer=customer,
+            service=service,
+            quantity=3,
+        )
+        view = InvoiceCreateView()
+        admin = _make_superuser('batchadmin')
+        view.request = _build_request(admin)
+        start = timezone.now().date()
+        view.process_batch_invoice(customer, start, start, 'REG-001', [sub])
+        item = InvoiceItem.objects.get(subscription=sub)
+        invoice = item.invoice
+        self.assertEqual(item.cantidad, 3)
+        self.assertEqual(item.importe, Decimal('300.00'))
+        self.assertEqual(item.unidad_medida, 'MES')
+        self.assertEqual(invoice.amount, Decimal('300.00'))
+
+    def test_pronostico_batch_uses_daily_quantity(self):
+        from apps.commercial.views.invoices import InvoiceCreateView
+
+        customer = _make_customer('batchcust2')
+        provider = _make_user('batchprov2')
+        service = Service.objects.create(
+            user=provider,
+            title='Daily',
+            summary='S',
+            service_type='commercial',
+            service_category='pronostico',
+            code='B002',
+            price=Decimal('5.00'),
+        )
+        sub = ServiceSubscription.objects.create(
+            customer=customer,
+            service=service,
+            quantity=10,
+        )
+        view = InvoiceCreateView()
+        admin = _make_superuser('batchadmin2')
+        view.request = _build_request(admin)
+        start = timezone.now().date()
+        view.process_batch_invoice(customer, start, start, 'REG-002', [sub])
+        item = InvoiceItem.objects.get(subscription=sub)
+        invoice = item.invoice
+        self.assertEqual(item.cantidad, 10)
+        self.assertEqual(item.importe, Decimal('50.00'))
+        self.assertEqual(item.unidad_medida, 'DÍA')
+        self.assertEqual(invoice.amount, Decimal('50.00'))
+
+
+class SubscriptionRenewQuantityTests(TestCase):
+    """Task 6.6 — SubscriptionRenewView computes end_date via compute_end_date."""
+
+    def test_renew_agrometeo_computes_monthly_end_date(self):
+        from django.contrib.auth.models import Group
+
+        from apps.commercial.views.subscriptions import SubscriptionRenewView
+
+        customer = _make_customer('renewcust')
+        customer_user = customer.user
+        group, _ = Group.objects.get_or_create(name='Clientes')
+        customer_user.groups.add(group)
+
+        provider = _make_user('renewprov')
+        service = Service.objects.create(
+            user=provider,
+            title='Agro Renew',
+            summary='S',
+            service_type='commercial',
+            service_category='agrometeo',
+            price=Decimal('120.00'),
+        )
+        old = ServiceSubscription.objects.create(
+            customer=customer,
+            service=service,
+            quantity=2,
+            start_date=timezone.now() - timedelta(days=60),
+            end_date=timezone.now() + timedelta(days=10),
+            payment_status='paid',
+        )
+
+        view = SubscriptionRenewView()
+        view.object = old
+        view.request = _build_request(customer_user)
+        form = type('Form', (), {'cleaned_data': {}})()
+        with patch('apps.commercial.views.subscriptions.redirect') as mock_redirect:
+            mock_redirect.return_value = '<redirect>'
+            view.form_valid(form)
+
+        new_sub = (
+            ServiceSubscription.objects.filter(
+                service=service, customer=customer, payment_status='requested'
+            )
+            .order_by('-start_date')
+            .first()
+        )
+        self.assertIsNotNone(new_sub)
+        self.assertEqual(new_sub.quantity, 2)
+        expected = Service.compute_end_date(new_sub.start_date, new_sub.quantity, 'agrometeo')
+        self.assertEqual(new_sub.end_date, expected)

@@ -117,12 +117,19 @@ class PaymentMethodForm(forms.Form):
         required=True,
         help_text='Fecha desde la cual necesita el servicio.',
     )
-    end_date = forms.DateField(
-        label='Fecha de fin del servicio',
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        required=True,
-        help_text='Fecha hasta la cual necesita el servicio.',
+    quantity = forms.IntegerField(
+        min_value=1,
+        label='Cantidad de días',
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        help_text='Cantidad de meses (agrometeo) o días (pronóstico).',
     )
+
+    def __init__(self, *args, category='pronostico', **kwargs):
+        super().__init__(*args, **kwargs)
+        if category == 'agrometeo':
+            self.fields['quantity'].label = 'Cantidad de meses'
+        else:
+            self.fields['quantity'].label = 'Cantidad de días'
 
 
 class InvoiceForm(forms.Form):

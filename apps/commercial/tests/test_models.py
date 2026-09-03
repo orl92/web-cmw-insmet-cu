@@ -123,6 +123,80 @@ class ServiceModelTests(FileHandlingTestCase):
     def setUpTestData(cls):
         cls.user = _make_user('svcuser')
 
+    def test_service_category_defaults_to_pronostico(self):
+        service = Service.objects.create(
+            user=self.user,
+            title='Default Cat',
+            summary='Sum',
+            service_type='commercial',
+        )
+        self.assertEqual(service.service_category, 'pronostico')
+
+    def test_period_days_alias_is_one(self):
+        self.assertEqual(Service.PERIOD_DAYS, 1)
+
+    def test_get_billing_period_display_pronostico(self):
+        service = Service(
+            user=self.user,
+            title='P',
+            summary='S',
+            service_type='commercial',
+            service_category='pronostico',
+        )
+        self.assertEqual(service.get_billing_period_display(), 'día')
+
+    def test_get_billing_period_display_agrometeo(self):
+        service = Service(
+            user=self.user,
+            title='A',
+            summary='S',
+            service_type='commercial',
+            service_category='agrometeo',
+        )
+        self.assertEqual(service.get_billing_period_display(), 'mes')
+
+    def test_get_price_per_period_display_pronostico(self):
+        service = Service(
+            user=self.user,
+            title='P',
+            summary='S',
+            service_type='commercial',
+            service_category='pronostico',
+            price=Decimal('10.00'),
+        )
+        self.assertIn('10.00', service.get_price_per_period_display())
+        self.assertIn('día', service.get_price_per_period_display())
+
+    def test_get_price_per_period_display_agrometeo(self):
+        service = Service(
+            user=self.user,
+            title='A',
+            summary='S',
+            service_type='commercial',
+            service_category='agrometeo',
+            price=Decimal('120.00'),
+        )
+        self.assertIn('120.00', service.get_price_per_period_display())
+        self.assertIn('mes', service.get_price_per_period_display())
+
+    def test_compute_end_date_agrometeo_no_overflow(self):
+        from datetime import date as date_cls
+
+        result = Service.compute_end_date(date_cls(2026, 1, 31), 2, 'agrometeo')
+        self.assertEqual(result, date_cls(2026, 3, 31))
+
+    def test_compute_end_date_pronostico_daily(self):
+        from datetime import date as date_cls
+
+        result = Service.compute_end_date(date_cls(2026, 1, 1), 5, 'pronostico')
+        self.assertEqual(result, date_cls(2026, 1, 6))
+
+    def test_compute_end_date_default_category_is_pronostico(self):
+        from datetime import date as date_cls
+
+        result = Service.compute_end_date(date_cls(2026, 2, 10), 3)
+        self.assertEqual(result, date_cls(2026, 2, 13))
+
     def test_create_public_service(self):
         service = Service.objects.create(
             user=self.user,
@@ -227,6 +301,26 @@ class ServiceSubscriptionModelTests(TestCase):
         )
         self.assertIsNotNone(sub.uuid)
         self.assertIn(self.service.title, str(sub))
+
+    def test_quantity_defaults_to_one(self):
+        sub = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
+        )
+        self.assertEqual(sub.quantity, 1)
+
+    def test_quantity_rejects_zero(self):
+        sub = ServiceSubscription(
+            customer=self.customer,
+            service=self.service,
+            quantity=0,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
+        )
+        with self.assertRaises(ValidationError):
+            sub.full_clean()
 
     def test_custom_permissions(self):
         meta = ServiceSubscription._meta

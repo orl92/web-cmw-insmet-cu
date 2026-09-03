@@ -101,7 +101,7 @@ class PublicationsBlogGridTests(TestCase):
         self._create_publication()
         html = self._get_page().content.decode()
         self.assertIn('row row-deck', html)
-        self.assertIn('col-sm-6 col-lg-4', html)
+        self.assertIn('col-md-6', html)
         self.assertContains(self._get_page(), 'data-pdf-url')
         self.assertContains(self._get_page(), 'id="documentPdfModal"')
 

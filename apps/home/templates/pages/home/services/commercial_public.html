@@ -6,9 +6,9 @@
     <div class="row row-cards">
       <div class="space-y">
         {% if services %}
-          <div class="row">
+          <div class="row gy-4">
             {% for service in services %}
-              <div class="col-md-6 col-lg-3">
+              <div class="col-sm-6 col-lg-4">
                 <div class="card h-100">
                   <!-- Imagen con ribbon superpuesto -->
                   <div class="position-relative">
@@ -33,6 +33,22 @@
                   </div>
                   <!-- Cuerpo de la tarjeta -->
                   <div class="card-body d-flex flex-column">
+                    {% if user.is_staff or perms.commercial.change_service or perms.commercial.add_service %}
+                      <div class="d-flex gap-2 mb-2">
+                        {% if user.is_staff or perms.commercial.change_service %}
+                          <a href="{% url 'commercial:servicio_update' service.uuid %}"
+                             class="btn btn-outline-warning btn-sm">
+                            <i class="icon ti ti-edit"></i> Editar
+                          </a>
+                        {% endif %}
+                        {% if user.is_staff or perms.commercial.add_service %}
+                          <a href="{% url 'commercial:servicio_create' %}"
+                             class="btn btn-outline-success btn-sm">
+                            <i class="icon ti ti-plus"></i> Nuevo servicio
+                          </a>
+                        {% endif %}
+                      </div>
+                    {% endif %}
                     <h3 class="card-title">
                       <!-- Cambiado text-dark por text-reset para adaptarse al modo oscuro -->
                       <a href="{% url 'home:services_commercial_detail' service.uuid %}"
@@ -52,7 +68,10 @@
                                   <a href="{% url 'home:payment' %}"
                                      class="btn btn-outline-primary btn-sm">Pagar con QR</a>
                                 {% else %}
-                                  <!-- No mostrar botón, ya tiene ribbon -->
+                                  <a href="{% url 'commercial:factura_list' %}"
+                                     class="btn btn-outline-secondary btn-sm">
+                                    <i class="icon ti ti-receipt"></i> Ver factura
+                                  </a>
                                 {% endif %}
                               {% elif sub.payment_status == 'requested' %}
                                 <!-- No mostrar botón, ya tiene ribbon -->

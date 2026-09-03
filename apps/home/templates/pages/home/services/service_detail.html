@@ -23,17 +23,21 @@
           <h4 class="mb-3">{{ service.title }}</h4>
           <div class="mb-3 text-muted">
             <div class="mb-2">
+              <i class="icon me-1 ti ti-tag"></i>
+              Categoría: <strong>{{ service.get_service_category_display }}</strong>
+            </div>
+            <div class="mb-2">
               <i class="icon me-1 ti ti-calendar-event"></i>
-              Período estándar: <strong>{{ service.PERIOD_DAYS }} días</strong>
+              Período: <strong>{{ service.get_billing_period_display }}</strong>
             </div>
             {% if service.service_type == 'commercial' %}
               <div class="mb-2">
                 <i class="icon me-1 ti ti-currency-dollar"></i>
-                Precio: <strong>${{ service.price|floatformat:2 }} CUP</strong>
+                Precio por {{ service.get_billing_period_display }}: <strong>${{ service.price|floatformat:2 }} CUP</strong>
               </div>
               <div class="mb-2">
                 <i class="icon me-1 ti ti-point"></i>
-                Monto estimado ({{ service.PERIOD_DAYS }} días): <strong class="text-primary">${{ estimated_total|floatformat:2 }} CUP</strong>
+                Monto estimado (1 {{ service.get_billing_period_display }}): <strong class="text-primary">${{ estimated_total|floatformat:2 }} CUP</strong>
               </div>
             {% else %}
               <div class="mb-2">
@@ -62,7 +66,9 @@
             </div>
           </div>
         {% else %}
-          <form method="post" id="subscription-form">
+          <form method="post"
+                id="subscription-form"
+                data-category="{{ service.service_category }}">
             {% csrf_token %}
             <!-- Fecha de inicio -->
             <div class="mb-3">
@@ -73,14 +79,14 @@
               {% endif %}
               <small class="form-hint">{{ form.start_date.help_text }}</small>
             </div>
-            <!-- Fecha de fin -->
+            <!-- Cantidad -->
             <div class="mb-3">
-              <label class="form-label required">{{ form.end_date.label }}</label>
-              {{ form.end_date }}
-              {% if form.end_date.errors %}
-                <div class="invalid-feedback d-block">{{ form.end_date.errors.0 }}</div>
+              <label class="form-label required" id="quantity-label">{{ form.quantity.label }}</label>
+              {{ form.quantity }}
+              {% if form.quantity.errors %}
+                <div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>
               {% endif %}
-              <small class="form-hint">{{ form.end_date.help_text }}</small>
+              <small class="form-hint">{{ form.quantity.help_text }}</small>
             </div>
             <!-- Método de pago -->
             <div class="mb-3">
@@ -120,7 +126,7 @@
       {% if related_services %}
         <hr class="my-4">
         <h4 class="mb-3">Servicios relacionados</h4>
-        <div class="row row-cards">
+        <div class="row row-cards gy-4">
           {% for related in related_services %}
             <div class="col-sm-6 col-lg-3">
               <div class="card card-sm">
@@ -158,6 +164,16 @@
 {% block extrajs %}
   <script>
   document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('subscription-form');
+    const quantityLabel = document.getElementById('quantity-label');
+    if (form && quantityLabel) {
+      const category = form.getAttribute('data-category');
+      if (category === 'agrometeo') {
+        quantityLabel.textContent = 'Cantidad de meses';
+      } else {
+        quantityLabel.textContent = 'Cantidad de días';
+      }
+    }
     const methodSelect = document.querySelector('select[name="payment_method"]');
     if (methodSelect) {
       const qrInfo = document.getElementById('qr-info');

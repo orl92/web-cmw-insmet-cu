@@ -1,7 +1,10 @@
 import uuid
+from datetime import timedelta
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -91,7 +94,13 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
         (COMMERCIAL, 'Comercial'),
     ]
 
-    PERIOD_DAYS = 30
+    PERIOD_DAYS = 1
+    PERIOD_MONTHS = 1
+
+    SERVICE_CATEGORY_CHOICES = [
+        ('agrometeo', 'Agrometeorológico'),
+        ('pronostico', 'Pronóstico'),
+    ]
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha')
@@ -118,6 +127,12 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
     price = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Precio (CUP)'
     )
+    service_category = models.CharField(
+        max_length=10,
+        choices=SERVICE_CATEGORY_CHOICES,
+        default='pronostico',
+        verbose_name='Categoría del servicio',
+    )
 
     file_fields = ['pdf', 'image']
 
@@ -140,6 +155,20 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
             return self.image.url
         return f'{settings.STATIC_URL}dist/img/default.svg'
 
+    def get_billing_period_display(self):
+        return 'mes' if self.service_category == 'agrometeo' else 'día'
+
+    def get_price_per_period_display(self):
+        if self.price is None:
+            return ''
+        return f'${self.price:.2f} / {self.get_billing_period_display()}'
+
+    @staticmethod
+    def compute_end_date(start_date, quantity, category='pronostico'):
+        if category == 'agrometeo':
+            return start_date + relativedelta(months=quantity)
+        return start_date + timedelta(days=quantity)
+
 
 class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
     PAYMENT_STATUS_CHOICES = [
@@ -159,6 +188,12 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name='Servicio')
     start_date = models.DateTimeField(verbose_name='Fecha de inicio', null=True, blank=True)
     end_date = models.DateTimeField(verbose_name='Fecha de expiración', null=True, blank=True)
+    quantity = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+        verbose_name='Cantidad',
+        help_text='Meses (agrometeo) o días (pronóstico)',
+    )
     payment_status = models.CharField(
         max_length=20,
         choices=PAYMENT_STATUS_CHOICES,

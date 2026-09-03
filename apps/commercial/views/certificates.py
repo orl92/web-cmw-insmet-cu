@@ -81,6 +81,11 @@ class CertificatePDFView(LoginRequiredMixin, PermissionRequiredMixin, View):
         response['Content-Disposition'] = (
             f'{disposition}; filename="certificado_{certificate.issued_date:%Y-%m-%d}.pdf"'
         )
+        # Same as ServeModelFileView: let the PDF modal embed this same-origin
+        # document (Firefox treats <object> as a frame and the global
+        # X-Frame-Options: DENY would block the inline preview).
+        if disposition == 'inline':
+            response['X-Frame-Options'] = 'SAMEORIGIN'
         return response
 
 

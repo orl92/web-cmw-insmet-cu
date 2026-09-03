@@ -14,6 +14,7 @@ from django.views.generic import CreateView, ListView, UpdateView, View
 from apps.commercial.forms.service import ServiceForm
 from apps.commercial.models import Service
 from apps.core.utils import log_action
+from apps.core.views import ServeModelFileView
 
 
 class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -107,11 +108,8 @@ class ServiceUpdateView(
         old_type = self.object.service_type
         new_type = request.POST.get('service_type')
 
-        if old_type != new_type:
-            if new_type == Service.PUBLIC:
-                self.object.image = None
-            elif new_type == Service.COMMERCIAL:
-                self.object.pdf = None
+        if old_type != new_type and new_type == Service.COMMERCIAL:
+            self.object.pdf = None
 
         form = self.get_form()
         if form.is_valid():
@@ -178,3 +176,12 @@ class ServiceHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         )
         messages.success(request, f'Servicio {service_title} eliminado permanentemente.')
         return redirect('commercial:servicio_list')
+
+
+class ServicePDFDownloadView(ServeModelFileView):
+    model = Service
+    field = 'pdf'
+    permission_required = 'commercial.view_service'
+
+    def get_filename(self, obj):
+        return f'servicio_{obj.uuid}_pd.pdf'

@@ -110,11 +110,12 @@
             <small class="text-muted">Solo archivos PDF. Máximo 10MB. Dejar en blanco si no desea cambiar el archivo actual.</small>
             {% if object.pdf %}
               <div class="mt-2">
+                {% url 'commercial:servicio_pdf' object.uuid as service_pdf_url %}
                 <button type="button"
                         class="btn btn-icon btn-outline-primary btn-sm"
                         data-bs-toggle="modal"
                         data-bs-target="#documentPdfModal"
-                        data-pdf-url="{{ object.pdf.url }}"
+                        data-pdf-url="{{ service_pdf_url }}?inline=1"
                         data-pdf-title="{{ object.title|default:'Servicio' }}"
                         data-bs-toggle="tooltip"
                         data-bs-placement="bottom"
@@ -135,7 +136,7 @@
   <div class="mb-3"
        id="field_image"
        style="display:
-              {% if object.service_type == 'commercial' %}block{% else %}none{% endif %}">
+              {% if object.service_type == 'public' or object.service_type == 'commercial' %}block{% else %}none{% endif %}">
     <label class="form-label" for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
     <div class="card">
       <div class="card-body">
@@ -199,11 +200,11 @@
       const type = serviceType.value;
       if (type === 'public') {
         fieldPdf.style.display = 'block';
-        fieldImage.style.display = 'none';
+        fieldImage.style.display = 'block';
         fieldCode.style.display = 'none';
         fieldPrice.style.display = 'none';
         pdfInput.disabled = false;
-        imageInput.disabled = true;
+        imageInput.disabled = false;
         codeInput.disabled = true;
         priceInput.disabled = true;
         pdfInput.required = false;

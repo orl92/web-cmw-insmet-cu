@@ -79,7 +79,9 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
         price = self.service.price
-        context['estimated_total'] = price * Service.PERIOD_DAYS if price else 0
+        context['estimated_total'] = price * 1 if price else 0
+        context['billing_period'] = self.service.get_billing_period_display()
+        context['price_per_period'] = self.service.get_price_per_period_display()
         context['related_services'] = (
             Service.objects.filter(service_type=Service.COMMERCIAL)
             .exclude(uuid=self.service.uuid)
@@ -98,6 +100,11 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
 
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['category'] = self.service.service_category
+        return kwargs
 
     def post(self, request, *args, **kwargs):
         if not (request.user.is_authenticated and hasattr(request.user, 'commercial_customer')):
@@ -119,17 +126,15 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
             return redirect('home:services_commercial_detail', uuid=self.service.uuid)
 
         start_date = form.cleaned_data['start_date']
-        end_date = form.cleaned_data['end_date']
-
-        if end_date < start_date:
-            messages.error(self.request, 'La fecha de fin no puede ser anterior a la de inicio.')
-            return self.form_invalid(form)
+        quantity = form.cleaned_data['quantity']
+        end_date = Service.compute_end_date(start_date, quantity, self.service.service_category)
 
         ServiceSubscription.objects.create(
             customer=customer,
             service=self.service,
             start_date=start_date,
             end_date=end_date,
+            quantity=quantity,
             payment_status='requested',
             payment_method=form.cleaned_data['payment_method'],
         )

@@ -1,5 +1,4 @@
 import logging
-from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
@@ -18,7 +17,7 @@ from django.utils import timezone
 from django.views.generic import CreateView, ListView, UpdateView, View
 
 from apps.commercial.forms.subscription import CertificateUploadForm, SubscriptionForm
-from apps.commercial.models import Certificate, Customer, ServiceSubscription
+from apps.commercial.models import Certificate, Customer, Service, ServiceSubscription
 from apps.core.utils import log_action
 
 logger = logging.getLogger(__name__)
@@ -147,11 +146,16 @@ class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
 
     def form_valid(self, form):
         old = self.object
+        service = old.service
+        new_quantity = old.quantity
+        start_date = timezone.now()
+        end_date = Service.compute_end_date(start_date, new_quantity, service.service_category)
         new_sub = ServiceSubscription.objects.create(
             customer=old.customer,
-            service=old.service,
-            start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
+            service=service,
+            start_date=start_date,
+            end_date=end_date,
+            quantity=new_quantity,
             payment_status='requested',
             record_active=True,
         )
