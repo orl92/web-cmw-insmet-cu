@@ -173,7 +173,12 @@ _CONTENT_SECURITY_POLICY_DIRECTIVES = {
     'default-src': ["'self'"],
     'base-uri': ["'self'"],
     'frame-ancestors': ["'self'"],
-    'object-src': ["'none'"],
+    # 'self' (formerly 'none'): the dashboard PDF modal renders documents in an
+    # <object type="application/pdf"> (templates/includes/home/document_pdf_modal.html).
+    # object-src 'none' blocked that object, so the modal only showed the
+    # download fallback. 'self' allows embedding same-origin PDFs while still
+    # blocking data:/external object sources.
+    'object-src': ["'self'"],
     # 'unsafe-inline' required: 41 inline <script> blocks
     # (e.g. templates/includes/base/scripts.html:8,
     #  templates/includes/dashboard/footer.html:41).

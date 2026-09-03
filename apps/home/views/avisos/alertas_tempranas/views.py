@@ -18,13 +18,5 @@ class EarlyWarningListView(ListView):
         context['title'] = 'Aviso de Alerta Temprana'
         context['parent'] = 'aviso'
         context['segment'] = 'warnings_early'
-
-        # Obtener objetos y agregar URLs absolutas
-        objects = self.get_queryset()
-        for obj in objects:
-            if obj.file:
-                # Agregar URL absoluta al objeto
-                obj.absolute_file_url = self.request.build_absolute_uri(obj.file.url)
-
-        context['objects'] = objects
+        context['objects'] = context['object_list']
         return context

@@ -122,3 +122,57 @@ class SiteConfigurationViewTests(TestCase):
         self.assertEqual(site.theme_base, 'neutral')
         self.assertEqual(site.theme_font, 'sans-serif')
         self.assertEqual(site.theme_radius, '1')
+
+    def test_toggle_maintenance_non_superuser_forbidden(self):
+        user = User.objects.create_user(
+            'worker_perm',
+            'worker_perm@example.com',
+            'password',
+            first_name='Worker',
+            last_name='Perm',
+        )
+        user.user_permissions.add(*self._permissions('core', 'change_siteconfiguration'))
+        self.client.force_login(user)
+        site = SiteConfiguration.get_instance()
+        site.maintenance_mode = False
+        site.save()
+        response = self.client.post(self.url, {'toggle_maintenance': '1', 'maintenance_mode': '1'})
+        self.assertEqual(response.status_code, 403)
+        site.refresh_from_db()
+        self.assertFalse(site.maintenance_mode)
+
+    def test_toggle_maintenance_superuser_enables(self):
+        user = User.objects.create_superuser(
+            'admin_sudo',
+            'admin_sudo@example.com',
+            'password',
+            first_name='Admin',
+            last_name='Sudo',
+        )
+        self.client.force_login(user)
+        site = SiteConfiguration.get_instance()
+        site.maintenance_mode = False
+        site.save()
+        response = self.client.post(self.url, {'toggle_maintenance': '1', 'maintenance_mode': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'ok': True, 'maintenance_mode': True})
+        site.refresh_from_db()
+        self.assertTrue(site.maintenance_mode)
+
+    def test_toggle_maintenance_superuser_disables(self):
+        user = User.objects.create_superuser(
+            'admin_sudo2',
+            'admin_sudo2@example.com',
+            'password',
+            first_name='Admin',
+            last_name='Sudo2',
+        )
+        self.client.force_login(user)
+        site = SiteConfiguration.get_instance()
+        site.maintenance_mode = True
+        site.save()
+        response = self.client.post(self.url, {'toggle_maintenance': '1', 'maintenance_mode': '0'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'ok': True, 'maintenance_mode': False})
+        site.refresh_from_db()
+        self.assertFalse(site.maintenance_mode)

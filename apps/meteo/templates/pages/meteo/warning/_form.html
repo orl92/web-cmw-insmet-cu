@@ -42,11 +42,12 @@
 </div>
 {% if object and object.file %}
   <div class="mt-3">
+    {% url 'meteo:alerta_download' object.uuid as warning_pdf_url %}
     <button type="button"
             class="btn btn-icon btn-outline-primary btn-sm"
             data-bs-toggle="modal"
             data-bs-target="#documentPdfModal"
-            data-pdf-url="{{ object.file.url }}"
+            data-pdf-url="{{ warning_pdf_url }}?inline=1"
             data-pdf-title="{{ object.summary|default:'Aviso' }}"
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"

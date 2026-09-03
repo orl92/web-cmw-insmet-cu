@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.middleware import get_user
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from apps.core.models import SiteConfiguration
@@ -49,19 +49,27 @@ class CheckUserProfileMiddleware:
 class MaintenanceModeMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
+        # Only the auth paths may stay reachable while the flag is set: an
+        # anonymous visitor (or a just-logged-out admin) must be able to log in
+        # to restore the site. Everything else, public and admin, shows the
+        # maintenance page during the outage.
+        self.exempt_paths = [
+            reverse('user_auth:login'),
+            reverse('user_auth:logout'),
+        ]
+        self.template_name = 'layouts/maintenance.html'
 
     def __call__(self, request):
         site_config = SiteConfiguration.objects.first()
         # Reuse the singleton fetch for the rest of the request (e.g. the
         # site_branding context processor) to avoid a redundant DB query.
         request.site_config = site_config
-        if (
-            request.user.is_authenticated
-            and not request.user.is_superuser
-            and site_config
-            and site_config.maintenance_mode
-            and request.path not in [reverse('user_auth:login'), reverse('user_auth:logout')]
-        ):
-            messages.warning(request, 'El sitio está en modo mantenimiento.')
-            return redirect('user_auth:login')
+        if site_config and site_config.maintenance_mode and not request.user.is_superuser:
+            if request.path in self.exempt_paths:
+                if request.user.is_authenticated:
+                    messages.warning(request, 'El sitio está en modo mantenimiento.')
+                return self.get_response(request)
+            # Anonymous visitors and non-superuser staff both hit the
+            # maintenance page (503), not the public content.
+            return render(request, self.template_name, status=503)
         return self.get_response(request)

@@ -86,9 +86,37 @@ class SiteConfigurationTemplateTests(TestCase):
 
     def test_reset_theme_defaults_button_and_modal(self):
         response = self._get_edit_page()
-        self.assertContains(response, 'Restablecer valores por defecto')
+        # The reset button lives in the page-header title_actions and carries
+        # the page-context label "Restablecer tema".
+        self.assertContains(response, 'Restablecer tema')
         self.assertContains(response, 'reset-theme-modal')
         self.assertContains(response, 'reset_theme_defaults')
+
+    def test_maintenance_card_present_for_superuser(self):
+        response = self._get_edit_page()
+        self.assertContains(response, 'Modo de mantenimiento')
+        self.assertContains(response, 'Desactivado')
+        self.assertContains(response, 'id="maintenance_mode"')
+        self.assertContains(response, 'toggle_maintenance')
+
+    def test_maintenance_card_absent_for_non_superuser(self):
+        from django.contrib.auth.models import Permission, User
+
+        user = User.objects.create_user(
+            'no_sudo',
+            'no_sudo@example.com',
+            'password',
+            first_name='No',
+            last_name='Sudo',
+        )
+        perm = Permission.objects.get(
+            content_type__app_label='core', codename='change_siteconfiguration'
+        )
+        user.user_permissions.add(perm)
+        self.client.force_login(user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Modo de mantenimiento')
 
     def test_brand_logo_hint_present(self):
         response = self._get_edit_page()
@@ -125,9 +153,9 @@ class SiteConfigurationTemplateTests(TestCase):
         self.assertContains(response, 'id_favicon')
         # brand_logo and favicon each live in their own col-md-6 cell, side by side.
         self.assertGreaterEqual(response.content.count(b'id_brand_logo'), 1)
-        self.assertIn(
-            b'id_brand_logo', response.content
-        ) and self.assertIn(b'id_favicon', response.content)
+        self.assertIn(b'id_brand_logo', response.content) and self.assertIn(
+            b'id_favicon', response.content
+        )
 
     def test_no_clearable_widget_cartel(self):
         """Django's ClearableFileInput 'Current:'/'Borrar' box must NOT render."""

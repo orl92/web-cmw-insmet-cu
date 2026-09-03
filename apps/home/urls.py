@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.commercial.models import Service
+from apps.core.views.serve_file import PublicServeFileView
 from apps.home.views.avisos.alertas_tempranas.views import EarlyWarningListView
 from apps.home.views.avisos.ciclones_tropicales.views import TropicalCycloneListView
 from apps.home.views.avisos.tormentas.views import StormListView
@@ -22,6 +24,9 @@ from apps.home.views.servicios.comerciales.views import (
 )
 from apps.home.views.servicios.publicos.views import PublicServicesListView
 from apps.home.views.tiempo.views import WeatherReportDetailView
+from apps.meteo.models import Warning as MeteoWarning
+from apps.meteo.models import WeatherReport
+from apps.publications.models import ScientificPublication
 
 app_name = 'home'
 
@@ -53,6 +58,28 @@ urlpatterns = [
         WeatherReportDetailView.as_view(),
         {'report_type': 'note'},
         name='weather_note',
+    ),
+    # PDF públicos (portal): sirven el archivo inline para que el modal lo
+    # incruste. Reutilizan PublicServeFileView (sin login, SAMEORIGIN).
+    path(
+        'pdf/meteo/<uuid:uuid>/',
+        PublicServeFileView.as_view(model=WeatherReport, field='file'),
+        name='weather_report_pdf',
+    ),
+    path(
+        'pdf/publicacion/<uuid:uuid>/',
+        PublicServeFileView.as_view(model=ScientificPublication, field='pdf'),
+        name='publication_pdf',
+    ),
+    path(
+        'pdf/aviso/<uuid:uuid>/',
+        PublicServeFileView.as_view(model=MeteoWarning, field='file'),
+        name='warning_pdf',
+    ),
+    path(
+        'pdf/servicio/<uuid:uuid>/',
+        PublicServeFileView.as_view(model=Service, field='pdf'),
+        name='service_pdf',
     ),
     # Avisos
     path('aviso/alerta_temprana/', EarlyWarningListView.as_view(), name='warnings_early'),

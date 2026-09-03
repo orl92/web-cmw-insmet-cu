@@ -9,7 +9,6 @@ from apps.core.views import (
     EmailRecipientListDeleteView,
     EmailRecipientListListView,
     EmailRecipientListUpdateView,
-    MaintenanceModeToggleView,
     SiteConfigurationUpdateView,
 )
 
@@ -39,9 +38,6 @@ urlpatterns = [
         'listas-correo/exportar/csv/',
         EmailRecipientListCSVExportView.as_view(),
         name='email_recipient_export_csv',
-    ),
-    path(
-        'toggle-maintenance/', MaintenanceModeToggleView.as_view(), name='toggle_maintenance_mode'
     ),
     path('auditoria/', ActivityLogListView.as_view(), name='activity_log'),
 ]

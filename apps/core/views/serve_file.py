@@ -61,4 +61,51 @@ class ServeModelFileView(LoginRequiredMixin, View):
         response['Content-Disposition'] = (
             f'{disposition}; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded}'
         )
+        # The PDF modal embeds this file in an <object> (Firefox treats it as
+        # a frame). The global X-Frame-Options: DENY would block that, so allow
+        # same-origin framing only for the inline preview. Attachment stays DENY.
+        if disposition == 'inline':
+            response['X-Frame-Options'] = 'SAMEORIGIN'
+        return response
+
+
+class PublicServeFileView(View):
+    """Sirve un FileField de un modelo accesible sin autenticación.
+
+    Usado por el portal público (home) para incrustar los PDFs que la página
+    ya muestra (reportes del tiempo, publicaciones científicas). Replica el
+    contrato de ``ServeModelFileView`` — ``?inline=1`` fuerza
+    ``Content-Disposition: inline`` + ``X-Frame-Options: SAMEORIGIN`` para que
+    el modal PDF (``<object>``) embeba el documento same-origin — pero sin
+    ``LoginRequiredMixin`` ni permisos. El ``field`` apunta al FileField y
+    ``get_queryset`` puede restringir en qué registros se permite servir.
+    """
+
+    model = None
+    field = 'file'
+
+    def get_queryset(self):
+        return self.model._default_manager.all()
+
+    def get_object(self):
+        return get_object_or_404(self.get_queryset(), uuid=self.kwargs['uuid'])
+
+    def get_filename(self, obj):
+        return getattr(obj, self.field).name.rsplit('/', 1)[-1]
+
+    def get(self, request, uuid):
+        obj = self.get_object()
+        f = getattr(obj, self.field)
+        if not f:
+            raise Http404
+        disposition = 'inline' if request.GET.get('inline') else 'attachment'
+        filename = self.get_filename(obj)
+        response = FileResponse(f.open(), content_type='application/pdf')
+        ascii_name = _ascii_filename(filename)
+        encoded = quote(filename)
+        response['Content-Disposition'] = (
+            f'{disposition}; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded}'
+        )
+        if disposition == 'inline':
+            response['X-Frame-Options'] = 'SAMEORIGIN'
         return response

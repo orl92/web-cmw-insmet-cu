@@ -106,8 +106,15 @@ class MaintenanceModeMiddlewareTests(TestCase):
         user = _make_user('blocked', is_staff=True)
         self.client.force_login(user)
         response = self.client.get(self.dashboard_url)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, self.login_url)
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, 'Temporalmente en mantenimiento', status_code=503)
+
+    def test_maintenance_blocks_anonymous_user(self):
+        set_maintenance(True)
+        response = self.client.get(self.dashboard_url)
+        self.assertEqual(response.status_code, 503)
+        self.assertContains(response, 'Temporalmente en mantenimiento', status_code=503)
+        self.assertContains(response, 'Iniciar sesión', status_code=503)
 
     def test_maintenance_allows_superuser(self):
         set_maintenance(True)

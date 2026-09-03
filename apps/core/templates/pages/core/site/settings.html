@@ -1,6 +1,17 @@
 {% extends 'layouts/form.html' %}
 {% load static %}
 {% load form_filters %}
+{% block title_actions %}
+  <div class="col-auto">
+    <button type="button"
+            class="btn btn-outline-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#reset-theme-modal">
+      <i class="icon ti ti-refresh"></i>
+      Restablecer tema
+    </button>
+  </div>
+{% endblock title_actions %}
 {% block form %}
   <div class="col-12">
     <div class="card">
@@ -37,16 +48,6 @@
             {% if form.theme_radius.errors %}
               <div class="invalid-feedback d-block">{{ form.theme_radius.errors.0 }}</div>
             {% endif %}
-          </div>
-          <div class="col-12 mt-2">
-            <button type="button"
-                    class="btn btn-outline-danger"
-                    data-bs-toggle="modal"
-                    data-bs-target="#reset-theme-modal">
-              <i class="icon ti ti-refresh"></i>
-              Restablecer valores por defecto
-            </button>
-            <small class="text-muted d-block mt-2">Vuelve el color primario, la base, la familia tipográfica y el radio de esquina a sus valores iniciales.</small>
           </div>
           <div class="modal fade"
                id="reset-theme-modal"
@@ -191,10 +192,60 @@
       </div>
     </div>
   </div>
+  {% if request.user.is_superuser %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h3 class="subheader text-muted fw-medium mb-3">Modo de mantenimiento</h3>
+          <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+              <div class="form-check form-switch form-switch-lg mb-0"
+                   id="maintenance-switch">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="maintenance_mode"
+                       name="maintenance_mode"
+                       {% if object.maintenance_mode %}checked{% endif %} />
+                <label class="form-check-label" for="maintenance_mode">
+                  <span class="{% if object.maintenance_mode %}text-primary fw-medium{% else %}text-muted{% endif %}"
+                        id="maintenance-status">{{ object.maintenance_mode|yesno:"Activado,Desactivado" }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <small class="text-muted d-block mt-2">Mientras el modo de mantenimiento esté activo, el resto de la página se bloquea y se muestra un aviso de mantenimiento; solo los superusuarios y la ruta de inicio de sesión siguen accesibles.</small>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 {% endblock %}
-{% block modal %}
+{% block extrastyle %}
   <link href="{% static 'dist/libs/coloris/coloris.min.css' %}"
         rel="stylesheet" />
+  <style>
+    /* Coloris: match Tabler's colorpicker field — full-width field with a
+       round color swatch inside, in front of (left of) the hex code. */
+    .clr-field {
+      display: block;
+      width: 100%;
+    }
+    .clr-field button {
+      inset-inline-start: 6px;
+      inset-inline-end: auto;
+      width: 1.5rem;
+      height: 1.5rem;
+      /* Perfectly round swatch (disc), not a square with rounded borders */
+      border-radius: var(--tblr-border-radius-pill);
+    }
+    .clr-field button::after {
+      box-shadow: inset 0 0 0 1px var(--tblr-border-color-translucent);
+    }
+    .clr-field input {
+      padding-inline-start: 2.5rem;
+    }
+  </style>
+{% endblock extrastyle %}
+{% block extrajs %}
   <script src="{% static 'dist/libs/coloris/coloris.min.js' %}"></script>
   <script>
     // Coloris color picker (Tabler pattern). The selected color stays INSIDE
@@ -206,11 +257,16 @@
         var tabler = function (name, fallback) {
           return css.getPropertyValue('--tblr-' + name).trim() || fallback;
         };
+        // Coloris ships its own light/dark palettes; pick the one that matches
+        // the active Tabler theme (data-bs-theme="dark") so the picker does not
+        // look white when the dashboard is in dark mode.
+        var dark = (document.documentElement.getAttribute('data-bs-theme') || '').toLowerCase() === 'dark';
         window.Coloris({
           el: '[data-coloris]',
           selectInput: false,
           format: 'hex',
           alpha: false,
+          theme: dark ? 'dark' : 'default',
           focusInput: true,
           swatches: [
             tabler('blue', '#066fd1'),
@@ -230,4 +286,64 @@
       }
     });
   </script>
-{% endblock %}
+  <script>
+    // Maintenance-mode instant toggle (superuser only). Unlike the theme /
+    // identity fields (saved with the form's "Aceptar"), the maintenance switch
+    // flips immediately, like the old standalone maintenance page. A small
+    // POST carries ONLY the CSRF + the toggle state, so it never drags files or
+    // half-edited theme fields, and the status label updates without reloading.
+    (function () {
+      var switchInput = document.getElementById('maintenance_mode');
+      if (!switchInput) {
+        return;
+      }
+      var status = document.getElementById('maintenance-status');
+      var csrf = '{{ csrf_token }}';
+
+      function render(maintenanceOn) {
+        if (status) {
+          status.textContent = maintenanceOn ? 'Activado' : 'Desactivado';
+          status.classList.toggle('text-primary', maintenanceOn);
+          status.classList.toggle('text-muted', !maintenanceOn);
+        }
+      }
+
+      switchInput.addEventListener('change', function () {
+        var wanted = switchInput.checked;
+        render(wanted); // optimistic update; rollback on failure
+        fetch('{% url 'core:site_configuration' %}', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': csrf,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'toggle_maintenance=1&maintenance_mode=' + (wanted ? '1' : '0'),
+        })
+          .then(function (res) {
+            if (!res.ok) {
+              throw new Error('HTTP ' + res.status);
+            }
+            return res.json();
+          })
+          .then(function (data) {
+            if (!data.ok) {
+              throw new Error(data.error || 'unknown');
+            }
+            switchInput.checked = data.maintenance_mode;
+            render(data.maintenance_mode);
+            if (typeof showToast === 'function') {
+              var verb = data.maintenance_mode ? 'activado' : 'desactivado';
+              showToast('El modo de mantenimiento ha sido ' + verb + '.', 'success');
+            }
+          })
+          .catch(function () {
+            render(!wanted); // rollback to the persisted state
+            if (typeof showToast === 'function') {
+              showToast('No se pudo cambiar el modo de mantenimiento.', 'danger');
+            }
+          });
+      });
+    })();
+  </script>
+{% endblock extrajs %}

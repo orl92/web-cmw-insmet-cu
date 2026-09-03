@@ -11,8 +11,7 @@ from apps.core.views.email_recipients import (
     EmailRecipientListUpdateView,
 )
 from apps.core.views.exports import CSVExportView
-from apps.core.views.maintenance import MaintenanceModeToggleView
-from apps.core.views.serve_file import ServeModelFileView
+from apps.core.views.serve_file import PublicServeFileView, ServeModelFileView
 from apps.core.views.site_configuration import SiteConfigurationUpdateView
 
 __all__ = [
@@ -25,7 +24,7 @@ __all__ = [
     'EmailRecipientListListView',
     'EmailRecipientListUpdateView',
     'CSVExportView',
-    'MaintenanceModeToggleView',
+    'PublicServeFileView',
     'ServeModelFileView',
     'SiteConfigurationUpdateView',
 ]

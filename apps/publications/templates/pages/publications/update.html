@@ -129,11 +129,12 @@
       <small class="text-muted">Solo archivos PDF. Máximo 10MB. Dejar en blanco si no desea cambiar el archivo actual.</small>
       {% if object.pdf %}
         <div class="mt-2">
+          {% url 'publications:pdf' object.uuid as publication_pdf_url %}
           <button type="button"
                   class="btn btn-icon btn-outline-primary btn-sm"
                   data-bs-toggle="modal"
                   data-bs-target="#documentPdfModal"
-                  data-pdf-url="{{ object.pdf.url }}"
+                  data-pdf-url="{{ publication_pdf_url }}?inline=1"
                   data-pdf-title="{{ object.title|default:'Publicación' }}"
                   data-bs-toggle="tooltip"
                   data-bs-placement="bottom"

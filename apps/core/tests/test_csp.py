@@ -55,9 +55,10 @@ class CSPSettingsTest(TestCase):
         policy_text = str(_directives())
         self.assertNotIn('imgwrfserver.cmw.insmet.cu', policy_text)
 
-    def test_object_src_is_none(self):
-        """Hardening: object-src must be 'none'."""
-        self.assertEqual(_directives()['object-src'], ["'none'"])
+    def test_object_src_is_self(self):
+        """object-src must be 'self' so the PDF modal can embed <object>
+        same-origin documents (reverted from 'none' for change 016/017)."""
+        self.assertEqual(_directives()['object-src'], ["'self'"])
 
     def test_frame_ancestors_is_self(self):
         """Hardening: frame-ancestors must be 'self'."""
@@ -109,10 +110,10 @@ class CSPHeaderPresenceTest(TestCase):
         self.assertIn("img-src 'self' data: https://cdn.jsdelivr.net", header)
 
     def test_csp_header_contains_object_src(self):
-        """Hardening: CSP header must contain object-src 'none'."""
+        """CSP header must contain object-src 'self' (PDF <object> embedding)."""
         response = self.client.get('/')
         header = response.headers.get('Content-Security-Policy', '')
-        self.assertIn("object-src 'none'", header)
+        self.assertIn("object-src 'self'", header)
 
     def test_csp_header_contains_frame_ancestors(self):
         """Hardening: CSP header must contain frame-ancestors 'self'."""
@@ -126,7 +127,7 @@ REPORT_ONLY_POLICY = {
         'default-src': ["'self'"],
         'base-uri': ["'self'"],
         'frame-ancestors': ["'self'"],
-        'object-src': ["'none'"],
+        'object-src': ["'self'"],
         'script-src': ["'self'", "'unsafe-inline'"],
         'style-src': ["'self'", "'unsafe-inline'"],
         'img-src': ["'self'", 'data:', 'https://cdn.jsdelivr.net'],

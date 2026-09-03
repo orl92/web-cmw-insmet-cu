@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.admin.models import CHANGE
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import UpdateView
@@ -74,6 +75,24 @@ class SiteConfigurationUpdateView(LoginRequiredMixin, PermissionRequiredMixin, U
                 self.request, 'El tema ha sido restablecido a los valores por defecto.'
             )
             return redirect(self.success_url)
+        if 'toggle_maintenance' in request.POST:
+            # Instant AJAX toggle from the maintenance switch (superuser only).
+            if not request.user.is_superuser:
+                return JsonResponse(
+                    {'ok': False, 'error': 'Solo los superusuarios pueden cambiar el modo.'},
+                    status=403,
+                )
+            site = self.get_object()
+            site.maintenance_mode = request.POST.get('maintenance_mode') == '1'
+            site.save()
+            verb = 'activó' if site.maintenance_mode else 'desactivó'
+            log_action(
+                user=request.user,
+                obj=site,
+                action_flag=6,  # maintenance mode (own activity-log family/icon)
+                message=f'El usuario {request.user.username} {verb} el modo de mantenimiento.',
+            )
+            return JsonResponse({'ok': True, 'maintenance_mode': site.maintenance_mode})
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):

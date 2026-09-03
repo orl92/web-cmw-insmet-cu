@@ -117,21 +117,22 @@ class AvisosLayoutSharedPartialTests(TestCase):
         return self.client.get(reverse('home:warnings_early'))
 
     def test_preview_renders_through_partial_with_pdf_url(self):
-        self._create_warning()
+        warning = self._create_warning()
         response = self._get_page()
-        self.assertContains(
-            response,
-            'data-pdf-url="http://testserver/media/warning_pdfs/aviso.pdf"',
-        )
+        pdf_url = reverse('home:warning_pdf', args=[warning.uuid]) + '?inline=1'
+        self.assertContains(response, f'data-pdf-url="{pdf_url}"')
         self.assertContains(response, 'id="documentPdfModal"')
 
     def test_each_warning_gets_its_own_preview_container(self):
-        self._create_warning()
-        self._create_warning()
+        w1 = self._create_warning()
+        w2 = self._create_warning()
         html = self._get_page().content.decode()
-        self.assertEqual(
-            2, html.count('data-pdf-url="http://testserver/media/warning_pdfs/aviso.pdf"')
-        )
+        pdf_url_1 = reverse('home:warning_pdf', args=[w1.uuid]) + '?inline=1'
+        pdf_url_2 = reverse('home:warning_pdf', args=[w2.uuid]) + '?inline=1'
+        # One "Ver PDF" trigger per warning, each linking its own public URL.
+        self.assertEqual(1, html.count(f'data-pdf-url="{pdf_url_1}"'))
+        self.assertEqual(1, html.count(f'data-pdf-url="{pdf_url_2}"'))
+        self.assertEqual(2, html.count('data-pdf-url='))
         self.assertEqual(1, html.count('id="documentPdfModal"'))
 
     def test_modal_comes_from_shared_partial_exactly_once(self):
@@ -196,8 +197,9 @@ class PublicationsSharedPartialTests(TestCase):
         pub = self._create_publication(title='Deep Learning Paper')
         html = self._get_page().content.decode()
         # The trigger is now a <button> (no href="#") carrying both attributes.
+        pdf_url = reverse('home:publication_pdf', args=[pub.uuid]) + '?inline=1'
         pattern = (
-            rf'data-pdf-url="{re.escape(pub.pdf.url)}"'
+            rf'data-pdf-url="{re.escape(pdf_url)}"'
             rf'[^>]*data-pdf-title="{re.escape(pub.title)}"'
         )
         self.assertRegex(html, pattern)
@@ -252,7 +254,11 @@ class ReportsSharedPartialTests(TestCase):
             with self.subTest(report=report_type):
                 report = self._create_report(report_type)
                 html = self._get_page(url_name).content.decode()
-                self.assertIn(f'data-pdf-url="{report.file.url}"', html)
+                pdf_url = reverse('home:weather_report_pdf', args=[report.uuid])
+                self.assertIn(
+                    f'data-pdf-url="{pdf_url}?inline=1"',
+                    html,
+                )
                 # Native <object> modal pattern for every report type.
                 self.assertIn('id="documentPdfModal"', html)
                 self.assertIn('id="documentPdfDownload"', html)
@@ -298,8 +304,9 @@ class ReportsSharedPartialTests(TestCase):
             with self.subTest(report=report_type):
                 report = self._create_report(report_type)
                 html = self._get_page(url_name).content.decode()
+                pdf_url = reverse('home:weather_report_pdf', args=[report.uuid]) + '?inline=1'
                 pattern = (
-                    rf'data-pdf-url="{re.escape(report.file.url)}"'
+                    rf'data-pdf-url="{re.escape(pdf_url)}"'
                     rf'[^>]*data-pdf-title="[^"]+"'
                 )
                 self.assertRegex(html, pattern)
@@ -328,3 +335,47 @@ class ReportsSharedPartialTests(TestCase):
                 # The literal malicious payload must be neutralized (escaped),
                 # not executed. Legit <script src=...> library tags are fine.
                 self.assertNotContains(response, '<script>alert(1)</script>')
+
+
+class PublicPdfServeTests(TestCase):
+    """PublicServeFileView: the home portal serves PDFs inline without login,
+    with X-Frame-Options: SAMEORIGIN (so the <object> embeds them in Firefox)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(
+            'author', 'author@test.com', 'pass', first_name='A', last_name='U'
+        )
+        file = SimpleUploadedFile('informe.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        cls.report = WeatherReport.objects.create(
+            user=cls.user,
+            summary='Resumen del reporte',
+            file=file,
+            report_type='today',
+        )
+
+    def test_inline_serves_with_sameorigin_and_pdf_type(self):
+        self.client.logout()
+        url = reverse('home:weather_report_pdf', args=[self.report.uuid]) + '?inline=1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('inline', response['Content-Disposition'])
+        self.assertEqual(response['X-Frame-Options'], 'SAMEORIGIN')
+
+    def test_inline_serves_without_login(self):
+        url = reverse('home:weather_report_pdf', args=[self.report.uuid]) + '?inline=1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_attachment_keeps_xframe_deny(self):
+        url = reverse('home:weather_report_pdf', args=[self.report.uuid])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('attachment', response['Content-Disposition'])
+        self.assertEqual(response['X-Frame-Options'], 'DENY')
+
+    def test_unknown_uuid_returns_404(self):
+        url = reverse('home:weather_report_pdf', args=['00000000-0000-0000-0000-000000000000'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)

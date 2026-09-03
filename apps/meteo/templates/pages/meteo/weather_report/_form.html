@@ -37,11 +37,12 @@
 </div>
 {% if object and object.file %}
   <div class="mt-3">
+    {% url 'meteo:reporte_download' object.uuid as weather_report_pdf_url %}
     <button type="button"
             class="btn btn-icon btn-outline-primary btn-sm"
             data-bs-toggle="modal"
             data-bs-target="#documentPdfModal"
-            data-pdf-url="{{ object.file.url }}"
+            data-pdf-url="{{ weather_report_pdf_url }}?inline=1"
             data-pdf-title="{{ object.summary|default:'Reporte' }}"
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"
