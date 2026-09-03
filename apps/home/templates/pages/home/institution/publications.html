@@ -2,10 +2,15 @@
 {% load static %}
 {% block content %}
   {% if objects %}
-    <div class="row row-deck">
+    <div class="row row-deck gy-4">
       {% for object in objects %}
-        <div class="col-sm-6 col-lg-4">
-          {% include 'includes/home/document_card.html' with title=object.title summary=object.summary publisher=object.author date=object.publication_date pdf_url=object.pdf_url pdf_title=object.title %}
+        <div class="col-md-6">
+          {% if object.pdf %}
+            {% url 'home:publication_pdf' object.uuid as publication_pdf_url %}
+            {% include 'includes/home/document_card.html' with title=object.title summary=object.summary publisher=object.author date=object.publication_date pdf_url=publication_pdf_url|add:'?inline=1' pdf_title=object.title %}
+          {% else %}
+            {% include 'includes/home/document_card.html' with title=object.title summary=object.summary publisher=object.author date=object.publication_date pdf_title=object.title %}
+          {% endif %}
         </div>
       {% endfor %}
     </div>

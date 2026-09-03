@@ -8,15 +8,20 @@
     {% if summary %}
       <p class="text-secondary">{{ summary|sanitize_html }}</p>
     {% endif %}
-    <div class="list-inline list-inline-dots text-secondary mb-3">
+    <div class="d-flex flex-wrap gap-2 text-secondary mb-3">
       {% if publisher %}
-        <span class="list-inline-item">
-          <i class="icon ti ti-user"></i> {{ publisher }}
+        <span>
+          {% if publisher_avatar %}
+            <span class="avatar avatar-xs rounded-circle me-1"
+                  style="background-image: url('{{ publisher_avatar }}')"></span>
+          {% endif %}
+          <span class="text-muted me-1">Autor:</span>
+          {{ publisher }}
         </span>
       {% endif %}
       {% if date %}
-        <span class="list-inline-item">
-          <i class="icon ti ti-calendar-time"></i> {{ date }}
+        <span>
+          <i class="icon ti ti-calendar"></i> {{ date }}
         </span>
       {% endif %}
     </div>

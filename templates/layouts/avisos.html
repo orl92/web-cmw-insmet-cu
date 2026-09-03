@@ -5,11 +5,16 @@
   <div class="row row-cards">
     <div class="col-12">
       {% if objects %}
-        <div class="row row-deck">
+        <div class="row row-deck gy-4">
           {% for warning in objects %}
             <div class="col-md-6">
-              {% with pdf_url=warning.absolute_file_url|default:'' %}
-                {% include 'includes/home/document_card.html' with title=warning.title|default:warning.summary publisher=warning.user.get_full_name date=warning.valid_until|date:'d/m/Y H:i' pdf_url=pdf_url pdf_title=warning.get_warning_type_display %}
+              {% with valid_hasta=warning.valid_until|date:'d/m/Y h:i A' %}
+                {% if warning.file %}
+                  {% url 'home:warning_pdf' warning.uuid as warning_pdf_url %}
+                  {% include 'includes/home/document_card.html' with title=warning.title|default:warning.summary publisher=warning.user.get_full_name publisher_avatar=warning.user.profile.get_avatar date='Válido hasta: '|add:valid_hasta pdf_url=warning_pdf_url|add:'?inline=1' pdf_title=warning.get_warning_type_display %}
+                {% else %}
+                  {% include 'includes/home/document_card.html' with title=warning.title|default:warning.summary publisher=warning.user.get_full_name publisher_avatar=warning.user.profile.get_avatar date='Válido hasta: '|add:valid_hasta pdf_title=warning.get_warning_type_display %}
+                {% endif %}
               {% endwith %}
             </div>
           {% endfor %}
