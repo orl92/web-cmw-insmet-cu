@@ -1,19 +1,24 @@
 import html
 import json
+import logging
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import Group, User
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models import Count, Exists, OuterRef, Sum
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, View
 
 from apps.commercial.models import Customer, Invoice, InvoiceItem, ServiceSubscription
 from apps.core.cache_utils import safe_cache_get, safe_cache_set
 from apps.core.models import TaskExecutionLog
 from apps.meteo.models import Forecasts, Warning
+
+logger = logging.getLogger(__name__)
 
 
 def _region_temp(f, region_key, period):
@@ -433,3 +438,47 @@ class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             }
         )
         return context
+
+
+class TaskMonitoringActionView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Acciones POST sobre un registro de tarea: reintentar o limpiar.
+
+    Requiere superuser (igual que la tabla). Reintentar solo es posible para
+    tareas cuyos argumentos se persistieron de forma segura (RETRYABLE_TASKS).
+    """
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def post(self, request, *args, **kwargs):
+        import json as _json
+        from importlib import import_module
+
+        from apps.core.apps import RETRYABLE_TASKS
+
+        execution = get_object_or_404(TaskExecutionLog, pk=self.kwargs['pk'])
+        action = request.POST.get('action')
+
+        if action == 'retry':
+            if execution.func_name not in RETRYABLE_TASKS.values() or not execution.func_args:
+                messages.error(
+                    request,
+                    'No se puede reintentar: la tarea no está marcada como segura de reencolar.',
+                )
+                return redirect('dashboard:tasks')
+            try:
+                module_name, _, func_name = execution.func_name.rpartition('.')
+                func = getattr(import_module(module_name), func_name)
+                payload = _json.loads(execution.func_args)
+                func(*payload.get('args', []), **payload.get('kwargs', {}))
+                messages.success(request, f'Tarea {execution.task_name} reencolada.')
+            except Exception:
+                logger.exception('No se pudo reintentar la tarea %s', execution.func_name)
+                messages.error(request, 'No se pudo reintentar la tarea. Revise los logs.')
+        elif action == 'delete':
+            execution.delete()
+            messages.success(request, f'Registro de {execution.task_name} eliminado.')
+        else:
+            messages.error(request, 'Acción no reconocida.')
+
+        return redirect('dashboard:tasks')

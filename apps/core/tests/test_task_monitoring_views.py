@@ -68,6 +68,168 @@ class TaskMonitoringViewTests(TestCase):
         self.assertIn('alert-danger', content)
         self.assertIn('<strong>1</strong>', content)
 
+    def test_badge_uses_lt_style(self):
+        """La tabla usa badges con estilo Tabler bg-*-lt (convención del proyecto)."""
+        TaskExecutionLog.objects.create(
+            task_id='err-badge-1',
+            task_name='send_email_task',
+            status=TaskExecutionLog.STATUS_ERROR,
+            enqueued_at=timezone.now(),
+        )
+        TaskExecutionLog.objects.create(
+            task_id='enqueued-badge-1',
+            task_name='send_email_task',
+            status=TaskExecutionLog.STATUS_ENQUEUED,
+            enqueued_at=timezone.now(),
+        )
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn('badge bg-danger-lt', content)
+        self.assertIn('badge bg-info-lt', content)
+
+    def test_actions_use_icons_and_tooltips(self):
+        """"Acciones con iconos + tooltips y args truncadas (estilo listados)."""
+        long_args = 'arg1=' + 'x' * 200
+        TaskExecutionLog.objects.create(
+            task_id='err-icon-1',
+            task_name='generate_invoice_pdf_and_email_task',
+            status=TaskExecutionLog.STATUS_ERROR,
+            enqueued_at=timezone.now(),
+            func_name='apps.core.tasks.generate_invoice_pdf_and_email_task',
+            func_args='{}',
+            args_repr=long_args,
+        )
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        # Botones de acción con clase btn-icon y tooltip.
+        self.assertIn('btn-icon btn-outline-danger btn-sm', content)
+        self.assertIn('data-bs-toggle="tooltip"', content)
+        # Iconos de las acciones (traceback / reintentar / eliminar).
+        self.assertIn('ti-code', content)
+        self.assertIn('ti-refresh', content)
+        self.assertIn('ti-trash', content)
+        # Args truncadas: el texto NO muestra los 200 chars pero el title sí.
+        self.assertNotIn(long_args + '</td>', content)
+        self.assertIn('title="' + long_args.replace('"', '&quot;') + '"', content)
+
+    def test_delete_uses_confirm_modal(self):
+        """"Eliminar" abre el modal de confirmación (estilo listados)."""
+        TaskExecutionLog.objects.create(
+            task_id='del-modal-1',
+            task_name='send_email_task',
+            status=TaskExecutionLog.STATUS_ERROR,
+            enqueued_at=timezone.now(),
+        )
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        # Botón con data-action->eliminar + pk + tooltip "Eliminar".
+        self.assertIn('action-btn', content)
+        self.assertIn('data-action="eliminar"', content)
+        self.assertIn('data-bs-original-title="Eliminar">', content)
+        # El modal de confirmación está presente con su form.
+        self.assertIn('id="confirmTaskDeleteModal"', content)
+        self.assertIn('id="confirmTaskDeleteForm"', content)
+        self.assertIn('name="action" value="delete"', content)
+
+
+class TaskMonitoringActionTests(TestCase):
+    """Acciones POST sobre un registro de tarea: reintentar y eliminar."""
+
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance()
+        cls.url = reverse('dashboard:tasks')
+        cls.superuser = User.objects.create_superuser(
+            'su_mon_action',
+            'su_mon_action@example.com',
+            'pass',
+            first_name='Su',
+            last_name='Action',
+        )
+        # El middleware CheckUserProfileMiddleware exige email + nombres completos.
+        cls.non_superuser = User.objects.create_user(
+            'reg_mon_action',
+            'reg_mon_action@example.com',
+            'pass',
+            first_name='Reg',
+            last_name='Action',
+        )
+
+    @staticmethod
+    def _log(**overrides):
+        defaults = {
+            'task_id': 'task-action-1',
+            'task_name': 'generate_invoice_pdf_and_email_task',
+            'status': TaskExecutionLog.STATUS_ERROR,
+            'enqueued_at': timezone.now(),
+            'func_name': 'apps.core.tasks.generate_invoice_pdf_and_email_task',
+            'func_args': '{"args": ["00000000-0000-0000-0000-000000000000", "http://x"]}',
+        }
+        defaults.update(overrides)
+        return TaskExecutionLog.objects.create(**defaults)
+
+    def test_retry_reenqueues_task(self):
+        execution = self._log()
+        from config.huey import huey
+
+        pending_before = huey.pending_count()
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse('dashboard:tasks_action', args=[execution.pk]),
+            {'action': 'retry'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, self.url)
+        # La tarea fue reencolada en la cola persistente.
+        self.assertEqual(huey.pending_count(), pending_before + 1)
+
+    def test_retry_non_retryable_rejected(self):
+        execution = self._log(
+            task_name='send_email_task',
+            func_name='apps.core.tasks.send_email_task',
+            func_args='',
+        )
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse('dashboard:tasks_action', args=[execution.pk]),
+            {'action': 'retry'},
+        )
+        self.assertEqual(response.status_code, 302)
+        # El registro sigue igual: no se reencoló ni se modificó.
+        execution.refresh_from_db()
+        self.assertEqual(execution.status, TaskExecutionLog.STATUS_ERROR)
+
+    def test_delete_removes_log(self):
+        execution = self._log()
+        self.client.force_login(self.superuser)
+        response = self.client.post(
+            reverse('dashboard:tasks_action', args=[execution.pk]),
+            {'action': 'delete'},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(TaskExecutionLog.objects.filter(pk=execution.pk).exists())
+
+    def test_non_superuser_blocked_from_action(self):
+        execution = self._log()
+        self.client.force_login(
+            User.objects.create_user(
+                'reg_mon_action2', 'reg_mon_action2@example.com', 'pass',
+                first_name='Reg', last_name='Action',
+            )
+        )
+        response = self.client.post(
+            reverse('dashboard:tasks_action', args=[execution.pk]),
+            {'action': 'delete'},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(TaskExecutionLog.objects.filter(pk=execution.pk).exists())
+
 
 class TaskExecutionLogAdminTests(TestCase):
     """Runtime coverage for verify gap TASK-ADMIN-1 (admin status filter)."""

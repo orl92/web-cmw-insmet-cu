@@ -8,11 +8,30 @@
     </div>
     <div class="col-auto ms-auto d-print-none">
       <div class="btn-list">
-        <a href="{% url 'dashboard:tasks' %}" class="btn btn-outline-secondary">Todos</a>
+        <a href="{% url 'dashboard:tasks' %}"
+           class="btn btn-icon btn-outline-secondary"
+           data-bs-toggle="tooltip"
+           data-bs-placement="bottom"
+           aria-label="Todos"
+           data-bs-original-title="Todos">
+          <i class="icon ti ti-list"></i>
+        </a>
         <a href="{% url 'dashboard:tasks' %}?status=ERROR"
-           class="btn btn-outline-danger">Errores</a>
+           class="btn btn-icon btn-outline-danger"
+           data-bs-toggle="tooltip"
+           data-bs-placement="bottom"
+           aria-label="Errores"
+           data-bs-original-title="Errores">
+          <i class="icon ti ti-alert-triangle"></i>
+        </a>
         <a href="{% url 'dashboard:tasks' %}?status=ENQUEUED"
-           class="btn btn-outline-info">En cola</a>
+           class="btn btn-icon btn-outline-info"
+           data-bs-toggle="tooltip"
+           data-bs-placement="bottom"
+           aria-label="En cola"
+           data-bs-original-title="En cola">
+          <i class="icon ti ti-player-play"></i>
+        </a>
       </div>
     </div>
   </div>
@@ -48,7 +67,7 @@
             <th>Inicio</th>
             <th>Fin</th>
             <th>Args</th>
-            <th>Traceback</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -57,42 +76,127 @@
               <td>{{ execution.task_name }}</td>
               <td>
                 {% if execution.status == 'ENQUEUED' %}
-                  <span class="badge bg-info">Enqueued</span>
+                  <span class="badge bg-info-lt">En cola</span>
                 {% elif execution.status == 'EXECUTING' %}
-                  <span class="badge bg-primary">Executing</span>
+                  <span class="badge bg-primary-lt">En ejecución</span>
                 {% elif execution.status == 'SUCCESS' %}
-                  <span class="badge bg-success">Success</span>
+                  <span class="badge bg-success-lt">Correcto</span>
                 {% elif execution.status == 'ERROR' %}
-                  <span class="badge bg-danger">Error</span>
+                  <span class="badge bg-danger-lt">Error</span>
                 {% elif execution.status == 'RETRYING' %}
-                  <span class="badge bg-warning">Retrying</span>
+                  <span class="badge bg-warning-lt">Reintentando</span>
                 {% elif execution.status == 'REVOKED' %}
-                  <span class="badge bg-secondary">Revoked</span>
+                  <span class="badge bg-secondary-lt">Revocada</span>
                 {% endif %}
               </td>
               <td class="text-center">{{ execution.attempts }}</td>
-              <td>{{ execution.enqueued_at|date:"d/m/Y H:i:s" }}</td>
-              <td>{{ execution.started_at|date:"d/m/Y H:i:s" }}</td>
-              <td>{{ execution.finished_at|date:"d/m/Y H:i:s" }}</td>
-              <td class="text-muted">{{ execution.args_repr }}</td>
-              <td>
-                {% if execution.status == 'ERROR' %}
-                  <button class="btn btn-sm btn-outline-danger"
-                          data-bs-toggle="collapse"
-                          data-bs-target="#tb-{{ execution.id }}"
-                          aria-expanded="false"
-                          aria-controls="tb-{{ execution.id }}">Ver traceback</button>
-                  <div class="collapse mt-2" id="tb-{{ execution.id }}">
-                    <pre class="bg-dark text-light p-2 mb-0"
-                         style="max-height:300px;
-                                overflow:auto">{{ execution.traceback }}</pre>
-                  </div>
+              <td>{{ execution.enqueued_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
+              <td>{{ execution.started_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
+              <td>{{ execution.finished_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
+              <td class="text-muted text-truncate"
+                  style="max-width:220px"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  title="{{ execution.args_repr|default:'—' }}">{{ execution.args_repr|default:"—"|truncatechars:45 }}</td>
+              <td class="text-nowrap">
+                <div class="btn-list">
+                  {% if execution.status == 'ERROR' %}
+                    <button type="button"
+                            class="btn btn-icon btn-outline-primary btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#tb-{{ execution.id }}"
+                            aria-label="Ver traceback"
+                            data-bs-original-title="Ver traceback">
+                      <i class="icon ti ti-code"></i>
+                    </button>
+                  {% endif %}
+                  {% if execution.func_name and execution.func_args %}
+                    <button type="submit"
+                            class="btn btn-icon btn-outline-info btn-sm"
+                            form="retry-{{ execution.pk }}"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            aria-label="Reintentar"
+                            data-bs-original-title="Reintentar">
+                      <i class="icon ti ti-refresh"></i>
+                    </button>
+                  {% endif %}
+                  <button type="button"
+                          class="btn btn-icon btn-outline-danger btn-sm action-btn"
+                          data-action="eliminar"
+                          data-pk="{{ execution.pk }}"
+                          data-name="{{ execution.task_name }}"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="bottom"
+                          aria-label="Eliminar"
+                          data-bs-original-title="Eliminar">
+                    <i class="icon ti ti-trash"></i>
+                  </button>
+                </div>
+                {% if execution.func_name and execution.func_args %}
+                  <form id="retry-{{ execution.pk }}"
+                        action="{% url 'dashboard:tasks_action' execution.pk %}"
+                        method="post"
+                        class="d-none">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="retry" />
+                  </form>
                 {% endif %}
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+  {% for execution in executions %}
+    {% if execution.status == 'ERROR' %}
+      <div class="modal fade" id="tb-{{ execution.id }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Traceback — {{ execution.task_name }}</h5>
+              <button type="button"
+                      class="btn-close"
+                      data-bs-dismiss="modal"
+                      aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+              <pre class="bg-dark text-light p-3 mb-0 rounded-2"
+                   style="max-height:60vh;
+                          overflow:auto">{{ execution.traceback }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+  <div class="modal modal-blur fade"
+       id="confirmTaskDeleteModal"
+       tabindex="-1"
+       role="dialog"
+       aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Eliminar registro</h5>
+          <button type="button"
+                  class="btn-close btn-close-white"
+                  data-bs-dismiss="modal"
+                  aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="confirmTaskDeleteBody"></div>
+        <div class="modal-footer">
+          <button type="button"
+                  class="btn btn-link link-secondary me-auto"
+                  data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmTaskDeleteBtn">Eliminar</button>
+        </div>
+        <form id="confirmTaskDeleteForm" method="post" style="display: none;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete" />
+        </form>
+      </div>
     </div>
   </div>
 {% endblock %}
@@ -105,6 +209,34 @@
         language: {
           url: "{% static 'dist/libs/datatables/Spanish.json' %}"
         }
+      })
+
+      /* --- Confirmación de borrado de registro (modal estilo listados) --- */
+      var confirmModal = document.getElementById('confirmTaskDeleteModal')
+      var Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap
+      var modalInstance = (Bootstrap && Bootstrap.Modal)
+        ? Bootstrap.Modal.getOrCreateInstance(confirmModal)
+        : null
+
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.action-btn')
+        if (!btn) return
+        var action = btn.dataset.action
+        if (action === 'eliminar') {
+          var pk = btn.dataset.pk
+          var name = btn.dataset.name
+          document.getElementById('confirmTaskDeleteBody').innerHTML =
+            '<p>¿Está seguro de <strong class="text-danger">eliminar</strong> el registro de ' +
+            '<strong>' + name + '</strong>?</p>' +
+            '<p class="text-muted">El historial de esta ejecución se borrará de manera permanente.</p>'
+          document.getElementById('confirmTaskDeleteForm').action =
+            '{% url "dashboard:tasks_action" 0 %}'.replace('/0/', '/' + pk + '/')
+          if (modalInstance) modalInstance.show()
+        }
+      })
+
+      document.getElementById('confirmTaskDeleteBtn').addEventListener('click', function () {
+        document.getElementById('confirmTaskDeleteForm').submit()
       })
     })
   </script>

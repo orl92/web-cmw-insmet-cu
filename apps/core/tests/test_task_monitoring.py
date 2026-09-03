@@ -87,3 +87,44 @@ class TaskMonitoringTests(TestCase):
             [TaskExecutionLog.STATUS_ERROR, TaskExecutionLog.STATUS_RETRYING],
         )
         self.assertTrue(log.traceback)
+
+    def test_retryable_task_persists_func_name_and_args(self):
+        """generate_invoice_pdf_and_email_task es retryable: su func_name y func_args
+        deben persistirse para poder reencolarla desde el dashboard."""
+
+        def run():
+            generate_invoice_pdf_and_email_task(
+                invoice_uuid='00000000-0000-0000-0000-000000000000',
+                site_url='http://testserver',
+            )
+
+        self._with_immediate(run)
+
+        log = TaskExecutionLog.objects.filter(
+            task_name='generate_invoice_pdf_and_email_task'
+        ).first()
+        self.assertIsNotNone(log)
+        self.assertEqual(
+            log.func_name, 'apps.core.tasks.generate_invoice_pdf_and_email_task'
+        )
+        self.assertTrue(log.func_args)
+        self.assertIn('00000000-0000-0000-0000-000000000000', log.func_args)
+
+    @override_settings(EMAIL_BACKEND=LOCMEM)
+    def test_non_retryable_task_keeps_func_args_empty(self):
+        """send_email_task NO es retryable: su func_name se guarda pero func_args
+        queda vacío (nunca se persisten datos sensibles)."""
+
+        def run():
+            send_email_task(
+                subject='Asunto',
+                html_message='<p>Hola</p>',
+                from_email='from@example.com',
+                recipients=['to@example.com'],
+            )
+
+        self._with_immediate(run)
+
+        log = TaskExecutionLog.objects.filter(task_name='send_email_task').first()
+        self.assertIsNotNone(log)
+        self.assertFalse(log.func_args)

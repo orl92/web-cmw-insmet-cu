@@ -1,3 +1,4 @@
+import json
 import logging
 import traceback
 
@@ -9,6 +10,50 @@ from huey import signals as huey_signals
 from config.huey import huey
 
 logger = logging.getLogger(__name__)
+
+# Funciones seguras de re-encolar. Sus argumentos son ligeros, JSON-serializables
+# y NO contienen datos sensibles (sin recipients, cuerpos de correo ni adjuntos).
+# Solo para estas se persiste func_args (necesario para reintentar el trabajo) y
+# su dotted path (para resolver la función con importlib).
+#   clave  -> el nombre con que Huey registra la tarea (task.name / task_id)
+#   valor  -> full dotted path de la función
+RETRYABLE_TASKS = {
+    'generate_invoice_pdf_and_email_task': 'apps.core.tasks.generate_invoice_pdf_and_email_task',
+}
+
+
+def _func_name(task):
+    """Full dotted path of the task function (e.g. 'apps.core.tasks.send_email_task').
+
+    En la señal Huey el objeto task NO expone .func; solo tenemos task.name (corto)
+    y los args. Para poder re-encolar con importlib resolvemos el dotted path a
+    partir del retryable whitelist; el resto guarda solo el nombre corto (informativo).
+    """
+    try:
+        name = getattr(task, 'name', '') or ''
+        return RETRYABLE_TASKS.get(name, name)
+    except Exception:
+        return ''
+
+
+def _safe_args_json(task):
+    """JSON-serialized args for RETRYABLE_TASKS, else empty.
+
+    Only tasks in RETRYABLE_TASKS get their arguments persisted, and only when
+    they are safely JSON-serializable; anything else keeps func_args empty so a
+    retire from the dashboard is impossible (no sensitive data stored).
+    """
+    name = _func_name(task)
+    if name not in RETRYABLE_TASKS.values():
+        return ''
+    try:
+        args = getattr(task, 'args', None) or ()
+        kwargs = getattr(task, 'kwargs', None) or {}
+        payload = {'args': list(args), 'kwargs': dict(kwargs)}
+        json.dumps(payload)  # validate serializable
+        return json.dumps(payload)
+    except (TypeError, ValueError):
+        return ''
 
 
 def _safe_args(task):
@@ -63,6 +108,8 @@ class CoreConfig(AppConfig):
                         'status': TaskExecutionLog.STATUS_ENQUEUED,
                         'enqueued_at': timezone.now(),
                         'args_repr': _safe_args(task),
+                        'func_name': _func_name(task),
+                        'func_args': _safe_args_json(task),
                     },
                 )
             except Exception:

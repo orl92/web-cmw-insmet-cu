@@ -331,6 +331,12 @@ class TaskExecutionLog(models.Model):
     error_message = models.TextField(blank=True)
     traceback = models.TextField(blank=True)
     args_repr = models.CharField(max_length=512, blank=True)
+    # Referencia para reintentos: name completo de la función y sus argumentos
+    # serializados como JSON. func_args solo se persiste para tareas marcadas
+    # como retryable (ver RETRYABLE_TASKS en apps/core/apps.py) para no exponer
+    # datos sensibles (recipients, cuerpos de correo, adjuntos).
+    func_name = models.CharField(max_length=255, blank=True)
+    func_args = models.TextField(blank=True)
 
     class Meta:
         ordering = ['-enqueued_at']
