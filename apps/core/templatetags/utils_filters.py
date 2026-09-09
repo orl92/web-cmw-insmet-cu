@@ -8,6 +8,16 @@ from django.utils.translation import gettext as _
 
 register = template.Library()
 
+_ES_MX_TRANS = str.maketrans(',.', '.,')
+
+
+@register.filter(name='format_cup')
+def format_cup(value):
+    """Formatea un precio en CUP: `$1.234,56` (miles con `.`, decimal con `,`)."""
+    if not value:
+        return '$0,00'
+    return f"${format(value, ',.2f').translate(_ES_MX_TRANS)}"
+
 
 @register.filter
 def get_dict_value(dictionary, key):
