@@ -183,6 +183,68 @@ class ServicesCommercialUiTests(TestCase):
         self.assertRegex(html, pattern)
 
 
+class CommercialServicesListViewStateScopeTests(TestCase):
+    """mis-servicios-cliente — CommercialServicesListView muestra TODAS las
+    suscripciones del cliente (requested, pending, paid, expired), ya no solo
+    las pagadas activas; el Case/When ordena requested -> pending -> paid ->
+    expired."""
+
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance_mode()
+        cls.provider = User.objects.create_user(
+            'allstatesprov', 'allstatesprov@test.com', 'pass', first_name='P', last_name='V'
+        )
+        cls.client_user = User.objects.create_user(
+            'allstatescli', 'allstatescli@test.com', 'pass', first_name='C', last_name='V'
+        )
+        cls.customer = Customer.objects.create(
+            user=cls.client_user,
+            client_type=Customer.ClientType.NATURAL,
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='12345678',
+        )
+
+    def _make_sub(self, status, title_suffix):
+        service = Service.objects.create(
+            user=self.provider,
+            title=f'Servicio {title_suffix}',
+            summary=f'Sum {title_suffix}',
+            service_type=Service.COMMERCIAL,
+            price=10,
+        )
+        return ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=service,
+            start_date=timezone.now() - timedelta(days=30),
+            end_date=timezone.now() + timedelta(days=30),
+            payment_status=status,
+            payment_method='transfer',
+        )
+
+    def test_lists_all_subscription_states_in_priority_order(self):
+        self._make_sub('expired', 'expirado')
+        self._make_sub('paid', 'activo')
+        self._make_sub('pending', 'pendiente')
+        self._make_sub('requested', 'solicitado')
+        self.client.force_login(self.client_user)
+        html = self.client.get(reverse('home:services_commercial')).content.decode()
+        self.assertIn('Servicio solicitado', html)
+        self.assertIn('Servicio pendiente', html)
+        self.assertIn('Servicio activo', html)
+        self.assertIn('Servicio expirado', html)
+        # El orden Case/When: requested(0) -> pending(1) -> paid(2) -> expired(3).
+        positions = [
+            html.index('Servicio solicitado'),
+            html.index('Servicio pendiente'),
+            html.index('Servicio activo'),
+            html.index('Servicio expirado'),
+        ]
+        self.assertEqual(positions, sorted(positions))
+
+
 class ServicesCommercialStaffButtonTests(TestCase):
     """Task 6.3 — staff/management buttons on the public commercial view."""
 
@@ -375,7 +437,7 @@ class ServiceReRequestUiTests(TestCase):
         self._login()
         html = self.client.get(self._detail_url()).content.decode()
         self.assertIn('subscription-form', html)
-        self.assertIn('Solicitar de nuevo', html)
+        self.assertIn('Solicitar', html)
         self.assertIn('activa hasta', html)
         self.assertNotIn('Ya tienes una solicitud o suscripción para este servicio.', html)
 
@@ -402,6 +464,9 @@ class ServiceReRequestUiTests(TestCase):
         self.assertNotIn('Activo', html)
         self.assertNotIn('Solicitar de nuevo', html)
         self.assertIn('Solicitar', html)
+        # Badge de categoría y precio format_cup (fixture pronostico + $20).
+        self.assertIn('Pronóstico', html)
+        self.assertIn('$20,00', html)
 
     def test_public_list_requested_shows_single_solicitar(self):
         self._make_sub(payment_status='requested', payment_method='transfer')
@@ -420,3 +485,89 @@ class ServiceReRequestUiTests(TestCase):
         self.assertNotIn('Solicitado', html)
         self.assertNotIn('Solicitar de nuevo', html)
         self.assertIn('Solicitar', html)
+
+
+class MisServiciosMenuItemTests(TestCase):
+    """mis-servicios-cliente — el item 'Mis Servicios' del menú es visible con
+    CUALQUIER estado de suscripción (requested/pending/paid/expired), no solo
+    con pagadas activas (condición `or` de los 4 contadores en menu-list.html)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance_mode()
+        cls.provider = User.objects.create_user(
+            'menuitemprov', 'menuitemprov@test.com', 'pass', first_name='P', last_name='M'
+        )
+        cls.client_user = User.objects.create_user(
+            'menuitemcli', 'menuitemcli@test.com', 'pass', first_name='C', last_name='M'
+        )
+        cls.customer = Customer.objects.create(
+            user=cls.client_user,
+            client_type=Customer.ClientType.NATURAL,
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='12345678',
+        )
+        cls.service = Service.objects.create(
+            user=cls.provider,
+            title='Servicio menú',
+            summary='Sum',
+            service_type=Service.COMMERCIAL,
+            price=10,
+        )
+
+    def _sub(self, status, **kwargs):
+        defaults = {
+            'customer': self.customer,
+            'service': self.service,
+            'start_date': timezone.now() - timedelta(days=30),
+            'end_date': timezone.now() + timedelta(days=30),
+            'payment_status': status,
+            'payment_method': 'transfer',
+        }
+        defaults.update(kwargs)
+        return ServiceSubscription.objects.create(**defaults)
+
+    def _menu_html(self):
+        # Cualquier página con layouts/home.html renderiza el menú; la lista
+        # pública de servicios es la más liviana.
+        return self.client.get(reverse('home:services_public')).content.decode()
+
+    def _menu_item_regex(self):
+        # El item real del menú: un <a class="dropdown-item" href="..."> cuya
+        # etiqueta visible es "Mis Servicios". El comentario HTML con el mismo
+        # texto se renderiza SIEMPRE en el template, así que asertar el label
+        # suelto daría falsos positivos (anónimo con item oculto).
+        url = reverse('home:services_commercial')
+        return re.compile(
+            rf'<a class="dropdown-item[^"]*"[^>]*href="{re.escape(url)}"[^>]*>\s*Mis Servicios'
+        )
+
+    def test_menu_shows_mis_servicios_with_requested_subscription(self):
+        self._sub('requested')
+        self.client.force_login(self.client_user)
+        html = self._menu_html()
+        self.assertRegex(html, self._menu_item_regex())
+
+    def test_menu_shows_mis_servicios_with_pending_subscription(self):
+        self._sub('pending')
+        self.client.force_login(self.client_user)
+        html = self._menu_html()
+        self.assertRegex(html, self._menu_item_regex())
+
+    def test_menu_shows_mis_servicios_with_paid_subscription(self):
+        self._sub('paid')
+        self.client.force_login(self.client_user)
+        html = self._menu_html()
+        self.assertRegex(html, self._menu_item_regex())
+
+    def test_menu_shows_mis_servicios_with_expired_subscription(self):
+        self._sub('expired', end_date=timezone.now() - timedelta(days=1))
+        self.client.force_login(self.client_user)
+        html = self._menu_html()
+        self.assertRegex(html, self._menu_item_regex())
+
+    def test_menu_hides_mis_servicios_for_anonymous_user(self):
+        html = self._menu_html()
+        self.assertNotRegex(html, self._menu_item_regex())
