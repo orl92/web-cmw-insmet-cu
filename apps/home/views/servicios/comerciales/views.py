@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Case, IntegerField, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -15,18 +16,31 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
     context_object_name = 'subscriptions'
     paginate_by = 10
 
+    STATUS_RIBBONS = {
+        'activo': 'bg-green',
+        'pendiente de pago': 'bg-orange',
+        'solicitado': 'bg-blue',
+        'expirado': 'bg-red',
+    }
+
     def get_queryset(self):
         try:
             customer = self.request.user.commercial_customer
         except Customer.DoesNotExist:
             return ServiceSubscription.objects.none()
-        ahora = timezone.now()
         return (
-            ServiceSubscription.objects.filter(
-                customer=customer, payment_status='paid', end_date__gt=ahora
-            )
+            ServiceSubscription.objects.filter(customer=customer, record_active=True)
             .select_related('service', 'service__user')
-            .order_by('start_date')
+            .order_by(
+                Case(
+                    When(payment_status='requested', then=0),
+                    When(payment_status='pending', then=1),
+                    When(payment_status='paid', then=2),
+                    default=3,
+                    output_field=IntegerField(),
+                ),
+                '-start_date',
+            )
         )
 
     def get_context_data(self, **kwargs):
@@ -34,6 +48,7 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
         context['title'] = 'Mis Servicios'
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
+        context['status_ribbon'] = self.STATUS_RIBBONS
         return context
 
 
@@ -53,30 +68,6 @@ class PublicCommercialServicesListView(ListView):
         context['title'] = 'Comerciales'
         context['parent'] = 'servicios'
         context['segment'] = 'comercial_p'
-        context['now'] = timezone.now()
-        if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
-            customer = self.request.user.commercial_customer
-            subs = ServiceSubscription.objects.filter(customer=customer)
-            # Deterministic per-service state: requested/pending (in-flight) >
-            # paid active > expired/none. Dict comprehension would leave the
-            # last row for duplicate (customer, service), which is wrong after
-            # re-requesting a service with an active subscription.
-            context['user_subscriptions'] = {}
-            for sub in subs:
-                current = context['user_subscriptions'].get(sub.service_id)
-                if (
-                    not current
-                    or sub.payment_status in ('requested', 'pending')
-                    or (
-                        current.payment_status == 'expired'
-                        and sub.payment_status == 'paid'
-                        and sub.end_date
-                        and sub.end_date > timezone.now()
-                    )
-                ):
-                    context['user_subscriptions'][sub.service_id] = sub
-        else:
-            context['user_subscriptions'] = {}
         return context
 
 
@@ -103,7 +94,8 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         price = self.service.price
         context['estimated_total'] = price * 1 if price else 0
         context['billing_period'] = self.service.get_billing_period_display()
-        context['price_per_period'] = self.service.get_price_per_period_display()
+        # El precio crudo se expone vía context['service'].price; el template
+        # compone el formato con el filtro format_cup (fase 3).
         context['related_services'] = (
             Service.objects.filter(
                 service_type=Service.COMMERCIAL, record_active=True

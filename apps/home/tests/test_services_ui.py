@@ -225,7 +225,9 @@ class ServicesCommercialStaffButtonTests(TestCase):
         self.assertNotIn('Editar', html)
         self.assertNotIn('Nuevo', html)
 
-    def test_pending_non_qr_shows_invoice_guidance(self):
+    def test_pending_non_qr_public_catalog_is_state_neutral(self):
+        """REQ-06: la guía 'Ver factura' para pending sin QR vive en Mis Servicios
+        (template de la fase 3); el catálogo público no la renderiza."""
         client_user = User.objects.create_user(
             'clientnonq',
             'clientnonq@test.com',
@@ -251,8 +253,10 @@ class ServicesCommercialStaffButtonTests(TestCase):
         )
         self.client.force_login(client_user)
         html = self._get_page().content.decode()
-        self.assertIn('Ver factura', html)
-        self.assertIn(reverse('commercial:factura_list'), html)
+        self.assertNotIn('Ver factura', html)
+        self.assertNotIn('Pendiente de pago', html)
+        self.assertNotIn('Solicitar de nuevo', html)
+        self.assertIn('Solicitar', html)
 
 
 class ServicesVisibilityFilterTests(TestCase):
@@ -390,26 +394,29 @@ class ServiceReRequestUiTests(TestCase):
         self.assertNotIn('id="subscription-form"', html)
         self.assertNotIn('type="submit"', html)
 
-    def test_public_list_active_shows_re_request_button(self):
+    def test_public_list_active_shows_state_neutral_card(self):
+        # REQ-06: el catálogo es neutral al estado; sin ribbon ni re-solicitud.
         self._make_sub(payment_status='paid', payment_method='transfer')
         self._login()
         html = self.client.get(reverse('home:services_commercial_public')).content.decode()
-        self.assertIn('Activo', html)
-        self.assertIn('Solicitar de nuevo', html)
-
-    def test_public_list_requested_shows_no_button(self):
-        self._make_sub(payment_status='requested', payment_method='transfer')
-        self._login()
-        html = self.client.get(reverse('home:services_commercial_public')).content.decode()
-        self.assertIn('Solicitado', html)
-        self.assertNotIn('Solicitar de nuevo', html)
-
-    def test_public_list_deterministic_precedence(self):
-        self._make_sub(payment_status='paid', payment_method='transfer')
-        self._make_sub(payment_status='requested', payment_method='transfer')
-        self._login()
-        html = self.client.get(reverse('home:services_commercial_public')).content.decode()
-        # in-flight (requested) wins over paid active
-        self.assertIn('Solicitado', html)
-        self.assertNotIn('Solicitar de nuevo', html)
         self.assertNotIn('Activo', html)
+        self.assertNotIn('Solicitar de nuevo', html)
+        self.assertIn('Solicitar', html)
+
+    def test_public_list_requested_shows_single_solicitar(self):
+        self._make_sub(payment_status='requested', payment_method='transfer')
+        self._login()
+        html = self.client.get(reverse('home:services_commercial_public')).content.decode()
+        self.assertNotIn('Solicitado', html)
+        self.assertNotIn('Solicitar de nuevo', html)
+        self.assertIn('Solicitar', html)
+
+    def test_public_list_state_neutral_regardless_of_subscription_state(self):
+        self._make_sub(payment_status='paid', payment_method='transfer')
+        self._make_sub(payment_status='requested', payment_method='transfer')
+        self._login()
+        html = self.client.get(reverse('home:services_commercial_public')).content.decode()
+        self.assertNotIn('Activo', html)
+        self.assertNotIn('Solicitado', html)
+        self.assertNotIn('Solicitar de nuevo', html)
+        self.assertIn('Solicitar', html)

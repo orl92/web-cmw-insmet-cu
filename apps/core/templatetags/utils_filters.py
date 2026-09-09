@@ -69,6 +69,8 @@ def remove_images_and_special_chars(value):
 
 @register.filter
 def get_item(dictionary, key):
+    if not isinstance(dictionary, dict):
+        return None
     return dictionary.get(key)
 
 
