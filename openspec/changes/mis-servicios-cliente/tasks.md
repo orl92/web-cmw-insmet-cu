@@ -34,11 +34,11 @@ Chain strategy: stacked-to-main
 
 ## Phase 2: Views + Context Processor
 
-- [ ] 2.1 Modify `CommercialServicesListView.get_queryset` in `apps/home/views/servicios/comerciales/views.py`: remove `payment_status='paid', end_date__gt=ahora` filter. Add `Case(When)` ordering: requested=0, pending=1, paid=2, default=3, then `-start_date`.
-- [ ] 2.2 Add `STATUS_RIBBONS` dict and inject `status_ribbon` in `CommercialServicesListView.get_context_data`.
-- [ ] 2.3 Modify `PublicCommercialServicesListView.get_context_data`: remove `user_subscriptions` and `now` from context (keep `title`, `parent`, `segment`).
-- [ ] 2.4 Fix `client_pending_actions` bug in `apps/core/context_processors.py:75–82`: compute `client_pending_actions = client_requested_count + client_pending_count` in the normal path (after both queries), not only in the `except`.
-- [ ] 2.5 Modify `ServiceDetailView.get_context_data`: replace `price_per_period` with raw `format_cup`-ready `price` for template use; keep `billing_period` and `estimated_total`.
+- [x] 2.1 Modify `CommercialServicesListView.get_queryset` in `apps/home/views/servicios/comerciales/views.py`: remove `payment_status='paid', end_date__gt=ahora` filter. Add `Case(When)` ordering: requested=0, pending=1, paid=2, default=3, then `-start_date`.
+- [x] 2.2 Add `STATUS_RIBBONS` dict and inject `status_ribbon` in `CommercialServicesListView.get_context_data`.
+- [x] 2.3 Modify `PublicCommercialServicesListView.get_context_data`: remove `user_subscriptions` and `now` from context (keep `title`, `parent`, `segment`).
+- [x] 2.4 Fix `client_pending_actions` bug in `apps/core/context_processors.py:75–82`: compute `client_pending_actions = client_requested_count + client_pending_count` in the normal path (after both queries), not only in the `except`.
+- [x] 2.5 Modify `ServiceDetailView.get_context_data`: replace `price_per_period` with raw `format_cup`-ready `price` for template use; keep `billing_period` and `estimated_total`.
 
 ## Phase 3: Templates
 
