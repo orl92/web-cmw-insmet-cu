@@ -679,7 +679,7 @@ class ServiceListRenderTests(TestCase):
     def test_commercial_row_keeps_price_and_subscription_count(self):
         self.client.force_login(self.admin)
         html = self.client.get(self.url).content.decode()
-        self.assertIn('$45.50', html)
+        self.assertIn('$45,50', html)
         self.assertIn('0', html)
 
     def test_reactivate_button_only_for_inactive_services(self):
