@@ -42,11 +42,11 @@ Chain strategy: stacked-to-main
 
 ## Phase 3: Templates
 
-- [ ] 3.1 Rewrite `apps/home/templates/pages/home/services/commercial.html`: dynamic ribbon via `status_ribbon|get_item:subscription.status_display`; contextual actions per state (activo → Ver PDF, pending+qr → Ver factura+Pagar QR, pending other → Ver factura, requested → "En proceso", expired → Solicitar); calendar icon before date range; `format_cup` for price.
-- [ ] 3.2 Rewrite `apps/home/templates/pages/home/services/commercial_public.html`: remove ribbon blocks (lines 20–32) and per-state button blocks (lines 58–91); add `service.get_service_category_display` badge, `service.code` if exists, `format_cup` for price, single button: "Solicitar" (logged in) / "Iniciar sesión" with `ti ti-login`. Add `{% load my_filters %}` to `commercial.html` for `format_cup`.
-- [ ] 3.3 Update `apps/home/templates/pages/home/services/service_detail.html`: unify submit to "Solicitar" + `ti ti-send` (line 157), Cancelar with `ti ti-x`, related "Ver" with `ti ti-eye`, price with `format_cup`.
-- [ ] 3.4 Update `templates/includes/home/menu-list.html:159`: change `client_active_count > 0` to `client_active_count > 0 or client_expired_count > 0 or client_requested_count > 0 or client_pending_count > 0`; add badge `client_pending_actions` (requested+pending) on "Mis Servicios" link.
-- [ ] 3.5 Verify: `python manage.py check` and `python manage.py test apps.home apps.core` green.
+- [x] 3.1 Rewrite `apps/home/templates/pages/home/services/commercial.html`: dynamic ribbon via `status_ribbon|get_item:subscription.status_display`; contextual actions per state (activo → Ver PDF, pending+qr → Ver factura+Pagar QR, pending other → Ver factura, requested → "En proceso", expired → Solicitar); calendar icon before date range; `format_cup` for price.
+- [x] 3.2 Rewrite `apps/home/templates/pages/home/services/commercial_public.html`: remove ribbon blocks (lines 20–32) and per-state button blocks (lines 58–91); add `service.get_service_category_display` badge, `service.code` if exists, `format_cup` for price, single button: "Solicitar" (logged in) / "Iniciar sesión" with `ti ti-login`. Add `{% load my_filters %}` to `commercial.html` for `format_cup`.
+- [x] 3.3 Update `apps/home/templates/pages/home/services/service_detail.html`: unify submit to "Solicitar" + `ti ti-send` (line 157), Cancelar with `ti ti-x`, related "Ver" with `ti ti-eye`, price with `format_cup`.
+- [x] 3.4 Update `templates/includes/home/menu-list.html:159`: change `client_active_count > 0` to `client_active_count > 0 or client_expired_count > 0 or client_requested_count > 0 or client_pending_count > 0`; add badge `client_pending_actions` (requested+pending) on "Mis Servicios" link.
+- [x] 3.5 Verify: `python manage.py check` and `python manage.py test apps.home apps.core` green.
 
 ## Phase 4: Tests
 

@@ -33,11 +33,11 @@
             {% if service.service_type == 'commercial' %}
               <div class="mb-2">
                 <i class="icon me-1 ti ti-currency-dollar"></i>
-                Precio por {{ service.get_billing_period_display }}: <strong>${{ service.price|floatformat:2 }} CUP</strong>
+                Precio por {{ service.get_billing_period_display }}: <strong>{{ service.price|format_cup }} CUP</strong>
               </div>
               <div class="mb-2">
                 <i class="icon me-1 ti ti-point"></i>
-                Monto estimado (1 {{ service.get_billing_period_display }}): <strong class="text-primary">${{ estimated_total|floatformat:2 }} CUP</strong>
+                Monto estimado (1 {{ service.get_billing_period_display }}): <strong class="text-primary">{{ estimated_total|format_cup }} CUP</strong>
               </div>
             {% else %}
               <div class="mb-2">
@@ -141,7 +141,9 @@
                   <div class="text-secondary small text-truncate">{{ related.summary }}</div>
                   <div class="mt-2">
                     <a href="{% url 'home:services_commercial_detail' related.uuid %}"
-                       class="btn btn-sm btn-outline-primary">Ver</a>
+                       class="btn btn-sm btn-outline-primary">
+                      <i class="icon ti ti-eye"></i> Ver
+                    </a>
                   </div>
                 </div>
               </div>
@@ -154,15 +156,21 @@
     <div class="card-footer">
       {% if user.is_authenticated and user.commercial_customer and not in_flight_subscription %}
         {% if service.service_type == 'commercial' %}
-          <button type="submit" form="subscription-form" class="btn btn-primary">{% if active_subscription %}Solicitar de nuevo{% else %}Aceptar{% endif %}</button>
+          <button type="submit" form="subscription-form" class="btn btn-primary">
+            <i class="icon ti ti-send"></i> Solicitar
+          </button>
         {% else %}
           <button type="submit" form="subscription-form" class="btn btn-success">Solicitar servicio público</button>
         {% endif %}
         <a href="{% url 'home:services_commercial_public' %}"
-           class="btn btn-secondary">Cancelar</a>
+           class="btn btn-secondary">
+          <i class="icon ti ti-x"></i> Cancelar
+        </a>
       {% else %}
         <a href="{% url 'home:services_commercial_public' %}"
-           class="btn btn-secondary">Cancelar</a>
+           class="btn btn-secondary">
+          <i class="icon ti ti-x"></i> Cancelar
+        </a>
       {% endif %}
     </div>
   </div>

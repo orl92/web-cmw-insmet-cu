@@ -155,8 +155,8 @@
           {% endif %}
         {% endif %}
       </a>
-      <!-- Mis Servicios (solo clientes con servicios activos) -->
-      {% if user.is_authenticated and user.commercial_customer and client_active_count > 0 %}
+      <!-- Mis Servicios (clientes con ≥1 suscripción en cualquier estado) -->
+      {% if user.is_authenticated and user.commercial_customer and client_active_count > 0 or client_expired_count > 0 or client_requested_count > 0 or client_pending_count > 0 %}
         <div class="dropdown-divider"></div>
         <a class="dropdown-item
                   {% if 'comerciales' in segment %}active{% endif %}"
@@ -165,6 +165,9 @@
           Mis Servicios
           {% if client_expired_count > 0 %}
             <span class="badge bg-red-lt ms-2">{{ client_expired_count }}</span>
+          {% endif %}
+          {% if client_pending_actions > 0 %}
+            <span class="badge bg-orange ms-2">{{ client_pending_actions }}</span>
           {% endif %}
         </a>
       {% endif %}
