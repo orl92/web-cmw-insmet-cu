@@ -2,7 +2,7 @@ schema: spec-driven
 
 context: |
   Project: web-cmw-insmet-cu (Centro Meteorológico Provincial Camagüey)
-  Stack: Django 5.1.4 (pinned in requirements.txt; legacy tech-stack.md removed
+  Stack: Django 5.2.17 (pinned in requirements.txt; legacy tech-stack.md removed
          in fresh-start — single source of truth is requirements.txt + AGENTS.md),
          DRF 3.17, drf-spectacular + sidecar, Python 3.12.
   Architecture: Monolith Django; apps live under apps/ (api, user_auth, core,
@@ -75,7 +75,7 @@ testing:
     - unit: apps/*/tests/test_*.py (Django TestCase)
     - integration: apps/api/tests/test_api.py (DRF APITestCase)
   gotchas:
-    - "Django is pinned to 5.1.4 in requirements.txt (tech-stack.md corrected); do not assume 5.2 APIs."
+    - "Django is pinned to 5.2.17 in requirements.txt; do not assume 4.x/5.1 APIs"
     - "App test labels must be full dotted path (apps.meteo); short label no longer resolves in Django 5.2+."
     - "Migrations are NOT versioned (.gitignore); always run makemigrations in setup."
     - "pre-commit hooks download from PyPI on first run; use `pre-commit install --install-hooks` (not bare `pre-commit install`) behind proxy."
