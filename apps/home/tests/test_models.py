@@ -171,7 +171,7 @@ class StormWarningViewContextTests(TestCase):
 class PublicServicesViewContextTests(TestCase):
     def test_context_title(self):
         response = self.client.get(reverse('home:services_public'))
-        self.assertEqual(response.context['title'], 'Servicios Públicos')
+        self.assertEqual(response.context['title'], 'Públicos')
 
     def test_context_parent_segment(self):
         response = self.client.get(reverse('home:services_public'))

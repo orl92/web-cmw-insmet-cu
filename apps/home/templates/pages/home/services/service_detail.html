@@ -52,20 +52,26 @@
       </div>
       <hr class="my-4">
       {% if user.is_authenticated and user.commercial_customer %}
-        {% if existing_subscription %}
+        {% if in_flight_subscription %}
           <div class="alert alert-info d-flex align-items-center" role="alert">
             <i class="icon me-2 ti ti-info-circle"></i>
             <div>
-              {% if existing_subscription.payment_status == 'paid' and existing_subscription.is_active %}
-                Ya tienes una suscripción activa a este servicio.
-              {% elif existing_subscription.payment_status == 'pending' %}
+              {% if in_flight_subscription.payment_status == 'pending' %}
                 Tienes una factura pendiente de pago.
-              {% elif existing_subscription.payment_status == 'requested' %}
+              {% elif in_flight_subscription.payment_status == 'requested' %}
                 Ya has solicitado este servicio. Estamos procesando tu solicitud.
               {% endif %}
             </div>
           </div>
         {% else %}
+          {% if active_subscription %}
+            <div class="alert alert-info d-flex align-items-center" role="alert">
+              <i class="icon me-2 ti ti-info-circle"></i>
+              <div>
+                Tienes una suscripción activa hasta {{ active_subscription.end_date }}; la nueva solicitud se procesará junto a la vigente.
+              </div>
+            </div>
+          {% endif %}
           <form method="post"
                 id="subscription-form"
                 data-category="{{ service.service_category }}">
@@ -146,9 +152,9 @@
     </div>
     {# Fin card-body #}
     <div class="card-footer">
-      {% if user.is_authenticated and user.commercial_customer and not existing_subscription %}
+      {% if user.is_authenticated and user.commercial_customer and not in_flight_subscription %}
         {% if service.service_type == 'commercial' %}
-          <button type="submit" form="subscription-form" class="btn btn-primary">Aceptar</button>
+          <button type="submit" form="subscription-form" class="btn btn-primary">{% if active_subscription %}Solicitar de nuevo{% else %}Aceptar{% endif %}</button>
         {% else %}
           <button type="submit" form="subscription-form" class="btn btn-success">Solicitar servicio público</button>
         {% endif %}

@@ -44,7 +44,9 @@ class PublicCommercialServicesListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        return Service.objects.filter(service_type=Service.COMMERCIAL).order_by('title')
+        return Service.objects.filter(
+            service_type=Service.COMMERCIAL, record_active=True
+        ).order_by('title')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -55,7 +57,24 @@ class PublicCommercialServicesListView(ListView):
         if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
             customer = self.request.user.commercial_customer
             subs = ServiceSubscription.objects.filter(customer=customer)
-            context['user_subscriptions'] = {sub.service_id: sub for sub in subs}
+            # Deterministic per-service state: requested/pending (in-flight) >
+            # paid active > expired/none. Dict comprehension would leave the
+            # last row for duplicate (customer, service), which is wrong after
+            # re-requesting a service with an active subscription.
+            context['user_subscriptions'] = {}
+            for sub in subs:
+                current = context['user_subscriptions'].get(sub.service_id)
+                if (
+                    not current
+                    or sub.payment_status in ('requested', 'pending')
+                    or (
+                        current.payment_status == 'expired'
+                        and sub.payment_status == 'paid'
+                        and sub.end_date
+                        and sub.end_date > timezone.now()
+                    )
+                ):
+                    context['user_subscriptions'][sub.service_id] = sub
         else:
             context['user_subscriptions'] = {}
         return context
@@ -68,7 +87,10 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
 
     def dispatch(self, request, *args, **kwargs):
         self.service = get_object_or_404(
-            Service, uuid=kwargs['uuid'], service_type=Service.COMMERCIAL
+            Service,
+            uuid=kwargs['uuid'],
+            service_type=Service.COMMERCIAL,
+            record_active=True,
         )
         return super().dispatch(request, *args, **kwargs)
 
@@ -83,19 +105,31 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         context['billing_period'] = self.service.get_billing_period_display()
         context['price_per_period'] = self.service.get_price_per_period_display()
         context['related_services'] = (
-            Service.objects.filter(service_type=Service.COMMERCIAL)
+            Service.objects.filter(
+                service_type=Service.COMMERCIAL, record_active=True
+            )
             .exclude(uuid=self.service.uuid)
             .order_by('title')[:4]
         )
 
         if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
             customer = self.request.user.commercial_customer
-            existing = (
-                ServiceSubscription.objects.filter(customer=customer, service=self.service)
-                .exclude(payment_status='expired')
+            subs = ServiceSubscription.objects.filter(customer=customer, service=self.service)
+            in_flight = (
+                subs.filter(payment_status__in=['requested', 'pending'])
+                .order_by('-start_date')
                 .first()
             )
-            context['existing_subscription'] = existing
+            active = (
+                subs.filter(
+                    payment_status='paid',
+                    end_date__gt=timezone.now(),
+                )
+                .order_by('-start_date')
+                .first()
+            )
+            context['in_flight_subscription'] = in_flight
+            context['active_subscription'] = active
         return context
 
     def get(self, request, *args, **kwargs):
@@ -116,7 +150,7 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         customer = self.request.user.commercial_customer
         existing = (
             ServiceSubscription.objects.filter(customer=customer, service=self.service)
-            .exclude(payment_status='expired')
+            .filter(payment_status__in=['requested', 'pending'])
             .first()
         )
         if existing:

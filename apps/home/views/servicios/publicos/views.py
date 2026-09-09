@@ -2,8 +2,6 @@ from django.views.generic import ListView
 
 from apps.commercial.models import Service
 
-# Create your views here.
-
 
 class PublicServicesListView(ListView):
     model = Service
@@ -13,7 +11,7 @@ class PublicServicesListView(ListView):
 
     def get_queryset(self):
         return (
-            Service.objects.filter(service_type=Service.PUBLIC)
+            Service.objects.filter(service_type=Service.PUBLIC, record_active=True)
             .order_by('date')
             .select_related('user')
         )
