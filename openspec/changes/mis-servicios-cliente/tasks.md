@@ -50,16 +50,16 @@ Chain strategy: stacked-to-main
 
 ## Phase 4: Tests
 
-- [ ] 4.1 Add unit tests for `format_cup` filter in `apps/core/tests/test_templatetags.py` (or create): Decimal, float, None, large number (thousand separator), zero.
-- [ ] 4.2 Update `ServiceReRequestUiTests.test_public_list_active_shows_re_request_button` in `apps/home/tests/test_services_ui.py`: remove `assertIn('Activo', html)` and `assertIn('Solicitar de nuevo', html)` — catalog now shows single "Solicitar" button without state ribbon.
-- [ ] 4.3 Update `ServiceReRequestUiTests.test_public_list_requested_shows_no_button`: remove `assertIn('Solicitado', html)` — no ribbon in catalog.
-- [ ] 4.4 Update `ServiceReRequestUiTests.test_public_list_deterministic_precedence`: remove ribbon/button assertions; verify catalog renders with single "Solicitar" regardless of state.
-- [ ] 4.5 Update `ServiceReRequestUiTests.test_active_paid_renders_form_and_cta`: change `assertIn('Solicitar de nuevo', html)` to `assertIn('Solicitar', html)`.
-- [ ] 4.6 Verify `ServicesCommercialStaffButtonTests.test_pending_non_qr_shows_invoice_guidance` still passes (button moves to "Mis Servicios" — test should reference `home:services_commercial` if relocated, or confirm it still passes on public view if the button remains there).
-- [ ] 4.7 Add test: `CommercialServicesListView` shows ALL subscription states (requested, pending, paid, expired) — not just paid active.
-- [ ] 4.8 Add test: `client_pending_actions` computed in normal path (no exception) — mock request with requested+pending subs, verify context variable via `menu_notifications`.
-- [ ] 4.9 Add test: menu "Mis Servicios" visible with any subscription state (requested/pending/paid/expired), not only active.
-- [ ] 4.10 Run full suite: `python manage.py test`; verify `djlint . --lint` clean on modified templates.
+- [x] 4.1 Add unit tests for `format_cup` filter in `apps/core/tests/test_templatetags.py` (or create): Decimal, float, None, large number (thousand separator), zero.
+- [x] 4.2 Update `ServiceReRequestUiTests.test_public_list_active_shows_re_request_button` in `apps/home/tests/test_services_ui.py`: remove `assertIn('Activo', html)` and `assertIn('Solicitar de nuevo', html)` — catalog now shows single "Solicitar" button without state ribbon.
+- [x] 4.3 Update `ServiceReRequestUiTests.test_public_list_requested_shows_no_button`: remove `assertIn('Solicitado', html)` — no ribbon in catalog.
+- [x] 4.4 Update `ServiceReRequestUiTests.test_public_list_deterministic_precedence`: remove ribbon/button assertions; verify catalog renders with single "Solicitar" regardless of state.
+- [x] 4.5 Update `ServiceReRequestUiTests.test_active_paid_renders_form_and_cta`: change `assertIn('Solicitar de nuevo', html)` to `assertIn('Solicitar', html)`.
+- [x] 4.6 Verify `ServicesCommercialStaffButtonTests.test_pending_non_qr_shows_invoice_guidance` still passes (button moves to "Mis Servicios" — test should reference `home:services_commercial` if relocated, or confirm it still passes on public view if the button remains there).
+- [x] 4.7 Add test: `CommercialServicesListView` shows ALL subscription states (requested, pending, paid, expired) — not just paid active.
+- [x] 4.8 Add test: `client_pending_actions` computed in normal path (no exception) — mock request with requested+pending subs, verify context variable via `menu_notifications`.
+- [x] 4.9 Add test: menu "Mis Servicios" visible with any subscription state (requested/pending/paid/expired), not only active.
+- [x] 4.10 Run full suite: `python manage.py test`; verify `djlint . --lint` clean on modified templates.
 
 ## RISK-1 Resolution Summary
 
