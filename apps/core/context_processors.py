@@ -73,6 +73,9 @@ def menu_notifications(request):
             context['client_active_count'] = ServiceSubscription.objects.filter(
                 customer=customer, payment_status='paid', end_date__gt=now, record_active=True
             ).count()
+            context['client_pending_actions'] = (
+                context['client_requested_count'] + context['client_pending_count']
+            )
         except Exception as e:
             logger.warning('Client counts query failed: %s', e)
             context['client_requested_count'] = 0
