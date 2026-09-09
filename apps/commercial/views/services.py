@@ -104,18 +104,13 @@ class ServiceUpdateView(
         return self.request.user.is_superuser or self.get_object().user == self.request.user
 
     def post(self, request, *args, **kwargs):
+        # El tipo de servicio es inmutable al editar: se fuerza al valor del
+        # objeto aunque el cliente envíe otro valor (el select está disabled).
         self.object = self.get_object()
-        old_type = self.object.service_type
-        new_type = request.POST.get('service_type')
-
-        if old_type != new_type and new_type == Service.COMMERCIAL:
-            self.object.pdf = None
-
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
-        else:
-            return self.form_invalid(form)
+        post = request.POST.copy()
+        post['service_type'] = self.object.service_type
+        request.POST = post
+        return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         self.object = form.save()
@@ -158,6 +153,29 @@ class ServiceDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return redirect('commercial:servicio_list')
 
 
+class ServiceReactivateView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Reactivación: vuelve a activar un servicio desactivado (soft delete inverso)."""
+
+    permission_required = 'commercial.change_service'
+
+    def post(self, request, uuid):
+        service = get_object_or_404(Service, uuid=uuid)
+        if service.record_active:
+            messages.warning(request, 'El servicio ya estaba activo.')
+            return redirect('commercial:servicio_list')
+        service.record_active = True
+        service.deleted_at = None
+        service.save(update_fields=['record_active', 'deleted_at'])
+        log_action(
+            user=self.request.user,
+            obj=service,
+            action_flag=CHANGE,
+            message=f'Servicio reactivado: {service.title}.',
+        )
+        messages.success(request, 'Servicio reactivado con éxito.')
+        return redirect('commercial:servicio_list')
+
+
 class ServiceHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     """Eliminación física permanente (solo superusuarios)."""
 
@@ -184,4 +202,4 @@ class ServicePDFDownloadView(ServeModelFileView):
     permission_required = 'commercial.view_service'
 
     def get_filename(self, obj):
-        return f'servicio_{obj.uuid}_pd.pdf'
+        return f'servicio_{obj.uuid}.pdf'

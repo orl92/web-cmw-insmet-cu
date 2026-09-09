@@ -40,16 +40,13 @@
       <div class="mt-2">
         {% url 'commercial:certificado_pdf' cert.uuid as cert_pdf_url %}
         <button type="button"
-                class="btn btn-icon btn-outline-primary btn-sm"
+                class="btn btn-pill btn-outline-primary btn-sm"
                 data-bs-toggle="modal"
                 data-bs-target="#documentPdfModal"
                 data-pdf-url="{{ cert_pdf_url }}?inline=1"
-                data-pdf-title="{{ object.service.title|default:'Certificado' }}"
-                data-bs-toggle="tooltip"
-                data-bs-placement="bottom"
-                aria-label="Ver PDF"
-                data-bs-original-title="Ver PDF">
-          <i class="icon ti ti-file-text"></i>
+                data-pdf-title="{{ object.service.title|default:'Certificado' }}">
+          <i class="icon ti ti-file-type-pdf"></i>
+          Ver PDF
         </button>
       </div>
     {% endif %}

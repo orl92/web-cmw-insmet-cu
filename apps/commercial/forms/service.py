@@ -46,6 +46,8 @@ class ServiceForm(forms.ModelForm):
             cleaned_data['price'] = None
             if not pdf and not existing_pdf:
                 self.add_error('pdf', 'Para servicios públicos es obligatorio un archivo PDF.')
+            if not image and not existing_image:
+                self.add_error('image', 'Para servicios públicos es obligatorio una imagen.')
         elif service_type == Service.COMMERCIAL:
             if not code:
                 self.add_error(

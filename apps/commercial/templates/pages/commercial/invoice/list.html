@@ -84,7 +84,7 @@
               data-bs-placement="bottom"
               aria-label="Ver PDF"
               data-bs-original-title="Ver PDF">
-        <i class="icon ti ti-file-text"></i>
+        <i class="icon ti ti-file-type-pdf"></i>
       </button>
       {% if not invoice.email_sent and not invoice.is_cancelled %}
         <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}"

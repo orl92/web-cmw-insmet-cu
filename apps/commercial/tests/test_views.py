@@ -1,9 +1,11 @@
+import re
 from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.messages import get_messages
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
@@ -19,6 +21,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.test_forms import _make_png
 from apps.core.models import SiteConfiguration
 
 
@@ -253,14 +256,273 @@ class ServiceCreateViewTests(TestCase):
             b'PDF content',
             content_type='application/pdf',
         )
+        image = SimpleUploadedFile(
+            'img.png',
+            _make_png(),
+            content_type='image/png',
+        )
         data = {
             'title': 'New Service',
             'summary': 'Test summary',
             'service_type': 'public',
             'pdf': pdf,
+            'image': image,
         }
         self.client.post(self.url, data, follow=True)
         self.assertTrue(Service.objects.filter(title='New Service').exists())
+
+
+class ServiceCategorySelectRenderTests(TestCase):
+    """categoria-y-layout-servicios — service_category select and side-by-side file layout.
+
+    The ServiceForm exposes service_category (required=False, model default
+    'pronostico') but the templates omitted it. These tests pin the rendered
+    select: visible only for commercial, hidden for public; and that public
+    services show PDF and image side-by-side in the form.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('adminsel')
+        cls.public_service = Service.objects.create(
+            user=cls.admin,
+            title='Public Service',
+            summary='Sum',
+            service_type='public',
+            service_category='agrometeo',
+        )
+        cls.commercial_service = Service.objects.create(
+            user=cls.admin,
+            title='Commercial Service',
+            summary='Sum',
+            service_type='commercial',
+            service_category='pronostico',
+            code='C200',
+            price=Decimal('30.00'),
+        )
+
+    def test_create_field_category_hidden_by_default(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('commercial:servicio_create'))
+        content = response.content.decode()
+        category_tag = re.search(
+            r'<div[^>]*id="field_category"[^>]*>', content
+        )
+        self.assertIsNotNone(category_tag)
+        self.assertIn('display: none', category_tag.group(0))
+
+    def test_create_select_present_without_required(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('commercial:servicio_create'))
+        content = response.content.decode()
+        self.assertRegex(
+            content,
+            r'<select[^>]*\bname="service_category"[^>]*>',
+        )
+        self.assertRegex(content, r'<option value="agrometeo"[^>]*>Agrometeorológico</option>')
+        self.assertRegex(content, r'<option value="pronostico"[^>]*>Pronóstico</option>')
+        select_tag = content.split('name="service_category"', 1)[1].split('>', 1)[0]
+        self.assertNotIn('required', select_tag)
+        self.assertNotRegex(
+            content,
+            r'<label class="form-label[^>]*required[^>]*for="id_service_category"',
+        )
+
+    def test_update_field_category_hidden_for_public(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('commercial:servicio_update', kwargs={'uuid': self.public_service.uuid})
+        )
+        content = response.content.decode()
+        category_tag = re.search(
+            r'<div[^>]*id="field_category"[^>]*>', content
+        )
+        self.assertIsNotNone(category_tag)
+        self.assertIn('display:', category_tag.group(0))
+        self.assertIn('none', category_tag.group(0))
+        self.assertNotIn('block', category_tag.group(0))
+
+    def test_update_field_category_visible_for_commercial_with_preselection(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('commercial:servicio_update', kwargs={'uuid': self.commercial_service.uuid})
+        )
+        content = response.content.decode()
+        category_tag = re.search(
+            r'<div[^>]*id="field_category"[^>]*>', content
+        )
+        self.assertIsNotNone(category_tag)
+        self.assertIn('block', category_tag.group(0))
+        self.assertRegex(
+            content,
+            r'<option value="pronostico"\s*selected\s*>Pronóstico</option>',
+        )
+        self.assertNotRegex(
+            content,
+            r'<label class="form-label[^>]*required[^>]*for="id_service_category"',
+        )
+
+    def test_update_public_form_shows_pdf_and_image_side_by_side(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('commercial:servicio_update', kwargs={'uuid': self.public_service.uuid})
+        )
+        content = response.content.decode()
+        # Row wraps both fields
+        self.assertIn('id="row_files"', content)
+        pdf_tag = re.search(r'<div[^>]*id="field_pdf"[^>]*>', content)
+        image_tag = re.search(r'<div[^>]*id="field_image"[^>]*>', content)
+        self.assertIsNotNone(pdf_tag)
+        self.assertIsNotNone(image_tag)
+        self.assertIn('col-md-6', pdf_tag.group(0))
+        self.assertIn('col-md-6', image_tag.group(0))
+
+    def test_update_commercial_form_keeps_image_full_width(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('commercial:servicio_update', kwargs={'uuid': self.commercial_service.uuid})
+        )
+        content = response.content.decode()
+        # PDF hidden for commercial
+        pdf_tag = re.search(r'<div[^>]*id="field_pdf"[^>]*>', content)
+        self.assertIsNotNone(pdf_tag)
+        self.assertIn('none', pdf_tag.group(0))
+        # Image NOT col-md-6 for commercial (full width)
+        image_tag = re.search(r'<div[^>]*id="field_image"[^>]*>', content)
+        self.assertIsNotNone(image_tag)
+        self.assertNotIn('col-md-6', image_tag.group(0))
+
+    def test_create_title_and_type_balanced_6_6(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('commercial:servicio_create'))
+        content = response.content.decode()
+        # Título y tipo: cada uno en col-md-6 (parejos)
+        title_tag = re.search(
+            r'<div class="col-md-6 mb-3">\s*<label[^>]*for="id_title"',
+            content,
+        )
+        type_tag = re.search(
+            r'<div class="col-md-6 mb-3">\s*<label[^>]*for="id_service_type"',
+            content,
+        )
+        self.assertIsNotNone(title_tag)
+        self.assertIsNotNone(type_tag)
+
+    def test_update_title_and_type_balanced_6_6(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('commercial:servicio_update', kwargs={'uuid': self.public_service.uuid})
+        )
+        content = response.content.decode()
+        # Título y tipo: cada uno en col-md-6 (parejos)
+        title_tag = re.search(
+            r'<div class="col-md-6 mb-3">\s*<label[^>]*for="id_title"',
+            content,
+        )
+        type_tag = re.search(
+            r'<div class="col-md-6 mb-3">\s*<label[^>]*for="id_service_type"',
+            content,
+        )
+        self.assertIsNotNone(title_tag)
+        self.assertIsNotNone(type_tag)
+
+    def test_create_commercial_fields_each_col_4_in_order(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('commercial:servicio_create'))
+        content = response.content.decode()
+        # Categoría (primera), código y precio: cada uno col-md-4, en ese orden
+        category_tag = re.search(
+            r'<div class="col-md-4 mb-3"[^>]*id="field_category"', content
+        )
+        code_tag = re.search(
+            r'<div class="col-md-4 mb-3"[^>]*id="field_code"', content
+        )
+        price_tag = re.search(
+            r'<div class="col-md-4 mb-3"[^>]*id="field_price"', content
+        )
+        self.assertIsNotNone(category_tag)
+        self.assertIsNotNone(code_tag)
+        self.assertIsNotNone(price_tag)
+        self.assertLess(
+            category_tag.start(), code_tag.start(), 'categoría debe ir antes que código'
+        )
+        self.assertLess(
+            code_tag.start(), price_tag.start(), 'código debe ir antes que precio'
+        )
+
+    def test_update_commercial_fields_each_col_4_in_order(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(
+            reverse('commercial:servicio_update', kwargs={'uuid': self.commercial_service.uuid})
+        )
+        content = response.content.decode()
+        category_tag = re.search(
+            r'<div class="col-md-4 mb-3"[^>]*id="field_category"', content
+        )
+        code_tag = re.search(
+            r'<div class="col-md-4 mb-3"[^>]*id="field_code"', content
+        )
+        price_tag = re.search(
+            r'<div class="col-md-4 mb-3"[^>]*id="field_price"', content
+        )
+        self.assertIsNotNone(category_tag)
+        self.assertIsNotNone(code_tag)
+        self.assertIsNotNone(price_tag)
+        self.assertLess(
+            category_tag.start(), code_tag.start(), 'categoría debe ir antes que código'
+        )
+        self.assertLess(
+            code_tag.start(), price_tag.start(), 'código debe ir antes que precio'
+        )
+
+    def test_create_public_image_is_required(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('commercial:servicio_create'))
+        content = response.content.decode()
+        # Image input must carry the required attr (public y commercial)
+        image_input = re.search(
+            r'<input[^>]*name="image"[^>]*>', content
+        )
+        self.assertIsNotNone(image_input)
+        self.assertIn('required', image_input.group(0))
+
+    def test_update_image_required_only_when_missing(self):
+        self.client.force_login(self.admin)
+        # Public service WITHOUT image must require image
+        response = self.client.get(
+            reverse('commercial:servicio_update', kwargs={'uuid': self.public_service.uuid})
+        )
+        content = response.content.decode()
+        image_input = re.search(
+            r'<input[^>]*name="image"[^>]*>', content
+        )
+        self.assertIsNotNone(image_input)
+        self.assertIn('required', image_input.group(0))
+
+    def test_update_image_not_required_when_exists(self):
+        self.client.force_login(self.admin)
+        service = Service.objects.create(
+            user=self.admin,
+            title='Service With Image',
+            summary='Sum',
+            service_type='public',
+            service_category='pronostico',
+            image=SimpleUploadedFile(
+                'with_img.png',
+                _make_png(),
+                content_type='image/png',
+            ),
+        )
+        response = self.client.get(
+            reverse('commercial:servicio_update', kwargs={'uuid': service.uuid})
+        )
+        content = response.content.decode()
+        image_input = re.search(
+            r'<input[^>]*name="image"[^>]*>', content
+        )
+        self.assertIsNotNone(image_input)
+        self.assertNotIn('required', image_input.group(0))
 
 
 class ServiceDeleteViewTests(TestCase):
@@ -281,6 +543,158 @@ class ServiceDeleteViewTests(TestCase):
         self.client.post(url, follow=True)
         self.service.refresh_from_db()
         self.assertFalse(self.service.record_active)
+
+
+class ServiceReactivateViewTests(TestCase):
+    """servicios-activacion-filtro-home — reactivación de servicios."""
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('adminreact')
+        cls.staff = _make_user('staffreact', is_staff=True)
+        cls.service = Service.objects.create(
+            user=cls.admin,
+            title='To Reactivate',
+            summary='Reac',
+            service_type='public',
+        )
+        cls.service.record_active = False
+        cls.service.save(update_fields=['record_active'])
+        cls.url = reverse('commercial:servicio_reactivate', args=[cls.service.uuid])
+
+    def test_post_reactivates_service(self):
+        self.client.force_login(self.staff)
+        ct = ContentType.objects.get_for_model(Service)
+        perm = ct.permission_set.get(codename='change_service')
+        self.staff.user_permissions.add(perm)
+        self.client.post(self.url, follow=True)
+        self.service.refresh_from_db()
+        self.assertTrue(self.service.record_active)
+        self.assertIsNone(self.service.deleted_at)
+
+    def test_post_when_already_active_is_noop_warning(self):
+        self.client.force_login(self.staff)
+        ct = ContentType.objects.get_for_model(Service)
+        perm = ct.permission_set.get(codename='change_service')
+        self.staff.user_permissions.add(perm)
+        self.service.record_active = True
+        self.service.save(update_fields=['record_active'])
+        self.client.post(self.url, follow=True)
+        self.service.refresh_from_db()
+        self.assertTrue(self.service.record_active)
+
+    def test_login_required(self):
+        response = self.client.post(self.url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertRedirects(
+            response, f'/accounts/login/?next={self.url}', fetch_redirect_response=False
+        )
+
+
+class ServiceUpdateTypeImmutableTests(TestCase):
+    """servicios-activacion-filtro-home — el tipo no se cambia en edición."""
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('admintypelock')
+        cls.service = Service.objects.create(
+            user=cls.admin,
+            title='Locked Type',
+            summary='Sum',
+            service_type='public',
+            service_category='agrometeo',
+            image=SimpleUploadedFile(
+                'lock.png',
+                _make_png(),
+                content_type='image/png',
+            ),
+        )
+        cls.url = reverse('commercial:servicio_update', args=[cls.service.uuid])
+
+    def test_update_select_is_disabled_with_hidden_input(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        content = response.content.decode()
+        select_tag = re.search(
+            r'<select[^>]*name="service_type"[^>]*>', content
+        )
+        self.assertIsNotNone(select_tag)
+        self.assertIn('disabled', select_tag.group(0))
+        hidden = re.search(
+            r'<input[^>]*type="hidden"[^>]*name="service_type"[^>]*value="public"[^>]*>',
+            content,
+        )
+        self.assertIsNotNone(hidden)
+
+    def test_post_cannot_change_service_type(self):
+        self.client.force_login(self.admin)
+        # Manipulated POST tries to switch to commercial; the view forces the
+        # original type (public), so the save must keep it.
+        self.client.post(
+            self.url,
+            {
+                'title': 'Locked Type',
+                'summary': 'Sum',
+                'service_type': 'commercial',
+            },
+            follow=True,
+        )
+        self.service.refresh_from_db()
+        self.assertEqual(self.service.service_type, 'public')
+
+
+class ServiceListRenderTests(TestCase):
+    """servicios-activacion-filtro-home — render del listado de servicios."""
+
+    PAGINATE_BY = 10
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('adminlistrender')
+        cls.public_service = Service.objects.create(
+            user=cls.admin,
+            title='Render Público',
+            summary='Sum',
+            service_type='public',
+        )
+        cls.commercial_service = Service.objects.create(
+            user=cls.admin,
+            title='Render Comercial',
+            summary='Sum',
+            service_type='commercial',
+            code='C900',
+            price=Decimal('45.50'),
+        )
+        cls.url = reverse('commercial:servicio_list')
+
+    def test_public_row_shows_em_dash_for_price_and_subscriptions(self):
+        self.client.force_login(self.admin)
+        html = self.client.get(self.url).content.decode()
+        self.assertEqual(html.count('<span class="text-muted">—</span>'), 2)
+        self.assertNotIn('$0.00', html)
+
+    def test_commercial_row_keeps_price_and_subscription_count(self):
+        self.client.force_login(self.admin)
+        html = self.client.get(self.url).content.decode()
+        self.assertIn('$45.50', html)
+        self.assertIn('0', html)
+
+    def test_reactivate_button_only_for_inactive_services(self):
+        self.service_inactive = Service.objects.create(
+            user=self.admin,
+            title='Inactivo para reactivar',
+            summary='Sum',
+            service_type='public',
+        )
+        self.service_inactive.record_active = False
+        self.service_inactive.save(update_fields=['record_active'])
+        self.client.force_login(self.admin)
+        html = self.client.get(self.url).content.decode()
+        self.assertIn('data-action="reactivar"', html)
+        self.assertIn('Reactivar servicio', html)
 
 
 class SubscriptionListViewTests(TestCase):
@@ -768,3 +1182,244 @@ class SubscriptionRenewQuantityTests(TestCase):
         self.assertEqual(new_sub.quantity, 2)
         expected = Service.compute_end_date(new_sub.start_date, new_sub.quantity, 'agrometeo')
         self.assertEqual(new_sub.end_date, expected)
+
+
+class CertificatePDFOwnerAccessTests(TestCase):
+    """PDFs de certificado visibles por el cliente titular (home/dashboard).
+
+    Antes ``CertificatePDFView`` exigía ``commercial.view_certificate`` (solo
+    staff), así que los botones "Ver PDF"/"Descargar" de "Mis Servicios" y de
+    "Mis Suscripciones" devolvían 403 para el cliente titular.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.staff = _make_user('staffcertpdf', is_staff=True)
+        cls.owner = _make_user('ownercert')
+        cls.other = _make_user('othercert')
+        cls.customer = Customer.objects.create(
+            user=cls.owner,
+            client_type='natural',
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='12345678',
+        )
+        cls.other_customer = Customer.objects.create(
+            user=cls.other,
+            client_type='natural',
+            account='6543210987654321',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='87654321',
+        )
+        service = Service.objects.create(
+            user=cls.staff,
+            title='Svc Cert',
+            summary='s',
+            service_type='commercial',
+            code='CERT001',
+            price=Decimal('10.00'),
+        )
+        sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=service,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=30),
+            payment_status='paid',
+        )
+        cls.cert = Certificate.objects.create(
+            subscription=sub,
+            pdf=SimpleUploadedFile('cert.pdf', b'%PDF-1.4 test', 'application/pdf'),
+        )
+        cls.url = reverse('commercial:certificado_pdf', args=[cls.cert.uuid])
+
+    def test_owner_client_can_view_inline_pdf(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(self.url, {'inline': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('inline', response['Content-Disposition'])
+        self.assertEqual(response['X-Frame-Options'], 'SAMEORIGIN')
+        self.assertEqual(b''.join(response.streaming_content), b'%PDF-1.4 test')
+
+    def test_owner_client_can_download_pdf(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('attachment', response['Content-Disposition'])
+
+    def test_other_client_gets_403(self):
+        self.client.force_login(self.other)
+        response = self.client.get(self.url, {'inline': '1'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_without_permission_gets_403(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(self.url, {'inline': '1'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_with_permission_can_view(self):
+        ct = ContentType.objects.get_for_model(Certificate)
+        perm = ct.permission_set.get(codename='view_certificate')
+        self.staff.user_permissions.add(perm)
+        self.client.force_login(self.staff)
+        response = self.client.get(self.url, {'inline': '1'})
+        self.assertEqual(response.status_code, 200)
+
+
+class InvoicePDFOwnerAccessTests(TestCase):
+    """PDFs de factura visibles por el cliente titular (dashboard).
+
+    ``InvoicePDFDownloadView`` exigía ``commercial.view_invoice``; un cliente
+    pendiente ve el botón "Ver PDF" de su factura y recibía 403.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.staff = _make_user('staffinvpdf', is_staff=True)
+        cls.owner = _make_user('ownerinv')
+        cls.other = _make_user('otherinv')
+        cls.customer = Customer.objects.create(
+            user=cls.owner,
+            client_type='natural',
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='12345678',
+        )
+        cls.other_customer = Customer.objects.create(
+            user=cls.other,
+            client_type='natural',
+            account='6543210987654321',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='87654321',
+        )
+        cls.invoice = Invoice.objects.create(
+            customer=cls.customer,
+            number='INV-OWNER-2026',
+            amount=Decimal('100.00'),
+            pdf=SimpleUploadedFile('factura.pdf', b'%PDF-1.4 test', 'application/pdf'),
+        )
+        cls.url = reverse('commercial:factura_download', args=[cls.invoice.uuid])
+
+    def test_owner_client_can_view_inline_pdf(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(self.url, {'inline': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('inline', response['Content-Disposition'])
+        self.assertEqual(response['X-Frame-Options'], 'SAMEORIGIN')
+
+    def test_owner_client_can_download_pdf(self):
+        self.client.force_login(self.owner)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('attachment', response['Content-Disposition'])
+
+    def test_other_client_gets_403(self):
+        self.client.force_login(self.other)
+        response = self.client.get(self.url, {'inline': '1'})
+        self.assertEqual(response.status_code, 403)
+
+
+class ServiceReRequestTests(TestCase):
+    """reesolicitar-servicio-activo — ServiceDetailView re-request semantics."""
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.customer = _make_customer('reerq')
+        cls.service = Service.objects.create(
+            user=_make_user('reerqprov'),
+            title='Re-request Svc',
+            summary='Sum',
+            service_type='commercial',
+            service_category='pronostico',
+            code='REQ1',
+            price=Decimal('20.00'),
+        )
+        cls.url = reverse('home:services_commercial_detail', args=[cls.service.uuid])
+
+    def _post_request(self):
+        return self.client.post(
+            self.url,
+            {
+                'payment_method': 'transfer',
+                'start_date': (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%d'),
+                'quantity': '1',
+            },
+        )
+
+    def test_form_valid_with_active_paid_creates_requested_row(self):
+        self.client.force_login(self.customer.user)
+        paid_end = timezone.now() + timedelta(days=30)
+        paid = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now() - timedelta(days=30),
+            end_date=paid_end,
+            payment_status='paid',
+            payment_method='transfer',
+            quantity=1,
+        )
+        initial_count = ServiceSubscription.objects.filter(
+            customer=self.customer, service=self.service
+        ).count()
+        self._post_request()
+        rows = ServiceSubscription.objects.filter(customer=self.customer, service=self.service)
+        self.assertEqual(rows.count(), initial_count + 1)
+        requested = rows.get(payment_status='requested')
+        self.assertIsNotNone(requested)
+        paid.refresh_from_db()
+        self.assertEqual(paid.payment_status, 'paid')
+        self.assertEqual(paid.end_date, paid_end)
+
+    def test_form_valid_blocked_with_requested_sub(self):
+        self.client.force_login(self.customer.user)
+        ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=30),
+            payment_status='requested',
+        )
+        count_before = ServiceSubscription.objects.filter(
+            customer=self.customer, service=self.service
+        ).count()
+        response = self._post_request()
+        msgs = [str(m) for m in get_messages(response.wsgi_request)]
+        self.assertEqual(
+            ServiceSubscription.objects.filter(
+                customer=self.customer, service=self.service
+            ).count(),
+            count_before,
+        )
+        self.assertIn('Ya tienes una solicitud o suscripción para este servicio.', msgs)
+        self.assertRedirects(response, self.url)
+
+    def test_form_valid_blocked_with_pending_sub(self):
+        self.client.force_login(self.customer.user)
+        ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=30),
+            payment_status='pending',
+        )
+        count_before = ServiceSubscription.objects.filter(
+            customer=self.customer, service=self.service
+        ).count()
+        response = self._post_request()
+        msgs = [str(m) for m in get_messages(response.wsgi_request)]
+        self.assertEqual(
+            ServiceSubscription.objects.filter(
+                customer=self.customer, service=self.service
+            ).count(),
+            count_before,
+        )
+        self.assertIn('Ya tienes una solicitud o suscripción para este servicio.', msgs)
+        self.assertRedirects(response, self.url)

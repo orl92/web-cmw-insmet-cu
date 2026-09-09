@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, DELETION
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -15,6 +16,7 @@ class CertificateListView(LoginRequiredMixin, PermissionRequiredMixin, ListView)
     model = Certificate
     template_name = 'pages/commercial/certificate/list.html'
     permission_required = 'commercial.view_certificate'
+    context_object_name = 'objects'
     paginate_by = 20
 
     def get_queryset(self):
@@ -32,7 +34,6 @@ class CertificateListView(LoginRequiredMixin, PermissionRequiredMixin, ListView)
         context['url_list'] = reverse_lazy('commercial:certificado_list')
         context['is_superuser'] = self.request.user.is_superuser
         context['url_export'] = reverse_lazy('commercial:certificado_export_csv')
-        context['objects'] = self.get_queryset()
         return context
 
 
@@ -68,11 +69,31 @@ class CertificateCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
         return context
 
 
-class CertificatePDFView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class CertificatePDFView(LoginRequiredMixin, View):
+    """Sirve el PDF de un certificado.
+
+    Acceso: staff con ``commercial.view_certificate`` o el cliente titular de
+    la suscripción del certificado (las páginas "Mis Servicios" y "Mis
+    Suscripciones" incrustan el certificado en el modal). Cualquier otro
+    usuario recibe 403.
+    """
+
     permission_required = 'commercial.view_certificate'
 
+    def has_permission(self, certificate):
+        user = self.request.user
+        if user.has_perm(self.permission_required):
+            return True
+        if not hasattr(user, 'commercial_customer'):
+            return False
+        return certificate.subscription.customer_id == user.commercial_customer.pk
+
     def get(self, request, uuid):
-        certificate = get_object_or_404(Certificate, uuid=uuid)
+        certificate = get_object_or_404(
+            Certificate.objects.select_related('subscription'), uuid=uuid
+        )
+        if not self.has_permission(certificate):
+            raise PermissionDenied
         if not certificate.pdf:
             messages.error(request, 'Este certificado no tiene archivo PDF.')
             return redirect('commercial:certificado_list')

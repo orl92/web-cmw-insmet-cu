@@ -20,11 +20,14 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-// Inicializar tooltips en los botones que abren el modal PDF (#documentPdfModal).
+// Inicializar tooltips en los botones que abren el modal PDF (#documentPdfModal)
+// y muestran SOLO un icono (btn-icon, típicamente en listados).
+// Los botones de los campos de formulario ya muestran el texto "Ver PDF",
+// por lo que un tooltip sería redundante.
 // Estos botones llevan data-bs-toggle="modal", por lo que el data-api de tooltips
 // (selector [data-bs-toggle="tooltip"]) no los inicializa; lo hacemos manualmente.
 document.addEventListener('DOMContentLoaded', function () {
-  var pdfTriggers = document.querySelectorAll('[data-pdf-url]');
+  var pdfTriggers = document.querySelectorAll('[data-pdf-url].btn-icon');
   if (!pdfTriggers.length) return;
   var Bs = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
   if (!Bs || !Bs.Tooltip) return;

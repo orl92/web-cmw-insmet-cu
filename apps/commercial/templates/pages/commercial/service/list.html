@@ -12,7 +12,13 @@
 {% endblock %}
 {% block row %}
   <td>{{ object.title }}</td>
-  <td>${{ object.price|floatformat:2 }}</td>
+  <td>
+    {% if object.service_type == 'public' %}
+      <span class="text-muted">—</span>
+    {% else %}
+      ${{ object.price|floatformat:2 }}
+    {% endif %}
+  </td>
   <td>{{ object.date|date:"d/m/Y h:i A" }}</td>
   <td>{{ object.user.get_full_name|default:object.user.username }}</td>
   <td>
@@ -22,7 +28,13 @@
       <span class="badge badge-outline text-green">Público</span>
     {% endif %}
   </td>
-  <td>{{ object.num_subscriptions }}</td>
+  <td>
+    {% if object.service_type == 'public' %}
+      <span class="text-muted">—</span>
+    {% else %}
+      {{ object.num_subscriptions }}
+    {% endif %}
+  </td>
   <td>
     {% if object.record_active %}
       <span class="badge badge-outline text-green">Activa</span>
@@ -50,6 +62,19 @@
               aria-label="Desactivar"
               data-bs-original-title="Desactivar servicio">
         <i class="icon ti ti-trash"></i>
+      </button>
+    {% endif %}
+    {% if not object.record_active and perms.commercial.change_service %}
+      <button type="button"
+              class="btn btn-icon btn-outline-success btn-sm action-btn"
+              data-action="reactivar"
+              data-uuid="{{ object.uuid }}"
+              data-name="{{ object.title }}"
+              data-bs-toggle="tooltip"
+              data-bs-placement="bottom"
+              aria-label="Reactivar"
+              data-bs-original-title="Reactivar servicio">
+        <i class="icon ti ti-arrow-up"></i>
       </button>
     {% endif %}
     {% if is_superuser and not object.record_active %}
@@ -105,11 +130,26 @@
 
       const modalTitle = document.getElementById('modalTitle');
       const modalBody = document.getElementById('modalBody');
+      const modalHeader = confirmModal.querySelector('.modal-header');
       const confirmBtn = document.getElementById('confirmDeleteBtn');
       const form = document.getElementById('deleteForm');
 
       const Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
       const modalInstance = (Bootstrap && Bootstrap.Modal) ? Bootstrap.Modal.getOrCreateInstance(confirmModal) : null;
+
+      function setupModalStyles(kind) {
+        if (kind === 'success') {
+          modalHeader.classList.remove('bg-danger', 'text-white');
+          modalHeader.classList.add('bg-success');
+          confirmBtn.classList.remove('btn-danger');
+          confirmBtn.classList.add('btn-success');
+        } else {
+          modalHeader.classList.remove('bg-success');
+          modalHeader.classList.add('bg-danger', 'text-white');
+          confirmBtn.classList.remove('btn-success');
+          confirmBtn.classList.add('btn-danger');
+        }
+      }
 
       document.addEventListener('click', function (e) {
         const btn = e.target.closest('.action-btn');
@@ -123,10 +163,17 @@
           modalTitle.textContent = 'Desactivar servicio';
           modalBody.innerHTML = `<p>¿Está seguro de desactivar el servicio <strong>${name}</strong>?</p><p class="text-muted">El registro se desactivará pero se conservará en la base de datos.</p>`;
           form.action = '{% url "commercial:servicio_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          setupModalStyles('danger');
+        } else if (action === 'reactivar') {
+          modalTitle.textContent = 'Reactivar servicio';
+          modalBody.innerHTML = `<p>¿Está seguro de reactivar el servicio <strong>${name}</strong>?</p><p class="text-muted">El servicio volverá a estar visible en el portal público.</p>`;
+          form.action = '{% url "commercial:servicio_reactivate" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          setupModalStyles('success');
         } else if (action === 'eliminar') {
           modalTitle.textContent = 'Eliminar permanentemente';
           modalBody.innerHTML = `<p>¿Está seguro de <strong class="text-danger">eliminar permanentemente</strong> el servicio <strong>${name}</strong>?</p><p class="text-danger">Esta acción no se puede deshacer.</p>`;
           form.action = '{% url "commercial:servicio_hard_delete" "00000000-0000-0000-0000-000000000000" %}'.replace('00000000-0000-0000-0000-000000000000', uuid);
+          setupModalStyles('danger');
         }
 
         if (modalInstance) modalInstance.show();

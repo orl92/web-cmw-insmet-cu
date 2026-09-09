@@ -133,7 +133,7 @@ class SiteConfigurationTemplateTests(TestCase):
         site.save()
         response = self._get_edit_page()
         self.assertContains(response, 'id_favicon')
-        self.assertContains(response, 'Ver imagen actual')
+        self.assertContains(response, 'Ver imagen')
         self.assertContains(response, site.favicon.url)
         self.assertContains(response, 'data-fslightbox')
 
@@ -153,9 +153,8 @@ class SiteConfigurationTemplateTests(TestCase):
         self.assertContains(response, 'id_favicon')
         # brand_logo and favicon each live in their own col-md-6 cell, side by side.
         self.assertGreaterEqual(response.content.count(b'id_brand_logo'), 1)
-        self.assertIn(b'id_brand_logo', response.content) and self.assertIn(
-            b'id_favicon', response.content
-        )
+        self.assertIn(b'id_brand_logo', response.content)
+        self.assertIn(b'id_favicon', response.content)
 
     def test_no_clearable_widget_cartel(self):
         """Django's ClearableFileInput 'Current:'/'Borrar' box must NOT render."""

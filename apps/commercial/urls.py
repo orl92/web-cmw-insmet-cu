@@ -16,6 +16,7 @@ from apps.commercial.views.contracts import (
     ContractCreateView,
     ContractDeleteView,
     ContractDetailView,
+    ContractHardDeleteView,
     ContractListView,
 )
 from apps.commercial.views.customers import (
@@ -36,7 +37,6 @@ from apps.commercial.views.exports import (
 )
 from apps.commercial.views.invoices import (
     CancelInvoiceView,
-    ContractHardDeleteView,
     InvoiceCreateView,
     InvoiceHardDeleteView,
     InvoiceListView,
@@ -50,6 +50,7 @@ from apps.commercial.views.services import (
     ServiceHardDeleteView,
     ServiceListView,
     ServicePDFDownloadView,
+    ServiceReactivateView,
     ServiceUpdateView,
 )
 from apps.commercial.views.subscriptions import (
@@ -89,6 +90,11 @@ urlpatterns = [
     path('crear/servicios/', ServiceCreateView.as_view(), name='servicio_create'),
     path('actualizar/servicios/<uuid:uuid>/', ServiceUpdateView.as_view(), name='servicio_update'),
     path('eliminar/servicios/<uuid:uuid>/', ServiceDeleteView.as_view(), name='servicio_delete'),
+    path(
+        'reactivar/servicios/<uuid:uuid>/',
+        ServiceReactivateView.as_view(),
+        name='servicio_reactivate',
+    ),
     path(
         'eliminar/servicios/<uuid:uuid>/permanente/',
         ServiceHardDeleteView.as_view(),

@@ -269,6 +269,11 @@ class ServiceFormTests(TestCase):
             b'PDF',
             content_type='application/pdf',
         )
+        image = SimpleUploadedFile(
+            'img.png',
+            _make_png(),
+            content_type='image/png',
+        )
         form = ServiceForm(
             user=self.user,
             data={
@@ -276,7 +281,7 @@ class ServiceFormTests(TestCase):
                 'summary': 'A public service',
                 'service_type': 'public',
             },
-            files={'pdf': pdf},
+            files={'pdf': pdf, 'image': image},
         )
         self.assertTrue(form.is_valid(), form.errors)
 
@@ -303,6 +308,11 @@ class ServiceFormTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_public_service_requires_pdf(self):
+        image = SimpleUploadedFile(
+            'img.png',
+            _make_png(),
+            content_type='image/png',
+        )
         form = ServiceForm(
             user=self.user,
             data={
@@ -310,9 +320,28 @@ class ServiceFormTests(TestCase):
                 'summary': 'Should fail',
                 'service_type': 'public',
             },
+            files={'image': image},
         )
         self.assertFalse(form.is_valid())
         self.assertIn('pdf', form.errors)
+
+    def test_public_service_requires_image(self):
+        pdf = SimpleUploadedFile(
+            'doc.pdf',
+            b'PDF',
+            content_type='application/pdf',
+        )
+        form = ServiceForm(
+            user=self.user,
+            data={
+                'title': 'No Image',
+                'summary': 'Should fail',
+                'service_type': 'public',
+            },
+            files={'pdf': pdf},
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('image', form.errors)
 
     def test_commercial_service_valid(self):
         image = SimpleUploadedFile(

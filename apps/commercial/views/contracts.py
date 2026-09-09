@@ -1,6 +1,10 @@
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, DELETION
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UserPassesTestMixin,
+)
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, View
@@ -103,3 +107,23 @@ class ContractDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
         )
         messages.success(request, 'Contrato desactivado con éxito.')
         return redirect('commercial:contrato_list')
+
+
+class ContractHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Eliminación física de contrato (solo superusuarios)."""
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def post(self, request, uuid):
+        contract = get_object_or_404(Contract, uuid=uuid)
+        contract_number = contract.number
+        contract.hard_delete()
+        log_action(
+            user=request.user,
+            obj=contract,
+            action_flag=DELETION,
+            message=f'Contrato {contract_number} eliminado físicamente.',
+        )
+        messages.success(request, f'Contrato {contract_number} eliminado permanentemente.')
+        return redirect('commercial:suscripcion_list')

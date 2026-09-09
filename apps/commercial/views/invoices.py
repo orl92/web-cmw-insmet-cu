@@ -10,11 +10,13 @@ from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     UserPassesTestMixin,
 )
+from django.core.exceptions import PermissionDenied
 from django.core.serializers.json import DjangoJSONEncoder
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
+from django.utils.html import escape
 from django.views.generic import FormView, ListView, View
 
 from apps.commercial.forms.invoice import InvoiceForm, InvoiceItemFormSet
@@ -323,11 +325,34 @@ class InvoicePDFDownloadView(ServeModelFileView):
     field = 'pdf'
     permission_required = 'commercial.view_invoice'
 
+    def get_queryset(self):
+        return super().get_queryset().select_related('subscription')
+
+    def get_permission_required(self, obj):
+        """Staff con permiso, o el cliente titular de la factura.
+
+        El cliente ve sus PDFs en "Mis Suscripciones" (dashboard) y en el
+        portal; sin esto los botones Ver PDF/Descargar de sus propias facturas
+        devuelven 403 porque no tienen ``commercial.view_invoice``.
+        """
+        user = self.request.user
+        if not hasattr(user, 'commercial_customer'):
+            return self.permission_required
+        customer = user.commercial_customer
+        if obj.customer_id == customer.pk:
+            return None
+        if obj.subscription_id and obj.subscription.customer_id == customer.pk:
+            return None
+        return self.permission_required
+
     def get_filename(self, obj):
         return f'factura_{obj.number}_{obj.issue_date:%Y-%m-%d}.pdf'
 
     def get(self, request, uuid):
         invoice = self.get_object()
+        perm = self.get_permission_required(invoice)
+        if perm and not request.user.has_perm(perm):
+            raise PermissionDenied
         if not getattr(invoice, self.field):
             # El PDF se genera por una tarea Huey; si no existe (p. ej. el
             # worker no corre en dev) lo generamos bajo demanda para no
@@ -465,38 +490,19 @@ def ajax_pending_subscriptions(request):
         start_str = sub.start_date.strftime('%Y-%m-%d') if sub.start_date else ''
         end_str = sub.end_date.strftime('%Y-%m-%d') if sub.end_date else ''
         days = (sub.end_date - sub.start_date).days if sub.start_date and sub.end_date else 0
-        summary = sub.service.summary or ''
+        title = escape(sub.service.title or '')
+        summary = escape(sub.service.summary or '')
         html += f'''
         <div class="form-check">
           <input class="form-check-input subscription-check" type="checkbox"
                  name="subscriptions" value="{sub.pk}"
                  id="sub_{sub.pk}" data-start="{start_str}" data-end="{end_str}"
                  data-quantity="{sub.quantity}"
-                 data-service="{sub.service.title}" data-days="{days}" data-summary="{summary}">
+                 data-service="{title}" data-days="{days}" data-summary="{summary}">
           <label class="form-check-label" for="sub_{sub.pk}">
-            <strong>{sub.service.title}</strong>
+            <strong>{title}</strong>
             <br><small class="text-muted">{summary}</small>
           </label>
         </div>
         '''
     return HttpResponse(html)
-
-
-class ContractHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
-    """Eliminación física de contrato (solo superusuarios)."""
-
-    def test_func(self):
-        return self.request.user.is_superuser
-
-    def post(self, request, uuid):
-        contract = get_object_or_404(Contract, uuid=uuid)
-        contract_number = contract.number
-        contract.hard_delete()
-        log_action(
-            user=request.user,
-            obj=contract,
-            action_flag=DELETION,
-            message=f'Contrato {contract_number} eliminado físicamente.',
-        )
-        messages.success(request, f'Contrato {contract_number} eliminado permanentemente.')
-        return redirect('commercial:suscripcion_list')

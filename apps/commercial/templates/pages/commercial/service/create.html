@@ -2,7 +2,7 @@
 {% block form %}
   {% include 'includes/dashboard/form_card.html' with card_title='Información del Servicio' %}
   <div class="row">
-    <div class="col-md-8 mb-3">
+    <div class="col-md-6 mb-3">
       <label class="form-label required" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
       <input type="text"
              class="form-control
@@ -16,7 +16,7 @@
         <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
       {% endif %}
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-6 mb-3">
       <label class="form-label required" for="id_service_type">{{ form.service_type.label }}</label>
       <select class="form-control
                      {% if form.service_type.errors %}is-invalid{% endif %}"
@@ -51,7 +51,23 @@
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Datos Específicos' %}
   <div class="row">
-    <div class="col-md-6 mb-3" id="field_code" style="display: none;">
+    <div class="col-md-4 mb-3" id="field_category" style="display: none;">
+      <label class="form-label" for="id_service_category">{{ form.service_category.label }}</label>
+      <select class="form-control
+                     {% if form.service_category.errors %}is-invalid{% endif %}"
+              name="service_category"
+              id="id_service_category">
+        {% for choice_value, choice_label in form.fields.service_category.choices %}
+          <option value="{{ choice_value }}"
+                  {% if form.service_category.value == choice_value %}selected{% endif %}>{{ choice_label }}</option>
+        {% endfor %}
+      </select>
+      <small class="text-muted">Período de facturación del servicio (día o mes).</small>
+      {% if form.service_category.errors %}
+        <div class="invalid-feedback d-block">{{ form.service_category.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-4 mb-3" id="field_code" style="display: none;">
       <label class="form-label required" for="{{ form.code.id_for_label }}">{{ form.code.label }}</label>
       <input type="text"
              class="form-control
@@ -65,7 +81,7 @@
       {% endif %}
       <small class="text-muted">Código único que identificará al servicio en las facturas.</small>
     </div>
-    <div class="col-md-6 mb-3" id="field_price" style="display: none;">
+    <div class="col-md-4 mb-3" id="field_price" style="display: none;">
       <label class="form-label required" for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
       <div class="input-group">
         <span class="input-group-text">$</span>
@@ -85,58 +101,60 @@
       <small class="text-muted">Precio unitario del servicio.</small>
     </div>
   </div>
-  <div class="mb-3" id="field_pdf" style="display: none;">
-    <label class="form-label required" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
-    <div class="card">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
-          <div class="flex-grow-1">
-            <input type="file"
-                   class="form-control
-                          {% if form.pdf.errors %}is-invalid{% endif %}"
-                   id="{{ form.pdf.id_for_label }}"
-                   name="{{ form.pdf.name }}"
-                   accept=".pdf"
-                   required>
-            <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
-            {% if form.pdf.errors %}
-              <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
-            {% endif %}
+  <div class="row" id="row_files">
+    <div class="col-md-6 mb-3" id="field_pdf" style="display: none;">
+      <label class="form-label required" for="{{ form.pdf.id_for_label }}">{{ form.pdf.label }}</label>
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="me-3">{% include 'includes/partials/pdf_avatar.html' %}</div>
+            <div class="flex-grow-1">
+              <input type="file"
+                     class="form-control
+                            {% if form.pdf.errors %}is-invalid{% endif %}"
+                     id="{{ form.pdf.id_for_label }}"
+                     name="{{ form.pdf.name }}"
+                     accept=".pdf"
+                     required>
+              <small class="text-muted">Solo archivos PDF. Máximo 10MB.</small>
+              {% if form.pdf.errors %}
+                <div class="invalid-feedback d-block mt-2">{{ form.pdf.errors.0 }}</div>
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="mb-3" id="field_image" style="display: none;">
-    <label class="form-label required" for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
-    <div class="card">
-      <div class="card-body">
-        <div class="d-flex align-items-center">
-          <div class="me-3">
-            <div class="avatar rounded-circle"
-                 style="width: 64px;
-                        height: 64px;
-                        overflow: hidden">
-              <img src="{{ form.instance.get_image_url }}"
-                   alt="Imagen"
-                   style="width: 100%;
-                          height: 100%;
-                          object-fit: cover">
+    <div class="col-md-6 mb-3" id="field_image" style="display: none;">
+      <label class="form-label required" for="{{ form.image.id_for_label }}">{{ form.image.label }}</label>
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="avatar rounded-circle"
+                   style="width: 64px;
+                          height: 64px;
+                          overflow: hidden">
+                <img src="{{ form.instance.get_image_url }}"
+                     alt="Imagen"
+                     style="width: 100%;
+                            height: 100%;
+                            object-fit: cover">
+              </div>
             </div>
-          </div>
-          <div class="flex-grow-1">
-            <input type="file"
-                   class="form-control
-                          {% if form.image.errors %}is-invalid{% endif %}"
-                   id="{{ form.image.id_for_label }}"
-                   name="{{ form.image.name }}"
-                   accept="image/*"
-                   required>
-            <small class="text-muted">Formatos: JPG, PNG, GIF. Máximo 2MB.</small>
-            {% if form.image.errors %}
-              <div class="invalid-feedback d-block mt-2">{{ form.image.errors.0 }}</div>
-            {% endif %}
+            <div class="flex-grow-1">
+              <input type="file"
+                     class="form-control
+                            {% if form.image.errors %}is-invalid{% endif %}"
+                     id="{{ form.image.id_for_label }}"
+                     name="{{ form.image.name }}"
+                     accept="image/*"
+                     required>
+              <small class="text-muted">Formatos: JPG, PNG, GIF. Máximo 2MB.</small>
+              {% if form.image.errors %}
+                <div class="invalid-feedback d-block mt-2">{{ form.image.errors.0 }}</div>
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>
@@ -154,10 +172,12 @@
     const fieldImage = document.getElementById('field_image');
     const fieldCode = document.getElementById('field_code');
     const fieldPrice = document.getElementById('field_price');
+    const fieldCategory = document.getElementById('field_category');
     const pdfInput = document.querySelector('input[name="pdf"]');
     const imageInput = document.querySelector('input[name="image"]');
     const codeInput = document.querySelector('input[name="code"]');
     const priceInput = document.querySelector('input[name="price"]');
+    const categoryInput = document.querySelector('select[name="service_category"]');
 
     function toggleFields() {
       const type = serviceType.value;
@@ -166,12 +186,15 @@
         fieldImage.style.display = 'block';
         fieldCode.style.display = 'none';
         fieldPrice.style.display = 'none';
+        fieldCategory.style.display = 'none';
+        fieldImage.classList.add('col-md-6');
         pdfInput.disabled = false;
         imageInput.disabled = false;
         codeInput.disabled = true;
         priceInput.disabled = true;
+        categoryInput.disabled = true;
         pdfInput.required = true;
-        imageInput.required = false;
+        imageInput.required = true;
         codeInput.required = false;
         priceInput.required = false;
         codeInput.value = '';
@@ -181,10 +204,13 @@
         fieldImage.style.display = 'block';
         fieldCode.style.display = 'block';
         fieldPrice.style.display = 'block';
+        fieldCategory.style.display = 'block';
+        fieldImage.classList.remove('col-md-6');
         pdfInput.disabled = true;
         imageInput.disabled = false;
         codeInput.disabled = false;
         priceInput.disabled = false;
+        categoryInput.disabled = false;
         pdfInput.required = false;
         imageInput.required = true;
         codeInput.required = true;
@@ -194,10 +220,12 @@
         fieldImage.style.display = 'none';
         fieldCode.style.display = 'none';
         fieldPrice.style.display = 'none';
+        fieldCategory.style.display = 'none';
         pdfInput.disabled = true;
         imageInput.disabled = true;
         codeInput.disabled = true;
         priceInput.disabled = true;
+        categoryInput.disabled = true;
         pdfInput.required = false;
         imageInput.required = false;
         codeInput.required = false;
