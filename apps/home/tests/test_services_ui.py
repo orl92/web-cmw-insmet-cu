@@ -16,6 +16,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from django.contrib.auth.models import User
+from django.template.defaultfilters import date as django_date_filter
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -244,6 +245,114 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         ]
         self.assertEqual(positions, sorted(positions))
 
+    def test_ribbon_class_and_label_per_subscription_state(self):
+        # REQ-03: el ribbon se resuelve vía status_ribbon|get_item:status_display
+        # (activo -> bg-green, pendiente de pago -> bg-orange, solicitado ->
+        # bg-blue, expirado -> bg-red); nunca hardcodeado.
+        self._make_sub('requested', 'ribbon-solicitado')
+        self._make_sub('pending', 'ribbon-pendiente')
+        self._make_sub('paid', 'ribbon-activo')
+        self._make_sub('expired', 'ribbon-expirado')
+        self.client.force_login(self.client_user)
+        response = self.client.get(reverse('home:services_commercial'))
+        html = response.content.decode()
+        self.assertEqual(
+            response.context['status_ribbon'],
+            {
+                'activo': 'bg-green',
+                'pendiente de pago': 'bg-orange',
+                'solicitado': 'bg-blue',
+                'expirado': 'bg-red',
+            },
+        )
+        # Un ribbon por card, con la clase y el texto del estado correctos.
+        self.assertEqual(html.count('ribbon-bookmark'), 4)
+        self.assertIn('ribbon-bookmark bg-green">activo', html)
+        self.assertIn('ribbon-bookmark bg-orange">pendiente de pago', html)
+        self.assertIn('ribbon-bookmark bg-blue">solicitado', html)
+        self.assertIn('ribbon-bookmark bg-red">expirado', html)
+
+    def test_calendar_icon_precedes_date_range_in_dom(self):
+        # REQ-05: el icono de calendario aparece antes del rango de fechas en
+        # el DOM del card (mismo formato d/m/Y que el template).
+        subscription = self._make_sub('paid', 'orden-calendario')
+        self.client.force_login(self.client_user)
+        html = self.client.get(reverse('home:services_commercial')).content.decode()
+        start_label = django_date_filter(subscription.start_date, 'd/m/Y')
+        self.assertIn('ti-calendar-month', html)
+        self.assertIn(start_label, html)
+        self.assertLess(html.index('ti-calendar-month'), html.index(start_label))
+
+
+class CommercialServicesListContextualActionsTests(TestCase):
+    """mis-servicios-cliente REQ-04 — acciones contextuales por estado en Mis
+    Servicios: pending+qr -> "Ver factura" + "Pagar con QR"; pending otro ->
+    solo factura; requested -> badge "En proceso" sin botones."""
+
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance_mode()
+        cls.provider = User.objects.create_user(
+            'ctxprov', 'ctxprov@test.com', 'pass', first_name='P', last_name='V'
+        )
+        cls.client_user = User.objects.create_user(
+            'ctxcli', 'ctxcli@test.com', 'pass', first_name='C', last_name='V'
+        )
+        cls.customer = Customer.objects.create(
+            user=cls.client_user,
+            client_type=Customer.ClientType.NATURAL,
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='12345678',
+        )
+
+    def _sub(self, status, payment_method='transfer'):
+        service = Service.objects.create(
+            user=self.provider,
+            title=f'Servicio {status}-{payment_method}',
+            summary='Sum',
+            service_type=Service.COMMERCIAL,
+            price=10,
+        )
+        return ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=service,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=30),
+            payment_status=status,
+            payment_method=payment_method,
+        )
+
+    def _html(self):
+        self.client.force_login(self.client_user)
+        return self.client.get(reverse('home:services_commercial')).content.decode()
+
+    def test_pending_qr_offers_invoice_and_qr_payment(self):
+        self._sub('pending', payment_method='qr')
+        html = self._html()
+        self.assertIn('Ver factura', html)
+        self.assertIn(reverse('commercial:factura_list'), html)
+        self.assertIn('Pagar con QR', html)
+        self.assertIn(reverse('home:payment'), html)
+
+    def test_pending_transfer_offers_invoice_without_qr(self):
+        self._sub('pending', payment_method='transfer')
+        html = self._html()
+        self.assertIn('Ver factura', html)
+        self.assertIn(reverse('commercial:factura_list'), html)
+        self.assertNotIn('Pagar con QR', html)
+        self.assertNotIn(reverse('home:payment'), html)
+
+    def test_requested_shows_progress_badge_without_action_buttons(self):
+        self._sub('requested')
+        html = self._html()
+        self.assertIn('En proceso', html)
+        self.assertNotIn('Ver factura', html)
+        self.assertNotIn('Pagar con QR', html)
+        self.assertNotIn('Ver PDF', html)
+        self.assertNotIn('ti ti-send', html)
+
 
 class ServicesCommercialStaffButtonTests(TestCase):
     """Task 6.3 — staff/management buttons on the public commercial view."""
@@ -281,11 +390,17 @@ class ServicesCommercialStaffButtonTests(TestCase):
         self.assertIn('Nuevo', html)
         self.assertIn(reverse('commercial:servicio_create'), html)
 
-    def test_anonymous_sees_no_management_buttons(self):
+    def test_anonymous_sees_login_cta_only_and_no_ribbon(self):
+        # REQ-06 + delta home-public-services-layout (escenario anónimo): el
+        # catálogo muestra un único control "Iniciar sesión" (ti-login), sin
+        # botones staff, sin "Solicitar" ni ribbons por estado.
         self.client.logout()
         html = self._get_page().content.decode()
         self.assertNotIn('Editar', html)
         self.assertNotIn('Nuevo', html)
+        self.assertNotIn('ti ti-send', html)
+        self.assertNotIn('ribbon-bookmark', html)
+        self.assertIn('<i class="icon ti ti-login"></i> Iniciar sesión', html)
 
     def test_pending_non_qr_public_catalog_is_state_neutral(self):
         """REQ-06: la guía 'Ver factura' para pending sin QR vive en Mis Servicios
@@ -319,6 +434,47 @@ class ServicesCommercialStaffButtonTests(TestCase):
         self.assertNotIn('Pendiente de pago', html)
         self.assertNotIn('Solicitar de nuevo', html)
         self.assertIn('Solicitar', html)
+
+
+class CommercialCatalogCodeAndCategoryUITests(TestCase):
+    """commercial-service-categories (delta) — el card público muestra el badge
+    de categoría y el código de forma discreta solo si existe; sin `code`, no
+    hay etiqueta 'Código:'."""
+
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance_mode()
+        cls.provider = User.objects.create_user(
+            'catcodeprov', 'catcodeprov@test.com', 'pass', first_name='P', last_name='C'
+        )
+
+    def _catalog_html(self):
+        return self.client.get(reverse('home:services_commercial_public')).content.decode()
+
+    def test_catalog_shows_category_badge_and_code(self):
+        Service.objects.create(
+            user=self.provider,
+            title='Servicio con código',
+            summary='Sum',
+            service_type=Service.COMMERCIAL,
+            service_category='agrometeo',
+            code='C200',
+            price=100,
+        )
+        html = self._catalog_html()
+        self.assertIn('Agrometeorológico', html)
+        self.assertIn('Código: C200', html)
+
+    def test_catalog_hides_code_label_when_service_has_no_code(self):
+        Service.objects.create(
+            user=self.provider,
+            title='Servicio sin código',
+            summary='Sum',
+            service_type=Service.COMMERCIAL,
+            price=100,
+        )
+        html = self._catalog_html()
+        self.assertNotIn('Código:', html)
 
 
 class ServicesVisibilityFilterTests(TestCase):
@@ -486,6 +642,23 @@ class ServiceReRequestUiTests(TestCase):
         self.assertNotIn('Solicitar de nuevo', html)
         self.assertIn('Solicitar', html)
 
+    def test_detail_renders_action_icons(self):
+        # REQ-07: submit "Solicitar" (ti-send), "Ver" relacionado (ti-eye) y
+        # "Cancelar" (ti-x) presentes en el detail comercial.
+        self._make_sub(payment_status='paid', payment_method='transfer')
+        Service.objects.create(
+            user=self.provider,
+            title='Relacionado iconos',
+            summary='Sum relacionado',
+            service_type=Service.COMMERCIAL,
+            price=5,
+        )
+        self._login()
+        html = self.client.get(self._detail_url()).content.decode()
+        self.assertIn('ti ti-send', html)
+        self.assertIn('ti ti-eye', html)
+        self.assertIn('ti ti-x', html)
+
 
 class MisServiciosMenuItemTests(TestCase):
     """mis-servicios-cliente — el item 'Mis Servicios' del menú es visible con
@@ -566,6 +739,26 @@ class MisServiciosMenuItemTests(TestCase):
         self._sub('expired', end_date=timezone.now() - timedelta(days=1))
         self.client.force_login(self.client_user)
         html = self._menu_html()
+        self.assertRegex(html, self._menu_item_regex())
+
+    def test_menu_dot_animated_shown_when_pending_actions(self):
+        # REQ-09 + REQ-10: requested+pending -> badge "2" en Mis Servicios y
+        # dot animado en el toggle Servicios.
+        self._sub('requested')
+        self._sub('pending')
+        self.client.force_login(self.client_user)
+        html = self._menu_html()
+        self.assertIn('status-dot status-dot-animated bg-red', html)
+        self.assertIn('<span class="badge bg-orange ms-2">2</span>', html)
+
+    def test_menu_dot_animated_hidden_without_pending_actions(self):
+        # REQ-10: con solo subs activas (requested+pending = 0) ni dot ni badge;
+        # el item Mis Servicios sigue visible por la sub activa (REQ-09).
+        self._sub('paid')
+        self.client.force_login(self.client_user)
+        html = self._menu_html()
+        self.assertNotIn('status-dot status-dot-animated', html)
+        self.assertNotIn('badge bg-orange ms-2', html)
         self.assertRegex(html, self._menu_item_regex())
 
     def test_menu_hides_mis_servicios_for_anonymous_user(self):
