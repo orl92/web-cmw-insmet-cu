@@ -37,15 +37,22 @@ The "Ver PDF" trigger SHALL open `#documentPdfModal` via `data-bs-toggle="modal"
 - AND the trigger SHALL contain `data-pdf-title` equal to the service title
 - AND the response SHALL NOT contain `target="_blank"` pointing to a file URL
 
-### Requirement: Commercial services page unaffected
+### Requirement: Commercial services public card is state-neutral
 
-The commercial services listing layout SHALL remain unchanged by this change.
+`commercial_public.html` SHALL renderizar el card del catálogo comercial como imagen, título, badge de categoría, precio `format_cup`, summary truncado, código discreto (si existe) y un único botón ("Solicitar" logueado / "Iniciar sesión" anónimo con `ti ti-login`). NO SHALL renderizar ribbons por estado ni botones por estado, y NO SHALL consumir `user_subscriptions` ni `now` del contexto.
 
-#### Scenario: Commercial layout untouched
+#### Scenario: Card sin ribbon ni botones de estado
 
-- GIVEN `commercial.html` / the commercial services page
-- WHEN the file is compared to its pre-change state
-- THEN no structural layout change SHALL be present
+- GIVEN `commercial_public.html` con cliente logueado con sub `paid`
+- WHEN se inspecciona el HTML del card
+- THEN no hay clases `bg-green`/`bg-orange`/`bg-blue`/`bg-red`
+- AND el único control es "Solicitar"
+
+#### Scenario: Card anónimo sin ribbon
+
+- GIVEN usuario anónimo
+- WHEN se inspecciona el HTML
+- THEN el único control es "Iniciar sesión" sin ribbon
 
 ## Coverage Notes
 
