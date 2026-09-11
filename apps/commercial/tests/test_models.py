@@ -322,6 +322,43 @@ class ServiceSubscriptionModelTests(TestCase):
         with self.assertRaises(ValidationError):
             sub.full_clean()
 
+    def test_get_quantity_period_display_pronostico(self):
+        sub = ServiceSubscription(
+            customer=self.customer,
+            service=self.service,
+            quantity=30,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
+        )
+        self.assertEqual(sub.get_quantity_period_display(), '30 días')
+
+    def test_get_quantity_period_display_agrometeo(self):
+        agrometeo = Service.objects.create(
+            user=self.user,
+            title='Agro',
+            summary='A',
+            service_type='commercial',
+            service_category='agrometeo',
+        )
+        sub = ServiceSubscription(
+            customer=self.customer,
+            service=agrometeo,
+            quantity=3,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=90),
+        )
+        self.assertEqual(sub.get_quantity_period_display(), '3 meses')
+
+    def test_get_quantity_period_display_singular(self):
+        sub = ServiceSubscription(
+            customer=self.customer,
+            service=self.service,
+            quantity=1,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
+        )
+        self.assertEqual(sub.get_quantity_period_display(), '1 día')
+
     def test_custom_permissions(self):
         meta = ServiceSubscription._meta
         perms = {p[0] for p in meta.permissions}

@@ -306,9 +306,7 @@ class ServiceCategorySelectRenderTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(reverse('commercial:servicio_create'))
         content = response.content.decode()
-        category_tag = re.search(
-            r'<div[^>]*id="field_category"[^>]*>', content
-        )
+        category_tag = re.search(r'<div[^>]*id="field_category"[^>]*>', content)
         self.assertIsNotNone(category_tag)
         self.assertIn('display: none', category_tag.group(0))
 
@@ -335,9 +333,7 @@ class ServiceCategorySelectRenderTests(TestCase):
             reverse('commercial:servicio_update', kwargs={'uuid': self.public_service.uuid})
         )
         content = response.content.decode()
-        category_tag = re.search(
-            r'<div[^>]*id="field_category"[^>]*>', content
-        )
+        category_tag = re.search(r'<div[^>]*id="field_category"[^>]*>', content)
         self.assertIsNotNone(category_tag)
         self.assertIn('display:', category_tag.group(0))
         self.assertIn('none', category_tag.group(0))
@@ -349,9 +345,7 @@ class ServiceCategorySelectRenderTests(TestCase):
             reverse('commercial:servicio_update', kwargs={'uuid': self.commercial_service.uuid})
         )
         content = response.content.decode()
-        category_tag = re.search(
-            r'<div[^>]*id="field_category"[^>]*>', content
-        )
+        category_tag = re.search(r'<div[^>]*id="field_category"[^>]*>', content)
         self.assertIsNotNone(category_tag)
         self.assertIn('block', category_tag.group(0))
         self.assertRegex(
@@ -432,24 +426,16 @@ class ServiceCategorySelectRenderTests(TestCase):
         response = self.client.get(reverse('commercial:servicio_create'))
         content = response.content.decode()
         # Categoría (primera), código y precio: cada uno col-md-4, en ese orden
-        category_tag = re.search(
-            r'<div class="col-md-4 mb-3"[^>]*id="field_category"', content
-        )
-        code_tag = re.search(
-            r'<div class="col-md-4 mb-3"[^>]*id="field_code"', content
-        )
-        price_tag = re.search(
-            r'<div class="col-md-4 mb-3"[^>]*id="field_price"', content
-        )
+        category_tag = re.search(r'<div class="col-md-4 mb-3"[^>]*id="field_category"', content)
+        code_tag = re.search(r'<div class="col-md-4 mb-3"[^>]*id="field_code"', content)
+        price_tag = re.search(r'<div class="col-md-4 mb-3"[^>]*id="field_price"', content)
         self.assertIsNotNone(category_tag)
         self.assertIsNotNone(code_tag)
         self.assertIsNotNone(price_tag)
         self.assertLess(
             category_tag.start(), code_tag.start(), 'categoría debe ir antes que código'
         )
-        self.assertLess(
-            code_tag.start(), price_tag.start(), 'código debe ir antes que precio'
-        )
+        self.assertLess(code_tag.start(), price_tag.start(), 'código debe ir antes que precio')
 
     def test_update_commercial_fields_each_col_4_in_order(self):
         self.client.force_login(self.admin)
@@ -457,33 +443,23 @@ class ServiceCategorySelectRenderTests(TestCase):
             reverse('commercial:servicio_update', kwargs={'uuid': self.commercial_service.uuid})
         )
         content = response.content.decode()
-        category_tag = re.search(
-            r'<div class="col-md-4 mb-3"[^>]*id="field_category"', content
-        )
-        code_tag = re.search(
-            r'<div class="col-md-4 mb-3"[^>]*id="field_code"', content
-        )
-        price_tag = re.search(
-            r'<div class="col-md-4 mb-3"[^>]*id="field_price"', content
-        )
+        category_tag = re.search(r'<div class="col-md-4 mb-3"[^>]*id="field_category"', content)
+        code_tag = re.search(r'<div class="col-md-4 mb-3"[^>]*id="field_code"', content)
+        price_tag = re.search(r'<div class="col-md-4 mb-3"[^>]*id="field_price"', content)
         self.assertIsNotNone(category_tag)
         self.assertIsNotNone(code_tag)
         self.assertIsNotNone(price_tag)
         self.assertLess(
             category_tag.start(), code_tag.start(), 'categoría debe ir antes que código'
         )
-        self.assertLess(
-            code_tag.start(), price_tag.start(), 'código debe ir antes que precio'
-        )
+        self.assertLess(code_tag.start(), price_tag.start(), 'código debe ir antes que precio')
 
     def test_create_public_image_is_required(self):
         self.client.force_login(self.admin)
         response = self.client.get(reverse('commercial:servicio_create'))
         content = response.content.decode()
         # Image input must carry the required attr (public y commercial)
-        image_input = re.search(
-            r'<input[^>]*name="image"[^>]*>', content
-        )
+        image_input = re.search(r'<input[^>]*name="image"[^>]*>', content)
         self.assertIsNotNone(image_input)
         self.assertIn('required', image_input.group(0))
 
@@ -494,9 +470,7 @@ class ServiceCategorySelectRenderTests(TestCase):
             reverse('commercial:servicio_update', kwargs={'uuid': self.public_service.uuid})
         )
         content = response.content.decode()
-        image_input = re.search(
-            r'<input[^>]*name="image"[^>]*>', content
-        )
+        image_input = re.search(r'<input[^>]*name="image"[^>]*>', content)
         self.assertIsNotNone(image_input)
         self.assertIn('required', image_input.group(0))
 
@@ -518,9 +492,7 @@ class ServiceCategorySelectRenderTests(TestCase):
             reverse('commercial:servicio_update', kwargs={'uuid': service.uuid})
         )
         content = response.content.decode()
-        image_input = re.search(
-            r'<input[^>]*name="image"[^>]*>', content
-        )
+        image_input = re.search(r'<input[^>]*name="image"[^>]*>', content)
         self.assertIsNotNone(image_input)
         self.assertNotIn('required', image_input.group(0))
 
@@ -617,9 +589,7 @@ class ServiceUpdateTypeImmutableTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(self.url)
         content = response.content.decode()
-        select_tag = re.search(
-            r'<select[^>]*name="service_type"[^>]*>', content
-        )
+        select_tag = re.search(r'<select[^>]*name="service_type"[^>]*>', content)
         self.assertIsNotNone(select_tag)
         self.assertIn('disabled', select_tag.group(0))
         hidden = re.search(
@@ -1423,3 +1393,103 @@ class ServiceReRequestTests(TestCase):
         )
         self.assertIn('Ya tienes una solicitud o suscripción para este servicio.', msgs)
         self.assertRedirects(response, self.url)
+
+
+class ResendCertificateOwnerAccessTests(TestCase):
+    """Reenvío del certificado por correo accesible al cliente titular.
+
+    Antes ``ResendCertificateEmailView`` exigía ``commercial.change_subscription``
+    (solo staff), así que el botón "Reenviar certificado por correo" de "Mis
+    Suscripciones" devolvía 403 para el cliente titular.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.staff = _make_user('staffresend', is_staff=True)
+        cls.owner = _make_user('ownerresend')
+        cls.other = _make_user('otherresend')
+        cls.customer = Customer.objects.create(
+            user=cls.owner,
+            client_type='natural',
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='12345678',
+        )
+        cls.other_customer = Customer.objects.create(
+            user=cls.other,
+            client_type='natural',
+            account='6543210987654321',
+            agency_bank='BANDEC',
+            address='Addr',
+            phone='87654321',
+        )
+        service = Service.objects.create(
+            user=cls.staff,
+            title='Svc Resend',
+            summary='s',
+            service_type='commercial',
+            code='RESEND01',
+            price=Decimal('10.00'),
+        )
+        cls.sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=service,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=30),
+            payment_status='paid',
+        )
+        cls.cert = Certificate.objects.create(
+            subscription=cls.sub,
+            pdf=SimpleUploadedFile('cert.pdf', b'%PDF-1.4 test', 'application/pdf'),
+        )
+        cls.url = reverse('commercial:certificado_resend', args=[cls.sub.uuid])
+        cls.list_url = reverse('commercial:suscripcion_list')
+        # El grupo Clientes otorga view_subscription y habilita la rama cliente
+        # del SubscriptionListView; se añade para el follow del redirect.
+        from django.contrib.auth.models import Group
+
+        clientes, _ = Group.objects.get_or_create(name='Clientes')
+        cls.clientes = clientes
+
+    def test_owner_client_can_resend(self):
+        self.client.force_login(self.owner)
+        with patch('apps.commercial.views.subscriptions.EmailMessage') as mock_email_cls:
+            mock_email = mock_email_cls.return_value
+            mock_email.send.return_value = 1
+            response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.list_url)
+        msgs = [str(m) for m in get_messages(response.wsgi_request)]
+        self.assertTrue(
+            any('reenviado correctamente' in m for m in msgs),
+            f'expected success message, got {msgs}',
+        )
+
+    def test_other_client_gets_403(self):
+        self.client.force_login(self.other)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_without_permission_gets_403(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_with_change_subscription_can_resend(self):
+        ct = ContentType.objects.get_for_model(ServiceSubscription)
+        perm = ct.permission_set.get(codename='change_subscription')
+        self.staff.user_permissions.add(perm)
+        self.client.force_login(self.staff)
+        with patch('apps.commercial.views.subscriptions.EmailMessage') as mock_email_cls:
+            mock_email = mock_email_cls.return_value
+            mock_email.send.return_value = 1
+            response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.list_url)
+        msgs = [str(m) for m in get_messages(response.wsgi_request)]
+        self.assertTrue(
+            any('reenviado correctamente' in m for m in msgs),
+            f'expected success message, got {msgs}',
+        )
