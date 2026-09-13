@@ -27,7 +27,6 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     model = ServiceSubscription
     template_name = 'pages/commercial/subscription/list.html'
     context_object_name = 'objects'
-    paginate_by = 20
     permission_required = 'commercial.view_subscription'
 
     def get_queryset(self):

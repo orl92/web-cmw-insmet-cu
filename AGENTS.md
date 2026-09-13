@@ -89,7 +89,7 @@ El job `test` de CI NO corre la suite completa en cada PR (tarda demasiado):
 - **UUIDs** en URLs de modelos expuestos (no `pk`)
 - **FileHandlerMixin** obligatorio en todo modelo que tenga FileField/ImageField
 - **Soft delete** en modelos de negocio con datos sensibles (Customer, Service, ServiceSubscription, Invoice, Contract, Certificate, Warning). NO forzar en modelos auxiliares/transaccionales (InvoiceItem, ForecastRegions, EmailRecipient).
-- **Paginación**: `paginate_by = 20` solo en vistas SIN DataTables. Las vistas con DataTables cargan todos los registros y delegan la paginación al cliente.
+- **Paginación**: `paginate_by = 10` (convención uniforme) en vistas SIN DataTables. Las vistas con DataTables cargan todos los registros y delegan la paginación al cliente — NO llevan `paginate_by`. Esto aplica por igual a listas públicas de servicios por cards (catálogo comercial y Mis Servicios), que usan `paginate_by = 10` para proteger la UX móvil; los tests codifican ese valor.
 - **Migrations** NO versionadas (`.gitignore`)
 - **Estáticos**: `static/` dev, `staticfiles/` prod con WhiteNoise
 - **Idioma**: español (`es-mx`, `America/Havana`)

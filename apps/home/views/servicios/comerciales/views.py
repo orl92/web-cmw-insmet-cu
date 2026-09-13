@@ -1,13 +1,16 @@
+from urllib.parse import quote
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Case, IntegerField, When
+from django.core.paginator import Paginator
+from django.db.models import Case, IntegerField, OuterRef, Subquery, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import FormView, ListView
 
 from apps.commercial.forms import PaymentMethodForm
-from apps.commercial.models import Customer, Service, ServiceSubscription
+from apps.commercial.models import Customer, Invoice, Service, ServiceSubscription
 
 
 class CommercialServicesListView(LoginRequiredMixin, ListView):
@@ -28,9 +31,11 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
             customer = self.request.user.commercial_customer
         except Customer.DoesNotExist:
             return ServiceSubscription.objects.none()
+        latest_invoice = Invoice.objects.filter(subscription=OuterRef('pk')).order_by('-issue_date')
         return (
             ServiceSubscription.objects.filter(customer=customer, record_active=True)
             .select_related('service', 'service__user')
+            .annotate(latest_invoice_uuid=Subquery(latest_invoice.values('uuid')[:1]))
             .order_by(
                 Case(
                     When(payment_status='requested', then=0),
@@ -49,6 +54,8 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
         context['status_ribbon'] = self.STATUS_RIBBONS
+        for sub in context.get('subscriptions', []):
+            sub.total_to_pay = (sub.service.price or 0) * (sub.quantity or 1)
         return context
 
 
@@ -59,9 +66,9 @@ class PublicCommercialServicesListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        return Service.objects.filter(
-            service_type=Service.COMMERCIAL, record_active=True
-        ).order_by('title')
+        return Service.objects.filter(service_type=Service.COMMERCIAL, record_active=True).order_by(
+            'title'
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -91,18 +98,22 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         context['title'] = self.service.title
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
-        price = self.service.price
-        context['estimated_total'] = price * 1 if price else 0
-        context['billing_period'] = self.service.get_billing_period_display()
         # El precio crudo se expone vía context['service'].price; el template
         # compone el formato con el filtro format_cup (fase 3).
-        context['related_services'] = (
+        related_qs = (
             Service.objects.filter(
-                service_type=Service.COMMERCIAL, record_active=True
+                service_type=Service.COMMERCIAL,
+                service_category=self.service.service_category,
+                record_active=True,
             )
             .exclude(uuid=self.service.uuid)
-            .order_by('title')[:4]
+            .order_by('title')
         )
+        paginator = Paginator(related_qs, 3)
+        page_number = self.request.GET.get('related_page', 1)
+        related_page = paginator.get_page(page_number)
+        context['related_services'] = related_page
+        context['related_page_obj'] = related_page
 
         if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
             customer = self.request.user.commercial_customer
@@ -124,18 +135,16 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
             context['active_subscription'] = active
         return context
 
-    def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
-
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['category'] = self.service.service_category
+        kwargs['billing_period'] = self.service.get_billing_period_display()
         return kwargs
 
     def post(self, request, *args, **kwargs):
         if not (request.user.is_authenticated and hasattr(request.user, 'commercial_customer')):
             messages.error(request, 'Debes ser un cliente registrado para solicitar servicios.')
-            return redirect('{}?next={}'.format(reverse('user_auth:login'), request.path))
+            login_url = reverse('user_auth:login')
+            return redirect(f'{login_url}?next={quote(request.path)}')
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):

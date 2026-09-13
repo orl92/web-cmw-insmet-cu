@@ -28,22 +28,29 @@
                     </h3>
                     <p class="text-secondary">{{ subscription.service.summary|truncatechars:200 }}</p>
                     <!-- Metadata de la suscripción -->
-                    <div class="d-flex flex-wrap gap-2 text-secondary mt-auto mb-3">
-                      <span>
-                        <i class="icon ti ti-calendar-month"></i>
-                        {{ subscription.start_date|date:'d/m/Y' }} - {{ subscription.end_date|date:'d/m/Y' }}
-                      </span>
+                    <div class="d-flex flex-column flex-grow-1 text-secondary mb-3">
+                      <div class="mb-2">
+                        <i class="icon me-1 ti ti-calendar"></i>
+                        Vigencia: <strong>{{ subscription.start_date|date:'d/m/Y' }} - {{ subscription.end_date|date:'d/m/Y' }}</strong>
+                      </div>
+                      <div class="mb-2">
+                        <i class="icon me-1 ti ti-tag"></i>
+                        Categoría: <strong>{{ subscription.service.get_service_category_display }}</strong>
+                      </div>
+                      <div class="mb-2">
+                        <i class="icon me-1 ti ti-calendar-event"></i>
+                        Período: <strong>{{ subscription.get_quantity_period_display }}</strong>
+                      </div>
                       {% if subscription.payment_method %}
-                        <span>
-                          <i class="icon ti ti-credit-card"></i>
+                        <div class="mb-2">
+                          <i class="icon me-1 ti {{ subscription.payment_method|payment_method_icon }}"></i>
                           {{ subscription.get_payment_method_display }}
-                        </span>
+                        </div>
                       {% endif %}
                       {% if subscription.service.service_type == 'commercial' %}
-                        <span>
-                          <i class="icon ti ti-currency-dollar"></i>
-                          {{ subscription.service.price|format_cup }} CUP/{{ subscription.service.get_billing_period_display }}
-                        </span>
+                        <div class="mb-2 mt-3">
+                          <span class="display-6 fw-bold text-primary">{{ subscription.total_to_pay|format_cup }} <small class="text-secondary">CUP</small></span>
+                        </div>
                       {% endif %}
                     </div>
                     <!-- Acciones contextuales por estado -->
@@ -66,10 +73,12 @@
                           {% endif %}
                         {% endwith %}
                       {% elif subscription.payment_status == 'pending' %}
-                        <a href="{% url 'commercial:factura_list' %}"
-                           class="btn btn-pill btn-outline-secondary">
-                          <i class="icon ti ti-receipt"></i> Ver factura
-                        </a>
+                        {% if subscription.latest_invoice_uuid %}
+                          <a href="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}?inline=1"
+                             class="btn btn-pill btn-outline-secondary">
+                            <i class="icon ti ti-receipt"></i> Ver factura
+                          </a>
+                        {% endif %}
                         {% if subscription.payment_method == 'qr' %}
                           <a href="{% url 'home:payment' %}"
                              class="btn btn-pill btn-outline-primary">
@@ -110,54 +119,8 @@
       </div>
     </div>
   </div>
-  <!-- Paginación (si existe) -->
-  {% if is_paginated %}
-    <div class="d-flex justify-content-center">
-      <ul class="pagination">
-        {% if page_obj.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?page=1" aria-label="Primera">
-              <span aria-hidden="true">&laquo;&laquo;</span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link"
-               href="?page={{ page_obj.previous_page_number }}"
-               aria-label="Página anterior">
-              <span aria-hidden="true">&lsaquo;</span>
-            </a>
-          </li>
-        {% endif %}
-        {% for page_number in page_obj.paginator.page_range %}
-          {% if page_number == page_obj.number %}
-            <li class="page-item active" aria-current="page">
-              <span class="page-link">{{ page_number }}</span>
-            </li>
-          {% else %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_number }}">{{ page_number }}</a>
-            </li>
-          {% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}
-          <li class="page-item">
-            <a class="page-link"
-               href="?page={{ page_obj.next_page_number }}"
-               aria-label="Página siguiente">
-              <span aria-hidden="true">&rsaquo;</span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link"
-               href="?page={{ page_obj.paginator.num_pages }}"
-               aria-label="Última">
-              <span aria-hidden="true">&raquo;&raquo;</span>
-            </a>
-          </li>
-        {% endif %}
-      </ul>
-    </div>
-  {% endif %}
+  <!-- Paginación -->
+  {% include 'includes/pagination.html' with page_obj=page_obj param_name='page' %}
   {% include 'includes/home/document_pdf_modal.html' %}
 {% endblock %}
 {% block extrajs %}

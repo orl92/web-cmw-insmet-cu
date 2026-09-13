@@ -41,7 +41,6 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Invoice
     template_name = 'pages/commercial/invoice/list.html'
     context_object_name = 'objects'
-    paginate_by = 20
     permission_required = 'commercial.view_invoice'
 
     def get_queryset(self):

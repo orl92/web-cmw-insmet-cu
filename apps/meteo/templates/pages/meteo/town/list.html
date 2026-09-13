@@ -10,8 +10,8 @@
 {% block row %}
   <td>{{ object.province.name|default:'—' }}</td>
   <td class="fw-medium">{{ object.name }}</td>
-  <td>{{ object.latitude|floatformat:4 }}° N</td>
-  <td>{{ object.longitude|floatformat:4 }}° O</td>
+  <td>{{ object.latitude|floatformat:4 }}</td>
+  <td>{{ object.longitude|floatformat:4 }}</td>
   <td class="text-end">
     <a href="{% url 'meteo:municipio_update' object.uuid %}"
        type="button"

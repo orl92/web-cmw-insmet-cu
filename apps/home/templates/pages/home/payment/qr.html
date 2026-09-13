@@ -149,9 +149,8 @@
                               <!-- Nota -->
                               <div class="mt-4">
                                 <div class="alert alert-light border">
-                                  <div class="d-flex">
-                                    <i class="icon ti ti-info-circle text-primary me-2"
-                                       style="font-size:32px"></i>
+                                  <div class="d-flex gap-3">
+                                    <i class="icon ti ti-info-circle text-primary" style="font-size:32px"></i>
                                     <div>
                                       <p class="mb-0 small">
                                         <strong>Nota:</strong> Este pago es para servicios meteorológicos. Asegúrese de tener saldo suficiente en EnZona y guarde el comprobante.
@@ -162,7 +161,10 @@
                               </div>
                               <!-- Registro EnZona -->
                               <div class="d-flex align-items-center">
-                                <span class="text-muted small">¿No tienes una cuenta de EnZona? <a href="https://enzona.net/registro" class="text-decoration-none">Regístrate aquí</a></span>
+                                <span class="text-muted small">¿No tienes una cuenta de EnZona? <a href="https://identity.enzona.net/accountrecoveryendpoint/register.do"
+    target="_blank"
+    rel="noopener"
+    class="text-decoration-none">Regístrate aquí</a></span>
                               </div>
                               <!-- Contacto y ayuda -->
                               <div class="row justify-content-center mt-6">
@@ -248,7 +250,7 @@
                   </div>
                   <!-- Botones de acción -->
                   <div class="d-grid gap-2">
-                    <a href="https://enzona.cu/descargar"
+                    <a href="https://util.enzona.net/enzona.apk"
                        target="_blank"
                        class="btn btn-primary">
                       <i class="icon ti ti-download"></i>
@@ -263,8 +265,9 @@
                   <div class="mt-4 pt-3 border-top">
                     <div class="text-center text-muted small mb-2">
                       ¿No tienes EnZona?
-                      <a href="https://enzona.cu/registro"
+                      <a href="https://identity.enzona.net/accountrecoveryendpoint/register.do"
                          target="_blank"
+                         rel="noopener"
                          class="text-decoration-none ms-1">Regístrate gratis</a>
                     </div>
                   </div>
@@ -295,7 +298,45 @@
       </div>
     </div>
   </div>
+  <!-- Toast de notificación (estilo global del sitio) -->
+  <div id="shareToast"
+       class="toast align-items-center text-white bg-success border-0"
+       role="alert"
+       aria-live="assertive"
+       aria-atomic="true"
+       style="position: fixed;
+              top: 20px;
+              right: 20px;
+              z-index: 9999;
+              display: none">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="icon me-2 ti ti-circle-check"></i>
+        <span id="share-toast-message">Enlace copiado al portapapeles</span>
+      </div>
+      <button type="button"
+              class="btn-close btn-close-white me-2 m-auto"
+              onclick="this.parentElement.parentElement.style.display='none'"></button>
+    </div>
+  </div>
   <script>
+    function showShareToast(message) {
+      const toastEl = document.getElementById('shareToast');
+      const toastMessage = document.getElementById('share-toast-message');
+      if (!toastEl) {
+        return
+      }
+      if (toastMessage) {
+        toastMessage.textContent = message
+      }
+      toastEl.style.display = 'block'
+      toastEl.classList.add('show')
+      window.setTimeout(function() {
+        toastEl.style.display = 'none'
+        toastEl.classList.remove('show')
+      }, 3000)
+    }
+
     function shareLink() {
       if (navigator.share) {
         navigator.share({
@@ -305,7 +346,7 @@
         })
       } else {
         navigator.clipboard.writeText(window.location.href).then(function() {
-          alert('Enlace copiado al portapapeles. Compártelo para pagar desde una computadora.')
+          showShareToast('Enlace copiado al portapapeles. Compártelo para pagar desde una computadora.')
         })
       }
     }

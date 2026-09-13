@@ -31,7 +31,6 @@ class EmailRecipientListListView(LoginRequiredMixin, PermissionRequiredMixin, Li
     template_name = 'pages/core/email_recipient/list.html'
     model = EmailRecipientList
     permission_required = 'core.view_emailrecipientlist'
-    paginate_by = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

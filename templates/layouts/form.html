@@ -27,8 +27,12 @@
           {% block form_actions %}
             <div class="col-12">
               <div class="d-flex justify-content-end gap-2 pt-3 mt-3 border-top">
-                <button type="submit" class="btn btn-primary">Aceptar</button>
-                <a href="{{ url_list }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">
+                  <i class="icon ti ti-check"></i> Aceptar
+                </button>
+                <a href="{{ url_list }}" class="btn btn-secondary">
+                  <i class="icon ti ti-x"></i> Cancelar
+                </a>
               </div>
             </div>
           {% endblock form_actions %}

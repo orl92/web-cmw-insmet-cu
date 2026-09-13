@@ -25,20 +25,20 @@
                       <a href="{% url 'home:services_commercial_detail' service.uuid %}"
                          class="text-decoration-none text-reset">{{ service.title }}</a>
                     </h3>
-                    <span class="badge bg-azure-lt mb-2">{{ service.get_service_category_display }}</span>
                     <p class="text-secondary">{{ service.summary|truncatechars:200 }}</p>
-                    <!-- Precio y código -->
-                    <div class="d-flex flex-wrap gap-2 text-secondary mt-auto mb-3">
-                      <span>
-                        <i class="icon ti ti-currency-dollar"></i>
-                        {{ service.price|format_cup|default_if_none:'—' }} CUP/{{ service.get_billing_period_display }}
-                      </span>
-                      {% if service.code %}
-                        <span>
-                          <i class="icon ti ti-hash"></i>
-                          Código: {{ service.code }}
-                        </span>
-                      {% endif %}
+                    <!-- Metadata del servicio -->
+                    <div class="d-flex flex-column flex-grow-1 text-secondary mb-3">
+                      <div class="mb-2">
+                        <i class="icon me-1 ti ti-tag"></i>
+                        Categoría: <strong>{{ service.get_service_category_display }}</strong>
+                      </div>
+                      <div class="mb-2">
+                        <i class="icon me-1 ti ti-calendar-event"></i>
+                        Período: <strong>{{ service.get_billing_period_display }}</strong>
+                      </div>
+                      <div class="mb-2 mt-3">
+                        <span class="display-6 fw-bold text-primary">{{ service.price|format_cup|default_if_none:'—' }} <small class="text-secondary">CUP/{{ service.get_billing_period_display }}</small></span>
+                      </div>
                     </div>
                     <!-- Controles staff + botón único -->
                     <div class="mt-auto d-flex justify-content-end gap-2">
@@ -56,12 +56,12 @@
                           </a>
                         {% endif %}
                       {% endif %}
-                      {% if user.is_authenticated %}
+                      {% if user.commercial_customer %}
                         <a href="{% url 'home:services_commercial_detail' service.uuid %}"
                            class="btn btn-pill btn-outline-primary">
                           <i class="icon ti ti-send"></i> Solicitar
                         </a>
-                      {% else %}
+                      {% elif not user.is_authenticated %}
                         <a href="{% url 'user_auth:login' %}?next={{ request.path }}"
                            class="btn btn-pill btn-outline-primary">
                           <i class="icon ti ti-login"></i> Iniciar sesión
@@ -93,4 +93,6 @@
       </div>
     </div>
   </div>
+  <!-- Paginación -->
+  {% include 'includes/pagination.html' with page_obj=page_obj param_name='page' %}
 {% endblock %}

@@ -32,7 +32,7 @@ Relax the client-facing blocking rule in `ServiceDetailView` from "any non-expir
 ## Data Flow
 
 ```
-[Client portal] 
+[Client portal]
   ServiceDetailView.form_valid
      ├─ existing requested/pending? ──→ warning + redirect (no row)
      └─ else ──→ ServiceSubscription.objects.create(payment_status='requested')
