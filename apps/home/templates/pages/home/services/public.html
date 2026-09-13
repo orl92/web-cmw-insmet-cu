@@ -17,23 +17,23 @@
                            alt="{{ service.title }}"
                            style="height: 200px;
                                   object-fit: cover">
-                      <div class="ribbon bg-green">Gratuito</div>
+                      <div class="ribbon ribbon-bookmark bg-green">Gratuito</div>
                     </div>
                     <div class="card-body d-flex flex-column">
                       <div class="d-flex align-items-start justify-content-between gap-2">
                         <h3 class="mb-0 card-title">{{ service.title }}</h3>
                       </div>
                       <p class="text-secondary mt-2">{{ service.summary }}</p>
-                      <div class="d-flex flex-wrap gap-2 text-secondary mt-auto mb-3">
-                        <span>
+                      <div class="d-flex flex-column flex-grow-1 text-secondary mb-3">
+                        <div class="mb-2">
+                          <i class="icon me-1 ti ti-calendar"></i>
+                          Publicado: <strong>{{ service.date|date:'j/n/Y' }}</strong>
+                        </div>
+                        <div class="mb-2">
                           <span class="avatar avatar-xs rounded-circle me-1"
                                 style="background-image: url('{{ service.user.profile.get_avatar }}')"></span>
-                          <span class="text-muted me-1">Autor:</span>
-                          {{ service.user.get_full_name }}
-                        </span>
-                        <span>
-                          <i class="icon ti ti-calendar"></i> {{ service.date|date:'j/n/Y' }}
-                        </span>
+                          Autor: <strong>{{ service.user.get_full_name }}</strong>
+                        </div>
                       </div>
                       <div class="d-flex justify-content-end">
                         {% if service.pdf %}
@@ -78,53 +78,7 @@
     </div>
   </div>
   <!-- Paginación -->
-  {% if is_paginated %}
-    <div class="d-flex justify-content-center">
-      <ul class="pagination">
-        {% if page_obj.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?page=1" aria-label="Primera">
-              <span aria-hidden="true">&laquo;&laquo;</span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link"
-               href="?page={{ page_obj.previous_page_number }}"
-               aria-label="Página anterior">
-              <span aria-hidden="true">&lsaquo;</span>
-            </a>
-          </li>
-        {% endif %}
-        {% for page_number in page_obj.paginator.page_range %}
-          {% if page_number == page_obj.number %}
-            <li class="page-item active" aria-current="page">
-              <span class="page-link">{{ page_number }}</span>
-            </li>
-          {% else %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_number }}">{{ page_number }}</a>
-            </li>
-          {% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}
-          <li class="page-item">
-            <a class="page-link"
-               href="?page={{ page_obj.next_page_number }}"
-               aria-label="Página siguiente">
-              <span aria-hidden="true">&rsaquo;</span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link"
-               href="?page={{ page_obj.paginator.num_pages }}"
-               aria-label="Última">
-              <span aria-hidden="true">&raquo;&raquo;</span>
-            </a>
-          </li>
-        {% endif %}
-      </ul>
-    </div>
-  {% endif %}
+  {% include 'includes/pagination.html' with page_obj=page_obj param_name='page' %}
   {% include 'includes/home/document_pdf_modal.html' %}
 {% endblock %}
 {% block extrajs %}

@@ -43,10 +43,10 @@ class ProvinceListViewTests(TestCase):
         url = reverse('meteo:provincia_list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'badge badge-outline text-blue">13')
-        self.assertContains(response, 'badge badge-outline text-green">6')
-        self.assertNotContains(response, 'badge badge-outline text-blue">78')
-        self.assertNotContains(response, 'badge badge-outline text-green">78')
+        self.assertContains(response, 'badge bg-purple-lt">13')
+        self.assertContains(response, 'badge bg-green-lt">6')
+        self.assertNotContains(response, 'badge bg-purple-lt">78')
+        self.assertNotContains(response, 'badge bg-green-lt">78')
 
 
 class StationCreateViewTests(TestCase):

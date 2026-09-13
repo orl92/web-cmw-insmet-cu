@@ -104,9 +104,7 @@ class TaskMonitoringTests(TestCase):
             task_name='generate_invoice_pdf_and_email_task'
         ).first()
         self.assertIsNotNone(log)
-        self.assertEqual(
-            log.func_name, 'apps.core.tasks.generate_invoice_pdf_and_email_task'
-        )
+        self.assertEqual(log.func_name, 'apps.core.tasks.generate_invoice_pdf_and_email_task')
         self.assertTrue(log.func_args)
         self.assertIn('00000000-0000-0000-0000-000000000000', log.func_args)
 

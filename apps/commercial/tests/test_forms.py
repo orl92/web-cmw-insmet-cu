@@ -649,13 +649,22 @@ class PaymentMethodFormTests(TestCase):
         self.assertNotIn('end_date', form.fields)
         self.assertIn('quantity', form.fields)
 
-    def test_quantity_label_by_category_pronostico(self):
-        form = PaymentMethodForm(category='pronostico')
+    def test_quantity_label_by_billing_period_dia(self):
+        form = PaymentMethodForm(billing_period='día')
         self.assertIn('días', form.fields['quantity'].label)
 
-    def test_quantity_label_by_category_agrometeo(self):
-        form = PaymentMethodForm(category='agrometeo')
+    def test_quantity_label_by_billing_period_mes(self):
+        form = PaymentMethodForm(billing_period='mes')
         self.assertIn('meses', form.fields['quantity'].label)
+
+    def test_quantity_help_text_does_not_hardcode_categories(self):
+        form = PaymentMethodForm(billing_period='día')
+        help_text = form.fields['quantity'].help_text
+        self.assertNotIn('agrometeo', help_text)
+        self.assertNotIn('pronóstico', help_text)
+        # El texto no repite "Cantidad de períodos" (confunde): explica cómo se
+        # calcula el importe sin encajar categorías hardcodeadas.
+        self.assertIn('multiplicando el precio', help_text)
 
 
 class InvoiceFormTests(TestCase):

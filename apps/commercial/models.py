@@ -229,6 +229,12 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
     def is_active(self):
         return self.payment_status == 'paid' and self.end_date and self.end_date > timezone.now()
 
+    def get_quantity_period_display(self):
+        """Cantidad + unidad de facturación: `1 día`, `3 meses`, `30 días`."""
+        unit = self.service.get_billing_period_display()  # 'día' | 'mes'
+        plural = {'día': 'días', 'mes': 'meses'}.get(unit, f'{unit}s')
+        return f'{self.quantity} {plural if self.quantity != 1 else unit}'
+
     @property
     def status_display(self):
         if self.payment_status == 'paid' and self.end_date and self.end_date > timezone.now():

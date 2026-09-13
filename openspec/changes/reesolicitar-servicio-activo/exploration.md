@@ -115,7 +115,7 @@ The minimal safe relaxation: `form_valid` and the templates would only block whi
 
 ## Recommendation
 
-**Option A — create a new `requested` subscription while the old active one stays**, aligned with the existing `SubscriptionRenewView` precedent. It is the least surprising, requires **no** schema change, and matches the already-shipped model semantics (no `(customer, service)` uniqueness). 
+**Option A — create a new `requested` subscription while the old active one stays**, aligned with the existing `SubscriptionRenewView` precedent. It is the least surprising, requires **no** schema change, and matches the already-shipped model semantics (no `(customer, service)` uniqueness).
 
 A pragmatic refinement: block only while a `requested`/`pending` row exists (i.e. combine A + C for the *blocking* rule), and allow submission whenever the latest existing row is `paid`/`expired` or absent. This prevents "double in-flight order" while permitting renewal of an active service. If the product wants true "re-request anytime", drop the block entirely (pure A).
 

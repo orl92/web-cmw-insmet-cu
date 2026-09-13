@@ -1,5 +1,6 @@
 {% extends 'layouts/list.html' %}
 {% load static %}
+{% load my_filters %}
 {% block columns %}
   <th>Título</th>
   <th>Precio</th>
@@ -16,7 +17,7 @@
     {% if object.service_type == 'public' %}
       <span class="text-muted">—</span>
     {% else %}
-      ${{ object.price|floatformat:2 }}
+      {{ object.price|format_cup }} CUP
     {% endif %}
   </td>
   <td>{{ object.date|date:"d/m/Y h:i A" }}</td>

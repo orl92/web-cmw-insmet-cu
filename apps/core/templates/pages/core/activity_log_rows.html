@@ -1,0 +1,20 @@
+<td class="text-nowrap">{{ object.action_time|date:'d/m/Y H:i' }}</td>
+<td>{{ object.user|default:'—' }}</td>
+<td>
+  {% if object.action_flag == 1 %}
+    <span class="badge bg-green-lt">Adición</span>
+  {% elif object.action_flag == 2 %}
+    <span class="badge bg-blue-lt">Cambio</span>
+  {% elif object.action_flag == 3 %}
+    <span class="badge bg-red-lt">Eliminación</span>
+  {% elif object.action_flag == 4 %}
+    <span class="badge bg-azure-lt">Inicio de sesión</span>
+  {% elif object.action_flag == 5 %}
+    <span class="badge bg-orange-lt">Cierre de sesión</span>
+  {% else %}
+    <span class="badge bg-secondary-lt">{{ object.get_action_flag_display }}</span>
+  {% endif %}
+</td>
+<td>{{ object.object_repr|truncatechars:60 }}</td>
+<td>{{ object.message|truncatechars:80 }}</td>
+<td class="text-nowrap">{{ object.ip_address|default:'—' }}</td>

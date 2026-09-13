@@ -72,7 +72,6 @@ WARNING_CONFIG = {
 
 class WarningListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Warning
-    paginate_by = 20
     parent = 'avisos'
 
     def get_warning_type(self):

@@ -149,7 +149,8 @@ class GroupCreateViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Añadir Grupo')
-        self.assertContains(response, '>Aceptar<')
+        self.assertContains(response, 'ti-check')
+        self.assertContains(response, 'Aceptar')
         self.assertContains(response, 'Cancelar')
         self.assertNotContains(response, 'Volver al listado')
 

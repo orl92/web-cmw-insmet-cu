@@ -91,6 +91,10 @@ The AJAX invoice endpoint MUST check `commercial.view_subscription` instead of t
 
 ### Requirement: Staff edit/create buttons on public view
 
+> **(Partly superseded by change `mis-servicios-cliente`)** — The staff management actions ("Editar" / "Nuevo servicio") SHALL remain unchanged and REQ-01 SHALL preserve them. The scenario "AND existing ribbon for staff is preserved" is SUPERSEDED: the catalog no longer renders state ribbons (STATUS-neutral card per `categoria-y-layout-servicios/home-public-services-layout`).
+> (Reason: `mis-servicios-cliente` moves state ribbons/badges out of the public catalog; only staff management controls are preserved.)
+> (Migration: staff actions remain on the public view; ribbon rendering is removed per the new state-neutral card requirement.)
+
 When the viewer `is_staff` or has `commercial.change_service`, the public commercial view SHALL show an "Editar" button (→ `commercial:servicio_update <service.uuid>`) and a "Nuevo servicio" link (→ `commercial:servicio_create`). Existing client/anonymous buttons and ribbons SHALL remain unchanged.
 
 #### Scenario: Staff sees management actions
@@ -98,14 +102,14 @@ When the viewer `is_staff` or has `commercial.change_service`, the public commer
 - GIVEN a staff user viewing the public commercial page
 - WHEN the page renders
 - THEN an "Editar" button and a "Nuevo servicio" link are present
-- AND existing ribbon for staff is preserved
+- AND ~~existing ribbon for staff is preserved~~ (SUPERSEDED by `mis-servicios-cliente`)
 
 #### Scenario: Anonymous viewer sees no management actions
 
 - GIVEN an anonymous user viewing the public commercial page
 - WHEN the page renders
 - THEN no "Editar" button or "Nuevo servicio" link is shown
-- AND the existing anonymous ribbon is preserved
+- AND ~~the existing anonymous ribbon is preserved~~ (SUPERSEDED by `mis-servicios-cliente`)
 
 ### Requirement: Service detail shows category and period price
 
@@ -124,6 +128,10 @@ The service detail view SHALL display the category (Agrometeorológico/Diario) a
 - THEN the category "Diario" and a per-day price of `10` are shown
 
 ### Requirement: Pending subscription guidance without QR
+
+> **(SUPERSEDED by change `mis-servicios-cliente`)** — Pending subscription guidance has moved to "Mis Servicios" (`home:services_commercial`) as the "Ver factura" contextual action for pending subscriptions (REQ-04 in `customer-services-dashboard`). The public catalog no longer renders state-specific guidance.
+> (Reason: state-dependent UI belongs to the customer dashboard, not the public catalog; pending guidance is now a "Ver factura" action in Mis Servicios.)
+> (Migration: pending-state users see "Ver factura" in Mis Servicios instead of inline guidance in the catalog.)
 
 In the public commercial view, a subscription in `pending` state with a non-QR payment method SHALL show guidance text or a link to view the invoice, instead of no button.
 

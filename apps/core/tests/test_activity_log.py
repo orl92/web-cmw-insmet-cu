@@ -121,3 +121,32 @@ class ActivityLogViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Registro creado por superuser')
         self.assertNotContains(response, 'Registro cambiado por superuser')
+
+    def test_filter_by_date_range_accepts_picker_dd_mm_yyyy_format(self):
+        # El picker Tempus envía dd/mm/yyyy; antes esto era un ValidationError 500.
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse('core:activity_log'),
+            {'date_from': '13/09/2026', 'date_to': '13/09/2026'},
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_partial_returns_table_body_only(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse('core:activity_log'), {'partial': '1'})
+        self.assertEqual(response.status_code, 200)
+        # El tbody debe ir dentro de <table>: DOMParser descarta un <tbody> suelto.
+        self.assertContains(response, '<table>')
+        self.assertContains(response, '<tbody>')
+        self.assertContains(response, 'Registro creado por superuser')
+        self.assertNotContains(response, '<html')
+
+    def test_partial_applies_picker_date_filters(self):
+        self.client.force_login(self.superuser)
+        response = self.client.get(
+            reverse('core:activity_log'),
+            {'partial': '1', 'date_from': '13/09/2026', 'date_to': '13/09/2026'},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<table>')
+        self.assertContains(response, '<tbody>')

@@ -18,7 +18,6 @@ class ContractListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Contract
     template_name = 'pages/commercial/contract/list.html'
     permission_required = 'commercial.view_contract'
-    paginate_by = 20
 
     def get_queryset(self):
         return Contract.objects.select_related(

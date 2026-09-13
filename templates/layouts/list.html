@@ -15,13 +15,16 @@
           </a>
         {% endif %}
         {% if url_create %}
-          <a href="{{ url_create }}" class="btn btn-primary">{{ btn }}</a>
+          <a href="{{ url_create }}" class="btn btn-primary">
+            <i class="icon ti ti-plus"></i> {{ btn }}
+          </a>
         {% endif %}
       </div>
     </div>
   {% endif %}
 {% endblock title_actions %}
 {% block content %}
+  {% block filters %}{% endblock %}
   <div class="card">
     <div class="card-body p-4 table-responsive rounded-3">
       <table id="{{ list_id|default:'example' }}" class="table" style="width:100%">
@@ -50,12 +53,21 @@
   <script src="{% static 'dist/libs/fslightbox/index.js' %}" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      new DataTable('#{{ list_id|default:'example' }}', {
+      var selector = '#{{ list_id|default:'example' }}';
+      var el = document.querySelector(selector);
+      if (!el) return;
+      // Se guarda la instancia globalmente para que los filtros AJAX
+      // (p.ej. activity-log-filters.js) refresquen solo los datos de la tabla.
+      window.dataTableInstances = window.dataTableInstances || {};
+      window.dataTableConfigs = window.dataTableConfigs || {};
+      var cfg = {
         processing: true,
         language: {
           url: "{% static 'dist/libs/datatables/Spanish.json' %}"
         }
-      })
+      };
+      window.dataTableConfigs[el.id] = cfg;
+      window.dataTableInstances[el.id] = new DataTable(selector, cfg);
     })
   </script>
 {% endblock %}

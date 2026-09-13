@@ -90,7 +90,7 @@ class TaskMonitoringViewTests(TestCase):
         self.assertIn('badge bg-info-lt', content)
 
     def test_actions_use_icons_and_tooltips(self):
-        """"Acciones con iconos + tooltips y args truncadas (estilo listados)."""
+        """ "Acciones con iconos + tooltips y args truncadas (estilo listados)."""
         long_args = 'arg1=' + 'x' * 200
         TaskExecutionLog.objects.create(
             task_id='err-icon-1',
@@ -117,7 +117,7 @@ class TaskMonitoringViewTests(TestCase):
         self.assertIn('title="' + long_args.replace('"', '&quot;') + '"', content)
 
     def test_delete_uses_confirm_modal(self):
-        """"Eliminar" abre el modal de confirmación (estilo listados)."""
+        """ "Eliminar" abre el modal de confirmación (estilo listados)."""
         TaskExecutionLog.objects.create(
             task_id='del-modal-1',
             task_name='send_email_task',
@@ -219,8 +219,11 @@ class TaskMonitoringActionTests(TestCase):
         execution = self._log()
         self.client.force_login(
             User.objects.create_user(
-                'reg_mon_action2', 'reg_mon_action2@example.com', 'pass',
-                first_name='Reg', last_name='Action',
+                'reg_mon_action2',
+                'reg_mon_action2@example.com',
+                'pass',
+                first_name='Reg',
+                last_name='Action',
             )
         )
         response = self.client.post(

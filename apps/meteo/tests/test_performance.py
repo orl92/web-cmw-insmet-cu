@@ -29,7 +29,8 @@ class WarningListViewQueryCountTests(TestCase):
             first_name='Perf',
             last_name='Admin',
         )
-        # Create > paginate_by so the query-count guard is meaningful.
+        # Create enough records so the DataTables grid really loads every record
+        # (client-side pagination, no paginate_by on the view).
         for i in range(25):
             Warning.objects.create(
                 warning_type='early',
@@ -41,12 +42,13 @@ class WarningListViewQueryCountTests(TestCase):
 
     def test_query_count_is_constant_and_joined(self):
         # Calibrated constant (this environment): session/auth + middleware
-        # (CheckUserProfile, MaintenanceMode) + SiteConfiguration + ListView
-        # COUNT + context-processor counts + 1 joined page fetch.
+        # (CheckUserProfile, MaintenanceMode) + SiteConfiguration + context-processor
+        # counts + 1 joined page fetch. No pagination COUNT: DataTables views
+        # (layouts/list.html) do not set paginate_by.
         # If select_related('user') is dropped, each of the 25 rendered rows
         # would add a user query -> count would scale with row count.
         self.client.force_login(self.admin)
-        with self.assertNumQueries(14):
+        with self.assertNumQueries(13):
             response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 

@@ -52,6 +52,23 @@ The `service_category` select SHALL be present regardless of `service_type` (pub
 - WHEN the code toggles between `public` and `commercial` service types
 - THEN the `service_category` select SHALL remain visible in both states
 
+### Requirement: Public card exposes category badge and discrete code
+
+`commercial_public.html` SHALL renderizar el badge de categoría (`service.get_service_category_display()`: "Agrometeorológico"/"Pronóstico") y el `service.code` de forma discreta (p. ej. "Código: C200") solo si existe, como referencia para facturas.
+
+#### Scenario: Badge y código visibles
+
+- GIVEN servicio comercial con `service_category='agrometeo'` y code='C200'
+- WHEN se renderiza el card público
+- THEN aparece el badge "Agrometeorológico"
+- AND el texto "Código: C200" está presente
+
+#### Scenario: Sin código no se muestra etiqueta
+
+- GIVEN servicio comercial sin `code`
+- WHEN se renderiza el card público
+- THEN no hay etiqueta "Código:"
+
 ## Coverage Notes
 
 - No model changes, no data migration; default `pronostico` stays the model's default.

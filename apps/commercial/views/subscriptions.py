@@ -27,7 +27,6 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     model = ServiceSubscription
     template_name = 'pages/commercial/subscription/list.html'
     context_object_name = 'objects'
-    paginate_by = 20
     permission_required = 'commercial.view_subscription'
 
     def get_queryset(self):
@@ -375,11 +374,28 @@ def enviar_correo_certificado(subscription, request=None):
         return False
 
 
-class ResendCertificateEmailView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = 'commercial.change_subscription'
+class ResendCertificateEmailView(LoginRequiredMixin, View):
+    """Reenvía el certificado de una suscripción por correo.
+
+    Acceso: staff con ``commercial.change_subscription`` o el cliente titular
+    de la suscripción del certificado (las páginas "Mis Servicios" y "Mis
+    Suscripciones" muestran el botón de reenvío). Cualquier otro usuario
+    recibe 403.
+    """
+
+    def has_permission(self, subscription):
+        user = self.request.user
+        if user.has_perm('commercial.change_subscription'):
+            return True
+        if not hasattr(user, 'commercial_customer'):
+            return False
+        return subscription.customer_id == user.commercial_customer.pk
 
     def get(self, request, uuid):
         subscription = get_object_or_404(ServiceSubscription, uuid=uuid)
+
+        if not self.has_permission(subscription):
+            raise PermissionDenied
 
         if subscription.payment_status != 'paid':
             messages.error(

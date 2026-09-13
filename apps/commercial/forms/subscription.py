@@ -102,6 +102,15 @@ class CertificateUploadForm(forms.ModelForm):
         }
 
 
+def _pluralize_period(period):
+    """Pluraliza un período de facturación en español ('día' -> 'días', 'mes' -> 'meses')."""
+    if period.endswith(('s', 'x')):
+        return f'{period}es'
+    if period and period[-1] in 'aeiouáéíóú':
+        return f'{period}s'
+    return f'{period}es'
+
+
 class PaymentMethodForm(forms.Form):
     PAYMENT_METHOD_CHOICES = [
         ('qr', 'Pago por Código QR'),
@@ -112,24 +121,30 @@ class PaymentMethodForm(forms.Form):
         choices=PAYMENT_METHOD_CHOICES, widget=forms.RadioSelect, label='Método de pago'
     )
     start_date = forms.DateField(
+        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
         label='Fecha de inicio del servicio',
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        widget=forms.DateInput(
+            attrs={
+                'class': 'form-control',
+                'data-tempus': 'date',
+                'autocomplete': 'off',
+            }
+        ),
         required=True,
         help_text='Fecha desde la cual necesita el servicio.',
     )
     quantity = forms.IntegerField(
         min_value=1,
-        label='Cantidad de días',
+        label='Cantidad',
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
-        help_text='Cantidad de meses (agrometeo) o días (pronóstico).',
+        help_text=(
+            'El importe total se calcula multiplicando el precio por la cantidad seleccionada.'
+        ),
     )
 
-    def __init__(self, *args, category='pronostico', **kwargs):
+    def __init__(self, *args, billing_period='día', **kwargs):
         super().__init__(*args, **kwargs)
-        if category == 'agrometeo':
-            self.fields['quantity'].label = 'Cantidad de meses'
-        else:
-            self.fields['quantity'].label = 'Cantidad de días'
+        self.fields['quantity'].label = f'Cantidad de {_pluralize_period(billing_period)}'
 
 
 class InvoiceForm(forms.Form):

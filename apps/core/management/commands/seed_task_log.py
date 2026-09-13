@@ -6,6 +6,7 @@ Uso:
 
 --flush  elimina los registros de TaskExecutionLog antes de insertar los demo.
 """
+
 import json
 from datetime import timedelta
 
@@ -25,8 +26,8 @@ def _traceback():
         '    invoice = Invoice.objects.get(uuid=payload["invoice_uuid"])\n'
         '  File "..../models/query.py", line 544, in get\n'
         '    raise self.model.DoesNotExist(\n'
-        "apps.commercial.models.DoesNotExist: "
-        "Invoice matching query does not exist.\n"
+        'apps.commercial.models.DoesNotExist: '
+        'Invoice matching query does not exist.\n'
     )
 
 
@@ -82,8 +83,7 @@ class Command(BaseCommand):
                 started_at=now - timedelta(seconds=20),
                 attempts=1,
                 args_repr=(
-                    "send_email_task('Boletín semanal', "
-                    "recipients=['a@x.cu'], (...) omitido)"
+                    "send_email_task('Boletín semanal', recipients=['a@x.cu'], (...) omitido)"
                 ),
             ),
             # SUCCESS completo.
@@ -129,11 +129,10 @@ class Command(BaseCommand):
                     'Traceback (most recent call last):\n'
                     '  File "apps/core/tasks.py", line 30, in send_email_task\n'
                     '    connection.send_messages([message])\n'
-                    'smtplib.SMTPConnectError: (111, \'Connection refused\')\n'
+                    "smtplib.SMTPConnectError: (111, 'Connection refused')\n"
                 ),
                 args_repr=(
-                    "send_email_task('Aviso de factura', "
-                    "recipients=['x@y.cu'], (...) omitido)"
+                    "send_email_task('Aviso de factura', recipients=['x@y.cu'], (...) omitido)"
                 ),
             ),
             # RETRYING: intentos > 1 (Huey reintentando automáticamente).

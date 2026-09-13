@@ -1,5 +1,5 @@
 {% if page_obj.paginator.num_pages > 1 %}
-  <div class="card-footer border-0 pt-0">
+  <div class="card-footer border-0 pt-0 mt-3">
     <div class="pagination justify-content-center">
       <ul class="pagination pagination-sm mb-0">
         {% if page_obj.has_previous %}
@@ -8,7 +8,8 @@
           </li>
           <li class="page-item">
             <a href="?{{ param_name }}={{ page_obj.previous_page_number }}"
-               class="page-link">&lsaquo;</a>
+               class="page-link"
+               aria-label="Página anterior"><span aria-hidden="true">&lsaquo;</span></a>
           </li>
         {% endif %}
         <li class="page-item disabled">
@@ -17,7 +18,8 @@
         {% if page_obj.has_next %}
           <li class="page-item">
             <a href="?{{ param_name }}={{ page_obj.next_page_number }}"
-               class="page-link">&rsaquo;</a>
+               class="page-link"
+               aria-label="Página siguiente"><span aria-hidden="true">&rsaquo;</span></a>
           </li>
           <li class="page-item">
             <a href="?{{ param_name }}={{ page_obj.paginator.num_pages }}"

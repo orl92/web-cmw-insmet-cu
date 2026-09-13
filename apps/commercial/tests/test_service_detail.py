@@ -1,7 +1,8 @@
 """Tests for the servicios detail (Service) UI fix (016-public-ui-ux, Phase 5).
 
-- Service.PERIOD_DAYS == 30 (business constant).
-- Template renders summary sanitized and image with object-fit: contain.
+- Service.PERIOD_DAYS == 1 (business constant).
+- Template renders summary sanitized and image with the responsive
+  aspect-ratio + object-fit-cover pattern (no white bands on wide images).
 """
 
 from datetime import date
@@ -44,11 +45,12 @@ class ServiceDetailTemplateTests(TestCase):
             image='services/test.png',
         )
 
-    def test_template_renders_sanitized_summary_and_contain(self):
+    def test_template_renders_sanitized_summary_and_responsive_image(self):
         self.client.force_login(self.user)
         url = reverse('home:services_commercial_detail', args=[self.service.uuid])
         html = self.client.get(url).content.decode()
-        self.assertIn('object-fit: contain', html)
+        self.assertIn('object-fit-cover', html)
+        self.assertIn('aspect-ratio: 4/3', html)
         self.assertIn('Resumen', html)
         self.assertNotIn('<script>alert(1)</script>', html)
         # Category and period display rendered.

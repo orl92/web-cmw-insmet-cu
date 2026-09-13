@@ -1,0 +1,11 @@
+<table>
+  <tbody>
+    {% for object in objects %}
+      <tr>{% include 'pages/core/activity_log_rows.html' %}</tr>
+    {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted py-4">No hay registros que coincidan con los filtros.</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
