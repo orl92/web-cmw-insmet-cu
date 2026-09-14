@@ -4,7 +4,7 @@
 
 Django 5.2 + DRF + drf-spectacular (OpenAPI), Python 3.12 (CI y ruff apuntan a `py312`). Virtual env `.venv/`. UI: Tabler vía Django Templates; raíz `templates/` con `layouts/` e `includes/`, y páginas en `apps/<app>/templates/pages/`. DB: SQLite dev, PostgreSQL/MySQL prod. Apps dentro de `apps/`.
 
-**Restricción de frontend:** JS 100% vanilla, **SIN Node.js, SIN bundlers ni paso de build**. Las librerías de terceros (Tabler, Tempus Dominus, etc.) se vendorean como `*.min.js` en `static/dist/libs/` y se sirven directo. No introducir npm, transpilación ni tooling JS en el proyecto.
+**Restricción de frontend:** JS 100% vanilla, **SIN Node.js, SIN bundlers ni paso de build**. Las librerías de terceros se vendorean como `*.min.js` y se sirven directo. Por legado, Tabler (CSS y JS) vive en `static/dist/css/` y `static/dist/js/` (ver `templates/includes/base/head.html` y `scripts.html`); el resto (Tempus Dominus, Popper, jQuery, DataTables, amcharts, highcharts, etc.) va en `static/dist/libs/`. No introducir npm, transpilación ni tooling JS en el proyecto.
 
 ## Misión, alcance y límites duros
 
@@ -14,7 +14,7 @@ Django 5.2 + DRF + drf-spectacular (OpenAPI), Python 3.12 (CI y ruff apuntan a `
 
 **Límites duros (no negociables):**
 - No commitear secretos ni datos: `.env`, `db.sqlite3` ni `media/` (ya excluidos en `.gitignore`).
-- No introducir dependencias npm, bundlers o frameworks JS (todo es Django Templates + Tabler + JS vanilla vendoreado en `static/dist/libs/`).
+- No introducir dependencias npm, bundlers o frameworks JS (todo es Django Templates + Tabler + JS vanilla vendoreado; Tabler en `static/dist/css` + `static/dist/js`, las demás libs en `static/dist/libs/`).
 - No quitar `FileHandlerMixin` de modelos con `FileField`/`ImageField` (pérdida de archivos en media).
 - No cambiar `default_permissions = ()` sin redefinir los 4 permisos custom (`view_*`/`add_*`/`change_*`/`delete_*`).
 - No saltarse el flujo SDD para features (proposal → design → tasks → implementación → archive en `openspec/changes/`).
@@ -119,7 +119,7 @@ La lista `<available_skills>` del sistema es la fuente autoritativa de skills ca
 ### MCP
 - `context7` — documentación actualizada de librerías/frameworks (Django, DRF, drf-spectacular, etc.). Usarlo siempre que se necesiten APIs, ejemplos o configuración de una librería; formato `use library /django/django`
 - `engram` — memoria persistente del proyecto (decisiones, descubrimientos, convenciones)
-- `tabler` — server MCP de Tabler.io (proyecto comunitario, MIT) para buscar íconos, componentes, layouts, paleta y docs de Tabler. Es un server stdio local (`npx -y tabler-mcp-server`) configurado en el opencode del agente, NO en el repo. Las sugerencias de CDN que genera se ignoran, porque el proyecto vendorea Tabler en `static/dist/libs/`.
+- `tabler` — server MCP de Tabler.io (proyecto comunitario, MIT) para buscar íconos, componentes, layouts, paleta y docs de Tabler. Es un server stdio local (`npx -y tabler-mcp-server`) configurado en el opencode del agente, NO en el repo. Las sugerencias de CDN que genera se ignoran, porque el proyecto vendorea Tabler en `static/dist/css/` y `static/dist/js/` (legacy; ver `templates/includes/base/head.html` y `scripts.html`).
 
 ## Flujo SDD (gentle-ai / OpenSpec)
 
