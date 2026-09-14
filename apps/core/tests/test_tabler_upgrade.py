@@ -65,7 +65,11 @@ class Tabler151UpgradeRenderTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(reverse('dashboard:index'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '<html lang="es" data-bs-theme="light">', count=1)
+        self.assertContains(
+            response,
+            '<html lang="es" data-bs-theme="light" data-bs-navbar-position="vertical">',
+            count=1,
+        )
         self.assertNotContains(response, 'data-bs-theme="auto"')
 
     def test_home_page_cache_busts_all_four_swapped_assets(self):
@@ -98,7 +102,18 @@ class Tabler151UpgradeFileContractTests(TestCase):
 
     def test_layouts_carry_static_light_theme_attribute(self):
         for layout in ('templates/layouts/base.html', 'templates/layouts/base-auth.html'):
-            self.assertIn('<html lang="es" data-bs-theme="light">', self._read(layout))
+            self.assertIn('lang="es" data-bs-theme="light"', self._read(layout))
+
+    def test_dashboard_layout_declares_vertical_navbar_position(self):
+        # Tabler 1.5.1 hides .navbar-vertical when .page contains a horizontal
+        # navbar and <html> lacks data-bs-navbar-position="vertical". The CMP
+        # dashboard keeps BOTH navbars, so the vertical position is the default
+        # declared by base.html; the public home layout blanks the block.
+        base = self._read('templates/layouts/base.html')
+        self.assertIn('data-bs-navbar-position="vertical"', base)
+        self.assertIn(
+            '{% block html_attrs %}{% endblock %}', self._read('templates/layouts/home.html')
+        )
 
     def test_layouts_header_comment_bumped_to_151(self):
         for layout in ('templates/layouts/base.html', 'templates/layouts/base-auth.html'):
