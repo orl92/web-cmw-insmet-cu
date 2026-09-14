@@ -148,3 +148,23 @@ class Tabler151UpgradeFileContractTests(TestCase):
             content = self._read(rel)
             self.assertNotIn('cdn.jsdelivr.net', content, msg=rel)
             self.assertNotIn('unpkg.com', content, msg=rel)
+
+    def test_webfont_icons_scaled_via_icon_size_variable_not_font_size(self):
+        # Tabler 1.5.1 .icon uses display:inline-block with a fixed
+        # width/height box driven by --tblr-icon-size (default 1.25rem). An
+        # inline `font-size` on the glyph grows it beyond that box, so the
+        # icon overflows its card/footer/empty-state container (dashboard KPI
+        # cards, comercial cards, footer social icons, pdf avatar placeholder).
+        # Scale the icon the canonical way: --tblr-icon-size: <size>.
+        import re
+
+        scanned = 0
+        for root in (BASE_DIR / 'templates', BASE_DIR / 'apps'):
+            for path in root.rglob('*'):
+                if not path.is_file() or path.suffix != '.html':
+                    continue
+                scanned += 1
+                content = path.read_text(encoding='utf-8', errors='ignore')
+                if re.search(r'class="icon ti.{0,120}?font-size:', content, re.DOTALL):
+                    self.fail(f'{path}: webfont icon scaled with inline font-size')
+        self.assertGreater(scanned, 20)
