@@ -303,11 +303,11 @@ function showToast(message, type = 'info') {
 
     let icon;
     if (type === 'success') {
-        icon = '<i class="icon ti ti-circle-check me-2" style="font-size:24px"></i>';
+        icon = '<i class="icon ti ti-circle-check me-2" style="--tblr-icon-size:24px"></i>';
     } else if (type === 'error') {
-        icon = '<i class="icon ti ti-alert-triangle me-2" style="font-size:24px"></i>';
+        icon = '<i class="icon ti ti-alert-triangle me-2" style="--tblr-icon-size:24px"></i>';
     } else {
-        icon = '<i class="icon ti ti-info-circle me-2" style="font-size:24px"></i>';
+        icon = '<i class="icon ti ti-info-circle me-2" style="--tblr-icon-size:24px"></i>';
     }
 
     const toastHTML = `

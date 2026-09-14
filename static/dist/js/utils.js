@@ -14,19 +14,19 @@ function showToast(message, type = 'danger', duration = 5000) {
     let icon, title;
     switch(type) {
       case 'success':
-        icon = '<i class="icon ti ti-circle-check" style="font-size:24px"></i>';
+        icon = '<i class="icon ti ti-circle-check" style="--tblr-icon-size:24px"></i>';
         title = 'Éxito';
         break;
       case 'warning':
-        icon = '<i class="icon ti ti-alert-triangle" style="font-size:24px"></i>';
+        icon = '<i class="icon ti ti-alert-triangle" style="--tblr-icon-size:24px"></i>';
         title = 'Advertencia';
         break;
       case 'info':
-        icon = '<i class="icon ti ti-info-circle" style="font-size:24px"></i>';
+        icon = '<i class="icon ti ti-info-circle" style="--tblr-icon-size:24px"></i>';
         title = 'Información';
         break;
       default:
-        icon = '<i class="icon ti ti-circle-x" style="font-size:24px"></i>';
+        icon = '<i class="icon ti ti-circle-x" style="--tblr-icon-size:24px"></i>';
         title = 'Error';
     }
     const toastHTML = `

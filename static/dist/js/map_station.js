@@ -70,9 +70,9 @@ function cargarEstaciones() {
 }
 
 // Definir los SVG como strings
-var windSvg = '<i class="icon ti ti-wind" style="font-size:44px"></i>';
-var rainSvg = '<i class="icon ti ti-cloud-rain" style="font-size:44px"></i>';
-var humiditySvg = '<i class="icon ti ti-droplet" style="font-size:44px"></i>';
+var windSvg = '<i class="icon ti ti-wind" style="--tblr-icon-size:44px"></i>';
+var rainSvg = '<i class="icon ti ti-cloud-rain" style="--tblr-icon-size:44px"></i>';
+var humiditySvg = '<i class="icon ti ti-droplet" style="--tblr-icon-size:44px"></i>';
 
 // Definir las variables para almacenar los datos
 var temperaturasDelDia = {};

@@ -154,14 +154,22 @@ class Tabler151UpgradeFileContractTests(TestCase):
         # width/height box driven by --tblr-icon-size (default 1.25rem). An
         # inline `font-size` on the glyph grows it beyond that box, so the
         # icon overflows its card/footer/empty-state container (dashboard KPI
-        # cards, comercial cards, footer social icons, pdf avatar placeholder).
+        # cards, comercial cards, footer social icons, pdf avatar placeholder,
+        # toast/station icons built in project JS).
         # Scale the icon the canonical way: --tblr-icon-size: <size>.
         import re
 
         scanned = 0
-        for root in (BASE_DIR / 'templates', BASE_DIR / 'apps'):
+        roots = (
+            (BASE_DIR / 'templates', {'.html'}),
+            (BASE_DIR / 'apps', {'.html'}),
+            (BASE_DIR / 'static' / 'dist' / 'js', {'.js'}),
+        )
+        for root, suffixes in roots:
             for path in root.rglob('*'):
-                if not path.is_file() or path.suffix != '.html':
+                if not path.is_file() or path.suffix not in suffixes:
+                    continue
+                if path.name.endswith('.min.js'):
                     continue
                 scanned += 1
                 content = path.read_text(encoding='utf-8', errors='ignore')
