@@ -281,6 +281,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Función para mostrar notificaciones toast (opcional)
 function showToast(message, type = 'info') {
+    // Tabler 1.5.1 expone Bootstrap bajo window.tabler (UMD); el fallback
+    // mantiene compatibilidad con exposiciones globales previas.
+    const Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
+    if (!Bootstrap || !Bootstrap.Toast) {
+        console.error('showToast: Bootstrap no está disponible.');
+        return;
+    }
+
     // Si no existe el contenedor de toasts, crearlo
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
@@ -293,11 +301,20 @@ function showToast(message, type = 'info') {
     const toastId = 'toast-' + Date.now();
     const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info';
 
+    let icon;
+    if (type === 'success') {
+        icon = '<i class="icon ti ti-circle-check me-2" style="font-size:24px"></i>';
+    } else if (type === 'error') {
+        icon = '<i class="icon ti ti-alert-triangle me-2" style="font-size:24px"></i>';
+    } else {
+        icon = '<i class="icon ti ti-info-circle me-2" style="font-size:24px"></i>';
+    }
+
     const toastHTML = `
         <div id="${toastId}" class="toast ${bgClass} text-white" role="alert">
             <div class="toast-body">
                 <div class="d-flex align-items-center">
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} me-2"></i>
+                    ${icon}
                     <span>${message}</span>
                     <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
@@ -308,7 +325,7 @@ function showToast(message, type = 'info') {
     toastContainer.insertAdjacentHTML('beforeend', toastHTML);
 
     const toastElement = document.getElementById(toastId);
-    const toast = new bootstrap.Toast(toastElement);
+    const toast = new Bootstrap.Toast(toastElement);
     toast.show();
 
     // Remover el toast del DOM después de que se oculte
