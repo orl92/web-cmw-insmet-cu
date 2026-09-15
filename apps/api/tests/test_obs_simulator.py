@@ -7,14 +7,18 @@ convention, deterministic seeds and validation errors; plus the realism bounds
 ``38 <= RH <= 100``.
 
 Work unit 1 scope: only :class:`SynopSimulatorUnitTests` and the ``_decode``
-helper. The decode-through-``Descodificador`` realism and the local-endpoint
-test classes land with work units 2/3.
+helper. Work unit 2 adds :class:`GenerateObsCommandTests` for the
+``generate_obs`` management command. The decode-through-``Descodificador``
+realism and the local-endpoint test classes land with work unit 3.
 """
 
 import math
 import tempfile
-from datetime import date
+from datetime import UTC, date, datetime
+from pathlib import Path
 
+from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import SimpleTestCase
 
 from apps.api.data.SynopSimulator import SynopSimulator
@@ -175,3 +179,119 @@ class SynopSimulatorUnitTests(SimpleTestCase):
                 rh = 100 * _magnus_es(td) / _magnus_es(t)
                 self.assertGreaterEqual(rh, 38)
                 self.assertLessEqual(rh, 100)
+
+
+class GenerateObsCommandTests(SimpleTestCase):
+    """Management command ``generate_obs`` (tasks 4.1, 4.2, 5.3).
+
+    Exercises the CLI contract from OBS-SIM-GENERATOR through
+    ``call_command``: option defaults, SM/SI file writing, output-dir
+    creation, the today-UTC default date, and the ``CommandError`` paths for
+    invalid station, hour and date. Every run uses a temporary output
+    directory so ``media/obs`` (real downloads) is never touched.
+    """
+
+    def test_generates_sm_file_at_explicit_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            call_command(
+                'generate_obs',
+                station=78352,
+                hour='12',
+                date=date(2026, 9, 14),
+                output=tmp,
+            )
+            path = Path(tmp) / 'SM352.12'
+            self.assertTrue(path.exists(), 'SM352.12 was not written')
+            text = path.read_text()
+            self.assertEqual(text.splitlines()[0], 'AAXX 14121')
+            session2 = _decode(text, 78352)['sesion2'].split()
+            self.assertTrue(any(g.startswith('10') for g in session2), session2)
+            self.assertTrue(any(g.startswith('20') for g in session2), session2)
+
+    def test_generates_si_file_without_tx_tn(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            call_command(
+                'generate_obs',
+                station=78352,
+                hour='03',
+                date=date(2026, 9, 14),
+                output=tmp,
+            )
+            path = Path(tmp) / 'SI352.03'
+            self.assertTrue(path.exists(), 'SI352.03 was not written')
+            text = path.read_text()
+            self.assertEqual(text.splitlines()[0], 'AAXX 14031')
+            self.assertEqual(_decode(text, 78352)['sesion2'], '56900 81825=')
+
+    def test_output_directory_is_created_when_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / 'nested' / 'obs'
+            call_command(
+                'generate_obs',
+                station=78350,
+                hour='00',
+                date=date(2026, 9, 14),
+                output=str(output),
+            )
+            self.assertTrue((output / 'SM350.00').exists())
+
+    def test_defaults_generate_all_stations_and_hours(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            call_command('generate_obs', output=tmp)
+            names = {path.name for path in Path(tmp).iterdir()}
+            expected = {
+                SynopSimulator.filename_for(station, hour)
+                for station in SynopSimulator.STATIONS
+                for hour in SynopSimulator.HOURS
+            }
+            self.assertEqual(len(names), len(SynopSimulator.STATIONS) * len(SynopSimulator.HOURS))
+            self.assertEqual(names, expected)
+
+    def test_default_date_is_today_utc(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            before = datetime.now(UTC).date()
+            call_command('generate_obs', station=78352, hour='12', output=tmp)
+            after = datetime.now(UTC).date()
+            header = (Path(tmp) / 'SM352.12').read_text().splitlines()[0]
+            self.assertIn(header, {f'AAXX {day.day:02d}121' for day in (before, after)})
+
+    def test_invalid_station_list_valid_stations(self):
+        for station in (99999, 78349):
+            with self.subTest(station=station):
+                with tempfile.TemporaryDirectory() as tmp, self.assertRaises(CommandError) as ctx:
+                    call_command(
+                        'generate_obs',
+                        station=station,
+                        hour='12',
+                        date=date(2026, 9, 14),
+                        output=tmp,
+                    )
+                self.assertIn('78350', str(ctx.exception))
+                self.assertIn('78355', str(ctx.exception))
+
+    def test_invalid_hour_list_valid_hours(self):
+        with tempfile.TemporaryDirectory() as tmp, self.assertRaises(CommandError) as ctx:
+            call_command(
+                'generate_obs',
+                station=78352,
+                hour='25',
+                date=date(2026, 9, 14),
+                output=tmp,
+            )
+        self.assertIn("'00'", str(ctx.exception))
+        self.assertIn("'21'", str(ctx.exception))
+
+    def test_invalid_date_raises_command_error(self):
+        for bad in ('2026-02-30', 'not-a-date', '14/09/2026'):
+            with (
+                self.subTest(bad=bad),
+                tempfile.TemporaryDirectory() as tmp,
+                self.assertRaises(CommandError),
+            ):
+                call_command(
+                    'generate_obs',
+                    station=78352,
+                    hour='12',
+                    date=bad,
+                    output=tmp,
+                )

@@ -51,14 +51,14 @@ Chain strategy: pending
 
 ## Phase 4: CLI (`generate_obs`)
 
-- [ ] 4.1 `apps/api/management/commands/generate_obs.py` — `BaseCommand`; options `--station`, `--hour` (repeatable), `--date` (default today UTC), `--output` (default `media/obs`); defaults all six stations / eight hours
-- [ ] 4.2 Validation + run — `--station` outside `[78350..78355]` or invalid `--hour` → `CommandError` listing valid values (exit ≠ 0); create output dir; call `generate_all`
+- [x] 4.1 `apps/api/management/commands/generate_obs.py` — `BaseCommand`; options `--station`, `--hour` (repeatable), `--date` (default today UTC), `--output` (default `media/obs`); defaults all six stations / eight hours
+- [x] 4.2 Validation + run — `--station` outside `[78350..78355]` or invalid `--hour` → `CommandError` listing valid values (exit ≠ 0); create output dir; call `generate_all`
 
 ## Phase 5: Tests (`apps/api/tests/test_obs_simulator.py`)
 
 - [x] 5.1 Create module — Django unittest (`SimpleTestCase` pure-unit, `APITestCase` HTTP), `SiteConfiguration` fixture like `test_api.py`, `_decode(text, station)` helper mirroring `OpenFileObs.station()`
 - [x] 5.2 `SynopSimulatorUnitTests` — header `AAXX YYGG1`; SM s2 has `10`/`20` groups, SI s2 == `56900 81825=` without them; filename convention; same seed → identical bytes; validation errors; `Td < T` + RH ∈ [38, 100]
-- [ ] 5.3 `GenerateObsCommandTests` — `call_command` writes `media/obs/SM352.12` for `--station 78352 --hour 12 --date 2026-09-14`; invalid station/hour raise `CommandError`
+- [x] 5.3 `GenerateObsCommandTests` — `call_command` writes `media/obs/SM352.12` for `--station 78352 --hour 12 --date 2026-09-14`; invalid station/hour raise `CommandError`
 - [ ] 5.4 `SynopSimulatorRealismTests` — hours 03/09/12/18/21 same date via `Descodificador`: T ∈ [17, 30.5], T(18)/T(21) ≥ T(09)/T(12), RH ∈ [38, 100], sky ∈ {Despejado, Poco nublado, Parcialmente nublado}, Nh ≤ 5, station/sea-P ranges, SM Tx/Tn ranges, dd azimuth NE→E
 - [ ] 5.5 `ObsLocalModeEndpointTests` — `setUp` writes today-dated `media/obs/SM352.12` + `addCleanup`; `override_settings(OBS_LOCAL_ONLY=True)` + `mock.patch('subprocess.run', side_effect=AssertionError)` → GET observation (12, 78352) = 200 and run never called; missing file → `FileNotFoundError` naming `media/obs`; flag unset → lftp path reached (`time.sleep` patched)
 
