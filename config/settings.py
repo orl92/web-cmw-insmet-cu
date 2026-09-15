@@ -404,6 +404,11 @@ FTP_OBS_USER = os.getenv('FTP_OBS_USER')
 FTP_OBS_PASS = os.getenv('FTP_OBS_PASS')
 FTP_OBS_PORT = os.getenv('FTP_OBS_PORT', '990')
 
+# Dev-only: sirve observaciones SYNOP desde media/obs sin FTPS (simulador offline).
+# OFF en producción por defecto; activar solo en desarrollo/tests con:
+# OBS_LOCAL_ONLY=1 python manage.py runserver
+OBS_LOCAL_ONLY = os.getenv('OBS_LOCAL_ONLY', '0') in ('1', 'true', 'True', 'yes')
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Centro Meteorológico Camagüey',
     'DESCRIPTION': 'Documentación de la API',

@@ -2,7 +2,7 @@
 
 Decision needed before apply: Yes
 Chained PRs recommended: Yes
-Chain strategy: pending
+Chain strategy: stacked-to-main
 400-line budget risk: High
 
 ## Review Workload Forecast
@@ -14,11 +14,11 @@ Chain strategy: pending
 | Chained PRs recommended | Yes |
 | Suggested split | PR 1 (generator) → PR 2 (CLI) → PR 3 (local mode + pipeline tests) |
 | Delivery strategy | ask-on-risk |
-| Chain strategy | pending |
+| Chain strategy | stacked-to-main |
 
 Decision needed before apply: Yes
 Chained PRs recommended: Yes
-Chain strategy: pending
+Chain strategy: stacked-to-main
 400-line budget risk: High
 
 ### Suggested Work Units
@@ -46,8 +46,8 @@ Chain strategy: pending
 
 ## Phase 3: Local mode (settings flag + FileObs)
 
-- [ ] 3.1 `config/settings.py` — add `OBS_LOCAL_ONLY = os.getenv('OBS_LOCAL_ONLY', '0') in ('1','true','True','yes')` after `FTP_OBS_PORT` (~line 405) with DEV-ONLY comment
-- [ ] 3.2 `apps/api/data/FileObs.py` — in `descargar_archivos_por_hora`, after `makedirs` and before the lftp loop: `if settings.OBS_LOCAL_ONLY:` return existing `media/obs/{filename}`, else raise `FileNotFoundError` naming the path + `generate_obs` hint (D6; unset path byte-identical)
+- [x] 3.1 `config/settings.py` — add `OBS_LOCAL_ONLY = os.getenv('OBS_LOCAL_ONLY', '0') in ('1','true','True','yes')` after `FTP_OBS_PORT` (~line 405) with DEV-ONLY comment
+- [x] 3.2 `apps/api/data/FileObs.py` — in `descargar_archivos_por_hora`, after `makedirs` and before the lftp loop: `if settings.OBS_LOCAL_ONLY:` return existing `media/obs/{filename}`, else raise `FileNotFoundError` naming the path + `generate_obs` hint (D6; unset path byte-identical)
 
 ## Phase 4: CLI (`generate_obs`)
 
@@ -59,8 +59,8 @@ Chain strategy: pending
 - [x] 5.1 Create module — Django unittest (`SimpleTestCase` pure-unit, `APITestCase` HTTP), `SiteConfiguration` fixture like `test_api.py`, `_decode(text, station)` helper mirroring `OpenFileObs.station()`
 - [x] 5.2 `SynopSimulatorUnitTests` — header `AAXX YYGG1`; SM s2 has `10`/`20` groups, SI s2 == `56900 81825=` without them; filename convention; same seed → identical bytes; validation errors; `Td < T` + RH ∈ [38, 100]
 - [x] 5.3 `GenerateObsCommandTests` — `call_command` writes `media/obs/SM352.12` for `--station 78352 --hour 12 --date 2026-09-14`; invalid station/hour raise `CommandError`
-- [ ] 5.4 `SynopSimulatorRealismTests` — hours 03/09/12/18/21 same date via `Descodificador`: T ∈ [17, 30.5], T(18)/T(21) ≥ T(09)/T(12), RH ∈ [38, 100], sky ∈ {Despejado, Poco nublado, Parcialmente nublado}, Nh ≤ 5, station/sea-P ranges, SM Tx/Tn ranges, dd azimuth NE→E
-- [ ] 5.5 `ObsLocalModeEndpointTests` — `setUp` writes today-dated `media/obs/SM352.12` + `addCleanup`; `override_settings(OBS_LOCAL_ONLY=True)` + `mock.patch('subprocess.run', side_effect=AssertionError)` → GET observation (12, 78352) = 200 and run never called; missing file → `FileNotFoundError` naming `media/obs`; flag unset → lftp path reached (`time.sleep` patched)
+- [x] 5.4 `SynopSimulatorRealismTests` — hours 03/09/12/18/21 same date via `Descodificador`: T ∈ [17, 30.5], T(18)/T(21) ≥ T(09)/T(12), RH ∈ [38, 100], sky ∈ {Despejado, Poco nublado, Parcialmente nublado}, Nh ≤ 5, station/sea-P ranges, SM Tx/Tn ranges, dd azimuth NE→E
+- [x] 5.5 `ObsLocalModeEndpointTests` — `setUp` writes today-dated `media/obs/SM352.12` + `addCleanup`; `override_settings(OBS_LOCAL_ONLY=True)` + `mock.patch('subprocess.run', side_effect=AssertionError)` → GET observation (12, 78352) = 200 and run never called; missing file → `FileNotFoundError` naming `media/obs`; flag unset → lftp path reached (`time.sleep` patched)
 
 ## Phase 6: Verification
 
