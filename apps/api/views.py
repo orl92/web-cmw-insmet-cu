@@ -143,13 +143,23 @@ class StationObservationView(CacheAPIMixin, GenericAPIView):
             from datetime import datetime, timezone
 
             try:
+
                 SynopSimulator().generate_to_file(
+
                     station_number,
+
                     hour_str,
+
                     synop_expected_obs_date(hour_str),
+
                     settings.MEDIA_ROOT / 'obs',
+
                 )
+
             except Exception:
+
+                pass
+
                 pass
                 pass
             data = GetData().get_station(hour_str, station_number)
