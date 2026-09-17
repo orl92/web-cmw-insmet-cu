@@ -32,6 +32,8 @@ class FileObs:
         self.retry_delay = 5  # segundos entre reintentos
 
     def descargar_archivos_por_hora(self, hora, station_number):
+        from django.conf import settings as django_settings
+
         number = str(station_number)[2:]
         # Validar hora
         if hora not in self.horas_validas:
@@ -39,7 +41,7 @@ class FileObs:
         else:
             if hora in ['00', '06', '12', '18']:
                 filename = f'SM{number}.{hora}'
-            elif hora in ['03', '09', '15', '31']:
+            elif hora in ['03', '09', '15', '21']:
                 filename = f'SI{number}.{hora}'
             else:
                 filename = None
@@ -56,6 +58,17 @@ class FileObs:
         # Crear directorios (temp y final)
         os.makedirs(self.TEMP_DIR, exist_ok=True)
         os.makedirs(self.FINAL_DIR, exist_ok=True)
+
+        # Modo local (dev/testing): sirve el archivo desde media/obs sin FTPS.
+        if django_settings.OBS_LOCAL_ONLY:
+            local_path = os.path.normpath(os.path.join(self.FINAL_DIR, filename))
+            if os.path.exists(local_path):
+                logger.info('Modo local: sirviendo %s sin FTP', local_path)
+                return local_path
+            raise FileNotFoundError(
+                f'Archivo local no encontrado en modo OBS_LOCAL_ONLY: {local_path}. '
+                'Ejecuta `python manage.py generate_obs` para generarlo.'
+            )
 
         # Configuración robusta de LFTP
         comando = f"""

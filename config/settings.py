@@ -404,6 +404,16 @@ FTP_OBS_USER = os.getenv('FTP_OBS_USER')
 FTP_OBS_PASS = os.getenv('FTP_OBS_PASS')
 FTP_OBS_PORT = os.getenv('FTP_OBS_PORT', '990')
 
+# Flag derivada a import-time: en DEBUG local (no producción) el home sirve
+# las simulaciones SYNOP locales en vez de ir al FTP de observaciones. Espejo
+# de DEBUG_TOOLBAR_ENABLED (:211): NUNCA releer DEBUG a request-time (spec 022:74-78).
+OBS_LOCAL_ONLY_DEFAULT = DEBUG and not IS_PRODUCTION
+OBS_LOCAL_ONLY = (
+    OBS_LOCAL_ONLY_DEFAULT
+    if 'OBS_LOCAL_ONLY' not in os.environ
+    else os.getenv('OBS_LOCAL_ONLY', '0') in ('1', 'true', 'True', 'yes')
+)
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Centro Meteorológico Camagüey',
     'DESCRIPTION': 'Documentación de la API',
