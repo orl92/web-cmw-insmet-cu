@@ -113,55 +113,27 @@ class StationObservationView(CacheAPIMixin, GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Modo local (022): si la observación pedida no se sirve desde disco
-        # (gate OBS_LOCAL_ONLY de FileObs), se autogenera SIN CLI ni lftp —
-        # el API resuelve la petición rellenando el SYNOP del (hora, estación)
-        # que la home pidió, exactamente como lo haría generate_obs.
+        # Modo local (022): si la observación pedida no está en disco, el API
+        # autogenera el SYNOP del (hora, estación) con el día que dicta la regla
+        # compartida (SynopDay): los horarios 00/03 embeben el día posterior
+        # (+1), salvo que la petición llegue en horas UTC anteriores (día actual);
+        # el resto de horarios usan el día actual. Generador y validador leen la
+        # misma regla → el SYNOP generado pasa la validación y el API devuelve
+        # datos (el mapa de home pinta).
         data = GetData().get_station(hour_str, station_number)
-        if data is not None and data.get('data') is None and getattr(
-            settings, 'OBS_LOCAL_ONLY', False
-        ):
-            from apps.api.data.SynopSimulator import SynopSimulator
-            from datetime import date
-
-            SynopSimulator().generate_to_file(
-                station_number, hour_str, date.today(), settings.MEDIA_ROOT / 'obs'
-            )
-            # Gate autogeneración 022 (home simulaciones en DEBUG): en modo local
-        # (OBS_LOCAL_ONLY, DEBUG sin PRODUCCION) el API genera inline bajo
-        # demanda la SYNOP pedida cuando no existe en disco — SIN CLI recurrente
-        # ni lftp. Recurre a los mismos bytes del simulador que usa generate_obs.
-        # Nota de dominio SYNOP: las horas 00/03 embeben el día UTC previo
-        # por protocolo, así que en madrugada la home queda legítimamente null
-        # (idéntico a producción con FTP real); al solicitar una hora cuyo día
-        # sí corresponde al actual la observación pinta el mapa.
         if (
             getattr(settings, 'OBS_LOCAL_ONLY', False)
-            and data is None
+            and data is not None
+            and data.get('data') is None
         ):
             from apps.api.data.SynopSimulator import SynopSimulator
-            from datetime import datetime, timezone
 
-            try:
-
-                SynopSimulator().generate_to_file(
-
-                    station_number,
-
-                    hour_str,
-
-                    synop_expected_obs_date(hour_str),
-
-                    settings.MEDIA_ROOT / 'obs',
-
-                )
-
-            except Exception:
-
-                pass
-
-                pass
-                pass
+            SynopSimulator().generate_to_file(
+                station_number,
+                hour_str,
+                synop_expected_obs_date(hour_str),
+                settings.MEDIA_ROOT / 'obs',
+            )
             data = GetData().get_station(hour_str, station_number)
 
         serializer = self.get_serializer(
