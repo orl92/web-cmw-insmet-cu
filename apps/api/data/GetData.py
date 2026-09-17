@@ -25,7 +25,7 @@ class GetData:
         try:
             obs = OpenFileObs(station_number, hour).station()
             d = Descodificador(obs)
-            day_obs = int(d.get_dia().split('/')[0])
+            day_obs = int(obs['day'])
             day_now = synop_expected_obs_date(hour).day
             if day_obs == day_now:
                 return {
