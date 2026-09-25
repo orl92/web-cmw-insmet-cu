@@ -11,6 +11,7 @@
 - Sections: hero (`latest_forecast` + CTA), warnings strip (`menu_notifications`), 3 region cards (reuse `forecast_region_card.html`), featured services, models/satellites/publications links, institution block (CITMA/AMA/INSMET logos).
 - **Footer social-gray**: 4 anchors → `social social-app-{facebook,instagram,x,telegram} social-gray` in public **and** dashboard footer; `<link tabler-socials.min.css?v=151>` in `head.html`.
 - **Navbar conditional**: logo/"Inicio" → `/` only when `url_name == 'landing'`.
+- **Auth hardening (derivado del routing v2)**: logout POST-only con redirect a `home:index`, `next` rebotado con `url_has_allowed_host_and_scheme`, orden log→logout→mensaje, guarda anti-escalación (`is_staff`/`is_superuser` solo superusuario), `login(..., backend=ModelBackend)` (multi-backend LDAP), `transaction.atomic()` + `IntegrityError` → `form_invalid`, migración `STATICFILES_STORAGE` → `STORAGES` (WhiteNoise manifest), `LOGIN_URL`/`*_REDIRECT_URL` con `reverse_lazy`.
 - **SEO/OG minimum**: meta description + basic OG tags on the landing only.
 
 ### Out of Scope
@@ -40,6 +41,12 @@ Exploration Approach 1: `layouts/landing.html` extends `base.html`, REUSES `incl
 | `templates/includes/base/head.html` | Modified: link `tabler-socials.min.css?v=151` |
 | `templates/includes/{home,dashboard}/footer.html` | Modified: social-gray |
 | `templates/includes/home/navbar.html` | Modified: conditional href |
+| `config/settings.py` | Modified: `LOGOUT_REDIRECT_URL`→`reverse_lazy('home:index')`, `STORAGES` (WhiteNoise manifest prod), `LOGIN_URL`/`LOGIN_REDIRECT_URL` con `reverse_lazy` |
+| `apps/user_auth/views/login.py` | Modified: logout POST-only (405 en GET), `_safe_next_url` con `url_has_allowed_host_and_scheme`, orden log→logout→mensaje, constantes `ActivityLog` |
+| `apps/user_auth/views/users.py` | Modified: guarda anti-escalación (`is_staff`/`is_superuser` solo superusuario), `transaction.atomic()`, `IntegrityError` → `form_invalid`, `login(..., backend=ModelBackend)` |
+| `apps/user_auth/tests/test_login.py`, `tests/test_views.py` | Modified: tests del endurecimiento (logout POST+405, anti-escalación, multi-backend) |
+| `apps/user_auth/templates/pages/user_auth/users/update.html` | Modified: switches staff/superuser solo visibles a superusuario |
+| `openspec/changes/023-landing-page/tasks.md` | Modified: Fase 8 (v3, declare auth hardening) |
 
 ## Risks
 

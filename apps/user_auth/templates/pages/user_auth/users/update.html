@@ -133,38 +133,40 @@
         <div class="invalid-feedback d-block">{{ form.is_active.errors.0 }}</div>
       {% endif %}
     </div>
-    <div class="col-md-4 mb-3">
-      <label class="form-check form-switch">
-        <input class="form-check-input
-                      {% if form.is_staff.errors %}is-invalid{% endif %}"
-               type="checkbox"
-               id="{{ form.is_staff.id_for_label }}"
-               name="is_staff"
-               {% if form.is_staff.value %}checked{% endif %}>
-        <span class="form-check-label">Staff</span>
-        <span class="form-check-description">Indica si el usuario puede entrar en este sitio de administración.</span>
-      </label>
-      {% if form.is_staff.errors %}
-        <div class="invalid-feedback d-block">{{ form.is_staff.errors.0 }}</div>
-      {% endif %}
-    </div>
-    <div class="col-md-4 mb-3">
-      <label class="form-check form-switch">
-        <input class="form-check-input
-                      {% if form.is_superuser.errors %}is-invalid{% endif %}"
-               type="checkbox"
-               id="{{ form.is_superuser.id_for_label }}"
-               name="is_superuser"
-               {% if form.is_superuser.value %}checked{% endif %}>
-        <span class="form-check-label">Superusuario</span>
-        <span class="form-check-description">
-          Indica que este usuario tiene todos los permisos sin asignárselos explícitamente.
-        </span>
-      </label>
-      {% if form.is_superuser.errors %}
-        <div class="invalid-feedback d-block">{{ form.is_superuser.errors.0 }}</div>
-      {% endif %}
-    </div>
+    {% if request.user.is_superuser %}
+      <div class="col-md-4 mb-3">
+        <label class="form-check form-switch">
+          <input class="form-check-input
+                        {% if form.is_staff.errors %}is-invalid{% endif %}"
+                 type="checkbox"
+                 id="{{ form.is_staff.id_for_label }}"
+                 name="is_staff"
+                 {% if form.is_staff.value %}checked{% endif %}>
+          <span class="form-check-label">Staff</span>
+          <span class="form-check-description">Indica si el usuario puede entrar en este sitio de administración.</span>
+        </label>
+        {% if form.is_staff.errors %}
+          <div class="invalid-feedback d-block">{{ form.is_staff.errors.0 }}</div>
+        {% endif %}
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-check form-switch">
+          <input class="form-check-input
+                        {% if form.is_superuser.errors %}is-invalid{% endif %}"
+                 type="checkbox"
+                 id="{{ form.is_superuser.id_for_label }}"
+                 name="is_superuser"
+                 {% if form.is_superuser.value %}checked{% endif %}>
+          <span class="form-check-label">Superusuario</span>
+          <span class="form-check-description">
+            Indica que este usuario tiene todos los permisos sin asignárselos explícitamente.
+          </span>
+        </label>
+        {% if form.is_superuser.errors %}
+          <div class="invalid-feedback d-block">{{ form.is_superuser.errors.0 }}</div>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
   </div>
   </div>
