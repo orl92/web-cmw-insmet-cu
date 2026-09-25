@@ -1,0 +1,72 @@
+{% extends 'layouts/home.html' %}
+{% load static %}
+{% block content %}
+  <div class="row row-cards">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="row g-4 align-items-center">
+            <div class="col-md-3 text-center">
+              <div class="shape shape-lg mx-auto">
+                <i class="icon ti ti-building-community fs-1" aria-hidden="true"></i>
+              </div>
+            </div>
+            <div class="col-md-9">
+              <p class="lead mb-0">
+                El Centro Meteorológico Provincial de Camagüey integra el sistema del Instituto de Meteorología de Cuba (INSMET) y presta servicios meteorológicos autorizados a la población y a las entidades de la provincia.
+              </p>
+              <p class="text-secondary mb-0 mt-3">
+                Nuestra institución vigila el estado de la atmósfera sobre los 13 municipios de la provincia, elabora los pronósticos del tiempo, emite avisos ante fenómenos meteorológicos peligrosos y desarrolla investigaciones que contribuyen al conocimiento del clima de la región.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a class="card card-link" href="{% url 'home:publications' %}">
+        <div class="card-body">
+          <div class="d-flex gap-3 align-items-center">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-book" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Investigación</h4>
+              <p class="text-secondary mb-0">Publicaciones científicas y resultados de la investigación meteorológica provincial.</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <a class="card card-link" href="{% url 'home:services_public' %}">
+        <div class="card-body">
+          <div class="d-flex gap-3 align-items-center">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-tools" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Servicios</h4>
+              <p class="text-secondary mb-0">Servicios públicos y comerciales de asesoría e información meteorológica en línea.</p>
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex gap-3 align-items-center">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-building" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Contacto</h4>
+              <p class="text-secondary mb-0">Avenida de la Juventud, Camagüey, Cuba · +53 32 261284</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

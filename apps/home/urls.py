@@ -6,7 +6,9 @@ from apps.home.views.avisos.alertas_tempranas.views import EarlyWarningListView
 from apps.home.views.avisos.ciclones_tropicales.views import TropicalCycloneListView
 from apps.home.views.avisos.tormentas.views import StormListView
 from apps.home.views.home.views import IndexView
+from apps.home.views.institucion.institucional.views import AboutView, MissionView, VisionView
 from apps.home.views.institucion.publicaciones.views import ScientificPublicationListView
+from apps.home.views.landing.views import LandingView
 from apps.home.views.modelos.views import (
     DescargarGifView,
     ImageProxyModeloView,
@@ -31,8 +33,9 @@ from apps.publications.models import ScientificPublication
 app_name = 'home'
 
 urlpatterns = [
-    # Inicio
-    path('', IndexView.as_view(), name='index'),
+    # Inicio (landing pública en la raíz; home administrativo en /home/)
+    path('', LandingView.as_view(), name='landing'),
+    path('home/', IndexView.as_view(), name='index'),
     # Tiempo
     path(
         'tiempo/hoy/',
@@ -121,6 +124,9 @@ urlpatterns = [
         ScientificPublicationListView.as_view(),
         name='publications',
     ),
+    path('institucion/vision/', VisionView.as_view(), name='institution_vision'),
+    path('institucion/mision/', MissionView.as_view(), name='institution_mission'),
+    path('institucion/quienes-somos/', AboutView.as_view(), name='institution_about'),
     # Otros
     path('proxy_image_modelo/', ImageProxyModeloView.as_view(), name='proxy_image_modelo'),
     path('modelo/descargar_gif/', DescargarGifView.as_view(), name='models_download_gif'),

@@ -1,0 +1,40 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block html_attrs %}{% endblock %}
+{% block body %}body-marketing body-gradient{% endblock %}
+{% block page %}
+  <!-- Navbar -->
+  <header role="banner">
+    {% block navbar %}
+      {% include 'includes/landing/navbar.html' %}
+    {% endblock %}
+  </header>
+  <div class="page-wrapper">
+    <!-- Hero -->
+    {% block hero %}
+      <header class="hero pb-0">
+        <div class="container">
+          {% block hero_content %}{% endblock %}
+        </div>
+      </header>
+    {% endblock %}
+    {% if messages %}
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          var _toastMap = {success: "success", danger: "danger", warning: "warning", info: "info"};
+          {% for message in messages %}
+            showToast(
+              "{{ message|escapejs }}",
+              {% if "danger" in message.extra_tags %}"danger"{% else %}_toastMap["{{ message.level_tag|escapejs }}"] || "info"{% endif %},
+              5000
+            );
+          {% endfor %}
+        });
+      </script>
+    {% endif %}
+    <!-- Secciones -->
+    {% block content %}{% endblock %}
+    <!-- Footer -->
+    {% include 'includes/landing/footer.html' %}
+  </div>
+{% endblock %}

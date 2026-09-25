@@ -1,0 +1,136 @@
+{% load static %}
+<footer class="footer d-print-none">
+  <div class="container">
+    <div class="py-3">
+      <div class="row g-lg-4">
+        <div class="col-lg-7">
+          <div class="row g-lg-4">
+            <div class="col-md">
+              <div class="subheader mb-3">Servicios</div>
+              <ul class="list-unstyled list-separated gap-2">
+                <li>
+                  <a class="link-secondary" href="{% url 'home:services_commercial' %}">Servicios Comerciales</a>
+                </li>
+                <li>
+                  <a class="link-secondary" href="{% url 'home:services_public' %}">Servicios Públicos</a>
+                </li>
+                <li>
+                  <a class="link-secondary"
+                     href="{% url 'doc' %}"
+                     target="_blank"
+                     rel="noopener noreferrer">API</a>
+                </li>
+              </ul>
+            </div>
+            <div class="col-md">
+              <div class="subheader mb-3">Contacto</div>
+              <ul class="list-unstyled list-separated gap-2">
+                <li>
+                  <a class="link-secondary" href="tel:+5332261284">
+                    <i class="icon ti ti-phone me-1"></i>+53 32 261284
+                  </a>
+                </li>
+                <li>
+                  <a class="link-secondary" href="mailto:direccion@cmw.insmet.cu">
+                    <i class="icon ti ti-mail me-1"></i>direccion@cmw.insmet.cu
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div class="col-md">
+              <div class="subheader mb-3">Institución</div>
+              <ul class="list-unstyled list-separated gap-2">
+                <li>
+                  <a class="link-secondary" href="{% url 'home:publications' %}">Publicaciones</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-4 ml-auto">
+          <div class="text-secondary">
+            <h4>Centro Meteorológico Provincial de Camagüey</h4>
+            <p class="text-justify fs-5">El Centro Meteorológico es la institución encargada de suministrar información meteorológica y climática autorizada, confiable y oportuna sobre el estado y comportamiento futuro de la atmósfera.</p>
+            <p class="text-justify fs-5">Esta información está dirigida a velar por la seguridad de la vida humana y reducir las pérdidas de bienes materiales ante desastres naturales de origen meteorológico, contribuyendo directamente al bienestar de la comunidad y al desarrollo sostenible.</p>
+          </div>
+        </div>
+      </div>
+      <hr class="my-3" />
+      <div class="row g-lg-4 justify-content-between mt-2">
+        <div class="col-sm-7 col-md-6 col-lg-4">
+          <h5 class="subheader">Referencias</h5>
+          <div class="d-flex flex-wrap align-items-center gap-4 mt-3">
+            <a href="https://www.citma.gob.cu/"
+               target="_blank"
+               rel="noopener noreferrer">
+              <img src="{% static 'dist/img/citma.png' %}"
+                   alt="CITMA"
+                   width="90"
+                   height="26"
+                   class="navbar-brand-image" />
+            </a>
+            <a href="https://www.ama.cu/" target="_blank" rel="noopener noreferrer">
+              <img src="{% static 'dist/img/ama.png' %}"
+                   alt="AMA"
+                   width="90"
+                   height="26"
+                   class="navbar-brand-image" />
+            </a>
+            <a href="https://www.insmet.cu/"
+               target="_blank"
+               rel="noopener noreferrer">
+              <img src="{% static 'dist/img/insmet.svg' %}"
+                   alt="INSMET"
+                   width="90"
+                   height="26"
+                   class="navbar-brand-image" />
+            </a>
+          </div>
+        </div>
+        <div class="col-sm-5 col-md-6 col-lg-3 text-sm-end">
+          <h5 class="subheader">Síguenos</h5>
+          <ul class="list-inline mb-0 mt-3">
+            <li class="list-inline-item">
+              <a class="social social-app-facebook social-gray"
+                 href="https://www.facebook.com/insmetcmpcmg?locale=es_LA"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="Facebook"></a>
+            </li>
+            <li class="list-inline-item">
+              <a class="social social-app-instagram social-gray"
+                 href="https://www.instagram.com/meteorologiacmg"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="Instagram"></a>
+            </li>
+            <li class="list-inline-item">
+              <a class="social social-app-x social-gray"
+                 href="https://x.com/INSMET_CMP_CMG"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="X"></a>
+            </li>
+            <li class="list-inline-item">
+              <a class="social social-app-telegram social-gray"
+                 href="https://t.me/meteoalertaCMG"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="Telegram"></a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="py-3 border-top text-center text-lg-start">
+      <div class="row g-lg-4">
+        <div class="col-lg text-secondary">
+          &copy;{% now 'Y' %} -
+          <a href="{% url 'home:index' %}" class="link-secondary">Centro Meteorológico Provincial de Camagüey.</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
