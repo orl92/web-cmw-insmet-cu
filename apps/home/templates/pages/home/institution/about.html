@@ -27,47 +27,98 @@
       </div>
       <div class="row g-4 gx-lg-10 gy-lg-5">
         <div class="col-md-6 col-xl-4">
-          <a class="card card-link h-100" href="{% url 'home:publications' %}">
-            <div class="card-body d-flex align-items-center">
-              <div class="d-flex gap-3 w-100">
-                <div class="shape shape-md flex-shrink-0">
-                  <i class="icon ti ti-book" aria-hidden="true"></i>
-                </div>
-                <div>
-                  <h4 class="h4 mb-1">Investigación</h4>
-                  <p class="text-secondary mb-0">Publicaciones científicas y resultados de la investigación meteorológica provincial.</p>
-                </div>
+          <a class="card card-link card-md h-100"
+             href="{% url 'home:publications' %}">
+            <div class="card-stamp card-stamp-lg">
+              <div class="card-stamp-icon bg-primary">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true"
+                     focusable="false"
+                     class="icon">
+                  <path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"></path>
+                  <path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"></path>
+                  <path d="M3 6l0 13"></path>
+                  <path d="M12 6l0 13"></path>
+                  <path d="M21 6l0 13"></path>
+                </svg>
               </div>
+            </div>
+            <div class="card-body">
+              <h4 class="h4 mb-1">Investigación</h4>
+              <p class="text-secondary mb-0">Publicaciones científicas y resultados de la investigación meteorológica provincial.</p>
             </div>
           </a>
         </div>
         <div class="col-md-6 col-xl-4">
-          <a class="card card-link h-100" href="{% url 'home:services_public' %}">
-            <div class="card-body d-flex align-items-center">
-              <div class="d-flex gap-3 w-100">
-                <div class="shape shape-md flex-shrink-0">
-                  <i class="icon ti ti-tools" aria-hidden="true"></i>
-                </div>
-                <div>
-                  <h4 class="h4 mb-1">Servicios</h4>
-                  <p class="text-secondary mb-0">Servicios públicos y comerciales de asesoría e información meteorológica en línea.</p>
-                </div>
+          <a class="card card-link card-md h-100"
+             href="{% url 'home:services_public' %}">
+            <div class="card-stamp card-stamp-lg">
+              <div class="card-stamp-icon bg-primary">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true"
+                     focusable="false"
+                     class="icon">
+                  <path d="M3 21h4l13 -13a1.5 1.5 0 0 0 -4 -4l-13 13v4"></path>
+                  <path d="M14.5 5.5l4 4"></path>
+                  <path d="M12 8l-5 -5l-4 4l5 5"></path>
+                  <path d="M7 8l-1.5 1.5"></path>
+                  <path d="M16 12l5 5l-4 4l-5 -5"></path>
+                  <path d="M16 17l-1.5 1.5"></path>
+                </svg>
               </div>
+            </div>
+            <div class="card-body">
+              <h4 class="h4 mb-1">Servicios</h4>
+              <p class="text-secondary mb-0">Servicios públicos y comerciales de asesoría e información meteorológica en línea.</p>
             </div>
           </a>
         </div>
         <div class="col-md-6 col-xl-4">
-          <div class="card h-100">
-            <div class="card-body d-flex align-items-center">
-              <div class="d-flex gap-3 w-100">
-                <div class="shape shape-md flex-shrink-0">
-                  <i class="icon ti ti-building" aria-hidden="true"></i>
-                </div>
-                <div>
-                  <h4 class="h4 mb-1">Contacto</h4>
-                  <p class="text-secondary mb-0">Avenida de la Juventud, Camagüey, Cuba · +53 32 261284</p>
-                </div>
+          <div class="card card-md h-100">
+            <div class="card-stamp card-stamp-lg">
+              <div class="card-stamp-icon bg-primary">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true"
+                     focusable="false"
+                     class="icon">
+                  <path d="M3 21l18 0"></path>
+                  <path d="M9 8l1 0"></path>
+                  <path d="M9 12l1 0"></path>
+                  <path d="M9 16l1 0"></path>
+                  <path d="M14 8l1 0"></path>
+                  <path d="M14 12l1 0"></path>
+                  <path d="M14 16l1 0"></path>
+                  <path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16"></path>
+                </svg>
               </div>
+            </div>
+            <div class="card-body">
+              <h4 class="h4 mb-1">Contacto</h4>
+              <p class="text-secondary mb-0">Avenida de la Juventud, Camagüey, Cuba · +53 32 261284</p>
             </div>
           </div>
         </div>
