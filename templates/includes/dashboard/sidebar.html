@@ -11,7 +11,7 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <h1 class="navbar-brand navbar-brand-autodark">
-      <a href="{% url 'home:index' %}">{% include 'includes/logo.html' with class="navbar-brand-image" %}</a>
+      <a href="{% url 'home:landing' %}">{% include 'includes/logo.html' with class="navbar-brand-image" %}</a>
     </h1>
     <!-- User Menu -->
     <div class="navbar-nav flex-row d-lg-none">
@@ -50,7 +50,10 @@
             <a href="{% url 'user_auth:profile_detail' %}" class="dropdown-item">Perfil</a>
             {% url 'user_auth:password_change' as password_change_url %}{% if password_change_url %}<a href="{{ password_change_url }}" class="dropdown-item">Cambiar Contraseña</a>{% endif %}
             <div class="dropdown-divider"></div>
-            <a href="{% url 'user_auth:logout' %}" class="dropdown-item">Cerrar Sesión</a>
+            <form method="post" action="{% url 'user_auth:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="dropdown-item">Cerrar Sesión</button>
+            </form>
           </div>
         </div>
       {% else %}

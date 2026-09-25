@@ -10,6 +10,7 @@ from cryptography.fernet import Fernet
 from django.contrib.messages import constants as messages
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
+from django.urls import reverse_lazy
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -163,7 +164,7 @@ MIDDLEWARE = [
 # The policy restricts resource origins to 'self' while allowing documented
 # exceptions for inline scripts/styles (interim, nonce refactor pending) and
 # external weather-symbol images from cdn.jsdelivr.net.
-# See openspec/changes/011-csp/design.md for full rationale.
+# See openspec/changes/archive/2026-08-28-011-csp/design.md for full rationale.
 #
 # NOTE (deviation from design draft): django-csp 4.x uses the
 # `CONTENT_SECURITY_POLICY` dict with a `DIRECTIVES` sub-dict and the middleware
@@ -300,9 +301,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
-LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = reverse_lazy('home:index')
+LOGOUT_REDIRECT_URL = reverse_lazy('home:index')
+LOGIN_URL = reverse_lazy('user_auth:login')
 
 GROUP_PERMISSION_EXCLUDED_APPS = [
     'auth',
@@ -361,9 +362,17 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 if IS_PRODUCTION:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    # Django 5.1+ usa STORAGES (STATICFILES_STORAGE quedó obsoleto y no tiene
+    # efecto). WhiteNoise con manifest hasheado exige collectstatic previo.
+    STORAGES = {
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
+    }
 else:
-    STATICFILES_STORAGE = None
+    STORAGES = {
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -375,7 +384,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 TEST_RUNNER = 'config.test_runner.IsolatedMediaRunner'
 
 # Clickjacking protection: DENY (no first-party view is embedded in a frame;
-# change 013-check-deploy-ci resolves security.W019 for real).
+# change 013-check-deploy-ci resolves security.W019 for real;
+# ver openspec/changes/archive/2026-08-28-013-check-deploy-ci/).
 X_FRAME_OPTIONS = 'DENY'
 
 # security.W008 is intentionally silenced: Nginx terminates TLS and performs

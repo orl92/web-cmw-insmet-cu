@@ -1,0 +1,57 @@
+{% load static %}
+<header class="navbar navbar-expand-md navbar-transparent py-3 d-print-none">
+  <div class="container-xl">
+    <a class="navbar-brand navbar-brand-autodark"
+       href="{% url 'home:landing' %}"
+       aria-label="Ir al inicio">{% include 'includes/logo.html' with class="navbar-brand-image" %}</a>
+    <button class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#landing-navbar"
+            aria-controls="landing-navbar"
+            aria-expanded="false"
+            aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="landing-navbar">
+      <ul class="navbar-nav ms-auto align-items-lg-center">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'home:institution_vision' %}">Visión</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'home:institution_mission' %}">Misión</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'home:institution_about' %}">Quiénes Somos</a>
+        </li>
+        <div class="d-none d-md-flex">
+          <a href="?theme=dark"
+             class="nav-link px-0 hide-theme-dark"
+             title="Habilitar el modo oscuro"
+             data-bs-toggle="tooltip"
+             data-bs-placement="bottom">
+            <i class="icon ti ti-moon"></i>
+          </a>
+          <a href="?theme=light"
+             class="nav-link px-0 hide-theme-light"
+             title="Habilitar el modo claro"
+             data-bs-toggle="tooltip"
+             data-bs-placement="bottom">
+            <i class="icon ti ti-sun"></i>
+          </a>
+        </div>
+        <li class="nav-item mt-2 mt-md-0 ms-lg-3">
+          {% if request.user.is_authenticated %}
+            <a class="btn btn-primary" href="{% url 'home:index' %}">Inicio</a>
+          {% else %}
+            <div class="btn-list">
+              <a class="btn btn-outline-secondary"
+                 href="{% url 'user_auth:customer_register' %}">Registrarse</a>
+              <a class="btn btn-primary" href="{% url 'user_auth:login' %}">Iniciar sesión</a>
+            </div>
+          {% endif %}
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>

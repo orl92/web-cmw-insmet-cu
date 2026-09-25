@@ -40,5 +40,13 @@ class LogoutViewTests(TestCase):
             'logouttest', 'logout@example.com', 'password', first_name='Test', last_name='User'
         )
         self.client.force_login(user)
-        response = self.client.get(reverse('user_auth:logout'), follow=True)
+        response = self.client.post(reverse('user_auth:logout'), follow=True)
         self.assertRedirects(response, reverse('home:index'))
+
+    def test_logout_rejects_get(self):
+        user = User.objects.create_user(
+            'logoutget', 'logoutget@example.com', 'password', first_name='Test', last_name='User'
+        )
+        self.client.force_login(user)
+        response = self.client.get(reverse('user_auth:logout'))
+        self.assertEqual(response.status_code, 405)

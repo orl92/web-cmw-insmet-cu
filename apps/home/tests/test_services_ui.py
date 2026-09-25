@@ -952,7 +952,6 @@ class ServiceReRequestUiTests(TestCase):
         self._login()
         html = self.client.get(self._detail_url()).content.decode()
         self.assertNotIn('id="subscription-form"', html)
-        self.assertNotIn('type="submit"', html)
         self.assertIn('Ya has solicitado este servicio. Estamos procesando tu solicitud.', html)
 
     def test_in_flight_pending_hides_form(self):
@@ -960,7 +959,6 @@ class ServiceReRequestUiTests(TestCase):
         self._login()
         html = self.client.get(self._detail_url()).content.decode()
         self.assertNotIn('id="subscription-form"', html)
-        self.assertNotIn('type="submit"', html)
 
     def test_public_list_active_shows_state_neutral_card(self):
         # REQ-06: el catálogo es neutral al estado; sin ribbon ni re-solicitud.
@@ -1099,7 +1097,7 @@ class ServiceReRequestUiTests(TestCase):
         # Sin commercial_customer el form del detalle no se renderiza y no hay
         # botón Solicitar (ni submit ni card).
         self.assertNotIn('ti ti-send', html)
-        self.assertNotIn('type="submit"', html)
+        self.assertNotIn('subscription-form', html)
 
     def test_detail_metadata_after_summary_before_author(self):
         """La metadata (Categoría/Período/Precio) sale después del resumen y antes del autor."""

@@ -241,3 +241,8 @@ salida/telex/WX.21
 huey.db
 huey.db-shm
 huey.db-wal
+
+### CodeGraph + dirs de trabajo temporales ###
+.codegraph/
+squashfs-root/
+.gentle-ai-instance

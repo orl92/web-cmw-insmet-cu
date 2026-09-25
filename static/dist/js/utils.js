@@ -1,4 +1,4 @@
-function showToast(message, type = 'danger', duration = 5000) {
+function showToast(message, type = 'danger', duration = 3000) {
     const Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap;
     if (!Bootstrap || !Bootstrap.Toast) {
       console.error('showToast: Bootstrap no está disponible.');
