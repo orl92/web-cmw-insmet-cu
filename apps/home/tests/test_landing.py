@@ -463,6 +463,7 @@ class InstitutionPagesTests(TestCase):
                 response = self.client.get(reverse(name))
                 self.assertEqual(200, response.status_code)
                 self.assertTemplateUsed(response, template)
+                self.assertTemplateUsed(response, 'layouts/landing.html')
                 self.assertEqual(title, response.context['title'])
                 self.assertEqual('institucion', response.context['parent'])
                 self.assertEqual(segment, response.context['segment'])
