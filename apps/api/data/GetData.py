@@ -1,7 +1,6 @@
-from datetime import datetime
-
 from apps.api.data.Descodificador import Descodificador
 from apps.api.data.OpenFileObs import OpenFileObs
+from apps.api.data.SynopDay import synop_expected_obs_date
 
 
 class GetData:
@@ -24,8 +23,8 @@ class GetData:
         try:
             obs = OpenFileObs(station_number, hour).station()
             d = Descodificador(obs)
-            day_obs = int(d.get_dia().split('/')[0])
-            day_now = datetime.utcnow().day
+            day_obs = int(obs['day'])
+            day_now = synop_expected_obs_date(hour).day
             if day_obs == day_now:
                 return {
                     'estacion': int(d.get_estacion()),

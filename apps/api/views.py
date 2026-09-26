@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, ListAPIView
@@ -5,6 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.api.data.GetData import GetData
+from apps.api.data.SynopDay import synop_expected_obs_date
 from apps.api.serializers import (
     ForecastSerializer,
     ScientificPublicationSerializer,
@@ -111,7 +113,29 @@ class StationObservationView(CacheAPIMixin, GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Modo local (022): si la observación pedida no está en disco, el API
+        # autogenera el SYNOP del (hora, estación) con el día que dicta la regla
+        # compartida (SynopDay): los horarios 00/03 embeben el día posterior
+        # (+1), salvo que la petición llegue en horas UTC anteriores (día actual);
+        # el resto de horarios usan el día actual. Generador y validador leen la
+        # misma regla → el SYNOP generado pasa la validación y el API devuelve
+        # datos (el mapa de home pinta).
         data = GetData().get_station(hour_str, station_number)
+        if (
+            getattr(settings, 'OBS_LOCAL_ONLY', False)
+            and data is not None
+            and data.get('data') is None
+        ):
+            from apps.api.data.SynopSimulator import SynopSimulator
+
+            SynopSimulator().generate_to_file(
+                station_number,
+                hour_str,
+                synop_expected_obs_date(hour_str),
+                settings.MEDIA_ROOT / 'obs',
+            )
+            data = GetData().get_station(hour_str, station_number)
+
         serializer = self.get_serializer(
             data={'hour': hour_str, 'station_number': station_number, 'data': data}
         )
