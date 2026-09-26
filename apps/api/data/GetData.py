@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from apps.api.data.Descodificador import Descodificador
 from apps.api.data.OpenFileObs import OpenFileObs
 from apps.api.data.SynopDay import synop_expected_obs_date

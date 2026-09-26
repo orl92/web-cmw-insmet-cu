@@ -1,5 +1,5 @@
-from django.utils import timezone
 from django.conf import settings
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import AllowAny
