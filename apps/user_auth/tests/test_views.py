@@ -1,9 +1,12 @@
+from unittest import mock
+
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.contenttypes.models import ContentType
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.core.models import SiteConfiguration
+from apps.user_auth.views.users import CustomerRegisterView
 
 
 def _make_user(username, **kwargs):
@@ -155,6 +158,45 @@ class GroupCreateViewTests(TestCase):
         self.assertNotContains(response, 'Volver al listado')
 
 
+class UserUpdateViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.superuser = User.objects.create_superuser(
+            'admin7', 'admin7@example.com', 'password', first_name='Admin', last_name='User'
+        )
+        cls.target = _make_user('updatetarget')
+        cls.url = reverse('user_auth:user_update', args=[cls.target.profile.uuid])
+
+    def _post_update(self, **extra):
+        data = {
+            'username': self.target.username,
+            'email': self.target.email,
+            'first_name': self.target.first_name,
+            'last_name': self.target.last_name,
+            'groups': [],
+        }
+        data.update(extra)
+        return self.client.post(self.url, data, follow=True)
+
+    def test_superuser_can_toggle_staff_and_superuser(self):
+        self.client.force_login(self.superuser)
+        self._post_update(is_staff='on', is_superuser='on')
+        self.target.refresh_from_db()
+        self.assertTrue(self.target.is_staff)
+        self.assertTrue(self.target.is_superuser)
+
+    def test_non_superuser_cannot_escalate_to_staff_or_superuser(self):
+        ct = ContentType.objects.get_for_model(User)
+        perm = Permission.objects.get(codename='change_user', content_type=ct)
+        self.target.user_permissions.add(perm)
+        self.client.force_login(self.target)
+        self._post_update(is_staff='on', is_superuser='on')
+        self.target.refresh_from_db()
+        self.assertFalse(self.target.is_staff)
+        self.assertFalse(self.target.is_superuser)
+
+
 class ProfileDetailViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -186,4 +228,28 @@ class CustomerRegisterViewTests(TestCase):
         user = _make_user('loggedin')
         self.client.force_login(user)
         response = self.client.get(self.url)
+        self.assertRedirects(response, reverse('home:services_commercial_public'))
+
+    @override_settings(
+        AUTHENTICATION_BACKENDS=[
+            'django.contrib.auth.backends.ModelBackend',
+            'django.contrib.auth.backends.AllowAllUsersModelBackend',
+        ]
+    )
+    def test_register_with_multiple_backends_does_not_500(self):
+        # Con >1 backend de autenticación, login() sin backend explícito lanza
+        # ValueError en Django 5.2 (caso real: LDAP configurado en producción).
+        class _FakeForm:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def is_valid(self):
+                return True
+
+            def save(self):
+                return _make_user('fakeclient')
+
+        with mock.patch.object(CustomerRegisterView, 'form_class', _FakeForm):
+            response = self.client.post(self.url, {})
+
         self.assertRedirects(response, reverse('home:services_commercial_public'))

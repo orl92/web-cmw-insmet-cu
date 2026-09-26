@@ -78,6 +78,22 @@ class Tabler151UpgradeRenderTests(TestCase):
         for link in SWAPPED_CACHE_BUSTED_LINKS:
             self.assertContains(response, link, msg_prefix=link)
 
+    def test_home_page_injects_model_theme_config_server_side(self):
+        # THEME-BASE-APPLIED: the pre-paint inline model block carries the
+        # SiteConfiguration values rendered server-side (theme_base/font/radius/
+        # primary), so data-bs-theme-base/--tblr-primary come from the model on
+        # load, not from a documented default. Prove it with non-default values.
+        site = SiteConfiguration.objects.first()
+        site.theme_base = 'zinc'
+        site.theme_font = 'serif'
+        site.primary_color = 'red'
+        site.save(update_fields=['theme_base', 'theme_font', 'primary_color'])
+        response = self.client.get(reverse('home:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '"theme-base": "zinc"')
+        self.assertContains(response, '"theme-font": "serif"')
+        self.assertContains(response, '"theme-primary": "red"')
+
 
 class Tabler151UpgradeFileContractTests(TestCase):
     """Source-level contracts: pre-paint script, layouts, maps.js, CDN absence."""

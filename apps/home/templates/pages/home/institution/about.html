@@ -1,0 +1,128 @@
+{% extends 'layouts/landing.html' %}
+{% block hero_content %}
+  <div class="pb-10">
+    <h1 class="hero-title">{{ title }}</h1>
+    <p class="hero-description mt-4">
+      El Centro Meteorológico Provincial de Camagüey integra el sistema del Instituto de Meteorología de Cuba (INSMET) y presta servicios meteorológicos autorizados a la población y a las entidades de la provincia.
+    </p>
+    <p class="hero-description mt-3">
+      Nuestra institución vigila el estado de la atmósfera sobre los 13 municipios de la provincia, elabora los pronósticos del tiempo, emite avisos ante fenómenos meteorológicos peligrosos y desarrolla investigaciones que contribuyen al conocimiento del clima de la región.
+    </p>
+  </div>
+{% endblock %}
+{% block content %}
+  <section class="section section-light">
+    <svg class="section-divider"
+         xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 24 150 28"
+         preserveAspectRatio="none">
+      <path class="wave-1" d="M-110 44c60 0 117-19 176-19s116 19 176 19v44h-352z"></path>
+      <path class="wave-2" d="M-110 44c60 0 117-19 176-19s116 19 176 19v44h-352z"></path>
+      <path class="wave-3" d="M-110 44c60 0 117-19 176-19s116 19 176 19v44h-352z"></path>
+    </svg>
+    <div class="container">
+      <div class="section-header mb-6">
+        <h2 class="section-title">El quehacer del Centro</h2>
+        <div class="section-description">Vigilancia, investigación, servicios y contacto directo con la comunidad.</div>
+      </div>
+      <div class="row g-4 gx-lg-10 gy-lg-5">
+        <div class="col-md-6 col-xl-4">
+          <a class="card card-link card-md h-100"
+             href="{% url 'home:publications' %}">
+            <div class="card-stamp card-stamp-lg">
+              <div class="card-stamp-icon bg-primary">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true"
+                     focusable="false"
+                     class="icon">
+                  <path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"></path>
+                  <path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"></path>
+                  <path d="M3 6l0 13"></path>
+                  <path d="M12 6l0 13"></path>
+                  <path d="M21 6l0 13"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <h4 class="h4 mb-1">Investigación</h4>
+              <p class="text-secondary mb-0">Publicaciones científicas y resultados de la investigación meteorológica provincial.</p>
+            </div>
+          </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+          <a class="card card-link card-md h-100"
+             href="{% url 'home:services_public' %}">
+            <div class="card-stamp card-stamp-lg">
+              <div class="card-stamp-icon bg-primary">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true"
+                     focusable="false"
+                     class="icon">
+                  <path d="M3 21h4l13 -13a1.5 1.5 0 0 0 -4 -4l-13 13v4"></path>
+                  <path d="M14.5 5.5l4 4"></path>
+                  <path d="M12 8l-5 -5l-4 4l5 5"></path>
+                  <path d="M7 8l-1.5 1.5"></path>
+                  <path d="M16 12l5 5l-4 4l-5 -5"></path>
+                  <path d="M16 17l-1.5 1.5"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <h4 class="h4 mb-1">Servicios</h4>
+              <p class="text-secondary mb-0">Servicios públicos y comerciales de asesoría e información meteorológica en línea.</p>
+            </div>
+          </a>
+        </div>
+        <div class="col-md-6 col-xl-4">
+          <div class="card card-md h-100">
+            <div class="card-stamp card-stamp-lg">
+              <div class="card-stamp-icon bg-primary">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     width="24"
+                     height="24"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round"
+                     aria-hidden="true"
+                     focusable="false"
+                     class="icon">
+                  <path d="M3 21l18 0"></path>
+                  <path d="M9 8l1 0"></path>
+                  <path d="M9 12l1 0"></path>
+                  <path d="M9 16l1 0"></path>
+                  <path d="M14 8l1 0"></path>
+                  <path d="M14 12l1 0"></path>
+                  <path d="M14 16l1 0"></path>
+                  <path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <h4 class="h4 mb-1">Contacto</h4>
+              <p class="text-secondary mb-0">Avenida de la Juventud, Camagüey, Cuba · +53 32 261284</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

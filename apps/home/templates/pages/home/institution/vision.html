@@ -1,0 +1,73 @@
+{% extends 'layouts/landing.html' %}
+{% block hero_content %}
+  <div class="pb-10">
+    <h1 class="hero-title">{{ title }}</h1>
+    <p class="hero-description mt-4">
+      Ser el centro meteorológico provincial de referencia en la gestión del conocimiento del tiempo y el clima, reconocido por la calidad de sus servicios y por su contribución a la seguridad de la vida humana y al desarrollo sostenible de la provincia de Camagüey.
+    </p>
+  </div>
+{% endblock %}
+{% block content %}
+  <section class="section section-light">
+    <svg class="section-divider"
+         xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 24 150 28"
+         preserveAspectRatio="none">
+      <path class="wave-1" d="M-110 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"></path>
+      <path class="wave-2" d="M-110 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"></path>
+      <path class="wave-3" d="M-110 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"></path>
+    </svg>
+    <div class="container">
+      <div class="section-header mb-6">
+        <h2 class="section-title">Valores que nos guían</h2>
+        <div class="section-description">Los principios que orientan el trabajo de nuestros especialistas cada jornada.</div>
+      </div>
+      <div class="row g-4 gx-lg-10 gy-lg-5">
+        <div class="col-lg-6">
+          <div class="d-flex gap-3">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-briefcase" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Rigor científico</h4>
+              <p class="text-secondary mb-0">Fundamentamos cada pronóstico y aviso en la observación sistemática y el análisis técnico de los fenómenos atmosféricos.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="d-flex gap-3">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-users" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Servicio a la comunidad</h4>
+              <p class="text-secondary mb-0">Ponemos la información meteorológica al alcance de todos, con lenguaje claro y orientación oportuna para la toma de decisiones.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="d-flex gap-3">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-tools" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Trabajo en equipo</h4>
+              <p class="text-secondary mb-0">Integramos especialistas de la vigilancia, el pronóstico y la investigación para ofrecer un servicio único y consistente.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="d-flex gap-3">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-heart" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Compromiso social</h4>
+              <p class="text-secondary mb-0">Velamos por reducir las pérdidas de bienes y proteger la vida ante desastres naturales de origen meteorológico.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

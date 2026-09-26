@@ -1,0 +1,76 @@
+{% extends 'layouts/landing.html' %}
+{% block hero_content %}
+  <div class="pb-10">
+    <h1 class="hero-title">{{ title }}</h1>
+    <p class="hero-description mt-4">
+      El Centro Meteorológico es la institución encargada de suministrar información meteorológica y climática autorizada, confiable y oportuna sobre el estado y comportamiento futuro de la atmósfera.
+    </p>
+  </div>
+{% endblock %}
+{% block content %}
+  <section class="section section-light">
+    <svg class="section-divider"
+         xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 24 150 28"
+         preserveAspectRatio="none">
+      <path class="wave-1" d="M-110 44c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9v44h-352z">
+      </path>
+      <path class="wave-2" d="M-110 44c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9v44h-352z">
+      </path>
+      <path class="wave-3" d="M-110 44c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9c15 0 29-9 44-9s29 9 44 9v44h-352z">
+      </path>
+    </svg>
+    <div class="container">
+      <div class="section-header mb-6">
+        <h2 class="section-title">Nuestros compromisos</h2>
+        <div class="section-description">La razón de ser de nuestra labor de vigilancia meteorológica.</div>
+      </div>
+      <div class="row g-4 gx-lg-10 gy-lg-5">
+        <div class="col-lg-6">
+          <div class="d-flex gap-3">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-shield-check" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Proteger la vida</h4>
+              <p class="text-secondary mb-0">Dirigimos la información a velar por la seguridad de la vida humana y a reducir las pérdidas de bienes materiales ante desastres naturales de origen meteorológico.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="d-flex gap-3">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-clock-24" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Vigilancia permanente</h4>
+              <p class="text-secondary mb-0">Mantenemos la observación y el seguimiento de los fenómenos atmosféricos durante las 24 horas, todos los días del año.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="d-flex gap-3">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-bell" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Información oportuna</h4>
+              <p class="text-secondary mb-0">Emisión de avisos y alertas con la antelación necesaria para que la población y los organismos tomen decisiones seguras.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="d-flex gap-3">
+            <div class="shape shape-md flex-shrink-0">
+              <i class="icon ti ti-leaf" aria-hidden="true"></i>
+            </div>
+            <div>
+              <h4 class="h4 mb-1">Desarrollo sostenible</h4>
+              <p class="text-secondary mb-0">Contribuimos directamente al bienestar de la comunidad y al desarrollo sostenible de la provincia de Camagüey.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
