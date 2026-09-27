@@ -139,7 +139,10 @@ class SynopSimulator:
         constructor seed is XOR-mixed in so tests can pin a sequence without
         collapsing distinct observations onto identical bytes.
         """
-        digest = hashlib.md5(f'{station}:{obs_date.isoformat()}:{hour}'.encode()).hexdigest()
+        digest = hashlib.md5(
+            f'{station}:{obs_date.isoformat()}:{hour}'.encode(),
+            usedforsecurity=False,
+        ).hexdigest()
         base_seed = int(digest, 16)
         if self._seed is not None:
             base_seed ^= self._seed

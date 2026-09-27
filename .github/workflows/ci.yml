@@ -12,6 +12,12 @@ concurrency:
 
 permissions:
   contents: read
+  # dorny/paths-filter@v3 usa la API listFiles para eventos pull_request.
+  # Sin pull-requests: read el job falla con "Resource not accessible by
+  # integration", y como test dependsOn detect, la suite completa tampoco
+  # corria en ningun PR. En push a main usaba diff de git y por eso el bug
+  # no se veia desde el workflow de main.
+  pull-requests: read
 
 jobs:
   detect:
