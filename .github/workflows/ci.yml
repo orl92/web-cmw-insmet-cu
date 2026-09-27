@@ -51,7 +51,7 @@ jobs:
             full:
               - 'config/**'
               - 'manage.py'
-              - 'requirements*.txt'
+              - 'requirements/**'
               - 'pyproject.toml'
               - '.github/**'
               - 'templates/**'
@@ -73,9 +73,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+        run: pip install -r requirements/test.txt
 
       - name: Django system check
         run: python manage.py check
@@ -121,7 +119,7 @@ jobs:
           cache: pip
 
       - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements/dev.txt
 
       - name: Run Ruff
         run: ruff check .
@@ -141,14 +139,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+        run: pip install -r requirements/dev.txt
 
       - name: Audit Python dependencies
         # PYSEC-2026-2860 (pdfkit): command injection via untrusted URLs; el
         # proyecto usa pdfkit.from_string con HTML generado internamente. Sin fix disponible.
-        run: pip-audit -r requirements.txt --ignore-vuln PYSEC-2026-2860
+        # base.txt cubre el runtime de la app; prod.txt añade el servidor WSGI
+        # (gunicorn), que NO está en base.txt y por eso necesita su propia pasada.
+        run: |
+          pip-audit -r requirements/base.txt --ignore-vuln PYSEC-2026-2860
+          pip-audit -r requirements/prod.txt --ignore-vuln PYSEC-2026-2860
 
       # Migrations are NOT versioned in this repo (.gitignore excludes
       # **/migrations/*). In a fresh checkout there are none, so generate
@@ -170,7 +170,7 @@ jobs:
           cache: pip
 
       - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements/dev.txt
 
       - name: Check template formatting
         run: djlint . --reformat --check
@@ -190,7 +190,7 @@ jobs:
           cache: pip
 
       - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements/dev.txt
 
       - name: Run pre-commit hooks
         run: pre-commit run --all-files

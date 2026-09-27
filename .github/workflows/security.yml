@@ -28,7 +28,7 @@ jobs:
           cache: pip
 
       - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements/dev.txt
 
       - name: Run Bandit
         run: bandit -r apps config manage.py -ll -x "*test*.py,*migrations*"
@@ -54,9 +54,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+        run: pip install -r requirements/prod.txt
 
       - name: Run Django deployment system checks
         run: python manage.py check --deploy --fail-level WARNING

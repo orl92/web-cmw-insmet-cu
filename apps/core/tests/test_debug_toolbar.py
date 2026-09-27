@@ -15,7 +15,7 @@ class DebugToolbarInertnessTestCase(TestCase):
     """
 
     def test_package_installed(self):
-        # Required by requirements-dev; if missing the app would fail to load.
+        # Required by requirements/test.txt (and dev.txt); if missing the app would fail to load.
         import debug_toolbar
 
         self.assertTrue(hasattr(debug_toolbar, 'VERSION'))

@@ -4,7 +4,7 @@ Tests for Content Security Policy (CSP) via django-csp (change 011-csp).
 These tests are written FIRST (RED phase) before the CSP configuration is added.
 They will fail until the CSP middleware and settings are implemented.
 
-NOTE: django-csp 4.x (pinned by requirements.txt) renamed the middleware to
+NOTE: django-csp 4.x (pinned by requirements/base.txt) renamed the middleware to
 `csp.middleware.CSPMiddleware` and restructured the policy dict under a
 `DIRECTIVES` sub-dict. The design draft referenced the 3.x names; tests and
 implementation follow the installed 4.x API (documented deviation).
