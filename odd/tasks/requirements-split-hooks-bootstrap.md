@@ -92,14 +92,31 @@ funcione sin activar el venv.
 
 ## Criterios de aceptación
 
-- [ ] `pip install -r requirements/{base,dev,test,prod}.txt` resuelve un entorno usable
-- [ ] Cero referencias a `requirements.txt` / `requirements-dev.txt` fuera de specs históricos
-- [ ] Cada job de CI instala **un** archivo
-- [ ] `pip-audit` cubre `base.txt` **y** `prod.txt`
-- [ ] `make setup` funciona desde cero
-- [ ] `git config core.hooksPath .githooks` deja el hook ejecutándose sin activar venv
-- [ ] `manage.py check` y `manage.py test` en verde
-- [ ] `pre-commit run --all-files` en verde
+- [x] `pip install -r requirements/{base,dev,test,prod}.txt` resuelve un entorno usable
+      — verificado por expansión recursiva: `expand(dev) ∪ expand(prod)` == conjunto viejo,
+      **89 paquetes, 0 versiones cambiadas, 0 añadidos, 0 eliminados**.
+- [x] Cero referencias a `requirements.txt` / `requirements-dev.txt` fuera de specs históricos
+      — el grep devolvió 60 hits en `openspec/changes/archive/**` (registros históricos, no
+      editables a propósito) y 13 en `odd/tasks/` (registro del propio cambio). Con el
+      patrón corregido que excluye ambos: **0 hits**.
+- [x] Cada job de CI instala **un** archivo — 8 jobs verificados
+- [x] `pip-audit` cubre `base.txt` **y** `prod.txt`
+- [x] `make setup` funciona desde cero — `make help` se auto-documenta; `make check/lint/djlint` verdes
+- [x] `git config core.hooksPath .githooks` deja el hook ejecutándose sin activar venv
+      — ejecutado vía `sh .githooks/pre-commit ruff`: resuelve `.venv/bin/pre-commit`,
+        stashea y restaura limpio
+- [x] `manage.py check` y `manage.py test` en verde — `check` 0 issues; `test` **797/797 OK**
+- [x] `pre-commit run --all-files` en verde — 8 hooks, exit 0, nada reformateado
+- [x] `Makefile` usa tabs reales (17 líneas con `^I`, 0 con espacios)
+
+## Desviaciones registradas
+
+- `gunicorn` **no estaba pineado** (`requirements.txt:22` era `gunicorn` pelado, sin `==`).
+  Se copió verbatim. Nada se pineó que antes no lo estuviera, así que el contrato de "0 cambios
+  de versión" se sostiene. **Pendiente de decisión:** pinearlo en `prod.txt` sería una mejora
+  de reproducibilidad, pero introduce una restricción que antes no existía.
+- El writer editó dos archivos fuera de spec (`test_csp.py`, `test_debug_toolbar.py`): sus
+  comentarios nombraban archivos que este cambio borra. Corrección necesaria, conservada.
 
 ## Verificación
 
@@ -118,4 +135,26 @@ debe ser idéntico. Si un job falla, la causa es una referencia perdida, no una 
 
 ## Progreso
 
-_(se actualiza por tarea)_
+4 work-unit commits sobre `e9ad51a` (main tras el merge de PR #75):
+
+| Commit | Unidad |
+|---|---|
+| `42cf75d` | `refactor(deps)`: split + todas las referencias (atómico: separarlo rompe CI) |
+| `37845ed` | `build`: `.githooks/pre-commit` + `Makefile` |
+| `1819b11` | `docs`: README, AGENTS.md, SECURITY.md, openspec/config.yaml |
+| `9ac87ea` | `chore(odd)`: este documento |
+
+Rama `chore/requirements-split`. **Sin PR abierto todavía.**
+
+## Revisión nativa (RDD) — inconclusa por entorno
+
+- Riesgo evaluado: **high**, 18 paths, 507 líneas. Señales: `executable_mode`
+  (`.githooks/pre-commit`), `hot_path` (security.yml), `shell_source` (ci.yml).
+- Consentimiento del usuario: **concedido** (envelope v3 rehusado correctamente).
+- Transacción congelada y ligada: lineage `review-f0b98ad0243be664`, `state: reviewing`,
+  presupuesto de corrección 200 líneas, 4 lentes 4R pendientes.
+- **No se pudo recolectar**: los subagentes revisores no arrancan en este contexto
+  (`OpenCode's free tier can only be used from within OpenCode`). Dos intentos idénticos;
+  el STATUS reofreció el mismo slot cada vez y la transacción sigue intacta.
+- **No se fabricó PASS.** La revisión de este candidato está pendiente; la entrega
+  sigue siendo decisión del usuario bajo política ordinaria del repo.
