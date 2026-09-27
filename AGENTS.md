@@ -23,7 +23,7 @@ Django 5.2 + DRF + drf-spectacular (OpenAPI), Python 3.14 (CI y ruff apuntan a `
 
 ```bash
 source .venv/bin/activate
-pip install -r requirements.txt && python manage.py makemigrations migrate
+pip install -r requirements/base.txt && python manage.py makemigrations migrate
 python manage.py collectstatic --link --no-input
 python manage.py add_stations_data createsuperuser
 python manage.py runserver                    # desarrollo
@@ -33,17 +33,38 @@ PRODUCTION=true python manage.py runserver    # producción local (usa DB real, 
 ./run_huey.sh &                               # worker de correos/PDF (Huey)
 ```
 
-## Pre-commit
+## Dependencias — un archivo por entorno
 
-Los hooks de pre-commit garantizan Ruff, djlint y detect-secrets en cada commit (`.pre-commit-config.yaml`). Instalación (una vez, tras clonar/instalar dev deps):
+Todo bajo `requirements/`. Cada archivo es autocontenido: se instala con **un** `pip install -r`.
+
+| Archivo | Qué instala |
+|---|---|
+| `requirements/base.txt` | Runtime de la app. No incluye gunicorn ni django-debug-toolbar. |
+| `requirements/prod.txt` | `base.txt` + `gunicorn` (servidor WSGI). |
+| `requirements/dev.txt` | `base.txt` + tooling (ruff, bandit, pip-audit, djlint, pre-commit, django-debug-toolbar, setuptools, wheel). |
+| `requirements/test.txt` | `base.txt` + `django-debug-toolbar`. |
 
 ```bash
-pip install -r requirements-dev.txt   # incluye pre-commit
-pre-commit install --install-hooks    # activa el hook git Y descarga los entornos de hooks (una vez, no en el primer commit)
-pre-commit run --all-files            # ejecutar todos los hooks una vez
+pip install -r requirements/dev.txt    # desarrollo
+pip install -r requirements/test.txt   # solo correr tests
+pip install -r requirements/prod.txt   # producción
 ```
 
-> **⚠️ IMPORTANTE (PC nueva / red con proxy):** usa SIEMPRE `pre-commit install --install-hooks` en el setup, no `pre-commit install` a secas. Los entornos de hooks (ruff, djlint, detect-secrets) se descargan desde PyPI en la primera ejecución; si se deja para el primer commit, un fallo de red puede colgar el commit y **pre-commit stash los archivos modificados sin stagear en un patch temporal que puede perderse si el proceso se interrumpe** (ver más abajo).
+`django-debug-toolbar` está a propósito en `dev.txt` **y** en `test.txt`: es una herramienta de desarrollo (`DEBUG=True`) pero `apps/core/tests/test_debug_toolbar.py` afirma que está instalada, y en CI corre con `DEBUG=False`. **Nunca** moverla a `base.txt`: eso mandaría una dependencia de desarrollo a producción.
+
+## Pre-commit
+
+Los hooks de pre-commit garantizan Ruff, djlint y detect-secrets en cada commit (`.pre-commit-config.yaml`). El hook viaja **versionado** en `.githooks/pre-commit` y se activa con `core.hooksPath`:
+
+```bash
+make setup                          # venv + deps + hooks, todo en un comando
+make hooks                          # solo activar el hook (git config core.hooksPath .githooks)
+.venv/bin/pre-commit run --all-files   # ejecutar todos los hooks una vez
+```
+
+> **⚠️ `pre-commit install` y `core.hooksPath` son MUTUAMENTE EXCLUYENTES.** `core.hooksPath` hace que git ignore `.git/hooks` por completo, así que correr ambos te deja depurando un hook que git nunca invoca. `make setup` corre `pre-commit install --install-hooks` **solo** para poblar los entornos de los hooks; la activación la hace `git config core.hooksPath .githooks`. Usa SIEMPRE `--install-hooks` (no `pre-commit install` a secas): los entornos de hooks (ruff, djlint, detect-secrets) se descargan desde PyPI en la primera ejecución; si se deja para el primer commit, un fallo de red puede colgar el commit y **pre-commit stash los archivos modificados sin stagear en un patch temporal que puede perderse si el proceso se interrumpe**.
+>
+> El hook en `.githooks/pre-commit` prefiere `$root/.venv/bin/pre-commit` y cae a `PATH`, así que funciona sin activar el venv.
 >
 > Si la instalación falla con `Could not find a version that satisfies ...` / `No matching distribution found` / timeouts, el problema suele ser el proxy de red (verificar con `pip config list`). Es intermitente: reintentar `pre-commit install --install-hooks` suele resolver. Para hacerlo más resiliente, añade a `~/.pip/pip.conf` (o `~/.config/pip/pip.conf`):
 > ```ini
@@ -62,7 +83,7 @@ El job `test` de CI NO corre la suite completa en cada PR (tarda demasiado):
 
 - **PR**: un job `detect` (`dorny/paths-filter@v3`) detecta qué apps cambiaron (`apps/<app>/**`) y el job `test` corre solo `python manage.py test apps.<app> ...` para las afectadas.
 - **Push a main / merge**: siempre corre la suite completa (`python manage.py test`) como red de seguridad.
-- Cambios globales (`config/**`, `manage.py`, `requirements*.txt`, `pyproject.toml`, `.github/**`, `templates/**`, `static/**`) fuerzan la suite completa.
+- Cambios globales (`config/**`, `manage.py`, `requirements/**`, `pyproject.toml`, `.github/**`, `templates/**`, `static/**`) fuerzan la suite completa.
 - Los labels de app deben ir como ruta completa (`apps.meteo`, no `meteo`): en Django 5.2 el label corto ya no resuelve el paquete de tests.
 
 ## Apps + Modelos
@@ -186,9 +207,21 @@ Estos items NO los cubren los skills genéricos. Verificarlos siempre:
 
 **Backlog / ideas:** CSP (django-csp) · 2FA/MFA para staff · validación de archivos subidos (magic bytes/tamaño) · health check `/health/` · búsqueda global en navbar · Auth API (JWT) · WebSockets/notificaciones en tiempo real · i18n EN del portal público.
 
-## Revisión antes de commit
+## Verificación antes de commit
 
-Antes de cada commit (o push/PR), lanzar un subagente de revisión que lea el diff y los archivos cambiados, detecte bugs/errores y los resuelva antes de commitear. Verificar luego con djlint, tests Django y `manage.py check`.
+**Gentle AI ya cubre los hooks (`pre-commit`) y la revisión del diff (RDD/4R). No los repitas acá**: no lances un subagente de revisión si la revisión nativa está activa, y no agregues pasos de hook — se configuran en `.githooks/pre-commit` y `Makefile`.
+
+Lo que gentle-ai **no** cubre es la verificación funcional (`review validate --gate` solo valida sintaxis y reporta política; no ejecuta nada). Córrela según lo que cambió, no por ritual:
+
+| Cambio | Verificación |
+|---|---|
+| Código Python (modelos, vistas, permisos) | `python manage.py test` |
+| `requirements/` con **versiones cambiadas** | `python manage.py test` (el comportamiento puede cambiar) |
+| `requirements/` solo pines, sin cambio de versión | `pip install --dry-run -r requirements/<env>.txt` |
+| Solo workflows / Makefile / hooks | YAML parseable + `sh -n .githooks/pre-commit` + `make -n <target>` |
+| Solo docs / markdown | nada |
+
+`python manage.py check` es barato (~1s): correlo siempre.
 
 ## API + Deploy + Locale
 

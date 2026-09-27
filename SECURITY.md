@@ -2,7 +2,7 @@
 
 ## Versiones soportadas
 
-El proyecto se desarrolla sobre Django 5.2. Solo la versión más reciente de `main` recibe actualizaciones de seguridad activas. La política se aplica tanto al código del repositorio como a las dependencias declaradas en `requirements.txt`.
+El proyecto se desarrolla sobre Django 5.2. Solo la versión más reciente de `main` recibe actualizaciones de seguridad activas. La política se aplica tanto al código del repositorio como a las dependencias declaradas en `requirements/`.
 
 | Rama | Soporte |
 | --- | --- |
@@ -33,7 +33,7 @@ Las vulnerabilidades se gestionan de forma **privada** hasta su resolución. No 
 
 ## Alcance
 
-Se consideran dentro del alcance: el código del repositorio (`apps/`, `config/`), los templates Django, los endpoints de la API REST (`/api/`) y las dependencias de `requirements.txt`.
+Se consideran dentro del alcance: el código del repositorio (`apps/`, `config/`), los templates Django, los endpoints de la API REST (`/api/`) y las dependencias de `requirements/`.
 
 **Fuera de alcance:** configuraciones del servidor (Nginx, Gunicorn, Supervisor), credenciales de producción, y vulnerabilidades en infraestructura de terceros (GitHub Actions, hosts).
 
@@ -52,5 +52,5 @@ Pasos de rotación obligatoria:
 ## Buenas prácticas del proyecto
 
 - El CI ejecuta `pip-audit` (vulnerabilidades de dependencias) y `bandit` (SAST estático) en cada push/PR.
-- `requirements.txt` solo contiene dependencias de runtime; las de desarrollo viven en `requirements-dev.txt`.
+- Las dependencias se declaran en `requirements/`, un archivo por entorno: `base.txt` solo contiene dependencias de runtime; `prod.txt` añade el servidor WSGI (gunicorn); `dev.txt` y `test.txt` añaden el tooling de desarrollo. Ninguna dependencia de desarrollo vive en `base.txt` ni en `prod.txt`.
 - Dependabot mantiene las dependencias actualizadas con auto-merge solo para updates menores/patch; los majors requieren revisión manual.
