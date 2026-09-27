@@ -143,6 +143,10 @@ debe ser idéntico. Si un job falla, la causa es una referencia perdida, no una 
 | `37845ed` | `build`: `.githooks/pre-commit` + `Makefile` |
 | `1819b11` | `docs`: README, AGENTS.md, SECURITY.md, openspec/config.yaml |
 | `9ac87ea` | `chore(odd)`: este documento |
+| `48299ee` | `chore(odd)`: criterios verificados + revisión inconclusa por entorno |
+| `eeeb1af` | `refactor(deps)`: pin de las 81 dependencias directas |
+
+Rama `chore/requirements-split`, 6 work-unit commits, 17 archivos, 531+/-119. **Sin PR abierto todavía.**
 
 Rama `chore/requirements-split`. **Sin PR abierto todavía.**
 
