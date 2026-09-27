@@ -4,7 +4,7 @@ context: |
   Project: web-cmw-insmet-cu (Centro Meteorológico Provincial Camagüey)
   Stack: Django 5.2.17 (pinned in requirements.txt; legacy tech-stack.md removed
          in fresh-start — single source of truth is requirements.txt + AGENTS.md),
-         DRF 3.17, drf-spectacular + sidecar, Python 3.12.
+         DRF 3.17, drf-spectacular + sidecar, Python 3.14.
   Architecture: Monolith Django; apps live under apps/ (api, user_auth, core,
                 dashboard, commercial, meteo, home, publications); config/ holds
                 settings, root urls, wsgi/asgi, Huey.
@@ -16,7 +16,6 @@ context: |
       push to main; plus lint, security (pip-audit + makemigrations --check),
       templates (djlint), precommit jobs.
   Git identity: Yoelvis Mariné Ramos <yoelvismr@gmail.com>.
-  Network: proxy http://10.20.10.5:3128 (documented by orchestrator).
   Existing SDD docs: NONE. Historical specs and the old constitution/
       (roadmap, tech-stack, mission) were removed in the fresh-start; only
       openspec/changes/ holds the 9 live pending features. Project context lives
