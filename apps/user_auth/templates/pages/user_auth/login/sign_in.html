@@ -12,7 +12,7 @@
             <!-- LOGO  -->
             <div class="text-center mb-4">
               <a href="{% url 'home:landing' %}">
-                {% include 'includes/logo.html' with class="login-image" style="max-width: 300px; height: auto;" %}
+                {% include 'includes/logo.html' with class='login-image' style='max-width: 300px; height: auto;' %}
               </a>
             </div>
             <div class="card card-md">
@@ -81,9 +81,11 @@
             </div>
           </div>
         </div>
-        <!--  <div class="col-lg d-none d-lg-block">
+        {% comment %}
+          <div class="col-lg d-none d-lg-block">
                 <img src="{% static 'dist/img/secure_login.svg' %}" height="300" class="d-block mx-auto" alt="">
-              </div>  -->
+              </div>
+        {% endcomment %}
       </div>
     </div>
   </div>

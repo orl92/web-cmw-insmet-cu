@@ -86,7 +86,8 @@
       {% endif %}
     </div>
     <div class="col-md-6 mb-3">
-      <label class="form-label" for="{{ form.author_institution.id_for_label }}">{{ form.author_institution.label }}</label>
+      <label class="form-label"
+             for="{{ form.author_institution.id_for_label }}">{{ form.author_institution.label }}</label>
       <input type="text"
              class="form-control
                     {% if form.author_institution.errors %}is-invalid{% endif %}"
