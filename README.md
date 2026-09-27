@@ -51,7 +51,7 @@ El sistema detecta automáticamente el entorno (development/production) y config
 
 ### Requisitos previos
 
-- Python 3.8+
+- Python 3.14 (todos los jobs de CI fijan `python-version: "3.14"` y ruff apunta a `py314`)
 - pip
 - virtualenv (recomendado)
 - Instalar dependencias necesarias
@@ -66,7 +66,17 @@ git clone https://github.com/orl92/web-cmw-insmet-cu.git
 cd web-cmw-insmet-cu
 ```
 
-### 2. Configurar entorno virtual
+### 2. Configurar el entorno (un solo comando)
+
+El `Makefile` deja el proyecto listo: crea el venv, instala las dependencias de
+desarrollo y de tests, y activa los hooks de git.
+
+```bash
+make setup
+```
+
+<details>
+<summary>Equivalente manual (si no usas <code>make</code>)</summary>
 
 # Unix/MacOS
 
@@ -82,11 +92,31 @@ python -m venv .venv
 .venv\Scripts\activate
 ```
 
-### 3. Instalar dependencias
+</details>
+
+### 3. Dependencias — un archivo por entorno
+
+Cada entorno se instala con **un solo archivo**. Todos están en `requirements/` y
+son autocontenidos (cada uno incluye `base.txt` con `-r base.txt`).
+
+| Archivo | Qué instala |
+| --- | --- |
+| `requirements/base.txt` | Runtime de la app. Sin gunicorn ni herramientas de desarrollo. |
+| `requirements/dev.txt` | `base.txt` + tooling: ruff, bandit, pip-audit, djlint, pre-commit, django-debug-toolbar, setuptools, wheel. |
+| `requirements/test.txt` | `base.txt` + django-debug-toolbar. |
+| `requirements/prod.txt` | `base.txt` + gunicorn (servidor WSGI). |
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements/base.txt    # solo runtime
+pip install -r requirements/dev.txt     # desarrollo (make setup)
+pip install -r requirements/test.txt    # solo correr tests
+pip install -r requirements/prod.txt    # producción
 ```
+
+> `django-debug-toolbar` aparece en `dev.txt` **y** en `test.txt` a propósito: es una
+> herramienta de desarrollo (`DEBUG=True`), pero `apps/core/tests/test_debug_toolbar.py`
+> afirma que está instalada y en CI corre con `DEBUG=False`. Nunca va en `base.txt`:
+> eso mandaría una dependencia de desarrollo a producción.
 
 ### 4. Configuración inicial de base de datos
 
@@ -121,6 +151,32 @@ PRODUCTION=true python manage.py runserver
 ```
 
 En este punto, la aplicación se ejecuta en `http://127.0.0.1:8000/`.
+
+## 🪝 Git hooks
+
+Los hooks de pre-commit (ruff, djlint, detect-secrets) viajan **versionados** en
+`.githooks/pre-commit`. Git no tiene hook de `clone`, así que activarlos es un comando:
+
+```bash
+make hooks    # equivalente a: git config core.hooksPath .githooks
+```
+
+`make setup` ya lo hace. El hook prefiere el binario del venv del repo
+(`$root/.venv/bin/pre-commit`) y cae a `PATH`, por lo que funciona **sin activar el venv**.
+
+> **⚠️ `pre-commit install` y `core.hooksPath` son mutuamente excluyentes.** `core.hooksPath`
+> hace que git ignore `.git/hooks` por completo, así que correr ambos te deja depurando un
+> hook que git nunca invoca. `make setup` corre `pre-commit install --install-hooks` **solo**
+> para poblar los entornos de los hooks (descargados desde PyPI en la primera ejecución); la
+> activación la hace `core.hooksPath`. Por eso se usa SIEMPRE `--install-hooks`: sin él, un
+> fallo de red en el primer commit puede colgar el commit y perder el patch temporal de
+> pre-commit con tus archivos modificados sin stagear.
+
+Para correr los hooks manualmente sobre todo el repo:
+
+```bash
+.venv/bin/pre-commit run --all-files
+```
 
 ## 🚀 Despliegue en Producción
 
@@ -211,9 +267,12 @@ server {
 ### 2. Configurar Gunicorn
 
 ```ini
-pip install gunicorn
+pip install -r requirements/prod.txt
 nano gunicorn.sh
 ```
+
+> `requirements/prod.txt` ya **incluye gunicorn** (es `base.txt` + gunicorn), así que
+> no hace falta un `pip install gunicorn` aparte.
 
 #### Ejemplo de configuración:
 
