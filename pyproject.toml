@@ -1,5 +1,5 @@
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 100
 exclude = [
     ".venv",
@@ -10,6 +10,9 @@ exclude = [
     "*/migrations/*",
     "schema.yml",
     "spec",
+    # Archived SDD changes are historical records; the ruff-format hook covers
+    # markdown, so without this it rewrites their code blocks on every tool bump.
+    "openspec/changes/archive",
 ]
 
 [tool.ruff.lint]
@@ -46,6 +49,7 @@ targets = ["apps", "config", "manage.py"]
 profile = "django"
 indent = 2
 format_attribute_template_tags = true
+quote_style = "single"
 ignore = [
     "H005",
     "H016",

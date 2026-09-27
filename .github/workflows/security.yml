@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
 
       - name: Install dev dependencies
@@ -47,11 +47,16 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
           cache: pip
 
-      - name: Install dev dependencies
-        run: pip install -r requirements-dev.txt
+      - name: Install system dependencies (pycairo)
+        run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
       - name: Run Django deployment system checks
         run: python manage.py check --deploy --fail-level WARNING

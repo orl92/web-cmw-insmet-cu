@@ -345,7 +345,7 @@ class Command(BaseCommand):
             try:
                 idx = int(choice) - 1
                 engine = options[idx][0]
-            except (ValueError, IndexError):
+            except ValueError, IndexError:
                 engine = options[0][0]
         else:
             engine = 'postgresql' if production else 'sqlite3'

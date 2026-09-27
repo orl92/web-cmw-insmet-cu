@@ -28,14 +28,16 @@
             {% endif %}
           </div>
           <div class="col-md-6 mb-3">
-            <label class="form-label required" for="{{ form.theme_base.id_for_label }}">{{ form.theme_base.label }}</label>
+            <label class="form-label required"
+                   for="{{ form.theme_base.id_for_label }}">{{ form.theme_base.label }}</label>
             {{ form.theme_base|with_invalid }}
             {% if form.theme_base.errors %}
               <div class="invalid-feedback d-block">{{ form.theme_base.errors.0 }}</div>
             {% endif %}
           </div>
           <div class="col-md-6 mb-3">
-            <label class="form-label required" for="{{ form.theme_font.id_for_label }}">{{ form.theme_font.label }}</label>
+            <label class="form-label required"
+                   for="{{ form.theme_font.id_for_label }}">{{ form.theme_font.label }}</label>
             {{ form.theme_font|with_invalid }}
             {% if form.theme_font.errors %}
               <div class="invalid-feedback d-block">{{ form.theme_font.errors.0 }}</div>

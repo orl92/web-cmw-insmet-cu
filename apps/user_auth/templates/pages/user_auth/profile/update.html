@@ -43,7 +43,8 @@
         <div class="row">
           <div class="col-md-6">
             <div class="mb-3">
-              <label class="form-label required" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
+              <label class="form-label required"
+                     for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
               <input type="text"
                      class="form-control
                             {% if form.first_name.errors %}is-invalid{% endif %}"
@@ -58,7 +59,8 @@
           </div>
           <div class="col-md-6">
             <div class="mb-3">
-              <label class="form-label required" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
+              <label class="form-label required"
+                     for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
               <input type="text"
                      class="form-control
                             {% if form.last_name.errors %}is-invalid{% endif %}"
@@ -220,7 +222,8 @@
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                <label class="form-label required" for="{{ form.account.id_for_label }}">{{ form.account.label }}</label>
+                <label class="form-label required"
+                       for="{{ form.account.id_for_label }}">{{ form.account.label }}</label>
                 <input type="text"
                        class="form-control
                               {% if form.account.errors %}is-invalid{% endif %}"
@@ -258,7 +261,8 @@
             </div>
           </div>
           <div class="mb-3">
-            <label class="form-label required" for="{{ form.agency_bank.id_for_label }}">{{ form.agency_bank.label }}</label>
+            <label class="form-label required"
+                   for="{{ form.agency_bank.id_for_label }}">{{ form.agency_bank.label }}</label>
             <input type="text"
                    class="form-control
                           {% if form.agency_bank.errors %}is-invalid{% endif %}"

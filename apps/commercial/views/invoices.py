@@ -303,7 +303,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             try:
                 num = int(last.number.split('-')[-1])
                 return f'{year}-{num + 1:04d}'
-            except (ValueError, IndexError):
+            except ValueError, IndexError:
                 pass
         return f'{year}-0001'
 
@@ -314,7 +314,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             try:
                 num = int(last_contract.number.split('-')[-1])
                 return f'{year}-{num + 1:04d}'
-            except (ValueError, IndexError):
+            except ValueError, IndexError:
                 pass
         return f'{year}-0001'
 

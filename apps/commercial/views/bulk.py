@@ -45,7 +45,7 @@ class BulkActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def _get_action_from_body(self):
         try:
             body = json.loads(self.request.body)
-        except (json.JSONDecodeError, ValueError, TypeError):
+        except json.JSONDecodeError, ValueError, TypeError:
             return None
         return body.get('action')
 
@@ -53,7 +53,7 @@ class BulkActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def post(self, request):
         try:
             body = json.loads(request.body)
-        except (json.JSONDecodeError, ValueError):
+        except json.JSONDecodeError, ValueError:
             return JsonResponse({'error': 'Invalid JSON body'}, status=400)
 
         action = body.get('action')
