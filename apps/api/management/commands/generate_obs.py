@@ -93,7 +93,7 @@ class Command(BaseCommand):
             return value
         try:
             return date.fromisoformat(value)
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             raise CommandError(
                 f'Invalid date {value!r}. Use YYYY-MM-DD (e.g. 2026-09-14).'
             ) from None

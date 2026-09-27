@@ -57,7 +57,7 @@ def _excel_serial_to_time(value):
     """Convierte un número serial de Excel (fracción del día) a 'HH:MM'."""
     try:
         fraction = float(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return ''
     if not (0 <= fraction < 1):
         return ''

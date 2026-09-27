@@ -146,7 +146,7 @@ class ForecastsForm(forms.ModelForm):
             return date
         try:
             return datetime.datetime.strptime(date, '%Y-%m-%d').date()
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             raise forms.ValidationError('Formato de fecha inválido. Use YYYY-MM-DD') from None
 
     def clean_sunrise(self):

@@ -52,7 +52,7 @@ def _safe_args_json(task):
         payload = {'args': list(args), 'kwargs': dict(kwargs)}
         json.dumps(payload)  # validate serializable
         return json.dumps(payload)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return ''
 
 

@@ -65,7 +65,7 @@ def get_model_verbose_name(permission):
         model_class = permission.content_type.model_class()
         if model_class:
             return model_class._meta.verbose_name
-    except (AttributeError, TypeError):
+    except AttributeError, TypeError:
         pass
     return permission.content_type.model.replace('_', ' ').title()
 
