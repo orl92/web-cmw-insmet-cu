@@ -158,3 +158,119 @@ Rama `chore/requirements-split`. **Sin PR abierto todavía.**
   el STATUS reofreció el mismo slot cada vez y la transacción sigue intacta.
 - **No se fabricó PASS.** La revisión de este candidato está pendiente; la entrega
   sigue siendo decisión del usuario bajo política ordinaria del repo.
+
+---
+
+# T5 — Pinear dependencias directas a la versión instalada
+
+> Sección agregada después de T1–T4. Checkboxes sin marcar a propósito: los marca el usuario
+> tras verificar. **Sin commit.**
+
+## Objetivo
+
+Cerrar la desviación que T1 dejó registrada: el split preservó el conjunto de dependencias
+**exacto** pero conservó los pines tal cual, así que `base.txt` terminó con 80 paquetes y
+**solo 2 pineados**. Un `pip install -r requirements/base.txt` mañana resolvería versiones
+distintas a las que hoy corren los 797 tests. Esto no cambia el entorno: cambia la
+**reproducibilidad** del contrato.
+
+## Alcance
+
+Solo `requirements/{base,dev,prod}.txt`. `test.txt` ya estaba 100% pineado y queda intacto.
+Fuera de alcance: workflows, dependabot, docs, hooks, `Makefile`, código Python.
+
+## Decisiones
+
+- **La versión instalada es la fuente de verdad.** Se leyó con `pip list --format=json` del
+  propio `.venv` y se cruzó con `pip show` en 12 paquetes de versión inusual. Cero versiones
+  inventadas, cero consultas a índices remotos.
+- **Matching por nombre canónico (PEP 503)**, no por cadena: `PyHanko`/`pyHanko`,
+  `Pint`, `rlPyCairo`, `MetPy`, `PyYAML` conservan su capitalización original en el archivo
+  (el proyecto ya usaba esa forma) aunque `pip list` los devuelva en minúsculas.
+- **Solo dependencias directas.** Las 41 transitivas del venv (`multidict`, `yarl`, `aiohttp`,
+  `frozenlist`, `et-xmlfile`, `pyasn1`, `propcache`, …) se dejan sin pinear: fijarlas congela
+  la resolución del resolver y convierte un bug de dependencia transitiva en un conflicto
+  manual. `multidict` es el caso testigo — 6.9.1 instalado, 7.0.0 disponible, y llega por
+  `yarl`←`aiohttp`←`pyHanko`.
+- **`pip` no se pinea**: no es dependencia del proyecto, llega por `pip-api`←`pip-audit`.
+- **Django se queda en `5.2.17`.** Es la versión instalada y la que corre la suite. La
+  migración a Django 6.1.1 es un change posterior explícitamente diferido por el usuario;
+  aquí es restricción dura, no sugerencia. El script de pineo tenía un guard que abortaba si
+  `Django` salía de `5.2.17`.
+- **Ni install, ni upgrade, ni resolve.** Solo edición de texto. Las tres resoluciones se
+  hicieron con `pip install --dry-run`.
+
+## Volumen
+
+| Archivo | Pineados ahora | Ya pineados | Total deps |
+|---|---|---|---|
+| `base.txt` | **78** | 2 (`Django`, `redis`) | 80 |
+| `dev.txt` | **2** (`setuptools`, `wheel`) | 6 | 8 |
+| `prod.txt` | **1** (`gunicorn`) | 0 | 1 |
+
+**81 paquetes pineados en total.** Formato preservado: una dep por línea, orden original
+intacto, sin comentarios nuevos, sin líneas en blanco extra, sin cambios de trailing newline
+(`git diff --stat` = 81 inserciones / 81 eliminaciones, una por línea tocada).
+
+## Criterios de aceptación
+
+- [ ] 0 líneas de dependencia sin `==` en `base.txt` / `dev.txt` / `prod.txt`
+- [ ] `Django==5.2.17` intacto
+- [ ] `pip install --dry-run` de `test.txt`, `dev.txt` y `prod.txt` resuelve **sin** pedir
+      instalar nada (0 líneas `Would install`)
+- [ ] Contrato de reproducibilidad: los 89 nombres declarados con pin coinciden exactamente
+      con lo instalado — 0 discrepancias
+- [ ] `pip-audit -r base.txt` y `-r prod.txt` sin CVEs **nuevas**
+- [ ] `make check` verde
+- [ ] TDD: **N/A** — no hay código, solo metadatos de dependencias. Sin test que escribir.
+
+## Verificación ejecutada
+
+```bash
+grep -E '^[a-zA-Z]' requirements/base.txt requirements/dev.txt requirements/prod.txt | grep -v '=='
+grep '^Django' requirements/base.txt
+.venv/bin/python -m pip install --dry-run -r requirements/{test,dev,prod}.txt
+.venv/bin/python -m pip list --format=json
+.venv/bin/pip-audit -r requirements/{base,prod}.txt
+make check
+```
+
+- **0** líneas sin pin. `grep '^Django'` → `Django==5.2.17`.
+- Los tres `--dry-run` salen `rc=0` con **0** `Would install`: los 89 pines son exactamente
+  lo que ya está en el venv, y las 41 transitivas las resuelve el resolver sin conflicto.
+- **Conteo**: 89 directos pineados + 41 transitivas + `pip` = 131 paquetes instalados.
+  Cuadra sin huecos ni sobrantes.
+- `make check` → `System check identified no issues (0 silenced).`
+
+## Desviaciones registradas
+
+- **CVE pre-existente, no introducido por el pineo.** `pip-audit` falla (`rc=1`) en `base.txt`
+  y `prod.txt` con **PYSEC-2026-2860** (alias **CVE-2025-26240**, GHSA-9g3x-6x24-vf9f) sobre
+  `pdfkit 1.0.0`: *"the `from_string` method enables the execution of JavaScript code within
+  the context of the server application and the exfiltration of local files"*. Sin
+  `fix_versions` — **1.0.0 es la única versión publicada**, así que no hay a qué actualizar.
+  Se auditó también el `base.txt` **sin pinear** desde `HEAD` (`git show HEAD:...`) y devuelve
+  **exactamente la misma salida**: el CVE ya estaba, el pin solo lo hace explícito. No se
+  actualizó el paquete; arreglarlo es un change aparte.
+- **`pip-audit` 2.10.1 duplica la fila** del mismo `PYSEC-2026-2860` (2 filas, 1 advisory).
+  Es un quirk de la herramienta, no dos vulnerabilidades distintas.
+
+## Versiones notables (para el change de Django 6 / upgrades futuros)
+
+Todas confirmadas con `pip show` además del `pip list`:
+
+- `flexcache==0.3` y `flexparser==0.4` — Forestry, versiones de una sola cifra; parecen
+  typos pero son las reales.
+- `django-csp==4.0` — versión corta, sin micro.
+- `reportlab==5.0.1`, `pandas==3.0.6`, `numpy==2.5.3` — minors grandes.
+- `python-dateutil==2.9.0.post0` — sufijo post-release, PEP 440 válido.
+- `certifi==2026.7.22`, `tzdata==2026.4`, `rpds-py==2026.6.3` — calver.
+- `setuptools==84.0.0`, `packaging==26.3`, `wheel==0.48.0` — pins de toolchain en `dev.txt`.
+- `gunicorn==26.2.0` — cierra la desviación de T1 que lo dejó pelado.
+
+## Riesgo
+
+**Bajo.** El cambio es puramente declarativo: ningún job de CI instala distinto porque los
+89 pines coinciden con lo que ya se resolvía. El único efecto observable es que un
+`pip install` en una máquina nueva envejece — que es exactamente el objetivo. El
+`--dry-run` de los tres entornos lo confirma.

@@ -5,5 +5,5 @@ pip-audit==2.10.1
 djlint==1.46.2
 pre-commit==4.6.2
 django-debug-toolbar==8.0.0
-setuptools
-wheel
+setuptools==84.0.0
+wheel==0.48.0
