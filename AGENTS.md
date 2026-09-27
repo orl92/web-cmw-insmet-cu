@@ -207,9 +207,21 @@ Estos items NO los cubren los skills genéricos. Verificarlos siempre:
 
 **Backlog / ideas:** CSP (django-csp) · 2FA/MFA para staff · validación de archivos subidos (magic bytes/tamaño) · health check `/health/` · búsqueda global en navbar · Auth API (JWT) · WebSockets/notificaciones en tiempo real · i18n EN del portal público.
 
-## Revisión antes de commit
+## Verificación antes de commit
 
-Antes de cada commit (o push/PR), lanzar un subagente de revisión que lea el diff y los archivos cambiados, detecte bugs/errores y los resuelva antes de commitear. Verificar luego con djlint, tests Django y `manage.py check`.
+**Gentle AI ya cubre los hooks (`pre-commit`) y la revisión del diff (RDD/4R). No los repitas acá**: no lances un subagente de revisión si la revisión nativa está activa, y no agregues pasos de hook — se configuran en `.githooks/pre-commit` y `Makefile`.
+
+Lo que gentle-ai **no** cubre es la verificación funcional (`review validate --gate` solo valida sintaxis y reporta política; no ejecuta nada). Córrela según lo que cambió, no por ritual:
+
+| Cambio | Verificación |
+|---|---|
+| Código Python (modelos, vistas, permisos) | `python manage.py test` |
+| `requirements/` con **versiones cambiadas** | `python manage.py test` (el comportamiento puede cambiar) |
+| `requirements/` solo pines, sin cambio de versión | `pip install --dry-run -r requirements/<env>.txt` |
+| Solo workflows / Makefile / hooks | YAML parseable + `sh -n .githooks/pre-commit` + `make -n <target>` |
+| Solo docs / markdown | nada |
+
+`python manage.py check` es barato (~1s): correlo siempre.
 
 ## API + Deploy + Locale
 
