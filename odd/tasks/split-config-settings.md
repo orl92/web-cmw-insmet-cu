@@ -110,7 +110,51 @@ nuevo porque compara el objeto completo, no los valores que alguien se acuerde d
 
 ## Progreso
 
-Sin empezar.
+Rama `refactor/settings-profiles`, 2 work-unit commits sobre `16fe5ff`, árbol limpio.
+
+| Commit | Unidad |
+|---|---|
+| `b6afa9a` | `refactor(settings)`: paquete de perfiles + tests + corrección de la guarda de media/ |
+| `385280b` | `chore(odd)`: este documento |
+
+### Verificación ejecutada
+
+| Chequeo | Resultado |
+|---|---|
+| Equivalencia del objeto settings vs. el monolito de `HEAD`, 3 perfiles | **Byte a byte idéntica** (170/169/169 settings). Se excluyen `SETTINGS_MODULE` (nombre del módulo del probe) y `SECRET_KEY` (aleatorio por sesión). |
+| `python manage.py test` | **838/838 OK** (811 previos + 27 nuevos). |
+| `manage.py check` en dev y testing | 0 issues. |
+| `ruff check` | limpio. |
+| `pre-commit run` (8 hooks) | verde. |
+| `ruff format` (hook mutante) | reformateó 2 archivos → **equivalencia re-verificada sobre esos bytes** antes de commitear. |
+
+### Desviación del plan, y por qué
+
+`test_media_root_init.py` no estaba en el alcance y hubo que arreglarlo. Usaba
+`inspect.getsource(config.settings)`, que tras el split devuelve solo el `__init__.py` de 70
+líneas: la guarda de la spec 014 quedó **incapaz de fallar**. Ahora lee todos los módulos del
+paquete, y su eficacia está probada por mutación (inyectar `MEDIA_ROOT.mkdir` en `base.py` hace
+fallar el test con `module='base.py'`).
+
+Un test verde no distingue una guarda real de una decorativa. La mutación sí.
+
+### Deuda que este change dejó documentada, no resuelta
+
+- `apply_external_hostname()` deriva el puerto con `external_hostname.split(':')[-1]`: una URL con
+  path termina en el puerto.
+- `production.py` no pinea `DEBUG = False`; hereda el valor de `base.py`. Un `DEBUG=True` suelto en
+  el `.env` de producción sigue sirviendo tracebacks, igual que antes del split. **Decisión
+  pendiente del mantenedor**: pinearlo agrega `DEBUG` a la línea de diff del estado híbrido.
+- `DJANGO_SETTINGS_MODULE=config.settings.base` pasa `check` pero no tiene `DATABASES`. Válido solo
+  para orden de importación.
+- `DEBUG=False` en una máquina cuyo `.env` tenga `DB_ENGINE` sin los otros cuatro vars falla al
+  importar. Preexistente, verificado idéntico contra `HEAD`.
+
+## Revisión nativa
+
+**No revisada.** RDD sigue apagado a nivel de clon (`clone_local: off`, `global: on`), así que la
+entrega va por política ordinaria del repo y se reporta `disabled/unmanaged`. No hay PASS ni
+aprobación inventada. La apertura del PR es decisión del mantenedor.
 
 ## Ruta de ejecución
 
