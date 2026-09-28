@@ -65,7 +65,7 @@ filtrado no entrega nada por sí solo.
 
 ## Verificación
 
-- `python -m scripts.generate_env --development` y `--production` escriben un `.env` válido en un
+- `python scripts/generate_env.py --development` y `--production` escriben un `.env` válido en un
   directorio temporal, sin Django importado (se comprueba con `sys.modules`).
 - El par generado descifra: el script se relee con `config.settings.base.decrypt_secret_key`.
 - Fail-closed por los DOS lados: sin `.env` revienta con mensaje que dice qué ejecutar; con `.env`
@@ -76,6 +76,29 @@ filtrado no entrega nada por sí solo.
 - `nginx -t -c deploy/nginx/webcmp.conf.example` si hay nginx disponible; si no, se documenta el
   chequeo pendiente en vez de darlo por bueno.
 - `grep -rn "manage.py generate_env"` no devuelve nada.
+
+### Estado de la verificación tras `d5170a4`
+
+- 868 tests OK (12 del script, 43 de perfiles de los cuales 13 son el fail-closed nuevo).
+- `python manage.py check --deploy --fail-level WARNING` limpio en clon sin `.env`: 0 issues,
+  1 silenciado (W008, lo resuelve Nginx).
+- Las 4 ramas del fail-closed verificadas con el `.env` real movido aside, en `dev`,
+  `production` y `testing`.
+- El par del script descifra con `config.settings.base.decrypt_secret_key` y pasa `_check_secret_key`.
+- Ruff check + format limpios; `detect-secrets` limpio sin ampliar el baseline.
+
+Correcciones sobre lo planificado, y por que:
+
+- El dispatcher de `config/settings/__init__.py` tuvo que leer `.env` y las banderas él mismo.
+  Leía `DEBUG` desde `base`, así que importar el paquete importaba `base`, y `base` fail-closed
+  mataba al perfil `testing` antes de que este pudiera inyectar su par. El plan daba por hecho
+  que alcanza con inyectar en `testing.py`; no alcanza, y el fallo se ve solo en un clon limpio.
+- El par determinista quedo en `config/settings/_testing_keys.py` y no dentro de `testing.py`:
+  lo necesitan los dos caminos (dispatcher e import directo) ANTES de importar `base`, y duplicar
+  la constante en dos sitios es como el par de testing se desincroniza del suyo propio.
+- La clave Fernet de testing se DERIVA (`sha256` de una constante publica) en vez de escribirse.
+  Una cadena de 32 bytes literal en el repo es un string de alta entropia que `detect-secrets`
+  marca como secreto; derivado no hay nada que alguien pueda intentar usar.
 
 TDD: **off** (no hay `strict_tdd` registrado; los guards de configuración se prueban por sus
 ramas negativas, que es donde un test de valor aporta). Runner: `python manage.py test`.
@@ -94,10 +117,10 @@ ramas negativas, que es donde un test de valor aporta). Runner: `python manage.p
 Rama `feat/production-deploy`, apilada sobre `refactor/settings-profiles-hardening` (PR #80): el
 paquete de perfiles todavía no está en `main` y T2 lo necesita.
 
-- [ ] T1 `scripts/generate_env.py`
-- [ ] T2 `base.py` fail-closed 100%
-- [ ] T3 par determinista en `testing.py`
-- [ ] T4 borrar el management command y sus referencias
+- [x] T1 `scripts/generate_env.py` — commit `d5170a4`
+- [x] T2 `base.py` fail-closed 100% — `d5170a4`
+- [x] T3 par determinista en `testing.py` — `d5170a4`, con `_testing_keys.py` como dueño unico
+- [x] T4 borrar el management command y sus referencias — `d5170a4`
 - [ ] T5 `deploy/systemd/` + `deploy/nginx/`
 - [ ] T6 retirar `gunicorn.sh`
 - [ ] T7 CI `deploy-check` usa el script
