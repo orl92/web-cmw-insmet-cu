@@ -1,9 +1,9 @@
 """Perfil `production`: `PRODUCTION` presente en el entorno.
 
-Lo elige el dispatcher solo si `PRODUCTION` está en `os.environ`. `gunicorn.sh`
-no exporta esa variable (la define el `supervisord.conf` del servidor de deploy,
-fuera del repo): por eso el perfil de producción NO se puede alcanzar por otra
-vía, y no depende de `DEBUG` para ninguna de sus decisiones.
+Lo elige el dispatcher solo si `PRODUCTION` está en `os.environ`. La exporta
+`Environment=PRODUCTION=1` en `deploy/systemd/webcmp.service`, y no hay otro
+lugar del que sale: por eso el perfil de producción NO se puede alcanzar por
+otra vía, y no depende de `DEBUG` para ninguna de sus decisiones.
 """
 
 # Los settings de `base` llegan por `import *` a propósito: un perfil tiene que

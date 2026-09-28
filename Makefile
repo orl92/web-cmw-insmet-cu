@@ -3,13 +3,13 @@ PY := $(VENV)/bin/python
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup hooks check test lint djlint audit
+.PHONY: help setup hooks env check test lint djlint audit
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Create .venv, install dev+test deps, and activate the git hooks
+setup: env ## Create .venv, install dev+test deps, and activate the git hooks
 	python3 -m venv $(VENV)
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r requirements/dev.txt
@@ -18,6 +18,16 @@ setup: ## Create .venv, install dev+test deps, and activate the git hooks
 	# core.hooksPath is set below, so `pre-commit install` above only
 	# populates the hook environments; it does not wire a second hook.
 	git config core.hooksPath .githooks
+
+env: ## Generate the .env if it is missing (never overwrites an existing one)
+	@if [ -f .env ]; then \
+		echo ".env ya existe: no se toca (para regenerar: make env-force)"; \
+	else \
+		$(PY) scripts/generate_env.py --development; \
+	fi
+
+env-force: ## Regenerate the .env, keeping the current key pair
+	$(PY) scripts/generate_env.py --development --force
 
 hooks: ## Point git at the versioned hooks in .githooks/
 	git config core.hooksPath .githooks

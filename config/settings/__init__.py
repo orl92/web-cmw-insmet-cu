@@ -6,10 +6,10 @@ entorno que leía el monolito `config/settings.py`, con la MISMA precedencia:
     IS_PRODUCTION = 'PRODUCTION' in os.environ
     DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-`gunicorn.sh` no exporta `PRODUCTION` (la define el `supervisord.conf` del
-servidor de deploy, fuera del repo). Si esta selección usara otra variable, un
-supervisor que no la exportara arrancaría producción con el perfil equivocado:
-un outage silencioso. Por eso la tabla de verdad se preserva por construcción:
+El unit de systemd (`deploy/systemd/webcmp.service`) exporta `PRODUCTION=1`
+en el propio `[Service]`. Si esta selección usara otra variable, un despliegue
+que no la exportara arrancaría producción con el perfil equivocado: un outage
+silencioso. Por eso la tabla de verdad se preserva por construcción:
 
     PRODUCTION en el entorno        ->  production
     sin PRODUCTION, DEBUG == True   ->  dev

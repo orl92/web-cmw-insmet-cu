@@ -180,188 +180,181 @@ Para correr los hooks manualmente sobre todo el repo:
 
 ## 🚀 Despliegue en Producción
 
-### Configuración recomendada
+Guía para un servidor **nuevo**, en Ubuntu 26.04 LTS con Python 3.14 nativo. Si
+estás manteniendo un servidor que ya corre, migrá desde
+[Migrar desde supervisor](#migrar-desde-supervisor) al final de esta sección.
 
-- Nginx como proxy inverso
-- Gunicorn como servidor de aplicaciones
-- Supervisor para gestión de procesos
+El stack es: **Nginx** (TLS, estáticos y media) → **Gunicorn** vía systemd →
+**PostgreSQL**, más un worker de **Huey** aparte para correos y PDFs. Redis es
+opcional: el caché por defecto corre en memoria del proceso.
 
-### 1. Configurar Nginx
+Los tres archivos de configuración están versionados en `deploy/`. Son
+**ejemplos deterministas, sin secretos**: lo que cambia por instalación son
+rutas y rutas de certificado, y eso se edita en el servidor.
 
-```ini
-sudo apt install nginx
-sudo nano /etc/nginx/sites-available/webcmp.conf
-```
-
-#### Ejemplo de configuración:
-
-```ini
-proxy_cache_path /cache/nginx/tmpfs levels=1:2 keys_zone=webcmp:100m max_size=100m inactive=3h use_temp_path=off;
-
-upstream web.cmw.insmet.cu {
-    server unix:/tmp/gunicorn-webcmp.sock fail_timeout=0;
-}
-
-server {
-        listen 80 default_server;
-        listen [::]:80 default_server;
-        server_name _;
-        return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl default_server;
-    listen [::]:443 ssl default_server;
-    ssl_certificate /etc/nginx/certificate/web.cmw.insmet.cu.crt;
-    ssl_certificate_key /etc/nginx/certificate/web.cmw.insmet.cu.key;
-    server_name web.cmw.insmet.cu;
-    access_log /var/www/web-cmw-insmet-cu/logs/nginx-access.log;
-    error_log /var/www/web-cmw-insmet-cu/logs/nginx-error.log;
-
-    # Agrega estos headers esenciales
-    proxy_set_header X-Forwarded-Proto $scheme;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header Host $http_host;
-    proxy_redirect off;
-
-    # Configuraci  n de timeout
-    proxy_read_timeout 300s;
-    proxy_connect_timeout 75s;
-
-    location /media/  {
-        alias /var/www/web-cmw-insmet-cu/media/;
-    }
-
-    location /static/ {
-        alias /var/www/web-cmw-insmet-cu/staticfiles/;
-    }
-
-    location /static/admin/ {
-        alias /var/www/web-cmw-insmet-cu/staticfiles/admin/;
-    }
-
-    location / {
-         proxy_pass http://web.cmw.insmet.cu;
-
-         # Espec  ficamente para Django
-         proxy_set_header Upgrade $http_upgrade;
-         proxy_set_header Connection "upgrade";
-    }
-
-    error_page 500 502 503 504 /templates/500.html;
-}
-```
-
-> **Cookies seguras tras el proxy:** Django ahora lee `SECURE_PROXY_SSL_HEADER`
-> (`X-Forwarded-Proto`) en producción, por lo que `request.is_secure()` se
-> resuelve como `True` detrás de Nginx y las cookies de sesión/CSRF seguras se
-> envían correctamente. Mantenga `proxy_set_header X-Forwarded-Proto $scheme;`
-> en la configuración de Nginx (arriba); no lo elimine.
-
-#### Comentar el contenido de:
-
-```ini
-/etc/nginx/sites-available/default
-```
-
-### 2. Configurar Gunicorn
-
-```ini
-pip install -r requirements/prod.txt
-nano gunicorn.sh
-```
-
-> `requirements/prod.txt` ya **incluye gunicorn** (es `base.txt` + gunicorn), así que
-> no hace falta un `pip install gunicorn` aparte.
-
-#### Ejemplo de configuración:
-
-```ini
-#!/bin/bash
-NAME="webcmp"
-DJANGODIR=$(cd `dirname $0` && pwd)
-SOCKFILE=/tmp/gunicorn-webcmp.sock
-LOGDIR=${DJANGODIR}/logs/gunicorn.log
-# El servicio NO debe correr como root. El usuario dedicado (webcmp) debe ser
-# el propietario del venv (o ejecutar ./gunicorn.sh como ese usuario) para poder
-# escribir el socket y servir estáticos/media.
-USER=${GUNICORN_USER:-webcmp}
-GROUP=${GUNICORN_GROUP:-webcmp}
-NUM_WORKERS=5
-DJANGO_WSGI_MODULE=config.wsgi
-
-rm -frv $SOCKFILE
-
-echo $DJANGODIR
-
-cd $DJANGODIR
-
-exec ${DJANGODIR}/.venv/bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
-  --name $NAME \
-  --workers $NUM_WORKERS \
-  --user=$USER --group=$GROUP \
-  --bind=unix:$SOCKFILE \
-  --log-level=debug \
-  --log-file=$LOGDIR
-```
-
-> **Usuario no-root:** cree el usuario dedicado y asígnele la propiedad de los
-> directorios que Gunicorn necesita escribir:
-> ```bash
-> useradd -r -s /bin/false webcmp
-> chown -R webcmp:webcmp /var/www/web-cmw-insmet-cu/.venv \
->   /var/www/web-cmw-insmet-cu/media \
->   /var/www/web-cmw-insmet-cu/staticfiles \
->   /var/www/web-cmw-insmet-cu/logs
-> ```
-
-## 3. Configurar Supervisor
+### 1. Preparar el sistema
 
 ```bash
-sudo nano /etc/supervisor/conf.d/webcmp.conf
+sudo apt update
+sudo apt install -y python3.14 python3.14-venv postgresql redis-server nginx
+
+# Usuario dedicado. El servicio NUNCA corre como root.
+sudo useradd -r -s /bin/false webcmp
+
+sudo mkdir -p /srv/webcmp
+sudo chown webcmp:webcmp /srv/webcmp
 ```
 
-#### Ejemplo de configuración:
-
-```ini
-[program:webcmp]
-command=/var/www/web-cmw-insmet-cu/gunicorn.sh
-directory=/var/www/web-cmw-insmet-cu
-user=webcmp
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/webcmp.err.log
-stdout_logfile=/var/log/webcmp.out.log
-```
-
-### 4. Configurar Huey Worker
-
-El worker de Huey procesa las tareas asíncronas (envío de correos y generación de PDFs). Se ejecuta como un proceso separado de Gunicorn.
+### 2. PostgreSQL
 
 ```bash
-huey_consumer.py config.huey.huey
+sudo -u postgres psql <<'SQL'
+CREATE USER webcmp WITH PASSWORD 'CAMBIAR_ESTA_CLAVE';  -- pragma: allowlist secret
+CREATE DATABASE webcmp OWNER webcmp;
+\c webcmp
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO webcmp;
+SQL
 ```
 
-#### Supervisor (recomendado)
+`psycopg[binary]` ya está en `requirements/prod.txt`; no se instala el driver a mano.
 
-Agregar un segundo programa en `/etc/supervisor/conf.d/webcmp.conf`:
-
-```ini
-[program:webcmp-huey]
-command=/var/www/web-cmw-insmet-cu/.venv/bin/huey_consumer.py config.huey.huey
-directory=/var/www/web-cmw-insmet-cu
-user=webcmp
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/webcmp-huey.err.log
-stdout_logfile=/var/log/webcmp-huey.out.log
-```
+### 3. El código y el `.env`
 
 ```bash
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start webcmp-huey
+sudo -u webcmp git clone <repo> /srv/webcmp
+cd /srv/webcmp
+sudo -u webcmp python3.14 -m venv .venv
+sudo -u webcmp .venv/bin/pip install -r requirements/prod.txt
+sudo -u webcmp .venv/bin/python manage.py migrate
+sudo -u webcmp .venv/bin/python manage.py collectstatic --no-input
 ```
+
+Ahora el paso que antes era imposible de hacer bien: **el `.env` se genera sin
+Django arrancado**.
+
+```bash
+sudo -u webcmp .venv/bin/python scripts/generate_env.py --production
+```
+
+Eso escribe dos archivos:
+
+| Archivo | Contiene | Permisos |
+|---|---|---|
+| `/srv/webcmp/.env` | `SECRET_KEY` cifrada, `DEBUG=False`, `DB_*`, SMTP, LDAP comentado | `600` |
+| `/etc/webcmp/encryption.env` | `ENCRYPTION_KEY` (la clave de descifrado) | `600`, root |
+
+**Por qué la `ENCRYPTION_KEY` no va en el `.env`:** si comparten archivo, un
+`.env` filtrado entrega el secreto ya descifrado. La clave con la que se cifró
+viaja junto al texto cifrado, así que no hay nada que descifrar. La clave de
+descifrado tiene que vivir en un archivo que el `.env` no puede alcanzar, y
+`systemd` lo carga con `EnvironmentFile=-`.
+
+Después editá los `CHANGE_ME` del `.env` (correo SMTP y `DB_PASS`):
+
+```bash
+sudo -u webcmp nano /srv/webcmp/.env
+```
+
+Los permisos del archivo de clave, por si lo generaste antes de esto:
+
+```bash
+sudo chown root:root /etc/webcmp/encryption.env
+sudo chmod 600 /etc/webcmp/encryption.env
+```
+
+Los directorios que el servicio tiene que poder escribir:
+
+```bash
+sudo mkdir -p /srv/webcmp/media /srv/webcmp/logs /srv/webcmp/staticfiles
+sudo chown -R webcmp:webcmp /srv/webcmp/media /srv/webcmp/logs /srv/webcmp/staticfiles
+```
+
+### 4. systemd
+
+```bash
+sudo cp deploy/systemd/webcmp.service deploy/systemd/webcmp-huey.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now webcmp webcmp-huey
+systemctl status webcmp webcmp-huey
+```
+
+Los logs van a journald, no a archivos:
+
+```bash
+journalctl -u webcmp -f
+journalctl -u webcmp-huey -f
+```
+
+> **Los paths de `/srv/webcmp` están escritos en el `.service`, no en una
+> variable.** En un unit, `APP_DIR=/srv/webcmp` no es una clave válida de
+> systemd y `systemd-analyze verify` lo rechaza. Si el checkout vive en otro
+> lugar, se cambian las rutas y se verifica:
+> `systemd-analyze verify /etc/systemd/system/webcmp.service`.
+
+> **`EnvironmentFile=-` lleva el guion a propósito.** Sin la clave de descifrado,
+> el servicio arranca y falla con el error accionable de `load_secret_key()`,
+> que dice qué comando ejecutar. Sin el guion, fallaría systemd con un error que
+> no dice qué hacer. Si preferís que el fallo sea estricto, quitá el guion.
+
+### 5. Nginx
+
+```bash
+sudo cp deploy/nginx/webcmp.conf.example /etc/nginx/sites-available/webcmp.conf
+sudo nano /etc/nginx/sites-available/webcmp.conf   # certificados y rutas
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo ln -s /etc/nginx/sites-available/webcmp.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+> **No elimines `proxy_set_header X-Forwarded-Proto $scheme;`.** Django lo lee
+> con `SECURE_PROXY_SSL_HEADER` para resolver `request.is_secure()`. Sin esa
+> línea, las cookies de sesión seguras no se envían y el usuario entra en un
+> bucle de logout.
+
+### 6. Verificar
+
+```bash
+# Que los settings de producción cargan con la clave de descifrado del unit
+sudo -u webcmp systemd-run --pipe --wait -p EnvironmentFile=/etc/webcmp/encryption.env \
+  -p Environment=PRODUCTION=1 --working-directory=/srv/webcmp \
+  /srv/webcmp/.venv/bin/python manage.py check --deploy
+
+curl -I https://web.cmw.insmet.cu
+```
+
+> `check --deploy` tiene que salir con 0 issues. Lo único tolerado es `W008`
+> (HTTPS lo termina Nginx, no Django) y se silencia en
+> `config/settings/production.py`.
+
+### Comandos del día a día
+
+```bash
+sudo systemctl restart webcmp            # reinicio sin cortar conexiones
+sudo systemctl reload webcmp             # recarga de workers (SIGHUP)
+sudo systemctl status webcmp
+sudo journalctl -u webcmp --since "1 hour ago" -p err
+```
+
+### Rotar claves
+
+```bash
+sudo -u webcmp .venv/bin/python scripts/generate_env.py --production --rotate-keys
+sudo systemctl restart webcmp
+```
+
+**Invalida todas las sesiones y cookies firmadas.** Es lo esperado al rotar.
+
+### Migrar desde supervisor
+
+1. `sudo systemctl stop supervisor` (o quita los dos programas de
+   `/etc/supervisor/conf.d/webcmp.conf` y `supervisorctl update`).
+2. Seguí los pasos 3 a 6 de arriba en el servidor nuevo.
+3. Nginx debe apuntar al socket nuevo: `unix:/run/webcmp/gunicorn.sock`.
+4. `nginx -t && sudo systemctl reload nginx`.
+5. `gunicorn.sh` se retiró del repositorio: el unit hace su trabajo con
+   `ExecStart` directo. Si el servidor viejo todavía lo tiene, no lo borres
+   hasta que el nuevo esté sirviendo.
 
 ## 🤝 Cómo Contribuir
 
