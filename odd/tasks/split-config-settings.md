@@ -12,7 +12,7 @@ un archivo(reordered.
 (plantillas, apps, DRF, i18n) y decisiones de entorno dispersas en nueve ramas
 `if not DEBUG:` / `if IS_PRODUCTION:` a lo largo del archivo. Cada ajuste de entorno — cookies
 seguras, `STORAGES`, debug toolbar, WhiteNoise, base de datos — vive buried entre 60 líneas de
-config que no tienen nada que ver con él. Cuando Django 6的一个 una API o un default, no hay un
+config que no tienen nada que ver con él. Cuando Django 6 depreca una API o un default, no hay un
 lugar obvious donde aplicar el cambio ni una forma de verificar que el perfil equivocado no cambió.
 
 ## Restricción dura (no negociable)
