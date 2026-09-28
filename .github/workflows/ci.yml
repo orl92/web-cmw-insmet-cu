@@ -125,10 +125,10 @@ jobs:
 
       # El .env está en .gitignore y CI no puede tener claves reales, así que el
       # gate genera su propio par Fernet. Se usa `get_random_secret_key()` como
-      # texto plano (el MISMO generador que usa generate_env) y no una cadena fija:
-      # `security.W009` rechaza claves de menos de 50 caracteres o con menos de 5
-      # caracteres distintos, y una constante tipo "xxxxx" hace fallar el gate por
-      # una causa que no es una regresión de seguridad.
+      # texto plano (el MISMO generador que usa scripts/generate_env.py) y no una
+      # cadena fija: `security.W009` rechaza claves de menos de 50 caracteres o
+      # con menos de 5 caracteres distintos, y una constante tipo "xxxxx" hace
+      # fallar el gate por una causa que no es una regresión de seguridad.
       #
       # El script escribe en GITHUB_ENV, que inyecta las variables en los pasos
       # siguientes. Nada se persiste en el checkout.

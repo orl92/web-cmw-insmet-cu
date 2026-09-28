@@ -14,13 +14,11 @@ perfil ya no podría imponer el suyo. Ver odd/tasks/split-config-settings.md.
 
 import logging
 import os
-import warnings
 from pathlib import Path
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from django.contrib.messages import constants as messages
 from django.core.exceptions import ImproperlyConfigured
-from django.core.management.utils import get_random_secret_key
 from django.urls import reverse_lazy
 from dotenv import load_dotenv
 
@@ -79,43 +77,63 @@ def decrypt_secret_key(encrypted_secret_key, encryption_key):
     return cipher_suite.decrypt(encrypted_secret_key.encode()).decode()
 
 
-SECRET_KEY = decrypt_secret_key(
-    os.getenv('SECRET_KEY'),
-    os.getenv('ENCRYPTION_KEY'),
-)
+def load_secret_key():
+    """Arma `SECRET_KEY` desde el entorno, o se niega a arrancar.
 
+    Sin `.env` legible, o con un `SECRET_KEY` que no descifra con la
+    `ENCRYPTION_KEY` presente, la aplicación NO tiene una clave: tiene una
+    distinta en cada proceso. Eso invalida todas las sesiones y cookies firmadas
+    en cada reinicio, y el síntoma aparece tarde, como "los usuarios pierden la
+    sesión sin motivo". Una clave que se regenera sola es peor que no tener
+    clave, porque parece funcionar.
 
-class EphemeralSecretKeyWarning(UserWarning):
-    """Categoría propia para el fallback a `get_random_secret_key()`.
+    Esto antes caía a `get_random_secret_key()` con un warning, y el motivo del
+    bypass era real: el generador de claves era un management command, y
+    `manage.py` importa los settings ANTES de despacharlo (`django.setup()`), así
+    que un raise en este bloque dejaba sin arranque al comando que existía
+    justamente para crear la clave. La paradoja era del GENERADOR, no de los
+    settings. El generador ahora es `scripts/generate_env.py`, un script que no
+    importa Django y corre en el estado exacto en que la aplicación no puede.
 
-    No es un `UserWarning` pelado a propósito: con categoría propia el aviso es
-    grepeable y un operador puede endurecerlo después con
-    `-W error::config.settings.base.EphemeralSecretKeyWarning` sin tocar código.
+    El perfil `testing` inyecta un par determinista antes de importar este
+    módulo, así que la suite corre sin `.env` y sin `/etc/webcmp/encryption.env`.
     """
+    encrypted = os.getenv('SECRET_KEY')
+    encryption_key = os.getenv('ENCRYPTION_KEY')
+
+    if not encrypted and not encryption_key:
+        raise ImproperlyConfigured(
+            'Falta el archivo .env: no hay SECRET_KEY ni ENCRYPTION_KEY. Generá el '
+            'archivo con `python scripts/generate_env.py --development`, o con '
+            '`--production` en el servidor.'
+        )
+
+    if not encryption_key:
+        raise ImproperlyConfigured(
+            'Falta ENCRYPTION_KEY: hay SECRET_KEY pero nada con qué descifrarla. En '
+            'producción la clave de descifrado NO va en el .env, la carga systemd con '
+            '`EnvironmentFile=-/etc/webcmp/encryption.env`. En el resto de los perfiles, '
+            'regenerá el archivo con `python scripts/generate_env.py`.'
+        )
+
+    if not encrypted:
+        raise ImproperlyConfigured(
+            'Falta SECRET_KEY: hay ENCRYPTION_KEY pero ningún material cifrado que '
+            'descifrar. Regenerá el archivo con `python scripts/generate_env.py`.'
+        )
+
+    try:
+        return decrypt_secret_key(encrypted, encryption_key)
+    except (InvalidToken, ValueError, TypeError) as exc:
+        raise ImproperlyConfigured(
+            'SECRET_KEY no descifra con ENCRYPTION_KEY: el par no corresponde. O el '
+            'archivo de clave de descifrado es de otra instalación, o el .env se copió '
+            'de otro servidor. `python scripts/generate_env.py` conserva las claves '
+            'existentes si el par funciona y genera otras si no.'
+        ) from exc
 
 
-if SECRET_KEY is None:
-    # Sin .env cifrado: clave temporal por sesión. NO se puede fallar cerrado acá.
-    # `generate_env` es un management command, y `manage.py` importa los settings
-    # ANTES de despacharlo (`django.setup()`): un raise en este bloque dejaría sin
-    # arranque al propio comando que existe para generar la clave (paradoja de
-    # bootstrap; ver odd/tasks/harden-settings-profiles-deploy-gate.md).
-    # El fallback ES el bypass de bootstrap; el defecto nunca fue el fallback sino
-    # que fuera silencioso. Por eso ahora avisa. En producción `production.py`
-    # convierte este bloque en un fail-fast de verdad.
-    SECRET_KEY = get_random_secret_key()
-    warnings.warn(
-        'SECRET_KEY ausente o no descifrable con ENCRYPTION_KEY: se está usando una clave '
-        'efímera que cambia en cada reinicio del proceso, así que todas las sesiones y '
-        'cookies firmadas quedan invalidadas. Ejecute `python manage.py generate_env` para '
-        'escribir un .env con SECRET_KEY y ENCRYPTION_KEY válidas. El perfil de producción '
-        '(PRODUCTION=1) falla cerrado ante esto; este aviso corresponde a dev o CI sin .env.',
-        EphemeralSecretKeyWarning,
-        # `stacklevel=1` y no 2: el aviso tiene que señalar el punto donde se acuña
-        # la clave efímera (este `warnings.warn`). Con 2 apuntaría al `from .base
-        # import *` del perfil o del dispatcher, que no es donde está la causa.
-        stacklevel=1,
-    )
+SECRET_KEY = load_secret_key()
 
 # ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS
 ALLOWED_HOSTS = [
@@ -296,7 +314,7 @@ def get_database_config(*, is_production=IS_PRODUCTION, prefer_sqlite=DEBUG):
         raise ImproperlyConfigured(
             'Falta la configuración de la base de datos. Defina DB_ENGINE (y DB_NAME, '
             'DB_USER, DB_HOST, DB_PASS) en el archivo .env. '
-            'Ejecute `python manage.py generate_env --production` para generarlo.'
+            'Ejecute `python scripts/generate_env.py --production` para generarlo.'
         )
 
     # sqlite3 NO usa usuario, password ni host. La decisión va ANTES del chequeo de

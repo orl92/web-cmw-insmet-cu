@@ -15,9 +15,23 @@ un outage silencioso. Por eso la tabla de verdad se preserva por construcción:
     sin PRODUCTION, DEBUG == True   ->  dev
     sin PRODUCTION, DEBUG != True   ->  testing
 
-`PRODUCTION` gana sobre `DEBUG`, como antes. `load_dotenv()` corre dentro de
-`base`, que se importa antes de leer las banderas, así que `.env` participa en la
-decisión igual que participaba en el monolito.
+`PRODUCTION` gana sobre `DEBUG`, como antes. `load_dotenv()` corre ACÁ, antes de
+leer las banderas, así que `.env` participa en la decisión igual que participaba
+en el monolito.
+
+Por qué este módulo lee el entorno y no `base`
+---------------------------------------------
+Si las banderas se leyeran de `base` (`from . import base` y después
+`elif _base.DEBUG`), importar este paquete importaría `base` antes de saber qué
+perfil corresponde. Y `base.load_secret_key()` falla cerrado cuando no hay par
+de claves: el perfil `testing`, que es justamente el que existe para arrancar
+sin `.env`, se moriría en el import de `base` sin llegar a inyectar el suyo.
+
+El orden que funciona es el inverso: leer `.env` y las banderas acá, y recién
+entonces importar el perfil, que importa `base` a su vez. Por eso la lectura de
+`DEBUG` está duplicada literalmente de `base.DEBUG`: es la MISMA expresión del
+monolito, y si alguna vez divergen, un perfil se elige distinto según por dónde
+se entre. Eso también lo cubre `DispatcherTests`.
 
 Los perfiles también son importables por su cuenta
 (`DJANGO_SETTINGS_MODULE=config.settings.production`): cada uno hace su propio
@@ -28,16 +42,37 @@ Los perfiles también son importables por su cuenta
 # un módulo de settings completo, no un selector.
 # ruff: noqa: F405
 import os
+from pathlib import Path
 
-from . import base as _base
-from .base import _CONTENT_SECURITY_POLICY_DIRECTIVES  # noqa: F401  (`import *` no lo exporta)
+from dotenv import load_dotenv
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Idéntico al de `base`: `.env` se lee antes de decidir, en los dos módulos.
+load_dotenv(BASE_DIR / '.env')
+
+# La MISMA expresión del monolito y de `base.DEBUG`. Ver la docstring.
+_DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 if 'PRODUCTION' in os.environ:
-    from .production import *  # noqa: F403
-elif _base.DEBUG:
-    from .dev import *  # noqa: F403
+    from .production import *  # noqa: E402, F403
+elif _DEBUG:
+    from .dev import *  # noqa: E402, F403
 else:
-    from .testing import *  # noqa: F403
+    # `testing` es el único perfil que debe arrancar sin material de clave, así que
+    # su par determinista se inyecta ANTES de importar el perfil (y por lo tanto antes
+    # de importar `base`). `testing.py` repite la llamada para el caso en que se lo
+    # importe directo; la función es idempotente.
+    from ._testing_keys import inject_testing_key_pair  # noqa: E402
+
+    inject_testing_key_pair()
+
+    from .testing import *  # noqa: E402, F403
+
+# `base` ya está importado a esta altura por la cadena del perfil; se importa con
+# nombre explícito para las dos referencias siguientes.
+from . import base as _base  # noqa: E402
+from .base import _CONTENT_SECURITY_POLICY_DIRECTIVES  # noqa: E402,F401  (no lo exporta `*`)
 
 
 def get_database_config():

@@ -43,7 +43,7 @@ El sistema detecta automáticamente el entorno (development/production) y config
   - Incluye herramientas de depuración
 - **Producción**:
 
-  - Genera plantilla `.env` al ejecutar `python manage.py generate_env --production` con valores requeridos
+  - Genera el `.env` al ejecutar `python scripts/generate_env.py --production` con valores requeridos, y escribe la `ENCRYPTION_KEY` en un archivo aparte (600) que systemd carga con `EnvironmentFile=`
   - Exige validación manual de configuraciones críticas
   - Habilita optimizaciones de seguridad y performance
 

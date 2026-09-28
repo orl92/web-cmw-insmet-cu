@@ -10,8 +10,17 @@ mal configurado, por eso no se llama `ci`. Lo elige el dispatcher cuando
 # ruff: noqa: F405
 import os
 
-from .base import *  # noqa: F403
-from .base import (  # noqa: F401  (alias sin guion bajo: `import *` no lo exporta)
+# El par de claves tiene que existir ANTES de `from .base import *`, porque
+# `base.load_secret_key()` falla cerrado y este perfil es el único que debe
+# arrancar sin `.env`: CI no tiene uno, y un `manage.py test` en un clon limpio
+# tampoco. Inyectarlo acá es lo que permite que `base` sea fail-closed sin
+# convertir la suite en un ritual de bootstrap.
+from ._testing_keys import inject_testing_key_pair  # noqa: E402  (tiene que preceder a base)
+
+inject_testing_key_pair()
+
+from .base import *  # noqa: E402, F403
+from .base import (  # noqa: E402, F401  (alias sin guion bajo: `import *` no lo exporta)
     _CONTENT_SECURITY_POLICY_DIRECTIVES,
     apply_external_hostname,
     resolve_obs_local_only,

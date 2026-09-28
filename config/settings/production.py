@@ -15,7 +15,6 @@ from .base import *  # noqa: F403
 from .base import (  # noqa: F401  (alias sin guion bajo: `import *` no lo exporta)
     _CONTENT_SECURITY_POLICY_DIRECTIVES,
     apply_external_hostname,
-    decrypt_secret_key,
     resolve_obs_local_only,
 )
 
@@ -25,15 +24,11 @@ from .base import (  # noqa: F401  (alias sin guion bajo: `import *` no lo expor
 # híbrido `PRODUCTION=1 DEBUG=True`, que es exactamente el que este perfil evita.
 DEBUG = False
 
-# Sin DEBUG en el entorno, `SECRET_KEY` de `base` es una clave temporal por
-# sesión. Producción falla cerrado. El orden importa: este raise venía antes que
-# el de la base de datos en el monolito y debe seguir siendo el primero.
-if decrypt_secret_key(os.getenv('SECRET_KEY'), os.getenv('ENCRYPTION_KEY')) is None:
-    raise ImproperlyConfigured(
-        'SECRET_KEY y ENCRYPTION_KEY no están definidas. '
-        'Ejecute `python manage.py generate_env` (o `--production`) '
-        'para generar el archivo .env.'
-    )
+# La falta de SECRET_KEY ya no se comprueba acá: `base.load_secret_key()` falla
+# cerrado para TODOS los perfiles, con un mensaje que nombra el archivo y el comando
+# exacto. Dos dueños para la misma regla es una regla que alguien va a parchear en
+# uno de los dos. Lo que SÍ es propio de producción y no se puede expresar en
+# `base` es el correo por consola, de abajo.
 
 # Anti-consola. El pie real no es "dev usa consola", es "producción usa consola en
 # silencio": los correos se descartan en stdout y ni el operador ni el usuario se
@@ -47,7 +42,7 @@ if EMAIL_BACKEND.strip() == console_email_backend:
         f'{console_email_backend} y los mensajes se perderían en silencio. Defina un '
         'servidor SMTP real (EMAIL_BACKEND, EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, '
         'EMAIL_HOST_PASSWORD) y regenere el archivo con '
-        '`python manage.py generate_env --production`.'
+        '`python scripts/generate_env.py --production`.'
     )
 
 # Security
