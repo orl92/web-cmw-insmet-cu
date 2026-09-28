@@ -109,7 +109,7 @@ ramas negativas, que es donde un test de valor aporta). Runner: `python manage.p
 |---|---|
 | Sacar el management command rompe el flujo de quien ya lo conoce | El mensaje de error del fail-closed dice el comando exacto a ejecutar, y `make setup` lo hace solo. |
 | Fail-closed en `base.py` rompe el arranque de cualquier comando sin `.env` | Es el objetivo. El `testing.py` cubre la suite; el script cubre el primer arranque. |
-| Un unit con rutas hardcodeadas no sirve para la simulación local | Rutas como variables documentadas al tope del archivo; la simulación en Debian 14 usa `systemd --user` o copia con rutas locales. |
+| Un unit con rutas hardcodeadas no sirve para otra instalación | Las rutas están escritas y documentadas al tope del archivo, con el aviso de re-verificar. **No** se pueden abstraer en una variable: `APP_DIR=/srv/webcmp` no es clave válida de systemd (ver desviación 4). |
 | Sacar `gunicorn.sh` y que el servidor actual lo necesite | Se retira **después** de que el unit esté verificado, y el PR dice explícitamente que el deploy pasa a systemd. |
 
 ## Progreso
@@ -121,8 +121,66 @@ paquete de perfiles todavía no está en `main` y T2 lo necesita.
 - [x] T2 `base.py` fail-closed 100% — `d5170a4`
 - [x] T3 par determinista en `testing.py` — `d5170a4`, con `_testing_keys.py` como dueño unico
 - [x] T4 borrar el management command y sus referencias — `d5170a4`
-- [ ] T5 `deploy/systemd/` + `deploy/nginx/`
-- [ ] T6 retirar `gunicorn.sh`
-- [ ] T7 CI `deploy-check` usa el script
-- [ ] T8 `ENCRYPTION_KEY` fuera del `.env`
-- [ ] T9 onboarding y docs
+- [x] T5 `deploy/systemd/` + `deploy/nginx/` — commit `320dc12`
+- [x] T6 retirar `gunicorn.sh` — commit `ee96f8d` (`feat(deploy)`, ver historial)
+- [x] T7 CI `deploy-check` usa el script — commit `ee96f8d`
+- [x] T8 `ENCRYPTION_KEY` fuera del `.env` — script en `d5170a4`, unit en `320dc12`
+- [x] T9 onboarding y docs — commit `ee96f8d`
+
+### Commits
+
+| Commit | Qué |
+|---|---|
+| `d5170a4` | T1–T4: script plano, fail-closed, par de testing, command borrado |
+| `9cf1831` | Registro de T1–T4 y sus desviaciones |
+| `320dc12` | T5: unidades systemd + ejemplo de Nginx |
+| `ee96f8d` | T6 + T7 + T9: fuera `gunicorn.sh`, CI usa el script, docs y Makefile |
+| `e8a9722` | Default del `.env` anclado a la raíz del repo |
+
+### Estado de la verificación tras `e8a9722`
+
+- 870 tests OK (14 del script, 43 de perfiles con 13 de fail-closed).
+- `systemd-analyze verify` acepta **ambos** units. Los avisos restantes son de
+  paths del servidor (`/srv/webcmp`), que no existen en la máquina que verifica.
+- Procedimiento del README ejecutado de punta a punta, con el `.env` real del
+  repo ausente: el script genera el `.env` de producción **sin** `ENCRYPTION_KEY`,
+  `EnvironmentFile=-` lo inyecta y `check --deploy` da 0 issues, 1 silenciado.
+- Sin la clave inyectada, el fallo nombra el archivo exacto que falta.
+- Job de CI simulado con el `.env` real del repo movido aside (checkout limpio):
+  el script genera el par, el gate corre con 0 issues.
+- `make env` con un `.env` presente no lo toca (mismo md5 antes y después).
+- `detect-secrets` con pragma inline sobre el `PASSWORD 'CAMBIAR_ESTA_CLAVE'` del
+  README, que es un placeholder deliberado.
+
+### Pendiente que no se puede cerrar desde acá
+
+- `nginx -t` sobre `deploy/nginx/webcmp.conf.example`: **nginx no está instalado**
+  en la máquina de desarrollo. La configuración se valida en el servidor, antes
+  de reloadear. Queda anotado acá a propósito, no dado por bueno.
+- `specs/013-check-deploy-ci/spec.md` sigue exigiendo `EphemeralSecretKeyWarning` y
+  `manage.py generate_env`, que este trabajo retiró. El spec promovido se cambia
+  por un delta spec nuevo, no editándolo acá.
+
+### Desviaciones 4 a 7, y por qué
+
+4. **Las rutas del unit van escritas, no en una variable.** El primer `webcmp.service`
+   usaba `APP_DIR=/srv/webcmp` en `[Service]`, y `systemd-analyze verify` lo rechazó:
+   `Unknown key 'APP_DIR' in section [Service]`, más `WorkingDirectory= path is not
+   absolute: ${APP_DIR}`. systemd no expande variables de entorno en esas
+   directivas, así que la indirección no funcionaba. Con rutas escritas, el unit
+   verifica y el operador edita seis paths si el checkout cambia de lugar.
+5. **`WatchdogSec` quedó solo en el unit de Gunicorn.** El de Huey lo declaraba con un
+   comentario que decía que mataba un consumer trabado, y eso era falso: el watchdog
+   mide un heartbeat que solo existe con `Type=notify`, así que en un `Type=simple`
+   no vigila nada. Huey no implementa `sd_notify`. El comentario ahora dice la
+   verdad: un consumer trabado no se detecta solo, hay que mirarlo.
+6. **T7 no es solo "usar el script": el gate tiene que seguir siendo ciego a lo que
+   era.** Una primera simulación local falló con el rechazo de `EMAIL_BACKEND`
+   console, y la causa era el `.env` real del repo filtrándose al entorno, no el
+   cambio. La lección es que el gate se valida con el repo en estado de CI (`.env`
+   ausente), no con el checkout del desarrollador: los dos se corrieron.
+7. **El default de `--env-file` se ancló a la raíz del repo.** La prueba de punta a
+   punta del README mostró que el default era relativo al CWD mientras los settings
+   leen `BASE_DIR/'.env'`: dos paths distintos para el mismo archivo. Un `--env-file`
+   fuera de la raíz ahora avisa, porque el flag se usa justamente en los tests y en
+   CI, donde el archivo no es para Django.
