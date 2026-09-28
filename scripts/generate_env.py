@@ -60,6 +60,14 @@ DEFAULT_ENCRYPTION_KEY_FILE = '/etc/webcmp/encryption.env'
 DEFAULT_PRODUCTION_HOSTNAME = 'cmw.insmet.cu'
 CUSTOM_EMAIL_BACKEND = 'config.custom_email_backend.CustomSTARTTLSBackend'
 
+# El `.env` se resuelve contra la raíz del repo, NO contra el CWD.
+# `config/settings/__init__.py` lo lee en `BASE_DIR/'.env'`, un path absoluto: si
+# el default fuera relativo, correr el script desde otro directorio escribiría el
+# archivo donde Django no lo busca, y el fallo sería "falta SECRET_KEY" a metros
+# de distancia de la causa.
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_ENV_PATH = REPO_ROOT / '.env'
+
 BANNER = """# ============================================================
 # ARCHIVO DE CONFIGURACIÓN DEL PROYECTO
 # Generado por scripts/generate_env.py el {timestamp}
@@ -246,8 +254,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         '--env-file',
-        default='.env',
-        help='Ruta del .env a escribir (default: .env en el directorio actual)',
+        default=str(DEFAULT_ENV_PATH),
+        help=f'Ruta del .env a escribir (default: {DEFAULT_ENV_PATH})',
     )
     parser.add_argument(
         '--encryption-key-file',
@@ -344,6 +352,19 @@ def main(argv: list[str] | None = None) -> int:
     if key_file:
         print(f'✓ {key_file} escrito (600): contiene ENCRYPTION_KEY y NO está en el repositorio.')
         print(f'  Cargalo con:  systemctl edit webcmp  →  EnvironmentFile=-{key_file}')
+
+    if env_path != DEFAULT_ENV_PATH.resolve():
+        # `--env-file` existe para los tests y para el job de CI, que necesita el
+        # par en el entorno y no un archivo. En esos casos nadie espera que Django
+        # lo lea. Pero si alguien lo cambia esperando que los settings lo encuentren,
+        # no lo van a encontrar: config/settings/__init__.py lee BASE_DIR/'.env', fijo.
+        print(
+            f'\n  ATENCION: {env_path} NO es el .env del proyecto ({DEFAULT_ENV_PATH}).\n'
+            "  Los settings lo leen en BASE_DIR/'.env', fijo: Django no va a encontrar\n"
+            '  este archivo y va a fallar cerrado por falta de SECRET_KEY. Para que lo use,\n'
+            '  dejalo en la raiz del repo o cargalo vos en el entorno.'
+        )
+
     print(
         '\n  Editá los valores CHANGE_ME antes de arrancar producción:\n'
         '  - EMAIL_HOST / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD\n'

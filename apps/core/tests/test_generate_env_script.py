@@ -268,3 +268,40 @@ class GenerateEnvScriptTests(unittest.TestCase):
         result = run_script('--env-file', str(self.env_file))
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.env_file.exists())
+
+    # --- Donde aterriza el archivo -------------------------------------------
+    def test_default_env_path_is_the_repo_root_not_the_cwd(self):
+        """El default se resuelve contra la raíz del repo, no contra el CWD.
+
+        `config/settings/__init__.py` lee `BASE_DIR/'.env'`, un path absoluto. Un
+        default relativo al CWD escribía el archivo donde Django no lo busca, y
+        el síntoma —"falta SECRET_KEY"— no señalaba la causa.
+        """
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location('generate_env_under_test', SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        self.assertEqual(module.REPO_ROOT.resolve(), REPO_ROOT.resolve())
+        # El modo es obligatorio, pero no tiene efecto sobre el path.
+        self.assertEqual(
+            Path(module.parse_args(['--development']).env_file).resolve(),
+            (REPO_ROOT / '.env').resolve(),
+        )
+        self.assertEqual(
+            Path(module.parse_args(['--development']).env_file).resolve(),
+            Path(module.DEFAULT_ENV_PATH).resolve(),
+        )
+
+    def test_warns_when_env_file_is_not_the_one_django_reads(self):
+        """Un `--env-file` fuera de la raíz funciona, pero hay que decirlo.
+
+        El flag existe para los tests y para el job de CI, que quiere el par en
+        el entorno. Si alguien lo cambia esperando que Django lo encuentre, el
+        fallo llega mucho después y sin señalar la causa.
+        """
+        result = run_script(*self._args('--development'))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('NO es el .env del proyecto', result.stdout)
+        self.assertIn('BASE_DIR', result.stdout)
