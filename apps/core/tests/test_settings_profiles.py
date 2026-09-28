@@ -15,6 +15,7 @@ mirar `django.conf.settings`.
 
 import importlib
 import os
+import warnings
 from unittest import mock
 
 from cryptography.fernet import Fernet
@@ -28,6 +29,11 @@ DEBUG_TOOLBAR_MIDDLEWARE = 'debug_toolbar.middleware.DebugToolbarMiddleware'
 STATIC_FILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 MANIFEST_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 SQLITE_ENGINE = 'django.db.backends.sqlite3'
+# Literal, no el `base.console_email_backend`: el test tiene que fijar la cadena
+# exacta que el perfil de producción rechaza, no seguir a la constante.
+CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DJANGO_SMTP_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+CUSTOM_EMAIL_BACKEND = 'config.custom_email_backend.CustomSTARTTLSBackend'
 
 # El bloque de cookies seguras del monolito (`if not DEBUG:`) setting por setting.
 SECURE_COOKIE_VALUES = {
@@ -51,7 +57,21 @@ def load_profile(module_path, env):
     ejecuta `load_dotenv()` (neutralizado acá para que `.env` no decida por
     nosotros). No toca el objeto `django.conf.settings`, que ya copió sus valores.
     """
-    with mock.patch.dict(os.environ, env, clear=True), mock.patch('dotenv.load_dotenv'):
+    with (
+        mock.patch.dict(os.environ, env, clear=True),
+        mock.patch('dotenv.load_dotenv'),
+        warnings.catch_warnings(),
+    ):
+        # Los perfiles que se cargan SIN par de claves recorren el fallback a
+        # clave efímera, y ese camino ahora avisa (`EphemeralSecretKeyWarning`).
+        # Sin este ignore, cada `reload` de `base` escupe 6 líneas de warning a la
+        # salida del runner y termina tapando los avisos que sí importan.
+        # El filtro va por MENSAJE y no por la clase a propósito: `reload(base)`
+        # crea un `EphemeralSecretKeyWarning` nuevo (identidad distinta) en cada
+        # pasada, así que un filtro por categoría quedaría viejo al segundo reload.
+        # Los tests que sí necesitan observar el aviso (EphemeralSecretKeyFallbackTests)
+        # no pasan por acá: usan su propio helper.
+        warnings.filterwarnings('ignore', message='^SECRET_KEY ausente', category=UserWarning)
         importlib.reload(base)
         return importlib.reload(importlib.import_module(module_path))
 
@@ -140,6 +160,18 @@ class DevProfileTests(SecureCookieAssertionsMixin, DebugToolbarAssertionsMixin, 
 
     def test_local_synop_simulations(self):
         self.assertIs(self.module.OBS_LOCAL_ONLY_DEFAULT, True)
+
+    def test_console_email_by_default(self):
+        """Sin `EMAIL_BACKEND` en el entorno, dev cae a consola (base defaultea SMTP)."""
+        self.assertEqual(self.module.EMAIL_BACKEND, CONSOLE_EMAIL_BACKEND)
+
+    def test_explicit_email_backend_wins(self):
+        """Un valor explícito NO se pisa: desde dev se prueba envío real (MailHog, etc.)."""
+        module = load_profile(
+            'config.settings.dev',
+            {'DEBUG': 'True', 'EMAIL_BACKEND': CUSTOM_EMAIL_BACKEND},
+        )
+        self.assertEqual(module.EMAIL_BACKEND, CUSTOM_EMAIL_BACKEND)
 
 
 class TestingProfileTests(SecureCookieAssertionsMixin, DebugToolbarAssertionsMixin, SimpleTestCase):
@@ -248,8 +280,92 @@ class ProductionProfileTests(
             load_profile('config.settings.production', {'PRODUCTION': '1'})
         self.assertIn('SECRET_KEY', str(ctx.exception))
 
+    def test_debug_is_pinned_false(self):
+        """`DEBUG=True` en el entorno no se hereda: producción lo pinea en False.
+
+        Sin el pin, un `DEBUG=True` colado en el `.env` de producción publicaría
+        tracebacks con paths del servidor.
+        """
+        module = load_profile('config.settings.production', {**self.DB_ENV, 'DEBUG': 'True'})
+        self.assertIs(module.DEBUG, False)
+
+    def test_console_email_backend_is_rejected(self):
+        """Rama NEGATIVA del assert: consola en producción es un `.env` regenerable.
+
+        El pie real no es "dev usa consola", es "producción usa consola en silencio":
+        los correos se descartan sin un solo error.
+        """
+        with self.assertRaises(ImproperlyConfigured) as ctx:
+            load_profile(
+                'config.settings.production',
+                {**self.DB_ENV, 'EMAIL_BACKEND': CONSOLE_EMAIL_BACKEND},
+            )
+        message = str(ctx.exception)
+        self.assertIn(CONSOLE_EMAIL_BACKEND, message)
+        self.assertIn('generate_env --production', message)
+
+    def test_real_email_backends_are_accepted(self):
+        """Rama POSITIVA del assert: todo backend menos consola pasa."""
+        for backend in (DJANGO_SMTP_BACKEND, CUSTOM_EMAIL_BACKEND):
+            with self.subTest(backend=backend):
+                module = load_profile(
+                    'config.settings.production', {**self.DB_ENV, 'EMAIL_BACKEND': backend}
+                )
+                self.assertEqual(module.EMAIL_BACKEND, backend)
+
     def test_ftp_simulations_off(self):
         self.assertIs(self.module.OBS_LOCAL_ONLY_DEFAULT, False)
+
+
+class EphemeralSecretKeyFallbackTests(SimpleTestCase):
+    """El fallback a clave efímera se queda (es el bypass de bootstrap) pero avisa.
+
+    Ver odd/tasks/harden-settings-profiles-deploy-gate.md: `generate_env` es un
+    management command y `manage.py` importa los settings antes de despacharlo,
+    así que fallar cerrado aquí dejaría sin arranque al generador de claves.
+    """
+
+    WARNING = 'EphemeralSecretKeyWarning'
+
+    def reload_base(self, env):
+        """Recarga `base` con `env` como único entorno, capturando los warnings.
+
+        `importlib.reload` borra `__warningregistry__`, así que el aviso se
+        vuelve a emitir en cada recarga: por eso se usa `simplefilter('always')`.
+        """
+        with (
+            mock.patch.dict(os.environ, env, clear=True),
+            mock.patch('dotenv.load_dotenv'),
+            warnings.catch_warnings(record=True) as caught,
+        ):
+            warnings.simplefilter('always')
+            module = importlib.reload(base)
+        return module, caught
+
+    def warned(self, caught):
+        return [w for w in caught if w.category.__name__ == self.WARNING]
+
+    def test_missing_key_falls_back_and_warns(self):
+        """Sin clave descifrable: cae a efímera Y deja un warning accionable."""
+        module, caught = self.reload_base({'DEBUG': 'True'})
+        self.assertTrue(module.SECRET_KEY)
+        warned = self.warned(caught)
+        self.assertEqual(len(warned), 1, 'el fallback tiene que avisar exactamente una vez')
+        self.assertIn('generate_env', str(warned[0].message))
+
+    def test_key_generator_can_still_boot(self):
+        """La paradoja de bootstrap: `base` no puede fail-closed, o `generate_env` no arranca.
+
+        Este test es la razón de que el test anterior espere un warning y no un raise.
+        """
+        module, caught = self.reload_base({'DEBUG': 'True'})
+        self.assertTrue(module.SECRET_KEY)
+        self.assertTrue(self.warned(caught), 'y el bypass tiene que seguir siendo visible')
+
+    def test_valid_pair_does_not_warn(self):
+        """Con un par Fernet válido el fallback no se alcanza: nada que avisar."""
+        _module, caught = self.reload_base({'DEBUG': 'False', **secret_env()})
+        self.assertEqual(self.warned(caught), [])
 
 
 class DispatcherTests(SimpleTestCase):

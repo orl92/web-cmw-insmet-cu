@@ -107,6 +107,65 @@ jobs:
         if: github.event_name == 'push' || needs.detect.outputs.full == 'true'
         run: python manage.py test
 
+  deploy-check:
+    name: Deploy check (check --deploy)
+    # Job propio, sin `needs: detect`: el gate de seguridad tiene que correr en
+    # TODOS los PR y pushes, no solo cuando el filtro de paths marca apps. Un
+    # `DEBUG=True` colado en un perfil de producción no toca ninguna app, y un
+    # check de seguridad que depende de qué archivos cambiaron no es un check.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install system dependencies (pycairo)
+        run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
+
+      - name: Install dependencies
+        run: pip install -r requirements/test.txt
+
+      # El .env está en .gitignore y CI no puede tener claves reales, así que el
+      # gate genera su propio par Fernet. Se usa `get_random_secret_key()` como
+      # texto plano (el MISMO generador que usa generate_env) y no una cadena fija:
+      # `security.W009` rechaza claves de menos de 50 caracteres o con menos de 5
+      # caracteres distintos, y una constante tipo "xxxxx".make el gate fallar por
+      # una causa que no es una regresión de seguridad.
+      #
+      # El script escribe en GITHUB_ENV, que inyecta las variables en los pasos
+      # siguientes. Nada se persiste en el checkout.
+      - name: Generate throwaway Fernet pair
+        run: |
+          python - <<'PY' >> "$GITHUB_ENV"
+          from cryptography.fernet import Fernet
+          from django.core.management.utils import get_random_secret_key
+
+          encryption_key = Fernet.generate_key().decode()
+          secret_key = Fernet(encryption_key.encode()).encrypt(get_random_secret_key().encode()).decode()
+          print(f'ENCRYPTION_KEY={encryption_key}')
+          print(f'SECRET_KEY={secret_key}')
+          PY
+
+      - name: Run deployment checks (production profile)
+        env:
+          # Sin esto el dispatcher elige dev/testing, no producción (ver
+          # config/settings/__init__.py). `DEBUG` NO se pasa: production.py lo
+          # pinea en False justamente para que un DEBUG=True del entorno no imponga.
+          PRODUCTION: "1"
+          # check --deploy no abre conexiones, pero cargar los modelos sí necesita
+          # un ENGINE importable y requirements/ NO trae driver de Postgres ni de
+          # MySQL: sqlite3 es el único motor que no agrega dependencia de terceros.
+          # sqlite3 tampoco pide credenciales (`get_database_config` corta antes del
+          # chequeo de DB_USER/DB_PASS para ese motor), así que el gate no carga
+          # ninguna credencial: ni real, ni de mentira.
+          DB_ENGINE: sqlite3
+        # --fail-level WARNING explícito: el default de `check` es ERROR, y con
+        # ERROR un W00x de despliegue pasaría el gate sin que nadie lo note.
+        run: python manage.py check --deploy --fail-level WARNING
+
   lint:
     name: Lint (Ruff)
     runs-on: ubuntu-latest

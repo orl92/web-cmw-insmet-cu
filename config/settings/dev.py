@@ -21,6 +21,15 @@ from .base import (  # noqa: F401  (alias sin guion bajo: `import *` no lo expor
 
 DEBUG = True
 
+# `EMAIL_BACKEND` por defecto consola SOLO si `.env` no lo define. `base` defaultea
+# a SMTP, que con `EMAIL_HOST=None` no revienta al importar sino recién al mandar,
+# en el peor momento posible. La condición mira `os.environ` y no el valor
+# resuelto porque `load_dotenv` ya lo pobló desde `base`: así un valor explícito
+# gana siempre, y desde dev se puede probar envío real (SMTP de pruebas, MailHog,
+# servidor real con un destinatario de test).
+if 'EMAIL_BACKEND' not in os.environ:
+    EMAIL_BACKEND = console_email_backend
+
 # Security: sin bloque de cookies seguras (el servidor local no termina TLS).
 # En el monolito era `if not DEBUG:`; aquí lo decide el perfil.
 

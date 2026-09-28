@@ -59,3 +59,42 @@ class DatabaseConfigTests(TestCase):
     def test_prod_with_complete_vars(self):
         config = get_database_config()
         self.assertEqual(config['default']['ENGINE'], 'django.db.backends.postgresql')
+
+    # sqlite3 no lee usuario, password ni host: exigirlos obligaba a inventar cuatro
+    # valores que el motor nunca usa, y un `.env` con `DB_ENGINE=sqlite3` no podía
+    # arrancar el perfil `testing` (DEBUG=False, sin PRODUCTION).
+    @mock.patch.dict(os.environ, {'DB_ENGINE': 'sqlite3'}, clear=True)
+    @mock.patch.object(settings, 'DEBUG', False)
+    @mock.patch.object(settings, 'IS_PRODUCTION', False)
+    def test_sqlite_engine_needs_no_credentials(self):
+        config = get_database_config()
+        self.assertEqual(config['default']['ENGINE'], 'django.db.backends.sqlite3')
+
+    @mock.patch.dict(os.environ, {'DB_ENGINE': 'sqlite3'}, clear=True)
+    @mock.patch.object(settings, 'DEBUG', False)
+    @mock.patch.object(settings, 'IS_PRODUCTION', True)
+    def test_sqlite_engine_in_production_needs_no_credentials(self):
+        config = get_database_config()
+        self.assertEqual(config['default']['ENGINE'], 'django.db.backends.sqlite3')
+
+    @mock.patch.dict(os.environ, {'DB_ENGINE': 'postgresql', 'DB_NAME': 'x'}, clear=True)
+    @mock.patch.object(settings, 'DEBUG', False)
+    @mock.patch.object(settings, 'IS_PRODUCTION', True)
+    def test_server_engine_still_requires_every_credential(self):
+        """El corte es solo para sqlite: un motor de red sigue exigiendo las cuatro."""
+        with self.assertRaises(ImproperlyConfigured) as ctx:
+            get_database_config()
+        message = str(ctx.exception)
+        self.assertIn('DB_USER', message)
+        self.assertIn('postgresql', message)
+
+    @mock.patch.dict(os.environ, {'DB_ENGINE': 'sqlite3'}, clear=True)
+    @mock.patch.object(settings, 'DEBUG', False)
+    @mock.patch.object(settings, 'IS_PRODUCTION', True)
+    def test_sqlite_engine_is_not_a_way_around_the_missing_engine_guard(self):
+        """`DB_ENGINE` vacío en producción sigue siendo fail-closed."""
+        with (
+            mock.patch.dict(os.environ, {'DB_ENGINE': ''}, clear=True),
+            self.assertRaises(ImproperlyConfigured),
+        ):
+            get_database_config()

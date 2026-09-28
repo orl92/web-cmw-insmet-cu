@@ -14,6 +14,7 @@ perfil ya no podría imponer el suyo. Ver odd/tasks/split-config-settings.md.
 
 import logging
 import os
+import warnings
 from pathlib import Path
 
 from cryptography.fernet import Fernet
@@ -83,13 +84,38 @@ SECRET_KEY = decrypt_secret_key(
     os.getenv('ENCRYPTION_KEY'),
 )
 
+
+class EphemeralSecretKeyWarning(UserWarning):
+    """Categoría propia para el fallback a `get_random_secret_key()`.
+
+    No es un `UserWarning` pelado a propósito: con categoría propia el aviso es
+    grepeable y un operador puede endurecerlo después con
+    `-W error::config.settings.base.EphemeralSecretKeyWarning` sin tocar código.
+    """
+
+
 if SECRET_KEY is None:
-    # Sin .env en desarrollo: clave temporal por sesión para permitir
-    # arrancar comandos como generate_env antes de que exista .env.
-    # En producción `production.py` convierte este bloque en un fail-fast.
-    # NO se endurece aquí: la spec 013-check-deploy-ci afirma que CI no debe
-    # fallar por una clave ausente (CI genera esta clave aleatoria).
+    # Sin .env cifrado: clave temporal por sesión. NO se puede fallar cerrado acá.
+    # `generate_env` es un management command, y `manage.py` importa los settings
+    # ANTES de despacharlo (`django.setup()`): un raise en este bloque dejaría sin
+    # arranque al propio comando que existe para generar la clave (paradoja de
+    # bootstrap; ver odd/tasks/harden-settings-profiles-deploy-gate.md).
+    # El fallback ES el bypass de bootstrap; el defecto nunca fue el fallback sino
+    # que fuera silencioso. Por eso ahora avisa. En producción `production.py`
+    # convierte este bloque en un fail-fast de verdad.
     SECRET_KEY = get_random_secret_key()
+    warnings.warn(
+        'SECRET_KEY ausente o no descifrable con ENCRYPTION_KEY: se está usando una clave '
+        'efímera que cambia en cada reinicio del proceso, así que todas las sesiones y '
+        'cookies firmadas quedan invalidadas. Ejecute `python manage.py generate_env` para '
+        'escribir un .env con SECRET_KEY y ENCRYPTION_KEY válidas. El perfil de producción '
+        '(PRODUCTION=1) falla cerrado ante esto; este aviso corresponde a dev o CI sin .env.',
+        EphemeralSecretKeyWarning,
+        # `stacklevel=1` y no 2: el aviso tiene que señalar el punto donde se acuña
+        # la clave efímera (este `warnings.warn`). Con 2 apuntaría al `from .base
+        # import *` del perfil o del dispatcher, que no es donde está la causa.
+        stacklevel=1,
+    )
 
 # ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS
 ALLOWED_HOSTS = [
@@ -264,14 +290,22 @@ def get_database_config(*, is_production=IS_PRODUCTION, prefer_sqlite=DEBUG):
     - *prefer_sqlite* hace que sqlite gane aunque `DB_ENGINE` esté definida
       (equivalente al antiguo `if DEBUG or ...`, que solo dev lo pedía).
     """
-    if is_production and 'DB_ENGINE' not in os.environ:
+    db_engine = os.getenv('DB_ENGINE', '').strip().lower()
+
+    if is_production and not db_engine:
         raise ImproperlyConfigured(
             'Falta la configuración de la base de datos. Defina DB_ENGINE (y DB_NAME, '
             'DB_USER, DB_HOST, DB_PASS) en el archivo .env. '
             'Ejecute `python manage.py generate_env --production` para generarlo.'
         )
 
-    if prefer_sqlite or 'DB_ENGINE' not in os.environ:
+    # sqlite3 NO usa usuario, password ni host. La decisión va ANTES del chequeo de
+    # credenciales, no después: si el motor ya es sqlite, exigir DB_USER/DB_HOST/
+    # DB_PASS obligaría a inventar cuatro valores que el motor nunca lee, y un
+    # `.env` con `DB_ENGINE=sqlite3` (dev con DEBUG=False, staging, el gate de CI)
+    # no podría arrancar ningún perfil. Antes de este corte, el perfil `testing`
+    # fallaba con un mensaje que además decía "Para producción" sin serlo.
+    if prefer_sqlite or db_engine in {'', 'sqlite', 'sqlite3'}:
         return {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
@@ -281,10 +315,11 @@ def get_database_config(*, is_production=IS_PRODUCTION, prefer_sqlite=DEBUG):
 
     if not all(os.getenv(k) for k in ('DB_NAME', 'DB_USER', 'DB_HOST', 'DB_PASS')):
         raise ImproperlyConfigured(
-            'Para producción defina DB_NAME, DB_USER, DB_HOST y DB_PASS en el archivo .env.'
+            f'El motor "{db_engine}" necesita DB_NAME, DB_USER, DB_HOST y DB_PASS, y al menos '
+            'uno falta o está vacío en el entorno. (sqlite3 no los necesita: para él, alcanzaba '
+            'con DB_ENGINE=sqlite3.) Defina las cuatro en el archivo .env.'
         )
 
-    db_engine = os.getenv('DB_ENGINE', '').strip().lower()
     db_config = {
         'ENGINE': f'django.db.backends.{db_engine}',
         'NAME': os.getenv('DB_NAME'),
@@ -465,6 +500,12 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_URLS_REGEX = r'^/api/.*$'
 
 # Email
+# Path del backend de consola, compartido por los perfiles: `dev` lo usa como
+# default y `production` lo rechaza. Minúscula a propósito, igual que
+# `whitenoise_middleware`: en MAYÚSCULAS sería un setting y Django lo copiaría al
+# objeto `settings`. Comparar el path (y no importar la clase) es lo que permite
+# usarlo como constante sin arrastrar imports de mail a la importación de settings.
+console_email_backend = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST = os.getenv('EMAIL_HOST')
