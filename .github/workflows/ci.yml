@@ -12,11 +12,6 @@ concurrency:
 
 permissions:
   contents: read
-  # dorny/paths-filter@v3 usa la API listFiles para eventos pull_request.
-  # Sin pull-requests: read el job falla con "Resource not accessible by
-  # integration", y como test dependsOn detect, la suite completa tampoco
-  # corria en ningun PR. En push a main usaba diff de git y por eso el bug
-  # no se veia desde el workflow de main.
   pull-requests: read
 
 jobs:
@@ -109,10 +104,6 @@ jobs:
 
   deploy-check:
     name: Deploy check (check --deploy)
-    # Job propio, sin `needs: detect`: el gate de seguridad tiene que correr en
-    # TODOS los PR y pushes, no solo cuando el filtro de paths marca apps. Un
-    # `DEBUG=True` colado en un perfil de producción no toca ninguna app, y un
-    # check de seguridad que depende de qué archivos cambiaron no es un check.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -125,14 +116,18 @@ jobs:
       - name: Install system dependencies (pycairo)
         run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
 
+      # `prod.txt` y no `test.txt`: el gate tiene que correr con el CONJUNTO DE
+      # DEPENDENCIAS DE PRODUCCIÓN, no con el de desarrollo. Un gate que instala
+      # otra cosa verifica otro entorno, y no puede ver, por ejemplo, que falte el
+      # driver de PostgreSQL en el archivo que se instala en el servidor.
       - name: Install dependencies
-        run: pip install -r requirements/test.txt
+        run: pip install -r requirements/prod.txt
 
       # El .env está en .gitignore y CI no puede tener claves reales, así que el
       # gate genera su propio par Fernet. Se usa `get_random_secret_key()` como
       # texto plano (el MISMO generador que usa generate_env) y no una cadena fija:
       # `security.W009` rechaza claves de menos de 50 caracteres o con menos de 5
-      # caracteres distintos, y una constante tipo "xxxxx".make el gate fallar por
+      # caracteres distintos, y una constante tipo "xxxxx" hace fallar el gate por
       # una causa que no es una regresión de seguridad.
       #
       # El script escribe en GITHUB_ENV, que inyecta las variables en los pasos
@@ -155,15 +150,20 @@ jobs:
           # config/settings/__init__.py). `DEBUG` NO se pasa: production.py lo
           # pinea en False justamente para que un DEBUG=True del entorno no imponga.
           PRODUCTION: "1"
-          # check --deploy no abre conexiones, pero cargar los modelos sí necesita
-          # un ENGINE importable y requirements/ NO trae driver de Postgres ni de
-          # MySQL: sqlite3 es el único motor que no agrega dependencia de terceros.
-          # sqlite3 tampoco pide credenciales (`get_database_config` corta antes del
-          # chequeo de DB_USER/DB_PASS para ese motor), así que el gate no carga
-          # ninguna credencial: ni real, ni de mentira.
-          DB_ENGINE: sqlite3
-        # --fail-level WARNING explícito: el default de `check` es ERROR, y con
-        # ERROR un W00x de despliegue pasaría el gate sin que nadie lo note.
+          # El motor es el REAL de producción (PostgreSQL), no sqlite3. Cargar los
+          # modelos importa el ENGINE, así que este paso detecta un driver faltante en
+          # requirements/prod.txt -- el fallo que de verdad mata un deploy:
+          # `ImproperlyConfigured: Error loading psycopg2 or psycopg module`, antes de
+          # tocar la base. Con sqlite3 el gate era ciego a eso.
+          # `check --deploy` NO abre conexiones: las credenciales de abajo existen solo
+          # porque `get_database_config` las exige para un motor de red. El pragma de
+          # `DB_PASS` es lo que corresponde a un placeholder; en la versión sqlite3 no
+          # hacía falta porque ese motor no pedía ninguna.
+          DB_ENGINE: postgresql
+          DB_NAME: webcmp
+          DB_USER: webcmp
+          DB_HOST: localhost
+          DB_PASS: ci_placeholder_not_a_real_password  # pragma: allowlist secret
         run: python manage.py check --deploy --fail-level WARNING
 
   lint:
@@ -204,17 +204,10 @@ jobs:
         run: pip install -r requirements/dev.txt
 
       - name: Audit Python dependencies
-        # PYSEC-2026-2860 (pdfkit): command injection via untrusted URLs; el
-        # proyecto usa pdfkit.from_string con HTML generado internamente. Sin fix disponible.
-        # base.txt cubre el runtime de la app; prod.txt añade el servidor WSGI
-        # (gunicorn), que NO está en base.txt y por eso necesita su propia pasada.
         run: |
           pip-audit -r requirements/base.txt --ignore-vuln PYSEC-2026-2860
           pip-audit -r requirements/prod.txt --ignore-vuln PYSEC-2026-2860
 
-      # Migrations are NOT versioned in this repo (.gitignore excludes
-      # **/migrations/*). In a fresh checkout there are none, so generate
-      # + apply them from the current models before the deployment check.
       - name: Generate and apply migrations
         run: |
           python manage.py makemigrations
