@@ -1,0 +1,85 @@
+# Unidad systemd para el servidor WSGI (Gunicorn).
+#
+# Instalar en el servidor:
+#   sudo cp deploy/systemd/webcmp.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now webcmp
+#
+# Las rutas de /srv/webcmp están escritas en el archivo, no en una variable: en un
+# unit, `APP_DIR=/srv/webcmp` NO es una clave válida de systemd (falla el
+# `systemd-analyze verify` con "Unknown key"), y una indirección que hay que
+# editar en seis lugares no es más mantenible que seis rutas. Si el checkout vive
+# en otro lado, se cambian las seis y se vuelve a verificar.
+#
+# NOTA DE SEGURIDAD: este archivo NO lleva `Environment=ENCRYPTION_KEY=...` a
+# propósito. La clave de descifrado va en /etc/webcmp/encryption.env (600, root),
+# escrito por `python scripts/generate_env.py --production`, y se carga acá con
+# `EnvironmentFile=-`. El guion es lo que hace que el servicio NO falle si el
+# archivo falta: arrancar sin descifrar la clave tiene que producir el error
+# accionable de `base.load_secret_key()`, no un fallo de systemd que no dice qué
+# hacer. Para que sea estricto, quitá el guion.
+
+[Unit]
+Description=CMP Camaguey - aplicacion web (Gunicorn)
+Documentation=https://github.com/orl92/web-cmw-insmet-cu
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=notify
+# Gunicorn implementa el protocolo sd_notify, asi que systemd SABE si el master
+# arranco de verdad. Con Type=simple, un worker que muere al segundo se ve
+# "activo" para siempre.
+NotifyAccess=main
+User=webcmp
+Group=webcmp
+
+WorkingDirectory=/srv/webcmp
+EnvironmentFile=-/etc/webcmp/encryption.env
+Environment=PRODUCTION=1
+Environment=DJANGO_SETTINGS_MODULE=config.settings
+
+# El socket en /run y no en /tmp: /run es un tmpfs que systemd crea con el
+# permiso del usuario del servicio y limpia en cada arranque. Un socket en /tmp
+# sobrevive a un reinicio y Nginx se queda proxying a un archivo fantasma.
+RuntimeDirectory=webcmp
+RuntimeDirectoryMode=0750
+
+# El servicio no corre como root. Si falta alguna politica de confinement, esto
+# es la red de contencion igual.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+# ProtectSystem=full deja /etc de solo lectura, que es lo que queremos; sin esta
+# excepcion el worker no podria escribir en media/, logs/ ni staticfiles/.
+ReadWritePaths=/srv/webcmp/media /srv/webcmp/logs /srv/webcmp/staticfiles
+
+ExecStart=/srv/webcmp/.venv/bin/gunicorn config.wsgi:application \
+    --name webcmp \
+    --workers 3 \
+    --bind unix:/run/webcmp/gunicorn.sock \
+    --umask 007 \
+    --access-logfile - \
+    --error-logfile - \
+    --capture-output
+
+ExecReload=/bin/kill -s HUP $MAINPID
+KillSignal=SIGQUIT
+TimeoutStopSec=30
+Restart=always
+RestartSec=5
+
+# Un worker trabado mantiene las conexiones abiertas y el usuario ve un sitio que
+# "carga y no pasa" en vez de un error. Con Type=notify, systemd puede notar el
+# watchdog perdido y matar el proceso en vez de esperar al reinicio del kernel.
+WatchdogSec=60
+
+# Un consumo anomalo no se come el servidor entero: con limites de memoria, el
+# OOM killer elige victima dentro del servicio y no el proceso de al lado.
+MemoryMax=1G
+MemoryHigh=768M
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target

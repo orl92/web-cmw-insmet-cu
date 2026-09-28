@@ -1,0 +1,74 @@
+# Configuracion de Nginx para el portal del CMP Camaguey.
+#
+# EJEMPLAR, no configuracion activa: los paths de certificados y del checkout son
+# de la instalacion y no van versionados. Copiala y ajustala.
+#
+#   sudo cp deploy/nginx/webcmp.conf.example /etc/nginx/sites-available/webcmp.conf
+#   sudo nano /etc/nginx/sites-available/webcmp.conf     # certificados y rutas
+#   sudo ln -s /etc/nginx/sites-available/webcmp.conf /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Lo unico que cambia respecto a la version anterior: el socket. Gunicorn ahora
+# escucha en /run/webcmp/gunicorn.sock (RuntimeDirectory del unit) y no en
+# /tmp/gunicorn-webcmp.sock. /run es un tmpfs limpio en cada arranque; un socket
+# en /tmp sobrevive al reinicio y Nginx queda proxying a un archivo fantasma.
+
+proxy_cache_path /cache/nginx/tmpfs levels=1:2 keys_zone=webcmp:100m max_size=100m inactive=3h use_temp_path=off;
+
+upstream webcmp {
+    server unix:/run/webcmp/gunicorn.sock fail_timeout=0;
+}
+
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        server_name _;
+        return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    ssl_certificate /etc/nginx/certificate/web.cmw.insmet.cu.crt;
+    ssl_certificate_key /etc/nginx/certificate/web.cmw.insmet.cu.key;
+    server_name web.cmw.insmet.cu;
+    access_log /var/log/nginx/webcmp-access.log;
+    error_log /var/log/nginx/webcmp-error.log;
+
+    # Headers que Django necesita para resolver is_secure() detras del proxy.
+    # SECURE_PROXY_SSL_HEADER lee X-Forwarded-Proto: sin esta linea, las cookies
+    # de sesion seguras NO se envian y el usuario entra en un bucle de logout.
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_redirect off;
+
+    # 300s: la exportacion de graficos y los PDFs server-side tardan. Con el
+    # default de 60s, un pronostico largo se ve como un 504.
+    proxy_read_timeout 300s;
+    proxy_connect_timeout 75s;
+
+    client_max_body_size 20M;  # adjuntos PDF de avisos y reportes
+
+    location /media/  {
+        alias /srv/webcmp/media/;
+    }
+
+    location /static/ {
+        alias /srv/webcmp/staticfiles/;
+    }
+
+    location /static/admin/ {
+        alias /srv/webcmp/staticfiles/admin/;
+    }
+
+    location / {
+         proxy_pass http://webcmp;
+
+         # Requerido por las websockets del grafico de sounding.
+         proxy_set_header Upgrade $http_upgrade;
+         proxy_set_header Connection "upgrade";
+    }
+
+    error_page 500 502 503 504 /templates/500.html;
+}
