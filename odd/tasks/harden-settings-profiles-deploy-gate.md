@@ -180,7 +180,7 @@ perfil que NO es producción, así que mandaba a buscar el archivo equivocado.
 
 | Commit | Alcance |
 |---|---|
-| (pendiente) `refactor(settings):` endurecer perfil de producción + gate de deploy en CI | los 6 puntos de alcance + los 8 tests + la corrección de ruido + el fix de `get_database_config` que la verificación destapó |
+| `df3c716` `refactor(settings):` endurecer perfil de producción + gate de deploy en CI | los 6 puntos de alcance + los 8 tests + la corrección de ruido + el fix de `get_database_config` que la verificación destapó |
 | (pendiente) `chore(odd):` | este registro de verificación, hallazgo y corrección |
 
 > Nota de proceso: la sesión anterior cerró declarando en memoria un commit `4f43d51` que
