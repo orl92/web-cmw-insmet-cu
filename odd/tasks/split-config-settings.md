@@ -110,7 +110,9 @@ nuevo porque compara el objeto completo, no los valores que alguien se acuerde d
 
 ## Progreso
 
-Rama `refactor/settings-profiles`, 2 work-unit commits sobre `16fe5ff`, árbol limpio.
+Rama `refactor/settings-profiles` (2 work-unit commits sobre `16fe5ff`, árbol limpio). Esa rama
+se renombró después a `refactor/settings-profiles-hardening` cuando el gate de deploy se le
+sumó encima y el nombre viejo ya describía menos de lo que la rama contenía.
 
 | Commit | Unidad |
 |---|---|
