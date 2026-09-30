@@ -36,11 +36,8 @@ jobs:
       - name: Run Bandit
         run: bandit -r apps config manage.py -ll -x "*test*.py,*migrations*"
 
-  # El gate de `check --deploy` (change 013-check-deploy-ci) estuvo ACA hasta que
-  # `config/settings.py` se partió en perfiles. Corría sin `PRODUCTION` en el
-  # entorno, así que el dispatcher elegía `testing`, NO `production`: el job
-  # comprobaba un perfil que producción nunca usa, y su comentario ("DEBUG
-  # defaults to False so the production security block is active") quedó en
-  # falso sin que nadie lo notara. Vive ahora en ci.yml como `deploy-check`,
-  # corriendo bajo `PRODUCTION=1` y con su propio par Fernet, que es el estado
-  # que de verdad se despliega. Este workflow queda solo con Bandit.
+  # Este workflow es solo Bandit. El gate `check --deploy` no debe volver aquí:
+  # el dispatcher elige perfil de settings según `PRODUCTION`, así que sin
+  # `PRODUCTION=1` en el entorno comprobaría el perfil `testing` y no el que se
+  # despliega. Vive en ci.yml como `deploy-check`, bajo `PRODUCTION=1` y con su
+  # propio par Fernet.

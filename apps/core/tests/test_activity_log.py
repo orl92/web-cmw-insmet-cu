@@ -123,7 +123,7 @@ class ActivityLogViewTests(TestCase):
         self.assertNotContains(response, 'Registro cambiado por superuser')
 
     def test_filter_by_date_range_accepts_picker_dd_mm_yyyy_format(self):
-        # El picker Tempus envía dd/mm/yyyy; antes esto era un ValidationError 500.
+        # El picker Tempus envía dd/mm/yyyy: un formato inválido sería un 500.
         self.client.force_login(self.superuser)
         response = self.client.get(
             reverse('core:activity_log'),

@@ -996,7 +996,7 @@ def _build_request(user, method='GET', path='/'):
 
 
 class AjaxPendingSubscriptionsTests(TestCase):
-    """Task 6.4 — corrected permission + data-quantity on AJAX endpoint."""
+    """Permission + data-quantity on the AJAX endpoint."""
 
     @classmethod
     def setUpTestData(cls):
@@ -1037,7 +1037,7 @@ class AjaxPendingSubscriptionsTests(TestCase):
 
 
 class BatchInvoiceQuantityTests(TestCase):
-    """Task 6.5 — process_batch_invoice uses quantity × price and period unit."""
+    """process_batch_invoice uses quantity × price and period unit."""
 
     def test_agrometeo_batch_uses_monthly_quantity(self):
         from apps.commercial.views.invoices import InvoiceCreateView
@@ -1103,7 +1103,7 @@ class BatchInvoiceQuantityTests(TestCase):
 
 
 class SubscriptionRenewQuantityTests(TestCase):
-    """Task 6.6 — SubscriptionRenewView computes end_date via compute_end_date."""
+    """SubscriptionRenewView computes end_date via compute_end_date."""
 
     def test_renew_agrometeo_computes_monthly_end_date(self):
         from django.contrib.auth.models import Group

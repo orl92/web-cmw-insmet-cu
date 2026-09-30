@@ -61,7 +61,7 @@ class PaymentMethodIconFilterTests(TestCase):
 
 
 class ServicesPublicUiTests(TestCase):
-    """Tasks 5.1-5.3 — pages/home/services/public.html."""
+    """pages/home/services/public.html."""
 
     PAGINATE_BY = 10
 
@@ -100,7 +100,7 @@ class ServicesPublicUiTests(TestCase):
         # component reports the current position ("Pág. 2 de 2").
         self.assertIn('href="?page=1"', html)
         self.assertIn('<span class="page-link">Pág. 2 de 2</span>', html)
-        # The old manual step-links markup must be gone entirely.
+        # The pagination must not ship the manual step-links markup.
         self.assertNotIn('step-links', html)
         self.assertNotIn('&laquo; primera', html)
         self.assertNotIn('aria-current="page"', html)
@@ -144,7 +144,7 @@ class ServicesPublicUiTests(TestCase):
 
 
 class ServicesCommercialUiTests(TestCase):
-    """Task 5.4 — pages/home/services/commercial.html."""
+    """pages/home/services/commercial.html."""
 
     PAGINATE_BY = 10
 
@@ -428,9 +428,8 @@ class CommercialServicesListViewStateScopeTests(TestCase):
 
     def test_subscription_price_no_suffix(self):
         # REQ-05 S2: el precio destacado es SOLO el monto format_cup, sin el
-        # sufijo "CUP/<período>" (en Mis Servicios el período de facturación es
-        # la línea "Período: start - end" — hoy "Vigencia: start - end" — que
-        # aparece antes del precio).
+        # sufijo "CUP/<período>" (en Mis Servicios la línea de período de
+        # facturación aparece antes del precio).
         self._make_sub('paid', 'precio-sin-sufijo')
         self.client.force_login(self.client_user)
         html = self.client.get(reverse('home:services_commercial')).content.decode()
@@ -569,7 +568,7 @@ class CommercialServicesListContextualActionsTests(TestCase):
 
 
 class ServicesCommercialStaffButtonTests(TestCase):
-    """Task 6.3 — staff/management buttons on the public commercial view."""
+    """staff/management buttons on the public commercial view."""
 
     @classmethod
     def setUpTestData(cls):
@@ -653,8 +652,8 @@ class ServicesCommercialStaffButtonTests(TestCase):
         self.assertIn('<i class="icon ti ti-login"></i> Iniciar sesión', html)
 
     def test_pending_non_qr_public_catalog_is_state_neutral(self):
-        """REQ-06: la guía 'Ver factura' para pending sin QR vive en Mis Servicios
-        (template de la fase 3); el catálogo público no la renderiza."""
+        """REQ-06: la guía 'Ver factura' para pending sin QR vive en Mis Servicios;
+        el catálogo público no la renderiza."""
         client_user = User.objects.create_user(
             'clientnonq',
             'clientnonq@test.com',
@@ -737,7 +736,7 @@ class CommercialCatalogCodeAndCategoryUITests(TestCase):
         )
         html = self._catalog_html()
         # Espec: el icono ti-tag con me-1 aparece ANTES del label
-        # "Categoría:" en su línea <div class="mb-2"> (ya no badge apiñado).
+        # "Categoría:" en su línea <div class="mb-2">.
         category_marker = html.index('Categoría:')
         line_start = html.rfind('<div class="mb-2">', 0, category_marker)
         line_end = html.index('</div>', category_marker)
@@ -757,7 +756,7 @@ class CommercialCatalogCodeAndCategoryUITests(TestCase):
         )
         html = self._catalog_html()
         # Espec: el icono ti-tag con me-1 aparece ANTES del label
-        # "Categoría:" en su línea <div class="mb-2"> (ya no badge apiñado).
+        # "Categoría:" en su línea <div class="mb-2">.
         category_marker = html.index('Categoría:')
         line_start = html.rfind('<div class="mb-2">', 0, category_marker)
         line_end = html.index('</div>', category_marker)

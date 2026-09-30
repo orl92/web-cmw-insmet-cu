@@ -3,15 +3,15 @@
 Covers the public blog-style PDF cards and the dashboard detail sweep:
 
 - Avisos render the shared `document_card.html` with NO badge, title falls back
-  to `summary` when `Warning.title` is empty, and the hardcoded
-  "Aviso meteorológico" string is gone.
+  to `summary` when `Warning.title` is empty, and no hardcoded
+  "Aviso meteorológico" string is rendered.
 - The publicaciones list renders `document_card.html` items inside a
   `row row-deck` grid, drops the "Ver detalle" (`public_detail`) button, and
   attaches neither a `public_detail` link nor a per-item trigger for items
   without a PDF.
 - Each dashboard detail page (certificate, weather report, publication) delegates
-  to `document_card.html` + the shared `document_pdf_modal.html` and no longer
-  emits a raw `<a target="_blank">Ver PDF</a>`.
+  to `document_card.html` + the shared `document_pdf_modal.html` and emits no
+  raw `<a target="_blank">Ver PDF</a>`.
 """
 
 from datetime import date, timedelta
@@ -27,7 +27,7 @@ from apps.publications.models import Author, ScientificPublication
 
 
 class AvisosBlogCardTests(TestCase):
-    """Task 2 — avisos uses document_card, no badge, title falls back to summary."""
+    """avisos uses document_card, no badge, title falls back to summary."""
 
     @classmethod
     def setUpTestData(cls):
@@ -52,7 +52,7 @@ class AvisosBlogCardTests(TestCase):
         self._create_warning(title=None)
         response = self._get_page()
         self.assertContains(response, 'Resumen del aviso de prueba')
-        # The card title <h3> must carry the fallback summary, not the old label.
+        # The card title <h3> must carry the fallback summary.
         self.assertContains(response, '<h3 class="card-title">Resumen del aviso de prueba</h3>')
 
     def test_title_is_used_when_present(self):
@@ -76,7 +76,7 @@ class AvisosBlogCardTests(TestCase):
 
 
 class PublicationsBlogGridTests(TestCase):
-    """Task 3 — publicaciones list uses document_card in a responsive grid."""
+    """publicaciones list uses document_card in a responsive grid."""
 
     @classmethod
     def setUpTestData(cls):

@@ -290,13 +290,11 @@
 </div>
 {% endblock %}
 {% block extrajs %}
-  {# 7.2 amCharts 5 accessibility module: NOT enabled. #}
+  {# amCharts 5 accessibility module: NOT enabled. #}
   {# The bundled dist (static/dist/libs/amcharts/dist/*.js) is a monolithic global #}
   {# build. There is no separate ESM accessibility module (no es2015/ or features/ #}
   {# path) and no enableFeature("Accessibility", true) API in the bundle, so an #}
-  {# import would break the chart. Revisit when upgrading to the npm/ESM amCharts 5 #}
-  {# build, where `import { Accessibility } from "@amcharts/amcharts5"` plus #}
-  {# `root.enableFeature("Accessibility", true)` becomes available. #}
+  {# import would break the chart. #}
   <script src="{% static 'dist/libs/amcharts/dist/index.js' %}"></script>
   <script src="{% static 'dist/libs/amcharts/dist/map.js' %}"></script>
   <script src="{% static 'dist/libs/amcharts/dist/themes/Animated.js' %}"></script>

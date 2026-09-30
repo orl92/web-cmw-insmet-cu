@@ -63,7 +63,7 @@ class CacheBackendConfigTests(TestCase):
 
 
 class RateLimitIpRegressionTests(TestCase):
-    """rate_limit_ip must keep working against the (now shared) default cache."""
+    """rate_limit_ip must keep working against the shared default cache."""
 
     def test_rate_limit_blocks_after_threshold(self):
         factory = RequestFactory()

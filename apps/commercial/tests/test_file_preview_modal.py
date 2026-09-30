@@ -1,13 +1,13 @@
 """Verification tests for the dashboard "edit/create" form templates.
 
-These tests assert that uploaded files NO LONGER open in a blank browser tab
+These tests assert that uploaded files must not open in a blank browser tab
 (``target="_blank"`` on the file anchor) and instead rely on the shared
 ``#documentPdfModal`` for PDFs and the vendored fslightbox for images.
 Templates are NOT modified; we only assert on rendered output.
 
 NOTE: the base layout footer intentionally keeps ``target="_blank"`` on its
 social-media links (Instagram/Facebook/X/Telegram) — that is out of scope and
-unrelated to the file-preview change, so we assert the *file anchor* does not
+unrelated to the file preview, so we assert the *file anchor* does not
 use ``target="_blank"`` rather than the whole page.
 """
 
@@ -31,10 +31,7 @@ PNG_BYTES = base64.b64decode(
 
 
 def assert_file_anchor_not_blank_tab(test_case, content, file_url):
-    """The legacy pattern opened a file via ``<a href="<url>" target="_blank">``.
-
-    Assert that exact combination no longer exists for the uploaded file.
-    """
+    """Assert the uploaded file's anchor is not ``<a href="<url>" target="_blank">``."""
     needle = ('href="' + file_url + '" target="_blank"').encode()
     test_case.assertNotIn(needle, content)
 
@@ -86,10 +83,10 @@ class CommercialFilePreviewModalTests(TestCase):
         resp = self.client.get(url)
 
         self.assertEqual(resp.status_code, 200)
-        # PDF preview now uses the shared modal.
+        # PDF preview uses the shared modal.
         self.assertIn(b'documentPdfModal', resp.content)
         self.assertIn(b'data-pdf-url=', resp.content)
-        # Image preview now uses fslightbox.
+        # Image preview uses fslightbox.
         self.assertIn(b'data-fslightbox', resp.content)
         # The uploaded pdf/image anchors must NOT open a blank tab.
         assert_file_anchor_not_blank_tab(self, resp.content, self.service.pdf.url)
@@ -122,7 +119,7 @@ class CommercialFilePreviewModalTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn(b'documentPdfModal', resp.content)
         self.assertIn(b'fslightbox', resp.content)
-        # The current certificate's PDF now previews in the shared modal.
+        # The current certificate's PDF previews in the shared modal.
         self.assertIn(b'data-pdf-url=', resp.content)
         cert = self.subscription.certificates.first()
         assert_file_anchor_not_blank_tab(self, resp.content, cert.pdf.url)

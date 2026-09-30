@@ -60,9 +60,9 @@ class DatabaseConfigTests(TestCase):
         config = get_database_config()
         self.assertEqual(config['default']['ENGINE'], 'django.db.backends.postgresql')
 
-    # sqlite3 no lee usuario, password ni host: exigirlos obligaba a inventar cuatro
-    # valores que el motor nunca usa, y un `.env` con `DB_ENGINE=sqlite3` no podía
-    # arrancar el perfil `testing` (DEBUG=False, sin PRODUCTION).
+    # sqlite3 no lee usuario, password ni host: exigirlos obligaría a inventar
+    # cuatro valores que el motor nunca usa. Un `.env` con `DB_ENGINE=sqlite3`
+    # debe poder arrancar el perfil `testing` (DEBUG=False, sin PRODUCTION).
     @mock.patch.dict(os.environ, {'DB_ENGINE': 'sqlite3'}, clear=True)
     @mock.patch.object(settings, 'DEBUG', False)
     @mock.patch.object(settings, 'IS_PRODUCTION', False)

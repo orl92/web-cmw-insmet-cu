@@ -1,7 +1,6 @@
-"""023-landing-page — v3 "landing traducida + contenido real" contract.
+"""Landing "traducida + contenido real" contract.
 
-RED-first tests for the landing in its current state on disk (the
-maintainer-approved design): hero with browser mockup (preview_light.png),
+Tests for the landing as it stands on disk: hero with browser mockup (preview_light.png),
 six capability sections with ti-* icons and Spanish headings, institutional
 logos strip, real marketing copy ("Servicios y herramientas del Centro" con
 imagen GOES-16), real stats (3 regiones / 13 municipios / 24/7 / 100%
@@ -40,11 +39,11 @@ def social_anchor_classes(html):
 
 
 class LandingFooterSocialTests(TestCase):
-    """Tasks 2.1-2.3 + 5.6 + 7.4/7.5 — socials plugin activation contract.
+    """Socials plugin activation contract.
 
-    Both /home/ (which reuses the dashboard footer, task 7.4) and the
+    Both /home/ (which reuses the dashboard footer) and the
     dashboard expose the four `social-gray` anchors and render them at the
-    smaller `social-sm` size (task 7.5).
+    smaller `social-sm` size.
     """
 
     def setUp(self):
@@ -103,7 +102,7 @@ class LandingFooterSocialTests(TestCase):
 
 
 class LandingRoutingTests(TestCase):
-    """Task 5.1 + 1.1 — ROOT-ROUTING: landing at '/', index at '/home/'."""
+    """Landing at '/', index at '/home/'."""
 
     def test_landing_reverses_to_root(self):
         self.assertEqual(reverse('home:landing'), '/')
@@ -128,7 +127,7 @@ class LandingRoutingTests(TestCase):
 
 
 class LandingRenderTests(TestCase):
-    """Task 7.1 + 7.6 — v3 PRODUCT SHOWCASE render with data present.
+    """PRODUCT SHOWCASE render with data present.
 
     With a forecast, an active warning and published services in the DB, the
     landing shows the product (browser mockup, capability sections, logos,
@@ -278,12 +277,12 @@ class LandingRenderTests(TestCase):
         self.assertIn('<html lang="es" data-bs-theme="light"', self.html)
 
     def test_marketing_stylesheet_linked(self):
-        """Task 2.1b — head.html links the vendored tabler-marketing CSS."""
+        """head.html links the vendored tabler-marketing CSS."""
         self.assertIn('dist/css/tabler-marketing.min.css?v=151', self.html)
 
 
 class LandingMarketingRedesignEmptyTests(TestCase):
-    """Tasks 1.3b/1.4/2.1b — marketing redesign survives the empty state
+    """Marketing redesign survives the empty state
     and the stylesheet is linked site-wide (off the landing too)."""
 
     def test_newsletter_cta_renders_without_data(self):
@@ -301,9 +300,9 @@ class LandingMarketingRedesignEmptyTests(TestCase):
 
 
 class LandingEmptyStateTests(TestCase):
-    """Task 5.3 + 7.6 — the showcase renders 200 without any data.
+    """The showcase renders 200 without any data.
 
-    v3: the landing no longer lists DB content, so the empty state IS the
+    The landing does not list DB content, so the empty state IS the
     showcase (browser mockup + newsletter CTA render regardless of data).
     """
 
@@ -318,7 +317,7 @@ class LandingEmptyStateTests(TestCase):
 
 
 class LandingNavbarTests(TestCase):
-    """Tasks 7.2/7.3 + 7.6 — v3 navbar contract.
+    """Navbar contract.
 
     The landing navbar (its own include) points its brand to the landing,
     links to the institution pages (Visión/Misión/Quiénes Somos), keeps the
@@ -378,7 +377,7 @@ class LandingNavbarTests(TestCase):
         ):
             self.assertIn(label, navbar, msg=label)
             self.assertIn(path, navbar, msg=path)
-        # v3 focus: Servicios/Publicaciones links live in the footer, not here.
+        # Servicios/Publicaciones links live in the footer, not here.
         for label in ('Servicios', 'Publicaciones'):
             self.assertNotIn(label, navbar, msg=label)
 
@@ -439,7 +438,7 @@ class LandingNavbarTests(TestCase):
 
 
 class InstitutionPagesTests(TestCase):
-    """v3 — páginas institucionales del navbar landing (Visión/Misión/Quiénes Somos)."""
+    """Páginas institucionales del navbar landing (Visión/Misión/Quiénes Somos)."""
 
     PAGES = (
         ('home:institution_vision', 'pages/home/institution/vision.html', 'Visión', 'vision'),
@@ -480,7 +479,7 @@ class InstitutionPagesTests(TestCase):
 
 
 class LandingFooterLayoutTests(TestCase):
-    """Tasks 7.4 + 7.5 — footer layout contract.
+    """Footer layout contract.
 
     The home (and dashboard) reuse the small transparent footer with `<li>`
     socials rendered at social-sm; the big institutional footer (with the
@@ -536,7 +535,7 @@ class LandingFooterLayoutTests(TestCase):
 
 
 class LandingSeoTests(TestCase):
-    """Task 5.5 + 4.1 — SEO-OG-MINIMUM meta description + OG tags; CSP intact."""
+    """Meta description + OG tags; CSP intact."""
 
     def setUp(self):
         self.response = self.client.get('/')
@@ -559,7 +558,7 @@ class LandingSeoTests(TestCase):
 
 
 class LandingCdnScanTests(TestCase):
-    """Task 5.7 — the two new templates carry no CDN references (read-only scan)."""
+    """The two landing templates carry no CDN references (read-only scan)."""
 
     def test_new_templates_free_of_cdn_references(self):
         files = (

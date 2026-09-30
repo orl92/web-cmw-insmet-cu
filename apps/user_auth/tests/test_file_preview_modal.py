@@ -1,6 +1,6 @@
 """Verification tests for the user_auth profile update form template.
 
-Asserts that the avatar image no longer opens in a blank tab and instead uses
+Asserts that the avatar image must not open in a blank tab and instead uses
 the vendored fslightbox (data-fslightbox). Templates are NOT modified.
 
 The profile middleware (CheckUserProfileMiddleware) redirects incomplete

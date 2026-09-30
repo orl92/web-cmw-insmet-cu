@@ -130,7 +130,7 @@
   </div>
 {% endblock %}
 {% block modal %}
-  <!-- Modal para editar Datos de la Empresa (sin cambios) -->
+  <!-- Modal para editar Datos de la Empresa -->
   <div class="modal modal-blur fade"
        id="modal-company-settings"
        tabindex="-1"
@@ -700,7 +700,7 @@
     loadGroupedSubscriptions(customerSelect.value);
   }
 
-  // ========== Facturación manual (sin cambios) ==========
+  // ========== Facturación manual ==========
   function updateRowFromService(row) {
     const serviceSelect = row.querySelector('select[id$="-service"]');
     const codeInput = row.querySelector('input[id$="-codigo"]');

@@ -99,7 +99,7 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
         # El precio crudo se expone vía context['service'].price; el template
-        # compone el formato con el filtro format_cup (fase 3).
+        # compone el formato con el filtro format_cup.
         related_qs = (
             Service.objects.filter(
                 service_type=Service.COMMERCIAL,

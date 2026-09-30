@@ -17,7 +17,7 @@ from apps.meteo.models import Forecasts
 
 
 class IndexUvSvgA11yTests(TestCase):
-    """Task 7.1 — pages/home/index.html UV gauge."""
+    """pages/home/index.html UV gauge."""
 
     @classmethod
     def setUpTestData(cls):

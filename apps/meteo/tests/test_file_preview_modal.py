@@ -1,6 +1,6 @@
 """Verification tests for the meteo warning/weather_report form templates.
 
-Asserts that uploaded PDFs no longer open in a blank tab and instead use the
+Asserts that uploaded PDFs must not open in a blank tab and instead use the
 shared ``#documentPdfModal`` (data-pdf-url). Templates are NOT modified.
 
 NOTE: the base layout footer intentionally keeps ``target="_blank"`` on its

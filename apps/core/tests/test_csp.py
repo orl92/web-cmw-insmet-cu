@@ -57,7 +57,7 @@ class CSPSettingsTest(TestCase):
 
     def test_object_src_is_self(self):
         """object-src must be 'self' so the PDF modal can embed <object>
-        same-origin documents (reverted from 'none' for change 016/017)."""
+        same-origin documents."""
         self.assertEqual(_directives()['object-src'], ["'self'"])
 
     def test_frame_ancestors_is_self(self):

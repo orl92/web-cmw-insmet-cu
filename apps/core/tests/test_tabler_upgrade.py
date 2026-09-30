@@ -1,8 +1,8 @@
-"""Tabler 1.5.1 upgrade contracts (tabler-core-vendor + tema-personalizado).
+"""Tabler 1.5.1 vendor contracts (tabler-core-vendor + tema-personalizado).
 
-RED tests for the vendored swap:
+Contracts the vendored assets must satisfy:
 - LIGHT-DEFAULT-EXPLICIT: home and dashboard render ``<html data-bs-theme="light">``
-  server-side; head.html pre-paint always sets the attribute; the swapped
+  server-side; head.html pre-paint always sets the attribute; the vendored
   assets are cache-busted with ``?v=151``.
 - NO-CDN-NO-BUILD: no cdn.jsdelivr.net / unpkg.com reference in templates or
   in the vendored Tabler assets.
@@ -22,7 +22,7 @@ from apps.core.models import SiteConfiguration
 
 BASE_DIR = Path(settings.BASE_DIR)
 
-# ?v=151 cache busting on the 4 swapped assets (3 CSS in head.html, 1 JS in
+# ?v=151 cache busting on the 4 vendored assets (3 CSS in head.html, 1 JS in
 # scripts.html). Order matters: [0:3] are the head.html stylesheet links.
 SWAPPED_CACHE_BUSTED_LINKS = [
     'dist/css/tabler.min.css?v=151',

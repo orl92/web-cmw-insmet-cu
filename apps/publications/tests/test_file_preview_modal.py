@@ -1,6 +1,6 @@
 """Verification tests for the publications update form template.
 
-Asserts that the PDF no longer opens in a blank tab and instead uses the
+Asserts that the PDF must not open in a blank tab and instead uses the
 shared ``#documentPdfModal`` (data-pdf-url). Templates are NOT modified.
 
 NOTE: the base layout footer intentionally keeps ``target="_blank"`` on its

@@ -24,7 +24,7 @@ EXTERNAL_HREFS = [
     'https://www.star.nesdis.noaa.gov/goes/sector.php?sat=G16&sector=car',
 ]
 
-# Caption text moved from the visible <small> into each anchor's aria-label.
+# Caption text carried by each anchor's aria-label.
 EXPECTED_LABELS = {
     FSLIGHTBOX_HREFS[0]: 'Polvo',
     FSLIGHTBOX_HREFS[1]: 'Color Natural',
@@ -38,7 +38,7 @@ EXPECTED_LABELS = {
 
 
 class SatelliteGalleryA11yTests(TestCase):
-    """Task 6.1 — pages/home/satellites/satellites.html."""
+    """pages/home/satellites/satellites.html."""
 
     def setUp(self):
         self.html = self.client.get(reverse('home:satellite')).content.decode()
@@ -77,7 +77,7 @@ class SatelliteGalleryA11yTests(TestCase):
             self.assertIn('aria-hidden="true"', block)
 
     def test_visible_caption_text_was_moved_to_aria_label(self):
-        # The old visible captions are gone; their text now lives in aria-label.
+        # The captions are not visible; their text lives in aria-label.
         visible_captions = [
             'text-secondary">Polvo',
             'text-secondary">Color Natural',

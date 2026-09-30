@@ -14,13 +14,11 @@ class SettingsImportNoSideEffectTest(TestCase):
     def _settings_sources(self):
         """Yield (name, source) for every module in the `config.settings` package.
 
-        Since the settings-package split (odd/tasks/split-config-settings.md),
-        `config.settings` is a package: `inspect.getsource` on it returns only
-        `__init__.py`, so a check scoped to the entry module no longer reaches
-        the file where MEDIA_ROOT actually lives (`base.py`). Asserting on the
-        entry module alone made this test incapable of failing. Every module in
-        the package is read instead, which is strictly stronger than the
-        pre-split check.
+        `config.settings` is a package, so `inspect.getsource` on it returns
+        only `__init__.py`: a check scoped to the entry module would never
+        reach the file where MEDIA_ROOT actually lives (`base.py`) and could
+        not fail. Reading every module in the package is what gives the
+        assertion reach.
         """
         package_dir = pathlib.Path(config.settings.__file__).resolve().parent
         modules = sorted(package_dir.glob('*.py'))
@@ -28,7 +26,7 @@ class SettingsImportNoSideEffectTest(TestCase):
         return [(path.name, path.read_text(encoding='utf-8')) for path in modules]
 
     def test_no_mkdir_in_any_settings_module(self):
-        """The import-time 'if not MEDIA_ROOT.exists(): MEDIA_ROOT.mkdir' branch is gone."""
+        """No settings module contains the import-time MEDIA_ROOT.mkdir branch."""
         for name, source in self._settings_sources():
             with self.subTest(module=name):
                 self.assertNotIn('MEDIA_ROOT.mkdir', source)
