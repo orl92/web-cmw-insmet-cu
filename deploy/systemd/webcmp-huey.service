@@ -41,7 +41,7 @@ ReadWritePaths=/srv/webcmp/media /srv/webcmp/logs
 
 # El log va a stdout, no a un archivo: journald ya lo rota, lo comprime y lo
 # indexa. Un --logfile en el codigo es un log que nadie rota nunca.
-ExecStart=/srv/webcmp/.venv/bin/huey_consumer config.huey.huey --verbose
+ExecStart=/srv/webcmp/.venv/bin/huey_consumer config.huey_consumer_entry.huey --verbose
 
 Restart=always
 RestartSec=10

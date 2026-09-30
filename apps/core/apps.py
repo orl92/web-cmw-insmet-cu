@@ -96,6 +96,13 @@ class CoreConfig(AppConfig):
 
         Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
 
+        # Importar el módulo de tareas es lo que registra los `@huey.task()` en el
+        # TaskRegistry. Sin esto, el consumer de `run_huey.sh` y de
+        # `webcmp-huey.service` arranca sin ninguna tarea conocida y cada dequeue
+        # explota con `HueyException: <tarea> not found in TaskRegistry`: el worker
+        # queda vivo, pero jamás procesa nada. El proceso del consumer no importa
+        # vistas, así que nadie más lo hace por él.
+        from apps.core import tasks  # noqa: F401
         from apps.core.models import TaskExecutionLog
 
         @huey.signal(huey_signals.SIGNAL_ENQUEUED)
