@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 
 import pdfkit
 from django.conf import settings
@@ -12,6 +13,33 @@ from django.utils import timezone
 from apps.core.models import CompanySettings
 
 logger = logging.getLogger(__name__)
+
+
+def require_pdf_renderer():
+    """Se niega a generar un PDF sin el binario que lo produce.
+
+    `pdfkit` es un wrapper: el paquete Python está en `requirements/base.txt`,
+    pero el conversor `wkhtmltopdf` es un binario del sistema. Sin este chequeo
+    el error que sube es `OSError: No wkhtmltopdf executable found`, que no dice
+    qué instalar; en el worker ese OSError se ve como un reintento de Huey en
+    vez de como una dependencia que falta.
+
+    Solo mira el PATH a propósito. `pdfkit.Configuration()` busca por `which`
+    cuando no se le pasa una ruta, y el call site de abajo no le pasa ninguna,
+    así que `shutil.which` reproduce exactamente la resolucion que pdfkit va a
+    hacer: no hay falso negativo cuando alguien instala el binario en otro
+    lugar, porque en ese caso hay que pasar `configuration=` y el call site
+    tendría que cambiar.
+    """
+    if shutil.which('wkhtmltopdf'):
+        return
+    raise RuntimeError(
+        'Falta el binario wkhtmltopdf, que es lo que convierte el HTML de la '
+        'factura en PDF. El paquete Python `pdfkit` es solo un wrapper: sin el '
+        'binario del sistema no hay PDF.\n'
+        '  Debian/Ubuntu: sudo apt install wkhtmltopdf\n'
+        '  macOS:         brew install wkhtmltopdf'
+    )
 
 
 def generate_invoice_pdf_standalone(
@@ -58,7 +86,8 @@ def generate_invoice_pdf_standalone(
         'total': float(invoice.amount),
         'current_year': timezone.now().year,
     }
-    html_string = render_to_string('pages/commercial/invoice/factura_template.html', context)
+    require_pdf_renderer()
+    html_string = render_to_string('pages/commercial/invoice/template.html', context)
     options = {
         'page-size': 'A4',
         'margin-top': '10mm',
