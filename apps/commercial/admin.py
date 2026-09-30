@@ -13,7 +13,8 @@ from apps.commercial.models import (
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ('company_name', 'client_type', 'phone')
+    list_display = ('company_name', 'client_type', 'identity_document', 'phone')
+    search_fields = ('company_name', 'reeup', 'nit', 'identity_document', 'user__email')
 
 
 @admin.register(Service)

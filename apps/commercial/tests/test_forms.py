@@ -101,8 +101,87 @@ class CustomerFormTests(TestCase):
         data['company_name'] = ''
         data['reeup'] = ''
         data['nit'] = ''
+        # La persona natural sí necesita documento de identidad: es el único dato
+        # con el que se la identifica en la factura.
+        data['identity_document'] = '34111234567'
         form = CustomerForm(data=data)
         self.assertTrue(form.is_valid(), form.errors)
+
+    def test_natural_requires_identity_document(self):
+        data = self._valid_juridica_data()
+        data['client_type'] = 'natural'
+        data['company_name'] = ''
+        data['reeup'] = ''
+        data['nit'] = ''
+        data['identity_document'] = ''
+        form = CustomerForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('identity_document', form.errors)
+
+    def test_juridica_does_not_require_identity_document(self):
+        data = self._valid_juridica_data()
+        data['identity_document'] = ''
+        form = CustomerForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_natural_identity_document_se_guarda(self):
+        data = self._valid_juridica_data()
+        data['client_type'] = 'natural'
+        data['company_name'] = ''
+        data['reeup'] = ''
+        data['nit'] = ''
+        data['identity_document'] = '  34111234567  '
+        form = CustomerForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors)
+        customer = form.save()
+        # Se guarda sin los espacios: el `strip` del cleaner, igual que con el resto.
+        self.assertEqual(customer.identity_document, '34111234567')
+
+    def test_unique_identity_document(self):
+        u1 = _make_user('u1')
+        Customer.objects.create(
+            client_type='natural',
+            user=u1,
+            identity_document='34111234567',
+            account='1111111111111111',
+            address='Addr',
+            phone='11111111',
+        )
+        data = self._valid_juridica_data()
+        data['client_type'] = 'natural'
+        data['company_name'] = ''
+        data['reeup'] = ''
+        data['nit'] = ''
+        data['identity_document'] = '34111234567'
+        data['username'] = 'newuser2'
+        data['email'] = 'u2@example.com'
+        data['account'] = '2222222222222222'
+        form = CustomerForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('identity_document', form.errors)
+
+    def test_identity_document_vacio_no_choca_con_unico(self):
+        """Dos jurídicas sin documento no se pisan entre sí: la unicidad solo se
+        compara cuando el campo tiene valor, porque es opcional para ellas."""
+        Customer.objects.create(
+            client_type='juridica',
+            user=_make_user('u1'),
+            company_name='Existing',
+            identity_document=None,
+            reeup='111.1.1111',
+            nit='11111111111',
+            account='1111111111111111',
+            address='Addr',
+            phone='11111111',
+        )
+        data = self._valid_juridica_data()
+        data['identity_document'] = ''
+        data['username'] = 'newuser2'
+        data['email'] = 'u2@example.com'
+        data['account'] = '2222222222222222'
+        form = CustomerForm(data=data)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertIsNone(form.save().identity_document)
 
     def test_invalid_reeup_format(self):
         data = self._valid_juridica_data()
@@ -234,6 +313,91 @@ class CustomerUpdateFormTests(TestCase):
         self.assertEqual(customer.company_name, 'New Name')
         self.assertEqual(customer.user.email, 'updated@example.com')
 
+    def _juridica_data(self, **kwargs):
+        data = {
+            'client_type': 'juridica',
+            'company_name': 'New Name',
+            'reeup': '111.1.1111',
+            'nit': '11111111111',
+            'account': '1111111111111111',
+            'agency_bank': 'New Bank',
+            'address': 'New address',
+            'phone': '11111111',
+            'email': 'updated@example.com',
+        }
+        data.update(kwargs)
+        return data
+
+    def test_juridica_no_requiere_identity_document(self):
+        form = CustomerUpdateForm(instance=self.customer, data=self._juridica_data())
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_natural_requiere_identity_document(self):
+        form = CustomerUpdateForm(
+            instance=self.customer,
+            data=self._juridica_data(
+                client_type='natural', company_name='', reeup='', nit='', identity_document=''
+            ),
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('identity_document', form.errors)
+
+    def test_natural_guarda_identity_document(self):
+        form = CustomerUpdateForm(
+            instance=self.customer,
+            data=self._juridica_data(
+                client_type='natural',
+                company_name='',
+                reeup='',
+                nit='',
+                identity_document='34111234567',
+            ),
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.save().identity_document, '34111234567')
+
+    def test_update_acepta_su_propio_identity_document(self):
+        """La unicidad excluye la instancia: reenviar el valor sin tocar no es
+        un choque con uno mismo (mismo criterio que reeup/nit)."""
+        self.customer.identity_document = '34111234567'
+        self.customer.save(update_fields=['identity_document'])
+
+        form = CustomerUpdateForm(
+            instance=self.customer,
+            data=self._juridica_data(
+                client_type='natural',
+                company_name='',
+                reeup='',
+                nit='',
+                identity_document='34111234567',
+            ),
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_update_rechaza_el_documento_de_otro(self):
+        otro = User.objects.create_user('otrocliente', 'otro@example.com', 'pass')
+        Customer.objects.create(
+            client_type='natural',
+            user=otro,
+            identity_document='34999999999',
+            account='3333333333333333',
+            address='Addr',
+            phone='11111111',
+        )
+
+        form = CustomerUpdateForm(
+            instance=self.customer,
+            data=self._juridica_data(
+                client_type='natural',
+                company_name='',
+                reeup='',
+                nit='',
+                identity_document='34999999999',
+            ),
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('identity_document', form.errors)
+
 
 class CustomerForUserFormTests(TestCase):
     @classmethod
@@ -245,6 +409,7 @@ class CustomerForUserFormTests(TestCase):
             user=self.user,
             data={
                 'client_type': 'natural',
+                'identity_document': '34111234567',
                 'account': '1234567890123456',
                 'agency_bank': 'Banco Test',
                 'address': 'Addr',
@@ -256,6 +421,64 @@ class CustomerForUserFormTests(TestCase):
         customer = form.save()
         self.assertEqual(customer.user, self.user)
         self.assertEqual(customer.user.email, 'foruser@example.com')
+
+    def test_natural_requiere_identity_document(self):
+        form = CustomerForUserForm(
+            user=self.user,
+            data={
+                'client_type': 'natural',
+                'account': '1234567890123456',
+                'agency_bank': 'Banco Test',
+                'address': 'Addr',
+                'phone': '12345678',
+                'email': 'foruser@example.com',
+            },
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('identity_document', form.errors)
+
+    def test_juridica_no_requiere_identity_document(self):
+        form = CustomerForUserForm(
+            user=self.user,
+            data={
+                'client_type': 'juridica',
+                'company_name': 'Empresa S.A.',
+                'reeup': '123.4.5678',
+                'nit': '12345678901',
+                'account': '1234567890123456',
+                'agency_bank': 'Banco Test',
+                'address': 'Addr',
+                'phone': '12345678',
+                'email': 'foruser@example.com',
+            },
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_rechaza_identity_document_duplicado(self):
+        otro = User.objects.create_user('foruser2', 'foruser2@example.com', 'pass')
+        Customer.objects.create(
+            client_type='natural',
+            user=otro,
+            identity_document='34111234567',
+            account='9999999999999999',
+            address='Addr',
+            phone='11111111',
+        )
+
+        form = CustomerForUserForm(
+            user=self.user,
+            data={
+                'client_type': 'natural',
+                'identity_document': '34111234567',
+                'account': '1234567890123456',
+                'agency_bank': 'Banco Test',
+                'address': 'Addr',
+                'phone': '12345678',
+                'email': 'foruser@example.com',
+            },
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('identity_document', form.errors)
 
 
 class ServiceFormTests(TestCase):

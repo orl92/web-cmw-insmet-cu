@@ -447,6 +447,7 @@ LOGGING = {
     'loggers': {
         '': {'handlers': ['console'], 'level': 'INFO'},
         'django': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'weasyprint.progress': {'level': 'WARNING'},
     },
 }
 

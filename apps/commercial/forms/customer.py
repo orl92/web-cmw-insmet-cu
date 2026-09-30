@@ -6,6 +6,9 @@ from django.db import transaction
 from apps.commercial.models import Customer
 from apps.core.validators import validate_account, validate_nit, validate_phones, validate_reeup
 
+IDENTITY_REQUIRED_ERROR = 'El documento de identidad es obligatorio para personas naturales.'
+IDENTITY_TAKEN_ERROR = 'Este documento de identidad ya está registrado.'
+
 
 class CustomerForm(forms.ModelForm):
     username = forms.CharField(max_length=150, required=True, label='Nombre de Usuario')
@@ -19,6 +22,7 @@ class CustomerForm(forms.ModelForm):
         model = Customer
         fields = [
             'client_type',
+            'identity_document',
             'company_name',
             'reeup',
             'nit',
@@ -47,10 +51,23 @@ class CustomerForm(forms.ModelForm):
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
             self.fields['nit'].required = True
+            self.fields['identity_document'].required = False
         else:
             self.fields['company_name'].required = False
             self.fields['reeup'].required = False
             self.fields['nit'].required = False
+            self.fields['identity_document'].required = True
+
+    def clean_identity_document(self):
+        identity_document = (self.cleaned_data.get('identity_document') or '').strip()
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.NATURAL and not identity_document:
+            raise ValidationError(IDENTITY_REQUIRED_ERROR)
+        if not identity_document:
+            return None
+        if Customer.objects.filter(identity_document=identity_document).exists():
+            raise ValidationError(IDENTITY_TAKEN_ERROR)
+        return identity_document or None
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup')
@@ -113,6 +130,7 @@ class CustomerUpdateForm(forms.ModelForm):
         model = Customer
         fields = [
             'client_type',
+            'identity_document',
             'company_name',
             'reeup',
             'nit',
@@ -143,10 +161,26 @@ class CustomerUpdateForm(forms.ModelForm):
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
             self.fields['nit'].required = True
+            self.fields['identity_document'].required = False
         else:
             self.fields['company_name'].required = False
             self.fields['reeup'].required = False
             self.fields['nit'].required = False
+            self.fields['identity_document'].required = True
+
+    def clean_identity_document(self):
+        identity_document = (self.cleaned_data.get('identity_document') or '').strip()
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.NATURAL and not identity_document:
+            raise ValidationError(IDENTITY_REQUIRED_ERROR)
+        if not identity_document:
+            return None
+        qs = Customer.objects.filter(identity_document=identity_document).exclude(
+            pk=self.instance.pk
+        )
+        if qs.exists():
+            raise ValidationError(IDENTITY_TAKEN_ERROR)
+        return identity_document or None
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup', '')
@@ -197,6 +231,7 @@ class CustomerForUserForm(forms.ModelForm):
         model = Customer
         fields = [
             'client_type',
+            'identity_document',
             'company_name',
             'reeup',
             'nit',
@@ -232,10 +267,26 @@ class CustomerForUserForm(forms.ModelForm):
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
             self.fields['nit'].required = True
+            self.fields['identity_document'].required = False
         else:
             self.fields['company_name'].required = False
             self.fields['reeup'].required = False
             self.fields['nit'].required = False
+            self.fields['identity_document'].required = True
+
+    def clean_identity_document(self):
+        identity_document = (self.cleaned_data.get('identity_document') or '').strip()
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.NATURAL and not identity_document:
+            raise ValidationError(IDENTITY_REQUIRED_ERROR)
+        if not identity_document:
+            return None
+        qs = Customer.objects.filter(identity_document=identity_document)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError(IDENTITY_TAKEN_ERROR)
+        return identity_document
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup', '')

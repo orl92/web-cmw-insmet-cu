@@ -726,7 +726,7 @@ class CancelInvoiceViewTests(TestCase):
 
     @patch('apps.commercial.views.invoice_utils.generate_invoice_pdf_standalone')
     def test_download_generates_pdf_if_missing(self, mock_gen):
-        def _fake_gen(invoice, customer, start, end, reg, items):
+        def _fake_gen(invoice, customer, start, end, items):
             invoice.pdf.save('factura_test.pdf', ContentFile(b'%PDF-1.4 test'))
 
         mock_gen.side_effect = _fake_gen

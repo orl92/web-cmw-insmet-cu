@@ -11,7 +11,7 @@
         }
         @page {
             size: A4;
-            margin: 0.8cm;
+            margin: 10mm;
         }
         html, body {
             height: 100%;
@@ -287,10 +287,14 @@
               <div class="info-item"><span class="info-label">Dirección:</span> {{ cliente.direccion }}</div>
               <div class="info-item"><span class="info-label">Factura No:</span> {{ numero_factura }}</div>
               <div class="info-item"><span class="info-label">Fecha de Facturación:</span> {{ fecha_facturacion }}</div>
-              <div class="info-item"><span class="info-label">Código Reeup:</span> {{ cliente.codigo_reeup }}</div>
-              <div class="info-item"><span class="info-label">NIT:</span> {{ cliente.nit }}</div>
-              <div class="info-item"><span class="info-label">Cuenta Bancaria MN:</span> {{ cliente.cuenta_bancaria }}</div>
-              <div class="info-item"><span class="info-label">Agencia Bancaria:</span> {{ cliente.agencia_bancaria }}</div>
+              {% if cliente.es_juridica %}
+                <div class="info-item"><span class="info-label">Código Reeup:</span> {{ cliente.codigo_reeup }}</div>
+                <div class="info-item"><span class="info-label">NIT:</span> {{ cliente.nit }}</div>
+                <div class="info-item"><span class="info-label">Cuenta Bancaria MN:</span> {{ cliente.cuenta_bancaria }}</div>
+                <div class="info-item"><span class="info-label">Agencia Bancaria:</span> {{ cliente.agencia_bancaria }}</div>
+              {% else %}
+                <div class="info-item"><span class="info-label">Documento de identidad:</span> {{ cliente.documento_identidad }}</div>
+              {% endif %}
               <div class="info-item"><span class="info-label">Teléfonos:</span> {{ cliente.telefonos }}</div>
             </div>
             <div class="info-col">

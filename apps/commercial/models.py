@@ -24,6 +24,12 @@ class Customer(SoftDeleteModel):
         default=ClientType.JURIDICA,
         verbose_name='Tipo de Cliente',
     )
+    identity_document = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name='Documento de identidad',
+    )
     company_name = models.CharField(
         max_length=100,
         blank=True,

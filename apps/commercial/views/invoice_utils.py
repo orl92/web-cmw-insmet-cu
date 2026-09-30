@@ -1,77 +1,148 @@
 import logging
 import os
-import shutil
+from functools import lru_cache
 
-import pdfkit
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from weasyprint import HTML
 
+from apps.commercial.models import Contract, Customer
 from apps.core.models import CompanySettings
 
 logger = logging.getLogger(__name__)
 
 
+@lru_cache(maxsize=1)
 def require_pdf_renderer():
-    """Se niega a generar un PDF sin el binario que lo produce.
+    """Se niega a generar un PDF sin que el motor de renderizado funcione.
 
-    `pdfkit` es un wrapper: el paquete Python está en `requirements/base.txt`,
-    pero el conversor `wkhtmltopdf` es un binario del sistema. Sin este chequeo
-    el error que sube es `OSError: No wkhtmltopdf executable found`, que no dice
-    qué instalar; en el worker ese OSError se ve como un reintento de Huey en
-    vez de como una dependencia que falta.
+    `WeasyPrint` es una biblioteca pura de Python, pero necesita la pila
+    del sistema (Pango, Harfbuzz, GdkPixbuf) para convertir HTML a PDF. Si
+    esa pila falta, el primer `write_pdf()` falla con un error profundo,
+    no con un `ImportError` claro. Este chequeo previene que el worker
+    de Huey intente generar facturas en ese estado y deja constancia de
+    qué dependencias del sistema faltan, antes de tocar ningún archivo.
 
-    Solo mira el PATH a propósito. `pdfkit.Configuration()` busca por `which`
-    cuando no se le pasa una ruta, y el call site de abajo no le pasa ninguna,
-    así que `shutil.which` reproduce exactamente la resolucion que pdfkit va a
-    hacer: no hay falso negativo cuando alguien instala el binario en otro
-    lugar, porque en ese caso hay que pasar `configuration=` y el call site
-    tendría que cambiar.
+    Ejecuta una prueba real de renderizado (no solo una importación): al
+    hacerlo una única vez por proceso (cacheado) se paga el costo de
+    arranque de Pango como mucho una vez y, lo más importante, el chequeo
+    ocurre ANTES de que se escriba un PDF a medio crear.
     """
-    if shutil.which('wkhtmltopdf'):
-        return
-    raise RuntimeError(
-        'Falta el binario wkhtmltopdf, que es lo que convierte el HTML de la '
-        'factura en PDF. El paquete Python `pdfkit` es solo un wrapper: sin el '
-        'binario del sistema no hay PDF.\n'
-        '  Debian/Ubuntu: sudo apt install wkhtmltopdf\n'
-        '  macOS:         brew install wkhtmltopdf'
-    )
+
+    try:
+        HTML(string='<p>ok</p>').write_pdf()
+    except Exception as exc:
+        raise RuntimeError(
+            'No se puede generar el PDF de la factura: faltan bibliotecas del '
+            'sistema necesarias para WeasyPrint (Pango/Harfbuzz).\n'
+            '  Debian/Ubuntu: sudo apt install libpango-1.0-0 '
+            'libpangoft2-1.0-0 libharfbuzz0b libgdk-pixbuf-2.0-0\n'
+            '  Otras plataformas: consulte la documentación de WeasyPrint '
+            'para las dependencias del sistema.'
+        ) from exc
 
 
-def generate_invoice_pdf_standalone(
-    invoice, customer, start_date, end_date, commercial_registry, items
-):
+def _contrato_de_factura(invoice):
+    """El contrato de la suscripción facturada, o `None`.
+
+    `Contract.subscription` es un `OneToOneField`, así que `subscription.contract`
+    lanza `Contract.DoesNotExist` cuando la suscripción todavía no tiene
+    contrato: eso es un caso normal (la factura manual no tiene suscripción), no
+    un error, y por eso se devuelve `None` en vez de dejar subir la excepción.
+    """
+    subscription = invoice.subscription if invoice else None
+    if subscription is None:
+        return None
+    try:
+        return subscription.contract
+    except Contract.DoesNotExist:
+        return None
+
+
+def _datos_proveedor(company, contract):
+    """Datos del ejecutor, con el bloque de contrato resuelto.
+
+    El registro comercial del contrato es el más específico (es el de esa
+    suscripción), así que gana; si el contrato no lo trae, se usa el de la
+    empresa. Sin contrato, los tres campos quedan vacíos en vez de romper.
+    """
+    return {
+        'nombre': company.nombre,
+        'direccion': company.direccion,
+        'codigo_reeup': company.codigo_reeup,
+        'nit': company.nit,
+        'cuenta_bancaria': company.cuenta_bancaria,
+        'agencia_bancaria': company.agencia_bancaria,
+        'telefonos': company.telefonos,
+        'registro_comercial': (
+            (contract.commercial_registry if contract else '') or company.registro_comercial
+        ),
+        'no_contrato': contract.number if contract else '',
+        'fecha_contrato': contract.date.strftime('%d/%m/%Y') if contract else '',
+    }
+
+
+def _datos_cliente(customer):
+    """Datos del cliente, ya resueltos según su tipo.
+
+    La plantilla solo decide qué imprimir con `es_juridica`; qué valores van en
+    cada caso se calcula acá, que es donde se puede razonar sin HTML.
+
+    El nombre se resuelve por tipo y nunca queda en blanco: una jurídica
+    imprime su razón social (es lo que imprimía antes, y es lo que va en una
+    factura legal) y una persona natural su nombre, que vive en el `User`. Si
+    alguno de los dos falta, se degrada al otro y, en último caso, al nombre de
+    usuario. Es la misma prioridad que usa `Customer.__str__`.
+    """
+    if customer is None:
+        return {
+            'es_juridica': False,
+            'nombre': '',
+            'documento_identidad': '',
+            'direccion': '',
+            'codigo_reeup': '',
+            'nit': '',
+            'cuenta_bancaria': '',
+            'agencia_bancaria': '',
+            'telefonos': '',
+        }
+
+    es_juridica = customer.client_type == Customer.ClientType.JURIDICA
+    user = customer.user
+    nombre_persona = user.get_full_name() if user else ''
+    if es_juridica:
+        nombre = customer.company_name or nombre_persona
+    else:
+        nombre = nombre_persona or customer.company_name
+    if not nombre and user:
+        nombre = user.username
+
+    return {
+        'es_juridica': es_juridica,
+        'nombre': nombre or '',
+        'documento_identidad': customer.identity_document or '',
+        'direccion': customer.address,
+        'codigo_reeup': customer.reeup or '',
+        'nit': customer.nit or '',
+        'cuenta_bancaria': customer.account or '',
+        'agencia_bancaria': customer.agency_bank or '',
+        'telefonos': customer.phone or '',
+    }
+
+
+def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, items):
     company = CompanySettings.get_instance()
     periodo = f'Desde {start_date.strftime("%d/%m/%Y")} hasta {end_date.strftime("%d/%m/%Y")}'
     context = {
         'numero_factura': invoice.number,
         'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
         'periodo_facturacion': periodo,
-        'cliente': {
-            'nombre': customer.company_name,
-            'direccion': customer.address,
-            'codigo_reeup': customer.reeup or '',
-            'nit': customer.nit or '',
-            'cuenta_bancaria': customer.account or '',
-            'agencia_bancaria': customer.agency_bank or '',
-            'telefonos': customer.phone or '',
-        },
-        'proveedor': {
-            'nombre': company.nombre,
-            'direccion': company.direccion,
-            'codigo_reeup': company.codigo_reeup,
-            'nit': company.nit,
-            'cuenta_bancaria': company.cuenta_bancaria,
-            'agencia_bancaria': company.agencia_bancaria,
-            'telefonos': company.telefonos,
-            'registro_comercial': commercial_registry,
-            'no_contrato': '',
-            'fecha_contrato': '',
-        },
+        'cliente': _datos_cliente(customer),
+        'proveedor': _datos_proveedor(company, _contrato_de_factura(invoice)),
         'items': [
             {
                 'codigo': item.codigo,
@@ -88,17 +159,7 @@ def generate_invoice_pdf_standalone(
     }
     require_pdf_renderer()
     html_string = render_to_string('pages/commercial/invoice/template.html', context)
-    options = {
-        'page-size': 'A4',
-        'margin-top': '10mm',
-        'margin-bottom': '10mm',
-        'margin-left': '10mm',
-        'margin-right': '10mm',
-        'encoding': 'UTF-8',
-        'no-outline': None,
-        'enable-local-file-access': None,
-    }
-    pdf_bytes = pdfkit.from_string(html_string, False, options=options)
+    pdf_bytes = HTML(string=html_string).write_pdf()
     filename = f'factura_{invoice.id}.pdf'
     invoice.pdf.save(filename, ContentFile(pdf_bytes))
 

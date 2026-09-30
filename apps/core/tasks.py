@@ -7,10 +7,6 @@ from config.huey import huey
 
 logger = logging.getLogger(__name__)
 
-# Tres reintentos con espera creciente: 30 s, 60 s y 120 s, o sea unos 3,5 min de
-# cobertura para un fallo transitorio (SMTP caído, disco lleno, sin render).
-# El backoff tiene que ser un NÚMERO: huey multiplica la espera por él en cada
-# reintento, así que `True` es un no-op silencioso (30 * True == 30).
 RETRY_POLICY = {'retries': 3, 'retry_delay': 30, 'retry_backoff': 2}
 
 
@@ -31,7 +27,6 @@ def generate_invoice_pdf_and_email_task(invoice_uuid, site_url):
         customer,
         invoice.subscription.start_date if invoice.subscription else invoice.issue_date,
         invoice.subscription.end_date if invoice.subscription else invoice.issue_date,
-        '',
         items,
     )
     enviar_correo_factura(invoice, customer, base_url=site_url)
