@@ -5,7 +5,7 @@ Por qué un script y no un management command
 --------------------------------------------
 `manage.py` importa los settings ANTES de despachar el comando (`django.setup()`).
 Un comando que genera la clave necesita entonces arrancar con settings sin clave
-declarada, y esa Tolerance es la razón de que `config/settings/base.py` no pueda
+declarada, y esa tolerancia es la razón de que `config/settings/base.py` no pueda
 fallar cerrado. Este script no importa settings: puede correr justo en el estado
 en que la aplicación no puede, y con él el fail-closed de los settings se vuelve
 implementable.

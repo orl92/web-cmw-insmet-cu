@@ -24,11 +24,12 @@ from .base import (  # noqa: F401  (alias sin guion bajo: `import *` no lo expor
 # híbrido `PRODUCTION=1 DEBUG=True`, que es exactamente el que este perfil evita.
 DEBUG = False
 
-# La falta de SECRET_KEY ya no se comprueba acá: `base.load_secret_key()` falla
-# cerrado para TODOS los perfiles, con un mensaje que nombra el archivo y el comando
-# exacto. Dos dueños para la misma regla es una regla que alguien va a parchear en
-# uno de los dos. Lo que SÍ es propio de producción y no se puede expresar en
-# `base` es el correo por consola, de abajo.
+# La falta de SECRET_KEY no se comprueba acá: la regla tiene un solo dueño,
+# `base.load_secret_key()`, que falla cerrado para TODOS los perfiles con un
+# mensaje que nombra el archivo y el comando exacto. Dos dueños para una misma
+# regla es una regla que alguien va a parchear en uno de los dos. Lo que SÍ es
+# propio de producción y no se puede expresar en `base` es el correo por consola,
+# de abajo.
 
 # Anti-consola. El pie real no es "dev usa consola", es "producción usa consola en
 # silencio": los correos se descartan en stdout y ni el operador ni el usuario se
@@ -71,8 +72,8 @@ if whitenoise_middleware not in MIDDLEWARE:
     MIDDLEWARE = [*MIDDLEWARE[:1], whitenoise_middleware, *MIDDLEWARE[1:]]
 
 # `is_production=True` activa el fail-closed sin DB_ENGINE; `prefer_sqlite=False`
-# porque producción no acepta el atajo a sqlite que hoy daría un `DEBUG=True`
-# colado en el entorno (el `if DEBUG or ...` del monolito).
+# porque producción no acepta el atajo a sqlite que daría un `DEBUG=True` colado
+# en el entorno.
 DATABASES = get_database_config(is_production=True, prefer_sqlite=False)
 
 if external_hostname := os.getenv('EXTERNAL_HOSTNAME', ''):

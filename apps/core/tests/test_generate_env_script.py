@@ -1,8 +1,8 @@
 """Tests del generador de `.env` como script plano (`scripts/generate_env.py`).
 
-Reemplazan a los del management command `generate_env`, que ya no existe: el
-generador es un script precisamente para poder correr sin settings, y probarlo
-como comando de Django probaría la mitad muerta del contrato.
+El generador es un script y no un management command a propósito: existe para
+correr sin settings, y probarlo como comando de Django probaría la mitad muerta
+del contrato.
 
 Cada test ejercita el script como proceso (subprocess), no sus funciones internas:
 lo que importa es lo que un operador obtiene de la terminal.
@@ -81,9 +81,9 @@ class GenerateEnvScriptTests(unittest.TestCase):
     def test_script_does_not_import_django(self):
         """El script NO puede importar Django.
 
-        Es la razón de que el script exista: si importara Django, volvería a
-        necesitar settings para generar la clave, y con ellos la tolerancia que
-        se quiere eliminar.
+        Es la razón de que el script exista: si importara Django, necesitaría los
+        settings para generar la clave, y entonces no podría correr en el estado
+        en que la aplicación todavía no tiene clave.
         """
         source = SCRIPT.read_text(encoding='utf-8')
         for forbidden in ('import django', 'from django', 'from config', 'import config'):
@@ -156,7 +156,7 @@ class GenerateEnvScriptTests(unittest.TestCase):
         """La clave de descifrado vive aparte.
 
         Si compartieran archivo, un `.env` filtrado entregaría el secreto ya
-        descifrado: la clave de descifrado travelling con el texto cifrado no
+        descifrado: la clave de descifrado viaja con el texto cifrado, así que no
         cifra nada.
         """
         result = run_script(*self._args('--production'))
@@ -274,8 +274,8 @@ class GenerateEnvScriptTests(unittest.TestCase):
         """El default se resuelve contra la raíz del repo, no contra el CWD.
 
         `config/settings/__init__.py` lee `BASE_DIR/'.env'`, un path absoluto. Un
-        default relativo al CWD escribía el archivo donde Django no lo busca, y
-        el síntoma —"falta SECRET_KEY"— no señalaba la causa.
+        default relativo al CWD escribiría el archivo donde Django no lo busca, y
+        el síntoma —"falta SECRET_KEY"— no señalaría la causa.
         """
         import importlib.util
 

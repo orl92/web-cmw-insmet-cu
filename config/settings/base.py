@@ -27,8 +27,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 # Las dos banderas que el dispatcher de `config/settings/__init__.py` usa para
-# elegir perfil. Son las MISMAS lecturas que hacía el monolito: perfil de
-# producción inalcanzable sin `PRODUCTION` en el entorno.
+# elegir perfil. La expresión de `DEBUG` tiene que ser idéntica a la del
+# dispatcher: si divergen, el perfil se elige distinto según por dónde se entre.
+# Sin `PRODUCTION` en el entorno, producción es inalcanzable.
 IS_PRODUCTION = 'PRODUCTION' in os.environ
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
@@ -87,13 +88,12 @@ def load_secret_key():
     sesión sin motivo". Una clave que se regenera sola es peor que no tener
     clave, porque parece funcionar.
 
-    Esto antes caía a `get_random_secret_key()` con un warning, y el motivo del
-    bypass era real: el generador de claves era un management command, y
-    `manage.py` importa los settings ANTES de despacharlo (`django.setup()`), así
-    que un raise en este bloque dejaba sin arranque al comando que existía
-    justamente para crear la clave. La paradoja era del GENERADOR, no de los
-    settings. El generador ahora es `scripts/generate_env.py`, un script que no
-    importa Django y corre en el estado exacto en que la aplicación no puede.
+    El negarse a arrancar es viable porque el generador de claves es
+    `scripts/generate_env.py`, un script que NO importa Django ni settings y corre
+    en el estado exacto en que la aplicación no puede. Como management command no
+    serviría: `manage.py` importa los settings ANTES de despacharlo
+    (`django.setup()`), así que el raise de este bloque dejaría sin arranque al
+    comando que existe justamente para crear la clave.
 
     El perfil `testing` inyecta un par determinista antes de importar este
     módulo, así que la suite corre sin `.env` y sin `/etc/webcmp/encryption.env`.
@@ -234,16 +234,15 @@ _CONTENT_SECURITY_POLICY_DIRECTIVES = {
     'default-src': ["'self'"],
     'base-uri': ["'self'"],
     'frame-ancestors': ["'self'"],
-    # 'self' (formerly 'none'): the dashboard PDF modal renders documents in an
+    # 'self', not 'none': the dashboard PDF modal renders documents in an
     # <object type="application/pdf"> (templates/includes/home/document_pdf_modal.html).
-    # object-src 'none' blocked that object, so the modal only showed the
-    # download fallback. 'self' allows embedding same-origin PDFs while still
-    # blocking data:/external object sources.
+    # 'none' would block that object and leave the modal with only the download
+    # fallback. 'self' allows embedding same-origin PDFs while still blocking
+    # data:/external object sources.
     'object-src': ["'self'"],
-    # 'unsafe-inline' required: 41 inline <script> blocks
+    # 'unsafe-inline': las plantillas traen scripts en linea.
     # (e.g. templates/includes/base/scripts.html:8,
     #  templates/includes/dashboard/footer.html:41).
-    # Nonce migration is a tracked follow-up.
     'script-src': ["'self'", "'unsafe-inline'"],
     # 'unsafe-inline' required: inline <style> blocks
     # (e.g. templates/includes/base/head.html:15).
@@ -305,8 +304,7 @@ def get_database_config(*, is_production=IS_PRODUCTION, prefer_sqlite=DEBUG):
     producción" sin que `base` se adelante.
 
     - *is_production* activa el fail-closed sin `DB_ENGINE` (solo producción).
-    - *prefer_sqlite* hace que sqlite gane aunque `DB_ENGINE` esté definida
-      (equivalente al antiguo `if DEBUG or ...`, que solo dev lo pedía).
+    - *prefer_sqlite* hace que sqlite gane aunque `DB_ENGINE` esté definida.
     """
     db_engine = os.getenv('DB_ENGINE', '').strip().lower()
 
@@ -321,8 +319,7 @@ def get_database_config(*, is_production=IS_PRODUCTION, prefer_sqlite=DEBUG):
     # credenciales, no después: si el motor ya es sqlite, exigir DB_USER/DB_HOST/
     # DB_PASS obligaría a inventar cuatro valores que el motor nunca lee, y un
     # `.env` con `DB_ENGINE=sqlite3` (dev con DEBUG=False, staging, el gate de CI)
-    # no podría arrancar ningún perfil. Antes de este corte, el perfil `testing`
-    # fallaba con un mensaje que además decía "Para producción" sin serlo.
+    # no podría arrancar ningún perfil.
     if prefer_sqlite or db_engine in {'', 'sqlite', 'sqlite3'}:
         return {
             'default': {
@@ -449,9 +446,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # dejar archivos residuales en media/).
 TEST_RUNNER = 'config.test_runner.IsolatedMediaRunner'
 
-# Clickjacking protection: DENY (no first-party view is embedded in a frame;
-# change 013-check-deploy-ci resolves security.W019 for real;
-# ver openspec/changes/archive/2026-08-28-013-check-deploy-ci/).
+# Clickjacking protection: DENY, porque ninguna vista de primera parte está pensada
+# para ser embebida en un frame.
 X_FRAME_OPTIONS = 'DENY'
 
 # security.W008 is intentionally silenced: Nginx terminates TLS and performs

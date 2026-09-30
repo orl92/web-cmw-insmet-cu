@@ -36,7 +36,7 @@ CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DJANGO_SMTP_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 CUSTOM_EMAIL_BACKEND = 'config.custom_email_backend.CustomSTARTTLSBackend'
 
-# El bloque de cookies seguras del monolito (`if not DEBUG:`) setting por setting.
+# El bloque de cookies seguras, setting por setting.
 SECURE_COOKIE_VALUES = {
     'SECURE_SSL_REDIRECT': False,
     'SECURE_PROXY_SSL_HEADER': ('HTTP_X_FORWARDED_PROTO', 'https'),
@@ -97,7 +97,7 @@ class SecureCookieAssertionsMixin:
             )
 
     def assert_no_secure_cookies(self, module):
-        # Ausentes, no "con el default de Django": el monolito no los definía.
+        # Ausentes, no "con el default de Django".
         for name in SECURE_COOKIE_VALUES:
             self.assertNotIn(name, vars(module), f'{module.__name__} no debe definir {name}')
 
@@ -114,7 +114,7 @@ class DebugToolbarAssertionsMixin:
         self.assertIs(module.DEBUG_TOOLBAR_ENABLED, False)
         self.assertNotIn(DEBUG_TOOLBAR_APP, module.INSTALLED_APPS)
         self.assertNotIn(DEBUG_TOOLBAR_MIDDLEWARE, module.MIDDLEWARE)
-        # El toolbar desaparecía con sus dos settings, no con un default.
+        # El toolbar va con sus dos settings o con ninguno: no queda en un default.
         self.assertNotIn('DEBUG_TOOLBAR_CONFIG', vars(module))
         self.assertNotIn('INTERNAL_IPS', vars(module))
 
@@ -212,8 +212,8 @@ class TestingProfileTests(SecureCookieAssertionsMixin, DebugToolbarAssertionsMix
         )
         self.assertEqual(module.DATABASES['default']['ENGINE'], 'django.db.backends.postgresql')
 
-    def test_random_secret_key_fallback(self):
-        """013-check-deploy-ci afirma que CI no debe fallar por una clave ausente."""
+    def test_secret_key_comes_from_the_injected_pair(self):
+        """El perfil `testing` arranca sin `.env` porque su par sale del par inyectado."""
         self.assertTrue(self.module.SECRET_KEY)
 
     def test_ftp_simulations_off(self):
@@ -273,7 +273,7 @@ class ProductionProfileTests(
         self.assertIn('DB_ENGINE', str(ctx.exception))
 
     def test_missing_secret_key_raises_before_database(self):
-        """Sin claves y sin DB_ENGINE, el primer error es el de SECRET_KEY (orden del monolito).
+        """Sin claves y sin DB_ENGINE, el primer error es el de SECRET_KEY.
 
         `with_secret=False` porque el default de `load_profile` inyecta un par
         válido, y con par este perfil llega hasta el error de base de datos: el
@@ -325,11 +325,9 @@ class ProductionProfileTests(
 class SecretKeyFailClosedTests(SimpleTestCase):
     """Sin un par de claves que descifre, la aplicación NO arranca. En ningún perfil.
 
-    Antes esto caía a `get_random_secret_key()` con un warning, y el bypass se
-    justificaba por la paradoja de bootstrap: el generador de claves era un
-    management command, y `manage.py` importa los settings antes de despacharlo.
-    El generador ahora es `scripts/generate_env.py`, que no importa Django, así
-    que la paradoja se corrigió en el generador y `base` puede negarse.
+    La regla tiene un solo dueño, `base.load_secret_key()`, y es implementable
+    porque el generador (`scripts/generate_env.py`) no importa Django: corre en el
+    estado exacto en que la aplicación todavía no puede arrancar.
     Ver odd/tasks/production-deploy-systemd.md.
     """
 
@@ -475,7 +473,7 @@ class SecretKeyFailClosedTests(SimpleTestCase):
 
 
 class DispatcherTests(SimpleTestCase):
-    """La restricción dura: el perfil lo eligen las MISMAS variables de antes."""
+    """La restricción dura: el perfil lo eligen estas DOS variables de entorno."""
 
     def test_flags_are_read_from_the_environment(self):
         from config import settings

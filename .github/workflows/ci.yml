@@ -126,10 +126,10 @@ jobs:
       # El .env está en .gitignore y CI no puede tener claves reales, así que el
       # gate genera su propio par con el MISMO generador que usa el servidor.
       #
-      # Esto ya no es un snippet inline: `scripts/generate_env.py` no importa
-      # Django, así que funciona en un checkout limpio, que es exactamente el
-      # estado de este job. Que el gate dependa del script de producción es lo que
-      # hace que una regresión en el generador se vea acá y no en el servidor.
+      # `scripts/generate_env.py` no importa Django, así que funciona en un
+      # checkout limpio, que es el estado de este job. Que el gate dependa del
+      # script de producción es lo que hace que una regresión en el generador se
+      # vea acá y no en el servidor.
       #
       # El archivo va a RUNNER_TEMP, NO al checkout: el job no corre producción
       # (produce SQLite y DEBUG=True), así que lo que necesita son las dos
@@ -150,11 +150,10 @@ jobs:
           # modelos importa el ENGINE, así que este paso detecta un driver faltante en
           # requirements/prod.txt -- el fallo que de verdad mata un deploy:
           # `ImproperlyConfigured: Error loading psycopg2 or psycopg module`, antes de
-          # tocar la base. Con sqlite3 el gate era ciego a eso.
+          # tocar la base. Con sqlite3 el gate no vería un driver faltante.
           # `check --deploy` NO abre conexiones: las credenciales de abajo existen solo
           # porque `get_database_config` las exige para un motor de red. El pragma de
-          # `DB_PASS` es lo que corresponde a un placeholder; en la versión sqlite3 no
-          # hacía falta porque ese motor no pedía ninguna.
+          # `DB_PASS` marca el valor inventado como placeholder para `detect-secrets`.
           DB_ENGINE: postgresql
           DB_NAME: webcmp
           DB_USER: webcmp

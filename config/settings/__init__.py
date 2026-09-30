@@ -1,7 +1,7 @@
 """Punto de entrada de la configuración: selecciona el perfil y lo reexporta.
 
-RESTRICCIÓN DURA (no negociable): el perfil lo eligen las MISMAS variables de
-entorno que leía el monolito `config/settings.py`, con la MISMA precedencia:
+RESTRICCIÓN DURA (no negociable): el perfil lo eligen estas DOS variables de
+entorno, con esta precedencia:
 
     IS_PRODUCTION = 'PRODUCTION' in os.environ
     DEBUG = os.getenv('DEBUG', 'False') == 'True'
@@ -15,23 +15,21 @@ silencioso. Por eso la tabla de verdad se preserva por construcción:
     sin PRODUCTION, DEBUG == True   ->  dev
     sin PRODUCTION, DEBUG != True   ->  testing
 
-`PRODUCTION` gana sobre `DEBUG`, como antes. `load_dotenv()` corre ACÁ, antes de
-leer las banderas, así que `.env` participa en la decisión igual que participaba
-en el monolito.
+`PRODUCTION` gana sobre `DEBUG`. `load_dotenv()` corre ACÁ, antes de leer las
+banderas, así que `.env` participa en la decisión.
 
 Por qué este módulo lee el entorno y no `base`
 ---------------------------------------------
-Si las banderas se leyeran de `base` (`from . import base` y después
-`elif _base.DEBUG`), importar este paquete importaría `base` antes de saber qué
-perfil corresponde. Y `base.load_secret_key()` falla cerrado cuando no hay par
-de claves: el perfil `testing`, que es justamente el que existe para arrancar
-sin `.env`, se moriría en el import de `base` sin llegar a inyectar el suyo.
+`base` falla cerrado cuando no hay par de claves descifrable, así que el perfil
+tiene que decidirse ANTES de importarlo: importando este paquete con las banderas
+leídas de `base`, el perfil `testing` —que existe justamente para arrancar sin
+`.env`— se moriría en el import sin llegar a inyectar su par.
 
 El orden que funciona es el inverso: leer `.env` y las banderas acá, y recién
 entonces importar el perfil, que importa `base` a su vez. Por eso la lectura de
-`DEBUG` está duplicada literalmente de `base.DEBUG`: es la MISMA expresión del
-monolito, y si alguna vez divergen, un perfil se elige distinto según por dónde
-se entre. Eso también lo cubre `DispatcherTests`.
+`DEBUG` está duplicada literalmente de `base.DEBUG`: si alguna vez divergen, un
+perfil se elige distinto según por dónde se entre. Eso también lo cubre
+`DispatcherTests`.
 
 Los perfiles también son importables por su cuenta
 (`DJANGO_SETTINGS_MODULE=config.settings.production`): cada uno hace su propio
@@ -51,7 +49,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Idéntico al de `base`: `.env` se lee antes de decidir, en los dos módulos.
 load_dotenv(BASE_DIR / '.env')
 
-# La MISMA expresión del monolito y de `base.DEBUG`. Ver la docstring.
+# La MISMA expresión que `base.DEBUG`. Ver la docstring.
 _DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 if 'PRODUCTION' in os.environ:
@@ -78,11 +76,10 @@ from .base import _CONTENT_SECURITY_POLICY_DIRECTIVES  # noqa: E402,F401  (no lo
 def get_database_config():
     """Envoltura de `base.get_database_config()`.
 
-    Antes de la partición el helper leía `DEBUG` e `IS_PRODUCTION` del propio
-    módulo `config.settings`, y los tests los parchean con
-    `mock.patch.object(config.settings, 'DEBUG', ...)`. La envoltura lee los
-    mismos dos nombres en ESTE módulo y delega la construcción en `base`, de
-    modo que ese contrato se conserva tal cual.
+    Los tests parchean `DEBUG` e `IS_PRODUCTION` con
+    `mock.patch.object(config.settings, 'DEBUG', ...)`, así que la envoltura lee
+    esos dos nombres en ESTE módulo y delega la construcción en `base`: leerlos
+    de `base` haría que el parche dejara de mandar.
     """
     return _base.get_database_config(is_production=IS_PRODUCTION, prefer_sqlite=DEBUG)
 

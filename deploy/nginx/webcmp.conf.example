@@ -8,10 +8,9 @@
 #   sudo ln -s /etc/nginx/sites-available/webcmp.conf /etc/nginx/sites-enabled/
 #   sudo nginx -t && sudo systemctl reload nginx
 #
-# Lo unico que cambia respecto a la version anterior: el socket. Gunicorn ahora
-# escucha en /run/webcmp/gunicorn.sock (RuntimeDirectory del unit) y no en
-# /tmp/gunicorn-webcmp.sock. /run es un tmpfs limpio en cada arranque; un socket
-# en /tmp sobrevive al reinicio y Nginx queda proxying a un archivo fantasma.
+# El socket de Gunicorn vive en /run/webcmp/gunicorn.sock (RuntimeDirectory del
+# unit), no en /tmp: /run es un tmpfs limpio en cada arranque, y un socket en
+# /tmp sobrevive al reinicio y deja a Nginx proxying a un archivo fantasma.
 
 proxy_cache_path /cache/nginx/tmpfs levels=1:2 keys_zone=webcmp:100m max_size=100m inactive=3h use_temp_path=off;
 
