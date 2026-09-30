@@ -67,17 +67,7 @@ class NoDeadLoadPdfCallsTests(TestCase):
         offenders = []
         for path in self._shipped_html_and_js_files():
             text = path.read_text(encoding='utf-8')
-            # Skip the legacy paths themselves.
             rel = str(path.relative_to(REPO_ROOT))
-            if rel in (
-                'static/dist/js/pdf-viewer.js',
-                'static/dist/css/pdf-viewer.css',
-                'static/dist/libs/PDF/pdf.min.js',
-                'static/dist/libs/PDF/pdf.worker.min.js',
-                'templates/includes/home/pdf_preview.html',
-                'templates/includes/home/pdf_modal.html',
-            ):
-                continue
             # `document_pdf_modal.html` legitimately contains the substring
             # "pdf_modal.html"; strip it so the legacy marker check is exact.
             cleaned = text.replace('document_pdf_modal.html', '')
