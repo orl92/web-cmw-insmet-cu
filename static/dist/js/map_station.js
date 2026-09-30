@@ -5,6 +5,11 @@ var currentScript = document.currentScript || (function() {
 })();
 var API_STATIONS_URL = currentScript.getAttribute('data-api-stations-url') || '/api/stations/';
 var API_OBSERVATION_URL = currentScript.getAttribute('data-api-observation-url') || '/api/station/observation/';
+// Las URLs del geojson vienen del template con {% static %}. Con una ruta
+// relativa ("static/...") el navegador la resuelve contra el path de la pagina y
+// en /home/ pedia /home/static/... -> 404 en HTML, que rompia el mapa entero.
+var GEO_COUNTRIES_URL = currentScript.getAttribute('data-geo-countries-url') || '/static/dist/json/contry_data.json';
+var GEO_CAMAGUEY_URL = currentScript.getAttribute('data-geo-camaguey-url') || '/static/dist/json/camagueyLow.json';
 
 // Crear el elemento raíz
 var root = am5.Root.new("chartdiv");
@@ -23,7 +28,7 @@ var chart = root.container.children.push(am5map.MapChart.new(root, {
 }));
 
 // Cargar datos geográficos
-am5.net.load("static/dist/json/contry_data.json", chart).then(function (result) {
+am5.net.load(GEO_COUNTRIES_URL, chart).then(function (result) {
     var geo = am5.JSONParser.parse(result.response);
     loadGeodata(geo.country_code);
 });
@@ -37,7 +42,7 @@ var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
 // Función para cargar geodatos
 function loadGeodata(country) {
     // Cálculo de qué mapa usar
-    am5.net.load("static/dist/json/camagueyLow.json", chart).then(function (result) {
+    am5.net.load(GEO_CAMAGUEY_URL, chart).then(function (result) {
         var geodata = am5.JSONParser.parse(result.response);
         var data = [];
         for (var i = 0; i < geodata.features.length; i++) {
