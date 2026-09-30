@@ -33,6 +33,10 @@ SQLITE_ENGINE = 'django.db.backends.sqlite3'
 # Literal, no el `base.console_email_backend`: el test tiene que fijar la cadena
 # exacta que el perfil de producción rechaza, no seguir a la constante.
 CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# `filebased` y `locmem` comparten el modo de fallo de `console`: aceptan el
+# mensaje y lo descartan. Literales, por la misma razón que arriba.
+FILEBASED_EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+LOCMEM_EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 DJANGO_SMTP_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 CUSTOM_EMAIL_BACKEND = 'config.custom_email_backend.CustomSTARTTLSBackend'
 
@@ -295,19 +299,23 @@ class ProductionProfileTests(
         self.assertIs(module.DEBUG, False)
 
     def test_console_email_backend_is_rejected(self):
-        """Rama NEGATIVA del assert: consola en producción es un `.env` regenerable.
+        """Rama NEGATIVA del assert: un backend que descarta en producción es un
+        `.env` regenerable.
 
-        El pie real no es "dev usa consola", es "producción usa consola en silencio":
-        los correos se descartan sin un solo error.
+        El pie real no es "dev usa consola", es "producción descarta el correo sin
+        un solo error": el mensaje se acepta y se pierde. `filebased` y `locmem`
+        fallan igual, aunque el README los recomiende para desarrollo.
         """
-        with self.assertRaises(ImproperlyConfigured) as ctx:
-            load_profile(
-                'config.settings.production',
-                {**self.DB_ENV, 'EMAIL_BACKEND': CONSOLE_EMAIL_BACKEND},
-            )
-        message = str(ctx.exception)
-        self.assertIn(CONSOLE_EMAIL_BACKEND, message)
-        self.assertIn('generate_env.py --production', message)
+        for backend in (CONSOLE_EMAIL_BACKEND, FILEBASED_EMAIL_BACKEND, LOCMEM_EMAIL_BACKEND):
+            with self.subTest(backend=backend):
+                with self.assertRaises(ImproperlyConfigured) as ctx:
+                    load_profile(
+                        'config.settings.production',
+                        {**self.DB_ENV, 'EMAIL_BACKEND': backend},
+                    )
+                message = str(ctx.exception)
+                self.assertIn(backend, message)
+                self.assertIn('generate_env.py --production', message)
 
     def test_real_email_backends_are_accepted(self):
         """Rama POSITIVA del assert: todo backend menos consola pasa."""

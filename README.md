@@ -18,6 +18,7 @@ para correos y PDFs. Interfaz y configuración en español (`es-mx`, `America/Ha
 - [Organización del proyecto](#organización-del-proyecto) — qué hace cada app
 - [Convenciones que te van a morder](#convenciones-que-te-van-a-morder) — las reglas duras del proyecto
 - [Tests](#tests) — cómo correrlos y qué corre CI
+- [Probar el worker y los correos](#probar-el-worker-y-los-correos) — PDF + email de punta a punta
 - [Despliegue en producción](#despliegue-en-producción) — servidor nuevo, paso a paso
 - [Contribuir](#contribuir) — flujo de trabajo del proyecto
 - [Licencia](#licencia)
@@ -68,6 +69,9 @@ El worker de Huey corre aparte, en otra terminal:
 ```bash
 ./run_huey.sh
 ```
+
+Para probar el flujo de facturas y correos de punta a punta (con sus
+dependencias y su preflight), ver [Probar el worker y los correos](#probar-el-worker-y-los-correos).
 
 <details>
 <summary>Instalación manual (si no usas <code>make</code>)</summary>
@@ -243,6 +247,53 @@ commit. Viajan versionados en `.githooks/pre-commit` y `make setup` los activa c
 > depurando un hook que git nunca invoca. `make setup` usa
 > `pre-commit install --install-hooks` **solo** para poblar los entornos de los hooks;
 > la activación la hace `core.hooksPath`.
+
+---
+
+## Probar el worker y los correos
+
+El flujo de factura (PDF + correo) tiene tres dependencias que fallan en
+silencio: el binario `wkhtmltopdf`, el worker corriendo, y el backend de correo.
+Sin esto, el síntoma es siempre el mismo y engañoso: Huey reintenta tres veces y
+la factura queda con `email_sent=True` sin que haya salido nada de tu máquina.
+
+Este comando te dice **cuál** falta, antes de encolar nada:
+
+```bash
+# Chequeo previo: crea datos de prueba solo si todo lo demás está en su sitio
+python manage.py send_test_invoice --demo
+
+# Encolar para el worker (que corre aparte: ./run_huey.sh)
+python manage.py send_test_invoice --demo
+
+# Ejecutar en este proceso, sin levantar el worker
+python manage.py send_test_invoice --demo --now
+
+# Una factura que ya existe
+python manage.py send_test_invoice <uuid>
+```
+
+> `wkhtmltopdf` no se instala con `pip`: es una dependencia del sistema. En
+> Debian/Ubuntu, `sudo apt install wkhtmltopdf`. `pdfkit` es solo un wrapper; sin
+> el binario, la tarea muere *antes* de enviar el correo.
+
+### Ver el correo, no un "enviado" falso
+
+El backend por defecto en desarrollo es `console`: imprime el mensaje y devuelve
+éxito igual, así que `email_sent=True` no significa que el correo haya salido. Para
+verlo de verdad, poné en tu `.env`:
+
+```dotenv
+EMAIL_BACKEND=django.core.mail.backends.filebased.EmailBackend
+```
+
+Cada correo queda como archivo en `tmp/emails/` (ignorado por git, porque lleva
+datos de clientes). Para cambiar la ruta: `EMAIL_FILE_PATH=...`.
+
+Con SMTP real usá las variables de producción y el `EMAIL_BACKEND` de Django que
+corresponda. `dev` acepta cualquiera; `production` rechaza `console`, `filebased` y
+`locmem` (los tres aceptan el mensaje y lo descartan) y te pide regenerar el `.env`
+con `python scripts/generate_env.py --production`.
 
 ---
 
