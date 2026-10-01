@@ -8,7 +8,7 @@ social-media links — out of scope — so we assert the *file anchor* does not
 use ``target="_blank"`` rather than the whole page.
 """
 
-import base64
+import io
 import tempfile
 from datetime import date
 
@@ -16,15 +16,31 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from apps.publications.models import Author, ScientificPublication
 
 User = get_user_model()
 
 PDF_BYTES = b'%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF'
-PNG_BYTES = base64.b64decode(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-)
+
+
+def _png_1x1():
+    """Devuelve los bytes de un PNG 1x1 generado por Pillow, no un literal.
+
+    El literal base64 que estaba aca antes estaba corrupto: despues del chunk
+    IDAT, el decoder leia una longitud de 2 GiB y un tipo de chunk
+    ``b'\x00\x00IE'`` en lugar de IEND. ``Image.open()`` es perezoso y solo lee
+    la cabecera, asi que los bytes malos pasaban inadvertidos en los tests que
+    solo guardan el archivo. Generar los bytes elimina de raiz la clase de bug
+    "alguien tipo mal el base64".
+    """
+    buffer = io.BytesIO()
+    Image.new('RGB', (1, 1), (200, 200, 200)).save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
+PNG_BYTES = _png_1x1()
 
 
 def assert_file_anchor_not_blank_tab(test_case, content, file_url):
