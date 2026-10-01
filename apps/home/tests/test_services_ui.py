@@ -946,18 +946,19 @@ class ServiceReRequestUiTests(TestCase):
         self.assertIn('activa hasta', html)
         self.assertNotIn('Ya tienes una solicitud o suscripción para este servicio.', html)
 
-    def test_in_flight_hides_form_and_button(self):
+    def test_in_flight_still_shows_form(self):
+        """B1: una solicitud en vuelo avisa pero no oculta el formulario."""
         self._make_sub(payment_status='requested', payment_method='transfer')
         self._login()
         html = self.client.get(self._detail_url()).content.decode()
-        self.assertNotIn('id="subscription-form"', html)
+        self.assertIn('id="subscription-form"', html)
         self.assertIn('Ya has solicitado este servicio. Estamos procesando tu solicitud.', html)
 
-    def test_in_flight_pending_hides_form(self):
+    def test_in_flight_pending_still_shows_form(self):
         self._make_sub(payment_status='pending', payment_method='transfer')
         self._login()
         html = self.client.get(self._detail_url()).content.decode()
-        self.assertNotIn('id="subscription-form"', html)
+        self.assertIn('id="subscription-form"', html)
 
     def test_public_list_active_shows_state_neutral_card(self):
         # REQ-06: el catálogo es neutral al estado; sin ribbon ni re-solicitud.

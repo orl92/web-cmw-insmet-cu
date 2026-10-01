@@ -149,17 +149,6 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         customer = self.request.user.commercial_customer
-        existing = (
-            ServiceSubscription.objects.filter(customer=customer, service=self.service)
-            .filter(payment_status__in=['requested', 'pending'])
-            .first()
-        )
-        if existing:
-            messages.warning(
-                self.request, 'Ya tienes una solicitud o suscripción para este servicio.'
-            )
-            return redirect('home:services_commercial_detail', uuid=self.service.uuid)
-
         start_date = form.cleaned_data['start_date']
         quantity = form.cleaned_data['quantity']
         end_date = Service.compute_end_date(start_date, quantity, self.service.service_category)

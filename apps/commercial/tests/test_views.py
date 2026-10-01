@@ -1348,7 +1348,8 @@ class ServiceReRequestTests(TestCase):
         self.assertEqual(paid.payment_status, 'paid')
         self.assertEqual(paid.end_date, paid_end)
 
-    def test_form_valid_blocked_with_requested_sub(self):
+    def test_form_valid_with_requested_sub_still_creates_second_row(self):
+        """B1: una solicitud en vuelo no bloquea pedir el servicio otra vez."""
         self.client.force_login(self.customer.user)
         ServiceSubscription.objects.create(
             customer=self.customer,
@@ -1361,17 +1362,16 @@ class ServiceReRequestTests(TestCase):
             customer=self.customer, service=self.service
         ).count()
         response = self._post_request()
-        msgs = [str(m) for m in get_messages(response.wsgi_request)]
         self.assertEqual(
             ServiceSubscription.objects.filter(
                 customer=self.customer, service=self.service
             ).count(),
-            count_before,
+            count_before + 1,
         )
-        self.assertIn('Ya tienes una solicitud o suscripción para este servicio.', msgs)
-        self.assertRedirects(response, self.url)
+        self.assertEqual(response.status_code, 302)
 
-    def test_form_valid_blocked_with_pending_sub(self):
+    def test_form_valid_with_pending_sub_still_creates_second_row(self):
+        """B1: tampoco una factura pendiente de pago impide una nueva solicitud."""
         self.client.force_login(self.customer.user)
         ServiceSubscription.objects.create(
             customer=self.customer,
@@ -1384,15 +1384,13 @@ class ServiceReRequestTests(TestCase):
             customer=self.customer, service=self.service
         ).count()
         response = self._post_request()
-        msgs = [str(m) for m in get_messages(response.wsgi_request)]
         self.assertEqual(
             ServiceSubscription.objects.filter(
                 customer=self.customer, service=self.service
             ).count(),
-            count_before,
+            count_before + 1,
         )
-        self.assertIn('Ya tienes una solicitud o suscripción para este servicio.', msgs)
-        self.assertRedirects(response, self.url)
+        self.assertEqual(response.status_code, 302)
 
 
 class ResendCertificateOwnerAccessTests(TestCase):
