@@ -1,7 +1,5 @@
 from datetime import timedelta
-from pathlib import Path
 
-from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.test import RequestFactory, TestCase
@@ -326,24 +324,67 @@ class TaskMonitoringViewTests(TestCase):
         self.assertIn('Argumentos', content)
         self.assertIn('secreto-1', content)
 
-    def test_empty_state_row_matches_the_column_count(self):
-        """La fila de vacío declara exactamente tantas columnas como la tabla.
+    def test_partial_never_renders_a_colspan_empty_row(self):
+        """El template NO debe renderizar una fila de "no hay nada" con colspan.
 
-        Pasarle tal cual a DataTables un <td colspan="N"> con N distinto del
-        número de <th> produce el aviso 'Requested unknown parameter N-1 for
-        row 0, column N-1' y deja la tabla a medio construir. El JS descarta
-        la fila por número de celdas, pero el HTML tampoco debe mentir.
+        DataTables mapea celdas por posición: si al tbody le llega una fila con
+        un único <td colspan="N"> para una tabla de N columnas, se queja con
+        "Requested unknown parameter '1' for row 0, column 1" y deja la tabla a
+        medio construir. Pasaba en la carga inicial y en cada filtro sin
+        resultados. El estado vacío lo pinta DataTables (language.emptyTable),
+        no el template: por eso la fila no se renderiza nunca.
         """
         self.client.force_login(self.superuser)
-        content = self.client.get(self.url).content.decode()
-        tabla = content.split('<table id="tasks-table"', 1)[1].split('</table>', 1)[0]
 
-        columnas = tabla.split('<thead>', 1)[1].split('</thead>', 1)[0].count('<th')
-        self.assertEqual(columnas, 8)
-        self.assertIn('<td colspan="8"', tabla)
-        # Y el filtro por número de celdas del JS sigue presente.
-        js = Path(settings.BASE_DIR) / 'static' / 'dist' / 'js' / 'tasks-monitor.js'
-        self.assertIn('columnCount', js.read_text())
+        def assert_sin_fila_vacia(params):
+            content = self.client.get(self.url, params).content.decode()
+            tabla = content.split('<table id="tasks-table"', 1)[1].split('</table>', 1)[0]
+            self.assertNotIn('colspan', tabla)
+            # Solo filas reales: el trozo tras el último </tr> es whitespace.
+            for fila in tabla.split('<tr')[1:]:
+                cuerpo = fila.split('</tr>', 1)[0]
+                if '<td' not in cuerpo:
+                    continue  # fila de encabezado
+                celdas = cuerpo.count('<td')
+                self.assertEqual(celdas, 8, f'fila con {celdas} celdas, se esperaban 8')
+
+        assert_sin_fila_vacia({})  # sin registros
+        assert_sin_fila_vacia({'status': 'ERROR'})  # filtro sin resultados
+
+        # Con filas reales tampoco aparece ninguna fila decolspan.
+        TaskExecutionLog.objects.create(
+            task_id='cols-1', task_name='send_email_task', status='SUCCESS'
+        )
+        assert_sin_fila_vacia({})
+
+    def test_filter_buttons_are_marked_and_ready_for_ajax(self):
+        """Los botones de filtro se interceptan por JS y marcan el activo.
+
+        Antes eran <a href> que recargaban la página entera, tirando el estado
+        del operador; ahora el JS los intercepta (data-tasks-filter) y marca
+        cuál está aplicado. Sin data-tasks-filter, el click recarga todo y el
+        atributo falta.
+        """
+        self.client.force_login(self.superuser)
+        for status in (None, 'ERROR', 'ENQUEUED'):
+            params = {'status': status} if status else {}
+            content = self.client.get(self.url, params).content.decode()
+            self.assertEqual(content.count('data-tasks-filter'), 3)
+            # Solo uno de los tres lleva la clase active, y el marcado depende
+            # del filtro pedido, no de un valor fijo.
+            activos = (
+                content.count('btn-outline-secondary active')
+                + content.count('btn-outline-danger active')
+                + content.count('btn-outline-info active')
+            )
+            self.assertEqual(activos, 1, f'activos={activos} para status={status!r}')
+
+    def test_active_filter_is_exposed_to_the_template(self):
+        """La vista expone current_status para pintar el filtro aplicado."""
+        TaskExecutionLog.objects.create(task_id='st-1', task_name='send_email_task', status='ERROR')
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url, {'status': 'ERROR'})
+        self.assertEqual(response.context['current_status'], 'ERROR')
 
     def test_retry_form_lives_inside_the_row_it_belongs_to(self):
         """El form de reintento viaja dentro de su <td>.

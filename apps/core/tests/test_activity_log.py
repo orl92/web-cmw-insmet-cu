@@ -141,6 +141,29 @@ class ActivityLogViewTests(TestCase):
         self.assertContains(response, 'Registro creado por superuser')
         self.assertNotContains(response, '<html')
 
+    def test_partial_never_renders_a_colspan_empty_row(self):
+        """El partial sin resultados no debe renderizar una fila con colspan.
+
+        Es el mismo bug que se veía en el monitoreo de tareas: DataTables mapea
+        celdas por posición, así que un único <td colspan="6"> en una tabla de 6
+        columnas dispara "Requested unknown parameter '1' for row 0, column 1"
+        y rompe la tabla justo cuando el operador filtra y no encuentra nada.
+        """
+        self.client.force_login(self.superuser)
+        ActivityLog.objects.all().delete()
+        response = self.client.get(reverse('core:activity_log'), {'partial': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'colspan')
+        # Y con filas reales tampoco hay ninguna fila decolspan.
+        ActivityLog.objects.create(
+            user=self.superuser,
+            action_flag=1,
+            object_repr='x',
+            message='prueba',
+        )
+        response = self.client.get(reverse('core:activity_log'), {'partial': '1'})
+        self.assertNotContains(response, 'colspan')
+
     def test_partial_applies_picker_date_filters(self):
         self.client.force_login(self.superuser)
         response = self.client.get(

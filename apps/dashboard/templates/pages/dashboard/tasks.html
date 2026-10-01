@@ -9,7 +9,9 @@
     <div class="col-auto ms-auto d-print-none">
       <div class="btn-list">
         <a href="{% url 'dashboard:tasks' %}"
-           class="btn btn-icon btn-outline-secondary"
+           class="btn btn-icon btn-outline-secondary{% if not current_status %}
+                    active{% endif %}"
+           data-tasks-filter
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
            aria-label="Todos"
@@ -17,7 +19,9 @@
           <i class="icon ti ti-list"></i>
         </a>
         <a href="{% url 'dashboard:tasks' %}?status=ERROR"
-           class="btn btn-icon btn-outline-danger"
+           class="btn btn-icon btn-outline-danger{% if current_status == 'ERROR' %}
+                    active{% endif %}"
+           data-tasks-filter
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
            aria-label="Errores"
@@ -25,7 +29,9 @@
           <i class="icon ti ti-alert-triangle"></i>
         </a>
         <a href="{% url 'dashboard:tasks' %}?status=ENQUEUED"
-           class="btn btn-icon btn-outline-info"
+           class="btn btn-icon btn-outline-info{% if current_status == 'ENQUEUED' %}
+                    active{% endif %}"
+           data-tasks-filter
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
            aria-label="En cola"

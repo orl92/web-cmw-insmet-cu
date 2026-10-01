@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var table = new DataTable('#tasks-table', {
     processing: true,
     language: {
-      url: tableEl.getAttribute('data-language-url') || ''
+      url: tableEl.getAttribute('data-language-url') || '',
+      emptyTable: 'No hay tareas registradas.'
     }
   });
   // La auditoría busca la instancia acá (window.dataTableInstances); se deja
@@ -35,7 +36,6 @@ document.addEventListener('DOMContentLoaded', function () {
   window.dataTableInstances[tableEl.id] = table;
 
   var baseUrl = tableEl.getAttribute('data-refresh-url') || window.location.pathname;
-  var columnCount = tableEl.querySelectorAll('thead th').length;
   var interacting = false;
   var idleTimer = null;
   var stopped = false;
@@ -96,56 +96,60 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   }
 
-  function refreshTable() {
-    var params = currentParams();
-    params.set('partial', '1');
-    var url = baseUrl + '?' + params.toString();
+  // Un solo camino para meter un partial en la tabla. Lo usan el polling y los
+  // botones de filtro: si cada uno tuviera el suyo, se desincronizarían (el
+  // forgotó los modales, el otro olvidó resetear la huella, etc.).
+  function applyPartial(doc) {
+    var newTbody = doc.querySelector('tbody');
+    if (!newTbody) return;
 
+    var rows = Array.prototype.map.call(newTbody.querySelectorAll('tr'), function (tr) {
+      return Array.prototype.map.call(tr.querySelectorAll('td'), function (td) {
+        return td.innerHTML;
+      });
+    });
+
+    table.clear();
+    table.rows.add(rows);
+    table.draw();
+
+    // El form de reintento se renderiza DENTRO del <td> de acciones, así que
+    // viaja con la fila cuando DataTables hace cell.innerHTML: el botón
+    // `form="retry-N"` siempre encuentra su form. Por eso no hace falta
+    // sincronizar forms aparte.
+    //
+    // Los modales de traceback sí viven fuera del tbody, en un contenedor
+    // aparte: sin repoblarlos, una fila que pasa a ERROR con la página abierta
+    // tendría su botón apuntando a un modal inexistente.
+    syncTracebackModals(doc);
+    reiniciarTooltips();
+  }
+
+  // Devuelve `true` si el partial se aplicó, `false` si falló. Un solo punto de
+  // captura para los dos caminos: el polling solo necesita que no se rompa, pero
+  // los filtros SÍ necesitan saber si el cuerpo llegó antes de cambiar la URL —
+  // si no, la barra de direcciones anunciaría un filtro que la tabla nunca llegó a
+  // mostrar.
+  function fetchPartial(url, errorMessage) {
     return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(function (response) {
-        if (!response.ok) throw new Error('Error al refrescar la tabla');
+        if (!response.ok) throw new Error(errorMessage);
         return response.text();
       })
       .then(function (html) {
-        var doc = new DOMParser().parseFromString(html, 'text/html');
-        var newTbody = doc.querySelector('tbody');
-        if (!newTbody) return;
-
-        var filas = Array.prototype.filter.call(
-          newTbody.querySelectorAll('tr'),
-          function (tr) {
-            // La fila de "no hay tareas" es un único <td colspan="N">. Si se
-            // pasa tal cual, DataTables recibe una fila de 1 celda para N
-            // columnas y protesta ('Requested unknown parameter'); el estado
-            // vacío lo pinta el propio DataTables.
-            return tr.querySelectorAll('td').length === columnCount;
-          }
-        );
-
-        var rows = Array.prototype.map.call(filas, function (tr) {
-          return Array.prototype.map.call(tr.querySelectorAll('td'), function (td) {
-            return td.innerHTML;
-          });
-        });
-
-        table.clear();
-        table.rows.add(rows);
-        table.draw();
-
-        // El form de reintento se renderiza DENTRO del <td> de acciones, así que
-        // viaja con la fila cuando DataTables hace cell.innerHTML: el botón
-        // `form="retry-N"` siempre encuentra su form. Por eso no hace falta
-        // sincronizar forms aparte.
-        //
-        // Los modales de traceback sí viven fuera del tbody, en un contenedor
-        // aparte: si el polling no los repuebla, una fila que pasa a ERROR con
-        // la página abierta tendría su botón apuntando a un modal inexistente.
-        syncTracebackModals(doc);
-        reiniciarTooltips();
+        applyPartial(new DOMParser().parseFromString(html, 'text/html'));
+        return true;
       })
       .catch(function (err) {
-        console.warn('[tasks-monitor] No se pudo refrescar la tabla:', err);
+        console.warn('[tasks-monitor]', err);
+        return false;
       });
+  }
+
+  function refreshTable() {
+    var params = currentParams();
+    params.set('partial', '1');
+    return fetchPartial(baseUrl + '?' + params.toString(), 'Error al refrescar la tabla');
   }
 
   // El ciclo: primero la huella barata, y solo si cambió, la tabla.
@@ -170,6 +174,47 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     });
   }
+
+  // Los botones de filtro (Todos / Errores / En cola) cambian la tabla sin
+  // recargar la página. Antes eran <a href> que recargaban todo, y en una tabla
+  // que se refresca sola eso tiraba el estado del operador a la basura.
+  function marcarFiltroActivo(url) {
+    var status = new URL(url, window.location.origin).searchParams.get('status') || '';
+    document.querySelectorAll('[data-tasks-filter]').forEach(function (link) {
+      var suyo = new URL(link.href, window.location.origin).searchParams.get('status') || '';
+      link.classList.toggle('active', suyo === status);
+    });
+  }
+
+  function aplicarFiltro(url) {
+    var destino = new URL(url, window.location.origin);
+    destino.searchParams.set('partial', '1');
+
+    return fetchPartial(destino.toString(), 'Error al filtrar las tareas').then(function (ok) {
+      if (!ok) return;
+      // La URL se actualiza para que recargar o compartir la página conserve el
+      // filtro, y para que el polling siga leyendo los params actuales.
+      window.history.pushState({}, '', url);
+      marcarFiltroActivo(url);
+      // La línea base de la huella es la del filtro nuevo: sin resetearla, la
+      // próxima pasada vería un token distinto y descargaría la tabla dos
+      // veces seguidas.
+      lastToken = null;
+    });
+  }
+
+  document.querySelectorAll('[data-tasks-filter]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      aplicarFiltro(link.getAttribute('href'));
+    });
+  });
+
+  // Volver atrás (o adelante) debe pintar la tabla, no dejarla mintiendo: la
+  // URL ya cambió sola, así que hay que volver a pedir el partial.
+  window.addEventListener('popstate', function () {
+    aplicarFiltro(window.location.pathname + window.location.search);
+  });
 
   // Los modales de traceback dependen del estado de cada fila, así que también
   // se refrescan. Solo corresponde cuando no hay ninguno abierto (shouldSkip ya

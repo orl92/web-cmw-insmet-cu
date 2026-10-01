@@ -504,6 +504,10 @@ class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 'segment': 'task_monitoring',
                 'executions': executions,
                 'status_choices': TaskExecutionLog.STATUS_CHOICES,
+                # Para marcar qué botón de filtro está aplicado: sin esto, el
+                # operador no tiene forma de saber qué está viendo después de
+                # filtrar, porque el filtro ya no recarga la página.
+                'current_status': self.request.GET.get('status', ''),
                 'stale_threshold_minutes': stale_threshold_minutes,
                 'stale_count': stale_count,
                 'error_count': error_count,
