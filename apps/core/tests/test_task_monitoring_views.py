@@ -1,5 +1,7 @@
 from datetime import timedelta
+from pathlib import Path
 
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.test import RequestFactory, TestCase
@@ -90,7 +92,7 @@ class TaskMonitoringViewTests(TestCase):
         self.assertIn('badge bg-info-lt', content)
 
     def test_actions_use_icons_and_tooltips(self):
-        """ "Acciones con iconos + tooltips y args truncadas (estilo listados)."""
+        """ "Acciones con iconos + tooltips; los args viven en el modal."""
         long_args = 'arg1=' + 'x' * 200
         TaskExecutionLog.objects.create(
             task_id='err-icon-1',
@@ -112,9 +114,13 @@ class TaskMonitoringViewTests(TestCase):
         self.assertIn('ti-code', content)
         self.assertIn('ti-refresh', content)
         self.assertIn('ti-trash', content)
-        # Args truncadas: el texto NO muestra los 200 chars pero el title sí.
-        self.assertNotIn(long_args + '</td>', content)
-        self.assertIn('title="' + long_args.replace('"', '&quot;') + '"', content)
+        # Args: fuera de la tabla, dentro del modal de traceback y sin truncar
+        # (antes iban en una <td> con title=; ahora el <code> del modal).
+        tabla = content.split('data-tasks-modals')[0]
+        self.assertNotIn(long_args, tabla)
+        self.assertNotIn('<th>Args</th>', content)
+        self.assertIn(long_args, content)
+        self.assertIn('Argumentos', content)
 
     def test_delete_uses_confirm_modal(self):
         """ "Eliminar" abre el modal de confirmación (estilo listados)."""
@@ -235,6 +241,133 @@ class TaskMonitoringViewTests(TestCase):
         content = self.client.get(self.url, {'partial': '1', 'status': 'ERROR'}).content.decode()
         self.assertIn('correo-err', content)
         self.assertNotIn('correo-ok', content)
+
+    def test_fingerprint_is_stable_until_something_changes(self):
+        """La sonda solo cambia cuando cambia algo que la tabla muestra."""
+        TaskExecutionLog.objects.create(
+            task_id='fp-1',
+            task_name='send_email_task',
+            status=TaskExecutionLog.STATUS_ENQUEUED,
+            summary='Factura A',
+        )
+        self.client.force_login(self.superuser)
+
+        def token():
+            response = self.client.get(self.url, {'fingerprint': '1'})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'application/json')
+            return response.json()['token']
+
+        primero = token()
+        self.assertEqual(
+            token(),
+            primero,
+            'sin cambios en la tabla, la huella debe ser idéntica',
+        )
+
+        # Un cambio de estado es exactamente lo que tiene que moverla.
+        TaskExecutionLog.objects.filter(task_id='fp-1').update(status='SUCCESS')
+        self.assertNotEqual(token(), primero)
+
+        # Y una fila nueva también.
+        antes_de_agregar = token()
+        TaskExecutionLog.objects.create(
+            task_id='fp-2', task_name='send_email_task', status='SUCCESS'
+        )
+        self.assertNotEqual(token(), antes_de_agregar)
+
+    def test_fingerprint_does_not_render_a_template(self):
+        """La sonda es una respuesta de API, no una página."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url, {'fingerprint': '1'})
+        self.assertNotIn(b'<table', response.content)
+        self.assertNotIn(b'<html', response.content.lower())
+
+    def test_fingerprint_respects_status_filter(self):
+        """Con un filtro activo, la huella cubre solo lo que se ve."""
+        TaskExecutionLog.objects.create(
+            task_id='fp-ok', task_name='send_email_task', status='SUCCESS'
+        )
+        error = TaskExecutionLog.objects.create(
+            task_id='fp-err', task_name='send_email_task', status='ERROR'
+        )
+        self.client.force_login(self.superuser)
+
+        def token(**params):
+            params['fingerprint'] = '1'
+            return self.client.get(self.url, params).json()['token']
+
+        solo_error = token(status='ERROR')
+        # Tocar una fila que NO está en el filtro no debe mover la huella.
+        TaskExecutionLog.objects.filter(task_id='fp-ok').update(attempts=7)
+        self.assertEqual(token(status='ERROR'), solo_error)
+        # Tocar una que sí está en el filtro, sí.
+        TaskExecutionLog.objects.filter(pk=error.pk).update(attempts=2)
+        self.assertNotEqual(token(status='ERROR'), solo_error)
+
+    def test_args_column_removed_and_moved_to_modal(self):
+        """La columna Args se fue de la tabla (no aportaba) al modal."""
+        TaskExecutionLog.objects.create(
+            task_id='args-1',
+            task_name='generate_invoice_pdf_and_email_task',
+            status=TaskExecutionLog.STATUS_ERROR,
+            enqueued_at=timezone.now(),
+            traceback='Traceback (most recent call last): ...',
+            func_name='apps.core.tasks.generate_invoice_pdf_and_email_task',
+            func_args='{"args": ["secreto-1", "http://x"], "kwargs": {}}',
+            args_repr='args=(secreto-1, http://x)',
+        )
+        self.client.force_login(self.superuser)
+        content = self.client.get(self.url).content.decode()
+
+        # Fuera de la tabla: el <th> ya no existe.
+        self.assertNotIn('<th>Args</th>', content)
+        # Pero el dato no se perdió: sigue disponible en el modal de traceback.
+        self.assertIn('Argumentos', content)
+        self.assertIn('secreto-1', content)
+
+    def test_empty_state_row_matches_the_column_count(self):
+        """La fila de vacío declara exactamente tantas columnas como la tabla.
+
+        Pasarle tal cual a DataTables un <td colspan="N"> con N distinto del
+        número de <th> produce el aviso 'Requested unknown parameter N-1 for
+        row 0, column N-1' y deja la tabla a medio construir. El JS descarta
+        la fila por número de celdas, pero el HTML tampoco debe mentir.
+        """
+        self.client.force_login(self.superuser)
+        content = self.client.get(self.url).content.decode()
+        tabla = content.split('<table id="tasks-table"', 1)[1].split('</table>', 1)[0]
+
+        columnas = tabla.split('<thead>', 1)[1].split('</thead>', 1)[0].count('<th')
+        self.assertEqual(columnas, 8)
+        self.assertIn('<td colspan="8"', tabla)
+        # Y el filtro por número de celdas del JS sigue presente.
+        js = Path(settings.BASE_DIR) / 'static' / 'dist' / 'js' / 'tasks-monitor.js'
+        self.assertIn('columnCount', js.read_text())
+
+    def test_retry_form_lives_inside_the_row_it_belongs_to(self):
+        """El form de reintento viaja dentro de su <td>.
+
+        El botón usa `form="retry-N"` en vez de un <form> anidado, pero el form
+        sí se renderiza dentro de la celda de acciones. Eso es lo que permite
+        que el polling no tenga que sincronizar forms aparte: al repoblar con
+        `cell.innerHTML`, el form viaja con la fila y la asociación por id sigue
+        siendo válida. Si alguien mueve el form fuera del <td>, este test falla.
+        """
+        log = TaskExecutionLog.objects.create(
+            task_id='retry-form-1',
+            task_name='generate_invoice_pdf_and_email_task',
+            status=TaskExecutionLog.STATUS_ERROR,
+            enqueued_at=timezone.now(),
+            func_name='apps.core.tasks.generate_invoice_pdf_and_email_task',
+            func_args='{}',
+        )
+        self.client.force_login(self.superuser)
+        content = self.client.get(self.url).content.decode()
+
+        fila = content.split(f'data-bs-target="#tb-{log.pk}"', 1)[1].split('</tr>', 1)[0]
+        self.assertIn(f'form="retry-{log.pk}"', fila)
+        self.assertIn(f'<form id="retry-{log.pk}"', fila)
 
     def test_auto_refresh_is_wired(self):
         """La página carga el JS del polling y la tabla trae su URL de refresco."""

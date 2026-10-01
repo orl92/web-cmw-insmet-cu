@@ -1,14 +1,19 @@
-// Auto-refresco de la tabla de tareas: recarga solo las filas cada pocos
-// segundos, para que se vea el progreso del worker sin refrescar la página.
+// Auto-refresco de la tabla de tareas: el operador ve el progreso del worker
+// sin recargar la página.
 //
-// Dos decisiones que no son obvias y conviene no romper:
+// Tres decisiones que no son obvias y conviene no romper:
 //
-// 1. Se recarga el `tbody` vía un partial (?partial=1) y se repuebla la
+// 1. Se sondea una huella (?fingerprint=1), no la tabla. La huella es un token
+//    barato; la tabla entera solo se descarga y se repinta cuando el token se
+//    movió. Preguntar "¿cambió algo?" cada 5s es barato; renderizar el partial
+//    completo cada 5s para reemplazar filas idénticas es trabajo tirado.
+//
+// 2. Se recarga el `tbody` vía un partial (?partial=1) y se repuebla la
 //    instancia de DataTables existente, igual que la auditoría. Redibujar la
 //    tabla entera perdería el orden, la búsqueda y la paginación del operador
 //    en cada pasada.
 //
-// 2. El polling se pausa si el operador está interactuando: ordenando una
+// 3. El polling se pausa si el operador está interactuando: ordenando una
 //    columna, escribiendo en la búsqueda, o con el traceback abierto. Pisar la
 //    tabla en ese momento borra justo lo que la persona está por mirar. Vuelve
 //    solo cuando la tabla queda quieta de nuevo.
@@ -30,9 +35,11 @@ document.addEventListener('DOMContentLoaded', function () {
   window.dataTableInstances[tableEl.id] = table;
 
   var baseUrl = tableEl.getAttribute('data-refresh-url') || window.location.pathname;
+  var columnCount = tableEl.querySelectorAll('thead th').length;
   var interacting = false;
   var idleTimer = null;
   var stopped = false;
+  var lastToken = null;
 
   function markInteracting() {
     interacting = true;
@@ -59,16 +66,42 @@ document.addEventListener('DOMContentLoaded', function () {
     return false;
   }
 
-  function refreshTable() {
-    if (stopped) return;
-    if (shouldSkip()) return;
-    if (document.hidden) return;
-
+  function currentParams() {
     var params = new URLSearchParams(window.location.search);
+    return params;
+  }
+
+  // Sondeo barato: solo devuelve un token, no renderiza la página.
+  function pollFingerprint() {
+    if (stopped) return Promise.resolve(null);
+    if (document.hidden) return Promise.resolve(null);
+    var params = currentParams();
+    params.set('fingerprint', '1');
+
+    return fetch(baseUrl + '?' + params.toString(), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error('Error al consultar el estado');
+        return response.json();
+      })
+      .then(function (data) {
+        return data.token || null;
+      })
+      .catch(function (err) {
+        // Un fallo puntual de red no debe romper el polling: el siguiente ciclo
+        // reintenta solo. Se registra, no interrumpe.
+        console.warn('[tasks-monitor] No se pudo consultar la huella:', err);
+        return null;
+      });
+  }
+
+  function refreshTable() {
+    var params = currentParams();
     params.set('partial', '1');
     var url = baseUrl + '?' + params.toString();
 
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(function (response) {
         if (!response.ok) throw new Error('Error al refrescar la tabla');
         return response.text();
@@ -78,7 +111,18 @@ document.addEventListener('DOMContentLoaded', function () {
         var newTbody = doc.querySelector('tbody');
         if (!newTbody) return;
 
-        var rows = Array.prototype.map.call(newTbody.querySelectorAll('tr'), function (tr) {
+        var filas = Array.prototype.filter.call(
+          newTbody.querySelectorAll('tr'),
+          function (tr) {
+            // La fila de "no hay tareas" es un único <td colspan="N">. Si se
+            // pasa tal cual, DataTables recibe una fila de 1 celda para N
+            // columnas y protesta ('Requested unknown parameter'); el estado
+            // vacío lo pinta el propio DataTables.
+            return tr.querySelectorAll('td').length === columnCount;
+          }
+        );
+
+        var rows = Array.prototype.map.call(filas, function (tr) {
           return Array.prototype.map.call(tr.querySelectorAll('td'), function (td) {
             return td.innerHTML;
           });
@@ -88,29 +132,42 @@ document.addEventListener('DOMContentLoaded', function () {
         table.rows.add(rows);
         table.draw();
 
-        // Los formularios de reintento y los modales de traceback se
-        // renderizan en el partial, fuera del tbody. Si el polling no los
-        // repuebla, una fila que pasa a ERROR con la página abierta tendría su
-        // botón apuntando a un modal que no existe.
-        syncRetryForms(doc);
+        // El form de reintento se renderiza DENTRO del <td> de acciones, así que
+        // viaja con la fila cuando DataTables hace cell.innerHTML: el botón
+        // `form="retry-N"` siempre encuentra su form. Por eso no hace falta
+        // sincronizar forms aparte.
+        //
+        // Los modales de traceback sí viven fuera del tbody, en un contenedor
+        // aparte: si el polling no los repuebla, una fila que pasa a ERROR con
+        // la página abierta tendría su botón apuntando a un modal inexistente.
         syncTracebackModals(doc);
         reiniciarTooltips();
       })
       .catch(function (err) {
-        // Un fallo puntual de red no debe romper el polling: el próximo ciclo
-        // reintenta solo. Se registra, no interrumpe.
         console.warn('[tasks-monitor] No se pudo refrescar la tabla:', err);
       });
   }
 
-  // Los <form> de reintento se renderizan en el partial junto con la tabla. El
-  // polling los repuebla para que el botón no quede apuntando a un form viejo.
-  function syncRetryForms(doc) {
-    var nuevos = doc.querySelectorAll('form[id^="retry-"]');
-    if (!nuevos.length) return;
-    nuevos.forEach(function (form) {
-      var viejo = document.getElementById(form.id);
-      if (viejo) viejo.replaceWith(form);
+  // El ciclo: primero la huella barata, y solo si cambió, la tabla.
+  function tick() {
+    if (stopped) return;
+    // Mientras el operador está usando la tabla no se avanza ni el token: si
+    // se avanzara, el cambio se daría por visto sin haberse visto, y al
+    // retomar la poll no se pintaría nunca.
+    if (shouldSkip()) return;
+
+    pollFingerprint().then(function (token) {
+      if (token === null) return;
+      if (lastToken === null) {
+        // Primera pasada tras cargar la página: lo que hay en pantalla ya es
+        // lo último, así que no hay nada que descargar todavía.
+        lastToken = token;
+        return;
+      }
+      if (token === lastToken) return;
+      return refreshTable().then(function () {
+        lastToken = token;
+      });
     });
   }
 
@@ -150,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.target.matches('.dt-search input')) markInteracting();
   });
 
-  var interval = setInterval(refreshTable, POLL_MS);
+  var interval = setInterval(tick, POLL_MS);
   window.addEventListener('beforeunload', function () {
     stopped = true;
     clearInterval(interval);

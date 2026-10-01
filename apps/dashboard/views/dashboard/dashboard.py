@@ -1,3 +1,4 @@
+import hashlib
 import html
 import json
 import logging
@@ -9,6 +10,7 @@ from django.contrib.sessions.models import Session
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models import Count, Exists, OuterRef, Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.views.generic import TemplateView, View
@@ -428,11 +430,44 @@ def _paso_a_reintentar(execution, paso_pedido):
     return None
 
 
+def _tabla_fingerprint(qs):
+    """Token barato que cambia si y solo si cambia lo que la tabla muestra.
+
+    El cliente lo consulta cada pocos segundos y solo descarga y repinta la
+    tabla cuando el token se movió. Sin esto, estaríamos renderizando el
+    partial completo cada 5 segundos para reemplazar filas idénticas, que es
+    trabajo de servidor y red tirados a la basura.
+
+    El modelo no tiene `updated_at`, así que la huella se arma con los campos
+    que la tabla muestra de verdad: si ninguno cambió, la pantalla tampoco
+    tiene nada nuevo que pintar.
+    """
+    filas = list(
+        qs.values_list(
+            'pk',
+            'status',
+            'attempts',
+            'enqueued_at',
+            'started_at',
+            'finished_at',
+            'summary',
+        )
+    )
+    return hashlib.sha1(repr(filas).encode('utf-8')).hexdigest()[:16]
+
+
 class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'pages/dashboard/tasks.html'
+    max_rows = 500
 
     def test_func(self):
         return self.request.user.is_superuser
+
+    def get(self, request, *args, **kwargs):
+        # La sonda de "¿cambió algo?" no renderiza nada: responde un token.
+        if request.GET.get('fingerprint'):
+            return JsonResponse({'token': _tabla_fingerprint(self._queryset())})
+        return super().get(request, *args, **kwargs)
 
     def get_template_names(self):
         # El polling del cliente pide solo la tabla (?partial=1) para
@@ -442,17 +477,20 @@ class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return ['pages/dashboard/tasks_table.html']
         return [self.template_name]
 
+    def _queryset(self):
+        qs = TaskExecutionLog.objects.all()
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs[: self.max_rows]
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         now = timezone.now()
         stale_threshold_minutes = 5
 
-        qs = TaskExecutionLog.objects.all()
-        status_filter = self.request.GET.get('status')
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        executions = qs[:500]
-
+        qs = self._queryset()
+        executions = qs
         stale_count = TaskExecutionLog.objects.filter(
             status=TaskExecutionLog.STATUS_ENQUEUED,
             enqueued_at__lt=now - timezone.timedelta(minutes=stale_threshold_minutes),

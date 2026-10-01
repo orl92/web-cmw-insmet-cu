@@ -25,7 +25,6 @@
       <th>En cola</th>
       <th>Inicio</th>
       <th>Fin</th>
-      <th>Args</th>
       <th>Acciones</th>
     </tr>
   </thead>
@@ -59,11 +58,6 @@
         <td>{{ execution.enqueued_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
         <td>{{ execution.started_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
         <td>{{ execution.finished_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
-        <td class="text-muted text-truncate"
-            style="max-width:220px"
-            data-bs-toggle="tooltip"
-            data-bs-placement="bottom"
-            title="{{ execution.args_repr|default:'—' }}">{{ execution.args_repr|default:"—"|truncatechars:45 }}</td>
         <td class="text-nowrap">
           <div class="btn-list">
             {% if execution.status == 'ERROR' %}
@@ -112,7 +106,7 @@
       </tr>
     {% empty %}
       <tr>
-        <td colspan="9" class="text-center text-secondary py-4">No hay tareas registradas.</td>
+        <td colspan="8" class="text-center text-secondary py-4">No hay tareas registradas.</td>
       </tr>
     {% endfor %}
   </tbody>
@@ -131,8 +125,22 @@
                       aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
+              <dl class="row mb-3">
+                <dt class="col-sm-3">De quién es</dt>
+                <dd class="col-sm-9">
+                  {{ execution.summary|default:"—" }}
+                </dd>
+                <dt class="col-sm-3">Tarea</dt>
+                <dd class="col-sm-9">
+                  <code>{{ execution.func_name|default:"—" }}</code>
+                </dd>
+                <dt class="col-sm-3">Argumentos</dt>
+                <dd class="col-sm-9">
+                  <code>{{ execution.args_repr|default:"—" }}</code>
+                </dd>
+              </dl>
               <pre class="bg-dark text-light p-3 mb-0 rounded-2"
-                   style="max-height:60vh;
+                   style="max-height:50vh;
                           overflow:auto">{{ execution.traceback }}</pre>
             </div>
           </div>
