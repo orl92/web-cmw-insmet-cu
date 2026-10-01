@@ -9,7 +9,13 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
-from apps.core.validators import validate_account, validate_nit, validate_phones, validate_reeup
+from apps.core.validators import (
+    validate_account,
+    validate_image_upload,
+    validate_nit,
+    validate_phones,
+    validate_reeup,
+)
 
 
 class Customer(SoftDeleteModel):
@@ -125,7 +131,11 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
         upload_to=pdf_upload_path, blank=True, null=True, verbose_name='Archivo PDF'
     )
     image = models.ImageField(
-        upload_to=image_upload_path, blank=True, null=True, verbose_name='Imagen'
+        upload_to=image_upload_path,
+        blank=True,
+        null=True,
+        verbose_name='Imagen',
+        validators=[validate_image_upload],
     )
     code = models.CharField(
         max_length=50, unique=True, null=True, blank=True, verbose_name='Código del servicio'

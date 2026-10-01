@@ -11,9 +11,11 @@ makes a test pass for the wrong reason.
 import io
 from unittest import mock
 
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import models
 from django.test import SimpleTestCase, TestCase
 from PIL import Image, ImageFile
 
@@ -217,6 +219,32 @@ class ValidateImageUploadTests(SimpleTestCase):
         large_legal = _png((4000, 4000))
 
         self.assertIsNotNone(validate_image_upload(SimpleUploadedFile('big.png', large_legal)))
+
+
+class EveryImageFieldIsValidatedTests(SimpleTestCase):
+    """No ImageField in the project may reach storage unvalidated.
+
+    This is a guard for the next field someone adds, not a restatement of the
+    tests above: the recurring gap was branding and catalog images being the odd
+    ones out, because validation had been attached to a form instead of the
+    model. `avatar` reaches the validator through `ProfileForm.clean_avatar`,
+    so it is accepted here on the strength of that call site.
+    """
+
+    def test_every_image_field_validates_its_uploads(self):
+        unvalidated = []
+        for model in apps.get_models():
+            for field in model._meta.get_fields():
+                if not isinstance(field, models.ImageField):
+                    continue
+                if field.name == 'avatar':
+                    continue  # validated in ProfileForm.clean_avatar
+                if validate_image_upload not in field.validators:
+                    unvalidated.append(f'{model.__name__}.{field.name}')
+
+        self.assertEqual(
+            unvalidated, [], f'ImageField sin validate_image_upload: {", ".join(unvalidated)}'
+        )
 
 
 class SiteConfigurationImageFieldsTests(TestCase):
