@@ -153,25 +153,46 @@ def _cliente_label(customer):
     return nombre or user.email or customer.identity_document or 'sin identificar'
 
 
+# Los receivers de Huey viven en el `Signal` interno de la instancia, no en las
+# constantes de `huey.signals` (esas son solo strings). `ready()` se puede
+# invocar más de una vez en el mismo proceso —los tests lo hacen—, y cada llamada
+# volvería a conectar los cinco receivers sobre `config.huey.huey`, que es un
+# singleton. Sin esta bandera, un solo encolado ejecutaría el mismo receiver N
+# veces y el log de tareas acumularía intentos de más. Registrar una sola vez por
+# proceso es correcto: `config.huey` no se recarga en ningún momento (el perfil de
+# tests solo recarga `config.settings.base`).
+_TASK_SIGNALS_REGISTERED = False
+
+
 class CoreConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.core'
     verbose_name = 'Configuración'
 
-    def ready(self):
+    def ensure_media_root(self):
+        """Crea MEDIA_ROOT con `parents=True, exist_ok=True`.
+
+        Idempotente y sin estado: lee `settings.MEDIA_ROOT` en cada llamada, así que
+        los tests pueden apuntarlo a un temporal y restaurarlo después.
+        """
         from pathlib import Path
 
         from django.conf import settings
 
         Path(settings.MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
 
-        # Importar el módulo de tareas es lo que registra los `@huey.task()` en el
-        # TaskRegistry. Sin esto, el consumer de `run_huey.sh` y de
-        # `webcmp-huey.service` arranca sin ninguna tarea conocida y cada dequeue
-        # explota con `HueyException: <tarea> not found in TaskRegistry`: el worker
-        # queda vivo, pero jamás procesa nada. El proceso del consumer no importa
-        # vistas, así que nadie más lo hace por él.
-        from apps.core import tasks  # noqa: F401
+    def register_task_signals(self):
+        """Conecta los receivers que escriben `TaskExecutionLog` a las señales de Huey.
+
+        Idempotente: la primera llamada conecta los cinco receivers y las siguientes
+        son no-op (ver `_TASK_SIGNALS_REGISTERED`). Los bodies no cambian; solo se
+        movieron acá desde `ready()`.
+        """
+        global _TASK_SIGNALS_REGISTERED
+
+        if _TASK_SIGNALS_REGISTERED:
+            return
+
         from apps.core.models import TaskExecutionLog
 
         @huey.signal(huey_signals.SIGNAL_ENQUEUED)
@@ -264,3 +285,18 @@ class CoreConfig(AppConfig):
                 logger.error('Huey task %s failed: %s', task.name, exc)
             except Exception:
                 logger.exception('on_error: fallo al registrar el error de %s', task.id)
+
+        _TASK_SIGNALS_REGISTERED = True
+
+    def ready(self):
+        self.ensure_media_root()
+
+        # Importar el módulo de tareas es lo que registra los `@huey.task()` en el
+        # TaskRegistry. Sin esto, el consumer de `run_huey.sh` y de
+        # `webcmp-huey.service` arranca sin ninguna tarea conocida y cada dequeue
+        # explota con `HueyException: <tarea> not found in TaskRegistry`: el worker
+        # queda vivo, pero jamás procesa nada. El proceso del consumer no importa
+        # vistas, así que nadie más lo hace por él.
+        from apps.core import tasks  # noqa: F401
+
+        self.register_task_signals()
