@@ -143,8 +143,9 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 
 ## Restricciones
 
-- Nada de esto autoriza tocar el WIP del usuario en `requirements/`: el paso de
-  redis/whitenoise a `prod.txt` sigue sin commitear y es suyo.
+- `requirements/` ya no es WIP del usuario: `redis` y `whitenoise` pasaron a
+  `prod.txt` en el commit `534286b`, junto con el fix que impedía que un driver
+  ausente se convirtiera en un 500.
 - Las migraciones no se versionan en este repo.
 - Los datos reales de la BD (`admin`, `osniel`, factura `2026-0001`) no se tocan.
 - Nada de npm ni bundler; el frontend es JS vanilla.
@@ -178,12 +179,30 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 
 - [x] Diagnóstico completo de los tres problemas, con file:line.
 - [ ] A1, A2
-- [ ] B1, B2, B3, B4, B5, B6
-- [ ] C1, C2, C3, C4, C5
-- [ ] D1, D2, D3
+- [ ] B1, B2, B3, B5, B6
+- [x] B4 — commit `385c12a`
+- [x] C1, C2, C3, C4, C5 — commit `4b1dff5`
+- [ ] D1
+- [x] D2 — commits `0ce468a`…`1b644fc`
+- [ ] D3
 
-**Siguiente paso:** resolver las tres decisiones abiertas y arrancar por el
-bloque C, que es el que está doliendo en producción ahora mismo.
+**B4 cerrado.** La línea manual ya deriva `codigo`, `precio` y `unidad_medida`
+del `Service` en `clean()`, así que el POST no fija el precio; `cantidad` es
+required y editable, y la plantilla propone. `service_category` viaja al
+navegador porque la unidad no es elegible: sale de la categoría.
+
+**Un límite del modelo que conviene no olvidar:** el servidor calcula el
+vencimiento como `start + relativedelta(months=N)`, y eso no reproduce
+cualquier par (inicio, fin) — entre 01/01 y 31/01 no existe ningún N entero.
+La cantidad en meses que propone el navegador redondea contra el promedio real
+del año (mediana de 2 días de desvío), pero el residuo no baja de medio mes
+mientras el modelo acepte sólo meses enteros. Es una decisión de B2 pendiente:
+si el cliente elige inicio y fin, el servidor tendría que derivar la cantidad
+en vez de al revés.
+
+**Siguiente paso:** B1 y B5 son acotados y no dependen de las decisiones
+abiertas. B2 es el que decide el modelo de periodo y conviene hacerlo antes que
+B3, porque B3 alinea los formularios con lo que B2 defina.
 
 **Ruta prevista:** B y C tocan modelos, formularios, vistas y templates, así que
 van delegados a un escritor por bloque. D3 es documentación y va inline.
