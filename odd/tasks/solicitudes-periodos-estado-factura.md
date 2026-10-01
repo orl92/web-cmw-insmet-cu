@@ -149,8 +149,6 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 - Las migraciones no se versionan en este repo.
 - Los datos reales de la BD (`admin`, `osniel`, factura `2026-0001`) no se tocan.
 - Nada de npm ni bundler; el frontend es JS vanilla.
-- No borrar el guard de B1 sin borrar también los tests que lo exigen, o la
-  suite queda verde mintiendo.
 
 ## Criterios de aceptación
 
@@ -179,7 +177,7 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 
 - [x] Diagnóstico completo de los tres problemas, con file:line.
 - [ ] A1, A2
-- [ ] B1, B2, B3, B5, B6
+- [ ] B1, B2, B3, B5, B6 → B1 y B5 cerrados en `2a7dbad`
 - [x] B4 — commit `385c12a`
 - [x] C1, C2, C3, C4, C5 — commit `4b1dff5`
 - [ ] D1
@@ -200,9 +198,19 @@ mientras el modelo acepte sólo meses enteros. Es una decisión de B2 pendiente:
 si el cliente elige inicio y fin, el servidor tendría que derivar la cantidad
 en vez de al revés.
 
-**Siguiente paso:** B1 y B5 son acotados y no dependen de las decisiones
-abiertas. B2 es el que decide el modelo de periodo y conviene hacerlo antes que
-B3, porque B3 alinea los formularios con lo que B2 defina.
+**B1 cerrado.** El bloqueo de duplicados estaba en **dos** capas: `form_valid`
+descartaba el POST (`apps/home/views/servicios/comerciales/views.py:152`) y el
+template escondía el formulario (`service_detail.html:65`). Quitar solo una
+deja el comportamiento a medias, así que caerán las dos: el aviso queda
+informativo sobre lo ya solicitado y la vía de pedir sigue abierta. Los
+cuatro tests que afirmaban el bloqueo se reescribieron como afirmaciones del
+comportamiento nuevo, no se borraron.
+
+**B5 cerrado.** El listado de suscripciones perdió la columna Expiración y el
+badge Vencido que colgaba de ella. Ningún test dependía de esa columna.
+
+**Siguiente paso:** B2 es el que decide el modelo de periodo y conviene hacerlo
+antes que B3, porque B3 alinea los formularios con lo que B2 defina.
 
 **Ruta prevista:** B y C tocan modelos, formularios, vistas y templates, así que
 van delegados a un escritor por bloque. D3 es documentación y va inline.
