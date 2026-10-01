@@ -20,10 +20,10 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     STATUS_RIBBONS = {
-        'activo': 'bg-green',
-        'pendiente de pago': 'bg-orange',
+        'pagado': 'bg-green',
+        'pendiente': 'bg-orange',
         'solicitado': 'bg-blue',
-        'expirado': 'bg-red',
+        'cancelada': 'bg-red',
     }
 
     def get_queryset(self):

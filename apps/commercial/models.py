@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from apps.core.models import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
@@ -192,7 +192,6 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
         ('requested', 'Solicitado'),
         ('pending', 'Pendiente de pago'),
         ('paid', 'Pagado'),
-        ('expired', 'Expirado'),
     ]
     PAYMENT_METHOD_CHOICES = [
         ('qr', 'Pago por Código QR'),
@@ -254,14 +253,21 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
 
     @property
     def status_display(self):
-        if self.payment_status == 'paid' and self.end_date and self.end_date > timezone.now():
-            return 'activo'
-        elif self.payment_status == 'pending':
-            return 'pendiente de pago'
-        elif self.payment_status == 'requested':
-            return 'solicitado'
-        else:
-            return 'expirado'
+        """Estado único del ciclo de vida, para listados y exportaciones.
+
+        `cancelada` sale de la baja lógica (`record_active`), no de un valor
+        propio de `payment_status`: anular ya marca `record_active=False`, y
+        llevar el mismo dato en dos campos es la forma más directa de que
+        diverjan. Tampoco se mira `end_date`: una suscripción pagada que venció
+        estuvo pagada, y el periodo es un dato aparte, no un estado de pago.
+        """
+        if not self.record_active:
+            return 'cancelada'
+        return {
+            'requested': 'solicitado',
+            'pending': 'pendiente',
+            'paid': 'pagado',
+        }.get(self.payment_status, 'solicitado')
 
     def __str__(self):
         return f'{self.customer.company_name} - {self.service.title}'
@@ -279,6 +285,26 @@ class InvoiceQuerySet(models.QuerySet):
         al cliente sin botones de factura justo en esos casos.
         """
         return self.filter(Q(subscription=sub) | Q(items__subscription=sub)).distinct()
+
+    def with_display_status(self):
+        """Anota el conteo de líneas pagadas para no repetir la consulta por fila.
+
+        `Invoice.status_display` cae a las líneas cuando no encuentra estas
+        anotaciones, así que sin esto el listado pagaría una consulta por
+        factura.
+        """
+        return self.annotate(
+            items_total=Count(
+                'items__subscription',
+                distinct=True,
+                filter=Q(items__subscription__isnull=False),
+            ),
+            items_paid=Count(
+                'items__subscription',
+                distinct=True,
+                filter=Q(items__subscription__payment_status='paid'),
+            ),
+        )
 
 
 class Invoice(SoftDeleteModel, FileHandlerMixin):
@@ -360,6 +386,31 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
     def clean(self):
         if self.amount is not None and self.amount <= 0:
             raise ValidationError('El monto de la factura debe ser mayor que cero.')
+
+    @property
+    def status_display(self):
+        """Estado derivado: la fuente de verdad del pago es la suscripción.
+
+        No hay campo de estado en la factura a propósito. La facturación por
+        lote cubre varias suscripciones y cada una se aprueba por separado, así
+        que un campo propio sólo añadiría una segunda fuente de verdad capaz de
+        divergir de la real. Se lee de las líneas, o de las anotaciones que
+        deja `with_display_status()` cuando el listado ya las trajo.
+        """
+        if self.is_cancelled:
+            return 'cancelada'
+        if hasattr(self, 'items_total'):
+            total, paid = self.items_total, self.items_paid
+        else:
+            # `filter`, nunca `exclude`: `items` es una relación inversa, y
+            # excluir sobre una relación multi-valorada arma un subquery que
+            # termina descartando todas las líneas.
+            subs = self.items.filter(subscription__isnull=False).values_list(
+                'subscription__payment_status', flat=True
+            )
+            states = list(subs)
+            total, paid = len(states), states.count('paid')
+        return 'pagada' if total and paid == total else 'pendiente'
 
     def __str__(self):
         if self.subscription:

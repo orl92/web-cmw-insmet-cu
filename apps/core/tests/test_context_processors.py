@@ -62,10 +62,15 @@ class MenuNotificationsClientCountsTests(TestCase):
         self.assertEqual(context['client_pending_count'], 1)
         self.assertEqual(context['client_pending_actions'], 2)
 
-    def test_client_counts_distinguish_active_and_expired(self):
+    def test_client_active_count_only_covers_a_running_period(self):
+        """El contador de activas mira el periodo, no un estado 'expirado'.
+
+        Antes este test fabricaba `payment_status='expired'` a mano, un valor
+        que ninguna ruta de la aplicación escribe, sólo para alimentar un
+        contador que siempre daba 0 en producción.
+        """
         self._sub('paid')
-        self._sub('expired', end_date=timezone.now() - timedelta(days=1))
+        self._sub('paid', end_date=timezone.now() - timedelta(days=1))
         context = self._context()
         self.assertEqual(context['client_active_count'], 1)
-        self.assertEqual(context['client_expired_count'], 1)
         self.assertEqual(context['client_pending_actions'], 0)

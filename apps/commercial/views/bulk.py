@@ -193,7 +193,7 @@ class ServiceSubscriptionBulkActionView(BulkActionView):
     }
     csv_export_view_class = ServiceSubscriptionCSVExportView
     update_allowlist = {
-        'payment_status': ['requested', 'pending', 'paid', 'expired'],
+        'payment_status': ['requested', 'pending', 'paid'],
     }
 
 

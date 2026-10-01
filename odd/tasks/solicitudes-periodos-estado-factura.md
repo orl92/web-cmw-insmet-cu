@@ -180,7 +180,7 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 - [ ] B1, B2, B3, B5, B6 → B1 y B5 cerrados en `2a7dbad`
 - [x] B4 — commit `385c12a`
 - [x] C1, C2, C3, C4, C5 — commit `4b1dff5`
-- [ ] D1
+- [x] D1 — commit `7e36058`
 - [x] D2 — commits `0ce468a`…`1b644fc`
 - [ ] D3
 
@@ -208,6 +208,60 @@ comportamiento nuevo, no se borraron.
 
 **B5 cerrado.** El listado de suscripciones perdió la columna Expiración y el
 badge Vencido que colgaba de ella. Ningún test dependía de esa columna.
+
+**D1 cerrado.** La factura canónica de una suscripción se resuelve por línea
+(`InvoiceItem`) con `Invoice.objects.for_subscription()`, con el ancla
+`Invoice.subscription` como fallback para facturas de una sola suscripción. El
+comando `repair_invoice_subscriptions` reparó 2 facturas huérfanas y es
+idempotente.
+
+**Estados unificados (este bloque).** El estado de suscripción y el de factura
+son DERIVADOS, no campos nuevos:
+
+- `ServiceSubscription.status_display` devuelve `solicitado` / `pendiente` /
+  `pagado` / `cancelada`; `cancelada` deriva de `record_active=False` (baja
+  lógica) y no se duplica en `payment_status`.
+- `payment_status='expired'` era un estado muerto: ninguna ruta productiva lo
+  escribía, sólo los tests. Se eliminó de `PAYMENT_STATUS_CHOICES`.
+- `Invoice.status_display` devuelve `pagada` (tiene suscripciones y todas
+  `paid`), `cancelada` (`is_cancelled`) o `pendiente`. `InvoiceQuerySet
+  .with_display_status()` anota `items_total` / `items_paid` para que la columna
+  Estado no dispare una consulta por fila.
+- Los contadores y badges `expired` se eliminaron; `menu_notifications()` pasó
+  a agregados condicionales (una consulta por lado).
+- Los listados de suscripción y factura colapsan las columnas Pago/Registro en
+  una sola columna Estado.
+
+**Documentos acumulativos.** Antes la rama `is_active` del card de Home y la
+del listado mostraban sólo el certificado, así que la factura desaparecía
+justo cuando el cliente la necesitaba como respaldo. Ahora el botón de factura
+y el de certificado se renderizan por separado en ambos listados, con labels
+distinguibles (`Ver Factura` / `Ver Certificado`) en vez del ambiguo `Ver PDF`.
+El botón de factura del card de Home pasó a abrir el modal `data-pdf-*`.
+
+**Orden de acciones.** Editar y el botón destructivo quedan siempre al final de
+la fila; las acciones de estado (Facturar / Aprobar Pago / Regenerar) van
+primero.
+
+**Sobre `record_active` y la visibilidad de canceladas:** `SoftDeleteModel` no
+filtra en el manager, cada vista lo hace explícitamente. El listado staff de
+suscripciones NO filtra, así que las canceladas aparecen con el label
+`Cancelada`; el listado de Home del cliente sí filtra `record_active=True`, así
+que no se ven ahí. Esa asimetría es intencional y está cubierta por tests.
+
+**Verificación:** `python manage.py test` → 1058 tests OK. `ruff check apps
+templates` limpio. La aserción de no-N+1 compara el conteo de consultas entre
+un listado de 1 y de 4 facturas (en vez de fijar un número absoluto, porque el
+layout y los context processors aportan consultas fijas).
+
+**Pendiente de esta etapa:** nada de esta etapa quedó pendiente; B2/B3 (rediseño
+de formularios) siguen abiertos y son el siguiente bloque.
+
+**Siguiente paso:** B2 es el que decide el modelo de periodo y conviene hacerlo
+antes que B3, porque B3 alinea los formularios con lo que B2 defina.
+
+**Ruta prevista:** B y C tocan modelos, formularios, vistas y templates, así que
+van delegados a un escritor por bloque. D3 es documentación y va inline.
 
 **Siguiente paso:** B2 es el que decide el modelo de periodo y conviene hacerlo
 antes que B3, porque B3 alinea los formularios con lo que B2 defina.

@@ -17,6 +17,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.test_views import disable_maintenance_mode
 from apps.core.tests.base import FileHandlingTestCase
 
 
@@ -391,7 +392,7 @@ class ServiceSubscriptionModelTests(TestCase):
             payment_status='paid',
         )
         self.assertTrue(sub.is_active)
-        self.assertEqual(sub.status_display, 'activo')
+        self.assertEqual(sub.status_display, 'pagado')
 
     def test_is_active_expired(self):
         past = timezone.now() - timedelta(days=1)
@@ -412,9 +413,52 @@ class ServiceSubscriptionModelTests(TestCase):
         )
         self.assertEqual(sub.status_display, 'solicitado')
         sub.payment_status = 'pending'
-        self.assertEqual(sub.status_display, 'pendiente de pago')
-        sub.payment_status = 'expired'
-        self.assertEqual(sub.status_display, 'expirado')
+        self.assertEqual(sub.status_display, 'pendiente')
+        sub.payment_status = 'paid'
+        self.assertEqual(sub.status_display, 'pagado')
+
+    def test_status_display_is_cancelled_by_soft_delete(self):
+        """La baja lógica es lo que cancela, no un valor de `payment_status`.
+
+        Anular ya marca `record_active=False`; llevar además un 'cancelled' en
+        `payment_status` sería el mismo dato en dos campos, y la forma más
+        segura de que se contradigan.
+        """
+        sub = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            payment_status='paid',
+        )
+        self.assertEqual(sub.status_display, 'pagado')
+        sub.delete()
+        self.assertEqual(sub.status_display, 'cancelada')
+
+    def test_status_display_ignores_the_elapsed_period(self):
+        """Una suscripción pagada y vencida estuvo pagada.
+
+        El periodo que terminó es un dato del servicio, no un estado de pago:
+        mezclarlo hacía que un cobro correcto se leyera como 'expirado'.
+        """
+        sub = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now() - timedelta(days=60),
+            end_date=timezone.now() - timedelta(days=1),
+            payment_status='paid',
+        )
+        self.assertFalse(sub.is_active)
+        self.assertEqual(sub.status_display, 'pagado')
+
+    def test_expired_is_not_a_valid_payment_status(self):
+        from django.core.exceptions import ValidationError
+
+        sub = ServiceSubscription(
+            customer=self.customer,
+            service=self.service,
+            payment_status='expired',
+        )
+        with self.assertRaises(ValidationError):
+            sub.full_clean()
 
     def test_soft_delete(self):
         sub = ServiceSubscription.objects.create(
@@ -710,3 +754,86 @@ class CertificateModelTests(FileHandlingTestCase):
 
     def test_file_fields_defined(self):
         self.assertEqual(Certificate.file_fields, ['pdf'])
+
+
+class InvoiceDerivedStatusTests(TestCase):
+    """La factura no tiene campo de estado: el pago se deriva de las líneas.
+
+    El lote agrupa suscripciones y cada una se aprueba por separado, así que un
+    campo propio en la factura sería una segunda fuente de verdad capaz de
+    contradecir a la real.
+    """
+
+    def setUp(self):
+        disable_maintenance_mode()
+        customer = Customer.objects.create(
+            client_type='natural',
+            user=User.objects.create_user(username='invstatus', email='invstatus@example.com'),
+            account='1',
+            agency_bank='B',
+            address='A',
+            phone='9',
+        )
+        provider = User.objects.create_user(username='invprov', email='invprov@example.com')
+        self.service = Service.objects.create(
+            user=provider,
+            title='S',
+            summary='S',
+            service_type='commercial',
+            code='INV1',
+            price=Decimal('10.00'),
+        )
+        self.customer = customer
+        self.invoice = Invoice.objects.create(
+            customer=customer, subscription=None, number='2026-7001', amount=20
+        )
+
+    def _sub(self, code, status):
+        sub = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=Service.objects.create(
+                user=self.service.user,
+                title=f'S {code}',
+                summary='S',
+                service_type='commercial',
+                code=code,
+                price=Decimal('10.00'),
+            ),
+            payment_status=status,
+        )
+        InvoiceItem.objects.create(
+            invoice=self.invoice,
+            subscription=sub,
+            codigo=code,
+            descripcion=sub.service.title,
+            cantidad=1,
+            precio=Decimal('10.00'),
+            importe=Decimal('10.00'),
+        )
+        return sub
+
+    def test_invoice_without_subscriptions_is_pending(self):
+        self.assertEqual(self.invoice.status_display, 'pendiente')
+
+    def test_invoice_is_pending_while_any_subscription_is_unpaid(self):
+        self._sub('S1', 'paid')
+        self._sub('S2', 'pending')
+        self.assertEqual(self.invoice.status_display, 'pendiente')
+
+    def test_invoice_is_paid_when_every_subscription_is_paid(self):
+        self._sub('S3', 'paid')
+        self._sub('S4', 'paid')
+        self.assertEqual(self.invoice.status_display, 'pagada')
+
+    def test_cancelled_invoice_wins_over_paid_subscriptions(self):
+        self._sub('S5', 'paid')
+        self.invoice.is_cancelled = True
+        self.invoice.save(update_fields=['is_cancelled'])
+        self.assertEqual(self.invoice.status_display, 'cancelada')
+
+    def test_annotation_matches_the_property_without_extra_queries(self):
+        self._sub('S6', 'paid')
+        self._sub('S7', 'paid')
+        annotated = Invoice.objects.with_display_status().get(pk=self.invoice.pk)
+        with self.assertNumQueries(0):
+            self.assertEqual(annotated.status_display, 'pagada')

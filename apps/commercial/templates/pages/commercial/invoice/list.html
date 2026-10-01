@@ -59,10 +59,12 @@
     </td>
     <td>$ {{ invoice.amount|floatformat:2 }}</td>
     <td>
-      {% if invoice.is_cancelled %}
-        <span class="badge badge-outline text-secondary">Anulada</span>
+      {% if invoice.status_display == 'pagada' %}
+        <span class="badge bg-green-lt">Pagada</span>
+      {% elif invoice.status_display == 'cancelada' %}
+        <span class="badge bg-red-lt">Cancelada</span>
       {% else %}
-        <span class="badge badge-outline text-green">Activa</span>
+        <span class="badge bg-orange-lt">Pendiente</span>
       {% endif %}
     </td>
     <td class="text-end">
@@ -83,8 +85,8 @@
                 data-pdf-title="Factura {{ invoice.number }}"
                 data-bs-toggle="tooltip"
                 data-bs-placement="bottom"
-                aria-label="Ver PDF"
-                data-bs-original-title="Ver PDF">
+                aria-label="Ver Factura"
+                data-bs-original-title="Ver Factura">
           <i class="icon ti ti-file-type-pdf"></i>
         </button>
       {% elif invoice.pdf_status == 'failed' %}
@@ -93,12 +95,6 @@
               data-bs-original-title="{{ invoice.pdf_error|truncatechars:160 }}"
               title="No se pudo generar el PDF. Reintentá desde el monitoreo de tareas.">
           <i class="icon ti ti-file-type-pdf me-1"></i>PDF falló
-        </span>
-      {% else %}
-        <span class="badge bg-yellow-lt"
-              data-bs-toggle="tooltip"
-              data-bs-original-title="La factura todavía no tiene PDF generado.">
-          <i class="icon ti ti-clock me-1"></i>PDF pendiente
         </span>
       {% endif %}
       {% if invoice.email_status != 'sent' and not invoice.is_cancelled %}

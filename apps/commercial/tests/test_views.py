@@ -8,7 +8,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages import get_messages
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 
@@ -699,6 +701,109 @@ class InvoiceListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class InvoiceListStatusColumnTests(TestCase):
+    """La columna Estado del listado muestra el estado DERIVADO de la factura
+    (pagada / pendiente / cancelada), no un "Activa/Anulada" desconectado del
+    pago real de sus suscripciones."""
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('invstatus')
+        customer = Customer.objects.create(
+            client_type='natural',
+            user=_make_user('invstatuscust'),
+            address='Addr',
+            phone='12345678',
+            account='1234567890123456',
+        )
+        service = Service.objects.create(
+            user=cls.admin,
+            title='Svc estado',
+            summary='Svc estado',
+            service_type='commercial',
+            code='E100',
+            price=Decimal('50.00'),
+        )
+        cls.customer = customer
+        cls.service = service
+        cls.url = reverse('commercial:factura_list')
+
+    def _subscription(self, status):
+        return ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
+            payment_status=status,
+        )
+
+    def _invoice(self, number, subscription=None, is_cancelled=False):
+        # El vínculo canónico es la línea (InvoiceItem); el ancla
+        # `subscription` sólo existe en facturas de una única suscripción y no
+        # participa del cálculo del estado derivado.
+        invoice = Invoice.objects.create(
+            customer=self.customer,
+            subscription=subscription,
+            number=number,
+            amount=Decimal('50.00'),
+            is_cancelled=is_cancelled,
+        )
+        if subscription is not None:
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                subscription=subscription,
+                descripcion='Svc estado',
+                cantidad=Decimal('1'),
+                precio=Decimal('50.00'),
+            )
+        return invoice
+
+    def _render(self):
+        self.client.force_login(self.admin)
+        return self.client.get(self.url).content.decode()
+
+    def test_paid_subscription_renders_pagada(self):
+        sub = self._subscription('paid')
+        self._invoice('F-PAG', subscription=sub)
+        self.assertIn('>Pagada<', self._render())
+
+    def test_pending_subscription_renders_pendiente(self):
+        sub = self._subscription('pending')
+        self._invoice('F-PEN', subscription=sub)
+        html = self._render()
+        self.assertIn('>Pendiente<', html)
+        self.assertNotIn('>Pagada<', html)
+
+    def test_cancelled_invoice_renders_cancelada(self):
+        sub = self._subscription('pending')
+        self._invoice('F-CAN', subscription=sub, is_cancelled=True)
+        html = self._render()
+        self.assertIn('>Cancelada<', html)
+        self.assertNotIn('>Activa<', html)
+
+    def _query_count_for(self, rows):
+        sub = self._subscription('paid')
+        for i in range(rows):
+            self._invoice(f'F-QRY-{rows}-{i}', subscription=sub)
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        return len(ctx.captured_queries)
+
+    def test_list_view_annotates_display_status_without_n_plus_one(self):
+        # La columna Estado se resuelve con items_total/items_paid anotados por
+        # `with_display_status`. Sin esa anotación, `Invoice.status_display`
+        # consultaría items por fila: el conteo crecería con el tamaño del
+        # listado. Se comparan dos tamaños en vez de fijar un número absoluto,
+        # porque el layout y los context processors aportan consultas fijas.
+        self.client.force_login(self.admin)
+        queries_one = self._query_count_for(1)
+        queries_four = self._query_count_for(4)
+        # 3 filas extra no deben sumar consultas.
+        self.assertEqual(queries_one, queries_four)
+
+
 class CancelInvoiceViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -1100,6 +1205,110 @@ class BatchInvoiceQuantityTests(TestCase):
         self.assertEqual(item.importe, Decimal('50.00'))
         self.assertEqual(item.unidad_medida, 'DÍA')
         self.assertEqual(invoice.amount, Decimal('50.00'))
+
+
+class SubscriptionListStateAndActionsTests(TestCase):
+    """Columna Estado única y acciones ordenadas en el listado de suscripciones.
+
+    Antes existían tres columnas redundantes (Estado / Pago / Registro) que
+    además mostraban un "Expirado" imposible, y los dos botones de PDF
+    compartían el mismo label "Ver PDF", imposible de distinguir.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('substate')
+        customer = Customer.objects.create(
+            client_type='natural',
+            user=_make_user('substatecust'),
+            address='Addr',
+            phone='12345678',
+            account='1234567890123456',
+        )
+        service = Service.objects.create(
+            user=cls.admin,
+            title='Svc estado sub',
+            summary='Svc estado sub',
+            service_type='commercial',
+            code='S100',
+            price=Decimal('50.00'),
+        )
+        cls.customer = customer
+        cls.service = service
+        cls.url = reverse('commercial:suscripcion_list')
+
+    def _subscription(self, status):
+        return ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now(),
+            end_date=timezone.now() + timedelta(days=30),
+            payment_status=status,
+        )
+
+    def _render(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        return response.content.decode()
+
+    def test_single_status_column_replaces_payment_and_registry_columns(self):
+        self._subscription('paid')
+        html = self._render()
+        self.assertIn('<th>Estado</th>', html)
+        self.assertNotIn('<th>Pago</th>', html)
+        self.assertNotIn('<th>Registro</th>', html)
+        # El estado derivado reemplaza a los labels viejos.
+        self.assertIn('>Pagado<', html)
+        self.assertNotIn('Expirado', html)
+        self.assertNotIn('Desactivada', html)
+
+    def test_cancelled_subscription_renders_cancelada_state(self):
+        # `SoftDeleteModel` no filtra en el manager: el listado staff usa
+        # `super().get_queryset()` sin filtrar, así que la suscripción dada de
+        # baja SÍ aparece y la columna Estado debe decir "Cancelada" (antes
+        # decía "Desactivada" en la columna Registro, que se eliminó).
+        cancelled = self._subscription('requested')
+        service_title = cancelled.service.title
+        cancelled.delete()
+        self.assertEqual(cancelled.status_display, 'cancelada')
+        html = self._render()
+        self.assertIn(service_title, html)
+        self.assertIn('>Cancelada<', html)
+
+    def test_document_buttons_are_distinguishable_by_label(self):
+        sub = self._subscription('paid')
+        invoice = Invoice.objects.create(
+            subscription=sub,
+            number='F-LBL-001',
+            amount=Decimal('50.00'),
+        )
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=sub,
+            descripcion='Svc estado sub',
+            cantidad=Decimal('1'),
+            precio=Decimal('50.00'),
+        )
+        Certificate.objects.create(
+            subscription=sub,
+            pdf=SimpleUploadedFile('cert-state.pdf', b'%PDF-1.4 t', 'application/pdf'),
+        )
+        html = self._render()
+        self.assertIn('aria-label="Ver Factura"', html)
+        self.assertIn('aria-label="Ver Certificado"', html)
+        # Ninguno conserva el label ambiguo.
+        self.assertNotIn('aria-label="Ver PDF"', html)
+
+    def test_edit_precedes_destructive_action_in_the_row(self):
+        self._subscription('pending')
+        html = self._render()
+        edit_pos = html.index('title="Editar"')
+        delete_pos = html.index('title="Anular suscripción"')
+        self.assertLess(edit_pos, delete_pos)
+        # El botón de factura/QR del estado va antes de Editar.
+        self.assertLess(html.index('title="Aprobar Pago"'), edit_pos)
 
 
 class SubscriptionRenewQuantityTests(TestCase):

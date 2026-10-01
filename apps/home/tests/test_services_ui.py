@@ -13,6 +13,7 @@ Covers tasks 5.1-5.4:
 
 import re
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from django.contrib.auth.models import User
@@ -357,51 +358,57 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         self.assertNotIn('Ver factura', html)
 
     def test_lists_all_subscription_states_in_priority_order(self):
-        self._make_sub('expired', 'expirado')
-        self._make_sub('paid', 'activo')
+        # 'expired' ya no es un payment_status: la baja lógica produce
+        # status_display == 'cancelada' y el queryset de Home excluye las
+        # suscripciones con record_active=False, así que sólo quedan tres
+        # estados visibles (solicitado, pendiente, pagado).
+        self._make_sub('paid', 'pagado')
         self._make_sub('pending', 'pendiente')
         self._make_sub('requested', 'solicitado')
         self.client.force_login(self.client_user)
         html = self.client.get(reverse('home:services_commercial')).content.decode()
         self.assertIn('Servicio solicitado', html)
         self.assertIn('Servicio pendiente', html)
-        self.assertIn('Servicio activo', html)
-        self.assertIn('Servicio expirado', html)
-        # El orden Case/When: requested(0) -> pending(1) -> paid(2) -> expired(3).
+        self.assertIn('Servicio pagado', html)
+        # El orden Case/When: requested(0) -> pending(1) -> paid(2).
         positions = [
             html.index('Servicio solicitado'),
             html.index('Servicio pendiente'),
-            html.index('Servicio activo'),
-            html.index('Servicio expirado'),
+            html.index('Servicio pagado'),
         ]
         self.assertEqual(positions, sorted(positions))
 
     def test_ribbon_class_and_label_per_subscription_state(self):
         # REQ-03: el ribbon se resuelve vía status_ribbon|get_item:status_display
-        # (activo -> bg-green, pendiente de pago -> bg-orange, solicitado ->
-        # bg-blue, expirado -> bg-red); nunca hardcodeado.
+        # (pagado -> bg-green, pendiente -> bg-orange, solicitado -> bg-blue,
+        # cancelada -> bg-red); nunca hardcodeado.
         self._make_sub('requested', 'ribbon-solicitado')
         self._make_sub('pending', 'ribbon-pendiente')
-        self._make_sub('paid', 'ribbon-activo')
-        self._make_sub('expired', 'ribbon-expirado')
+        self._make_sub('paid', 'ribbon-pagado')
+        # Una suscripción dada de baja (baja lógica) queda en 'cancelada' pero
+        # NO se renderiza: el listado de Home filtra record_active=True.
+        cancelada = self._make_sub('requested', 'ribbon-cancelada')
+        cancelada.delete()
+        self.assertEqual(cancelada.status_display, 'cancelada')
         self.client.force_login(self.client_user)
         response = self.client.get(reverse('home:services_commercial'))
         html = response.content.decode()
         self.assertEqual(
             response.context['status_ribbon'],
             {
-                'activo': 'bg-green',
-                'pendiente de pago': 'bg-orange',
+                'pagado': 'bg-green',
+                'pendiente': 'bg-orange',
                 'solicitado': 'bg-blue',
-                'expirado': 'bg-red',
+                'cancelada': 'bg-red',
             },
         )
-        # Un ribbon por card, con la clase y el texto del estado correctos.
-        self.assertEqual(html.count('ribbon-bookmark'), 4)
-        self.assertIn('ribbon-bookmark bg-green">activo', html)
-        self.assertIn('ribbon-bookmark bg-orange">pendiente de pago', html)
+        # Un ribbon por card activa, con la clase y el texto del estado correctos.
+        self.assertEqual(html.count('ribbon-bookmark'), 3)
+        self.assertIn('ribbon-bookmark bg-green">pagado', html)
+        self.assertIn('ribbon-bookmark bg-orange">pendiente', html)
         self.assertIn('ribbon-bookmark bg-blue">solicitado', html)
-        self.assertIn('ribbon-bookmark bg-red">expirado', html)
+        # La cancelada no aparece en Home (soft delete la saca del queryset).
+        self.assertNotIn('ribbon-cancelada', html)
 
     def test_calendar_icon_precedes_date_range_in_dom(self):
         # REQ-05: el icono de calendario aparece antes del rango de fechas en
@@ -586,6 +593,53 @@ class CommercialServicesListContextualActionsTests(TestCase):
     def _html(self):
         self.client.force_login(self.client_user)
         return self.client.get(reverse('home:services_commercial')).content.decode()
+
+    def test_paid_subscription_keeps_invoice_and_certificate_both_visible(self):
+        """Los documentos son ACUMULATIVOS: pagar no borra la factura.
+
+        Antes la rama `is_active` del template mostraba sólo el certificado y
+        la factura desaparecía del card justo cuando el cliente la necesitaba
+        como respaldo. Ahora ambos botones se renderizan por separado.
+        """
+        sub = self._sub('paid')
+        invoice = Invoice.objects.create(
+            subscription=sub,
+            number='F002-001',
+            amount=10,
+        )
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=sub,
+            descripcion='Servicio',
+            cantidad=Decimal('1'),
+            precio=Decimal('10.00'),
+        )
+        certificate = Certificate.objects.create(
+            subscription=sub,
+            pdf='certificate_pdfs/cert-paid.pdf',
+        )
+        html = self._html()
+        self.assertIn('Ver factura', html)
+        self.assertIn(f'factura/{invoice.uuid}/pdf/?inline=1', html)
+        self.assertIn('Ver certificado', html)
+        self.assertIn(
+            f'certificado/{certificate.uuid}/pdf/?inline=1',
+            html,
+        )
+
+    def test_paid_subscription_without_certificate_says_so(self):
+        sub = self._sub('paid')
+        invoice = Invoice.objects.create(subscription=sub, number='F002-002', amount=10)
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=sub,
+            descripcion='Servicio',
+            cantidad=Decimal('1'),
+            precio=Decimal('10.00'),
+        )
+        html = self._html()
+        self.assertIn('Ver factura', html)
+        self.assertIn('Sin certificado', html)
 
     def test_pending_qr_offers_invoice_and_qr_payment(self):
         sub = self._sub('pending', payment_method='qr')
@@ -1301,8 +1355,14 @@ class MisServiciosMenuItemTests(TestCase):
         html = self._menu_html()
         self.assertRegex(html, self._menu_item_regex())
 
-    def test_menu_shows_mis_servicios_with_expired_subscription(self):
-        self._sub('expired', end_date=timezone.now() - timedelta(days=1))
+    def test_menu_shows_mis_servicios_with_elapsed_subscription(self):
+        """El enlace aparece con cualquier suscripción, no con estados sueltos.
+
+        Antes la condición enumeraba `active/requested/pending` y existía sólo
+        porque `payment_status='expired'` se escribía a mano en los tests: en
+        producción la suspendida nunca se guardaba. Ahora manda el total.
+        """
+        self._sub('paid', end_date=timezone.now() - timedelta(days=1))
         self.client.force_login(self.client_user)
         html = self._menu_html()
         self.assertRegex(html, self._menu_item_regex())

@@ -44,9 +44,12 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'commercial.view_invoice'
 
     def get_queryset(self):
+        # `with_display_status` trae items_total/items_paid anotados para que la
+        # columna Estado no dispare una consulta por fila.
         return (
             Invoice.objects.select_related('subscription__customer', 'subscription__service')
             .prefetch_related('items')
+            .with_display_status()
             .order_by('-issue_date')
         )
 
