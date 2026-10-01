@@ -15,7 +15,7 @@ from apps.commercial.forms.customer import (
     CustomerForUserForm,
     CustomerUpdateForm,
 )
-from apps.commercial.forms.invoice import InvoiceForm
+from apps.commercial.forms.invoice import InvoiceForm, InvoiceItemForm
 from apps.commercial.forms.service import ServiceForm
 from apps.commercial.forms.subscription import (
     PaymentMethodForm,
@@ -911,3 +911,102 @@ class InvoiceFormTests(TestCase):
         )
         self.assertFalse(form.is_valid())
         self.assertIn('customer', form.errors)
+
+
+class InvoiceItemFormTests(TestCase):
+    """B4: la línea manual deriva unidad y precio del servicio, no del POST."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = _make_user('itemform')
+        cls.agro = Service.objects.create(
+            user=cls.user,
+            title='Agrometeo',
+            summary='S',
+            service_type=Service.COMMERCIAL,
+            service_category='agrometeo',
+            code='AGRO-01',
+            price=Decimal('120.00'),
+        )
+        cls.pronostico = Service.objects.create(
+            user=cls.user,
+            title='Pronóstico',
+            summary='S',
+            service_type=Service.COMMERCIAL,
+            service_category='pronostico',
+            code='PRO-01',
+            price=Decimal('5.00'),
+        )
+
+    def _data(self, service, **overrides):
+        # El navegador manda el precio del servicio; clean() lo vuelve a derivar igual.
+        data = {
+            'service': service.pk,
+            'codigo': service.code or '',
+            'cantidad': 3,
+            'unidad_medida': 'U',
+            'precio': f'{service.price:.2f}',
+        }
+        data.update(overrides)
+        return data
+
+    def test_clean_overrides_posted_derived_fields(self):
+        """Invariante de seguridad: el POST no puede fijar código, precio ni UM."""
+        form = InvoiceItemForm(
+            data=self._data(
+                self.pronostico,
+                codigo='HACKED',
+                unidad_medida='MES',
+                precio='9999.99',
+            )
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['codigo'], 'PRO-01')
+        self.assertEqual(form.cleaned_data['precio'], Decimal('5.00'))
+        self.assertEqual(form.cleaned_data['unidad_medida'], 'DÍA')
+
+    def test_agrometeo_unit_is_mes(self):
+        form = InvoiceItemForm(data=self._data(self.agro))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['unidad_medida'], 'MES')
+
+    def test_pronostico_unit_is_dia(self):
+        form = InvoiceItemForm(data=self._data(self.pronostico))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['unidad_medida'], 'DÍA')
+
+    def test_cantidad_comes_from_the_operator(self):
+        """La cantidad es del operador: clean() no la toca, la plantilla sólo propone."""
+        form = InvoiceItemForm(data=self._data(self.agro, cantidad=7))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['cantidad'], 7)
+
+    def test_missing_cantidad_is_a_validation_error(self):
+        data = self._data(self.agro)
+        del data['cantidad']
+        form = InvoiceItemForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('cantidad', form.errors)
+
+    def test_empty_cantidad_is_a_validation_error(self):
+        form = InvoiceItemForm(data=self._data(self.agro, cantidad=''))
+        self.assertFalse(form.is_valid())
+        self.assertIn('cantidad', form.errors)
+
+    def test_cantidad_below_minimum_is_rejected(self):
+        form = InvoiceItemForm(data=self._data(self.agro, cantidad=0))
+        self.assertFalse(form.is_valid())
+        self.assertIn('cantidad', form.errors)
+
+    def test_service_without_code_falls_back_to_empty_codigo(self):
+        service = Service.objects.create(
+            user=self.user,
+            title='Sin código',
+            summary='S',
+            service_type=Service.COMMERCIAL,
+            service_category='pronostico',
+            price=Decimal('10.00'),
+        )
+        form = InvoiceItemForm(data=self._data(service, codigo='HACKED'))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['codigo'], '')

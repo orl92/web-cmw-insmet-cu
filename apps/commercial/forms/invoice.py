@@ -21,8 +21,10 @@ class InvoiceItemForm(forms.Form):
     )
     cantidad = forms.IntegerField(
         min_value=1,
-        required=False,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
+        required=True,
+        label='Cantidad',
+        help_text='Cantidad de meses o días según el tipo de servicio.',
+        widget=forms.NumberInput(attrs={'class': 'form-control quantity-days', 'min': '1'}),
     )
     unidad_medida = forms.CharField(
         max_length=5,
@@ -35,6 +37,28 @@ class InvoiceItemForm(forms.Form):
         decimal_places=2,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
     )
+
+    def clean(self):
+        """Rebuild the readonly fields from the service, never from the POST body.
+
+        `codigo`, `precio` and `unidad_medida` exist so the operator can see what
+        is being charged, not so a stale page or a hand-crafted request can set
+        them. `unidad_medida` follows the service category: agrometeo bills months,
+        every other category bills days, so the same period means 3 for agrometeo
+        and 90 for pronostico. `cantidad` is the opposite — the operator owns it,
+        and the browser only proposes a value for it.
+        """
+        cleaned_data = super().clean()
+        service = cleaned_data.get('service')
+
+        if service:
+            cleaned_data['codigo'] = service.code or ''
+            cleaned_data['precio'] = service.price
+            cleaned_data['unidad_medida'] = (
+                'MES' if service.service_category == 'agrometeo' else 'DÍA'
+            )
+
+        return cleaned_data
 
 
 InvoiceItemFormSet = formset_factory(InvoiceItemForm, extra=1, can_delete=True)

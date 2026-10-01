@@ -96,11 +96,8 @@
                     </div>
                     <div class="col-md-2">
                       <label class="form-label">{{ item_form.cantidad.label }}</label>
-                      <input type="text"
-                             name="{{ item_form.cantidad.html_name }}"
-                             value="{{ item_form.cantidad.value|default:'' }}"
-                             class="form-control quantity-days"
-                             readonly />
+                      {{ item_form.cantidad }}
+                      <small class="form-text text-muted">{{ item_form.cantidad.help_text }}</small>
                     </div>
                     <div class="col-md-1">
                       <label class="form-label">{{ item_form.unidad_medida.label }}</label>
@@ -371,7 +368,16 @@
   // ============================================================
   const servicesData = JSON.parse('{{ commercial_services_json|escapejs }}');
   const servicesMap = {};
-  servicesData.forEach(s => { servicesMap[s.id] = { code: s.code, price: s.price, unit: "U" }; });
+  // La unidad no es elegible: sale de la categoría del servicio (agrometeo → MES,
+  // resto → DÍA), así que un mismo período propone 3 o 90 según la fila.
+  // El form aplica la misma regla en el servidor.
+  servicesData.forEach(s => {
+    servicesMap[s.id] = {
+      code: s.code,
+      price: s.price,
+      unit: s.service_category === 'agrometeo' ? 'MES' : 'DÍA',
+    };
+  });
 
   const ajaxUrl = "{% url 'commercial:ajax_pending_subscriptions' %}";
   const customerSelect = document.getElementById('id_customer');
@@ -430,11 +436,40 @@
     return diff >= 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
   }
 
+  // Meses que reproducen lo más cerca posible la fecha elegida por el operador.
+  //
+  // El servidor calcula el vencimiento como `start + relativedelta(months=N)`, y
+  // eso no reproduce cualquier par (inicio, fin): entre 01/01 y 31/01 no existe
+  // ningún N entero. Contar "meses completos" --el floor del delta de meses--
+  // deja casi todos los meses a medio camino y el operador ve un número que el
+  // servidor no cobra. Se redondea contra el promedio real del año (365.2425/12),
+  // que es lo más cerca que puede quedar una cantidad entera de meses.
+  const DAYS_PER_MONTH = 365.2425 / 12;
+
+  function calculateMonths(start, end) {
+    const s = parsePickerDate(start);
+    const e = parsePickerDate(end);
+    if (!s || !e || e < s) return 0;
+    const months = Math.round((e - s) / (DAYS_PER_MONTH * 24 * 60 * 60 * 1000));
+    return Math.max(months, 0);
+  }
+
+  // Propuesta para la línea manual: el período medido en la unidad del servicio.
+  // Nunca por debajo de 1 porque el campo exige min_value=1. El operador la ajusta.
+  function proposeQuantity(row) {
+    const serviceSelect = row.querySelector('select[id$="-service"]');
+    const data = servicesMap[serviceSelect ? serviceSelect.value : ''];
+    const quantity = data && data.unit === 'MES'
+      ? calculateMonths(startDateInput.value, endDateInput.value)
+      : calculateDays(startDateInput.value, endDateInput.value);
+    return Math.max(quantity, 1);
+  }
+
   function updateDaysFromInputs() {
-    const days = calculateDays(startDateInput.value, endDateInput.value);
-    daysCountInput.value = days;
-    document.querySelectorAll('#items-container .quantity-days').forEach(input => {
-      input.value = days;
+    daysCountInput.value = calculateDays(startDateInput.value, endDateInput.value);
+    document.querySelectorAll('#items-container .item-row').forEach(row => {
+      const quantityInput = row.querySelector('.quantity-days');
+      if (quantityInput) quantityInput.value = proposeQuantity(row);
     });
   }
 
@@ -717,9 +752,8 @@
       priceInput.value = '';
       unitInput.value = 'U';
     }
-    const days = calculateDays(startDateInput.value, endDateInput.value);
     const quantityInput = row.querySelector('.quantity-days');
-    if (quantityInput) quantityInput.value = days;
+    if (quantityInput) quantityInput.value = proposeQuantity(row);
   }
 
   function bindRowEvents(row) {

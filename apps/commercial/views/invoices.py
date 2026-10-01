@@ -110,8 +110,11 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         context['url_list'] = reverse_lazy('commercial:factura_list')
         context['items_formset'] = InvoiceItemFormSet(prefix='items')
         commercial_services = Service.objects.filter(service_type=Service.COMMERCIAL)
+        # The manual lines need `service_category` to tell months from days, and
+        # the browser cannot derive the unit from the dates alone.
         context['commercial_services_json'] = json.dumps(
-            list(commercial_services.values('id', 'code', 'title', 'price')), cls=DjangoJSONEncoder
+            list(commercial_services.values('id', 'code', 'title', 'price', 'service_category')),
+            cls=DjangoJSONEncoder,
         )
         context['company'] = CompanySettings.get_instance()
         return context
@@ -222,8 +225,6 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             context['items_formset'] = items_formset
             return self.render_to_response(context)
 
-        quantity = 1  # default para facturación manual
-
         invoice = Invoice.objects.create(
             subscription=None, customer=customer, amount=0, number=self.generate_invoice_number()
         )
@@ -235,7 +236,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
                 cd = item_form.cleaned_data
                 service = cd['service']
-                cantidad = cd.get('cantidad') or quantity
+                cantidad = cd['cantidad']
                 unidad_medida = 'MES' if service.service_category == 'agrometeo' else 'DÍA'
 
                 sub = ServiceSubscription.objects.create(
