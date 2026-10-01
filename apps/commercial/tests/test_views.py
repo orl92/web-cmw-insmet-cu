@@ -1491,3 +1491,225 @@ class ResendCertificateOwnerAccessTests(TestCase):
             any('reenviado correctamente' in m for m in msgs),
             f'expected success message, got {msgs}',
         )
+
+
+class InvoiceSubscriptionLinkTests(TestCase):
+    """D1: el vínculo factura-suscripción vive en la línea, no en la factura.
+
+    La facturación por lote agrupa suscripciones y la manual de varios servicios
+    sólo colgaba la primera, así que `Invoice.subscription` quedaba NULL.
+    Quien leía `subscription.invoices` no encontraba nada y el cliente veía la
+    suscripción pendiente sin botones de factura.
+    """
+
+    def _sub(self, customer, provider, code, price=Decimal('50.00')):
+        service = Service.objects.create(
+            user=provider,
+            title=f'Servicio {code}',
+            summary='S',
+            service_type='commercial',
+            code=code,
+            price=price,
+        )
+        return ServiceSubscription.objects.create(
+            customer=customer,
+            service=service,
+            quantity=2,
+            payment_status='pending',
+        )
+
+    def _batch(self, subs, seq=None):
+        from apps.commercial.views.invoices import InvoiceCreateView
+
+        customer = subs[0].customer
+        view = InvoiceCreateView()
+        view.request = _build_request(
+            _make_superuser(f'batchadmin-link-{seq if seq is not None else id(subs)}')
+        )
+        day = timezone.now().date()
+        view.process_batch_invoice(customer, day, day, 'REG-LINK', subs)
+        return InvoiceItem.objects.filter(subscription__in=subs).first().invoice
+
+    def test_for_subscription_finds_invoice_linked_only_by_item(self):
+        customer = _make_customer('linkcust')
+        provider = _make_user('linkprov')
+        subs = [
+            self._sub(customer, provider, 'L001'),
+            self._sub(customer, provider, 'L001b'),
+        ]
+        invoice = self._batch(subs)
+        self.assertIsNone(invoice.subscription_id, 'precondición: la factura nace huérfana')
+        for sub in subs:
+            self.assertIn(invoice, Invoice.objects.for_subscription(sub))
+
+    def test_batch_with_one_subscription_anchors_the_invoice(self):
+        customer = _make_customer('linkcust1')
+        provider = _make_user('linkprov1')
+        sub = self._sub(customer, provider, 'L002')
+        invoice = self._batch([sub])
+        self.assertEqual(invoice.subscription_id, sub.pk)
+
+    def test_batch_with_many_subscriptions_leaves_it_unanchored(self):
+        customer = _make_customer('linkcust2')
+        provider = _make_user('linkprov2')
+        subs = [
+            self._sub(customer, provider, 'L003'),
+            self._sub(customer, provider, 'L004'),
+        ]
+        invoice = self._batch(subs)
+        self.assertIsNone(invoice.subscription_id, 'no hay una suscripción única que colgarse')
+        for sub in subs:
+            self.assertIn(invoice, Invoice.objects.for_subscription(sub))
+
+    def test_each_subscription_sees_only_its_own_invoice(self):
+        customer = _make_customer('linkcust3')
+        provider = _make_user('linkprov3')
+        subs = [
+            self._sub(customer, provider, 'L005'),
+            self._sub(customer, provider, 'L006'),
+        ]
+        invoice_a = self._batch([subs[0]], seq='a')
+        invoice_b = self._batch([subs[1]], seq='b')
+        self.assertNotEqual(invoice_a.pk, invoice_b.pk)
+        self.assertIn(invoice_a, Invoice.objects.for_subscription(subs[0]))
+        self.assertNotIn(invoice_b, Invoice.objects.for_subscription(subs[0]))
+
+    def test_cancelled_invoice_is_excluded_from_the_lookup(self):
+        customer = _make_customer('linkcust4')
+        provider = _make_user('linkprov4')
+        subs = [
+            self._sub(customer, provider, 'L007'),
+            self._sub(customer, provider, 'L007b'),
+        ]
+        invoice = self._batch(subs)
+        invoice.is_cancelled = True
+        invoice.save(update_fields=['is_cancelled'])
+        self.assertNotIn(
+            invoice,
+            Invoice.objects.for_subscription(subs[0]).filter(is_cancelled=False),
+        )
+
+
+class ClientPendingInvoiceButtonsTests(TestCase):
+    """D1: en "Mis Suscripciones" el cliente pendiente ve sus botones de factura.
+
+    La rama cliente leía `subscription.invoices`, que queda vacío cuando la
+    factura cuelga sólo de su línea, así que la suscripción pendiente
+    aparecía sin ningún botón: sin descarga y sin ver PDF.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        from django.contrib.auth.models import Group
+
+        cls.customer = _make_customer('clicust')
+        cls.user = cls.customer.user
+        provider = _make_user('cliprov')
+        service = Service.objects.create(
+            user=provider,
+            title='Servicio pending',
+            summary='S',
+            service_type='commercial',
+            code='CLI001',
+            price=Decimal('40.00'),
+        )
+        cls.sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=service,
+            quantity=2,
+            payment_status='pending',
+            payment_method='transfer',
+        )
+        # Factura por lote de dos suscripciones: queda sin ancla a propósito,
+        # porque con varias no hay una suscripción única que colgarse.
+        other_service = Service.objects.create(
+            user=provider,
+            title='Otro servicio',
+            summary='S',
+            service_type='commercial',
+            code='CLI002',
+            price=Decimal('10.00'),
+        )
+        other_sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=other_service,
+            quantity=1,
+            payment_status='pending',
+        )
+        invoice = Invoice.objects.create(
+            customer=cls.customer,
+            subscription=None,
+            number='2026-9001',
+            amount=90,
+        )
+        for sub, cantidad in ((cls.sub, 2), (other_sub, 1)):
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                subscription=sub,
+                codigo=sub.service.code,
+                descripcion=sub.service.title,
+                cantidad=cantidad,
+                unidad_medida='DÍA',
+                precio=sub.service.price,
+                importe=sub.service.price * cantidad,
+            )
+        cls.invoice = invoice
+        # Suscripción pendiente sin ninguna factura asociada: no debe mostrar
+        # ningún botón, aunque su cliente tenga otras facturas.
+        orphan_service = Service.objects.create(
+            user=provider,
+            title='Servicio sin factura',
+            summary='S',
+            service_type='commercial',
+            code='CLI003',
+            price=Decimal('15.00'),
+        )
+        cls.orphan_sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=orphan_service,
+            quantity=1,
+            payment_status='pending',
+        )
+        group, _ = Group.objects.get_or_create(name='Clientes')
+        perm = ContentType.objects.get_for_model(ServiceSubscription).permission_set.get(
+            codename='view_subscription'
+        )
+        group.permissions.add(perm)
+        cls.user.groups.add(group)
+
+    def setUp(self):
+        self.url = reverse('commercial:suscripcion_list')
+
+    def test_pending_client_sees_download_and_view_pdf_buttons(self):
+        self.client.force_login(self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        download_url = reverse('commercial:factura_download', args=[self.invoice.uuid])
+        self.assertIn('Descargar Factura', html)
+        self.assertIn(download_url, html)
+        self.assertIn(f'data-pdf-title="Factura {self.invoice.number}"', html)
+
+    def test_list_view_annotates_the_invoice_reachable_only_by_item(self):
+        from apps.commercial.views.subscriptions import SubscriptionListView
+
+        view = SubscriptionListView()
+        view.request = _build_request(self.user)
+        resolved = {s.pk: s.latest_invoice_uuid for s in view.get_queryset()}
+        self.assertEqual(resolved[self.sub.pk], self.invoice.uuid)
+
+    def test_subscription_without_invoice_gets_no_buttons(self):
+        self.client.force_login(self.user)
+        html = self.client.get(self.url).content.decode()
+        # Las dos suscripciones del lote comparten factura -> 2 botones.
+        # La que no tiene factura no agrega un tercero.
+        self.assertEqual(html.count('Descargar Factura'), 2)
+
+    def test_orphan_subscription_annotation_is_empty(self):
+        from apps.commercial.views.subscriptions import SubscriptionListView
+
+        view = SubscriptionListView()
+        view.request = _build_request(self.user)
+        resolved = {s.pk: s.latest_invoice_uuid for s in view.get_queryset()}
+        self.assertIsNone(resolved[self.orphan_sub.pk])

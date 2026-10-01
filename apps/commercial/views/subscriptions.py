@@ -10,6 +10,7 @@ from django.contrib.auth.mixins import (
 )
 from django.core.exceptions import PermissionDenied
 from django.core.mail import EmailMessage
+from django.db.models import OuterRef, Subquery
 from django.shortcuts import get_object_or_404, redirect
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -17,7 +18,13 @@ from django.utils import timezone
 from django.views.generic import CreateView, ListView, UpdateView, View
 
 from apps.commercial.forms.subscription import CertificateUploadForm, SubscriptionForm
-from apps.commercial.models import Certificate, Customer, Service, ServiceSubscription
+from apps.commercial.models import (
+    Certificate,
+    Customer,
+    Invoice,
+    Service,
+    ServiceSubscription,
+)
 from apps.core.utils import log_action
 
 logger = logging.getLogger(__name__)
@@ -32,6 +39,18 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     def get_queryset(self):
         user = self.request.user
         qs = super().get_queryset().select_related('customer', 'service')
+        # El vínculo por línea es el que siempre existe: la factura de un lote o
+        # de varios servicios no cuelga de `Invoice.subscription`. Sin esto el
+        # cliente ve la suscripción pendiente sin ningún botón de factura.
+        latest_invoice = (
+            Invoice.objects.for_subscription(OuterRef('pk'))
+            .filter(is_cancelled=False)
+            .order_by('-issue_date')
+        )
+        qs = qs.annotate(
+            latest_invoice_uuid=Subquery(latest_invoice.values('uuid')[:1]),
+            latest_invoice_number=Subquery(latest_invoice.values('number')[:1]),
+        )
         if user.is_superuser or user.is_staff:
             return qs.order_by('-start_date')
         elif user.groups.filter(name='Clientes').exists():
@@ -250,11 +269,12 @@ class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
             )
             return redirect('commercial:suscripcion_list')
 
-        if not subscription.invoices.exists():
+        invoices = Invoice.objects.for_subscription(subscription)
+        if not invoices.exists():
             messages.error(request, 'Esta suscripción no tiene facturas para regenerar.')
             return redirect('commercial:suscripcion_list')
 
-        for invoice in subscription.invoices.all():
+        for invoice in invoices:
             invoice.is_cancelled = True
             invoice.save()
             log_action(

@@ -147,6 +147,21 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 form, customer, start_date, end_date, commercial_registry
             )
 
+    def anchor_invoice(self, invoice, subscriptions):
+        """Cuelga la factura de la suscripción cuando hay una sola.
+
+        `Invoice.subscription` es un atajo de conveniencia: con varias
+        suscripciones no hay una respuesta única, así que se deja en NULL y el
+        vínculo real queda en cada línea. Cuando hay exactamente una se
+        completa, porque `subscription.invoices` es la relación que consulta
+        buena parte del código.
+        """
+        unique = {sub.pk: sub for sub in subscriptions}
+        if len(unique) == 1:
+            invoice.subscription = next(iter(unique.values()))
+            invoice.save(update_fields=['subscription'])
+        return invoice
+
     def process_batch_invoice(
         self, customer, start_date, end_date, commercial_registry, subscriptions
     ):
@@ -202,6 +217,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
 
         invoice.amount = total
         invoice.save()
+        self.anchor_invoice(invoice, subscriptions)
 
         log_action(
             user=self.request.user,
@@ -230,7 +246,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         )
         total = 0
         items = []
-        first_sub = None
+        created_subs = []
 
         for item_form in items_formset:
             if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
@@ -251,8 +267,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     quantity=cantidad,
                 )
 
-                if first_sub is None:
-                    first_sub = sub
+                created_subs.append(sub)
 
                 item = InvoiceItem.objects.create(
                     invoice=invoice,
@@ -277,9 +292,8 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 )
 
         invoice.amount = total
-        if first_sub:
-            invoice.subscription = first_sub
         invoice.save()
+        self.anchor_invoice(invoice, created_subs)
 
         log_action(
             user=self.request.user,

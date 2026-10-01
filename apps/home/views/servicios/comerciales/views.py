@@ -3,7 +3,7 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
-from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, When
+from django.db.models import Case, IntegerField, OuterRef, Subquery, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -31,16 +31,12 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
             customer = self.request.user.commercial_customer
         except Customer.DoesNotExist:
             return ServiceSubscription.objects.none()
-        # La factura no siempre cuelga de `Invoice.subscription`: la facturación
-        # por lote la crea sin ancla y la factura manual de varios servicios solo
-        # se ancla al primero. Cada línea (`InvoiceItem`) sí apunta a su
-        # suscripción, así que esa es la relación fiable. Filtrar por cliente
-        # mostraría la factura de otro servicio. Las anuladas no cuentan.
+        # `for_subscription` cubre el ancla de la factura y el vínculo por línea; las
+        # anuladas no se ofrecen porque no hay nada que pagar.
         latest_invoice = (
-            Invoice.objects.filter(is_cancelled=False)
-            .filter(Q(subscription=OuterRef('pk')) | Q(items__subscription=OuterRef('pk')))
+            Invoice.objects.for_subscription(OuterRef('pk'))
+            .filter(is_cancelled=False)
             .order_by('-issue_date')
-            .distinct()
         )
         return (
             ServiceSubscription.objects.filter(customer=customer, record_active=True)

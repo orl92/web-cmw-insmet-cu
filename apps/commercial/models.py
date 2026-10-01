@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.models import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
@@ -266,7 +267,22 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
         return f'{self.customer.company_name} - {self.service.title}'
 
 
+class InvoiceQuerySet(models.QuerySet):
+    def for_subscription(self, sub):
+        """Facturas de una suscripción, por cualquiera de los dos caminos.
+
+        `Invoice.subscription` es un ancla de conveniencia y queda NULL cuando la
+        factura cubre varias suscripciones: la facturación por lote agrupa
+        suscripciones con el mismo período y la manual de varios servicios sólo
+        cuelga la primera. El vínculo que nunca falta es el de cada línea
+        (`InvoiceItem.subscription`), así que leer sólo la relación inversa deja
+        al cliente sin botones de factura justo en esos casos.
+        """
+        return self.filter(Q(subscription=sub) | Q(items__subscription=sub)).distinct()
+
+
 class Invoice(SoftDeleteModel, FileHandlerMixin):
+    objects = InvoiceQuerySet.as_manager()
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.ForeignKey(
         ServiceSubscription,

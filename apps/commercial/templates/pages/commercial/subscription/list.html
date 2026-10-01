@@ -74,29 +74,27 @@
     {% endif %}
     <td class="text-end">
       {% if request.user.is_staff %}
-        {% with invoice=subscription.invoices.first %}
-          {% if invoice %}
-            <a href="{% url 'commercial:factura_download' invoice.uuid %}"
-               class="btn btn-icon btn-outline-success btn-sm"
-               data-bs-toggle="tooltip"
-               data-bs-placement="bottom"
-               title="Descargar Factura">
-              <i class="icon ti ti-download"></i>
-            </a>
-            <button type="button"
-                    class="btn btn-icon btn-outline-primary btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#documentPdfModal"
-                    data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
-                    data-pdf-title="Factura {{ invoice.number }}"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="bottom"
-                    aria-label="Ver PDF"
-                    data-bs-original-title="Ver PDF">
-              <i class="icon ti ti-file-type-pdf"></i>
-            </button>
-          {% endif %}
-        {% endwith %}
+        {% if subscription.latest_invoice_uuid %}
+          <a href="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}"
+             class="btn btn-icon btn-outline-success btn-sm"
+             data-bs-toggle="tooltip"
+             data-bs-placement="bottom"
+             title="Descargar Factura">
+            <i class="icon ti ti-download"></i>
+          </a>
+          <button type="button"
+                  class="btn btn-icon btn-outline-primary btn-sm"
+                  data-bs-toggle="modal"
+                  data-bs-target="#documentPdfModal"
+                  data-pdf-url="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}?inline=1"
+                  data-pdf-title="Factura {{ subscription.latest_invoice_number }}"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  aria-label="Ver PDF"
+                  data-bs-original-title="Ver PDF">
+            <i class="icon ti ti-file-type-pdf"></i>
+          </button>
+        {% endif %}
         {% if subscription.payment_status == 'paid' %}
           {% with certificate=subscription.certificates.first %}
             {% if certificate and certificate.pdf %}
@@ -179,7 +177,7 @@
              title="Aprobar Pago">
             <i class="icon ti ti-circle-check"></i>
           </a>
-          {% if subscription.invoices.exists %}
+          {% if subscription.latest_invoice_uuid %}
             <form method="post"
                   action="{% url 'commercial:factura_regenerate' subscription.uuid %}"
                   style="display:inline"
@@ -233,29 +231,27 @@
             {% endif %}
           {% endwith %}
         {% elif subscription.payment_status == 'pending' %}
-          {% with invoice=subscription.invoices.first %}
-            {% if invoice %}
-              <a href="{% url 'commercial:factura_download' invoice.uuid %}"
-                 class="btn btn-icon btn-outline-success btn-sm"
-                 data-bs-toggle="tooltip"
-                 data-bs-placement="bottom"
-                 title="Descargar Factura">
-                <i class="icon ti ti-download"></i>
-              </a>
-              <button type="button"
-                      class="btn btn-icon btn-outline-primary btn-sm"
-                      data-bs-toggle="modal"
-                      data-bs-target="#documentPdfModal"
-                      data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
-                      data-pdf-title="Factura {{ invoice.number }}"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="bottom"
-                      aria-label="Ver PDF"
-                      data-bs-original-title="Ver PDF">
-                <i class="icon ti ti-file-type-pdf"></i>
-              </button>
-            {% endif %}
-          {% endwith %}
+          {% if subscription.latest_invoice_uuid %}
+            <a href="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}"
+               class="btn btn-icon btn-outline-success btn-sm"
+               data-bs-toggle="tooltip"
+               data-bs-placement="bottom"
+               title="Descargar Factura">
+              <i class="icon ti ti-download"></i>
+            </a>
+            <button type="button"
+                    class="btn btn-icon btn-outline-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#documentPdfModal"
+                    data-pdf-url="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}?inline=1"
+                    data-pdf-title="Factura {{ subscription.latest_invoice_number }}"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    aria-label="Ver PDF"
+                    data-bs-original-title="Ver PDF">
+              <i class="icon ti ti-file-type-pdf"></i>
+            </button>
+          {% endif %}
           {% if subscription.payment_method == 'qr' %}
             <a href="{% url 'home:payment' %}"
                class="btn btn-icon btn-outline-primary btn-sm"
