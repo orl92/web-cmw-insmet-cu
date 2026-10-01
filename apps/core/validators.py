@@ -3,6 +3,7 @@ import io
 import re
 
 from django.core.exceptions import ValidationError
+from django.db.models.fields.files import FieldFile
 from PIL import Image, ImageFile
 
 REEUP_RE = r'^\d{3}\.\d{1,2}\.\d{4,5}$'
@@ -138,6 +139,30 @@ def strict_pillow():
         ImageFile.LOAD_TRUNCATED_IMAGES = previous
 
 
+def _is_stored_file(candidate):
+    """True when the file is an ImageField value already persisted on disk.
+
+    Model validation (`full_clean`) hands the validator whatever the field holds,
+    which for an untouched field is the previously stored file rather than a new
+    upload. Validating that would be actively harmful: a branding file uploaded
+    before this validator existed would make every later edit to the settings
+    page impossible to save, with no way out except re-uploading it.
+
+    Existence in storage is the test rather than `FieldFile._committed`: that
+    attribute is private, has no public property, and is True from `__init__`
+    even for a file that was assigned but never written.
+    """
+    if not isinstance(candidate, FieldFile) or not candidate.name:
+        return False
+
+    try:
+        return candidate.storage.exists(candidate.name)
+    except Exception:
+        # A storage backend that cannot answer must not turn an ordinary
+        # upload into a skip. Assume it is new and validate it.
+        return False
+
+
 def validate_image_upload(uploaded_file):
     """Validate an uploaded image file.
 
@@ -147,8 +172,14 @@ def validate_image_upload(uploaded_file):
 
     The two limits are not redundant and neither is enough alone: MAX_IMAGE_UPLOAD_SIZE
     bounds the upload, MAX_IMAGE_PIXELS bounds the memory it turns into.
+
+    A file that is already stored and unchanged is skipped: this validates
+    uploads, not storage. See `_is_stored_file`.
     """
     if uploaded_file is None:
+        return uploaded_file
+
+    if _is_stored_file(uploaded_file):
         return uploaded_file
 
     size = _file_size(uploaded_file)
