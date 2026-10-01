@@ -14,10 +14,26 @@ PHONE_SEPARATOR_RE = re.compile(r'[,;\s-]+')
 MAX_IMAGE_UPLOAD_SIZE = 5 * 1024 * 1024  # 5 MiB
 MAX_IMAGE_UPLOAD_SIZE_LABEL = '5 MiB'
 
+# The byte limit above does NOT bound memory use: a PNG of a flat colour
+# compresses to almost nothing and expands enormously. Measured in this repo,
+# a 13000x13000 PNG is 0.51 MiB on disk — comfortably under MAX_IMAGE_UPLOAD_SIZE
+# — and still needs ~645 MiB of RAM to decode, taking 6+ seconds of CPU. Pillow's
+# own DecompressionBombError only fires at 178 MP, far too late to be a guard.
+#
+# So the real limit is the decoded pixel count, checked from the header BEFORE
+# any decoding happens, which is why the size is read and not the pixels.
+# 25 MP is ~100 MiB as RGBA: far above any sane avatar or logo, far below what
+# takes a worker down.
+MAX_IMAGE_PIXELS = 25_000_000
+MAX_IMAGE_PIXELS_LABEL = '25 megapíxeles'
+
 INVALID_IMAGE_ERROR = (
     'El archivo no es una imagen válida o está dañada. Suba una imagen en formato PNG o JPEG.'
 )
 IMAGE_TOO_LARGE_ERROR = 'El archivo supera el tamaño máximo permitido de {limit}.'
+IMAGE_TOO_MANY_PIXELS_ERROR = (
+    'La imagen es demasiado grande: {limit}. Redimensione la imagen antes de subirla.'
+)
 
 # Pillow does not report every kind of corruption with the same exception, and
 # three of them do NOT inherit from OSError, so they have to be listed
@@ -85,6 +101,18 @@ def _read_bytes(file_object):
         raise ValidationError(INVALID_IMAGE_ERROR) from exc
 
 
+def _check_pixel_budget(size):
+    """Reject an image whose decoded size exceeds MAX_IMAGE_PIXELS.
+
+    `size` comes straight from the image header, so this runs without decoding
+    a single pixel. That matters: the failure mode being prevented is the
+    memory allocation, and `Image.load()` is what performs it.
+    """
+    width, height = size
+    if width * height > MAX_IMAGE_PIXELS:
+        raise ValidationError(IMAGE_TOO_MANY_PIXELS_ERROR.format(limit=MAX_IMAGE_PIXELS_LABEL))
+
+
 @contextlib.contextmanager
 def strict_pillow():
     """Force Pillow to reject damaged pixel data instead of padding it.
@@ -115,7 +143,10 @@ def validate_image_upload(uploaded_file):
 
     Accepts an UploadedFile (form upload) or a File/FieldFile (already stored).
     Raises a ValidationError with an actionable message when the file is too
-    large, is not an image at all, or is a corrupted image.
+    large, declares too many pixels, is not an image at all, or is corrupted.
+
+    The two limits are not redundant and neither is enough alone: MAX_IMAGE_UPLOAD_SIZE
+    bounds the upload, MAX_IMAGE_PIXELS bounds the memory it turns into.
     """
     if uploaded_file is None:
         return uploaded_file
@@ -133,6 +164,17 @@ def validate_image_upload(uploaded_file):
     # unusable, and load() decodes the pixel data that verify() never inspects.
     # So verify() is followed by a fresh open() plus load().
     with strict_pillow():
+        # Reject on the declared dimensions first, before anything is decoded:
+        # load() is what allocates the memory, so this is the only check that
+        # actually prevents the allocation rather than complaining afterwards.
+        try:
+            with Image.open(io.BytesIO(data)) as image:
+                _check_pixel_budget(image.size)
+        except ValidationError:
+            raise
+        except Exception as exc:
+            raise ValidationError(INVALID_IMAGE_ERROR) from exc
+
         for stage in ('verify', 'load'):
             try:
                 with Image.open(io.BytesIO(data)) as image:

@@ -28,7 +28,9 @@ from django.urls import reverse
 from PIL import Image, ImageFile
 
 from apps.core.validators import (
+    IMAGE_TOO_MANY_PIXELS_ERROR,
     INVALID_IMAGE_ERROR,
+    MAX_IMAGE_PIXELS,
     MAX_IMAGE_UPLOAD_SIZE,
     strict_pillow,
     validate_image_upload,
@@ -99,7 +101,39 @@ def _oversized_png():
     return buffer.getvalue()
 
 
+def _too_many_pixels_png():
+    """A valid PNG that is tiny on disk but far too large to decode.
+
+    This is the fixture that justifies `MAX_IMAGE_PIXELS`: it is well under
+    `MAX_IMAGE_UPLOAD_SIZE`, so the byte rule accepts it, and only the pixel
+    rule can reject it. Measured in this repo, the real-world version of this
+    attack is a 13000x13000 PNG — 0.51 MiB on disk, ~645 MiB of RAM once
+    decoded — so a byte limit alone does not bound anything.
+
+    Pixels are generated for real rather than the header being patched, so the
+    fixture is a genuinely decodable image and the test cannot pass for the
+    wrong reason. 5200x5200 is the smallest square over the 25 MP budget that
+    still costs about a second to build.
+    """
+    buffer = io.BytesIO()
+    Image.new('RGB', (5200, 5200), (10, 20, 30)).save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
+def _large_legal_png():
+    """A big image that is legal on both counts: 4000x4000 = 16 MP.
+
+    Deliberately smaller than the 25 MP budget so the pixel rule cannot be what
+    accepts it. Its job is to catch a budget implemented as a blunt size cap.
+    """
+    buffer = io.BytesIO()
+    Image.new('RGB', (4000, 4000), (10, 20, 30)).save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
 OVERSIZED_PNG_BYTES = _oversized_png()
+TOO_MANY_PIXELS_PNG_BYTES = _too_many_pixels_png()
+LARGE_LEGAL_PNG_BYTES = _large_legal_png()
 
 
 def _upload(name, data, content_type='image/png'):
@@ -142,6 +176,16 @@ class AvatarFixtureIntegrityTests(SimpleTestCase):
         image.close()
 
         self.assertGreater(len(data), MAX_IMAGE_UPLOAD_SIZE)
+
+    def test_too_many_pixels_fixture_is_small_on_disk_but_huge_when_decoded(self):
+        data = TOO_MANY_PIXELS_PNG_BYTES
+        with Image.open(io.BytesIO(data)) as image:
+            width, height = image.size
+            image.verify()
+
+        # The whole point: the byte rule cannot see this one.
+        self.assertLessEqual(len(data), MAX_IMAGE_UPLOAD_SIZE)
+        self.assertGreater(width * height, MAX_IMAGE_PIXELS)
 
 
 class ValidateImageUploadTests(SimpleTestCase):
@@ -190,7 +234,47 @@ class ValidateImageUploadTests(SimpleTestCase):
         with self.assertRaises(ValidationError):
             validate_image_upload(_upload('huge.png', OVERSIZED_PNG_BYTES))
 
-    def test_returns_none_for_a_missing_file(self):
+    def test_rejects_an_image_with_too_many_pixels(self):
+        with self.assertRaises(ValidationError) as ctx:
+            validate_image_upload(_upload('bomb.png', TOO_MANY_PIXELS_PNG_BYTES))
+
+        self.assertIn(
+            IMAGE_TOO_MANY_PIXELS_ERROR.format(limit='25 megapíxeles'),
+            ctx.exception.messages,
+        )
+
+    def test_rejects_too_many_pixels_before_decoding_anything(self):
+        # load() is what allocates the memory this rule exists to prevent, so
+        # the budget has to be enforced from the header. If load() ran first, a
+        # bomb would already have been paid for by the time it was refused.
+        #
+        # The calls are recorded rather than made to raise on purpose: the
+        # validator wraps decoding in a broad `except Exception` that turns any
+        # internal error into a ValidationError, so a raising stub would be
+        # swallowed and this test would pass even with the check moved after
+        # load(). Counting the calls is what actually pins the ordering.
+        calls = []
+        original_load = Image.Image.load
+
+        def counting_load(self, *args, **kwargs):
+            calls.append(self.size)
+            return original_load(self, *args, **kwargs)
+
+        with (
+            mock.patch.object(Image.Image, 'load', counting_load),
+            self.assertRaises(ValidationError),
+        ):
+            validate_image_upload(_upload('bomb.png', TOO_MANY_PIXELS_PNG_BYTES))
+
+        self.assertEqual(calls, [], 'load() decodifico pixeles de una imagen ya rechazada')
+
+    def test_accepts_a_large_image_when_within_the_pixel_budget(self):
+        # Guards against the budget being a blunt "reject anything big": a
+        # comfortably large-but-legal image must still pass. Not the oversized
+        # fixture, which is over the byte limit by design.
+        self.assertIsNotNone(validate_image_upload(_upload('big.png', LARGE_LEGAL_PNG_BYTES)))
+
+    def test_accepts_none_for_a_missing_file(self):
         self.assertIsNone(validate_image_upload(None))
 
 
@@ -239,6 +323,14 @@ class ProfileFormAvatarTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('avatar', form.errors)
         self.assertIn('5 MiB', form.errors['avatar'][0])
+
+    def test_image_with_too_many_pixels_is_a_field_error(self):
+        form = self._form(files={'avatar': _upload('bomb.png', TOO_MANY_PIXELS_PNG_BYTES)})
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('avatar', form.errors)
+        self.assertIn('megapíxeles', form.errors['avatar'][0])
+        self.assertFalse(Profile.objects.get(user=self.user).avatar)
 
     def test_broken_pixels_are_reported_by_the_shared_validator(self):
         form = self._form(files={'avatar': _upload('broken.png', _png_with_broken_pixels())})
