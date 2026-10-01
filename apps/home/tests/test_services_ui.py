@@ -16,6 +16,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.defaultfilters import date as django_date_filter
 from django.test import TestCase
 from django.urls import reverse
@@ -267,6 +268,45 @@ class CommercialServicesListViewStateScopeTests(TestCase):
             payment_status=status,
             payment_method=payment_method,
         )
+
+    def test_pending_shows_invoice_button_for_manual_invoice(self):
+        """D1: la factura manual (`subscription_id = NULL`) también se encuentra.
+
+        El staff la cuelga de la suscripción, pero la factura creada a mano queda
+        huérfana. Buscar solo por `subscription` devolvía `None` y el botón
+        "Ver factura" no se renderizaba: el cliente con la factura pendiente se
+        quedaba sin forma de verla.
+        """
+        self._make_sub('pending', 'manual-invoice')
+        invoice = Invoice.objects.create(
+            customer=self.customer,
+            subscription=None,
+            issue_date=timezone.now().date(),
+            amount=10,
+            pdf=SimpleUploadedFile('f.pdf', b'%PDF-1.4 fake', content_type='application/pdf'),
+        )
+        self.client.force_login(self.client_user)
+        html = self.client.get(reverse('home:services_commercial')).content.decode()
+        self.assertIn('Ver factura', html)
+        self.assertIn(
+            reverse('commercial:factura_download', args=[invoice.uuid]),
+            html,
+        )
+
+    def test_cancelled_manual_invoice_is_not_offered(self):
+        """Una factura anulada no es pagable, así que no se ofrece el botón."""
+        self._make_sub('pending', 'cancelled-invoice')
+        Invoice.objects.create(
+            customer=self.customer,
+            subscription=None,
+            issue_date=timezone.now().date(),
+            amount=10,
+            is_cancelled=True,
+            pdf=SimpleUploadedFile('f.pdf', b'%PDF-1.4 fake', content_type='application/pdf'),
+        )
+        self.client.force_login(self.client_user)
+        html = self.client.get(reverse('home:services_commercial')).content.decode()
+        self.assertNotIn('Ver factura', html)
 
     def test_lists_all_subscription_states_in_priority_order(self):
         self._make_sub('expired', 'expirado')

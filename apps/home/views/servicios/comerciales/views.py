@@ -3,7 +3,7 @@ from urllib.parse import quote
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
-from django.db.models import Case, IntegerField, OuterRef, Subquery, When
+from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
@@ -31,7 +31,18 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
             customer = self.request.user.commercial_customer
         except Customer.DoesNotExist:
             return ServiceSubscription.objects.none()
-        latest_invoice = Invoice.objects.filter(subscription=OuterRef('pk')).order_by('-issue_date')
+        # La factura puede llegar colgada de la suscripción o creada a mano por
+        # el staff (`subscription_id = NULL`), y en el segundo caso hay que
+        # buscarla por cliente. Las anuladas no cuentan: no hay nada que pagar.
+        customer_id = customer.pk
+        latest_invoice = (
+            Invoice.objects.filter(is_cancelled=False)
+            .filter(
+                Q(subscription=OuterRef('pk'))
+                | Q(customer_id=customer_id, subscription__isnull=True)
+            )
+            .order_by('-issue_date')
+        )
         return (
             ServiceSubscription.objects.filter(customer=customer, record_active=True)
             .select_related('service', 'service__user')
