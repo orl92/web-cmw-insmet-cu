@@ -10,6 +10,7 @@ from django.templatetags.static import static
 from PIL import Image
 
 from apps.core.models import FileHandlerMixin, image_upload_path
+from apps.core.validators import strict_pillow
 
 logger = logging.getLogger(__name__)
 
@@ -45,34 +46,62 @@ class Profile(FileHandlerMixin, models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.avatar and os.path.exists(self.avatar.path):
-            with Image.open(self.avatar.path) as img:
-                wide, high = img.size
-                if wide > high:
-                    new_high = 300
-                    new_wide = int((wide / high) * new_high)
-                    img = img.resize((new_wide, new_high))
-                elif high > wide:
-                    new_wide = 300
-                    new_high = int((high / wide) * new_wide)
-                    img = img.resize((new_wide, new_high))
-                else:
-                    img.thumbnail((300, 300))
-                img.save(self.avatar.path)
-            with Image.open(self.avatar.path) as img:
-                wide, high = img.size
-                if wide > high:
-                    left = (wide - high) / 2
-                    top = 0
-                    right = (wide + high) / 2
-                    bottom = high
-                else:
-                    left = 0
-                    top = (high - wide) / 2
-                    right = wide
-                    bottom = (high + wide) / 2
-                img = img.crop((left, top, right, bottom))
-                img.save(self.avatar.path)
+        self._process_avatar()
+
+    def _process_avatar(self):
+        """Resize and crop the stored avatar in place, keeping it square.
+
+        Pillow is forced to fully decode the file here, so a corrupted or
+        truncated upload used to turn any save (form, admin, shell, signal)
+        into an HTTP 500. Image processing is therefore best-effort: on
+        failure the exception is logged and the stored file is left untouched
+        instead of breaking the save.
+        """
+        if not self.avatar or not os.path.exists(self.avatar.path):
+            return
+
+        try:
+            with strict_pillow():
+                with Image.open(self.avatar.path) as img:
+                    wide, high = img.size
+                    if wide > high:
+                        new_high = 300
+                        new_wide = int((wide / high) * new_high)
+                        img = img.resize((new_wide, new_high))
+                    elif high > wide:
+                        new_wide = 300
+                        new_high = int((high / wide) * new_wide)
+                        img = img.resize((new_wide, new_high))
+                    else:
+                        img.thumbnail((300, 300))
+                    img.save(self.avatar.path)
+                with Image.open(self.avatar.path) as img:
+                    wide, high = img.size
+                    if wide > high:
+                        left = (wide - high) / 2
+                        top = 0
+                        right = (wide + high) / 2
+                        bottom = high
+                    else:
+                        left = 0
+                        top = (high - wide) / 2
+                        right = wide
+                        bottom = (high + wide) / 2
+                    img = img.crop((left, top, right, bottom))
+                    img.save(self.avatar.path)
+        except Exception:
+            # Deliberately broad, and deliberately so: this is the only thing
+            # standing between a damaged file already sitting in storage and an
+            # HTTP 500 on every later save. `PILLOW_ERRORS` is not enough here
+            # because a few real failure modes are not OSError subclasses —
+            # `zlib.error` on a broken IDAT stream, `struct.error` on a mangled
+            # header — and a legacy file uploaded before validation existed can
+            # still be on disk. Every failure is logged with a traceback, so a
+            # genuine programming bug here stays visible instead of silent.
+            logger.exception(
+                'No se pudo procesar el avatar del perfil %s; se conserva el archivo original.',
+                self.uuid,
+            )
 
 
 class PermissionProfile(models.Model):
