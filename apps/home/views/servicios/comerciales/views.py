@@ -31,17 +31,16 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
             customer = self.request.user.commercial_customer
         except Customer.DoesNotExist:
             return ServiceSubscription.objects.none()
-        # La factura puede llegar colgada de la suscripción o creada a mano por
-        # el staff (`subscription_id = NULL`), y en el segundo caso hay que
-        # buscarla por cliente. Las anuladas no cuentan: no hay nada que pagar.
-        customer_id = customer.pk
+        # La factura no siempre cuelga de `Invoice.subscription`: la facturación
+        # por lote la crea sin ancla y la factura manual de varios servicios solo
+        # se ancla al primero. Cada línea (`InvoiceItem`) sí apunta a su
+        # suscripción, así que esa es la relación fiable. Filtrar por cliente
+        # mostraría la factura de otro servicio. Las anuladas no cuentan.
         latest_invoice = (
             Invoice.objects.filter(is_cancelled=False)
-            .filter(
-                Q(subscription=OuterRef('pk'))
-                | Q(customer_id=customer_id, subscription__isnull=True)
-            )
+            .filter(Q(subscription=OuterRef('pk')) | Q(items__subscription=OuterRef('pk')))
             .order_by('-issue_date')
+            .distinct()
         )
         return (
             ServiceSubscription.objects.filter(customer=customer, record_active=True)
