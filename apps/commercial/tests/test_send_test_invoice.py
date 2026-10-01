@@ -107,12 +107,18 @@ class SendTestInvoiceCommandTests(TestCase):
 
     def _marcar_enviada(self, enviada, error=''):
         """Lo que hace `enviar_correo_factura` sobre la factura, sin el correo."""
-        Invoice.objects.filter(number='CMD-0001').update(email_sent=enviada, email_error=error)
+        Invoice.objects.filter(number='CMD-0001').update(
+            email_status='sent' if enviada else 'failed',
+            email_error=error or None,
+            pdf_status='ready',
+        )
 
     def _marcar_demo_enviada(self, enviada=True, error=''):
         """Ídem, sobre las facturas que crea `--demo` (su número no es fijo)."""
         Invoice.objects.filter(number__startswith=DEMO_PREFIX).update(
-            email_sent=enviada, email_error=error
+            email_status='sent' if enviada else 'failed',
+            email_error=error or None,
+            pdf_status='ready',
         )
 
     def _cola_sqlite(self):
@@ -373,14 +379,18 @@ class SendTestInvoiceCommandTests(TestCase):
 
         tarea.call_local.assert_called_once()
         self.assertNotIn('NO ENVIADO', salida)
-        self.assertIn('email_sent=True', salida)
+        self.assertIn('correo enviado', salida)
 
     def test_now_falla_cuando_el_correo_no_salio(self):
+        def _falla_el_correo(*a, **kw):
+            # La tarea real propaga el fallo del correo en vez de tragárselo:
+            # el estado y el error quedan escritos y después sube la excepción.
+            self._marcar_enviada(False, 'SMTP caído')
+            raise RuntimeError('No se pudo enviar el correo de la factura CMD-0001')
+
         with con_binario(), patch('apps.core.tasks.generate_invoice_pdf_and_email_task') as tarea:
-            tarea.call_local.side_effect = lambda *a, **kw: self._marcar_enviada(
-                False, 'SMTP caído'
-            )
+            tarea.call_local.side_effect = _falla_el_correo
             with self.assertRaises(CommandError) as ctx:
                 self._run(str(self.invoice.uuid), '--now')
 
-        self.assertIn('el correo no se envió', str(ctx.exception))
+        self.assertIn('paso "correo"', str(ctx.exception))

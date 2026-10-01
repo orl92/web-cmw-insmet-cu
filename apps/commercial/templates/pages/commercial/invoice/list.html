@@ -66,32 +66,47 @@
       {% endif %}
     </td>
     <td class="text-end">
-      <a href="{% url 'commercial:factura_download' invoice.uuid %}"
-         class="btn btn-icon btn-outline-success btn-sm"
-         data-bs-toggle="tooltip"
-         data-bs-placement="bottom"
-         aria-label="Descargar Factura"
-         data-bs-original-title="Descargar Factura">
-        <i class="icon ti ti-download"></i>
-      </a>
-      <button type="button"
-              class="btn btn-icon btn-outline-primary btn-sm"
-              data-bs-toggle="modal"
-              data-bs-target="#documentPdfModal"
-              data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
-              data-pdf-title="Factura {{ invoice.number }}"
+      {% if invoice.pdf_ready %}
+        <a href="{% url 'commercial:factura_download' invoice.uuid %}"
+           class="btn btn-icon btn-outline-success btn-sm"
+           data-bs-toggle="tooltip"
+           data-bs-placement="bottom"
+           aria-label="Descargar Factura"
+           data-bs-original-title="Descargar Factura">
+          <i class="icon ti ti-download"></i>
+        </a>
+        <button type="button"
+                class="btn btn-icon btn-outline-primary btn-sm"
+                data-bs-toggle="modal"
+                data-bs-target="#documentPdfModal"
+                data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
+                data-pdf-title="Factura {{ invoice.number }}"
+                data-bs-toggle="tooltip"
+                data-bs-placement="bottom"
+                aria-label="Ver PDF"
+                data-bs-original-title="Ver PDF">
+          <i class="icon ti ti-file-type-pdf"></i>
+        </button>
+      {% elif invoice.pdf_status == 'failed' %}
+        <span class="badge bg-red-lt"
               data-bs-toggle="tooltip"
-              data-bs-placement="bottom"
-              aria-label="Ver PDF"
-              data-bs-original-title="Ver PDF">
-        <i class="icon ti ti-file-type-pdf"></i>
-      </button>
-      {% if not invoice.email_sent and not invoice.is_cancelled %}
+              data-bs-original-title="{{ invoice.pdf_error|truncatechars:160 }}"
+              title="No se pudo generar el PDF. Reintentá desde el monitoreo de tareas.">
+          <i class="icon ti ti-file-type-pdf me-1"></i>PDF falló
+        </span>
+      {% else %}
+        <span class="badge bg-yellow-lt"
+              data-bs-toggle="tooltip"
+              data-bs-original-title="La factura todavía no tiene PDF generado.">
+          <i class="icon ti ti-clock me-1"></i>PDF pendiente
+        </span>
+      {% endif %}
+      {% if invoice.email_status != 'sent' and not invoice.is_cancelled %}
         <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}"
            class="btn btn-icon btn-outline-warning btn-sm"
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
-           title="Reenviar correo">
+           title="{% if invoice.email_status == 'failed' %}Reenviar correo (el anterior falló){% else %}Reenviar correo{% endif %}">
           <i class="icon ti ti-mail-forward"></i>
         </a>
       {% endif %}

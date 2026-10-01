@@ -61,6 +61,7 @@
         <thead>
           <tr>
             <th>Tarea</th>
+            <th>De quién es</th>
             <th>Estado</th>
             <th class="text-center">Intentos</th>
             <th>En cola</th>
@@ -74,6 +75,13 @@
           {% for execution in executions %}
             <tr>
               <td>{{ execution.task_name }}</td>
+              <td>
+                {% if execution.summary %}
+                  <span class="fw-medium">{{ execution.summary }}</span>
+                {% else %}
+                  <span class="text-secondary">—</span>
+                {% endif %}
+              </td>
               <td>
                 {% if execution.status == 'ENQUEUED' %}
                   <span class="badge bg-info-lt">En cola</span>

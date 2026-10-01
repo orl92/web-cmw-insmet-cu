@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 from weasyprint import HTML
 
-from apps.commercial.models import Contract, Customer
+from apps.commercial.models import Contract, Customer, Invoice
 from apps.core.models import CompanySettings
 
 logger = logging.getLogger(__name__)
@@ -162,14 +162,36 @@ def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, ite
     pdf_bytes = HTML(string=html_string).write_pdf()
     filename = f'factura_{invoice.id}.pdf'
     invoice.pdf.save(filename, ContentFile(pdf_bytes))
+    return pdf_bytes
+
+
+def marcar_pdf(invoice, error=None):
+    """Deja el estado del PDF alineado con lo que pasó en el render.
+
+    Vive acá y no en la tarea porque hay dos caminos que generan el PDF (la
+    tarea Huey y el comando de pruebas) y el estado tiene que quedar escrito
+    igual en los dos.
+    """
+    invoice.pdf_status = Invoice.PdfStatus.FAILED if error else Invoice.PdfStatus.READY
+    invoice.pdf_error = str(error) if error else None
+    invoice.save(update_fields=['pdf_status', 'pdf_error'])
+    return invoice
 
 
 def enviar_correo_factura(invoice, customer, request=None, base_url=None):
     """
-    Envía el correo con la factura en PDF y actualiza flags email_sent/email_error.
-    Retorna True si se envió correctamente, False en caso contrario.
+    Envía el correo con la factura en PDF y registra el resultado en
+    `email_status`/`email_error`.
+
+    Retorna True si salió, False si no. **No propaga la excepción**: quien
+    llama decide si eso es un error fatal o solo un estado que hay que
+    mostrar. Tragar el error acá es lo que hacía que la tarea Huey reportara
+    éxito con el correo sin enviar.
     """
     if not customer.user or not customer.user.email:
+        invoice.email_status = Invoice.EmailStatus.FAILED
+        invoice.email_error = 'El cliente no tiene correo registrado.'
+        invoice.save(update_fields=['email_status', 'email_error'])
         return False
 
     first_item = invoice.items.first()
@@ -232,14 +254,14 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
 
     try:
         email.send()
-        invoice.email_sent = True
+        invoice.email_status = Invoice.EmailStatus.SENT
         invoice.email_error = None
-        invoice.save()
+        invoice.save(update_fields=['email_status', 'email_error'])
         logger.info(f'Factura {invoice.number} enviada a {customer.user.email}')
         return True
     except Exception as e:
         logger.error(f'Error enviando factura {invoice.number}: {e}')
-        invoice.email_sent = False
+        invoice.email_status = Invoice.EmailStatus.FAILED
         invoice.email_error = str(e)
-        invoice.save()
+        invoice.save(update_fields=['email_status', 'email_error'])
         return False

@@ -123,7 +123,8 @@ class InvoiceCSVExportView(CSVExportView):
         ('Servicio(s)', _invoice_services),
         ('Monto', 'amount'),
         ('Estado', lambda o: 'Anulada' if o.is_cancelled else 'Activa'),
-        ('Correo Enviado', lambda o: 'Sí' if o.email_sent else 'No'),
+        ('Estado del correo', lambda o: o.get_email_status_display()),
+        ('Error del correo', lambda o: (o.email_error or '')[:200]),
     ]
 
 

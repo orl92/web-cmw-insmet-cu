@@ -281,10 +281,43 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
         upload_to=pdf_upload_path, verbose_name='Archivo PDF', blank=True, null=True
     )
     is_cancelled = models.BooleanField(default=False, verbose_name='¿Anulada?')
-    email_sent = models.BooleanField(default=False, verbose_name='Correo enviado')
+
+    class PdfStatus(models.TextChoices):
+        PENDING = 'pending', 'Pendiente'
+        READY = 'ready', 'Generado'
+        FAILED = 'failed', 'Falló'
+
+    class EmailStatus(models.TextChoices):
+        PENDING = 'pending', 'Pendiente'
+        SENT = 'sent', 'Enviado'
+        FAILED = 'failed', 'Falló'
+
+    pdf_status = models.CharField(
+        max_length=10,
+        choices=PdfStatus.choices,
+        default=PdfStatus.PENDING,
+        verbose_name='Estado del PDF',
+    )
+    pdf_error = models.TextField(blank=True, null=True, verbose_name='Error al generar el PDF')
+    email_status = models.CharField(
+        max_length=10,
+        choices=EmailStatus.choices,
+        default=EmailStatus.PENDING,
+        verbose_name='Estado del correo',
+    )
     email_error = models.TextField(blank=True, null=True, verbose_name='Error al enviar')
 
     file_fields = ['pdf']
+
+    @property
+    def pdf_ready(self):
+        """El PDF se puede mostrar y descargar solo si el render terminó bien.
+
+        No alcanza con que el archivo exista: un render fallido a mitad de
+        camino deja el campo `pdf` PopulationError. El estado explícito es lo
+        que decide si los botones aparecen.
+        """
+        return self.pdf_status == self.PdfStatus.READY and bool(self.pdf)
 
     class Meta:
         verbose_name = 'Factura'

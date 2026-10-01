@@ -59,7 +59,7 @@ class InvoiceUtilsTests(TestCase):
         )
         self.assertTrue(result)
         self.invoice.refresh_from_db()
-        self.assertTrue(self.invoice.email_sent)
+        self.assertEqual(self.invoice.email_status, Invoice.EmailStatus.SENT)
 
     @patch('apps.commercial.views.invoice_utils.render_to_string')
     @patch('apps.commercial.views.invoice_utils.EmailMessage')
@@ -77,6 +77,7 @@ class InvoiceUtilsTests(TestCase):
         )
         self.assertFalse(result)
         self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.email_status, Invoice.EmailStatus.FAILED)
         self.assertIn('SMTP error', self.invoice.email_error or '')
 
 

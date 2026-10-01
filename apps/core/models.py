@@ -323,6 +323,14 @@ class TaskExecutionLog(models.Model):
 
     task_id = models.CharField(max_length=255, db_index=True)
     task_name = models.CharField(max_length=255)
+    # Clave estable del trabajo lógico, no del intento. Un reintento genera un
+    # `task.id` nuevo, así que buscar por `task_id` abría una fila nueva en
+    # cada intento y el error original quedaba congelado. Con esta clave el
+    # reintento actualiza la misma fila y `task_id` se refresca al nuevo id.
+    logical_key = models.CharField(max_length=255, blank=True, default='', db_index=True)
+    # Texto legible de a quién pertenece la tarea, para que la tabla no.obligue
+    # a abrir el log para saber de qué cliente habla.
+    summary = models.CharField(max_length=255, blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ENQUEUED)
     enqueued_at = models.DateTimeField(null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)

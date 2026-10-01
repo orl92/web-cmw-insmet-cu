@@ -4,8 +4,8 @@ El problema que este comando viene a resolver: en desarrollo el flujo se ve
 "simulado" por cuatro razones apiladas (falta el binario de PDF, la tarea muere
 antes de enviar, el worker no arranca sin `logs/`, y el console backend nunca
 falla). Con este comando el preflight dice cuál de esas está fallando, en vez de
-dejar que se manifieste como un reintento de Huey o como un `email_sent=True` que
-no llegó a ningún lado.
+dejar que se manifieste como un reintento de Huey o como un
+`email_status='sent'` que no llegó a ningún lado.
 
 `--demo` escribe filas REALES (clientes, facturas, usuarios) en la base de
 desarrollo. Como la base de desarrollo es la que el resto del trabajo usa, se
@@ -37,7 +37,7 @@ from apps.commercial.models import (
 from apps.commercial.views.invoice_utils import require_pdf_renderer
 
 # Backends que no entregan a nadie: escriben y devuelven éxito igual. Con estos,
-# `email_sent=True` no significa que el correo saliera.
+# `email_status='sent'` no significa que el correo saliera.
 SILENT_BACKENDS = {
     'django.core.mail.backends.console.EmailBackend',
     'django.core.mail.backends.filebased.EmailBackend',
@@ -584,28 +584,26 @@ class Command(BaseCommand):
         try:
             generate_invoice_pdf_and_email_task.call_local(str(invoice.uuid), base_url)
         except Exception as exc:
+            # La tarea propaga el fallo de cada paso, así que acá ya se sabe
+            # cuál fue. Antes el correo se reportaba como tarea exitosa y
+            # este comando no decía nada.
             invoice.refresh_from_db()
+            paso = 'PDF' if invoice.pdf_status == Invoice.PdfStatus.FAILED else 'correo'
+            detalle = invoice.pdf_error if paso == 'PDF' else invoice.email_error
             self.stderr.write(
                 self.style.ERROR(
-                    f'La tarea falló: {type(exc).__name__}: {exc}\n'
-                    f'Revisá logs/huey.log si esperabas que el worker lo reintentara.'
+                    f'Falló el paso "{paso}" de la factura {invoice.number}.\n'
+                    f'  pdf_status={invoice.pdf_status}  email_status={invoice.email_status}\n'
+                    f'  detalle: {detalle or "(sin detalle)"}\n'
+                    f'  error: {type(exc).__name__}: {exc}'
                 )
             )
-            raise CommandError('La tarea del worker falló.') from exc
+            raise CommandError(f'La tarea falló en el paso "{paso}".') from exc
 
         invoice.refresh_from_db()
-        if invoice.email_sent:
-            recipient = self._resolve_customer(invoice).user.email
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f'Factura {invoice.number}: email_sent=True, correo a {recipient}'
-                )
+        recipient = self._resolve_customer(invoice).user.email
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'Factura {invoice.number}: PDF {invoice.pdf_status} y correo enviado a {recipient}'
             )
-        else:
-            self.stderr.write(
-                self.style.ERROR(
-                    f'Factura {invoice.number}: email_sent=False, '
-                    f'email_error={invoice.email_error!r}'
-                )
-            )
-            raise CommandError('La tarea corrió pero el correo no se envió.')
+        )

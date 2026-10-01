@@ -402,6 +402,32 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         return context
 
 
+def _paso_a_reintentar(execution, paso_pedido):
+    """Qué paso de la tarea de factura hay que reintentar.
+
+    Devuelve 'pdf', 'email' o None (dejar que la tarea decida sola).
+
+    Si el operador pidió un paso explícito, se respeta. Si no, se deduce del
+    estado de la factura, que es la fuente de verdad: si el PDF quedó `ready`
+    y el correo `failed`, el único paso que sirve reintentar es el correo.
+    """
+    if paso_pedido in ('pdf', 'email'):
+        return paso_pedido
+    if not (execution.logical_key or '').startswith('invoice:'):
+        return None
+    try:
+        from apps.commercial.models import Invoice
+
+        invoice = Invoice.objects.get(uuid=execution.logical_key.split(':', 1)[1])
+    except Exception:
+        return None
+    if not invoice.pdf_ready and invoice.pdf_status == Invoice.PdfStatus.FAILED:
+        return 'pdf'
+    if invoice.email_status == Invoice.EmailStatus.FAILED:
+        return 'email'
+    return None
+
+
 class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'pages/dashboard/tasks.html'
 
@@ -470,8 +496,22 @@ class TaskMonitoringActionView(LoginRequiredMixin, UserPassesTestMixin, View):
                 module_name, _, func_name = execution.func_name.rpartition('.')
                 func = getattr(import_module(module_name), func_name)
                 payload = _json.loads(execution.func_args)
-                func(*payload.get('args', []), **payload.get('kwargs', {}))
-                messages.success(request, f'Tarea {execution.task_name} reencolada.')
+                args = list(payload.get('args', []))
+                kwargs = dict(payload.get('kwargs', {}))
+                # Reintentar el paso que falló, no la tarea entera: si el PDF
+                # ya salió bien y lo que no salió fue el correo, volver a
+                # renderizar el PDF no arregla nada y lo deja con una marca de
+                # tiempo nueva. La tarea es idempotente, así que
+                # `_paso_a_reintentar` solo decide qué se le pide explícitamente.
+                paso = _paso_a_reintentar(execution, request.POST.get('paso'))
+                if paso:
+                    kwargs['solo_paso'] = paso
+                func(*args, **kwargs)
+                messages.success(
+                    request,
+                    f'Tarea reencolada'
+                    f'{f" (paso: {paso})" if paso else ""}. Se actualizó la misma fila.',
+                )
             except Exception:
                 logger.exception('No se pudo reintentar la tarea %s', execution.func_name)
                 messages.error(request, 'No se pudo reintentar la tarea. Revise los logs.')

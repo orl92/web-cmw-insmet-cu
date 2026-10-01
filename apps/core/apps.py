@@ -84,6 +84,75 @@ def _tb(exc):
         return str(exc)
 
 
+def _logical_key(task):
+    """Clave estable del trabajo lógico, o '' si la tarea no tiene una.
+
+    Huey da un `task.id` nuevo en cada encolado, así que ese id identifica un
+    *intento*, no un trabajo. Para las tareas que sabemos repetir sobre la
+    misma fila de negocio, la clave se deriva de esa fila: la tarea de
+    factura siempre habla de la misma factura, la repita la cuenta que la
+    repita. Sin esta clave, cada reintento desde el dashboard crea una fila
+    nueva y el error original se queda ahí para siempre.
+    """
+    name = getattr(task, 'name', '') or ''
+    if name != 'generate_invoice_pdf_and_email_task':
+        return ''
+    args = getattr(task, 'args', None) or ()
+    if not args:
+        return ''
+    return f'invoice:{args[0]}'
+
+
+def _summary(task, logical_key):
+    """Descripción legible de la tarea, o '' si no se puede resolver.
+
+    Solo para mostrar en la tabla: 'Factura 2026-0001 · Cliente X'. Si la
+    factura ya no existe, devuelve el prefijo solo en vez de romper el
+    encolado, porque el log de tareas no es el lugar para fallar.
+    """
+    if not logical_key.startswith('invoice:'):
+        return ''
+    invoice_uuid = logical_key.split(':', 1)[1]
+    try:
+        from apps.commercial.models import Invoice
+
+        invoice = (
+            Invoice.objects.select_related('customer', 'customer__user')
+            .only(
+                'number',
+                'customer__company_name',
+                'customer__identity_document',
+                'customer__user__first_name',
+                'customer__user__last_name',
+                'customer__user__email',
+            )
+            .get(uuid=invoice_uuid)
+        )
+    except Exception:
+        return 'Factura (eliminado)'
+    return f'Factura {invoice.number} · {_cliente_label(invoice.customer)}'[:255]
+
+
+def _cliente_label(customer):
+    """Nombre con el que una persona puede reconocer al cliente de un vistazo.
+
+    `company_name` solo existe para personas jurídicas: en una natural está
+    vacío, y el resumen quedaba como 'Factura X · None', que no identifica a
+    nadie justo en el caso más común del portal. Para una natural caemos a
+    sus nombres, y de ahí al correo, que siempre existe.
+    """
+    if customer is None:
+        return 'sin cliente'
+    nombre = (customer.company_name or '').strip()
+    if nombre:
+        return nombre
+    user = customer.user
+    if user is None:
+        return customer.identity_document or 'sin identificar'
+    nombre = f'{user.first_name or ""} {user.last_name or ""}'.strip()
+    return nombre or user.email or customer.identity_document or 'sin identificar'
+
+
 class CoreConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.core'
@@ -108,16 +177,38 @@ class CoreConfig(AppConfig):
         @huey.signal(huey_signals.SIGNAL_ENQUEUED)
         def on_enqueued(signal, task):
             try:
+                logical_key = _logical_key(task)
+                defaults = {
+                    'task_name': task.name,
+                    'status': TaskExecutionLog.STATUS_ENQUEUED,
+                    'enqueued_at': timezone.now(),
+                    'args_repr': _safe_args(task),
+                    'func_name': _func_name(task),
+                    'func_args': _safe_args_json(task),
+                    'summary': _summary(task, logical_key),
+                    'logical_key': logical_key,
+                }
+                if logical_key:
+                    # Reintento de un trabajo conocido: se reutiliza la fila
+                    # existente. `task_id` se refresca al id nuevo porque las
+                    # señales siguientes (executing/complete/retrying/error)
+                    # buscan por `task_id`, no por `logical_key`: sin esto la
+                    # fila reutilizada queda en `enqueued` para siempre, sin
+                    # registrar ni un resultado. `attempts` se arrastra para
+                    # que se vea cuántos intentos lleva.
+                    existing = (
+                        TaskExecutionLog.objects.filter(logical_key=logical_key)
+                        .order_by('-enqueued_at')
+                        .first()
+                    )
+                    if existing:
+                        defaults['attempts'] = F('attempts') + 1
+                        defaults['task_id'] = task.id
+                        TaskExecutionLog.objects.filter(pk=existing.pk).update(**defaults)
+                        return
                 TaskExecutionLog.objects.update_or_create(
                     task_id=task.id,
-                    defaults={
-                        'task_name': task.name,
-                        'status': TaskExecutionLog.STATUS_ENQUEUED,
-                        'enqueued_at': timezone.now(),
-                        'args_repr': _safe_args(task),
-                        'func_name': _func_name(task),
-                        'func_args': _safe_args_json(task),
-                    },
+                    defaults=defaults,
                 )
             except Exception:
                 logger.exception('on_enqueued: fallo al registrar la tarea %s', task.id)

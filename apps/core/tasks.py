@@ -11,25 +11,78 @@ RETRY_POLICY = {'retries': 3, 'retry_delay': 30, 'retry_backoff': 2}
 
 
 @huey.task(**RETRY_POLICY)
-def generate_invoice_pdf_and_email_task(invoice_uuid, site_url):
+def generate_invoice_pdf_and_email_task(invoice_uuid, site_url, solo_paso=None):
+    """Genera el PDF de la factura y envía el correo, en dos pasos con estado.
+
+    Los dos pasos se registran por separado en la factura (`pdf_status` y
+    `email_status`) porque fallan por razones distintas: el PDF necesita el
+    renderizador de WeasyPrint y el correo necesita un SMTP. Antes era una
+    sola operación, así que un correo caído se reportaba como tarea exitosa y
+    un PDF roto se re-renderizaba en cada reintento aunque el correo ya
+    hubiera salido.
+
+    La tarea es idempotente: si el PDF ya quedó `ready` no se vuelve a
+    renderizar, y si el correo ya salió no se reenvía. Eso es lo que permite
+    que el reintento de Huey corrija un paso sin tocar el otro. `solo_paso`
+    fuerza uno de los dos desde el botón de reintentar del dashboard.
+    """
     from apps.commercial.models import Invoice
     from apps.commercial.views.invoice_utils import (
         enviar_correo_factura,
         generate_invoice_pdf_standalone,
+        marcar_pdf,
     )
 
-    invoice = Invoice.objects.get(uuid=invoice_uuid)
+    try:
+        invoice = Invoice.objects.get(uuid=invoice_uuid)
+    except Invoice.DoesNotExist:
+        # La factura se borró con la tarea todavía en la cola. Reintentar un
+        # `get()` que va a seguir fallando cada hora llena el log de ruido sin
+        # hope de éxito: se corta la cadena acá.
+        logger.warning(
+            'Tarea de factura %s abortada: la factura ya no existe. '
+            'La cola la tenía pendiente cuando se borró.',
+            invoice_uuid,
+        )
+        return None
+
     customer = invoice.customer
-    items = list(invoice.items.all())
 
-    generate_invoice_pdf_standalone(
-        invoice,
-        customer,
-        invoice.subscription.start_date if invoice.subscription else invoice.issue_date,
-        invoice.subscription.end_date if invoice.subscription else invoice.issue_date,
-        items,
-    )
-    enviar_correo_factura(invoice, customer, base_url=site_url)
+    # `solo_paso` fuerza un paso. Sin él, cada paso se hace solo si su estado
+    # no está ya resuelto: así el reintento de Huey corrige lo que falta sin
+    # volver a renderizar un PDF que salió bien.
+    if solo_paso != 'email' and (solo_paso == 'pdf' or not invoice.pdf_ready):
+        items = list(invoice.items.all())
+        try:
+            generate_invoice_pdf_standalone(
+                invoice,
+                customer,
+                invoice.subscription.start_date if invoice.subscription else invoice.issue_date,
+                invoice.subscription.end_date if invoice.subscription else invoice.issue_date,
+                items,
+            )
+        except Exception as e:
+            marcar_pdf(invoice, error=e)
+            raise
+        marcar_pdf(invoice)
+
+    if solo_paso == 'pdf':
+        return invoice.uuid
+
+    if (
+        solo_paso != 'pdf'
+        and invoice.email_status != Invoice.EmailStatus.SENT
+        and not enviar_correo_factura(invoice, customer, base_url=site_url)
+    ):
+        # El estado y el error ya quedaron escritos por
+        # `enviar_correo_factura`. Se propaga para que Huey reintente, y el
+        # reintento no vuelve a tocar el PDF porque ya está `ready`.
+        raise RuntimeError(
+            f'No se pudo enviar el correo de la factura {invoice.number}: '
+            f'{invoice.email_error or "sin detalle"}'
+        )
+
+    return invoice.uuid
 
 
 @huey.task(**RETRY_POLICY)
