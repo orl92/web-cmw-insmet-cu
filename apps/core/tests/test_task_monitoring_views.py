@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 
 from django.contrib import admin
@@ -364,6 +365,12 @@ class TaskMonitoringViewTests(TestCase):
         del operador; ahora el JS los intercepta (data-tasks-filter) y marca
         cuál está aplicado. Sin data-tasks-filter, el click recarga todo y el
         atributo falta.
+
+        El marcado se busca con una expresión regular que tolera whitespace y
+        no con un espacio literal a propósito: djlint parte los atributos
+        `class` largos en varias líneas cuando hace falta, y un conteo sobre el
+        texto exacto rompería con el formateador y no con un cambio real de
+        comportamiento.
         """
         self.client.force_login(self.superuser)
         for status in (None, 'ERROR', 'ENQUEUED'):
@@ -372,10 +379,9 @@ class TaskMonitoringViewTests(TestCase):
             self.assertEqual(content.count('data-tasks-filter'), 3)
             # Solo uno de los tres lleva la clase active, y el marcado depende
             # del filtro pedido, no de un valor fijo.
-            activos = (
-                content.count('btn-outline-secondary active')
-                + content.count('btn-outline-danger active')
-                + content.count('btn-outline-info active')
+            activos = sum(
+                len(re.findall(rf'btn-outline-{variante}\s+active', content))
+                for variante in ('secondary', 'danger', 'info')
             )
             self.assertEqual(activos, 1, f'activos={activos} para status={status!r}')
 
