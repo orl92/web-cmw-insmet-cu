@@ -3,6 +3,8 @@
 These wrappers degrade gracefully: if the configured cache backend raises a
 connection error (e.g. Redis is unreachable while ``USE_REDIS_CACHE=True``), the
 read is treated as a miss and the write is skipped instead of bubbling up a 500.
+A missing ``redis`` package degrades the same way -- see
+``_cache_failure_exceptions``.
 
 The ``redis`` package is imported lazily so this module can be imported in
 environments where Redis is not installed (dev/CI run with LocMemCache).
@@ -18,15 +20,22 @@ logger = logging.getLogger(__name__)
 def _cache_failure_exceptions():
     """Return the exception types that mean "cache backend is unavailable".
 
-    Lazy-import ``redis.exceptions`` so this module loads even when the ``redis``
-    package is not installed (the default LocMemCache path never needs it).
+    ``redis`` ships in ``prod.txt`` only, so a dev or CI box that sets
+    ``USE_REDIS_CACHE=True`` without it fails at the first cache call with
+    ``ModuleNotFoundError``. That is an ``ImportError``, not an ``OSError``:
+    without it here the wrappers below re-raise and the caller answers 500,
+    which is the opposite of what these helpers exist for.
+
+    ``ImportError`` is therefore always in the tuple, and the ``redis``
+    exceptions are added on top only when the package is importable.
     """
+    base = (ImportError, ConnectionError, OSError)
     try:
         from redis.exceptions import RedisError
-
-        return (RedisError, ConnectionError, OSError)
     except ImportError:  # pragma: no cover - redis not installed
-        return (ConnectionError, OSError)
+        return base
+
+    return (RedisError, *base)
 
 
 def safe_cache_get(key, default=None):
