@@ -137,6 +137,113 @@ class TaskMonitoringViewTests(TestCase):
         self.assertIn('id="confirmTaskDeleteForm"', content)
         self.assertIn('name="action" value="delete"', content)
 
+    def test_retry_button_only_on_error(self):
+        """ "Reintentar" solo aparece en tareas que fallaron.
+
+        Antes la condición era "si tiene func_name y func_args", o sea que una
+        tarea en SUCCESS mostraba el botón: "se puede reencolar" no es lo mismo
+        que "falló", y ofrecerlo invitaba a duplicar trabajo ya hecho.
+        """
+        estados = [
+            TaskExecutionLog.STATUS_SUCCESS,
+            TaskExecutionLog.STATUS_ENQUEUED,
+            TaskExecutionLog.STATUS_EXECUTING,
+            TaskExecutionLog.STATUS_RETRYING,
+            TaskExecutionLog.STATUS_REVOKED,
+            TaskExecutionLog.STATUS_ERROR,
+        ]
+        for i, estado in enumerate(estados):
+            TaskExecutionLog.objects.create(
+                task_id=f'retry-btn-{i}',
+                task_name='generate_invoice_pdf_and_email_task',
+                status=estado,
+                enqueued_at=timezone.now(),
+                func_name='apps.core.tasks.generate_invoice_pdf_and_email_task',
+                func_args='{"args": ["x", "y"], "kwargs": {}}',
+            )
+        self.client.force_login(self.superuser)
+        content = self.client.get(self.url).content.decode()
+
+        # Todos los estados menos ERROR se renderizan, y solo uno lleva botón.
+        for estado in estados:
+            with self.subTest(estado=estado):
+                fila = self._fila_de(content, estado)
+                self.assertEqual(
+                    'ti-refresh' in fila,
+                    estado == TaskExecutionLog.STATUS_ERROR,
+                    f'reintentar debería verse solo en ERROR, no en {estado}',
+                )
+
+    def _fila_de(self, content, estado):
+        """Devuelve el HTML de la fila cuyo badge dice `estado`."""
+
+        clase = {
+            TaskExecutionLog.STATUS_SUCCESS: 'bg-success-lt',
+            TaskExecutionLog.STATUS_ENQUEUED: 'bg-info-lt',
+            TaskExecutionLog.STATUS_EXECUTING: 'bg-primary-lt',
+            TaskExecutionLog.STATUS_ERROR: 'bg-danger-lt',
+            TaskExecutionLog.STATUS_RETRYING: 'bg-warning-lt',
+            TaskExecutionLog.STATUS_REVOKED: 'bg-secondary-lt',
+        }[estado]
+        self.assertIn(clase, content, f'no se renderizó ninguna fila {estado}')
+        inicio = content.index(f'class="badge {clase}"')
+        # La fila empieza antes del badge (columna de tarea) y termina después
+        # de la columna de acciones.
+        fila_inicio = content.rindex('<tr>', 0, inicio)
+        fila_fin = content.index('</tr>', inicio) + len('</tr>')
+        return content[fila_inicio:fila_fin]
+
+    def test_partial_returns_table_for_polling(self):
+        """?partial=1 devuelve la tabla sola, para el auto-refresco."""
+        TaskExecutionLog.objects.create(
+            task_id='partial-1',
+            task_name='send_email_task',
+            status=TaskExecutionLog.STATUS_ERROR,
+            enqueued_at=timezone.now(),
+            traceback='Traceback (most recent call last): ...',
+        )
+        self.client.force_login(self.superuser)
+        response = self.client.get(self.url, {'partial': '1'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'pages/dashboard/tasks_table.html')
+        content = response.content.decode()
+        # La tabla y los modales de traceback: sin el modal, una fila que pasa a
+        # ERROR con el polling no tendría a dónde apuntar su botón.
+        self.assertIn('id="tasks-table"', content)
+        self.assertIn('id="tb-', content)
+        # Y nada del chrome de la página: para eso se pidió el partial.
+        self.assertNotIn('confirmTaskDeleteModal', content)
+        self.assertNotIn('<html', content.lower())
+
+    def test_partial_keeps_status_filter(self):
+        """El polling respeta el filtro de la barra de estado."""
+        # Se distinguen por `args_repr`, que sí se renderiza: dos filas con el
+        # mismo `task_name` serían indistinguibles en el HTML.
+        TaskExecutionLog.objects.create(
+            task_id='filtro-ok',
+            task_name='send_email_task',
+            status='SUCCESS',
+            args_repr='args=[correo-ok]',
+        )
+        TaskExecutionLog.objects.create(
+            task_id='filtro-err',
+            task_name='send_email_task',
+            status='ERROR',
+            args_repr='args=[correo-err]',
+        )
+        self.client.force_login(self.superuser)
+        content = self.client.get(self.url, {'partial': '1', 'status': 'ERROR'}).content.decode()
+        self.assertIn('correo-err', content)
+        self.assertNotIn('correo-ok', content)
+
+    def test_auto_refresh_is_wired(self):
+        """La página carga el JS del polling y la tabla trae su URL de refresco."""
+        self.client.force_login(self.superuser)
+        content = self.client.get(self.url).content.decode()
+        self.assertIn('dist/js/tasks-monitor.js', content)
+        self.assertIn('data-refresh-url=', content)
+        self.assertIn('data-language-url=', content)
+
 
 class TaskMonitoringActionTests(TestCase):
     """Acciones POST sobre un registro de tarea: reintentar y eliminar."""
@@ -163,6 +270,10 @@ class TaskMonitoringActionTests(TestCase):
 
     @staticmethod
     def _log(**overrides):
+        # `logical_key` es lo que hace que un reintento reutilice esta fila en
+        # vez de abrir otra: la señal la guarda en cada encolado nuevo. Las
+        # filas creadas por el código anterior a esa clave no la traen y siguen
+        # abriendo fila nueva al reintentarse.
         defaults = {
             'task_id': 'task-action-1',
             'task_name': 'generate_invoice_pdf_and_email_task',
@@ -170,6 +281,7 @@ class TaskMonitoringActionTests(TestCase):
             'enqueued_at': timezone.now(),
             'func_name': 'apps.core.tasks.generate_invoice_pdf_and_email_task',
             'func_args': '{"args": ["00000000-0000-0000-0000-000000000000", "http://x"]}',
+            'logical_key': 'invoice:00000000-0000-0000-0000-000000000000',
         }
         defaults.update(overrides)
         return TaskExecutionLog.objects.create(**defaults)
@@ -188,6 +300,43 @@ class TaskMonitoringActionTests(TestCase):
         self.assertRedirects(response, self.url)
         # La tarea fue reencolada en la cola persistente.
         self.assertEqual(huey.pending_count(), pending_before + 1)
+
+    def test_retry_updates_same_row_not_a_new_one(self):
+        """Reintentar no abre una fila nueva: reutiliza la del trabajo.
+
+        Es el bug que más confundía al operador: pulsaba "Reintentar" sobre una
+        tarea y le aparecía una segunda fila, con lo que el error original
+        quedaba ahí para siempre y era imposible seguir el hilo del fallo.
+        """
+        execution = self._log()
+        from config.huey import huey
+
+        self.client.force_login(self.superuser)
+        antes = TaskExecutionLog.objects.count()
+        task_id_original = execution.task_id
+
+        self.client.post(
+            reverse('dashboard:tasks_action', args=[execution.pk]),
+            {'action': 'retry'},
+        )
+
+        self.assertEqual(
+            TaskExecutionLog.objects.count(),
+            antes,
+            'el reintento no debe crear una fila nueva en el log',
+        )
+        execution.refresh_from_db()
+        self.assertNotEqual(
+            execution.task_id,
+            task_id_original,
+            'la fila debe apuntar al id de intento nuevo, no quedarse en el viejo',
+        )
+        self.assertEqual(
+            execution.status,
+            TaskExecutionLog.STATUS_ENQUEUED,
+            'la misma fila vuelve a "En cola" en vez de duplicarse',
+        )
+        huey.flush()
 
     def test_retry_non_retryable_rejected(self):
         execution = self._log(

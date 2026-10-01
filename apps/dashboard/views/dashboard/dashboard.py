@@ -434,6 +434,14 @@ class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         return self.request.user.is_superuser
 
+    def get_template_names(self):
+        # El polling del cliente pide solo la tabla (?partial=1) para
+        # recargar los datos sin reconstruir la página ni la instancia de
+        # DataTables: si no, cada pasada pierde el orden y la búsqueda.
+        if self.request.GET.get('partial'):
+            return ['pages/dashboard/tasks_table.html']
+        return [self.template_name]
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         now = timezone.now()
