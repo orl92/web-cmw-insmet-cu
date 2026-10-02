@@ -92,8 +92,10 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 
 - **B1** Quitar el guard de duplicados: tantas solicitudes como quiera el
   cliente. Actualizar los tests que lo codifican.
-- **B2** Que el cliente elija la unidad del periodo (días o meses) y la fecha de
-  inicio libremente, incluso en el pasado.
+- **B2** Fecha de inicio libre, incluso en el pasado, y **cantidad** de días o
+  meses. La unidad no la elige quien captura: sale de la categoría del servicio
+  (`service_category` → `Service.get_billing_period_display()`), igual que en la
+  facturación manual (B4) y en el alta pública de Home. Cerrado en `5d4fa30`.
 - **B3** Formularios de crear y editar suscripción alineados al modelo nuevo.
 - **B4** Facturación manual alineada al mismo modelo.
 - **B5** Quitar la columna Expiración del listado de suscripciones
@@ -137,9 +139,14 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
    (recomendado: los botones dependen del estado del PDF, y el reintento
    naturally cae en la misma fila) o partir en **dos** tareas Huey independientes
    (más fiel a "saber qué falló", pero duplica filas en la tabla de monitoreo).
-3. **¿Cómo se representa el periodo?** Agregar `period_unit` con opciones
-   días/meses y dejar la fecha de inicio libre, conservando `quantity` para el
-   precio; o pedir fecha de inicio y fin y derivar cantidad y unidad del delta.
+3. **¿Cómo se representa el periodo? — CERRADA en `5d4fa30`.** No se agregó
+   `period_unit`. La unidad ya sale de `service_category`
+   (`Service.get_billing_period_display()`), que B4 y el alta pública de Home ya
+   trataban como única fuente; preguntarla al usuario en el formulario abriría
+   una segunda fuente de verdad y dejaría el precio por período sin coherencia
+   con el vencimiento. La alternativa de pedir inicio y fin y derivar la
+   cantidad del delta se descartó porque el precio necesita una magnitud
+   (`quantity`), no una cantidad de días implícita.
 
 ## Restricciones
 
@@ -177,7 +184,7 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 
 - [x] Diagnóstico completo de los tres problemas, con file:line.
 - [ ] A1, A2
-- [ ] B1, B2, B3, B5, B6 → B1 y B5 cerrados en `2a7dbad`
+- [x] B1, B2, B3, B5, B6 → B1 y B5 cerrados en `2a7dbad`, B2 y B3 en `5d4fa30`
 - [x] B4 — commit `385c12a`
 - [x] C1, C2, C3, C4, C5 — commit `4b1dff5`
 - [x] D1 — commit `7e36058`
@@ -194,9 +201,11 @@ vencimiento como `start + relativedelta(months=N)`, y eso no reproduce
 cualquier par (inicio, fin) — entre 01/01 y 31/01 no existe ningún N entero.
 La cantidad en meses que propone el navegador redondea contra el promedio real
 del año (mediana de 2 días de desvío), pero el residuo no baja de medio mes
-mientras el modelo acepte sólo meses enteros. Es una decisión de B2 pendiente:
-si el cliente elige inicio y fin, el servidor tendría que derivar la cantidad
-en vez de al revés.
+mientras el modelo acepte sólo meses enteros. **B2 resolvió el lado de la
+captura** (quien entra elige inicio y cantidad, nunca inicio y fin, así que el
+par imposible ya no se puede escribir), pero **el residuo de meses enteros
+sigue abierto** y es una decisión de modelo: `period_unit` por servicio con
+fracción de mes, o aceptar el redondeo.
 
 **B1 cerrado.** El bloqueo de duplicados estaba en **dos** capas: `form_valid`
 descartaba el POST (`apps/home/views/servicios/comerciales/views.py:152`) y el
@@ -249,22 +258,50 @@ suscripciones NO filtra, así que las canceladas aparecen con el label
 `Cancelada`; el listado de Home del cliente sí filtra `record_active=True`, así
 que no se ven ahí. Esa asimetría es intencional y está cubierta por tests.
 
-**Verificación:** `python manage.py test` → 1058 tests OK. `ruff check apps
-templates` limpio. La aserción de no-N+1 compara el conteo de consultas entre
-un listado de 1 y de 4 facturas (en vez de fijar un número absoluto, porque el
-layout y los context processors aportan consultas fijas).
+**Verificación (bloque de estados):** `python manage.py test` → 1058 tests OK.
+`ruff check apps templates` limpio. La aserción de no-N+1 compara el conteo de
+consultas entre un listado de 1 y de 4 facturas (en vez de fijar un número
+absoluto, porque el layout y los context processors aportan consultas fijas).
 
-**Pendiente de esta etapa:** nada de esta etapa quedó pendiente; B2/B3 (rediseño
-de formularios) siguen abiertos y son el siguiente bloque.
+## B2/B3 cerrados — `5d4fa30`
 
-**Siguiente paso:** B2 es el que decide el modelo de periodo y conviene hacerlo
-antes que B3, porque B3 alinea los formularios con lo que B2 defina.
+**Qué cambió.** `SubscriptionForm` ya no tiene `period` ni `end_date`: quien
+captura elige **fecha de inicio** (el pasado está permitido) y **cantidad**, y el
+vencimiento lo deriva `Service.compute_end_date`. La unidad no es un campo: sale
+de la categoría del servicio, que cada `<option>` publica en `data-period-unit`.
+`quantity` es la magnitud que multiplica el precio, igual que en B4.
 
-**Ruta prevista:** B y C tocan modelos, formularios, vistas y templates, así que
-van delegados a un escritor por bloque. D3 es documentación y va inline.
+**Por qué no `period_unit`.** Ver la decisión 3 de "Decisiones abiertas". La
+fuerza estaba en el mismo sitio donde B4 ya la había puesto: la categoría.
 
-**Siguiente paso:** B2 es el que decide el modelo de periodo y conviene hacerlo
-antes que B3, porque B3 alinea los formularios con lo que B2 defina.
+**Lo que el navegador hace y lo que no.** `static/dist/js/subscription-period.js`
+sólo rotula ("Cantidad de días/meses") y previsualiza el vencimiento; el valor
+guardado siempre lo calcula el servidor, y sin JS la fecha ya viene impresa
+desde la plantilla (`form.derived_end_date`). El preview recorta al último día
+del mes igual que `relativedelta` (31/01 + 1 mes = 28/02) porque `setMonth`
+desborda a marzo. Los seis casos de esa aritmética se verificaron contra el
+modelo, no sólo a ojo.
 
-**Ruta prevista:** B y C tocan modelos, formularios, vistas y templates, así que
-van delegados a un escritor por bloque. D3 es documentación y va inline.
+**Un detalle que salió en el camino:** `start_date` es un campo declarado, así
+que sin `label` explícito Django lo rotula con el nombre del atributo
+("Start date") e ignora el `verbose_name` del modelo. Llevaba así desde antes de
+este bloque y salía en inglés en una interfaz `es-mx`; ahora dice "Fecha de
+inicio", con test que lo ata.
+
+**Verificación (este bloque):** `python manage.py test apps.commercial apps.home
+apps.core apps.dashboard` → 964 tests, `FAILED (failures=1)`. El único fallo es
+`apps.core.tests.test_site_configuration_template.test_reset_theme_defaults_button_and_modal`
+("Restablecer tema" no aparece en la respuesta), **preexistente**: se reproduce
+en `0061521` con el árbol limpio, antes de tocar nada, y no lo causa este cambio.
+`python manage.py check` sin issues, `ruff check apps templates` limpio,
+`djlint . --lint` y `djlint . --reformat --check` limpios. Los tests de las dos
+clases tocadas: 29 métodos añadidos y 4 fuera (`test_period_1m/3m/1y_calculates_end_date`
+y `test_custom_period_validates_dates`, que afirmaban el modelo viejo), o sea
++25, que es exactamente el delta de la suite del alcance: 939 → 964.
+
+**Pendiente de esta etapa:** nada de B2/B3 quedó pendiente dentro del alcance
+acordado. Queda abierto, pero es decisión de modelo y no de formulario: el
+residuo de meses enteros (ver el límite del modelo más arriba).
+
+**Ruta prevista:** B6 y D3 siguen abiertos. B6 toca Home y el dashboard; D3 es
+documentación y va inline.
