@@ -7,12 +7,12 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.commercial.models import (
-    Customer,
     Invoice,
     InvoiceItem,
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import natural_customer
 
 
 class InvoiceUtilsTests(TestCase):
@@ -25,12 +25,8 @@ class InvoiceUtilsTests(TestCase):
             first_name='Test',
             last_name='User',
         )
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.invoice = Invoice.objects.create(
             customer=cls.customer,
@@ -91,12 +87,8 @@ class CertificateEmailTests(TestCase):
             first_name='Test',
             last_name='User',
         )
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -140,9 +132,8 @@ class CertificateEmailTests(TestCase):
             first_name='No',
             last_name='Email',
         )
-        customer_no_email = Customer.objects.create(
-            client_type='natural',
-            user=user_no_email,
+        customer_no_email = natural_customer(
+            user_no_email,
             address='Addr',
             phone='12345678',
             account='9999999999999999',

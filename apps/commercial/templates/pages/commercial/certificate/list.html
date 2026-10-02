@@ -19,7 +19,7 @@
            data-uuid="{{ object.uuid }}"
            aria-label="Seleccionar">
   </td>
-  <td>{{ object.subscription.customer.company_name }}</td>
+  <td>{{ object.subscription.customer.display_name }}</td>
   <td>{{ object.subscription.service.title }}</td>
   <td>{{ object.issued_date|date:"d/m/Y h:i A" }}</td>
   <td>

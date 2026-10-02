@@ -17,6 +17,12 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import (
+    IncompleteCustomerDataError,
+    make_user,
+    natural_customer,
+    valid_natural_customer,
+)
 from apps.commercial.tests.test_views import disable_maintenance_mode
 from apps.core.tests.base import FileHandlingTestCase
 
@@ -34,9 +40,8 @@ def _make_user(username='testuser', **kwargs):
 class CustomerModelTests(TestCase):
     def test_create_natural_customer(self):
         user = _make_user('nat')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=user,
+        customer = natural_customer(
+            user,
             address='Calle 1 #123',
             phone='12345678',
             account='1234567890123456',
@@ -74,12 +79,8 @@ class CustomerModelTests(TestCase):
 
     def test_soft_delete(self):
         user = _make_user('softdel')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=user,
-            address='Test',
-            phone='12345678',
-            account='1234567890123456',
+        customer = natural_customer(
+            user, address='Test', phone='12345678', account='1234567890123456'
         )
         customer.delete()
         customer.refresh_from_db()
@@ -88,12 +89,8 @@ class CustomerModelTests(TestCase):
 
     def test_hard_delete(self):
         user = _make_user('harddel')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=user,
-            address='Test',
-            phone='12345678',
-            account='1234567890123456',
+        customer = natural_customer(
+            user, address='Test', phone='12345678', account='1234567890123456'
         )
         pk = customer.pk
         customer.hard_delete()
@@ -102,21 +99,68 @@ class CustomerModelTests(TestCase):
     def test_unique_account(self):
         user1 = _make_user('u1')
         user2 = _make_user('u2')
-        Customer.objects.create(
-            client_type='natural',
-            user=user1,
-            address='Addr1',
-            phone='11111111',
-            account='1111111111111111',
-        )
+        natural_customer(user1, address='Addr1', phone='11111111', account='1111111111111111')
         with self.assertRaises(IntegrityError):
-            Customer.objects.create(
-                client_type='natural',
-                user=user2,
-                address='Addr2',
-                phone='22222222',
-                account='1111111111111111',
-            )
+            natural_customer(user2, address='Addr2', phone='22222222', account='1111111111111111')
+
+
+class CustomerDisplayNameTests(TestCase):
+    """`display_name` es lo que muestran los listados. Antes las plantillas leían
+    `company_name` directo, que es NULL en toda persona natural: el listado
+    imprimía la palabra `None` en lugar del nombre de la persona."""
+
+    def test_natural_usa_el_nombre_del_usuario(self):
+        customer = natural_customer(
+            make_user('natnombre', first_name='Ana', last_name='Norte'),
+        )
+        self.assertEqual(customer.display_name, 'Ana Norte')
+
+    def test_natural_sin_nombres_cae_al_username(self):
+        customer = natural_customer(
+            make_user('sinnombres', first_name='', last_name=''),
+        )
+        self.assertEqual(customer.display_name, 'sinnombres')
+
+    def test_juridica_usa_el_nombre_de_la_empresa(self):
+        customer = Customer.objects.create(
+            client_type='juridica',
+            user=make_user('jurnombre', first_name='Ana', last_name='Norte'),
+            company_name='Empresa Test',
+            reeup='123.4.5678',
+            nit='12345678901',
+            account='1234567890123456',
+            address='Calle 2 #456',
+            phone='87654321',
+        )
+        self.assertEqual(customer.display_name, 'Empresa Test')
+
+    def test_juridica_sin_razon_social_cae_al_nombre_del_usuario(self):
+        customer = Customer.objects.create(
+            client_type='juridica',
+            user=make_user('jur.sin.razon', first_name='Ana', last_name='Norte'),
+            company_name='',
+            reeup='123.4.5679',
+            nit='12345678902',
+            account='1234567890123457',
+            address='Calle 3 #789',
+            phone='87654322',
+        )
+        self.assertEqual(customer.display_name, 'Ana Norte')
+
+    def test_natural_sin_usuario_devuelve_placeholder_y_no_none(self):
+        customer = Customer(
+            client_type='natural',
+            identity_document='34111234567',
+            account='1234567890123458',
+            address='Calle 4 #111',
+            phone='87654323',
+        )
+        self.assertEqual(customer.display_name, '—')
+        self.assertIsNotNone(customer.display_name)
+
+    def test_str_usa_display_name(self):
+        customer = natural_customer(make_user('strcheck', first_name='Ana', last_name='Norte'))
+        self.assertEqual(str(customer), customer.display_name)
 
 
 class ServiceModelTests(FileHandlingTestCase):
@@ -277,12 +321,8 @@ class ServiceSubscriptionModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('subuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -477,12 +517,8 @@ class InvoiceModelTests(FileHandlingTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('invuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
 
     def test_create_invoice(self):
@@ -558,12 +594,8 @@ class InvoiceItemModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('itemuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.invoice = Invoice.objects.create(
             customer=cls.customer,
@@ -628,12 +660,8 @@ class ContractModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('contuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -689,12 +717,8 @@ class CertificateModelTests(FileHandlingTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('certuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -766,13 +790,13 @@ class InvoiceDerivedStatusTests(TestCase):
 
     def setUp(self):
         disable_maintenance_mode()
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=User.objects.create_user(username='invstatus', email='invstatus@example.com'),
-            account='1',
-            agency_bank='B',
-            address='A',
-            phone='9',
+        customer = natural_customer(
+            User.objects.create_user(
+                username='invstatus',
+                email='invstatus@example.com',
+                first_name='Ana',
+                last_name='Sur',
+            )
         )
         provider = User.objects.create_user(username='invprov', email='invprov@example.com')
         self.service = Service.objects.create(
@@ -837,3 +861,39 @@ class InvoiceDerivedStatusTests(TestCase):
         annotated = Invoice.objects.with_display_status().get(pk=self.invoice.pk)
         with self.assertNumQueries(0):
             self.assertEqual(annotated.status_display, 'pagada')
+
+
+class CustomerFactoryTests(TestCase):
+    """La factory tiene que fallar ruidosamente: un cliente a medio construir
+    llegaba a la base y el `None` aparecía tres pantallas más abajo."""
+
+    def test_cliente_natural_nace_completo(self):
+        customer = natural_customer()
+        self.assertEqual(customer.client_type, Customer.ClientType.NATURAL)
+        self.assertTrue(customer.identity_document)
+        self.assertTrue(customer.agency_bank)
+        self.assertTrue(customer.address)
+        self.assertTrue(customer.phone)
+        self.assertTrue(customer.user.first_name)
+        self.assertTrue(customer.user.last_name)
+        # Completo = mostrable: el listado no puede imprimir `None`.
+        self.assertNotIn('None', customer.display_name)
+
+    def test_error_dice_que_falta(self):
+        with self.assertRaises(IncompleteCustomerDataError) as ctx:
+            natural_customer(identity_document='', agency_bank='')
+        mensaje = str(ctx.exception)
+        self.assertIn('identity_document', mensaje)
+        self.assertIn('agency_bank', mensaje)
+
+    def test_error_dice_el_formato_invalido(self):
+        with self.assertRaises(IncompleteCustomerDataError) as ctx:
+            natural_customer(phone='1234')
+        self.assertIn('phone', str(ctx.exception))
+
+    def test_reutiliza_un_cliente_valido_existente(self):
+        existente = natural_customer()
+        self.assertEqual(valid_natural_customer().pk, existente.pk)
+
+    def test_crea_cliente_si_no_hay_ninguno_valido(self):
+        self.assertIsNotNone(valid_natural_customer().identity_document)

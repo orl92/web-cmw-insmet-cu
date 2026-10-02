@@ -19,8 +19,10 @@ class CertificateListView(LoginRequiredMixin, PermissionRequiredMixin, ListView)
     context_object_name = 'objects'
 
     def get_queryset(self):
+        # `customer__user` porque la columna Cliente muestra `display_name`,
+        # que para una persona natural lee los nombres del User.
         return Certificate.objects.select_related(
-            'subscription__customer', 'subscription__service'
+            'subscription__customer__user', 'subscription__service'
         ).all()
 
     def get_context_data(self, **kwargs):

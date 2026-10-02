@@ -14,9 +14,11 @@ from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
+from django.template.loader import render_to_string
 from django.test import TestCase
 
-from apps.commercial.models import Customer, Invoice, InvoiceItem
+from apps.commercial.models import Invoice, InvoiceItem, Service, ServiceSubscription
+from apps.commercial.tests.factories import natural_customer
 from apps.core.models import TaskExecutionLog
 from config.huey import huey
 
@@ -39,12 +41,8 @@ class FacturaBase(TestCase):
             first_name='Ana',
             last_name='Entrega',
         )
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.invoice = Invoice.objects.create(
             customer=cls.customer,
@@ -222,6 +220,59 @@ class TareaIdempotenteTests(FacturaBase):
         self.invoice.refresh_from_db()
         self.assertEqual(self.invoice.email_status, Invoice.EmailStatus.FAILED)
         self.assertIn('correo', self.invoice.email_error)
+
+
+class SaludoDelCorreoTests(TestCase):
+    """El saludo del correo imprimía `company_name`, que en una natural es NULL:
+    Django no lo silencia, lo escribe literally como la palabra `None`, y el
+    cliente leía "Estimado(a) None," en su propia factura."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.customer = natural_customer(
+            User.objects.create_user(
+                'saludo', 'saludo@ejemplo.cu', 'pass', first_name='Ana', last_name='Norte'
+            )
+        )
+        cls.subscription = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=Service.objects.create(
+                user=cls.customer.user,
+                title='Servicio de prueba',
+                code='SRV-SALUDO',
+                price=Decimal('100.00'),
+            ),
+        )
+        cls.invoice = Invoice.objects.create(
+            customer=cls.customer, number='INV-SALUDO', amount=Decimal('100.00')
+        )
+        InvoiceItem.objects.create(
+            invoice=cls.invoice,
+            descripcion='Item',
+            cantidad=1,
+            precio=Decimal('100.00'),
+        )
+
+    def test_factura_saluda_con_el_nombre_del_cliente_natural(self):
+        for template in (
+            'pages/commercial/emails/factura.html',
+            'pages/commercial/emails/factura_qr.html',
+        ):
+            with self.subTest(template=template):
+                html = render_to_string(
+                    template,
+                    {'invoice': self.invoice, 'customer': self.customer},
+                )
+                self.assertIn('Ana Norte', html)
+                self.assertNotIn('>None<', html)
+
+    def test_certificado_saluda_con_el_nombre_del_cliente_natural(self):
+        html = render_to_string(
+            'pages/commercial/emails/certificado.html',
+            {'subscription': self.subscription, 'customer': self.customer},
+        )
+        self.assertIn('Ana Norte', html)
+        self.assertNotIn('>None<', html)
 
 
 class ResumenDelClienteTests(FacturaBase):

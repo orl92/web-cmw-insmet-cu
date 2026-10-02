@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Count, Q
@@ -93,10 +93,30 @@ class Customer(SoftDeleteModel):
             ('delete_customer', 'Eliminar'),
         )
 
-    def __str__(self):
+    @property
+    def display_name(self):
+        """Nombre del cliente tal como debe mostrarse en la interfaz.
+
+        `company_name` solo existe para personas jurídicas: en una natural está
+        vacío, y las plantillas que leían el campo crudo imprimían `None` en
+        lugar del nombre de la persona, que vive en el User. Se centraliza acá
+        para que listados, tooltips y atributos `data-*` no diverjan.
+        """
+        try:
+            user = self.user
+        except ObjectDoesNotExist:
+            # Una instancia sin `user_id` todavía (no guardada, o
+            # cargada con `.only()`) no tiene a quién mostrarle nombre: se
+            # devuelve un placeholder legible en vez de explotar en la plantilla.
+            user = None
+        full_name = user.get_full_name() if user else ''
+        fallback = full_name or (user.username if user else '')
         if self.client_type == self.ClientType.NATURAL:
-            return f'{self.user.get_full_name() or self.user.username}'
-        return self.company_name or self.user.get_full_name() or self.user.username
+            return fallback or '—'
+        return self.company_name or fallback or '—'
+
+    def __str__(self):
+        return self.display_name
 
 
 class Service(SoftDeleteModel, FileHandlerMixin, models.Model):

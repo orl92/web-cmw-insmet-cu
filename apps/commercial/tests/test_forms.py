@@ -26,6 +26,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import natural_customer
 
 
 def _make_png():
@@ -60,6 +61,8 @@ class CustomerFormTests(TestCase):
     def _valid_juridica_data(self):
         return {
             'username': 'newcliente',
+            'first_name': 'Ana',
+            'last_name': 'Norte',
             'password': 'Pass1234!',
             'password2': 'Pass1234!',
             'email': 'cliente@example.com',
@@ -139,9 +142,8 @@ class CustomerFormTests(TestCase):
 
     def test_unique_identity_document(self):
         u1 = _make_user('u1')
-        Customer.objects.create(
-            client_type='natural',
-            user=u1,
+        natural_customer(
+            u1,
             identity_document='34111234567',
             account='1111111111111111',
             address='Addr',
@@ -233,6 +235,25 @@ class CustomerFormTests(TestCase):
         self.assertIsNotNone(customer.user)
         self.assertTrue(User.objects.filter(username='newcliente').exists())
         self.assertEqual(customer.user.email, 'cliente@example.com')
+
+    def test_nombre_y_apellido_son_obligatorios(self):
+        # Sin ellos el User nace sin nombre: `display_name` del cliente natural
+        # cae al username y `CheckUserProfileMiddleware` manda a actualizar el
+        # perfil en cada request.
+        data = self._valid_juridica_data()
+        data['first_name'] = ''
+        data['last_name'] = ''
+        form = CustomerForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('first_name', form.errors)
+        self.assertIn('last_name', form.errors)
+
+    def test_nombre_y_apellido_se_guardan_en_el_usuario(self):
+        form = CustomerForm(data=self._valid_juridica_data())
+        self.assertTrue(form.is_valid(), form.errors)
+        customer = form.save()
+        self.assertEqual(customer.user.first_name, 'Ana')
+        self.assertEqual(customer.user.last_name, 'Norte')
 
     def test_unique_reeup(self):
         user1 = _make_user('u1')
@@ -376,9 +397,8 @@ class CustomerUpdateFormTests(TestCase):
 
     def test_update_rechaza_el_documento_de_otro(self):
         otro = User.objects.create_user('otrocliente', 'otro@example.com', 'pass')
-        Customer.objects.create(
-            client_type='natural',
-            user=otro,
+        natural_customer(
+            otro,
             identity_document='34999999999',
             account='3333333333333333',
             address='Addr',
@@ -408,6 +428,8 @@ class CustomerForUserFormTests(TestCase):
         form = CustomerForUserForm(
             user=self.user,
             data={
+                'first_name': 'Ana',
+                'last_name': 'Norte',
                 'client_type': 'natural',
                 'identity_document': '34111234567',
                 'account': '1234567890123456',
@@ -426,6 +448,8 @@ class CustomerForUserFormTests(TestCase):
         form = CustomerForUserForm(
             user=self.user,
             data={
+                'first_name': 'Ana',
+                'last_name': 'Norte',
                 'client_type': 'natural',
                 'account': '1234567890123456',
                 'agency_bank': 'Banco Test',
@@ -441,6 +465,8 @@ class CustomerForUserFormTests(TestCase):
         form = CustomerForUserForm(
             user=self.user,
             data={
+                'first_name': 'Ana',
+                'last_name': 'Norte',
                 'client_type': 'juridica',
                 'company_name': 'Empresa S.A.',
                 'reeup': '123.4.5678',
@@ -454,11 +480,57 @@ class CustomerForUserFormTests(TestCase):
         )
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_nombre_y_apellido_son_obligatorios(self):
+        form = CustomerForUserForm(
+            user=self.user,
+            data={
+                'client_type': 'juridica',
+                'company_name': 'Empresa S.A.',
+                'reeup': '123.4.5678',
+                'nit': '12345678901',
+                'account': '1234567890123456',
+                'agency_bank': 'Banco Test',
+                'address': 'Addr',
+                'phone': '12345678',
+                'email': 'foruser@example.com',
+            },
+        )
+        self.assertFalse(form.is_valid())
+        self.assertIn('first_name', form.errors)
+        self.assertIn('last_name', form.errors)
+
+    def test_prellena_el_nombre_del_usuario_existente(self):
+        form = CustomerForUserForm(user=self.user)
+        self.assertEqual(form.fields['first_name'].initial, self.user.first_name)
+        self.assertEqual(form.fields['last_name'].initial, self.user.last_name)
+
+    def test_guarda_el_nombre_sobre_el_usuario_existente(self):
+        form = CustomerForUserForm(
+            user=self.user,
+            data={
+                'first_name': 'Ana',
+                'last_name': 'Sur',
+                'client_type': 'juridica',
+                'company_name': 'Empresa S.A.',
+                'reeup': '123.4.5678',
+                'nit': '12345678901',
+                'account': '1234567890123456',
+                'agency_bank': 'Banco Test',
+                'address': 'Addr',
+                'phone': '12345678',
+                'email': 'foruser@example.com',
+            },
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        customer = form.save()
+        self.user.refresh_from_db()
+        self.assertEqual(customer.user.first_name, 'Ana')
+        self.assertEqual(customer.user.last_name, 'Sur')
+
     def test_rechaza_identity_document_duplicado(self):
         otro = User.objects.create_user('foruser2', 'foruser2@example.com', 'pass')
-        Customer.objects.create(
-            client_type='natural',
-            user=otro,
+        natural_customer(
+            otro,
             identity_document='34111234567',
             account='9999999999999999',
             address='Addr',
@@ -468,6 +540,8 @@ class CustomerForUserFormTests(TestCase):
         form = CustomerForUserForm(
             user=self.user,
             data={
+                'first_name': 'Ana',
+                'last_name': 'Norte',
                 'client_type': 'natural',
                 'identity_document': '34111234567',
                 'account': '1234567890123456',
@@ -652,12 +726,8 @@ class SubscriptionFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('subform')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -753,12 +823,8 @@ class ContractFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('conform')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         service = Service.objects.create(
             user=cls.user,
@@ -804,12 +870,8 @@ class CertificateFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('certform')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         service = Service.objects.create(
             user=cls.user,
@@ -894,12 +956,8 @@ class InvoiceFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('invform')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
 
     def test_invoice_form_requires_customer(self):

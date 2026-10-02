@@ -9,6 +9,7 @@
   <th>Cliente</th>
   <th>Tipo de Cliente</th>
   <th>Identificación</th>
+  <th>Datos Fiscales</th>
   <th>Correo Electrónico</th>
   <th>Número de Teléfono</th>
   <th>Registro</th>
@@ -34,6 +35,13 @@
       <span class="badge bg-green-lt">Persona Natural</span>
     {% else %}
       <span class="badge bg-azure-lt">Persona Jurídica</span>
+    {% endif %}
+  </td>
+  <td>
+    {% if object.client_type == 'natural' %}
+      <div class="fw-medium font-monospace">{{ object.identity_document|default:'—' }}</div>
+    {% else %}
+      <span class="text-secondary">—</span>
     {% endif %}
   </td>
   <td>

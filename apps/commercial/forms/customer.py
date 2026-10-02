@@ -12,6 +12,10 @@ IDENTITY_TAKEN_ERROR = 'Este documento de identidad ya está registrado.'
 
 class CustomerForm(forms.ModelForm):
     username = forms.CharField(max_length=150, required=True, label='Nombre de Usuario')
+    # Nombre y apellido alimentan `display_name` del cliente y el perfil del
+    # usuario: sin ellos `CheckUserProfileMiddleware` manda a /accounts/profile/update/
+    first_name = forms.CharField(max_length=150, required=True, label='Nombre')
+    last_name = forms.CharField(max_length=150, required=True, label='Apellidos')
     password = forms.CharField(widget=forms.PasswordInput, required=True, label='Contraseña')
     password2 = forms.CharField(
         widget=forms.PasswordInput, required=True, label='Confirmar Contraseña'
@@ -36,7 +40,13 @@ class CustomerForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['client_type'].widget = forms.RadioSelect(attrs={'class': 'form-check-input'})
         for field_name, field in self.fields.items():
-            if field_name not in ['username', 'password', 'password2', 'email', 'client_type']:
+            if field_name not in [
+                'username',
+                'password',
+                'password2',
+                'email',
+                'client_type',
+            ]:
                 field.widget.attrs.update({'class': 'form-control'})
         self.fields['agency_bank'].required = True
         self._set_juridica_required()
@@ -117,6 +127,8 @@ class CustomerForm(forms.ModelForm):
                     username=self.cleaned_data['username'],
                     password=self.cleaned_data['password'],
                     email=self.cleaned_data['email'],
+                    first_name=self.cleaned_data['first_name'],
+                    last_name=self.cleaned_data['last_name'],
                 )
                 customer.user = user
                 customer.save()
@@ -226,6 +238,10 @@ class CustomerUpdateForm(forms.ModelForm):
 
 class CustomerForUserForm(forms.ModelForm):
     email = forms.EmailField(required=True, label='Correo Electrónico')
+    # El usuario ya existe, pero su nombre puede venir vacío (registro antigo o
+    # alta por admin): se pide explícitamente para que el cliente sea identificable.
+    first_name = forms.CharField(max_length=150, required=True, label='Nombre')
+    last_name = forms.CharField(max_length=150, required=True, label='Apellidos')
 
     class Meta:
         model = Customer
@@ -246,6 +262,8 @@ class CustomerForUserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.user:
             self.fields['email'].initial = self.user.email
+            self.fields['first_name'].initial = self.user.first_name
+            self.fields['last_name'].initial = self.user.last_name
         self.fields['client_type'].widget = forms.RadioSelect(attrs={'class': 'form-check-input'})
         for field_name, field in self.fields.items():
             if field_name not in ['email', 'client_type']:
@@ -334,7 +352,10 @@ class CustomerForUserForm(forms.ModelForm):
         customer.user = self.user
         if commit:
             customer.save()
-            if self.user and 'email' in self.cleaned_data:
-                self.user.email = self.cleaned_data['email']
+            if self.user:
+                if 'email' in self.cleaned_data:
+                    self.user.email = self.cleaned_data['email']
+                self.user.first_name = self.cleaned_data.get('first_name', '')
+                self.user.last_name = self.cleaned_data.get('last_name', '')
                 self.user.save()
         return customer

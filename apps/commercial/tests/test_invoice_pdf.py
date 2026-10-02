@@ -39,6 +39,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import natural_customer
 from apps.commercial.views.invoice_utils import generate_invoice_pdf_standalone
 from apps.core.models import CompanySettings
 
@@ -299,9 +300,8 @@ class BloqueClienteTests(TestCase):
         cls.natural_user = User.objects.create_user(
             'natural', 'natural@example.com', 'pass', first_name='Ana', last_name='Norte'
         )
-        cls.natural = Customer.objects.create(
-            client_type='natural',
-            user=cls.natural_user,
+        cls.natural = natural_customer(
+            cls.natural_user,
             identity_document='34111234567',
             account='9001000000000005',
             address='Calle Persona 2',
@@ -396,9 +396,8 @@ class BloqueClienteTests(TestCase):
     def test_natural_sin_nombre_cae_a_razon_social_y_luego_a_username(self):
         """La degradación es por tipo: natural -> persona -> razón social ->
         username, sin imprimir nunca la línea en blanco."""
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=User.objects.create_user('solo_razon', 'razon@example.com', 'pass'),
+        customer = natural_customer(
+            User.objects.create_user('solo_razon', 'razon@example.com', 'pass'),
             company_name='Razón Social Residual',
             identity_document='34111888888',
             account='9001000000000007',
@@ -414,9 +413,8 @@ class BloqueClienteTests(TestCase):
     def test_sin_nombre_ninguno_cae_al_username(self):
         """Nunca se imprime una línea de nombre en blanco."""
         anonimo = User.objects.create_user('sin_nombre', 'anonimo@example.com', 'pass')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=anonimo,
+        customer = natural_customer(
+            anonimo,
             identity_document='34111999999',
             account='9001000000000006',
             address='Calle Anonimo 3',

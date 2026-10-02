@@ -13,7 +13,7 @@
       {% for sub in form.subscription.field.queryset %}
         <option value="{{ sub.pk }}"
                 {% if form.subscription.value|stringformat:"s" == sub.pk|stringformat:"s" %}selected{% endif %}>
-          {{ sub.customer.company_name }} - {{ sub.service.title }}
+          {{ sub.customer.display_name }} - {{ sub.service.title }}
         </option>
       {% endfor %}
     </select>

@@ -172,7 +172,7 @@
                                                         </tr>
                                                         <tr>
                                                             <td class="content text-center pt-sm" style="font-family: Inter, -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif; padding: 8px 48px 48px;" align="center">
-                                                                <p>Estimado(a) <strong>{{ customer.company_name }}</strong>,</p>
+                                                                <p>Estimado(a) <strong>{{ customer.display_name }}</strong>,</p>
                                                                 {% if subscription %}
                                                                 <p>Se ha generado la factura para el servicio <strong>"{{ subscription.service.title }}"</strong>.</p>
                                                                 {% else %}

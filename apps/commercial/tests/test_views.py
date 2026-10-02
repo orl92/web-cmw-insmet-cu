@@ -23,6 +23,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import make_user, natural_customer
 from apps.commercial.tests.test_forms import _make_png
 from apps.core.models import SiteConfiguration
 
@@ -71,6 +72,43 @@ class CustomerListViewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 
+    def test_natural_muestra_nombre_y_documento_de_identidad(self):
+        # `company_name` es NULL en una natural: la columna Cliente terminaba
+        # imprimiendo la palabra `None`, y la de Identificación un guion.
+        customer = natural_customer(
+            make_user('lista.natural', first_name='Ana', last_name='Norte'),
+            identity_document='34111234567',
+        )
+        ct = ContentType.objects.get_for_model(Customer)
+        self.staff_user.user_permissions.add(ct.permission_set.get(codename='view_customer'))
+        self.client.force_login(self.staff_user)
+        html = self.client.get(self.url).content.decode()
+        self.assertIn('Ana Norte', html)
+        self.assertIn('34111234567', html)
+        self.assertNotIn('>None<', html)
+        self.assertEqual(customer.client_type, Customer.ClientType.NATURAL)
+
+    def test_juridica_muestra_razon_social_y_datos_fiscales(self):
+        natural_customer(make_user('lista.otro', first_name='Luis', last_name='Sur'))
+        Customer.objects.create(
+            client_type='juridica',
+            user=make_user('lista.juridica', first_name='Empresa', last_name='Jurídica'),
+            company_name='Empresa Listado S.A.',
+            reeup='123.4.5678',
+            nit='12345678901',
+            account='1234567890123456',
+            address='Calle 1',
+            phone='71234567',
+        )
+        ct = ContentType.objects.get_for_model(Customer)
+        self.staff_user.user_permissions.add(ct.permission_set.get(codename='view_customer'))
+        self.client.force_login(self.staff_user)
+        html = self.client.get(self.url).content.decode()
+        self.assertIn('Empresa Listado S.A.', html)
+        # REEUP y NIT viven en su propia columna, no en Identificación.
+        self.assertIn('123.4.5678', html)
+        self.assertIn('12345678901', html)
+
 
 class CustomerCreateViewTests(TestCase):
     @classmethod
@@ -88,6 +126,8 @@ class CustomerCreateViewTests(TestCase):
         self.client.force_login(self.admin)
         data = {
             'username': 'newcliente',
+            'first_name': 'Ana',
+            'last_name': 'Norte',
             'password': 'Pass1234!',
             'password2': 'Pass1234!',
             'email': 'cliente@example.com',
@@ -154,9 +194,8 @@ class CustomerDeleteViewTests(TestCase):
     def setUpTestData(cls):
         disable_maintenance_mode()
         cls.staff_user = _make_user('staffdel', is_staff=True)
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('todel'),
+        cls.customer = natural_customer(
+            _make_user('todel'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -179,9 +218,8 @@ class CustomerHardDeleteViewTests(TestCase):
         disable_maintenance_mode()
         cls.admin = _make_superuser('admin3')
         cls.normal = _make_user('normal')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('harddelcust'),
+        cls.customer = natural_customer(
+            _make_user('harddelcust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -196,9 +234,8 @@ class CustomerHardDeleteViewTests(TestCase):
 
     def test_hard_delete_with_own_user_does_not_crash(self):
         own = _make_superuser('ownadmin')
-        own_customer = Customer.objects.create(
-            client_type='natural',
-            user=own,
+        own_customer = natural_customer(
+            own,
             address='Addr2',
             phone='87654321',
             account='8923456789012345',
@@ -710,9 +747,8 @@ class InvoiceListStatusColumnTests(TestCase):
     def setUpTestData(cls):
         disable_maintenance_mode()
         cls.admin = _make_superuser('invstatus')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('invstatuscust'),
+        customer = natural_customer(
+            _make_user('invstatuscust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -809,9 +845,8 @@ class CancelInvoiceViewTests(TestCase):
     def setUpTestData(cls):
         disable_maintenance_mode()
         cls.admin = _make_superuser('admin6')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('cancust'),
+        customer = natural_customer(
+            _make_user('cancust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -867,9 +902,8 @@ class ContractCreateViewTests(TestCase):
     def setUpTestData(cls):
         disable_maintenance_mode()
         cls.admin = _make_superuser('admin7')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('conccust'),
+        customer = natural_customer(
+            _make_user('conccust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -920,9 +954,8 @@ class ContractDeleteViewTests(TestCase):
     def setUpTestData(cls):
         disable_maintenance_mode()
         cls.admin = _make_superuser('admin8')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('delcust'),
+        customer = natural_customer(
+            _make_user('delcust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -977,9 +1010,8 @@ class CertificateDeleteViewTests(TestCase):
     def setUpTestData(cls):
         disable_maintenance_mode()
         cls.admin = _make_superuser('admin9')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('certcust'),
+        customer = natural_customer(
+            _make_user('certcust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -1075,9 +1107,8 @@ class CSVExportViewTests(TestCase):
 
 
 def _make_customer(username):
-    customer = Customer.objects.create(
-        client_type='natural',
-        user=_make_user(username),
+    customer = natural_customer(
+        _make_user(username),
         account='1234567890123456',
         agency_bank='BANDEC',
         address='Calle 10',
@@ -1219,9 +1250,8 @@ class SubscriptionListStateAndActionsTests(TestCase):
     def setUpTestData(cls):
         disable_maintenance_mode()
         cls.admin = _make_superuser('substate')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('substatecust'),
+        customer = natural_customer(
+            _make_user('substatecust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -1377,17 +1407,15 @@ class CertificatePDFOwnerAccessTests(TestCase):
         cls.staff = _make_user('staffcertpdf', is_staff=True)
         cls.owner = _make_user('ownercert')
         cls.other = _make_user('othercert')
-        cls.customer = Customer.objects.create(
-            user=cls.owner,
-            client_type='natural',
+        cls.customer = natural_customer(
+            cls.owner,
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',
             phone='12345678',
         )
-        cls.other_customer = Customer.objects.create(
-            user=cls.other,
-            client_type='natural',
+        cls.other_customer = natural_customer(
+            cls.other,
             account='6543210987654321',
             agency_bank='BANDEC',
             address='Addr',
@@ -1461,17 +1489,15 @@ class InvoicePDFOwnerAccessTests(TestCase):
         cls.staff = _make_user('staffinvpdf', is_staff=True)
         cls.owner = _make_user('ownerinv')
         cls.other = _make_user('otherinv')
-        cls.customer = Customer.objects.create(
-            user=cls.owner,
-            client_type='natural',
+        cls.customer = natural_customer(
+            cls.owner,
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',
             phone='12345678',
         )
-        cls.other_customer = Customer.objects.create(
-            user=cls.other,
-            client_type='natural',
+        cls.other_customer = natural_customer(
+            cls.other,
             account='6543210987654321',
             agency_bank='BANDEC',
             address='Addr',
@@ -1616,17 +1642,15 @@ class ResendCertificateOwnerAccessTests(TestCase):
         cls.staff = _make_user('staffresend', is_staff=True)
         cls.owner = _make_user('ownerresend')
         cls.other = _make_user('otherresend')
-        cls.customer = Customer.objects.create(
-            user=cls.owner,
-            client_type='natural',
+        cls.customer = natural_customer(
+            cls.owner,
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',
             phone='12345678',
         )
-        cls.other_customer = Customer.objects.create(
-            user=cls.other,
-            client_type='natural',
+        cls.other_customer = natural_customer(
+            cls.other,
             account='6543210987654321',
             agency_bank='BANDEC',
             address='Addr',
