@@ -1956,3 +1956,137 @@ class ClientPendingInvoiceButtonsTests(TestCase):
         view.request = _build_request(self.user)
         resolved = {s.pk: s.latest_invoice_uuid for s in view.get_queryset()}
         self.assertIsNone(resolved[self.orphan_sub.pk])
+
+
+class SubscriptionPeriodFormViewTests(TestCase):
+    """B2/B3: los formularios de alta y edición piden inicio y cantidad.
+
+    La unidad (días o meses) la decide la categoría del servicio y el
+    vencimiento se deriva en el servidor, así que ninguno de los dos formularios
+    expone un `period` ni un `end_date` escribibles. El inicio puede estar en el
+    pasado, y la cantidad es la que el operador fija.
+    """
+
+    INICIO = '15/01/2026 08:00 AM'
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.staff = _make_superuser('subperiod')
+        perms = ContentType.objects.get_for_model(ServiceSubscription).permission_set.filter(
+            codename__in=['add_subscription', 'change_subscription']
+        )
+        cls.staff.user_permissions.add(*perms)
+        cls.owner = _make_user('subperiod.owner')
+        cls.customer = natural_customer(cls.owner)
+        cls.pronostico = Service.objects.create(
+            user=cls.owner,
+            title='Pronóstico diario',
+            summary='Commercial',
+            service_type='commercial',
+            code='SP001',
+            price=Decimal('60.00'),
+        )
+        cls.agrometeo = Service.objects.create(
+            user=cls.owner,
+            title='Boletín agrometeorológico',
+            summary='Commercial',
+            service_type='commercial',
+            code='SP002',
+            price=Decimal('300.00'),
+            service_category='agrometeo',
+        )
+        # La suscripción preexistente usa otro cliente: las pruebas de alta
+        # cuentan o consultan suscripciones de `cls.customer` y no deben
+        # confundirse con una ya existente.
+        cls.edit_owner = _make_user('subperiod.edit')
+        cls.edit_customer = natural_customer(cls.edit_owner)
+        cls.sub = ServiceSubscription.objects.create(
+            customer=cls.edit_customer,
+            service=cls.agrometeo,
+            start_date=timezone.now() - timedelta(days=10),
+            end_date=timezone.now() + timedelta(days=20),
+            quantity=1,
+            payment_status='requested',
+        )
+        cls.create_url = reverse('commercial:suscripcion_create')
+        cls.update_url = reverse('commercial:suscripcion_update', args=[cls.sub.uuid])
+        cls.list_url = reverse('commercial:suscripcion_list')
+
+    def setUp(self):
+        self.client.force_login(self.staff)
+
+    def _data(self, **overrides):
+        data = {
+            'customer': self.customer.pk,
+            'service': self.agrometeo.pk,
+            'start_date': self.INICIO,
+            'quantity': '3',
+            'payment_status': 'requested',
+        }
+        data.update(overrides)
+        return data
+
+    def test_crear_deriva_el_vencimiento_en_meses_para_agrometeo(self):
+        response = self.client.post(self.create_url, self._data())
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self.list_url)
+        sub = ServiceSubscription.objects.get(customer=self.customer)
+        self.assertEqual(
+            timezone.localtime(sub.end_date).strftime('%d/%m/%Y %H:%M'), '15/04/2026 08:00'
+        )
+        self.assertEqual(sub.quantity, 3)
+
+    def test_crear_deriva_el_vencimiento_en_dias_para_pronostico(self):
+        self.client.post(self.create_url, self._data(service=self.pronostico.pk, quantity='45'))
+        sub = ServiceSubscription.objects.get(customer=self.customer)
+        self.assertEqual(
+            timezone.localtime(sub.end_date).strftime('%d/%m/%Y %H:%M'), '01/03/2026 08:00'
+        )
+
+    def test_crear_acepta_una_fecha_de_inicio_pasada(self):
+        response = self.client.post(self.create_url, self._data(start_date='01/09/2025 08:00 AM'))
+        self.assertEqual(response.status_code, 302)
+        sub = ServiceSubscription.objects.get(customer=self.customer)
+        self.assertEqual(sub.start_date.strftime('%d/%m/%Y'), '01/09/2025')
+
+    def test_crear_ignora_el_end_date_enviado(self):
+        self.client.post(self.create_url, self._data(end_date='01/01/2030 08:00 AM'))
+        sub = ServiceSubscription.objects.get(customer=self.customer)
+        self.assertEqual(sub.end_date.strftime('%d/%m/%Y'), '15/04/2026')
+
+    def test_crear_sin_cantidad_no_crea_la_suscripcion(self):
+        response = self.client.post(self.create_url, self._data(quantity=''))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(ServiceSubscription.objects.filter(customer=self.customer).exists())
+        self.assertIn('quantity', response.context['form'].errors)
+
+    def test_editar_recalcula_el_vencimiento_al_cambiar_la_cantidad(self):
+        response = self.client.post(self.update_url, self._data(quantity='6'))
+        self.assertEqual(response.status_code, 302)
+        self.sub.refresh_from_db()
+        self.assertEqual(
+            timezone.localtime(self.sub.end_date).strftime('%d/%m/%Y %H:%M'), '15/07/2026 08:00'
+        )
+
+    def test_editar_ignora_el_end_date_enviado(self):
+        self.client.post(self.update_url, self._data(quantity='1', end_date='01/01/2030 08:00 AM'))
+        self.sub.refresh_from_db()
+        self.assertEqual(self.sub.end_date.strftime('%d/%m/%Y'), '15/02/2026')
+
+    def test_el_formulario_de_crear_pide_cantidad_y_no_expone_periodo_ni_fin(self):
+        html = self.client.get(self.create_url).content.decode()
+        self.assertIn('id="id_quantity"', html)
+        self.assertNotIn('id="id_period"', html)
+        self.assertNotIn('id="id_end_date"', html)
+
+    def test_el_formulario_de_editar_muestra_el_vencimiento_calculado(self):
+        # El vencimiento llega renderizado por el servidor: sin JavaScript el
+        # operador igual ve la fecha contra la que está trabajando.
+        html = self.client.get(self.update_url).content.decode()
+        esperado = Service.compute_end_date(
+            timezone.localtime(self.sub.start_date),
+            self.sub.quantity,
+            self.agrometeo.service_category,
+        ).strftime('%d/%m/%Y %I:%M %p')
+        self.assertIn(esperado, html)

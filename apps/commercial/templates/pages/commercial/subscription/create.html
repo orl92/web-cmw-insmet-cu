@@ -1,5 +1,6 @@
 {% extends 'layouts/form.html' %}
 {% load form_filters %}
+{% load static %}
 {% block form %}
   {% include 'includes/dashboard/form_card.html' with card_title='Suscripción' %}
   <div class="row">
@@ -18,24 +19,28 @@
       {% endif %}
     </div>
   </div>
-  <div class="mb-3">
-    <label class="form-label required" for="{{ form.period.id_for_label }}">{{ form.period.label }}</label>
-    {{ form.period }}
-    {% if form.period.errors %}
-      <div class="invalid-feedback d-block">{{ form.period.errors.0 }}</div>
-    {% endif %}
-  </div>
-  </div>
-  </div>
-  </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Período de Vigencia' %}
   <div class="row">
     <div class="col-md-6 mb-3">
       {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm' %}
     </div>
     <div class="col-md-6 mb-3">
-      {% include 'includes/dashboard/date_field.html' with field=form.end_date value=form.end_date.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm' %}
+      <label class="form-label required"
+             for="{{ form.quantity.id_for_label }}"
+             data-period-quantity-label>Cantidad</label>
+      {{ form.quantity }}
+      <small class="text-muted" id="{{ form.quantity.auto_id }}_helptext">{{ form.quantity.help_text }}</small>
+      {% if form.quantity.errors %}
+        <div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>
+      {% endif %}
     </div>
+  </div>
+  <div class="mb-3">
+    <span class="form-label d-block" id="end-date-preview-label">Vencimiento calculado</span>
+    <output class="form-control-plaintext fw-medium"
+            id="end-date-preview"
+            aria-labelledby="end-date-preview-label"
+            aria-live="polite">{% if form.derived_end_date %}{{ form.derived_end_date|fmt_datetime }}{% else %}Se calcula con la fecha de inicio y la cantidad.{% endif %}</output>
   </div>
   <div class="mb-3">
     <label class="form-label" for="{{ form.payment_status.id_for_label }}">{{ form.payment_status.label }}</label>
@@ -50,69 +55,5 @@
   </div>
 {% endblock %}
 {% block extrajs %}
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const periodSelect = document.getElementById('id_period');
-    const startInput = document.getElementById('id_start_date');
-    const endInput = document.getElementById('id_end_date');
-
-    function toIsoDateTime(date) {
-      const pad = n => String(n).padStart(2, '0');
-      return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
-        'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
-    }
-
-    function setPickerValue(input, isoDateTimeStr) {
-      const dt = new Date(isoDateTimeStr);
-      const picker = window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id];
-      if (picker && picker.dates && typeof picker.dates.setValue === 'function') {
-        picker.dates.setValue(dt);
-      }
-      // window.formatPickerDateTime se define en tempus-init (DOMContentLoaded); si
-      // aún no existe —el script corre durante el parseo— formateamos localmente.
-      if (typeof window.formatPickerDateTime === 'function') {
-        input.value = window.formatPickerDateTime(dt);
-      } else {
-        const pad = n => String(n).padStart(2, '0');
-        let h = dt.getHours();
-        const meridiem = h >= 12 ? 'PM' : 'AM';
-        let h12 = h % 12;
-        if (h12 === 0) h12 = 12;
-        input.value = pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() +
-          ' ' + h12 + ':' + pad(dt.getMinutes()) + ' ' + meridiem;
-      }
-    }
-
-    function updateFields() {
-      const val = periodSelect.value;
-      const now = new Date();
-      if (val === 'custom') {
-        startInput.disabled = false;
-        endInput.disabled = false;
-      } else {
-        startInput.disabled = true;
-        endInput.disabled = true;
-        if (val === '1m') {
-          setPickerValue(startInput, toIsoDateTime(now));
-          now.setDate(now.getDate() + 30);
-        } else if (val === '3m') {
-          setPickerValue(startInput, toIsoDateTime(now));
-          now.setDate(now.getDate() + 90);
-        } else if (val === '6m') {
-          setPickerValue(startInput, toIsoDateTime(now));
-          now.setDate(now.getDate() + 180);
-        } else if (val === '1y') {
-          setPickerValue(startInput, toIsoDateTime(now));
-          now.setDate(now.getDate() + 365);
-        }
-        if (val !== 'custom') {
-          setPickerValue(endInput, toIsoDateTime(now));
-        }
-      }
-    }
-
-    periodSelect.addEventListener('change', updateFields);
-    updateFields();
-  });
-  </script>
+  <script src="{% static 'dist/js/subscription-period.js' %}" defer></script>
 {% endblock %}

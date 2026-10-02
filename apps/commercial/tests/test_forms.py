@@ -1,6 +1,6 @@
 import struct
 import zlib
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
@@ -723,90 +723,157 @@ class ServiceFormTests(TestCase):
 
 
 class SubscriptionFormTests(TestCase):
+    """La unidad la decide el servicio y el vencimiento se deriva, no se escribe.
+
+    El formulario viejo ofrecía un `period` de cuatro opciones fijas resueltas con
+    `timedelta(days=30/90/180/365)`: ese "1 mes = 30 días" contradecía a
+    `Service.compute_end_date` y no era reproducible desde el modelo. Ahora el
+    operador elige fecha de inicio y cantidad, y la unidad sale de la categoría
+    del servicio, así que `end_date` desaparece del formulario.
+    """
+
+    INICIO = '15/01/2026 08:00 AM'
+
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('subform')
         cls.customer = natural_customer(
             cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
-        cls.service = Service.objects.create(
+        cls.pronostico = Service.objects.create(
             user=cls.user,
-            title='Comm Svc',
+            title='Pronóstico diario',
             summary='Commercial',
             service_type='commercial',
             code='C010',
             price=Decimal('60.00'),
         )
+        cls.agrometeo = Service.objects.create(
+            user=cls.user,
+            title='Boletín agrometeorológico',
+            summary='Commercial',
+            service_type='commercial',
+            code='C011',
+            price=Decimal('300.00'),
+            service_category='agrometeo',
+        )
+        cls.publico = Service.objects.create(
+            user=cls.user,
+            title='Pronóstico público',
+            summary='Public',
+            service_type='public',
+            code='P001',
+            price=Decimal('0.00'),
+        )
 
-    def test_period_1m_calculates_end_date(self):
+    def _data(self, **overrides):
+        data = {
+            'customer': self.customer.pk,
+            'service': self.pronostico.pk,
+            'start_date': self.INICIO,
+            'quantity': '45',
+            'payment_status': 'requested',
+        }
+        data.update(overrides)
+        return data
+
+    def test_los_campos_del_formulario(self):
+        # `period` se va y `end_date` también: el vencimiento es derivado. La
+        # lista exacta evita que un campo vuelva a colarse sin que nadie lo note.
+        form = SubscriptionForm()
+        self.assertEqual(
+            list(form.fields),
+            ['customer', 'service', 'start_date', 'quantity', 'payment_status'],
+        )
+
+    def test_period_ya_no_es_un_campo(self):
+        self.assertNotIn('period', SubscriptionForm().fields)
+
+    def test_end_date_no_es_editable(self):
+        self.assertNotIn('end_date', SubscriptionForm().fields)
+
+    def test_end_date_enviado_en_el_post_se_ignora(self):
+        # El vencimiento no se escribe: un POST a mano con `end_date` no cambia
+        # el resultado, porque el campo ni existe en el formulario.
         form = SubscriptionForm(
-            data={
-                'customer': self.customer.pk,
-                'service': self.service.pk,
-                'period': '1m',
-                'payment_status': 'requested',
-            }
+            data=self._data(service=self.agrometeo.pk, quantity='1', end_date='01/01/2030 00:00 AM')
         )
         self.assertTrue(form.is_valid(), form.errors)
-        sub = form.save(commit=False)
-        self.assertIsNotNone(sub.start_date)
-        self.assertIsNotNone(sub.end_date)
-        delta = (sub.end_date - sub.start_date).days
-        self.assertEqual(delta, 30)
+        self.assertEqual(form.save(commit=False).end_date.strftime('%d/%m/%Y'), '15/02/2026')
 
-    def test_period_3m_calculates_end_date(self):
-        form = SubscriptionForm(
-            data={
-                'customer': self.customer.pk,
-                'service': self.service.pk,
-                'period': '3m',
-                'payment_status': 'requested',
-            }
-        )
-        self.assertTrue(form.is_valid(), form.errors)
-        sub = form.save(commit=False)
-        delta = (sub.end_date - sub.start_date).days
-        self.assertEqual(delta, 90)
-
-    def test_period_1y_calculates_end_date(self):
-        form = SubscriptionForm(
-            data={
-                'customer': self.customer.pk,
-                'service': self.service.pk,
-                'period': '1y',
-                'payment_status': 'requested',
-            }
-        )
-        self.assertTrue(form.is_valid(), form.errors)
-        sub = form.save(commit=False)
-        delta = (sub.end_date - sub.start_date).days
-        self.assertEqual(delta, 365)
-
-    def test_custom_period_validates_dates(self):
-        start = timezone.now()
-        end = start - timedelta(days=1)
-        form = SubscriptionForm(
-            data={
-                'customer': self.customer.pk,
-                'service': self.service.pk,
-                'period': 'custom',
-                'payment_status': 'requested',
-                'start_date': start.strftime('%Y-%m-%dT%H:%M'),
-                'end_date': end.strftime('%Y-%m-%dT%H:%M'),
-            }
-        )
+    def test_cantidad_es_obligatoria(self):
+        form = SubscriptionForm(data=self._data(quantity=''))
         self.assertFalse(form.is_valid())
+        self.assertIn('quantity', form.errors)
+
+    def test_cantidad_rechaza_el_cero(self):
+        form = SubscriptionForm(data=self._data(quantity='0'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('quantity', form.errors)
+
+    def test_cantidad_exige_el_minimo_del_modelo(self):
+        form = SubscriptionForm()
+        field = form.fields['quantity']
+        self.assertTrue(field.required)
+        self.assertEqual(field.min_value, 1)
+        self.assertIn('min="1"', form['quantity'].as_widget())
+
+    def test_start_date_es_obligatorio(self):
+        form = SubscriptionForm(data=self._data(start_date=''))
+        self.assertFalse(form.is_valid())
+        self.assertIn('start_date', form.errors)
+
+    def test_start_date_pasado_se_acepta(self):
+        # B2: el inicio es libre, incluso en el pasado. El formulario viejo lo
+        # sobreescribía con `timezone.now()` cuando el período no era `custom`.
+        form = SubscriptionForm(data=self._data(start_date='01/09/2025 08:00 AM'))
+        self.assertTrue(form.is_valid(), form.errors)
+        sub = form.save(commit=False)
+        self.assertEqual(sub.start_date.strftime('%d/%m/%Y'), '01/09/2025')
+
+    def test_agrometeo_deriva_el_vencimiento_en_meses(self):
+        form = SubscriptionForm(data=self._data(service=self.agrometeo.pk, quantity='3'))
+        self.assertTrue(form.is_valid(), form.errors)
+        sub = form.save(commit=False)
+        self.assertEqual(sub.end_date.strftime('%d/%m/%Y %H:%M'), '15/04/2026 08:00')
+
+    def test_pronostico_deriva_el_vencimiento_en_dias(self):
+        form = SubscriptionForm(data=self._data(service=self.pronostico.pk, quantity='45'))
+        self.assertTrue(form.is_valid(), form.errors)
+        sub = form.save(commit=False)
+        esperado = datetime(2026, 1, 15, 8, 0) + timedelta(days=45)
+        self.assertEqual(
+            sub.end_date.strftime('%d/%m/%Y %H:%M'), esperado.strftime('%d/%m/%Y %H:%M')
+        )
+
+    def test_un_mes_no_es_treinta_dias(self):
+        # El "1 mes = 30 días" del `period` viejo no puede reproducirse con meses
+        # enteros: entre el 15/01 y el 15/02 hay 31 días, y ese es el límite que
+        # el modelo ya tenía documentado.
+        form = SubscriptionForm(data=self._data(service=self.agrometeo.pk, quantity='1'))
+        self.assertTrue(form.is_valid(), form.errors)
+        sub = form.save(commit=False)
+        self.assertEqual(sub.end_date.strftime('%d/%m/%Y'), '15/02/2026')
+        self.assertEqual((sub.end_date - sub.start_date).days, 31)
+
+    def test_el_vencimiento_ajusta_al_ultimo_dia_del_mes(self):
+        # `relativedelta(months=1)` desde el 31/01 cae en el último día de febrero
+        # en vez de desbordar al marzo, que es lo que hace un `setMonth` crudo.
+        form = SubscriptionForm(
+            data=self._data(
+                service=self.agrometeo.pk, quantity='1', start_date='31/01/2026 08:00 AM'
+            )
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        sub = form.save(commit=False)
+        self.assertEqual(sub.end_date.strftime('%d/%m/%Y'), '28/02/2026')
 
     def test_tempus_datetime_format_parses(self):
         form = SubscriptionForm(
-            data={
-                'customer': self.customer.pk,
-                'service': self.service.pk,
-                'period': 'custom',
-                'payment_status': 'requested',
-                'start_date': '23/08/2026 06:30 PM',
-                'end_date': '23/09/2026 11:45 AM',
-            }
+            data=self._data(
+                start_date='23/08/2026 06:30 PM',
+                quantity='31',
+            )
         )
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(
@@ -814,9 +881,66 @@ class SubscriptionFormTests(TestCase):
             '2026-08-23 18:30',
         )
         self.assertEqual(
-            form.cleaned_data['end_date'].strftime('%Y-%m-%d %H:%M'),
-            '2026-09-23 11:45',
+            form.save(commit=False).end_date.strftime('%Y-%m-%d %H:%M'),
+            '2026-09-23 18:30',
         )
+
+    def test_las_opciones_de_servicio_exponen_la_unidad(self):
+        # La unidad no es elegible, así que viaja al navegador junto a la opción
+        # para rotular la cantidad sin volver a pedirla al servidor. El atributo
+        # se emite siempre: sin él, el rótulo queda en la unidad por defecto.
+        opciones = SubscriptionForm()['service'].as_widget()
+        self.assertIn(f'value="{self.agrometeo.pk}" data-period-unit="mes"', opciones)
+        self.assertIn(f'value="{self.pronostico.pk}" data-period-unit="día"', opciones)
+
+    def test_el_servicio_publico_no_se_ofrece(self):
+        disponibles = SubscriptionForm().fields['service'].queryset
+        self.assertIn(self.pronostico, disponibles)
+        self.assertIn(self.agrometeo, disponibles)
+        self.assertNotIn(self.publico, disponibles)
+
+    def test_el_estado_de_pago_no_se_edita_sobre_una_suscripcion_existente(self):
+        instancia = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.pronostico,
+            start_date=datetime(2026, 1, 15, 8, 0, tzinfo=timezone.get_current_timezone()),
+            end_date=datetime(2026, 2, 28, 8, 0, tzinfo=timezone.get_current_timezone()),
+            quantity=45,
+            payment_status='pending',
+        )
+        form = SubscriptionForm(instance=instancia)
+        self.assertTrue(form.fields['payment_status'].disabled)
+        self.assertTrue(form.fields['payment_status'].help_text)
+
+    def test_el_vencimiento_derivado_se_muestra_sin_javascript(self):
+        # El valor que se imprime en la plantilla lo calcula el servidor; el
+        # navegador sólo lo refresca mientras se edita.
+        instancia = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.agrometeo,
+            start_date=datetime(2026, 1, 15, 8, 0, tzinfo=timezone.get_current_timezone()),
+            end_date=datetime(2026, 2, 15, 8, 0, tzinfo=timezone.get_current_timezone()),
+            quantity=1,
+            payment_status='requested',
+        )
+        form = SubscriptionForm(instance=instancia)
+        self.assertEqual(form.derived_end_date.strftime('%d/%m/%Y %H:%M'), '15/02/2026 08:00')
+
+    def test_el_vencimiento_derivado_sigue_a_la_cantidad_del_post(self):
+        form = SubscriptionForm(data=self._data(service=self.agrometeo.pk, quantity='6'))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.derived_end_date.strftime('%d/%m/%Y %H:%M'), '15/07/2026 08:00')
+
+    def test_los_campos_del_formulario_se_rotulan_en_espanol(self):
+        # Campo declarado sin `label`, Django rotula con el nombre del atributo
+        # ("Start date") y el operador ve la interfaz en dos idiomas.
+        form = SubscriptionForm()
+        self.assertEqual(form.fields['start_date'].label, 'Fecha de inicio')
+
+    def test_el_vencimiento_derivado_es_none_sin_datos_para_calcularlo(self):
+        # Sin servicio no hay unidad, así que no hay vencimiento: la plantilla
+        # muestra el texto neutro en vez de una fecha inventada.
+        self.assertIsNone(SubscriptionForm().derived_end_date)
 
 
 class ContractFormTests(TestCase):
