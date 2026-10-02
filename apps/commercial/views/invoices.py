@@ -560,6 +560,46 @@ class CancelInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return redirect('commercial:factura_list')
 
 
+class RetryInvoicePdfView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """Vuelve a encolar el render del PDF sin reenviar el correo.
+
+    El PDF se genera en una tarea Huey asíncrona, así que una factura puede
+    quedar pagada sin PDF (el worker caído, un render fallido) y no hay forma
+    de impedirlo sin volver síncrono el envío. Lo que sí tiene que existir es
+    la reparación: reencolar sólo el paso del PDF, que es idempotente y no
+    duplica el correo si el de la factura ya salió.
+    """
+
+    permission_required = 'commercial.change_invoice'
+
+    def post(self, request, uuid):
+        invoice = get_object_or_404(Invoice, uuid=uuid)
+
+        if invoice.pdf_ready:
+            messages.warning(request, f'La factura {invoice.number} ya tiene su PDF.')
+            return redirect('commercial:factura_list')
+        if invoice.is_cancelled:
+            messages.warning(
+                request, f'No se genera el PDF de una factura anulada ({invoice.number}).'
+            )
+            return redirect('commercial:factura_list')
+
+        site_url = request.build_absolute_uri('/')
+        generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url, solo_paso='pdf')
+        log_action(
+            user=request.user,
+            obj=invoice,
+            action_flag=CHANGE,
+            message=f'Reencolado el PDF de la factura {invoice.number}',
+            request=request,
+        )
+        messages.success(
+            request,
+            f'Generación del PDF de la factura {invoice.number} reencolada.',
+        )
+        return redirect('commercial:factura_list')
+
+
 class InvoiceHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         return self.request.user.is_superuser

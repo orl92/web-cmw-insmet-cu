@@ -42,6 +42,7 @@ from apps.commercial.views.invoices import (
     InvoiceListView,
     InvoicePDFDownloadView,
     ResendInvoiceEmailView,
+    RetryInvoicePdfView,
     ajax_pending_subscriptions,
 )
 from apps.commercial.views.services import (
@@ -167,6 +168,11 @@ urlpatterns = [
         'reenviar/correo/factura/<uuid:uuid>/',
         ResendInvoiceEmailView.as_view(),
         name='factura_resend_email',
+    ),
+    path(
+        'reintentar/pdf/factura/<uuid:uuid>/',
+        RetryInvoicePdfView.as_view(),
+        name='factura_retry_pdf',
     ),
     path(
         'ajax/suscripciones-pendientes/',

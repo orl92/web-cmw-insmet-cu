@@ -125,6 +125,16 @@ class BulkActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
             }
         )
 
+    def validate_update(self, qs, field, value):
+        """Invariantes que la acción masiva no puede violar.
+
+        Recibe los objetos ya filtrados (uuid + `record_active`) y devuelve el
+        mensaje de error, o `None` si el cambio se puede aplicar a todos. Se
+        llama una sola vez, antes de cualquier `save`, para que un rechazo no
+        deje registros a medio actualizar.
+        """
+        return None
+
     def _handle_update(self, request, body, uuids):
         field = body.get('field', '')
         value = body.get('value', '')
@@ -146,6 +156,16 @@ class BulkActionView(LoginRequiredMixin, PermissionRequiredMixin, View):
         processed = 0
         total = len(uuids)
         first_obj = qs.first()
+
+        # Se valida antes de tocar nada: una acción masiva que aplicara el cambio
+        # a los válidos y dejara fuera a los inválidos deja estados a medias que
+        # nadie pidió y que hay que corregir a mano.
+        error = self.validate_update(qs, field, value)
+        if error:
+            return JsonResponse(
+                {'error': error, 'processed': 0, 'skipped': len(qs)},
+                status=400,
+            )
 
         for obj in qs:
             setattr(obj, field, value)
@@ -195,6 +215,31 @@ class ServiceSubscriptionBulkActionView(BulkActionView):
     update_allowlist = {
         'payment_status': ['requested', 'pending', 'paid'],
     }
+
+    def validate_update(self, qs, field, value):
+        error = super().validate_update(qs, field, value)
+        if error:
+            return error
+        if field != 'payment_status' or value != 'paid':
+            return None
+        # Pagado sin certificado es el estado que reportaba el operador: la
+        # factura aparece pagada y no hay ningún documento que la respalde.
+        # La acción masiva no sube certificados, así que aquí sólo puede
+        # rechazar; el camino que sí los sube es `ApproveSubscriptionView`.
+        con_certificado = set(
+            qs.filter(certificates__record_active=True)
+            .exclude(certificates__pdf='')
+            .values_list('uuid', flat=True)
+            .distinct()
+        )
+        sin_certificado = list(qs.exclude(uuid__in=con_certificado).values_list('uuid', flat=True))
+        if sin_certificado:
+            return (
+                f'No se puede marcar como pagada {len(sin_certificado)} suscripción(es) '
+                'sin certificado: el pago se aprueba subiendo el certificado desde la '
+                'suscripción.'
+            )
+        return None
 
 
 class InvoiceBulkActionView(BulkActionView):
