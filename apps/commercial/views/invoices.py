@@ -45,9 +45,13 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_queryset(self):
         # `with_display_status` trae items_total/items_paid anotados para que la
-        # columna Estado no dispare una consulta por fila.
+        # columna Estado no dispare una consulta por fila. `customer__user` viene
+        # en el select_related porque la columna Cliente muestra `display_name`,
+        # que para una persona natural lee los nombres del User.
         return (
-            Invoice.objects.select_related('subscription__customer', 'subscription__service')
+            Invoice.objects.select_related(
+                'customer__user', 'subscription__customer__user', 'subscription__service'
+            )
             .prefetch_related('items')
             .with_display_status()
             .order_by('-issue_date')
@@ -75,17 +79,24 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def get_initial(self):
         initial = super().get_initial()
         today = timezone.now().date()
+        regenerar = self.suscripcion_a_regenerar()
         customer_uuid = self.request.GET.get('customer_uuid')
         if customer_uuid:
             try:
                 customer = Customer.objects.get(uuid=customer_uuid)
                 initial['customer'] = customer
-                pending_sub = ServiceSubscription.objects.filter(
-                    customer=customer,
-                    payment_status__in=['requested', 'pending'],
-                    start_date__isnull=False,
-                    end_date__isnull=False,
-                ).first()
+                # La suscripción a regenerar manda en las fechas propuestas: es la
+                # que el operador está por volver a facturar.
+                pending_sub = (
+                    regenerar
+                    if regenerar and regenerar.customer_id == customer.pk
+                    else ServiceSubscription.objects.filter(
+                        customer=customer,
+                        payment_status__in=['requested', 'pending'],
+                        start_date__isnull=False,
+                        end_date__isnull=False,
+                    ).first()
+                )
                 if pending_sub:
                     initial['start_date'] = (
                         pending_sub.start_date.date() if pending_sub.start_date else today
@@ -112,6 +123,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         context['segment'] = 'facturas'
         context['url_list'] = reverse_lazy('commercial:factura_list')
         context['items_formset'] = InvoiceItemFormSet(prefix='items')
+        context['regenerar_sub'] = self.suscripcion_a_regenerar()
         commercial_services = Service.objects.filter(service_type=Service.COMMERCIAL)
         # The manual lines need `service_category` to tell months from days, and
         # the browser cannot derive the unit from the dates alone.
@@ -122,12 +134,34 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         context['company'] = CompanySettings.get_instance()
         return context
 
+    def suscripcion_a_regenerar(self):
+        """Suscripción que el operador pidió regenerar, si el pedido es válido.
+
+        `regenerar` llega en el GET y vuelve en el POST (el formulario lo
+        reenvía en un campo oculto), así que se lee de los dos. Se valida en
+        ambos casos: una suscripción inexistente o ya pagada no tiene factura que
+        regenerar, y en ese caso el formulario abre normal en vez de prometer
+        una anulación que no va a pasar.
+        """
+        uuid = self.request.GET.get('regenerar') or self.request.POST.get('regenerar')
+        if not uuid:
+            return None
+        subscription = (
+            ServiceSubscription.objects.filter(uuid=uuid, record_active=True)
+            .select_related('service')
+            .first()
+        )
+        if subscription is None or subscription.payment_status == 'paid':
+            return None
+        return subscription
+
     def form_valid(self, form):
         customer = form.cleaned_data['customer']
         start_date = form.cleaned_data['start_date']
         end_date = form.cleaned_data['end_date']
         commercial_registry = form.cleaned_data['commercial_registry']
         subscriptions = form.cleaned_data.get('subscriptions')
+        regenerar = self.suscripcion_a_regenerar()
 
         if subscriptions and subscriptions.exists():
             groups = {}
@@ -137,17 +171,101 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 key = (sub_start, sub_end)
                 groups.setdefault(key, []).append(sub)
 
-            for (sub_start, sub_end), subs in groups.items():
+            nuevas_facturas = [
                 self.process_batch_invoice(customer, sub_start, sub_end, commercial_registry, subs)
+                for (sub_start, sub_end), subs in groups.items()
+            ]
 
             messages.success(
                 self.request,
                 f'Se generaron {len(groups)} factura(s) según los períodos de las suscripciones.',
             )
+            # Después de crear, nunca antes: la factura anterior sólo se anula
+            # cuando su reemplazo ya existe.
+            self.anular_factura_previa(regenerar, subscriptions, nuevas_facturas)
             return redirect(self.success_url)
         else:
+            # Facturación manual: crea suscripciones nuevas, así que la
+            # suscripción regenerada no está en esta factura y no hay nada que
+            # reemplazar. Se avisa en vez de anular a ciegas.
+            self.anular_factura_previa(regenerar, subscriptions)
             return self.process_manual_invoice(
                 form, customer, start_date, end_date, commercial_registry
+            )
+
+    def anular_factura_previa(self, regenerar, subscriptions, nuevas_facturas=None):
+        """Anula la factura que la nueva reemplaza, sólo si la nueva la reemplaza.
+
+        Va después de crear la factura nueva a propósito: el defecto que
+        reportaba el operador no era "se anuló la factura equivocada" sino "se
+        anuló antes de que existiera el reemplazo". Si algo falla antes de acá,
+        la factura anterior sigue viva.
+
+        No se envuelve en `transaction.atomic`: la tarea de PDF se encola dentro
+        de `process_batch_invoice`, y con la transacción abierta el worker
+        podría renderizar contra filas todavía sin confirmar. El orden ya da la
+        garantía que importa: crear primero, anular después.
+        """
+        if regenerar is None:
+            return
+        incluida = subscriptions and subscriptions.filter(pk=regenerar.pk).exists()
+        if not incluida:
+            messages.warning(
+                self.request,
+                'La suscripción a regenerar no se facturó en esta factura: su factura '
+                'anterior no se anuló y su certificado sigue vigente.',
+            )
+            return
+
+        # `Invoice.subscription` es un ancla opcional, así que `for_subscription`
+        # cubre las facturas de lote por el vínculo de línea. Las nuevas se
+        # excluyen explícitamente: en el caso de un solo período la factura
+        # recién creada también cuelga de la suscripción.
+        nuevas_ids = [invoice.pk for invoice in nuevas_facturas or []]
+        anteriores = (
+            Invoice.objects.for_subscription(regenerar)
+            .exclude(pk__in=nuevas_ids)
+            .filter(is_cancelled=False)
+        )
+        numeros = []
+        for invoice in anteriores:
+            invoice.is_cancelled = True
+            invoice.save(update_fields=['is_cancelled'])
+            numeros.append(invoice.number)
+            log_action(
+                user=self.request.user,
+                obj=invoice,
+                action_flag=CHANGE,
+                message=f'Factura {invoice.number} anulada al confirmar la factura nueva',
+                request=self.request,
+            )
+
+        # `Certificate` es `SoftDeleteModel` y `QuerySet.delete()` ignora su
+        # `delete()`: borra la fila de verdad y deja el PDF huérfano en `media/`.
+        # Por eso se da de baja uno por uno: baja lógica (la trazabilidad del
+        # certificado emitido se conserva) y `_cleanup_files()` borra el archivo,
+        # que es lo que corresponde a un documento que ya no vale. `hard_delete()`
+        # además sería peor: el certificado se le entregó al cliente.
+        certificados = regenerar.certificates.filter(record_active=True)
+        dados_de_baja = 0
+        for certificado in certificados:
+            certificado.delete()
+            dados_de_baja += 1
+        if dados_de_baja:
+            log_action(
+                user=self.request.user,
+                obj=regenerar,
+                action_flag=CHANGE,
+                message=(
+                    f'{dados_de_baja} certificado(s) dado(s) de baja al confirmar la factura nueva'
+                ),
+                request=self.request,
+            )
+
+        if numeros:
+            messages.success(
+                self.request,
+                f'Factura anterior anulada ({", ".join(numeros)}) al confirmar la nueva.',
             )
 
     def anchor_invoice(self, invoice, subscriptions):
@@ -168,6 +286,12 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def process_batch_invoice(
         self, customer, start_date, end_date, commercial_registry, subscriptions
     ):
+        """Crea la factura de un período y la devuelve.
+
+        El retorno lo usa `form_valid`: al regenerar, la factura anterior se
+        anula por diferencia, así que hay que saber cuáles son las nuevas para
+        no dejar el reemplazo anulado junto con lo que reemplaza.
+        """
         invoice = Invoice.objects.create(
             subscription=None, customer=customer, amount=0, number=self.generate_invoice_number()
         )
@@ -235,6 +359,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
 
         site_url = self.request.build_absolute_uri('/')
         generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
+        return invoice
 
     def process_manual_invoice(self, form, customer, start_date, end_date, commercial_registry):
         items_formset = InvoiceItemFormSet(self.request.POST, prefix='items')

@@ -3,6 +3,26 @@
 {% load static %}
 {% block form %}
   <div id="form-messages"></div>
+  {% if regenerar_sub %}
+    <input type="hidden"
+           name="regenerar"
+           value="{{ regenerar_sub.uuid }}"
+           data-pk="{{ regenerar_sub.pk }}" />
+    <div class="alert alert-warning" role="alert">
+      <div class="d-flex">
+        <div>
+          <i class="icon alert-icon ti ti-alert-triangle"></i>
+        </div>
+        <div class="ms-3">
+          <h4 class="alert-title">Regenerando la factura de {{ regenerar_sub.service.title }}</h4>
+          <p class="text-muted mb-0">
+            Al guardar, se anulará la factura anterior y se dará de baja su certificado.
+            Si cerrás el formulario ahora, no se anula nada: la factura actual sigue vigente.
+          </p>
+        </div>
+      </div>
+    </div>
+  {% endif %}
   {% include 'includes/dashboard/form_card.html' with card_title='Cliente' %}
   <div class="row">
     <!-- Cliente -->
@@ -386,6 +406,19 @@
   const startDateInput = document.getElementById('id_start_date');
   const endDateInput = document.getElementById('id_end_date');
   const daysCountInput = document.getElementById('days-count');
+  // Suscripción que el operador pidió regenerar: el servidor la pasa en un
+  // campo oculto y acá se usa para dejarla marcada. Sin esto el operador ve el
+  // grupo de pendientes sin nada seleccionado y factura cualquier otra cosa.
+  const regenerarInput = document.querySelector('input[name="regenerar"]');
+  const regenerarPk = regenerarInput ? regenerarInput.dataset.pk : '';
+
+  function preseleccionarRegeneracion() {
+    if (!regenerarPk) return;
+    const cb = groupedContainer.querySelector('.subscription-check[value="' + regenerarPk + '"]');
+    if (!cb) return;
+    setPeriodActive(cb.dataset.start, cb.dataset.end);
+    cb.checked = true;
+  }
 
   // Convierte el valor visible del picker (dd/mm/yyyy) a Date.
   // Usa window.pickerDateToIso cuando está disponible (lo define tempus-init en
@@ -720,6 +753,7 @@
 
         // Estado inicial: sin período activo, todo habilitado
         setPeriodInactive();
+        preseleccionarRegeneracion();
         updateDaysFromInputs();
       })
       .catch(function(error) {
