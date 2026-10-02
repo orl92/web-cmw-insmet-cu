@@ -1313,6 +1313,11 @@ class SubscriptionListStateAndActionsTests(TestCase):
             subscription=sub,
             number='F-LBL-001',
             amount=Decimal('50.00'),
+            # Los botones de documento sólo aparecen si el PDF está listo de
+            # verdad (`pdf_status` + archivo). Una factura sin PDF no los lleva,
+            # y el test es sobre las etiquetas, no sobre la existencia del PDF.
+            pdf='factura/invoice/F-LBL-001.pdf',
+            pdf_status=Invoice.PdfStatus.READY,
         )
         InvoiceItem.objects.create(
             invoice=invoice,
@@ -1875,6 +1880,11 @@ class ClientPendingInvoiceButtonsTests(TestCase):
             subscription=None,
             number='2026-9001',
             amount=90,
+            # El botón de descarga sólo existe si el PDF está listo; este test
+            # verifica que la vista encuentre la factura por su línea, así que
+            # la factura necesita un PDF real para que ese botón sea visible.
+            pdf='factura/invoice/2026-9001.pdf',
+            pdf_status=Invoice.PdfStatus.READY,
         )
         for sub, cantidad in ((cls.sub, 2), (other_sub, 1)):
             InvoiceItem.objects.create(
