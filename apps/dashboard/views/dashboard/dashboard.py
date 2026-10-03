@@ -36,7 +36,9 @@ def serialize_sub(sub):
     return {
         'customer': html.escape(sub.customer.company_name or 'N/A') if sub.customer else 'N/A',
         'service': html.escape(sub.service.title or 'N/A') if sub.service else 'N/A',
-        'end_date': sub.end_date.strftime('%d/%m/%Y') if sub.end_date else 'N/A',
+        # Sin vencimiento: la suscripción queda vigente hasta que se anule, así
+        # que lo único que hay que fechar es cuándo arranca el servicio.
+        'start_date': sub.start_date.strftime('%d/%m/%Y') if sub.start_date else 'N/A',
     }
 
 
@@ -265,16 +267,12 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             try:
                 customer = Customer.objects.get(user=user)
                 subs = ServiceSubscription.objects.filter(customer=customer, record_active=True)
-                context['client_active_subs'] = subs.filter(payment_status='paid', end_date__gt=now)
+                # Ninguna suscripción vence: `client_active_subs` son las pagadas
+                # y no anuladas, y lo siguen siendo para siempre. Por eso no
+                # existen "vencidas" ni "por vencer": una vez pagada, la única
+                # forma de perder la vigencia es anularla.
+                context['client_active_subs'] = subs.filter(payment_status='paid')
                 context['client_pending_subs'] = subs.filter(payment_status='pending')
-                context['client_expired_subs'] = subs.filter(
-                    payment_status='paid', end_date__lte=now
-                )
-                context['client_expiring_soon'] = subs.filter(
-                    payment_status='paid',
-                    end_date__gt=now,
-                    end_date__lte=now + timezone.timedelta(days=30),
-                )
                 context['client_requested_subs'] = subs.filter(payment_status='requested')
                 context['client_invoices'] = Invoice.objects.filter(customer=customer).order_by(
                     '-issue_date'
@@ -282,8 +280,6 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             except Customer.DoesNotExist:
                 context['client_active_subs'] = ServiceSubscription.objects.none()
                 context['client_pending_subs'] = ServiceSubscription.objects.none()
-                context['client_expired_subs'] = ServiceSubscription.objects.none()
-                context['client_expiring_soon'] = ServiceSubscription.objects.none()
                 context['client_requested_subs'] = ServiceSubscription.objects.none()
                 context['client_invoices'] = Invoice.objects.none()
 
@@ -309,23 +305,18 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             if 'commercial' in shared:
                 context.update(shared['commercial'])
 
+            # Las suscripciones no vencen: `active_subs` son las pagadas y no
+            # anuladas. Las métricas `expired_subs` y `expiring_soon` se
+            # eliminaron porque no tienen un conjunto que contar — una suscripción
+            # pagada nunca pasa a "vencida" sola.
             context['active_subs'] = ServiceSubscription.objects.filter(
-                payment_status='paid', end_date__gt=now, record_active=True
-            ).count()
-            context['expired_subs'] = ServiceSubscription.objects.filter(
-                payment_status='paid', end_date__lte=now, record_active=True
+                payment_status='paid', record_active=True
             ).count()
             context['pending_subs'] = ServiceSubscription.objects.filter(
                 payment_status='pending', record_active=True
             ).count()
             context['requested_subs'] = ServiceSubscription.objects.filter(
                 payment_status='requested', record_active=True
-            ).count()
-            context['expiring_soon'] = ServiceSubscription.objects.filter(
-                payment_status='paid',
-                end_date__gt=now,
-                end_date__lte=now + timezone.timedelta(days=30),
-                record_active=True,
             ).count()
 
             month_end = (month_start + timezone.timedelta(days=32)).replace(day=1)
@@ -340,17 +331,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['month_income'] = float(month_income_paid)
 
             active_subs_qs = (
-                ServiceSubscription.objects.filter(
-                    payment_status='paid', end_date__gt=now, record_active=True
-                )
-                .select_related('customer', 'service')
-                .order_by('customer__company_name')[:20]
-            )
-
-            expired_subs_qs = (
-                ServiceSubscription.objects.filter(
-                    payment_status='paid', end_date__lte=now, record_active=True
-                )
+                ServiceSubscription.objects.filter(payment_status='paid', record_active=True)
                 .select_related('customer', 'service')
                 .order_by('customer__company_name')[:20]
             )
@@ -368,7 +349,6 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             )
 
             context['active_subs_list'] = json.dumps([serialize_sub(s) for s in active_subs_qs])
-            context['expired_subs_list'] = json.dumps([serialize_sub(s) for s in expired_subs_qs])
             context['pending_subs_list'] = json.dumps([serialize_sub(s) for s in pending_subs_qs])
             context['requested_subs_list'] = json.dumps(
                 [serialize_sub(s) for s in requested_subs_qs]

@@ -68,7 +68,7 @@ def menu_notifications(request):
             ).aggregate(
                 requested=Count('pk', filter=Q(payment_status='requested')),
                 pending=Count('pk', filter=Q(payment_status='pending')),
-                active=Count('pk', filter=Q(payment_status='paid', end_date__gt=now)),
+                active=Count('pk', filter=Q(payment_status='paid')),
                 total=Count('pk'),
             )
             context['client_requested_count'] = counts['requested']
