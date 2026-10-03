@@ -1,13 +1,10 @@
 import uuid
-from datetime import timedelta
 
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Count, Q
-from django.utils import timezone
 
 from apps.core.models import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
 from apps.core.validators import (
@@ -200,12 +197,6 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
             return ''
         return f'${self.price:.2f} / {self.get_billing_period_display()}'
 
-    @staticmethod
-    def compute_end_date(start_date, quantity, category='pronostico'):
-        if category == 'agrometeo':
-            return start_date + relativedelta(months=quantity)
-        return start_date + timedelta(days=quantity)
-
 
 class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
     PAYMENT_STATUS_CHOICES = [
@@ -223,7 +214,6 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='Cliente')
     service = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name='Servicio')
     start_date = models.DateTimeField(verbose_name='Fecha de inicio', null=True, blank=True)
-    end_date = models.DateTimeField(verbose_name='Fecha de expiración', null=True, blank=True)
     quantity = models.PositiveIntegerField(
         default=1,
         validators=[MinValueValidator(1)],
@@ -257,13 +247,12 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
             ('delete_subscription', 'Eliminar'),
         )
 
-    def clean(self):
-        if self.start_date and self.end_date and self.start_date >= self.end_date:
-            raise ValidationError('La fecha de inicio debe ser anterior a la fecha de expiración.')
-
     @property
     def is_active(self):
-        return self.payment_status == 'paid' and self.end_date and self.end_date > timezone.now()
+        """Una suscripción está activa cuando está pagada y no ha sido cancelada."""
+        if not self.record_active:
+            return False
+        return self.payment_status == 'paid'
 
     def get_quantity_period_display(self):
         """Cantidad + unidad de facturación: `1 día`, `3 meses`, `30 días`."""
@@ -278,8 +267,8 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
         `cancelada` sale de la baja lógica (`record_active`), no de un valor
         propio de `payment_status`: anular ya marca `record_active=False`, y
         llevar el mismo dato en dos campos es la forma más directa de que
-        diverjan. Tampoco se mira `end_date`: una suscripción pagada que venció
-        estuvo pagada, y el periodo es un dato aparte, no un estado de pago.
+        diverjan. El estado es sólo el del pago: una suscripción no tiene
+        expiración que consultarse acá.
         """
         if not self.record_active:
             return 'cancelada'

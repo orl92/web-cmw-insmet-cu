@@ -77,9 +77,7 @@
         {% if active_subscription %}
           <div class="alert alert-info d-flex align-items-center" role="alert">
             <i class="icon me-2 ti ti-info-circle"></i>
-            <div>
-              Tienes una suscripción activa hasta {{ active_subscription.end_date }}; la nueva solicitud se procesará junto a la vigente.
-            </div>
+            <div>Ya tiene este servicio activo; la nueva solicitud se procesará junto a la vigente.</div>
           </div>
         {% endif %}
         <form method="post" id="subscription-form">

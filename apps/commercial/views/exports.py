@@ -104,7 +104,6 @@ class ServiceSubscriptionCSVExportView(CSVExportView):
         ('Cliente', lambda o: str(o.customer) if o.customer else ''),
         ('Servicio', lambda o: o.service.title if o.service else ''),
         ('Inicio', lambda o: o.start_date.strftime('%d/%m/%Y %H:%M') if o.start_date else ''),
-        ('Expiración', lambda o: o.end_date.strftime('%d/%m/%Y %H:%M') if o.end_date else ''),
         ('Estado', lambda o: _SUBSCRIPTION_STATUS.get(o.status_display, o.status_display.title())),
         ('Método de Pago', lambda o: o.get_payment_method_display() if o.payment_method else ''),
     ]

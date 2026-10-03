@@ -6,7 +6,6 @@ from django.core.paginator import Paginator
 from django.db.models import Case, IntegerField, OuterRef, Subquery, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
-from django.utils import timezone
 from django.views.generic import FormView, ListView
 
 from apps.commercial.forms import PaymentMethodForm
@@ -129,14 +128,7 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
                 .order_by('-start_date')
                 .first()
             )
-            active = (
-                subs.filter(
-                    payment_status='paid',
-                    end_date__gt=timezone.now(),
-                )
-                .order_by('-start_date')
-                .first()
-            )
+            active = subs.filter(payment_status='paid').order_by('-start_date').first()
             context['in_flight_subscription'] = in_flight
             context['active_subscription'] = active
         return context
@@ -157,13 +149,13 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         customer = self.request.user.commercial_customer
         start_date = form.cleaned_data['start_date']
         quantity = form.cleaned_data['quantity']
-        end_date = Service.compute_end_date(start_date, quantity, self.service.service_category)
 
+        # Sin `end_date`: la suscripción no vence, se queda viva hasta que se
+        # cancele. La cantidad es sólo el factor que multiplica al precio.
         ServiceSubscription.objects.create(
             customer=customer,
             service=self.service,
             start_date=start_date,
-            end_date=end_date,
             quantity=quantity,
             payment_status='requested',
             payment_method=form.cleaned_data['payment_method'],

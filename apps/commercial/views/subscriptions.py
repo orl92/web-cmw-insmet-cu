@@ -22,7 +22,6 @@ from apps.commercial.models import (
     Certificate,
     Customer,
     Invoice,
-    Service,
     ServiceSubscription,
 )
 from apps.core.utils import log_action
@@ -117,6 +116,7 @@ class SubscriptionCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
 
     def form_valid(self, form):
         form.instance.record_active = True
+        form.instance.payment_status = 'requested'
         response = super().form_valid(form)
         log_action(
             user=self.request.user,
@@ -163,61 +163,6 @@ class SubscriptionUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Update
         )
         messages.success(self.request, 'Suscripción actualizada con éxito.')
         return response
-
-
-class SubscriptionRenewView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = ServiceSubscription
-    fields = []
-    template_name = 'pages/commercial/subscription/renew.html'
-    success_url = reverse_lazy('commercial:suscripcion_list')
-    url_redirect = success_url
-
-    def get_object(self, queryset=None):
-        return get_object_or_404(ServiceSubscription, uuid=self.kwargs['uuid'])
-
-    def test_func(self):
-        sub = self.get_object()
-        return (
-            self.request.user.groups.filter(name='Clientes').exists()
-            and hasattr(self.request.user, 'commercial_customer')
-            and sub.customer == self.request.user.commercial_customer
-            and sub.is_active
-        )
-
-    def form_valid(self, form):
-        old = self.object
-        service = old.service
-        new_quantity = old.quantity
-        start_date = timezone.now()
-        end_date = Service.compute_end_date(start_date, new_quantity, service.service_category)
-        new_sub = ServiceSubscription.objects.create(
-            customer=old.customer,
-            service=service,
-            start_date=start_date,
-            end_date=end_date,
-            quantity=new_quantity,
-            payment_status='requested',
-            record_active=True,
-        )
-        log_action(
-            user=self.request.user,
-            obj=new_sub,
-            action_flag=ADDITION,
-            message=f'Suscripción renovada desde {old.uuid}',
-        )
-        messages.success(
-            self.request, 'Solicitud de renovación enviada. El staff generará una factura.'
-        )
-        return redirect(self.success_url)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['title'] = 'Renovar Suscripción'
-        context['parent'] = 'servicios'
-        context['segment'] = 'suscripciones'
-        context['url_list'] = reverse_lazy('commercial:suscripcion_list')
-        context['subscription'] = self.get_object()
-        return context
 
 
 class ApproveSubscriptionView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -329,7 +274,14 @@ class RegenerateInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
 
 class SubscriptionCancelView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    """Anula (soft delete) una suscripción."""
+    """Anula (soft delete) una suscripción que todavía no llegó a facturarse.
+
+    Una suscripción no vence por tiempo: su único final es esta anulación. Por eso
+    el bloqueo es económico, no temporal — no se puede deshacer un cobro ya
+    emitido, así que se rechaza la anulación en cuanto existe una factura
+    asociada o el pago fue aprobado. La comprobación vive acá y no en la
+    plantilla porque el botón tampoco es la garantía: un POST directo la sortea.
+    """
 
     permission_required = 'commercial.delete_subscription'
 
@@ -338,6 +290,23 @@ class SubscriptionCancelView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
         if not subscription.record_active:
             messages.warning(request, 'La suscripción ya estaba desactivada.')
+            return redirect('commercial:suscripcion_list')
+
+        # `payment_status` cubre el pago aprobado; el ítem de factura cubre el
+        # caso de una factura emitida que todavía no se pagó. Sólo cuentan las
+        # facturas no anuladas: una factura cancelada ya no compromete un cobro,
+        # así que no debe impedir que el cliente retire la solicitud. Se filtra
+        # por `invoice__is_cancelled=False` en vez de con un `exclude`, porque la
+        # relación con la suscripción vive en el ítem y así una sola consulta
+        # resuelve el caso borde del ítem huérfano.
+        if (
+            subscription.payment_status == 'paid'
+            or subscription.invoice_items.filter(invoice__is_cancelled=False).exists()
+        ):
+            messages.error(
+                request,
+                'No se puede anular una suscripción con factura generada o pago aprobado.',
+            )
             return redirect('commercial:suscripcion_list')
 
         subscription.delete()

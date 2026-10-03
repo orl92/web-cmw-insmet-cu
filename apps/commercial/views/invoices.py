@@ -94,18 +94,16 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                         customer=customer,
                         payment_status__in=['requested', 'pending'],
                         start_date__isnull=False,
-                        end_date__isnull=False,
                     ).first()
                 )
                 if pending_sub:
-                    initial['start_date'] = (
-                        pending_sub.start_date.date() if pending_sub.start_date else today
-                    )
-                    initial['end_date'] = (
-                        pending_sub.end_date.date()
-                        if pending_sub.end_date
-                        else today + timedelta(days=30)
-                    )
+                    # El periodo facturado lo fija el operador en el formulario,
+                    # no la suscripción: ésta ya no tiene expiración que sugiera
+                    # uno. Se propone desde la fecha de inicio que eligió el
+                    # cliente, que sí es un dato conocido y coherente.
+                    inicio = pending_sub.start_date.date() if pending_sub.start_date else today
+                    initial['start_date'] = inicio.isoformat()
+                    initial['end_date'] = (inicio + timedelta(days=30)).isoformat()
                 else:
                     initial['start_date'] = today.isoformat()
                     initial['end_date'] = (today + timedelta(days=30)).isoformat()
@@ -164,25 +162,21 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         regenerar = self.suscripcion_a_regenerar()
 
         if subscriptions and subscriptions.exists():
-            groups = {}
-            for sub in subscriptions:
-                sub_start = sub.start_date.date() if sub.start_date else start_date
-                sub_end = sub.end_date.date() if sub.end_date else end_date
-                key = (sub_start, sub_end)
-                groups.setdefault(key, []).append(sub)
-
-            nuevas_facturas = [
-                self.process_batch_invoice(customer, sub_start, sub_end, commercial_registry, subs)
-                for (sub_start, sub_end), subs in groups.items()
-            ]
-
+            # El periodo facturado es único y viene del formulario: la suscripción
+            # ya no tiene fecha de expiración que propose uno propio, así que
+            # todas las seleccionadas se facturan en el mismo periodo en vez de
+            # agruparse por un dato que ya no existe.
+            nueva = self.process_batch_invoice(
+                customer, start_date, end_date, commercial_registry, subscriptions
+            )
             messages.success(
                 self.request,
-                f'Se generaron {len(groups)} factura(s) según los períodos de las suscripciones.',
+                f'Se generó la factura del período {start_date.strftime("%d/%m/%Y")} - '
+                f'{end_date.strftime("%d/%m/%Y")}.',
             )
             # Después de crear, nunca antes: la factura anterior sólo se anula
             # cuando su reemplazo ya existe.
-            self.anular_factura_previa(regenerar, subscriptions, nuevas_facturas)
+            self.anular_factura_previa(regenerar, subscriptions, [nueva])
             return redirect(self.success_url)
         else:
             # Facturación manual: crea suscripciones nuevas, así que la
@@ -315,8 +309,12 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             items.append(item)
             total += amount
 
-            sub.start_date = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
-            sub.end_date = timezone.make_aware(datetime.combine(end_date, datetime.min.time()))
+            # La suscripción conserva la fecha de inicio que eligió quien la
+            # solicitó: es un dato del contrato con el cliente, no del periodo
+            # facturado, y sobreescribirlo lo convertía en un valor derivado de
+            # la factura. Al facturar sólo cambia el estado de pago. El periodo
+            # facturado es de la factura, no de la suscripción: las
+            # suscripciones no vencen por tiempo.
             sub.payment_status = 'pending'
             sub.save()
 
@@ -389,7 +387,6 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     start_date=timezone.make_aware(
                         datetime.combine(start_date, datetime.min.time())
                     ),
-                    end_date=timezone.make_aware(datetime.combine(end_date, datetime.min.time())),
                     payment_status='pending',
                     record_active=True,
                     quantity=cantidad,
@@ -507,8 +504,12 @@ class InvoicePDFDownloadView(ServeModelFileView):
 
         customer = invoice.customer
         items = list(invoice.items.all())
-        start_date = invoice.subscription.start_date if invoice.subscription else invoice.issue_date
-        end_date = invoice.subscription.end_date if invoice.subscription else invoice.issue_date
+        # El periodo del PDF es el de la facturación, no el de la suscripción: la
+        # suscripción no vence y por tanto no tiene fecha de expiración que
+        # acotar el periodo. `issue_date` es el único ancla disponible cuando el
+        # PDF se regenera bajo demanda, fuera de la creación de la factura.
+        start_date = invoice.issue_date
+        end_date = invoice.issue_date
         try:
             generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, items)
             invoice.refresh_from_db(fields=[self.field])
@@ -670,19 +671,22 @@ def ajax_pending_subscriptions(request):
     html = ''
     for sub in subs:
         start_str = sub.start_date.strftime('%Y-%m-%d') if sub.start_date else ''
-        end_str = sub.end_date.strftime('%Y-%m-%d') if sub.end_date else ''
-        days = (sub.end_date - sub.start_date).days if sub.start_date and sub.end_date else 0
         title = escape(sub.service.title or '')
         summary = escape(sub.service.summary or '')
+        unidad = escape(sub.get_quantity_period_display())
+        # El periodo facturado no viaja por acá: lo fija el operador en el
+        # formulario. La suscripción sólo aporta su inicio y la cantidad que
+        # multiplica al precio, así que no hay `data-end` ni `data-days` que
+        # calcular.
         html += f'''
         <div class="form-check">
           <input class="form-check-input subscription-check" type="checkbox"
                  name="subscriptions" value="{sub.pk}"
-                 id="sub_{sub.pk}" data-start="{start_str}" data-end="{end_str}"
+                 id="sub_{sub.pk}" data-start="{start_str}"
                  data-quantity="{sub.quantity}"
-                 data-service="{title}" data-days="{days}" data-summary="{summary}">
+                 data-service="{title}" data-summary="{summary}">
           <label class="form-check-label" for="sub_{sub.pk}">
-            <strong>{title}</strong>
+            <strong>{title}</strong> <span class="text-muted">({unidad})</span>
             <br><small class="text-muted">{summary}</small>
           </label>
         </div>

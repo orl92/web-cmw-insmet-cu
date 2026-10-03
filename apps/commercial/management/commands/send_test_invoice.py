@@ -15,7 +15,6 @@ cliente, así que el demo crea uno de cada tipo con su contrato.
 """
 
 import contextlib
-from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -279,7 +278,6 @@ class Command(BaseCommand):
                 customer=customer,
                 service=service,
                 start_date=timezone.now(),
-                end_date=timezone.now() + timedelta(days=30),
                 payment_status='paid',
                 payment_method='transfer',
             )

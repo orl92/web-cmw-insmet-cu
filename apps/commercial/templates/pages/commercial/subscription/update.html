@@ -1,25 +1,43 @@
 {% extends 'layouts/form.html' %}
 {% load form_filters %}
+{% load my_filters %}
 {% load static %}
 {% block form %}
-  {% include 'includes/dashboard/form_card.html' with card_title='Suscripción' %}
+  {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Solicitud' %}
   <div class="row">
     <div class="col-md-6 mb-3">
       <label class="form-label required" for="{{ form.customer.id_for_label }}">{{ form.customer.label }}</label>
-      {{ form.customer }}
+      <select class="form-control
+                     {% if form.customer.errors %}is-invalid{% endif %}"
+              id="{{ form.customer.id_for_label }}"
+              name="{{ form.customer.name }}"
+              required>
+        {% for choice_value, choice_label in form.fields.customer.choices %}
+          <option value="{{ choice_value }}"
+                  {% if form.customer.value == choice_value|stringformat:'s' %}selected{% endif %}>{{ choice_label }}</option>
+        {% endfor %}
+      </select>
       {% if form.customer.errors %}
         <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
       {% endif %}
     </div>
     <div class="col-md-6 mb-3">
       <label class="form-label required" for="{{ form.service.id_for_label }}">{{ form.service.label }}</label>
-      {{ form.service }}
+      <select class="form-control
+                     {% if form.service.errors %}is-invalid{% endif %}"
+              id="{{ form.service.id_for_label }}"
+              name="{{ form.service.name }}"
+              required>
+        {% for choice_value, choice_label in form.fields.service.choices %}
+          <option value="{{ choice_value }}"
+                  {% if form.service.value == choice_value|stringformat:'s' %}selected{% endif %}>{{ choice_label }}</option>
+        {% endfor %}
+      </select>
       {% if form.service.errors %}
         <div class="invalid-feedback d-block">{{ form.service.errors.0 }}</div>
       {% endif %}
     </div>
   </div>
-  {% include 'includes/dashboard/form_card.html' with card_title='Período de Vigencia' %}
   <div class="row">
     <div class="col-md-6 mb-3">
       {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm' %}
@@ -27,33 +45,55 @@
     <div class="col-md-6 mb-3">
       <label class="form-label required"
              for="{{ form.quantity.id_for_label }}"
-             data-period-quantity-label>Cantidad</label>
-      {{ form.quantity }}
+             data-period-quantity-label>{{ form.quantity.label }}</label>
+      <input type="number"
+             min="1"
+             class="form-control
+                    {% if form.quantity.errors %}is-invalid{% endif %}"
+             id="{{ form.quantity.id_for_label }}"
+             name="{{ form.quantity.name }}"
+             value="{{ form.quantity.value|default:'' }}"
+             required>
       <small class="text-muted" id="{{ form.quantity.auto_id }}_helptext">{{ form.quantity.help_text }}</small>
       {% if form.quantity.errors %}
         <div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>
       {% endif %}
     </div>
   </div>
-  <div class="mb-3">
-    <span class="form-label d-block" id="end-date-preview-label">Vencimiento calculado</span>
-    <output class="form-control-plaintext fw-medium"
-            id="end-date-preview"
-            aria-labelledby="end-date-preview-label"
-            aria-live="polite">{% if form.derived_end_date %}{{ form.derived_end_date|fmt_datetime }}{% else %}Se calcula con la fecha de inicio y la cantidad.{% endif %}</output>
   </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Método de pago' card_title_id='payment_method_group' %}
   <div class="mb-3">
-    <label class="form-label" for="{{ form.payment_status.id_for_label }}">{{ form.payment_status.label }}</label>
-    {{ form.payment_status }}
-    {% if form.payment_status.errors %}
-      <div class="invalid-feedback d-block">{{ form.payment_status.errors.0 }}</div>
+    <div class="form-selectgroup
+                {% if form.payment_method.errors %}is-invalid{% endif %}"
+         role="radiogroup"
+         aria-labelledby="payment_method_group"
+         {% if form.payment_method.errors %}aria-invalid="true"{% endif %}>
+      {% for choice in form.payment_method %}
+        <label class="form-selectgroup-item">
+          <input type="radio"
+                 name="payment_method"
+                 value="{{ choice.data.value }}"
+                 class="form-selectgroup-input"
+                 {% if choice.data.selected %}checked{% endif %}
+                 {% if forloop.first and not form.payment_method.value %}checked{% endif %} />
+          <span class="form-selectgroup-label">
+            <i class="icon me-1 ti {{ choice.data.value|payment_method_icon }}"></i>
+            {{ choice.data.label }}
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+    {% if form.payment_method.errors %}
+      <div class="invalid-feedback d-block">{{ form.payment_method.errors.0 }}</div>
     {% endif %}
-    <small class="text-muted">{{ form.payment_status.help_text }}</small>
+    <small class="text-muted">Elige cómo deseas realizar el pago.</small>
   </div>
   </div>
   </div>
   </div>
 {% endblock %}
 {% block extrajs %}
-  <script src="{% static 'dist/js/subscription-period.js' %}" defer></script>
+  <script src="{% static 'dist/js/subscription-quantity-label.js' %}" defer></script>
 {% endblock %}

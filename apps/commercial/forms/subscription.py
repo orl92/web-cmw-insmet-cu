@@ -1,9 +1,7 @@
 from django import forms
-from django.conf import settings
-from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 from apps.commercial.models import Certificate, Service, ServiceSubscription
-from apps.core.widgets import TempusAwareDateTimeInput
 
 
 class ServicePeriodUnitSelect(forms.Select):
@@ -25,39 +23,52 @@ class ServicePeriodUnitSelect(forms.Select):
 
 
 class SubscriptionForm(forms.ModelForm):
-    """Alta y edición de suscripciones: fecha de inicio libre y cantidad del período.
+    """Alta y edición de suscripciones: sólo se declara lo que el operador elige.
 
     La unidad (días o meses) la decide la categoría del servicio, no quien crea
-    la suscripción. Por eso `end_date` no es un campo del formulario sino un
-    valor derivado de inicio y cantidad, y `quantity` es la magnitud que el
-    operador sí fija: es lo que multiplica al precio.
+    la suscripción. La suscripción no vence por tiempo, así que no hay ningún
+    campo de expiración: `quantity` es la cantidad a facturar y multiplica al
+    precio, y `payment_method` se elige al solicitar.
     """
 
-    start_date = forms.DateTimeField(
-        # Campo declarado: sin `label` explícito Django rotula con el nombre del
-        # atributo ("Start date") e ignora el verbose_name del modelo.
-        label='Fecha de inicio',
-        input_formats=['%d/%m/%Y %I:%M %p', '%Y-%m-%dT%H:%M', '%d/%m/%Y %H:%M'],
-        widget=TempusAwareDateTimeInput(attrs={'class': 'form-control'}),
+    start_date = forms.DateField(
+        label='Fecha de inicio del servicio',
+        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
+        widget=forms.DateInput(
+            attrs={
+                'class': 'form-control',
+                'data-tempus': 'date',
+                'autocomplete': 'off',
+            }
+        ),
         required=True,
+        help_text='Fecha desde la cual necesita el servicio.',
     )
     quantity = forms.IntegerField(
         min_value=1,
         required=True,
         label='Cantidad',
-        # El texto del modelo es la fuente de la ayuda: la unidad depende de la
-        # categoría del servicio y no de un campo propio del formulario.
-        help_text=ServiceSubscription._meta.get_field('quantity').help_text,
+        # El texto del modelo es la fuente de los dos valores, y el form le añade
+        # de dónde sale la unidad: es lo único que la comunica cuando todavía no
+        # hay servicio elegido y el rótulo no puede nombrarla.
+        help_text=(
+            'El importe total se calcula multiplicando el precio por la cantidad seleccionada.'
+        ),
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+    )
+    payment_method = forms.ChoiceField(
+        choices=ServiceSubscription.PAYMENT_METHOD_CHOICES,
+        widget=forms.RadioSelect,
+        label='Método de pago',
+        required=True,
     )
 
     class Meta:
         model = ServiceSubscription
-        fields = ['customer', 'service', 'start_date', 'quantity', 'payment_status']
+        fields = ['customer', 'service', 'start_date', 'quantity', 'payment_method']
         widgets = {
             'customer': forms.Select(attrs={'class': 'form-control'}),
             'service': ServicePeriodUnitSelect(attrs={'class': 'form-control'}),
-            'payment_status': forms.Select(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -68,48 +79,26 @@ class SubscriptionForm(forms.ModelForm):
             str(service.pk): service.get_billing_period_display()
             for service in service_field.queryset
         }
-        if self.instance and self.instance.pk:
-            self.fields['payment_status'].disabled = True
-            self.fields[
-                'payment_status'
-            ].help_text = 'El estado solo puede modificarse mediante acciones específicas.'
+        unidad = self._selected_billing_period()
+        if unidad:
+            self.fields['quantity'].label = f'Cantidad de {_pluralize_period(unidad)}'
 
-    @property
-    def derived_end_date(self):
-        """Vencimiento que el servidor calcula para lo que el formulario muestra.
+    def _selected_billing_period(self):
+        """Unidad de facturación del servicio ya elegido, o `''` si no hay ninguno.
 
-        Es el valor que se imprime en la plantilla, así que el operador lo ve sin
-        JavaScript; el navegador sólo lo recalcula mientras edita. Se devuelve en
-        hora local porque la base la guarda en UTC y el filtro de la plantilla
-        formatea el valor tal cual.
+        El rótulo se imprime en el servidor para que sin JavaScript la cantidad
+        siga diciendo qué se está contando. Sólo un servicio del queryset cuenta:
+        uno inexistente, uno público o un POST mal formado dejan el rótulo neutro
+        en vez de romper el render.
         """
-        if self.is_bound:
-            start = self.cleaned_data.get('start_date')
-            quantity = self.cleaned_data.get('quantity')
-            service = self.cleaned_data.get('service')
-        else:
-            start = self.instance.start_date
-            quantity = self.instance.quantity
-            service = self.instance.service if self.instance.pk else None
-        if not (start and quantity and service):
-            return None
-        end = Service.compute_end_date(start, quantity, service.service_category)
-        return timezone.localtime(end) if settings.USE_TZ else end
-
-    def clean(self):
-        cleaned_data = super().clean()
-        start = cleaned_data.get('start_date')
-        quantity = cleaned_data.get('quantity')
-        service = cleaned_data.get('service')
-        if start and quantity and service:
-            # El vencimiento se escribe en la instancia y no sólo en
-            # `cleaned_data` porque `end_date` ya no está en `Meta.fields`: es
-            # `_post_clean` quien valida el invariante `start < end` del modelo,
-            # y para eso la instancia tiene que traer el valor derivado.
-            self.instance.end_date = Service.compute_end_date(
-                start, quantity, service.service_category
-            )
-        return cleaned_data
+        elegido = self.data.get('service') if self.is_bound else self.instance.service_id
+        if not elegido:
+            return ''
+        try:
+            servicio = self.fields['service'].clean(elegido)
+        except ValidationError:
+            return ''
+        return servicio.get_billing_period_display() if servicio else ''
 
 
 class CertificateUploadForm(forms.ModelForm):
