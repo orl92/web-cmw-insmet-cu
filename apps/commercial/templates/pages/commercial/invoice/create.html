@@ -83,7 +83,7 @@
   </div>
   <!-- Bloque dinámico -->
   <div id="dynamic-fields">
-    <!-- Suscripciones agrupadas por período -->
+    <!-- Suscripciones pendientes -->
     <div id="subscriptions-grouped" style="display: none;"></div>
     <!-- Facturación manual -->
     <div id="manual-container" style="display: none;">
@@ -416,8 +416,19 @@
     if (!regenerarPk) return;
     const cb = groupedContainer.querySelector('.subscription-check[value="' + regenerarPk + '"]');
     if (!cb) return;
-    setPeriodActive(cb.dataset.start, cb.dataset.end);
     cb.checked = true;
+  }
+
+  // Escapa el HTML que llega del endpoint AJAX antes de inyectarlo. El resumen
+  // del servicio es texto libre escrito por el staff, así que interpolarlo crudo
+  // en el DOM abriría la puerta a XSS desde la vista de facturación.
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   // Convierte el valor visible del picker (dd/mm/yyyy) a Date.
@@ -469,14 +480,11 @@
     return diff >= 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
   }
 
-  // Meses que reproducen lo más cerca posible la fecha elegida por el operador.
+  // Meses que reproducen lo más cerca posible el período elegido por el operador.
   //
-  // El servidor calcula el vencimiento como `start + relativedelta(months=N)`, y
-  // eso no reproduce cualquier par (inicio, fin): entre 01/01 y 31/01 no existe
-  // ningún N entero. Contar "meses completos" --el floor del delta de meses--
-  // deja casi todos los meses a medio camino y el operador ve un número que el
-  // servidor no cobra. Se redondea contra el promedio real del año (365.2425/12),
-  // que es lo más cerca que puede quedar una cantidad entera de meses.
+  // Se redondea contra el promedio real del año (365.2425/12) porque contar
+  // "meses completos" deja casi todos los meses a medio camino y el operador ve
+  // un número que no corresponde al período facturado.
   const DAYS_PER_MONTH = 365.2425 / 12;
 
   function calculateMonths(start, end) {
@@ -531,117 +539,7 @@
   }
   // ***********************************************************************************************************************
 
-  function setPeriodFields(start, end) {
-    setPickerValue(startDateInput, start);
-    setPickerValue(endDateInput, end);
-  }
-
-  // ========== Tooltip helpers ==========
-  function getOrCreateTooltip(el) {
-    const Tooltip = window.bootstrap?.Tooltip;
-    if (!Tooltip) return null;
-    let instance = Tooltip.getInstance(el);
-    if (!instance) {
-      instance = new Tooltip(el, { trigger: 'hover', placement: 'bottom' });
-    }
-    return instance;
-  }
-
-  function updateTooltipContent(sw) {
-    const tooltip = getOrCreateTooltip(sw);
-    if (tooltip) {
-      tooltip.setContent({ '.tooltip-inner': sw.title });
-    }
-  }
-
-  // ========== Funciones de control de período ==========
-  // Activa un período (switch encendido, fechas, bloquea otros) sin modificar checkboxes
-  function setPeriodActive(start, end) {
-    setPeriodFields(start, end);
-    document.querySelectorAll('.period-switch').forEach(sw => {
-      if (sw.dataset.start === start && sw.dataset.end === end) {
-        sw.checked = true;
-        sw.title = 'Desactivar período';
-        sw.disabled = false;
-      } else {
-        sw.checked = false;
-        sw.title = 'Activar período';
-        sw.disabled = true;
-      }
-      updateTooltipContent(sw);
-    });
-    // Bloquear checkboxes de otros períodos, desmarcarlos
-    document.querySelectorAll('.subscription-check').forEach(cb => {
-      if (cb.dataset.start === start && cb.dataset.end === end) {
-        cb.disabled = false;
-      } else {
-        cb.disabled = true;
-        cb.checked = false;
-      }
-    });
-  }
-
-  // Desactiva cualquier período (libera switches y checkboxes)
-  function setPeriodInactive() {
-    document.querySelectorAll('.period-switch').forEach(sw => {
-      sw.checked = false;
-      sw.title = 'Activar período';
-      sw.disabled = false;
-      updateTooltipContent(sw);
-    });
-    document.querySelectorAll('.subscription-check').forEach(cb => {
-      cb.disabled = false;
-      cb.checked = false;
-    });
-  }
-
-  // Activar período y marcar TODOS los checkboxes del grupo
-  function selectAllInPeriod(start, end) {
-    setPeriodActive(start, end);
-    document.querySelectorAll(`.subscription-check[data-start="${start}"][data-end="${end}"]`).forEach(cb => {
-      cb.checked = true;
-    });
-  }
-
-  // Desactivar período y desmarcar TODOS los checkboxes del grupo
-  function clearAllInPeriod(start, end) {
-    setPeriodInactive();
-    // No es necesario desmarcar porque setPeriodInactive ya desmarca todo
-  }
-
-  // ========== Eventos ==========
-  function onPeriodSwitchChange(e) {
-    const sw = e.target;
-    const start = sw.dataset.start;
-    const end = sw.dataset.end;
-    if (sw.checked) {
-      selectAllInPeriod(start, end);
-    } else {
-      clearAllInPeriod(start, end);
-    }
-  }
-
-  function onCheckboxChange(e) {
-    const cb = e.target;
-    const start = cb.dataset.start;
-    const end = cb.dataset.end;
-
-    if (cb.checked) {
-      // Acaba de marcar este checkbox → activar período (bloquear otros)
-      setPeriodActive(start, end);
-    } else {
-      // Se desmarcó, comprobar si aún hay alguno marcado en este período
-      const anyChecked = document.querySelector(`.subscription-check[data-start="${start}"][data-end="${end}"]:checked`);
-      if (!anyChecked) {
-        // Ninguno marcado → desactivar período
-        setPeriodInactive();
-      }
-      // Si aún hay otros marcados, no hacer nada (el período sigue activo)
-    }
-  }
-
   function switchToManualInvoice() {
-    setPeriodInactive();
     groupedContainer.style.display = 'none';
     manualContainer.style.display = 'block';
     const today = new Date().toISOString().split('T')[0];
@@ -651,7 +549,10 @@
   }
 
   // ========== Carga de suscripciones ==========
-  function loadGroupedSubscriptions(customerId) {
+  // Sin vencimiento, las suscripciones pendientes no forman grupos por período:
+  // el período facturado es único y lo fija el operador en el formulario de
+  // arriba. Se listan planas y las marcadas se facturan todas juntas.
+  function loadPendingSubscriptions(customerId) {
     if (!customerId) {
       groupedContainer.style.display = 'none';
       manualContainer.style.display = 'none';
@@ -671,14 +572,6 @@
           return;
         }
 
-        // Agrupar por período
-        const groups = {};
-        checkboxes.forEach(cb => {
-          const key = cb.dataset.start + '|' + cb.dataset.end;
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(cb);
-        });
-
         let htmlResult = `
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">Suscripciones Pendientes</h5>
@@ -687,72 +580,48 @@
               Facturación manual
             </button>
           </div>
+          <div class="card mb-3">
+            <div class="card-body">
         `;
 
-        for (const key in groups) {
-          const [start, end] = key.split('|');
-          const days = calculateDays(start, end);
+        checkboxes.forEach(cb => {
+          const start = cb.dataset.start || '';
+          let summary = cb.dataset.summary ? cb.dataset.summary : '';
+          if (summary.length > 80) {
+            summary = summary.substring(0, 80) + '…';
+          }
+          const unidad = cb.dataset.unitidad ? `<span class="text-muted">(${escapeHtml(cb.dataset.unidad)})</span> ` : '';
           htmlResult += `
-            <div class="card mb-3">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h6 class="card-title mb-0">
-                    <span class="fw-bold">${start} → ${end}</span>
-                    <span class="badge bg-blue-lt ms-2">${days} días</span>
-                  </h6>
-                  <div class="form-check form-switch form-switch-lg mb-0">
-                    <input class="form-check-input period-switch" type="checkbox" id="switch-${start}-${end}" data-start="${start}" data-end="${end}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Activar período">
-                    <label class="form-check-label" for="switch-${start}-${end}"></label>
-                  </div>
-                </div>
-                <div id="group-${start}-${end}">
-          `;
-          groups[key].forEach(cb => {
-            let summary = cb.dataset.summary ? cb.dataset.summary : '';
-            if (summary.length > 80) {
-              summary = summary.substring(0, 80) + '…';
-            }
-            htmlResult += `
               <div class="form-check">
-                <input class="form-check-input subscription-check" type="checkbox" name="subscriptions" value="${cb.value}" id="sub_${cb.value}" data-start="${start}" data-end="${end}" data-service="${cb.dataset.service}" data-days="${days}" data-summary="${summary}">
+                <input class="form-check-input subscription-check" type="checkbox"
+                       name="subscriptions" value="${cb.value}" id="sub_${cb.value}"
+                       data-start="${start}"
+                       data-quantity="${cb.dataset.quantity}"
+                       data-service="${escapeHtml(cb.dataset.service)}"
+                       data-unidad="${escapeHtml(cb.dataset.unidad || '')}"
+                       data-summary="${escapeHtml(summary)}">
                 <label class="form-check-label" for="sub_${cb.value}">
-                  <strong>${cb.dataset.service}</strong>
-                  ${summary ? `<br><small class="text-muted">${summary}</small>` : ''}
+                  <strong>${escapeHtml(cb.dataset.service)}</strong> ${unidad}
+                  ${summary ? `<br><small class="text-muted">${escapeHtml(summary)}</small>` : ''}
                 </label>
               </div>
-            `;
-          });
-          htmlResult += `</div></div></div>`;
-        }
+          `;
+        });
+
+        htmlResult += `
+            </div>
+          </div>
+        `;
 
         groupedContainer.innerHTML = htmlResult;
         groupedContainer.style.display = 'block';
         manualContainer.style.display = 'none';
 
-        // Inicializar tooltips de Bootstrap en los switches
-        const Tooltip = window.bootstrap?.Tooltip;
-        if (Tooltip) {
-          groupedContainer.querySelectorAll('.period-switch').forEach(sw => {
-            new Tooltip(sw, { trigger: 'hover', placement: 'bottom' });
-          });
-        }
-
-        // Evento del botón "Facturación manual"
         const switchBtn = document.getElementById('switch-to-manual-btn');
         if (switchBtn) {
           switchBtn.addEventListener('click', switchToManualInvoice);
         }
 
-        // Eventos de los switches y checkboxes
-        document.querySelectorAll('.period-switch').forEach(sw => {
-          sw.addEventListener('change', onPeriodSwitchChange);
-        });
-        document.querySelectorAll('.subscription-check').forEach(cb => {
-          cb.addEventListener('change', onCheckboxChange);
-        });
-
-        // Estado inicial: sin período activo, todo habilitado
-        setPeriodInactive();
         preseleccionarRegeneracion();
         updateDaysFromInputs();
       })
@@ -762,11 +631,11 @@
   }
 
   customerSelect.addEventListener('change', function() {
-    loadGroupedSubscriptions(this.value);
+    loadPendingSubscriptions(this.value);
   });
 
   if (customerSelect && customerSelect.value) {
-    loadGroupedSubscriptions(customerSelect.value);
+    loadPendingSubscriptions(customerSelect.value);
   }
 
   // ========== Facturación manual ==========

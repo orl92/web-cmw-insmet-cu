@@ -684,6 +684,7 @@ def ajax_pending_subscriptions(request):
                  name="subscriptions" value="{sub.pk}"
                  id="sub_{sub.pk}" data-start="{start_str}"
                  data-quantity="{sub.quantity}"
+                 data-unidad="{unidad}"
                  data-service="{title}" data-summary="{summary}">
           <label class="form-check-label" for="sub_{sub.pk}">
             <strong>{title}</strong> <span class="text-muted">({unidad})</span>
