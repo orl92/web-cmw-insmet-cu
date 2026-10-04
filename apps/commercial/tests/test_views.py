@@ -2337,10 +2337,21 @@ class SubscriptionPeriodFormViewTests(TestCase):
         html = self.client.get(self.update_url).content.decode()
         self.assertIn('Cantidad de meses', html)
 
+    def test_el_script_del_rotulo_se_incluye_de_verdad(self):
+        """El asset puede existir y aun así no cargarse nunca."""
+        for url in (self.create_url, self.update_url):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                self.assertIn('subscription-quantity-label.js', html)
+
+    def test_el_inicio_muestra_su_ayuda(self):
+        """El include de la fecha tenía que imprimir el `help_text` del campo."""
+        for url in (self.create_url, self.update_url):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                self.assertIn('Fecha desde la cual necesita el servicio.', html)
+
     def test_los_formularios_no_piden_scripts_inexistentes(self):
-        # Un `<script src>` a un asset que no existe rompe la vista en el navegador
-        # y Django no se queja: 404 silencioso. Se resuelve cada ruta estática
-        # contra el finder para que el archivo tenga que estar de verdad.
         for url in (self.create_url, self.update_url):
             with self.subTest(url=url):
                 html = self.client.get(url).content.decode()
@@ -2355,14 +2366,7 @@ class SubscriptionPeriodFormViewTests(TestCase):
                     )
 
     def test_el_inicio_se_pide_como_picker_de_fecha_y_no_de_fecha_hora(self):
-        """El picker y el campo tienen que hablar el mismo idioma.
-
-        `start_date` es un `DateField` que sólo acepta `%d/%m/%Y`. Con el picker
-        en modo `datetime`, Tempus escribe el valor con hora (`15/01/2026
-        12:00 AM`) y el formulario lo rechaza: desde el navegador el alta no se
-        podía enviar. La correspondencia modo↔formatos del campo es la que
-        sostiene el submit.
-        """
+        """El picker y el campo tienen que hablar el mismo idioma."""
         for url in (self.create_url, self.update_url):
             with self.subTest(url=url):
                 html = self.client.get(url).content.decode()

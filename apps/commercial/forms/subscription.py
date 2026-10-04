@@ -10,9 +10,15 @@ class ServicePeriodUnitSelect(forms.Select):
     La unidad no es elegible: sale de la categoría del servicio, así que viaja en
     la propia `<option>` y el navegador rotula la cantidad sin volver a pedírsela
     al servidor.
+
+    Además agrupa por categoría con `<optgroup>`. La categoría es lo único que
+    determina la unidad, así que grouping por ella deja la lista ya filtrada de
+    entrada sin necesidad de un select de categoría ni de JavaScript que vuelva a
+    pedir la lista al servidor.
     """
 
     period_units = None
+    categories = None
 
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
         option = super().create_option(name, value, label, selected, index, subindex, attrs)
@@ -20,6 +26,20 @@ class ServicePeriodUnitSelect(forms.Select):
         if unit:
             option['attrs']['data-period-unit'] = unit
         return option
+
+    def optgroups(self, name, value, attrs=None):
+        groups = super().optgroups(name, value, attrs)
+        if not self.categories:
+            return groups
+
+        labels = dict(Service.SERVICE_CATEGORY_CHOICES)
+        regrouped = {}
+        for _group_name, options, _index in groups:
+            for option in options:
+                category = self.categories.get(str(option['value']))
+                key = labels.get(category, category) if category else ''
+                regrouped.setdefault(key, []).append(option)
+        return [(key, options, index) for index, (key, options) in enumerate(regrouped.items())]
 
 
 class SubscriptionForm(forms.ModelForm):
@@ -78,6 +98,9 @@ class SubscriptionForm(forms.ModelForm):
         self.fields['service'].widget.period_units = {
             str(service.pk): service.get_billing_period_display()
             for service in service_field.queryset
+        }
+        self.fields['service'].widget.categories = {
+            str(service.pk): service.service_category for service in service_field.queryset
         }
         unidad = self._selected_billing_period()
         if unidad:

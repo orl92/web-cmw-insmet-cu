@@ -74,12 +74,6 @@
             </div>
           </div>
         {% endif %}
-        {% if active_subscription %}
-          <div class="alert alert-info d-flex align-items-center" role="alert">
-            <i class="icon me-2 ti ti-info-circle"></i>
-            <div>Ya tiene este servicio activo; la nueva solicitud se procesará junto a la vigente.</div>
-          </div>
-        {% endif %}
         <form method="post" id="subscription-form">
           {% csrf_token %}
           <div class="row g-3">
@@ -116,7 +110,7 @@
           <!-- Método de pago -->
           <div class="mb-3">
             <label class="form-label required">Método de pago</label>
-            <div class="form-selectgroup form-selectgroup-vertical">
+            <div class="form-selectgroup flex-column flex-md-row">
               {% for choice in form.payment_method %}
                 <label class="form-selectgroup-item">
                   <input type="radio"
@@ -131,7 +125,6 @@
                 </label>
               {% endfor %}
             </div>
-            <small class="form-hint mt-2">Elige cómo deseas realizar el pago.</small>
           </div>
           {% include 'includes/dashboard/payment_method_help.html' with payment_method=form.payment_method.value %}
           <div class="d-flex justify-content-end gap-2 pt-3 mt-3 border-top">

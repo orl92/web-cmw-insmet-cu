@@ -122,7 +122,13 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
 
         if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
             customer = self.request.user.commercial_customer
-            subs = ServiceSubscription.objects.filter(customer=customer, service=self.service)
+            # Sin `record_active` una suscripción anulada (baja lógica) seguía
+            # apareciendo como activa: la baja no borra la fila, la marca.
+            subs = ServiceSubscription.objects.filter(
+                customer=customer,
+                service=self.service,
+                record_active=True,
+            )
             in_flight = (
                 subs.filter(payment_status__in=['requested', 'pending'])
                 .order_by('-start_date')

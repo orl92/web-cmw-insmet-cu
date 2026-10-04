@@ -1078,12 +1078,26 @@ class ServiceReRequestUiTests(TestCase):
         html = self.client.get(self._detail_url()).content.decode()
         self.assertIn('subscription-form', html)
         self.assertIn('Solicitar', html)
-        # El aviso ya no puede decir "activa hasta <fecha>": sin `end_date` la
-        # suscripción no tiene fecha de fin. Ahora dice que la nueva solicitud
-        # se procesa junto a la vigente.
-        self.assertIn('Ya tiene este servicio activo', html)
+        # Sin `end_date` no hay "vigente" que anunciar: la suscripción no vence.
+        # El aviso decía que la nueva solicitud se procesaría junto a la
+        # vigente, lo cual promete algo que el sistema no coordina.
+        self.assertNotIn('Ya tiene este servicio activo', html)
         self.assertNotIn('activa hasta', html)
+        self.assertNotIn('la vigente', html)
         self.assertNotIn('Ya tienes una solicitud o suscripción para este servicio.', html)
+
+    def test_cancelled_subscription_no_se_anuncia_como_activa(self):
+        """Una baja lógica no borra la fila: sólo la marca.
+
+        Sin filtrar por `record_active` una suscripción anulada seguía
+        apareciendo como activa en el detalle.
+        """
+        sub = self._make_sub(payment_status='paid', payment_method='transfer')
+        sub.delete()
+        self._login()
+        html = self.client.get(self._detail_url()).content.decode()
+        self.assertNotIn('Ya tiene este servicio activo', html)
+        self.assertIn('subscription-form', html)
 
     def test_in_flight_still_shows_form(self):
         """B1: una solicitud en vuelo avisa pero no oculta el formulario."""

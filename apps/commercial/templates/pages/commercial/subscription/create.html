@@ -65,7 +65,7 @@
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Método de pago' card_title_id='payment_method_group' %}
   <div class="mb-3">
-    <div class="form-selectgroup form-selectgroup-vertical
+    <div class="form-selectgroup flex-column flex-md-row
                 {% if form.payment_method.errors %}is-invalid{% endif %}"
          role="radiogroup"
          aria-labelledby="payment_method_group"
