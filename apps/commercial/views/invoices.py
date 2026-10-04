@@ -19,16 +19,24 @@ from django.utils import timezone
 from django.utils.html import escape
 from django.views.generic import FormView, ListView, View
 
-from apps.commercial.forms.invoice import InvoiceForm, InvoiceItemFormSet
+from apps.commercial.forms.invoice import (
+    InvoiceCostAllocationFormSet,
+    InvoiceForm,
+    InvoiceItemFormSet,
+)
 from apps.commercial.models import (
     Contract,
     Customer,
     Invoice,
+    InvoiceCostAllocation,
     InvoiceItem,
     Service,
     ServiceSubscription,
 )
-from apps.commercial.views.invoice_utils import enviar_correo_factura
+from apps.commercial.views.invoice_utils import (
+    _prefill_cost_allocations_from_items,
+    enviar_correo_factura,
+)
 from apps.core.models import CompanySettings
 from apps.core.tasks import generate_invoice_pdf_and_email_task
 from apps.core.utils import log_action
@@ -121,6 +129,11 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         context['segment'] = 'facturas'
         context['url_list'] = reverse_lazy('commercial:factura_list')
         context['items_formset'] = InvoiceItemFormSet(prefix='items')
+        context['cost_allocations_formset'] = (
+            kwargs['cost_allocations_formset']
+            if 'cost_allocations_formset' in kwargs
+            else self.cost_allocations_formset()
+        )
         context['regenerar_sub'] = self.suscripcion_a_regenerar()
         commercial_services = Service.objects.filter(service_type=Service.COMMERCIAL)
         # The manual lines need `service_category` to tell months from days, and
@@ -153,6 +166,50 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             return None
         return subscription
 
+    def _save_cost_allocations(self, invoice, cost_formset):
+        """Guarda la imputación de la factura ya creada.
+
+        Se persiste a mano y no con `formset.save()` porque en este punto la
+        factura existe recién, y un formset atado a la línea no puede resolver la
+        FK hacia algo que todavía no estaba en la base cuando se validó. Son de
+        dos a tres filas: no vale la pena el indirecto de un inline formset para
+        eso. `full_clean` va explícito porque `Model.save()` no valida, y la regla
+        del porcentaje vive en el `clean()` del modelo.
+        """
+        if cost_formset is None:
+            return
+        for form in cost_formset.forms:
+            if not hasattr(form, 'cleaned_data') or form.cleaned_data.get('DELETE'):
+                continue
+            fila = InvoiceCostAllocation(
+                invoice=invoice,
+                codigo=form.cleaned_data['codigo'],
+                porcentaje=form.cleaned_data['porcentaje'],
+            )
+            fila.full_clean()
+            fila.save()
+
+    def cost_allocations_formset(self):
+        """Formset de imputación a centros de costo.
+
+        En el POST va ligado a lo enviado. En el GET se precarga desde los
+        servicios del cliente cuando ya se sabe cuál es —el caso de regenerar
+        una factura— porque sin cliente no hay códigos de los que deducir un
+        centro, y un reparto inventado sería peor que uno vacío.
+        """
+        prefix = 'cost_allocations'
+        if self.request.method == 'POST':
+            return InvoiceCostAllocationFormSet(self.request.POST, prefix=prefix)
+        return InvoiceCostAllocationFormSet(prefix=prefix, initial=self._prefill_inicial())
+
+    def _prefill_inicial(self):
+        subscription = self.suscripcion_a_regenerar()
+        if subscription is None:
+            return []
+        return _prefill_cost_allocations_from_items(
+            [InvoiceItem(codigo=subscription.service.code or '')]
+        )
+
     def form_valid(self, form):
         customer = form.cleaned_data['customer']
         start_date = form.cleaned_data['start_date']
@@ -161,13 +218,23 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         subscriptions = form.cleaned_data.get('subscriptions')
         regenerar = self.suscripcion_a_regenerar()
 
+        # La imputación se valida antes de crear la factura: si el reparto no
+        # suma 100 % no debe quedar una factura a medias en la base, y el error
+        # tiene que volver al formulario en vez de perderse en un redirect.
+        cost_formset = self.cost_allocations_formset()
+        if not cost_formset.is_valid():
+            messages.error(self.request, 'Corrige el reparto entre centros de costo de la factura.')
+            return self.render_to_response(
+                self.get_context_data(form=form, cost_allocations_formset=cost_formset)
+            )
+
         if subscriptions and subscriptions.exists():
             # El periodo facturado es único y viene del formulario: la suscripción
             # ya no tiene fecha de expiración que propose uno propio, así que
             # todas las seleccionadas se facturan en el mismo periodo en vez de
             # agruparse por un dato que ya no existe.
             nueva = self.process_batch_invoice(
-                customer, start_date, end_date, commercial_registry, subscriptions
+                customer, start_date, end_date, commercial_registry, subscriptions, cost_formset
             )
             messages.success(
                 self.request,
@@ -184,7 +251,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             # reemplazar. Se avisa en vez de anular a ciegas.
             self.anular_factura_previa(regenerar, subscriptions)
             return self.process_manual_invoice(
-                form, customer, start_date, end_date, commercial_registry
+                form, customer, start_date, end_date, commercial_registry, cost_formset
             )
 
     def anular_factura_previa(self, regenerar, subscriptions, nuevas_facturas=None):
@@ -278,7 +345,13 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         return invoice
 
     def process_batch_invoice(
-        self, customer, start_date, end_date, commercial_registry, subscriptions
+        self,
+        customer,
+        start_date,
+        end_date,
+        commercial_registry,
+        subscriptions,
+        cost_formset=None,
     ):
         """Crea la factura de un período y la devuelve.
 
@@ -355,11 +428,16 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             request=self.request,
         )
 
+        # Las asignaciones se guardan antes del task: el PDF se genera aparte,
+        # y si no estuvieran ya en la base saldría sin imputación.
+        self._save_cost_allocations(invoice, cost_formset)
         site_url = self.request.build_absolute_uri('/')
         generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
         return invoice
 
-    def process_manual_invoice(self, form, customer, start_date, end_date, commercial_registry):
+    def process_manual_invoice(
+        self, form, customer, start_date, end_date, commercial_registry, cost_formset=None
+    ):
         items_formset = InvoiceItemFormSet(self.request.POST, prefix='items')
         if not items_formset.is_valid():
             messages.error(self.request, 'Corrige los errores en las líneas de factura.')
@@ -431,6 +509,9 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             request=self.request,
         )
 
+        # Las asignaciones se guardan antes del task: el PDF se genera aparte,
+        # y si no estuvieran ya en la base saldría sin imputación.
+        self._save_cost_allocations(invoice, cost_formset)
         site_url = self.request.build_absolute_uri('/')
         generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
         messages.success(self.request, 'Factura manual generada (con suscripciones creadas).')

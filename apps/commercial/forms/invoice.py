@@ -1,9 +1,17 @@
 import contextlib
+from decimal import Decimal
 
 from django import forms
-from django.forms import formset_factory
+from django.core.exceptions import ValidationError
+from django.forms import formset_factory, modelformset_factory
+from django.forms.models import BaseModelFormSet
 
-from apps.commercial.models import Customer, Service, ServiceSubscription
+from apps.commercial.models import (
+    Customer,
+    InvoiceCostAllocation,
+    Service,
+    ServiceSubscription,
+)
 from apps.core.models import CompanySettings
 
 
@@ -62,6 +70,67 @@ class InvoiceItemForm(forms.Form):
 
 
 InvoiceItemFormSet = formset_factory(InvoiceItemForm, extra=1, can_delete=True)
+
+
+class InvoiceCostAllocationForm(forms.ModelForm):
+    class Meta:
+        model = InvoiceCostAllocation
+        fields = ['codigo', 'porcentaje']
+        widgets = {
+            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            'porcentaje': forms.NumberInput(
+                attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}
+            ),
+        }
+
+
+class InvoiceCostAllocationFormSet(BaseModelFormSet):
+    """Formset de centros de costo, con la regla de que sumen 100 %.
+
+    La suma se valida acá y no en `InvoiceCostAllocation.clean()` a propósito: en
+    el modelo no se podría borrar una fila y corregir el reparto, porque al
+    guardar la primera vez ya se exigiría el total. Sólo se cuentan las formas
+    vivas, así que `can_delete` recalcula bien.
+
+    Exige además al menos una fila viva: las tres facturas reales del CMP
+    imputan a algún centro, y una factura comercial sin imputación es
+    exactamente el defecto que este modelo viene a cerrar.
+    """
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+
+        total = Decimal('0')
+        vivas = 0
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data'):
+                continue
+            if form.cleaned_data.get('DELETE'):
+                continue
+            porcentaje = form.cleaned_data.get('porcentaje')
+            if porcentaje is None:
+                continue
+            total += porcentaje
+            vivas += 1
+
+        if vivas == 0:
+            raise ValidationError('La factura debe imputarse al menos a un centro de costo.')
+        if total != Decimal('100.00'):
+            raise ValidationError(
+                'El reparto entre centros de costo debe sumar 100 %. Suma actual: '
+                f'{total.normalize()}.'
+            )
+
+
+InvoiceCostAllocationFormSet = modelformset_factory(
+    InvoiceCostAllocation,
+    form=InvoiceCostAllocationForm,
+    formset=InvoiceCostAllocationFormSet,
+    extra=1,
+    can_delete=True,
+)
 
 
 class InvoiceForm(forms.Form):

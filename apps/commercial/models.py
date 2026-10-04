@@ -468,6 +468,49 @@ class InvoiceItem(models.Model):
         super().save(*args, **kwargs)
 
 
+class InvoiceCostAllocation(models.Model):
+    """Reparto del importe de una factura entre centros de costo.
+
+    Las tres facturas reales del CMP reparten de forma distinta: 182 a un solo
+    centro al 100 %, 279 a dos centros (90/10) y 276 a tres centros (25/65/10).
+    Con un solo centro el reparto era un literal fijo en el template, y las otras
+    dos facturas salían con la imputación contable equivocada.
+
+    No es un dato derivable de los ítems: la 276 tiene un único ítem repartido en
+    tres centros, cosa que ningún cálculo sobre montos puede producir. Por eso es
+    una tabla y no una columna. Lo único derivable es el centro por defecto, que
+    viaja en el prefijo del código de servicio.
+
+    La regla de que las filas sumen 100 % NO se valida acá a propósito: vive en el
+    formset, porque en el modelo impediría borrar y rehacer el reparto con
+    `can_delete`, que es la operación normal cuando el operador corrige.
+    """
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='cost_allocations')
+    codigo = models.CharField(max_length=50, verbose_name='Centro de Costo')
+    porcentaje = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Porcentaje')
+
+    class Meta:
+        verbose_name = 'Asignación de centro de costo'
+        verbose_name_plural = 'Asignaciones de centro de costo'
+        ordering = ['codigo']
+        default_permissions = ()
+        permissions = (
+            ('view_invoice_cost_allocation', 'Ver'),
+            ('add_invoice_cost_allocation', 'Añadir'),
+            ('change_invoice_cost_allocation', 'Editar'),
+            ('delete_invoice_cost_allocation', 'Eliminar'),
+        )
+
+    def __str__(self):
+        return f'{self.codigo} {self.porcentaje:f} %'
+
+    def clean(self):
+        if self.porcentaje is not None and self.porcentaje <= 0:
+            raise ValidationError('El porcentaje debe ser mayor que cero.')
+
+
 class Contract(SoftDeleteModel):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.OneToOneField(

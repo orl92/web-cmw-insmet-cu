@@ -121,6 +121,14 @@ class RegenerarCasoBase(TestCase):
             'commercial_registry': 'REG-RGN-01',
             'subscriptions': [str(self.sub.pk)],
             'regenerar': str(self.sub.uuid),
+            # La imputación a centros de costo es obligatoria: sin ella la
+            # factura saldría sin el centro al que se imputa.
+            'cost_allocations-TOTAL_FORMS': '1',
+            'cost_allocations-INITIAL_FORMS': '0',
+            'cost_allocations-MIN_NUM_FORMS': '0',
+            'cost_allocations-MAX_NUM_FORMS': '1000',
+            'cost_allocations-0-codigo': '700.50107',
+            'cost_allocations-0-porcentaje': '100.00',
         }
 
     def _abrir_formulario_de_regeneracion(self):
@@ -353,6 +361,14 @@ class RegenerarEnFacturacionManualTests(RegenerarCasoBase):
             'items-0-precio': '45.00',
             'items-0-unidad_medida': 'DÍA',
             'items-0-codigo': 'RGN01',
+            # La imputación a centros de costo es obligatoria: una factura
+            # comercial sin centro es justo el defecto que este formset impide.
+            'cost_allocations-TOTAL_FORMS': '1',
+            'cost_allocations-INITIAL_FORMS': '0',
+            'cost_allocations-MIN_NUM_FORMS': '0',
+            'cost_allocations-MAX_NUM_FORMS': '1000',
+            'cost_allocations-0-codigo': '700.50107',
+            'cost_allocations-0-porcentaje': '100.00',
         }
 
     def test_facturar_a_mano_no_annula_la_factura_anterior(self):

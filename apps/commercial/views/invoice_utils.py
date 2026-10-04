@@ -1,5 +1,6 @@
 import logging
 import os
+from decimal import ROUND_HALF_UP, Decimal
 from functools import lru_cache
 
 from django.conf import settings
@@ -44,6 +45,54 @@ def require_pdf_renderer():
             '  Otras plataformas: consulte la documentación de WeasyPrint '
             'para las dependencias del sistema.'
         ) from exc
+
+
+def _centro_de_costo_de_codigo(codigo):
+    """Centro de costo embebido en el prefijo del código de servicio.
+
+    Los códigos reales empiezan por el centro: `700501072507005` es
+    `700.50107 | 2507 | 005`. Se devuelve `None` cuando el código es demasiado
+    corto para contenerlo, porque inventar un centro sería peor que no tener
+    ninguno: el operador lo carga a mano.
+    """
+    codigo = (codigo or '').strip()
+    if len(codigo) < 8 or not codigo[:8].isdigit():
+        return None
+    return f'{codigo[:3]}.{codigo[3:8]}'
+
+
+def _prefill_cost_allocations_from_items(items):
+    """Reparto inicial a partir de los centros de los ítems facturados.
+
+    Ojo con lo que esto NO es: el reparto real de las facturas del CMP no sale de
+    los ítems. La factura 276 tiene un único ítem repartido en tres centros
+    (25/65/10), y ningún cálculo sobre montos produce tres porcentajes de una
+    sola línea. El reparto es una decisión del operador; esto es sólo el punto de
+    partida que le ahorra escribir los códigos.
+
+    Lo que sí sale de los ítems es el centro, porque viaja en el prefijo. El
+    reparto en partes iguales está ajustado para sumar EXACTAMENTE 100.00 (con
+    tres centros quedan 33.33/33.33/33.34, porque el residuo del redondeo se
+    absorbe en la última fila) ya que un reparto que no suma 100 es justo lo que
+    el formset después rechaza.
+    """
+    centros = []
+    for item in items:
+        centro = _centro_de_costo_de_codigo(getattr(item, 'codigo', None))
+        if centro and centro not in centros:
+            centros.append(centro)
+
+    if not centros:
+        return []
+
+    base = (Decimal('100') / len(centros)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    reparto = [{'codigo': centro, 'porcentaje': base} for centro in centros]
+    # El residuo del redondeo se absorbe en la última fila para que la suma sea
+    # exacta en cents y no 99.99.
+    reparto[-1]['porcentaje'] += Decimal('100.00') - sum(
+        (fila['porcentaje'] for fila in reparto), Decimal('0')
+    )
+    return reparto
 
 
 def _contrato_de_factura(invoice):
@@ -138,6 +187,10 @@ def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, ite
     company = CompanySettings.get_instance()
     periodo = f'Desde {start_date.strftime("%d/%m/%Y")} hasta {end_date.strftime("%d/%m/%Y")}'
     context = {
+        'cost_allocations': [
+            {'codigo': asignacion.codigo, 'porcentaje': asignacion.porcentaje}
+            for asignacion in invoice.cost_allocations.all()
+        ],
         'numero_factura': invoice.number,
         'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
         'periodo_facturacion': periodo,

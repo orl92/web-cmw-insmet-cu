@@ -339,7 +339,11 @@
               </tr>
             {% endfor %}
             <tr class="total-row">
-              <td colspan="3">Centro de Costo 700.50107 100 %</td>
+              <td colspan="3">
+                {% for asignacion in cost_allocations %}
+                  <div class="centro-costo-linea">Centro de Costo {{ asignacion.codigo }} {{ asignacion.porcentaje|floatformat }} %</div>
+                {% endfor %}
+              </td>
               <td colspan="2"></td>
               <td>$ {{ total|floatformat:2 }}</td>
             </tr>
