@@ -155,6 +155,18 @@ class InvoiceForm(forms.Form):
         label='Registro Comercial',
         widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
+    period_label = forms.CharField(
+        max_length=255,
+        required=False,
+        label='Período facturado',
+        help_text=(
+            'Texto libre, tal como se imprime en la factura. Ej.: '
+            '"Mes de mayo y junio de 2025". Si se deja vacío se usa la fecha de emisión.'
+        ),
+        widget=forms.TextInput(
+            attrs={'class': 'form-control', 'placeholder': 'Mes de mayo y junio de 2025'}
+        ),
+    )
     subscriptions = forms.ModelMultipleChoiceField(
         queryset=ServiceSubscription.objects.none(),
         required=False,

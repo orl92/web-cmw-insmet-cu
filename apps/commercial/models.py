@@ -337,6 +337,16 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
     )
     number = models.CharField(max_length=50, unique=True, verbose_name='Número de factura')
     issue_date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de emisión')
+    period_label = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Período facturado',
+        help_text=(
+            'Texto libre tal como se imprime en la factura. Ej.: '
+            '"Mes de mayo y junio de 2025", "octubre y noviembre del 2025". '
+            'Si se deja vacío se usa la fecha de emisión.'
+        ),
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Monto')
     pdf = models.FileField(
         upload_to=pdf_upload_path, verbose_name='Archivo PDF', blank=True, null=True

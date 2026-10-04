@@ -65,7 +65,26 @@
   </div>
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Período de Facturación' %}
-  <!-- Fechas y duración -->
+  <!-- Período impreso en la factura: texto libre, como en las facturas reales -->
+  <div class="row">
+    <div class="col-12 mb-3">
+      <label class="form-label" for="{{ form.period_label.id_for_label }}">{{ form.period_label.label }}</label>
+      <input type="text"
+             class="form-control"
+             id="{{ form.period_label.id_for_label }}"
+             name="{{ form.period_label.html_name }}"
+             value="{{ form.period_label.value|default:'' }}"
+             maxlength="255"
+             placeholder="Mes de mayo y junio de 2025" />
+      {% if form.period_label.help_text %}
+        <small class="form-hint">{{ form.period_label.help_text }}</small>
+      {% endif %}
+      {% if form.period_label.errors %}
+        <div class="invalid-feedback d-block">{{ form.period_label.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <!-- Fechas y duración: datos operativos del cálculo, no del texto impreso -->
   <div class="row">
     <div class="col-md-4 mb-3">
       {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}

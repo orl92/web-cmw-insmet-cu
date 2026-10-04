@@ -183,9 +183,27 @@ def _datos_cliente(customer):
     }
 
 
-def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, items):
+def _periodo_facturacion(invoice):
+    """El período facturado, tal como lo escribió el operador.
+
+    Las facturas reales del CMP lo escriben como texto libre ("Mes de mayo y
+    junio de 2025", "octubre y noviembre del 2025"), y ninguno de esos textos se
+    puede derivar de un par de fechas. Por eso es un `CharField` y no un rango:
+    componer "Desde X hasta Y" rinde un rango imposible en el caso normal, que
+    es una factura emitida de una sola fecha.
+
+    Si el campo está vacío (facturas emitidas antes de que existiera), cae a la
+    fecha de emisión. No es una migración de datos a propósito: en este proyecto
+    las migraciones no se versionan, así que una migración de datos se perdería
+    en silencio y dejaría facturas viejas sin período.
+    """
+    if invoice.period_label:
+        return invoice.period_label
+    return invoice.issue_date.strftime('%d/%m/%Y')
+
+
+def generate_invoice_pdf_standalone(invoice, customer, items):
     company = CompanySettings.get_instance()
-    periodo = f'Desde {start_date.strftime("%d/%m/%Y")} hasta {end_date.strftime("%d/%m/%Y")}'
     context = {
         'cost_allocations': [
             {'codigo': asignacion.codigo, 'porcentaje': asignacion.porcentaje}
@@ -193,7 +211,7 @@ def generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, ite
         ],
         'numero_factura': invoice.number,
         'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
-        'periodo_facturacion': periodo,
+        'periodo_facturacion': _periodo_facturacion(invoice),
         'cliente': _datos_cliente(customer),
         'proveedor': _datos_proveedor(company, _contrato_de_factura(invoice)),
         'items': [

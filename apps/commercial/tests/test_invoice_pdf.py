@@ -97,8 +97,6 @@ class GenerateInvoicePdfTests(TestCase):
             generate_invoice_pdf_standalone(
                 invoice or self.invoice,
                 customer or self.customer,
-                date(2026, 1, 1),
-                date(2026, 1, 31),
                 [item or self.item],
             )
         return mock_html.call_args.kwargs['string']
@@ -126,13 +124,7 @@ class GenerateInvoicePdfTests(TestCase):
             pdf_stub() as mock_html,
             self.assertRaises(RuntimeError),
         ):
-            generate_invoice_pdf_standalone(
-                self.invoice,
-                self.customer,
-                date(2026, 1, 1),
-                date(2026, 1, 31),
-                [self.item],
-            )
+            generate_invoice_pdf_standalone(self.invoice, self.customer, [self.item])
 
         mock_html.assert_not_called()
         self.invoice.refresh_from_db()
@@ -197,13 +189,7 @@ class BloqueProveedorTests(TestCase):
     def _generar(self, invoice=None):
         with renderizador_ok(), pdf_stub() as mock_html:
             mock_html.return_value.write_pdf.return_value = b'%PDF-1.4 stub'
-            generate_invoice_pdf_standalone(
-                invoice or self.invoice,
-                self.customer,
-                date(2026, 1, 1),
-                date(2026, 1, 31),
-                [self.item],
-            )
+            generate_invoice_pdf_standalone(invoice or self.invoice, self.customer, [self.item])
         return mock_html.call_args.kwargs['string']
 
     def test_el_contrato_llena_registro_numero_y_fecha(self):
@@ -335,9 +321,7 @@ class BloqueClienteTests(TestCase):
         )
         with renderizador_ok(), pdf_stub() as mock_html:
             mock_html.return_value.write_pdf.return_value = b'%PDF-1.4 stub'
-            generate_invoice_pdf_standalone(
-                invoice, customer, date(2026, 1, 1), date(2026, 1, 31), [item]
-            )
+            generate_invoice_pdf_standalone(invoice, customer, [item])
         return mock_html.call_args.kwargs['string']
 
     def test_juridica_imprime_los_campos_de_la_empresa(self):

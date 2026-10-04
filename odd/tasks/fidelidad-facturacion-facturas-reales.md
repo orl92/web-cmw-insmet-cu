@@ -110,9 +110,27 @@ contra el PDF actual.
         atado a la línea no resuelve la FK hacia algo que aún no estaba en la base.
       - El prefill del GET sólo se puede derivar cuando ya se sabe el cliente (el
         caso de regenerar); sin él no hay códigos y no se inventa un reparto.
-- [ ] **T2** `Invoice.period_label` (`CharField`, `blank=True`) + data migration
-      desde `issue_date`. El PDF muestra la etiqueta; si está vacía, cae a la
-      fecha de emisión en vez de componer un rango imposible.
+- [x] **T2** `Invoice.period_label` (`CharField`, `blank=True`, `max_length=255`).
+      El PDF muestra la etiqueta; si está vacía, cae a la fecha de emisión en vez
+      de componer un rango imposible.
+      - **No hay data migration, y es deliberado**: en este proyecto las
+        migraciones están gitignored y CI regenera con `makemigrations`, así que
+        una migración de datos se perdería en silencio y dejaría facturas viejas
+        sin período. El respaldo en tiempo de lectura (`_periodo_facturacion`)
+        cubre esas facturas sin depender del historial de migraciones.
+      - **Firma de `generate_invoice_pdf_standalone` reducida** de
+        `(invoice, customer, start_date, end_date, items)` a
+        `(invoice, customer, items)`: los dos parámetros de fecha existían sólo
+        para componer el texto del período. Mantenerlos habría dejado el bug
+        esperando a que alguien los pasara distinto otra vez.
+      - Los dos call sites pasaban `invoice.issue_date` **dos veces**, con un
+        comentario que lo justificaba como "el único ancla disponible". Ese
+        workaround era el origen del defecto y desapareció con la firma nueva.
+      - `start_date`/`end_date` **se conservan** en el modelo y el formulario:
+        alimentan el cálculo de duración y `ServiceSubscription.start_date`. No
+        son el período impreso, y borrarlos sería otra tarea.
+      - El campo va en la tarjeta "Período de Facturación", arriba de las fechas,
+        que quedan rotuladas como datos operativos del cálculo.
 - [ ] **T3** `U/M` = `U`. La descripción del ítem lleva "por meses"/"por días"
       según la categoría del servicio.
 - [ ] **T4** `Contract.__str__` y `Certificate.__str__` delegan en
@@ -233,9 +251,22 @@ Tests existentes que hubo que actualizar, porque ahora el POST exige la imputaci
 - `apps/commercial/tests/test_invoice_regeneration.py`: `_formulario` y
   `_formulario_manual`.
 
-## Pendiente para T2
+## Pendiente para T3
 
-`Invoice.period_label` sigue sin tocar: el PDF todavía compone
-`Desde <issue_date> hasta <issue_date>`, que es un rango imposible. En el mismo
-commit se dejó anotado que las facturas reales usan texto libre ("Mes de mayo y
-junio de 2025"), no un rango de fechas.
+`U/M` sigue siendo `M` y la descripción del ítem todavía no lleva "por meses" ni
+"por días". El usuario ya confirmó que `U/M` pasa a `U` y que el período va dentro
+de la descripción del servicio.
+
+## Hallazgo de T2: un error de render se disfraza de 404
+
+Al cambiar la firma de `generate_invoice_pdf_standalone`, el mock de
+`test_download_generates_pdf_if_missing` seguía con los cinco parámetros viejos.
+El `TypeError` lo tragaba el `except Exception` de `_generate_pdf_if_missing`, la
+vista seguía, el PDF no se guardaba y la descarga respondía **404**. El fallo se
+presentaba como un problema de lookup de factura cuando en realidad era una
+firma desactualizada dos capas más abajo.
+
+`_generate_pdf_if_missing` se traga cualquier excepción y deja que la descarga
+devuelva un 404 sin explicación. Es un problema de diagnosticabilidad preexistente
+y fuera del alcance de T2, pero conviene tenerlo anotado: la próxima vez que un
+test de descarga falle con 404, revisar primero la firma de lo que se mockeó.

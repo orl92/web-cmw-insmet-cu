@@ -302,9 +302,7 @@ class InvoiceCostAllocationPdfTests(_InvoiceFactoryMixin, TestCase):
     def _render(self, invoice, customer, items):
         with patch(PREFLIGHT, return_value=None), patch(HTML, autospec=True) as mock_html:
             mock_html.return_value.write_pdf.return_value = b'%PDF-1.4 stub'
-            generate_invoice_pdf_standalone(
-                invoice, customer, date(2026, 1, 1), date(2026, 1, 31), items
-            )
+            generate_invoice_pdf_standalone(invoice, customer, items)
         return mock_html.call_args.kwargs['string']
 
     def test_imprime_una_linea_por_centro_de_costo(self):

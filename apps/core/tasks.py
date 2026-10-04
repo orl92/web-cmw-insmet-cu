@@ -54,18 +54,11 @@ def generate_invoice_pdf_and_email_task(invoice_uuid, site_url, solo_paso=None):
     if solo_paso != 'email' and (solo_paso == 'pdf' or not invoice.pdf_ready):
         items = list(invoice.items.all())
         try:
-            # El periodo del PDF es el de la facturación, no el de la
-            # suscripción: la suscripción ya no vence y por tanto no tiene fecha
-            # de expiración que acotar el periodo. `issue_date` es el único ancla
-            # que guarda la factura, igual que en la generación bajo demanda de
-            # `InvoiceDetailView`.
-            generate_invoice_pdf_standalone(
-                invoice,
-                customer,
-                invoice.issue_date,
-                invoice.issue_date,
-                items,
-            )
+            # El período del PDF es `invoice.period_label` (texto libre escrito
+            # por el operador), no un rango derivado de fechas: ver
+            # `_periodo_facturacion`. Antes se pasaba `issue_date` dos veces y
+            # salía "Desde X hasta X" en cada factura de una sola fecha.
+            generate_invoice_pdf_standalone(invoice, customer, items)
         except Exception as e:
             marcar_pdf(invoice, error=e)
             raise

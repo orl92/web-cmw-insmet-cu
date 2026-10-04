@@ -585,14 +585,11 @@ class InvoicePDFDownloadView(ServeModelFileView):
 
         customer = invoice.customer
         items = list(invoice.items.all())
-        # El periodo del PDF es el de la facturación, no el de la suscripción: la
-        # suscripción no vence y por tanto no tiene fecha de expiración que
-        # acotar el periodo. `issue_date` es el único ancla disponible cuando el
-        # PDF se regenera bajo demanda, fuera de la creación de la factura.
-        start_date = invoice.issue_date
-        end_date = invoice.issue_date
+        # El período sale de `invoice.period_label` con respaldo en `issue_date`;
+        # la regeneración bajo demanda usa exactamente el mismo camino que la
+        # tarea asíncrona, así que las dos imprimen el mismo período.
         try:
-            generate_invoice_pdf_standalone(invoice, customer, start_date, end_date, items)
+            generate_invoice_pdf_standalone(invoice, customer, items)
             invoice.refresh_from_db(fields=[self.field])
         except Exception as exc:  # pragma: no cover - depends on WeasyPrint/Pango
             logger.exception(
