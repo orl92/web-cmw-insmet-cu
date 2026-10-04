@@ -14,6 +14,12 @@ viven en el mismo flujo.
 
 ### 1. El periodo no lo elige el cliente
 
+> **Estado: cerrado y superado.** Este es el diagnóstico original, cuando la
+> suscripción *sí* tenía vigencia. Ya no describe el modelo: `end_date` y
+> `Service.compute_end_date()` se eliminaron en `61197ac` porque la suscripción no
+> vence, y `quantity` es sólo cantidad facturable. Se conserva como registro de
+> por qué se quitó el selector de periodo, no como descripción del código actual.
+
 `ServiceSubscription` ya **es** la solicitud: tiene `start_date`, `end_date`,
 `quantity` y `payment_status`. No hay modelo nuevo que crear. El problema es
 quién decide la duración:
@@ -95,8 +101,12 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 - **B2** Fecha de inicio libre, incluso en el pasado, y **cantidad** de días o
   meses. La unidad no la elige quien captura: sale de la categoría del servicio
   (`service_category` → `Service.get_billing_period_display()`), igual que en la
-  facturación manual (B4) y en el alta pública de Home. Cerrado en `5d4fa30`.
-- **B3** Formularios de crear y editar suscripción alineados al modelo nuevo.
+  facturación manual (B4) y en el alta pública de Home. Cerrado en `5d4fa30` y
+  revisado en la UI (el vencimiento se calcula y guarda, pero no se presenta
+  mientras la suscripción está `requested`).
+- **B3** Formularios de crear y editar suscripción alineados al modelo nuevo:
+  método de pago elegible al crear, estado de pago no elegible, y el estilo de
+  formulario del dashboard. Cerrado con la revisión de B2.
 - **B4** Facturación manual alineada al mismo modelo.
 - **B5** Quitar la columna Expiración del listado de suscripciones
   (`subscription/list.html:15` y celda `:46-47`): con historial completo la
@@ -184,7 +194,8 @@ factura" aparezca para facturas que quizá ni siquiera tienen archivo.
 
 - [x] Diagnóstico completo de los tres problemas, con file:line.
 - [ ] A1, A2
-- [x] B1, B2, B3, B5, B6 → B1 y B5 cerrados en `2a7dbad`, B2 y B3 en `5d4fa30`
+- [x] B1, B2, B3, B5, B6 → B1 y B5 cerrados en `2a7dbad`, B2 y B3 en `5d4fa30` y
+      corregidos en la revisión de UI (alcance y cifras al final del documento)
 - [x] B4 — commit `385c12a`
 - [x] C1, C2, C3, C4, C5 — commit `4b1dff5`
 - [x] D1 — commit `7e36058`
@@ -263,24 +274,18 @@ que no se ven ahí. Esa asimetría es intencional y está cubierta por tests.
 consultas entre un listado de 1 y de 4 facturas (en vez de fijar un número
 absoluto, porque el layout y los context processors aportan consultas fijas).
 
-## B2/B3 cerrados — `5d4fa30`
+## B2/B3 cerrados — `5d4fa30`, revisados en la UI
 
 **Qué cambió.** `SubscriptionForm` ya no tiene `period` ni `end_date`: quien
 captura elige **fecha de inicio** (el pasado está permitido) y **cantidad**, y el
-vencimiento lo deriva `Service.compute_end_date`. La unidad no es un campo: sale
-de la categoría del servicio, que cada `<option>` publica en `data-period-unit`.
-`quantity` es la magnitud que multiplica el precio, igual que en B4.
+vencimiento lo derivaba `Service.compute_end_date` —función que `61197ac`
+eliminó junto con `end_date` al decidir que la suscripción no vence. La unidad no
+es un campo: sale de la categoría del servicio, que cada `<option>` publica en
+`data-period-unit`. `quantity` es la magnitud que multiplica el precio, igual que
+en B4, y por eso sigue siendo necesaria aunque ya no mida vigencia.
 
 **Por qué no `period_unit`.** Ver la decisión 3 de "Decisiones abiertas". La
 fuerza estaba en el mismo sitio donde B4 ya la había puesto: la categoría.
-
-**Lo que el navegador hace y lo que no.** `static/dist/js/subscription-period.js`
-sólo rotula ("Cantidad de días/meses") y previsualiza el vencimiento; el valor
-guardado siempre lo calcula el servidor, y sin JS la fecha ya viene impresa
-desde la plantilla (`form.derived_end_date`). El preview recorta al último día
-del mes igual que `relativedelta` (31/01 + 1 mes = 28/02) porque `setMonth`
-desborda a marzo. Los seis casos de esa aritmética se verificaron contra el
-modelo, no sólo a ojo.
 
 **Un detalle que salió en el camino:** `start_date` es un campo declarado, así
 que sin `label` explícito Django lo rotula con el nombre del atributo
@@ -288,16 +293,63 @@ que sin `label` explícito Django lo rotula con el nombre del atributo
 este bloque y salía en inglés en una interfaz `es-mx`; ahora dice "Fecha de
 inicio", con test que lo ata.
 
-**Verificación (este bloque):** `python manage.py test apps.commercial apps.home
-apps.core apps.dashboard` → 964 tests, `FAILED (failures=1)`. El único fallo es
-`apps.core.tests.test_site_configuration_template.test_reset_theme_defaults_button_and_modal`
-("Restablecer tema" no aparece en la respuesta), **preexistente**: se reproduce
-en `0061521` con el árbol limpio, antes de tocar nada, y no lo causa este cambio.
-`python manage.py check` sin issues, `ruff check apps templates` limpio,
-`djlint . --lint` y `djlint . --reformat --check` limpios. Los tests de las dos
-clases tocadas: 29 métodos añadidos y 4 fuera (`test_period_1m/3m/1y_calculates_end_date`
-y `test_custom_period_validates_dates`, que afirmaban el modelo viejo), o sea
-+25, que es exactamente el delta de la suite del alcance: 939 → 964.
+### Revisión de la interfaz (B2/B3, segunda pasada)
+
+La primera entrega resolvió el modelo pero no la pantalla: el formulario quedó
+con la apariencia de una maqueta y con piezas que ya no servían. Lo corrigió la
+revisión de UI, y el alcance de B2/B3 queda así:
+
+- **El vencimiento desapareció del modelo, no sólo de la pantalla.** Una primera
+  pasada lo había quitado de la UI y de la facturación, pero `end_date` seguía en
+  `ServiceSubscription` porque `_post_clean` validaba `start < end`. La decisión
+  de producto fue más tajante: **una suscripción no vence por tiempo**. Se
+  solicita, se factura, se aprueba el pago y queda viva; el único fin de su
+  existencia es la cancelación, y sólo se permite si todavía no se emitió una
+  factura vigente ni se aprobó el pago. `61197ac` eliminó `end_date`,
+  `Service.compute_end_date()`, `SubscriptionRenewView` y las métricas de
+  vencidas y por vencer (`c15f428`). Consecuencia directa: `quantity` dejó de
+  medir vigencia y es sólo cantidad facturable; la unidad sale de la categoría.
+- **`payment_status` no es elegible al crear.** `SubscriptionCreateView.form_valid`
+  fija `requested` explícitamente para que ni el formulario ni un POST a mano
+  puedan crear una suscripción ya pagada. **Motivo:** el estado no lo elige quien
+  captura, lo mueven las acciones (Facturar / Aprobar Pago); ofrecer un selector
+  invita a saltárselas. Al no estar en `Meta.fields`, el ModelForm de la edición
+  tampoco lo toca: una suscripción `paid` sigue `paid`.
+- **`payment_method` sí se elige al crear**, y es required: las choices salen de
+  `ServiceSubscription.PAYMENT_METHOD_CHOICES` y los radios son los mismos de
+  Home. Se pidió para que la solicitud llegue con el medio de pago decided, que
+  es lo que la factura necesita después.
+- **Se conserva un JS mínimo para la etiqueta de la cantidad.** El que había
+  (`subscription-period.js`) hacía dos cosas y una ya no era correcta:
+  previsualizar el vencimiento. Se sustituyó por
+  `static/dist/js/subscription-quantity-label.js`, que **sólo** rotula. **Motivo:**
+  "3" son tres meses en agrometeo y tres días en pronóstico, y una etiqueta fija
+  "Cantidad" esconde justo lo que explica el importe. Sin JavaScript el rótulo
+  igual es correcto: el servidor lo imprime con la unidad cuando el servicio ya
+  está elegido (edición y POST que rebota), y en el alta en blanco, donde todavía
+  no hay unidad que nombrar, lo que la comunica es el `help_text`.
+- **Cinco campos, dos cards**: "Datos de la Solicitud" (cliente, servicio, inicio,
+  cantidad) y "Método de pago". Tres cards partían el formulario en trozos sin
+  sentido. El título de la segunda nombra el grupo: los radios llevan
+  `role="radiogroup"` con `aria-labelledby` al título, que es lo que un
+  `form-selectgroup` necesita para tener nombre accesible (un `<label>` suelto no
+  era label de nada). Para eso `includes/dashboard/form_card.html` acepta un
+  `card_title_id` opcional; sin él la salida no cambia.
+
+**Un defecto que ningún test de Python veía:** los dos templates pedían
+`{% static 'dist/js/subscription-period.js' %}` con el archivo borrado, así que
+cada alta y cada edición pedía un asset inexistente (404 silencioso; Django no
+se queja). Ahora hay un test que resuelve contra el finder **cada** `<script
+src>` estático que pide la página del formulario, que es la clase de defecto que
+no se ve desde Python.
+
+**Verificación (esta revisión):** `python manage.py test` → 1170 tests,
+`FAILED (failures=1)`. El único fallo es
+`apps.core.tests.test_site_configuration_template.test_reset_theme_defaults_button_and_modal`,
+**preexistente**: se reproduce en `0061521` con el árbol limpio, antes de tocar
+nada, y no lo causa este cambio. `python manage.py test apps.commercial apps.home`
+→ 659 tests OK. `python manage.py check` sin issues, `ruff check apps templates`
+limpio, `djlint . --lint` y `djlint . --reformat --check` limpios.
 
 **Pendiente de esta etapa:** nada de B2/B3 quedó pendiente dentro del alcance
 acordado. Queda abierto, pero es decisión de modelo y no de formulario: el
@@ -305,3 +357,57 @@ residuo de meses enteros (ver el límite del modelo más arriba).
 
 **Ruta prevista:** B6 y D3 siguen abiertos. B6 toca Home y el dashboard; D3 es
 documentación y va inline.
+
+---
+
+## La suscripción no vence — `61197ac`, `c15f428`, `4296f4b`, `e7d2049`
+
+**Decisión de producto.** La suscripción nace viva y **no muere por tiempo**. Se
+solicita, se factura, se aprueba el pago, se entrega el certificado y sigue
+funcionando. Su única condición de fin es la **cancelación**, y sólo se permite
+mientras no haya una factura vigente ni un pago aprobado.
+
+**Por qué se tira `end_date` y no se oculta.** La primera pasada lo había
+escalonado en la capa de presentación: `end_date` seguía en el modelo y
+`_post_clean` seguía validando `start < end`, así que "ocultar el vencimiento"
+era una mentira de la pantalla. La regla real es más simple y más dura, y la
+decisión fue borrarlo. Eso arrastra tres consecuencias que conviene no volver a
+inventar:
+
+- `quantity` dejó de medir vigencia. Es **cantidad facturable**: multiplica el
+  precio, y la unidad (días o meses) la sigue imponiendo la categoría del
+  servicio. Por eso el campo no se fue con `end_date`.
+- `is_active` pasó a ser `record_active AND payment_status == 'paid'`. No mira
+  fechas, así que una suscripción pagada de hace un año sigue activa.
+- Desaparecieron `SubscriptionRenewView`, la URL `suscripcion_renew`, la
+  plantilla `renew.html`, `subscription-period.js` y las métricas de *vencidas* y
+  *por vencer* del dashboard.
+
+**La regla de cancelación y su borde.** Cancelar está permitido si `requested` y
+no hay facturas, y también si la única factura asociada está **anulada**: una
+factura anulada ya no compromete un cobro, que es la diferencia entre "tiene
+factura" y "tiene factura vigente". Con una factura vigente o el pago aprobado, la
+anulación se rechaza. Están los cuatro casos con test en `test_views.py`.
+
+**Una decisión que sigue siendo del usuario, no del código.** El periodo
+facturado vive en `InvoiceForm.start_date`/`end_date` y **no** está persistido en
+`Invoice`: el PDF lo recibe por parámetro y el modelo sólo guarda `issue_date`.
+Mientras la suscripción no vence eso es coherente (el periodo es un dato de la
+factura, no de la suscripción), pero si alguna vez se necesita reimprimir una
+factura vieja con su periodo original, hoy no está de donde sacarlo.
+
+**Qué rompió el agrupado de la pantalla de factura.** Las pendientes se agrupaban
+por período con un switch por grupo que fijaba las fechas y bloqueaba el resto de
+los checkboxes. Ese agrupamiento existía *porque* la suscripción traía su
+vencimiento. Sin `end_date` no hay nada que agrupar y el código quedó inerte
+leyendo `dataset.end` y `dataset.days`, que el endpoint ya no emitía. Ahora las
+pendientes se listan planas y las marcadas se facturan juntas en el período del
+formulario (`4296f4b`).
+
+**Verificación:** `python manage.py test` → 1175 tests,
+`FAILED (failures=1)`. El único fallo sigue siendo
+`apps.core.tests.test_site_configuration_template.test_reset_theme_defaults_button_and_modal`
+("Restablecer tema"), preexistente y ajeno: se reproduce en `0061521` con el
+árbol limpio. `python manage.py check` sin issues, `ruff check apps` y
+`ruff format --check apps` limpios, `djlint . --lint` y
+`djlint . --reformat --check` limpios.
