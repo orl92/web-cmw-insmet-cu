@@ -1,0 +1,39 @@
+<div class="form-hint" data-payment-method-help>
+  <small class="text-muted">Elige cómo deseas realizar el pago.</small>
+  <div class="mt-1">
+    {% if payment_method == 'qr' %}
+      <small class="text-muted d-block"
+             data-payment-method-info="qr">Pago por QR: Escanea el código QR desde la Web. Recibirás el enlace por correo.</small>
+    {% elif payment_method == 'transfer' %}
+      <small class="text-muted d-block"
+             data-payment-method-info="transfer">Transferencia bancaria: Recibirás los datos de la cuenta en la factura.</small>
+    {% elif payment_method == 'presencial' %}
+      <small class="text-muted d-block"
+             data-payment-method-info="presencial">Pago presencial: Acude a nuestras oficinas.</small>
+    {% endif %}
+  </div>
+</div>
+<script>
+  (function() {
+    const root = document.querySelector('[data-payment-method-help]');
+    if (!root || root.dataset.bound === '1') return;
+    root.dataset.bound = '1';
+
+    const infos = root.querySelectorAll('[data-payment-method-info]');
+    const inputs = document.querySelectorAll('input[name="payment_method"]');
+    if (!infos.length || !inputs.length) return;
+
+    function showChecked() {
+      const checked = root.form ? root.form.querySelector('input[name="payment_method"]:checked') : null;
+      const method = checked ? checked.value : '';
+      infos.forEach(function(info) {
+        info.hidden = info.dataset.paymentMethodInfo !== method;
+      });
+    }
+
+    inputs.forEach(function(input) {
+      input.addEventListener('change', showChecked);
+    });
+    showChecked();
+  })();
+</script>

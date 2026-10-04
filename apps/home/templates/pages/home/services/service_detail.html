@@ -116,7 +116,7 @@
           <!-- Método de pago -->
           <div class="mb-3">
             <label class="form-label required">Método de pago</label>
-            <div class="form-selectgroup">
+            <div class="form-selectgroup form-selectgroup-vertical">
               {% for choice in form.payment_method %}
                 <label class="form-selectgroup-item">
                   <input type="radio"
@@ -133,25 +133,7 @@
             </div>
             <small class="form-hint mt-2">Elige cómo deseas realizar el pago.</small>
           </div>
-          <div id="qr-info" style="display: none" class="mb-3 p-3 rounded border">
-            <p class="mb-0">
-              <strong>Pago por QR:</strong> Escanea el código QR desde la Web. Recibirás el enlace por correo.
-            </p>
-          </div>
-          <div id="transfer-info"
-               style="display: none"
-               class="mb-3 p-3 rounded border">
-            <p class="mb-0">
-              <strong>Transferencia bancaria:</strong> Recibirás los datos de la cuenta en la factura.
-            </p>
-          </div>
-          <div id="presencial-info"
-               style="display: none"
-               class="mb-3 p-3 rounded border">
-            <p class="mb-0">
-              <strong>Pago presencial:</strong> Acude a nuestras oficinas.
-            </p>
-          </div>
+          {% include 'includes/dashboard/payment_method_help.html' with payment_method=form.payment_method.value %}
           <div class="d-flex justify-content-end gap-2 pt-3 mt-3 border-top">
             <button type="submit" class="btn btn-primary">
               <i class="icon ti ti-send"></i> Solicitar
@@ -249,36 +231,4 @@
       {% endif %}
     </div>
   </div>
-{% endblock %}
-{% block extrajs %}
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Info del método de pago (radios; no select)
-    const methodInputs = document.querySelectorAll('input[name="payment_method"]');
-    if (methodInputs.length) {
-      const qrInfo = document.getElementById('qr-info');
-      const transferInfo = document.getElementById('transfer-info');
-      const presencialInfo = document.getElementById('presencial-info');
-
-      function toggleInfo() {
-        const checked = document.querySelector('input[name="payment_method"]:checked');
-        const method = checked ? checked.value : '';
-        qrInfo.style.display = 'none';
-        transferInfo.style.display = 'none';
-        presencialInfo.style.display = 'none';
-        if (method === 'qr') {
-          qrInfo.style.display = 'block';
-        } else if (method === 'transfer') {
-          transferInfo.style.display = 'block';
-        } else if (method === 'presencial') {
-          presencialInfo.style.display = 'block';
-        }
-      }
-      methodInputs.forEach(function(input) {
-        input.addEventListener('change', toggleInfo);
-      });
-      toggleInfo();
-    }
-  });
-  </script>
 {% endblock %}

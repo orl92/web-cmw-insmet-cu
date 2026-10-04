@@ -40,7 +40,7 @@
   </div>
   <div class="row">
     <div class="col-md-6 mb-3">
-      {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm' %}
+      {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
     </div>
     <div class="col-md-6 mb-3">
       <label class="form-label required"
@@ -65,7 +65,7 @@
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Método de pago' card_title_id='payment_method_group' %}
   <div class="mb-3">
-    <div class="form-selectgroup
+    <div class="form-selectgroup form-selectgroup-vertical
                 {% if form.payment_method.errors %}is-invalid{% endif %}"
          role="radiogroup"
          aria-labelledby="payment_method_group"
@@ -73,9 +73,9 @@
       {% for choice in form.payment_method %}
         <label class="form-selectgroup-item">
           <input type="radio"
+                 class="form-selectgroup-input"
                  name="payment_method"
                  value="{{ choice.data.value }}"
-                 class="form-selectgroup-input"
                  {% if choice.data.selected %}checked{% endif %}
                  {% if forloop.first and not form.payment_method.value %}checked{% endif %} />
           <span class="form-selectgroup-label">
@@ -88,7 +88,7 @@
     {% if form.payment_method.errors %}
       <div class="invalid-feedback d-block">{{ form.payment_method.errors.0 }}</div>
     {% endif %}
-    <small class="text-muted">Elige cómo deseas realizar el pago.</small>
+    {% include 'includes/dashboard/payment_method_help.html' with payment_method=form.payment_method.value %}
   </div>
   </div>
   </div>
