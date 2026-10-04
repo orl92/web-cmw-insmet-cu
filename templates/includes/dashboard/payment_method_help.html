@@ -1,39 +1,61 @@
-<div class="form-hint" data-payment-method-help>
-  <small class="text-muted">Elige cómo deseas realizar el pago.</small>
-  <div class="mt-1">
-    {% if payment_method == 'qr' %}
-      <small class="text-muted d-block"
-             data-payment-method-info="qr">Pago por QR: Escanea el código QR desde la Web. Recibirás el enlace por correo.</small>
-    {% elif payment_method == 'transfer' %}
-      <small class="text-muted d-block"
-             data-payment-method-info="transfer">Transferencia bancaria: Recibirás los datos de la cuenta en la factura.</small>
-    {% elif payment_method == 'presencial' %}
-      <small class="text-muted d-block"
-             data-payment-method-info="presencial">Pago presencial: Acude a nuestras oficinas.</small>
-    {% endif %}
+{% comment %}
+Ayuda del método de pago, compartida por el alta y la edición del dashboard y por
+el alta de Home, para que las tres pantallas digan exactamente lo mismo.
+
+Las tres descripciones se renderizan siempre y la visibilidad la gobierna
+`d-none`: el script necesita poder cambiar cuál queda visible, así que si el
+servidor imprimiera sólo la del método ya vinculado, en el formulario en blanco
+no habría ninguna y no podría aparecer al elegir.
+
+La visibilidad va en `d-none` y no en el atributo `hidden` porque `.alert` es
+`display:flex` sin `!important`, y los estilos de autor ganan siempre a la hoja
+del navegador: `hidden` no ocultaría nada dentro de una alerta. `.d-none` sí es
+`!important` y por eso manda.
+{% endcomment %}
+{% with metodo=payment_method|default:'qr' %}
+  <div data-payment-method-help>
+    <small class="form-hint mt-2">Elige cómo deseas realizar el pago.</small>
+    <div class="alert alert-info mt-2 mb-0 py-2 px-3{% if metodo != 'qr' %}
+                  d-none{% endif %}"
+         data-payment-method-info="qr">
+      <span><strong>Pago por QR:</strong> Escanea el código QR desde la Web. Recibirás el enlace por correo.</span>
+    </div>
+    <div class="alert alert-info mt-2 mb-0 py-2 px-3{% if metodo != 'transfer' %}
+                  d-none{% endif %}"
+         data-payment-method-info="transfer">
+      <span><strong>Transferencia bancaria:</strong> Recibirás los datos de la cuenta en la factura.</span>
+    </div>
+    <div class="alert alert-info mt-2 mb-0 py-2 px-3{% if metodo != 'presencial' %}
+                  d-none{% endif %}"
+         data-payment-method-info="presencial">
+      <span><strong>Pago presencial:</strong> Acude a nuestras oficinas.</span>
+    </div>
   </div>
-</div>
+{% endwith %}
 <script>
   (function() {
-    const root = document.querySelector('[data-payment-method-help]');
+    var root = document.querySelector('[data-payment-method-help]');
     if (!root || root.dataset.bound === '1') return;
     root.dataset.bound = '1';
 
-    const infos = root.querySelectorAll('[data-payment-method-info]');
-    const inputs = document.querySelectorAll('input[name="payment_method"]');
+    var infos = root.querySelectorAll('[data-payment-method-info]');
+    var form = root.closest('form') || document;
+    var inputs = form.querySelectorAll('input[name="payment_method"]');
     if (!infos.length || !inputs.length) return;
 
-    function showChecked() {
-      const checked = root.form ? root.form.querySelector('input[name="payment_method"]:checked') : null;
-      const method = checked ? checked.value : '';
-      infos.forEach(function(info) {
-        info.hidden = info.dataset.paymentMethodInfo !== method;
-      });
+    function mostrarSeleccionado() {
+      var checked = form.querySelector('input[name="payment_method"]:checked');
+      var metodo = checked ? checked.value : '';
+      for (var i = 0; i < infos.length; i++) {
+        // `d-none` y no `hidden`: dentro de `.alert` el atributo no ocultaría.
+        var coincide = infos[i].dataset.paymentMethodInfo === metodo;
+        infos[i].classList.toggle('d-none', !coincide);
+      }
     }
 
-    inputs.forEach(function(input) {
-      input.addEventListener('change', showChecked);
-    });
-    showChecked();
+    for (var i = 0; i < inputs.length; i++) {
+      inputs[i].addEventListener('change', mostrarSeleccionado);
+    }
+    mostrarSeleccionado();
   })();
 </script>

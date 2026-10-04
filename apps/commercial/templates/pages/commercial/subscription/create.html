@@ -54,7 +54,7 @@
              name="{{ form.quantity.name }}"
              value="{{ form.quantity.value|default:'' }}"
              required>
-      <small class="text-muted" id="{{ form.quantity.auto_id }}_helptext">{{ form.quantity.help_text }}</small>
+      <small class="form-hint" id="{{ form.quantity.auto_id }}_helptext">{{ form.quantity.help_text }}</small>
       {% if form.quantity.errors %}
         <div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>
       {% endif %}
@@ -71,7 +71,7 @@
          aria-labelledby="payment_method_group"
          {% if form.payment_method.errors %}aria-invalid="true"{% endif %}>
       {% for choice in form.payment_method %}
-        <label class="form-selectgroup-item">
+        <label class="form-selectgroup-item flex-md-fill">
           <input type="radio"
                  class="form-selectgroup-input"
                  name="payment_method"

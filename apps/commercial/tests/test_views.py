@@ -2384,6 +2384,63 @@ class SubscriptionPeriodFormViewTests(TestCase):
         for valor in ('qr', 'transfer', 'presencial'):
             self.assertIn(f'value="{valor}"', html)
 
+    def test_las_tres_descripciones_se_renderizan_siempre(self):
+        """Las tres, aunque en el alta no haya método vinculado todavía.
+
+        El script cambia cuál queda visible al marcar otro radio, así que
+        necesita que existan las tres. Si el servidor imprimiera sólo la del
+        método ya elegido, en el formulario en blanco no habría ninguna y la
+        descripción no podría aparecer nunca.
+        """
+        html = self.client.get(self.create_url).content.decode()
+        for valor in ('qr', 'transfer', 'presencial'):
+            self.assertIn(f'data-payment-method-info="{valor}"', html)
+
+    def test_la_descripcion_visible_es_la_del_metodo_elegido(self):
+        """Sin JavaScript, la del método vinculado es la única sin `d-none`.
+
+        `d-none` y no `hidden`: `.alert` es `display:flex` sin `!important` y
+        los estilos de autor ganan a la hoja del navegador, así que dentro de
+        una alerta el atributo `hidden` no ocultaría nada.
+        """
+        self.sub.payment_method = 'transfer'
+        self.sub.save(update_fields=['payment_method'])
+        html = self.client.get(self.update_url).content.decode()
+
+        def bloque(valor):
+            return re.search(
+                rf'<div[^>]*data-payment-method-info="{valor}".*?</div>', html, re.S
+            ).group(0)
+
+        self.assertNotIn('d-none', bloque('transfer'))
+        for valor in ('qr', 'presencial'):
+            with self.subTest(valor=valor):
+                self.assertIn('d-none', bloque(valor))
+
+    def test_las_ayudas_compartidas_dicen_lo_mismo_que_en_casa(self):
+        """Dashboard y Home comparten los tres textos de ayuda al pie."""
+        esperado = (
+            'Fecha desde la cual necesita el servicio.',
+            'El importe total se calcula multiplicando el precio por la cantidad seleccionada.',
+            'Elige cómo deseas realizar el pago.',
+        )
+        html = self.client.get(self.create_url).content.decode()
+        for texto in esperado:
+            with self.subTest(texto=texto):
+                self.assertEqual(html.count(texto), 1)
+
+    def test_las_ayudas_al_pie_llevan_el_margen_de_las_ayudas_de_campo(self):
+        """`.form-control + .form-hint` da 0.5rem, pero el help de pago no va
+        tras un control: sin `mt-2` quedaba pegado al grupo de radios."""
+        html = self.client.get(self.create_url).content.decode()
+        self.assertIn('<small class="form-hint mt-2">', html)
+
+    def test_los_botones_de_pago_reparten_el_ancho_disponible(self):
+        for url in (self.create_url, self.update_url):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                self.assertEqual(html.count('form-selectgroup-item flex-md-fill'), 3)
+
     def test_crear_sin_metodo_de_pago_no_crea_la_suscripcion(self):
         response = self.client.post(self.create_url, self._data(payment_method=''))
         self.assertEqual(response.status_code, 200)

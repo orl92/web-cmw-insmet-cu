@@ -112,7 +112,7 @@
             <label class="form-label required">Método de pago</label>
             <div class="form-selectgroup flex-column flex-md-row">
               {% for choice in form.payment_method %}
-                <label class="form-selectgroup-item">
+                <label class="form-selectgroup-item flex-md-fill">
                   <input type="radio"
                          name="payment_method"
                          value="{{ choice.data.value }}"
