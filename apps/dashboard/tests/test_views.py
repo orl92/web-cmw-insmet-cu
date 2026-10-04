@@ -152,7 +152,6 @@ class DashboardContextTests(TestCase):
             service=service,
             payment_status='paid',
             start_date=timezone.now(),
-            end_date=timezone.now() + timezone.timedelta(days=30),
         )
         Invoice.objects.create(
             customer=customer, subscription=sub, number='INV-DB-1', amount='100.00'
@@ -203,7 +202,6 @@ class DashboardCommercialDataTests(TestCase):
             service=service,
             payment_status='paid',
             start_date=timezone.now(),
-            end_date=timezone.now() + timezone.timedelta(days=60),
         )
         Invoice.objects.create(
             customer=customer,
@@ -228,9 +226,12 @@ class DashboardCommercialDataTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(self.url)
         context = response.context
+        # Sólo hay tres grupos y no hay `expired_subs`: sin `end_date` no existe
+        # una suscripción vencida. Lo que apaga una suscripción es la anulación
+        # (soft delete), que el manager por defecto ya excluye del queryset.
         self.assertEqual(context['active_subs'], 1)
-        self.assertEqual(context['expired_subs'], 0)
         self.assertEqual(context['pending_subs'], 0)
+        self.assertNotIn('expired_subs', context)
         self.assertIsInstance(context['month_income'], float)
 
 

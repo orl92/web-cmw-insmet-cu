@@ -224,24 +224,6 @@ class ServiceModelTests(FileHandlingTestCase):
         self.assertIn('120.00', service.get_price_per_period_display())
         self.assertIn('mes', service.get_price_per_period_display())
 
-    def test_compute_end_date_agrometeo_no_overflow(self):
-        from datetime import date as date_cls
-
-        result = Service.compute_end_date(date_cls(2026, 1, 31), 2, 'agrometeo')
-        self.assertEqual(result, date_cls(2026, 3, 31))
-
-    def test_compute_end_date_pronostico_daily(self):
-        from datetime import date as date_cls
-
-        result = Service.compute_end_date(date_cls(2026, 1, 1), 5, 'pronostico')
-        self.assertEqual(result, date_cls(2026, 1, 6))
-
-    def test_compute_end_date_default_category_is_pronostico(self):
-        from datetime import date as date_cls
-
-        result = Service.compute_end_date(date_cls(2026, 2, 10), 3)
-        self.assertEqual(result, date_cls(2026, 2, 13))
-
     def test_create_public_service(self):
         service = Service.objects.create(
             user=self.user,
@@ -338,7 +320,6 @@ class ServiceSubscriptionModelTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         self.assertIsNotNone(sub.uuid)
         self.assertIn(self.service.title, str(sub))
@@ -348,7 +329,6 @@ class ServiceSubscriptionModelTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         self.assertEqual(sub.quantity, 1)
 
@@ -358,7 +338,6 @@ class ServiceSubscriptionModelTests(TestCase):
             service=self.service,
             quantity=0,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         with self.assertRaises(ValidationError):
             sub.full_clean()
@@ -369,7 +348,6 @@ class ServiceSubscriptionModelTests(TestCase):
             service=self.service,
             quantity=30,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         self.assertEqual(sub.get_quantity_period_display(), '30 días')
 
@@ -386,7 +364,6 @@ class ServiceSubscriptionModelTests(TestCase):
             service=agrometeo,
             quantity=3,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=90),
         )
         self.assertEqual(sub.get_quantity_period_display(), '3 meses')
 
@@ -396,7 +373,6 @@ class ServiceSubscriptionModelTests(TestCase):
             service=self.service,
             quantity=1,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         self.assertEqual(sub.get_quantity_period_display(), '1 día')
 
@@ -412,38 +388,53 @@ class ServiceSubscriptionModelTests(TestCase):
         self.assertEqual(perms, expected)
         self.assertEqual(meta.default_permissions, ())
 
-    def test_clean_rejects_invalid_dates(self):
-        sub = ServiceSubscription(
-            customer=self.customer,
-            service=self.service,
-            start_date=timezone.now(),
-            end_date=timezone.now() - timedelta(days=1),
-        )
-        with self.assertRaises(ValidationError):
-            sub.clean()
-
     def test_is_active_property(self):
-        future = timezone.now() + timedelta(days=30)
         sub = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=future,
             payment_status='paid',
         )
         self.assertTrue(sub.is_active)
         self.assertEqual(sub.status_display, 'pagado')
 
+    def test_is_active_solo_exige_pago_y_no_estar_anulada(self):
+        """La vigencia no tiene componente temporal: sólo pago aprobado y baja viva.
+
+        Antes `is_active` miraba `end_date` y una suscripción pagada con el
+        período terminado se leía como inactiva. La suscripción ya no vence, así
+        que las dos condiciones que quedan son las que se combinan en la tabla.
+        """
+        for estado in ('requested', 'pending', 'paid'):
+            for activa in (True, False):
+                with self.subTest(payment_status=estado, record_active=activa):
+                    sub = ServiceSubscription.objects.create(
+                        customer=self.customer,
+                        service=self.service,
+                        start_date=timezone.now(),
+                        payment_status=estado,
+                        record_active=activa,
+                    )
+                    self.assertEqual(sub.is_active, estado == 'paid' and activa)
+
     def test_is_active_expired(self):
-        past = timezone.now() - timedelta(days=1)
-        sub = ServiceSubscription.objects.create(
+        """Sin `end_date` no hay vencimiento: lo único que apaga es la anulación.
+
+        El nombre histórico se conserva porque es el caso que se sigue
+        vigilando, pero lo que afirma es la regla nueva: una suscripción pagada
+        sigue activa aunque su período haya pasado, y se apaga en cuanto se
+        anula, esté pagada o no.
+        """
+        pagada = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.service,
             start_date=timezone.now() - timedelta(days=60),
-            end_date=past,
             payment_status='paid',
         )
-        self.assertFalse(sub.is_active)
+        self.assertTrue(pagada.is_active)
+
+        pagada.delete()
+        self.assertFalse(pagada.is_active)
 
     def test_status_display_values(self):
         sub = ServiceSubscription(
@@ -474,19 +465,18 @@ class ServiceSubscriptionModelTests(TestCase):
         self.assertEqual(sub.status_display, 'cancelada')
 
     def test_status_display_ignores_the_elapsed_period(self):
-        """Una suscripción pagada y vencida estuvo pagada.
+        """`status_display` es el estado del pago y nada más.
 
-        El periodo que terminó es un dato del servicio, no un estado de pago:
-        mezclarlo hacía que un cobro correcto se leyera como 'expirado'.
+        No queda ninguna fecha que consultar: la suscripción no tiene
+        vencimiento, así que el rótulo sale sólo de `record_active` y de
+        `payment_status`. La pasada del período no puede volver a cambiarlo.
         """
         sub = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.service,
             start_date=timezone.now() - timedelta(days=60),
-            end_date=timezone.now() - timedelta(days=1),
             payment_status='paid',
         )
-        self.assertFalse(sub.is_active)
         self.assertEqual(sub.status_display, 'pagado')
 
     def test_expired_is_not_a_valid_payment_status(self):
@@ -505,7 +495,6 @@ class ServiceSubscriptionModelTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         sub.delete()
         sub.refresh_from_db()
@@ -675,7 +664,6 @@ class ContractModelTests(TestCase):
             customer=cls.customer,
             service=cls.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
 
     def test_create_contract(self):
@@ -732,7 +720,6 @@ class CertificateModelTests(FileHandlingTestCase):
             customer=cls.customer,
             service=cls.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
 
     def test_create_certificate(self):

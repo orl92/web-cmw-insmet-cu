@@ -23,7 +23,7 @@ depender de la pila de Pango en el test; lo que se fija acá es el HTML, no la
 calidad del PDF.
 """
 
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -172,7 +172,6 @@ class BloqueProveedorTests(TestCase):
             customer=cls.customer,
             service=cls.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         cls.contract = Contract.objects.create(
             subscription=cls.subscription,
@@ -313,7 +312,6 @@ class BloqueClienteTests(TestCase):
             customer=customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         Contract.objects.create(
             subscription=subscription,

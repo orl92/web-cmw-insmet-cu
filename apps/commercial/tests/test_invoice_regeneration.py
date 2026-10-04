@@ -81,7 +81,6 @@ class RegenerarCasoBase(TestCase):
             quantity=10,
             payment_status='pending',
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=10),
         )
         cls.invoice_anterior = Invoice.objects.create(
             subscription=cls.sub,

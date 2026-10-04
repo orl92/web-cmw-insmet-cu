@@ -1,11 +1,13 @@
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages import get_messages
+from django.contrib.staticfiles import finders
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
@@ -770,7 +772,6 @@ class InvoiceListStatusColumnTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status=status,
         )
 
@@ -920,7 +921,6 @@ class ContractCreateViewTests(TestCase):
             customer=customer,
             service=service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         cls.url = reverse('commercial:contrato_create')
 
@@ -972,7 +972,6 @@ class ContractDeleteViewTests(TestCase):
             customer=customer,
             service=service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         cls.contract = Contract.objects.create(
             subscription=sub,
@@ -1028,7 +1027,6 @@ class CertificateDeleteViewTests(TestCase):
             customer=customer,
             service=service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         pdf = SimpleUploadedFile(
             'cert.pdf',
@@ -1150,7 +1148,6 @@ class AjaxPendingSubscriptionsTests(TestCase):
             customer=cls.customer,
             service=service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
             quantity=2,
             payment_status='pending',
         )
@@ -1237,6 +1234,101 @@ class BatchInvoiceQuantityTests(TestCase):
         self.assertEqual(item.unidad_medida, 'DÍA')
         self.assertEqual(invoice.amount, Decimal('50.00'))
 
+    def test_facturar_no_sobreescribe_el_inicio_de_la_suscripcion(self):
+        """La fecha de inicio es del acuerdo con el cliente, no de la factura.
+
+        Facturar solía copiar el inicio del período facturado sobre
+        `start_date`. Eso convertía un dato que el cliente eligió en un valor
+        derivado de la factura, y hacía que el mismo servicio pareciera haber
+        empezado en la fecha del cobro.
+        """
+        from apps.commercial.views.invoices import InvoiceCreateView
+
+        customer = _make_customer('batchstart')
+        provider = _make_user('batchstartprov')
+        service = Service.objects.create(
+            user=provider,
+            title='Agro',
+            summary='S',
+            service_type='commercial',
+            service_category='agrometeo',
+            code='B003',
+            price=Decimal('100.00'),
+        )
+        elegido = timezone.make_aware(datetime(2025, 9, 1))
+        sub = ServiceSubscription.objects.create(
+            customer=customer,
+            service=service,
+            start_date=elegido,
+            quantity=3,
+        )
+        view = InvoiceCreateView()
+        view.request = _build_request(_make_superuser('batchstartadmin'))
+
+        # El período facturado es deliberadamente otro.
+        view.process_batch_invoice(customer, date(2026, 5, 1), date(2026, 5, 31), 'REG-003', [sub])
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.start_date, elegido)
+        self.assertEqual(sub.payment_status, 'pending')
+
+    def test_varias_suscripciones_pendientes_generan_una_sola_factura(self):
+        """Sin agrupamiento por período, las pendientes se facturan juntas.
+
+        La vista ya no separa las suscripciones por su fecha de expiración (ya no
+        existe), así que marcar varias produce una única factura con una línea por
+        suscripción. Antes se grouping por período y podía salir más de una
+        factura para un mismo cliente.
+        """
+        from apps.commercial.views.invoices import InvoiceCreateView
+
+        customer = _make_customer('batchgroup')
+        provider = _make_user('batchgroupprov')
+        agro = Service.objects.create(
+            user=provider,
+            title='Agro',
+            summary='S',
+            service_type='commercial',
+            service_category='agrometeo',
+            code='B004',
+            price=Decimal('100.00'),
+        )
+        diario = Service.objects.create(
+            user=provider,
+            title='Diario',
+            summary='S',
+            service_type='commercial',
+            service_category='pronostico',
+            code='B005',
+            price=Decimal('5.00'),
+        )
+        # Inicios muy distintos: es justo la condición que antes los separaba en
+        # grupos distintos y producía una factura por grupo.
+        subs = [
+            ServiceSubscription.objects.create(
+                customer=customer,
+                service=servicio,
+                start_date=timezone.make_aware(datetime(2025, 1, dia)),
+                quantity=cantidad,
+            )
+            for dia, servicio, cantidad in ((1, agro, 3), (20, diario, 10), (28, agro, 2))
+        ]
+
+        view = InvoiceCreateView()
+        view.request = _build_request(_make_superuser('batchgroupadmin'))
+        invoice = view.process_batch_invoice(
+            customer, date(2026, 5, 1), date(2026, 5, 31), 'REG-004', subs
+        )
+
+        self.assertEqual(Invoice.objects.filter(customer=customer).count(), 1)
+        self.assertEqual(invoice.items.count(), 3)
+        self.assertEqual(
+            invoice.amount, Decimal('100.00') * 3 + Decimal('5.00') * 10 + Decimal('100.00') * 2
+        )
+        for sub in subs:
+            sub.refresh_from_db()
+            self.assertEqual(sub.payment_status, 'pending')
+
 
 class SubscriptionListStateAndActionsTests(TestCase):
     """Columna Estado única y acciones ordenadas en el listado de suscripciones.
@@ -1273,7 +1365,6 @@ class SubscriptionListStateAndActionsTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status=status,
         )
 
@@ -1346,56 +1437,205 @@ class SubscriptionListStateAndActionsTests(TestCase):
         self.assertLess(html.index('title="Aprobar Pago"'), edit_pos)
 
 
-class SubscriptionRenewQuantityTests(TestCase):
-    """SubscriptionRenewView computes end_date via compute_end_date."""
+class SubscriptionCancelViewTests(TestCase):
+    """La anulación es el único final de una suscripción, y es un bloqueo económico.
 
-    def test_renew_agrometeo_computes_monthly_end_date(self):
-        from django.contrib.auth.models import Group
+    Una suscripción no vence por tiempo, así que no hay fecha que la cierre: sólo
+    la puede anular el operador. Lo que no puede es deshacer un cobro ya emitido,
+    así que el servidor rechaza la anulación en cuanto hay pago aprobado o una
+    factura vigente. La comprobación vive en la vista y no en la plantilla,
+    porque el botón tampoco es la garantía: un POST directo la sortea.
+    """
 
-        from apps.commercial.views.subscriptions import SubscriptionRenewView
-
-        customer = _make_customer('renewcust')
-        customer_user = customer.user
-        group, _ = Group.objects.get_or_create(name='Clientes')
-        customer_user.groups.add(group)
-
-        provider = _make_user('renewprov')
-        service = Service.objects.create(
-            user=provider,
-            title='Agro Renew',
-            summary='S',
-            service_type='commercial',
-            service_category='agrometeo',
-            price=Decimal('120.00'),
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('canceladmin')
+        customer = natural_customer(
+            _make_user('cancelcust'),
+            address='Addr',
+            phone='12345678',
+            account='1234567890123456',
         )
-        old = ServiceSubscription.objects.create(
-            customer=customer,
-            service=service,
-            quantity=2,
-            start_date=timezone.now() - timedelta(days=60),
-            end_date=timezone.now() + timedelta(days=10),
+        service = Service.objects.create(
+            user=cls.admin,
+            title='Svc anulable',
+            summary='Svc anulable',
+            service_type='commercial',
+            code='CANCEL',
+            price=Decimal('50.00'),
+        )
+        cls.customer = customer
+        cls.service = service
+        cls.list_url = reverse('commercial:suscripcion_list')
+
+    def _subscription(self, status='requested'):
+        return ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now(),
+            payment_status=status,
+        )
+
+    def _invoice(self, sub, number, is_cancelled=False):
+        """Factura con una línea que apunta a la suscripción.
+
+        El vínculo que la vista consulta es `invoice_items`, no
+        `invoice.subscription`: una factura por lote deja el ancla en NULL.
+        """
+        invoice = Invoice.objects.create(
+            subscription=sub,
+            customer=self.customer,
+            number=number,
+            amount=Decimal('50.00'),
+            is_cancelled=is_cancelled,
+        )
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=sub,
+            codigo='CANCEL',
+            descripcion='Svc anulable',
+            cantidad=1,
+            unidad_medida='DÍA',
+            precio=Decimal('50.00'),
+        )
+        return invoice
+
+    def _anular(self, sub):
+        self.client.force_login(self.admin)
+        return self.client.post(
+            reverse('commercial:suscripcion_cancel', args=[sub.uuid]),
+        )
+
+    def test_rechaza_anular_una_suscripcion_pagada(self):
+        # El pago aprobado es el punto sin retorno: anular aquí dejaría al
+        # cliente con un cobro emitido y sin servicio.
+        sub = self._subscription('paid')
+        response = self._anular(sub)
+        self.assertRedirects(response, self.list_url)
+        sub.refresh_from_db()
+        self.assertTrue(sub.record_active)
+
+    def test_rechaza_anular_con_una_factura_no_anulada(self):
+        # Factura emitida y todavía no cobrada: el cobro está comprometido aunque
+        # el pago no se haya aprobado.
+        sub = self._subscription('pending')
+        self._invoice(sub, 'F-CANCEL-001')
+        response = self._anular(sub)
+        self.assertRedirects(response, self.list_url)
+        sub.refresh_from_db()
+        self.assertTrue(sub.record_active)
+
+    def test_permite_anular_cuando_la_unica_factura_esta_anulada(self):
+        """Caso borde: una factura cancelada ya no compromete un cobro.
+
+        Si la factura se anuló, no hay nada pendiente de cobrar y el cliente puede
+        retirar la solicitud. Es la diferencia entre "tiene factura" y "tiene
+        factura vigente", y una de las dos hace la anulación imposible.
+        """
+        sub = self._subscription('pending')
+        self._invoice(sub, 'F-CANCEL-002', is_cancelled=True)
+        response = self._anular(sub)
+        self.assertRedirects(response, self.list_url)
+        sub.refresh_from_db()
+        self.assertFalse(sub.record_active)
+        self.assertEqual(sub.status_display, 'cancelada')
+
+    def test_permite_anular_una_solicitud_sin_facturas(self):
+        # El camino normal de cancelación: nada emitido, nada que deshacer.
+        sub = self._subscription('requested')
+        response = self._anular(sub)
+        self.assertRedirects(response, self.list_url)
+        sub.refresh_from_db()
+        self.assertFalse(sub.record_active)
+
+    def test_no_anula_dos_veces(self):
+        sub = self._subscription('requested')
+        self._anular(sub)
+        self._anular(sub)
+        sub.refresh_from_db()
+        self.assertFalse(sub.record_active)
+        self.assertIsNotNone(sub.deleted_at)
+
+    def test_una_factura_anulada_no_oculta_la_vigente(self):
+        # Dos facturas: una anulada y otra vigente. La anulada no debe tapar a la
+        # que sí compromete el cobro.
+        sub = self._subscription('pending')
+        self._invoice(sub, 'F-CANCEL-003', is_cancelled=True)
+        self._invoice(sub, 'F-CANCEL-004')
+        self._anular(sub)
+        sub.refresh_from_db()
+        self.assertTrue(sub.record_active)
+
+
+class VencimientoFueraDeLaSuscripcionTests(TestCase):
+    """`end_date` no existe, y tampoco puede quedar vestigio de él en pantalla.
+
+    El modelo ya no tiene fecha de expiración, así que cualquier superficie que
+    la iba a mostrar o exportar es una referencia a un dato que ya no se captura:
+    o imprime vacío o inventa una columna que el operador tiene que ignorar. Se
+    afirma en el modelo y en cada superficie que lo mostraba.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.admin = _make_superuser('novenc')
+        cls.customer = natural_customer(
+            _make_user('novenccust'),
+            address='Addr',
+            phone='12345678',
+            account='1234567890123456',
+        )
+        cls.service = Service.objects.create(
+            user=cls.admin,
+            title='Svc sin vencimiento',
+            summary='Svc sin vencimiento',
+            service_type='commercial',
+            code='NOVENC',
+            price=Decimal('50.00'),
+        )
+        cls.sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=cls.service,
+            start_date=timezone.now(),
             payment_status='paid',
         )
 
-        view = SubscriptionRenewView()
-        view.object = old
-        view.request = _build_request(customer_user)
-        form = type('Form', (), {'cleaned_data': {}})()
-        with patch('apps.commercial.views.subscriptions.redirect') as mock_redirect:
-            mock_redirect.return_value = '<redirect>'
-            view.form_valid(form)
+    def test_el_modelo_no_tiene_campo_de_vencimiento(self):
+        campos = {f.name for f in ServiceSubscription._meta.get_fields()}
+        self.assertNotIn('end_date', campos)
 
-        new_sub = (
-            ServiceSubscription.objects.filter(
-                service=service, customer=customer, payment_status='requested'
-            )
-            .order_by('-start_date')
-            .first()
-        )
-        self.assertIsNotNone(new_sub)
-        self.assertEqual(new_sub.quantity, 2)
-        expected = Service.compute_end_date(new_sub.start_date, new_sub.quantity, 'agrometeo')
-        self.assertEqual(new_sub.end_date, expected)
+    def test_el_listado_no_muestra_ninguna_columna_de_vencimiento(self):
+        self.client.force_login(self.admin)
+        html = self.client.get(reverse('commercial:suscripcion_list')).content.decode()
+        self.assertIn(self.service.title, html)
+        self.assertNotIn('Vencimiento', html)
+        self.assertNotIn('Expiraci', html)
+
+    def test_el_listado_no_imprime_ninguna_fecha_de_vencimiento(self):
+        # Una columna se va por su rótulo, pero un `{{ ... end_date }}` suelto en
+        # una plantilla tampoco imprime nada y sólo delata el resto: se verifica
+        # que el HTML del listado no mencione el atributo.
+        self.client.force_login(self.admin)
+        html = self.client.get(reverse('commercial:suscripcion_list')).content.decode()
+        self.assertNotIn('end_date', html)
+
+    def test_el_export_no_incluye_vencimiento(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('commercial:suscripcion_export_csv'))
+        self.assertEqual(response.status_code, 200)
+        contenido = response.content.decode('utf-8-sig')
+        self.assertIn('Método de Pago', contenido)
+        self.assertNotIn('Vencimiento', contenido)
+        self.assertNotIn('Expiraci', contenido)
+
+    def test_home_no_muestra_vencimiento_de_sus_servicios(self):
+        self.client.force_login(self.customer.user)
+        html = self.client.get(reverse('home:services_commercial')).content.decode()
+        self.assertIn(self.service.title, html)
+        self.assertNotIn('Vencimiento', html)
+        self.assertNotIn('Expiraci', html)
 
 
 class CertificatePDFOwnerAccessTests(TestCase):
@@ -1438,7 +1678,6 @@ class CertificatePDFOwnerAccessTests(TestCase):
             customer=cls.customer,
             service=service,
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status='paid',
         )
         cls.cert = Certificate.objects.create(
@@ -1566,12 +1805,11 @@ class ServiceReRequestTests(TestCase):
 
     def test_form_valid_with_active_paid_creates_requested_row(self):
         self.client.force_login(self.customer.user)
-        paid_end = timezone.now() + timedelta(days=30)
+        paid_start = timezone.now() - timedelta(days=30)
         paid = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.service,
-            start_date=timezone.now() - timedelta(days=30),
-            end_date=paid_end,
+            start_date=paid_start,
             payment_status='paid',
             payment_method='transfer',
             quantity=1,
@@ -1584,9 +1822,12 @@ class ServiceReRequestTests(TestCase):
         self.assertEqual(rows.count(), initial_count + 1)
         requested = rows.get(payment_status='requested')
         self.assertIsNotNone(requested)
+        # Pedir el servicio otra vez crea una fila nueva y no toca la que ya
+        # estaba pagada: ni su estado ni la fecha que eligió el cliente.
         paid.refresh_from_db()
         self.assertEqual(paid.payment_status, 'paid')
-        self.assertEqual(paid.end_date, paid_end)
+        self.assertEqual(paid.start_date, paid_start)
+        self.assertEqual(paid.payment_method, 'transfer')
 
     def test_form_valid_with_requested_sub_still_creates_second_row(self):
         """B1: una solicitud en vuelo no bloquea pedir el servicio otra vez."""
@@ -1595,7 +1836,6 @@ class ServiceReRequestTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status='requested',
         )
         count_before = ServiceSubscription.objects.filter(
@@ -1617,7 +1857,6 @@ class ServiceReRequestTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status='pending',
         )
         count_before = ServiceSubscription.objects.filter(
@@ -1673,7 +1912,6 @@ class ResendCertificateOwnerAccessTests(TestCase):
             customer=cls.customer,
             service=service,
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status='paid',
         )
         cls.cert = Certificate.objects.create(
@@ -1959,15 +2197,16 @@ class ClientPendingInvoiceButtonsTests(TestCase):
 
 
 class SubscriptionPeriodFormViewTests(TestCase):
-    """B2/B3: los formularios de alta y edición piden inicio y cantidad.
+    """Alta y edición de suscripciones: sólo se pide lo que el operador elige.
 
-    La unidad (días o meses) la decide la categoría del servicio y el
-    vencimiento se deriva en el servidor, así que ninguno de los dos formularios
-    expone un `period` ni un `end_date` escribibles. El inicio puede estar en el
-    pasado, y la cantidad es la que el operador fija.
+    La unidad (días o meses) la decide la categoría del servicio y la suscripción
+    no vence, así que ninguno de los dos formularios expone un `period` ni un
+    `end_date`, escribibles ni derivados. El inicio puede estar en el pasado, la
+    cantidad es la que el operador fija, y el estado de pago no se elige al
+    capturar.
     """
 
-    INICIO = '15/01/2026 08:00 AM'
+    INICIO = '15/01/2026'
 
     @classmethod
     def setUpTestData(cls):
@@ -2005,7 +2244,6 @@ class SubscriptionPeriodFormViewTests(TestCase):
             customer=cls.edit_customer,
             service=cls.agrometeo,
             start_date=timezone.now() - timedelta(days=10),
-            end_date=timezone.now() + timedelta(days=20),
             quantity=1,
             payment_status='requested',
         )
@@ -2022,38 +2260,39 @@ class SubscriptionPeriodFormViewTests(TestCase):
             'service': self.agrometeo.pk,
             'start_date': self.INICIO,
             'quantity': '3',
-            'payment_status': 'requested',
+            'payment_method': 'qr',
         }
         data.update(overrides)
         return data
 
-    def test_crear_deriva_el_vencimiento_en_meses_para_agrometeo(self):
+    def test_crear_guarda_el_inicio_y_la_cantidad_elegidos(self):
         response = self.client.post(self.create_url, self._data())
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, self.list_url)
         sub = ServiceSubscription.objects.get(customer=self.customer)
-        self.assertEqual(
-            timezone.localtime(sub.end_date).strftime('%d/%m/%Y %H:%M'), '15/04/2026 08:00'
-        )
+        self.assertEqual(sub.start_date.strftime('%d/%m/%Y'), '15/01/2026')
         self.assertEqual(sub.quantity, 3)
+        self.assertEqual(sub.service, self.agrometeo)
 
-    def test_crear_deriva_el_vencimiento_en_dias_para_pronostico(self):
-        self.client.post(self.create_url, self._data(service=self.pronostico.pk, quantity='45'))
+    def test_crear_no_deja_ningun_vencimiento_en_la_suscripcion(self):
+        # La suscripción no vence: no hay fecha de expiración que calcular ni que
+        # guardar. Lo que se capturó es sólo el acuerdo con el cliente.
+        self.client.post(self.create_url, self._data())
         sub = ServiceSubscription.objects.get(customer=self.customer)
-        self.assertEqual(
-            timezone.localtime(sub.end_date).strftime('%d/%m/%Y %H:%M'), '01/03/2026 08:00'
-        )
+        self.assertFalse(hasattr(sub, 'end_date'))
 
     def test_crear_acepta_una_fecha_de_inicio_pasada(self):
-        response = self.client.post(self.create_url, self._data(start_date='01/09/2025 08:00 AM'))
+        response = self.client.post(self.create_url, self._data(start_date='01/09/2025'))
         self.assertEqual(response.status_code, 302)
         sub = ServiceSubscription.objects.get(customer=self.customer)
         self.assertEqual(sub.start_date.strftime('%d/%m/%Y'), '01/09/2025')
 
     def test_crear_ignora_el_end_date_enviado(self):
-        self.client.post(self.create_url, self._data(end_date='01/01/2030 08:00 AM'))
+        # Un POST a mano con `end_date` no crea ninguna fecha: el campo no existe
+        # ni en el formulario ni en el modelo, así que el dato se descarta.
+        self.client.post(self.create_url, self._data(end_date='01/01/2030'))
         sub = ServiceSubscription.objects.get(customer=self.customer)
-        self.assertEqual(sub.end_date.strftime('%d/%m/%Y'), '15/04/2026')
+        self.assertFalse(hasattr(sub, 'end_date'))
 
     def test_crear_sin_cantidad_no_crea_la_suscripcion(self):
         response = self.client.post(self.create_url, self._data(quantity=''))
@@ -2061,32 +2300,122 @@ class SubscriptionPeriodFormViewTests(TestCase):
         self.assertFalse(ServiceSubscription.objects.filter(customer=self.customer).exists())
         self.assertIn('quantity', response.context['form'].errors)
 
-    def test_editar_recalcula_el_vencimiento_al_cambiar_la_cantidad(self):
+    def test_editar_guarda_la_cantidad_nueva_sin_tocar_el_inicio(self):
+        # Editar la solicitud cambia lo que el operador eligió, y nada más: el
+        # inicio sigue siendo el que se capturó en el alta.
         response = self.client.post(self.update_url, self._data(quantity='6'))
         self.assertEqual(response.status_code, 302)
         self.sub.refresh_from_db()
-        self.assertEqual(
-            timezone.localtime(self.sub.end_date).strftime('%d/%m/%Y %H:%M'), '15/07/2026 08:00'
-        )
+        self.assertEqual(self.sub.quantity, 6)
+        self.assertFalse(hasattr(self.sub, 'end_date'))
 
     def test_editar_ignora_el_end_date_enviado(self):
-        self.client.post(self.update_url, self._data(quantity='1', end_date='01/01/2030 08:00 AM'))
+        self.client.post(self.update_url, self._data(quantity='1', end_date='01/01/2030'))
         self.sub.refresh_from_db()
-        self.assertEqual(self.sub.end_date.strftime('%d/%m/%Y'), '15/02/2026')
+        self.assertEqual(self.sub.quantity, 1)
+        self.assertFalse(hasattr(self.sub, 'end_date'))
 
-    def test_el_formulario_de_crear_pide_cantidad_y_no_expone_periodo_ni_fin(self):
+    def test_el_formulario_de_crear_pide_cantidad_y_no_expone_periodo_fin_nivel_calculado(self):
         html = self.client.get(self.create_url).content.decode()
         self.assertIn('id="id_quantity"', html)
         self.assertNotIn('id="id_period"', html)
         self.assertNotIn('id="id_end_date"', html)
+        self.assertNotIn('end-date-preview', html)
+        self.assertNotIn('Vencimiento calculado', html)
 
-    def test_el_formulario_de_editar_muestra_el_vencimiento_calculado(self):
-        # El vencimiento llega renderizado por el servidor: sin JavaScript el
-        # operador igual ve la fecha contra la que está trabajando.
+    def test_el_formulario_de_editar_no_muestra_el_vencimiento(self):
+        # El vencimiento se calcula y guarda en el servidor, pero no se presenta
+        # mientras la suscripción está `requested`.
         html = self.client.get(self.update_url).content.decode()
-        esperado = Service.compute_end_date(
-            timezone.localtime(self.sub.start_date),
-            self.sub.quantity,
-            self.agrometeo.service_category,
-        ).strftime('%d/%m/%Y %I:%M %p')
-        self.assertIn(esperado, html)
+        self.assertNotIn('end-date-preview', html)
+        self.assertNotIn('Vencimiento calculado', html)
+        self.assertNotIn('id="id_end_date"', html)
+
+    def test_la_cantidad_se_rotula_con_la_unidad_del_servicio(self):
+        # El rótulo lo imprime el servidor, así que se ve sin JavaScript; el
+        # navegador sólo lo mantiene al día al cambiar de servicio.
+        html = self.client.get(self.update_url).content.decode()
+        self.assertIn('Cantidad de meses', html)
+
+    def test_los_formularios_no_piden_scripts_inexistentes(self):
+        # Un `<script src>` a un asset que no existe rompe la vista en el navegador
+        # y Django no se queja: 404 silencioso. Se resuelve cada ruta estática
+        # contra el finder para que el archivo tenga que estar de verdad.
+        for url in (self.create_url, self.update_url):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                rutas = re.findall(r'<script src="([^"]+)"', html)
+                self.assertTrue(rutas, 'la página no cargó ningún script')
+                for ruta in rutas:
+                    if not ruta.startswith(settings.STATIC_URL):
+                        continue
+                    relativa = ruta[len(settings.STATIC_URL) :].split('?')[0]
+                    self.assertIsNotNone(
+                        finders.find(relativa), f'asset inexistente pedido por el form: {relativa}'
+                    )
+
+    def test_el_inicio_se_pide_como_picker_de_fecha_y_no_de_fecha_hora(self):
+        """El picker y el campo tienen que hablar el mismo idioma.
+
+        `start_date` es un `DateField` que sólo acepta `%d/%m/%Y`. Con el picker
+        en modo `datetime`, Tempus escribe el valor con hora (`15/01/2026
+        12:00 AM`) y el formulario lo rechaza: desde el navegador el alta no se
+        podía enviar. La correspondencia modo↔formatos del campo es la que
+        sostiene el submit.
+        """
+        for url in (self.create_url, self.update_url):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                self.assertIn('data-tempus="date"', html)
+                self.assertNotIn('data-tempus="datetime"', html)
+                self.assertNotIn('dd/mm/aaaa hh:mm', html)
+
+    def test_el_estado_de_pago_no_se_elige_al_crear(self):
+        html = self.client.get(self.create_url).content.decode()
+        self.assertNotIn('name="payment_status"', html)
+
+    def test_crear_ofrece_los_metodos_de_pago(self):
+        html = self.client.get(self.create_url).content.decode()
+        self.assertIn('name="payment_method"', html)
+        for valor in ('qr', 'transfer', 'presencial'):
+            self.assertIn(f'value="{valor}"', html)
+
+    def test_crear_sin_metodo_de_pago_no_crea_la_suscripcion(self):
+        response = self.client.post(self.create_url, self._data(payment_method=''))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(ServiceSubscription.objects.filter(customer=self.customer).exists())
+        self.assertIn('payment_method', response.context['form'].errors)
+
+    def test_crear_deja_la_suscripcion_en_solicitado_aunque_el_post_mande_otro_estado(self):
+        # El estado no es un campo del formulario, así que un POST a mano no puede
+        # crear una suscripción ya pagada.
+        response = self.client.post(self.create_url, self._data(payment_status='paid'))
+        self.assertEqual(response.status_code, 302)
+        sub = ServiceSubscription.objects.get(customer=self.customer)
+        self.assertEqual(sub.payment_status, 'requested')
+
+    def test_editar_no_cambia_el_estado_de_pago(self):
+        # Editar es editar la solicitud (cliente, servicio, inicio, cantidad y
+        # método de pago); el estado lo mueven las acciones, no este formulario.
+        self.sub.payment_status = 'paid'
+        self.sub.save(update_fields=['payment_status'])
+        response = self.client.post(self.update_url, self._data(payment_status='requested'))
+        self.assertEqual(response.status_code, 302)
+        self.sub.refresh_from_db()
+        self.assertEqual(self.sub.payment_status, 'paid')
+
+    def test_editar_guarda_el_metodo_de_pago_elegido(self):
+        response = self.client.post(self.update_url, self._data(payment_method='presencial'))
+        self.assertEqual(response.status_code, 302)
+        self.sub.refresh_from_db()
+        self.assertEqual(self.sub.payment_method, 'presencial')
+
+    def test_el_alta_y_la_edicion_agrupan_los_campos_en_dos_cards(self):
+        # Cinco campos en tres cards partía el formulario en trozos sin sentido:
+        # los datos de la solicitud van juntos y el pago aparte.
+        for url in (self.create_url, self.update_url):
+            with self.subTest(url=url):
+                html = self.client.get(url).content.decode()
+                self.assertIn('Datos de la Solicitud', html)
+                self.assertNotIn('Período de Vigencia', html)
+                self.assertEqual(html.count('subheader text-muted fw-medium'), 2)

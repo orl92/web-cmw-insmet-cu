@@ -188,7 +188,6 @@ class ServicesCommercialUiTests(TestCase):
                 customer=customer,
                 service=service,
                 start_date=timezone.now() - timedelta(days=10 - index),
-                end_date=timezone.now() + timedelta(days=30),
                 payment_status='paid',
                 payment_method='transfer',
             )
@@ -273,7 +272,6 @@ class CommercialServicesListViewStateScopeTests(TestCase):
             customer=self.customer,
             service=service,
             start_date=timezone.now() - timedelta(days=30),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status=status,
             payment_method=payment_method,
         )
@@ -449,19 +447,19 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         self.assertNotIn('CUP/', meta_html)
 
     def test_subscription_lines_have_strong(self):
-        # REQ-05 S4: la línea de fechas usa "Vigencia:" con el rango
-        # start-end en <strong> (d/m/Y); la línea de período de facturación
-        # (ti-calendar-event) usa "Período:" con get_billing_period_display en
-        # <strong>; la línea de categoría (ti-tag) usa <strong> con
+        # La línea de fechas usa "Inicio:" con la fecha de arranque en <strong>
+        # (d/m/Y). Ya no hay rango: la suscripción no vence, así que no existe
+        # una segunda fecha que acotar el período. La línea de período de
+        # facturación (ti-calendar-event) sigue mostrando el período facturado;
+        # la línea de categoría (ti-tag) usa <strong> con
         # get_service_category_display (patrón de service_detail).
         subscription = self._make_sub('paid', 'metadatos-strong')
         self.client.force_login(self.client_user)
         html = self.client.get(reverse('home:services_commercial')).content.decode()
         start_label = django_date_filter(subscription.start_date, 'd/m/Y')
-        end_label = django_date_filter(subscription.end_date, 'd/m/Y')
         self.assertIn('ti-calendar-event', html)
         self.assertIn('Período: <strong>1 día</strong>', html)
-        self.assertIn(f'Vigencia: <strong>{start_label} - {end_label}</strong>', html)
+        self.assertIn(f'Inicio: <strong>{start_label}</strong>', html)
         self.assertIn('Categoría: <strong>Pronóstico</strong>', html)
 
     def test_subscription_payment_icon_presencial(self):
@@ -506,7 +504,6 @@ class CommercialServicesListViewStateScopeTests(TestCase):
             customer=self.customer,
             service=service,
             start_date=timezone.now() - timedelta(days=30),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status='paid',
             payment_method='transfer',
         )
@@ -516,10 +513,9 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         meta_end = html.index('justify-content-end gap-2', meta_start)
         meta_html = html[meta_start:meta_end]
         start_label = django_date_filter(subscription.start_date, 'd/m/Y')
-        end_label = django_date_filter(subscription.end_date, 'd/m/Y')
         self.assertNotIn('display-6', meta_html)
         self.assertIn('ti-calendar', meta_html)
-        self.assertIn(f'Vigencia: <strong>{start_label} - {end_label}</strong>', meta_html)
+        self.assertIn(f'Inicio: <strong>{start_label}</strong>', meta_html)
 
     def test_subscription_price_no_suffix(self):
         # REQ-05 S2: el precio destacado es SOLO el monto format_cup, sin el
@@ -585,7 +581,6 @@ class CommercialServicesListContextualActionsTests(TestCase):
             customer=self.customer,
             service=service,
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status=status,
             payment_method=payment_method,
         )
@@ -817,7 +812,6 @@ class ServicesCommercialStaffButtonTests(TestCase):
             payment_status='pending',
             payment_method='transfer',
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=10),
         )
         self.client.force_login(client_user)
         html = self._get_page().content.decode()
@@ -1074,7 +1068,6 @@ class ServiceReRequestUiTests(TestCase):
             'customer': self.customer,
             'service': self.service,
             'start_date': timezone.now() - timedelta(days=1),
-            'end_date': timezone.now() + timedelta(days=30),
         }
         defaults.update(kwargs)
         return ServiceSubscription.objects.create(**defaults)
@@ -1085,7 +1078,11 @@ class ServiceReRequestUiTests(TestCase):
         html = self.client.get(self._detail_url()).content.decode()
         self.assertIn('subscription-form', html)
         self.assertIn('Solicitar', html)
-        self.assertIn('activa hasta', html)
+        # El aviso ya no puede decir "activa hasta <fecha>": sin `end_date` la
+        # suscripción no tiene fecha de fin. Ahora dice que la nueva solicitud
+        # se procesa junto a la vigente.
+        self.assertIn('Ya tiene este servicio activo', html)
+        self.assertNotIn('activa hasta', html)
         self.assertNotIn('Ya tienes una solicitud o suscripción para este servicio.', html)
 
     def test_in_flight_still_shows_form(self):
@@ -1315,7 +1312,6 @@ class MisServiciosMenuItemTests(TestCase):
             'customer': self.customer,
             'service': self.service,
             'start_date': timezone.now() - timedelta(days=30),
-            'end_date': timezone.now() + timedelta(days=30),
             'payment_status': status,
             'payment_method': 'transfer',
         }
@@ -1355,14 +1351,19 @@ class MisServiciosMenuItemTests(TestCase):
         html = self._menu_html()
         self.assertRegex(html, self._menu_item_regex())
 
-    def test_menu_shows_mis_servicios_with_elapsed_subscription(self):
+    def test_menu_shows_mis_servicios_with_ancient_subscription(self):
         """El enlace aparece con cualquier suscripción, no con estados sueltos.
 
         Antes la condición enumeraba `active/requested/pending` y existía sólo
         porque `payment_status='expired'` se escribía a mano en los tests: en
         producción la suspendida nunca se guardaba. Ahora manda el total.
+
+        Este caso usaba una suscripción con el periodo vencido para provar que
+        el enlace no dependía de la vigencia. Sin `end_date` no hay periodo que
+        venza: la antigüedad es ahora el caso más fuerte de esa misma idea, así
+        que se prueba con una suscripción de hace una década.
         """
-        self._sub('paid', end_date=timezone.now() - timedelta(days=1))
+        self._sub('paid', start_date=timezone.now() - timedelta(days=3650))
         self.client.force_login(self.client_user)
         html = self._menu_html()
         self.assertRegex(html, self._menu_item_regex())

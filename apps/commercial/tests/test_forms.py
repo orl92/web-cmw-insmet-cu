@@ -723,16 +723,16 @@ class ServiceFormTests(TestCase):
 
 
 class SubscriptionFormTests(TestCase):
-    """La unidad la decide el servicio y el vencimiento se deriva, no se escribe.
+    """La unidad la decide el servicio y la suscripción no vence.
 
     El formulario viejo ofrecía un `period` de cuatro opciones fijas resueltas con
-    `timedelta(days=30/90/180/365)`: ese "1 mes = 30 días" contradecía a
-    `Service.compute_end_date` y no era reproducible desde el modelo. Ahora el
-    operador elige fecha de inicio y cantidad, y la unidad sale de la categoría
-    del servicio, así que `end_date` desaparece del formulario.
+    `timedelta(days=30/90/180/365)`, y después un `end_date` derivado. Ninguna de
+    las dos dos sobrevive: la suscripción no tiene vencimiento, así que se elige
+    fecha de inicio (sólo fecha) y cantidad, y la unidad sale de la categoría del
+    servicio. El estado de pago tampoco se elige al capturar.
     """
 
-    INICIO = '15/01/2026 08:00 AM'
+    INICIO = '15/01/2026'
 
     @classmethod
     def setUpTestData(cls):
@@ -772,18 +772,31 @@ class SubscriptionFormTests(TestCase):
             'service': self.pronostico.pk,
             'start_date': self.INICIO,
             'quantity': '45',
-            'payment_status': 'requested',
+            'payment_method': 'qr',
         }
         data.update(overrides)
         return data
 
+    def _rotulo_cantidad(self, service):
+        """Etiqueta de la cantidad con el servicio ya elegido (alta de una instancia)."""
+        instancia = ServiceSubscription(
+            customer=self.customer,
+            service=service,
+            start_date=timezone.make_aware(datetime(2026, 1, 15)),
+            quantity=3,
+            payment_status='requested',
+            payment_method='qr',
+        )
+        return SubscriptionForm(instance=instancia).fields['quantity'].label
+
     def test_los_campos_del_formulario(self):
-        # `period` se va y `end_date` también: el vencimiento es derivado. La
-        # lista exacta evita que un campo vuelva a colarse sin que nadie lo note.
+        # `period`, `end_date` y `payment_status` se van: el vencimiento ya no
+        # existe y el estado lo mueven las acciones. La lista exacta evita que un
+        # campo vuelva a colarse sin que nadie lo note.
         form = SubscriptionForm()
         self.assertEqual(
             list(form.fields),
-            ['customer', 'service', 'start_date', 'quantity', 'payment_status'],
+            ['customer', 'service', 'start_date', 'quantity', 'payment_method'],
         )
 
     def test_period_ya_no_es_un_campo(self):
@@ -794,12 +807,11 @@ class SubscriptionFormTests(TestCase):
 
     def test_end_date_enviado_en_el_post_se_ignora(self):
         # El vencimiento no se escribe: un POST a mano con `end_date` no cambia
-        # el resultado, porque el campo ni existe en el formulario.
-        form = SubscriptionForm(
-            data=self._data(service=self.agrometeo.pk, quantity='1', end_date='01/01/2030 00:00 AM')
-        )
+        # el resultado, porque el campo ni existe en el formulario ni en el modelo.
+        form = SubscriptionForm(data=self._data(end_date='01/01/2030'))
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.save(commit=False).end_date.strftime('%d/%m/%Y'), '15/02/2026')
+        sub = form.save(commit=False)
+        self.assertFalse(hasattr(sub, 'end_date'))
 
     def test_cantidad_es_obligatoria(self):
         form = SubscriptionForm(data=self._data(quantity=''))
@@ -824,66 +836,39 @@ class SubscriptionFormTests(TestCase):
         self.assertIn('start_date', form.errors)
 
     def test_start_date_pasado_se_acepta(self):
-        # B2: el inicio es libre, incluso en el pasado. El formulario viejo lo
-        # sobreescribía con `timezone.now()` cuando el período no era `custom`.
-        form = SubscriptionForm(data=self._data(start_date='01/09/2025 08:00 AM'))
+        # El inicio es libre, incluso en el pasado: la fecha es un dato del
+        # acuerdo con el cliente, no un valor que se rellene con el momento actual.
+        form = SubscriptionForm(data=self._data(start_date='01/09/2025'))
         self.assertTrue(form.is_valid(), form.errors)
         sub = form.save(commit=False)
         self.assertEqual(sub.start_date.strftime('%d/%m/%Y'), '01/09/2025')
 
-    def test_agrometeo_deriva_el_vencimiento_en_meses(self):
-        form = SubscriptionForm(data=self._data(service=self.agrometeo.pk, quantity='3'))
+    def test_start_date_acepta_el_formato_iso(self):
+        # El mismo campo llega en los dos formatos: el del navegador y el de
+        # Tempus. Aceptar sólo uno rompe la captura según de dónde venga el dato.
+        form = SubscriptionForm(data=self._data(start_date='2026-01-15'))
         self.assertTrue(form.is_valid(), form.errors)
-        sub = form.save(commit=False)
-        self.assertEqual(sub.end_date.strftime('%d/%m/%Y %H:%M'), '15/04/2026 08:00')
+        self.assertEqual(form.cleaned_data['start_date'], date(2026, 1, 15))
 
-    def test_pronostico_deriva_el_vencimiento_en_dias(self):
-        form = SubscriptionForm(data=self._data(service=self.pronostico.pk, quantity='45'))
-        self.assertTrue(form.is_valid(), form.errors)
-        sub = form.save(commit=False)
-        esperado = datetime(2026, 1, 15, 8, 0) + timedelta(days=45)
-        self.assertEqual(
-            sub.end_date.strftime('%d/%m/%Y %H:%M'), esperado.strftime('%d/%m/%Y %H:%M')
-        )
+    def test_start_date_es_solo_fecha(self):
+        """La fecha de inicio no lleva hora: el servicio empieza ese día.
 
-    def test_un_mes_no_es_treinta_dias(self):
-        # El "1 mes = 30 días" del `period` viejo no puede reproducirse con meses
-        # enteros: entre el 15/01 y el 15/02 hay 31 días, y ese es el límite que
-        # el modelo ya tenía documentado.
-        form = SubscriptionForm(data=self._data(service=self.agrometeo.pk, quantity='1'))
-        self.assertTrue(form.is_valid(), form.errors)
-        sub = form.save(commit=False)
-        self.assertEqual(sub.end_date.strftime('%d/%m/%Y'), '15/02/2026')
-        self.assertEqual((sub.end_date - sub.start_date).days, 31)
+        Antes el campo aceptaba `15/01/2026 08:00 AM` porque el vencimiento se
+        derivaba por aritmética de meses y días. Sin vencimiento la hora no
+        significa nada, y aceptarla dejaba en el modelo una precisión que la
+        pantalla nunca pidió. Ahora sólo `%d/%m/%Y`.
+        """
+        form = SubscriptionForm(data=self._data(start_date='15/01/2026 08:00 AM'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('start_date', form.errors)
 
-    def test_el_vencimiento_ajusta_al_ultimo_dia_del_mes(self):
-        # `relativedelta(months=1)` desde el 31/01 cae en el último día de febrero
-        # en vez de desbordar al marzo, que es lo que hace un `setMonth` crudo.
-        form = SubscriptionForm(
-            data=self._data(
-                service=self.agrometeo.pk, quantity='1', start_date='31/01/2026 08:00 AM'
-            )
-        )
-        self.assertTrue(form.is_valid(), form.errors)
-        sub = form.save(commit=False)
-        self.assertEqual(sub.end_date.strftime('%d/%m/%Y'), '28/02/2026')
-
-    def test_tempus_datetime_format_parses(self):
-        form = SubscriptionForm(
-            data=self._data(
-                start_date='23/08/2026 06:30 PM',
-                quantity='31',
-            )
-        )
-        self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(
-            form.cleaned_data['start_date'].strftime('%Y-%m-%d %H:%M'),
-            '2026-08-23 18:30',
-        )
-        self.assertEqual(
-            form.save(commit=False).end_date.strftime('%Y-%m-%d %H:%M'),
-            '2026-09-23 18:30',
-        )
+    def test_start_date_se_rotula_y_se_ayuda_como_en_home(self):
+        # Textos compartidos con el alta pública de Home: el mismo dato con la
+        # misma etiqueta en los dos sitios, para que no haya que aprenderlo dos
+        # veces.
+        field = SubscriptionForm().fields['start_date']
+        self.assertEqual(field.label, 'Fecha de inicio del servicio')
+        self.assertEqual(field.help_text, 'Fecha desde la cual necesita el servicio.')
 
     def test_las_opciones_de_servicio_exponen_la_unidad(self):
         # La unidad no es elegible, así que viaja al navegador junto a la opción
@@ -893,54 +878,96 @@ class SubscriptionFormTests(TestCase):
         self.assertIn(f'value="{self.agrometeo.pk}" data-period-unit="mes"', opciones)
         self.assertIn(f'value="{self.pronostico.pk}" data-period-unit="día"', opciones)
 
+    def test_el_rotulo_de_cantidad_usa_la_unidad_del_servicio(self):
+        # Sin JavaScript el rótulo tiene que salir del servidor, y con el servicio
+        # ya elegido su unidad es conocida: "3" son tres meses en agrometeo y tres
+        # días en pronóstico, y la etiqueta es lo que explica el importe.
+        self.assertEqual(self._rotulo_cantidad(self.agrometeo), 'Cantidad de meses')
+        self.assertEqual(self._rotulo_cantidad(self.pronostico), 'Cantidad de días')
+
+    def test_el_rotulo_de_cantidad_es_neutro_sin_servicio(self):
+        # En el alta en blanco todavía no hay unidad que nombrar, así que el rótulo
+        # no puede inventarla. Lo que explica de dónde sale el importe es el texto
+        # de ayuda, que es el mismo en los dos casos.
+        campo = SubscriptionForm().fields['quantity']
+        self.assertEqual(campo.label, 'Cantidad')
+        self.assertEqual(
+            campo.help_text,
+            'El importe total se calcula multiplicando el precio por la cantidad seleccionada.',
+        )
+
+    def test_el_rotulo_de_cantidad_tras_un_post_invalido_usa_el_servicio_enviado(self):
+        # Un POST que rebota vuelve a renderizar el formulario con el servicio ya
+        # elegido: el rótulo tampoco puede quedarse atrás.
+        form = SubscriptionForm(data=self._data(service=self.agrometeo.pk, quantity=''))
+        self.assertEqual(form.fields['quantity'].label, 'Cantidad de meses')
+
+    def test_el_rotulo_de_cantidad_no_falla_con_un_servicio_inventado(self):
+        # Un `service` que no existe o no es comercial no puede resolver unidad
+        # alguna, y el rótulo neutro no puede reventar el render.
+        form = SubscriptionForm(data=self._data(service=self.publico.pk, quantity=''))
+        self.assertEqual(form.fields['quantity'].label, 'Cantidad')
+        form = SubscriptionForm(data=self._data(service='no-existe', quantity=''))
+        self.assertEqual(form.fields['quantity'].label, 'Cantidad')
+
     def test_el_servicio_publico_no_se_ofrece(self):
         disponibles = SubscriptionForm().fields['service'].queryset
         self.assertIn(self.pronostico, disponibles)
         self.assertIn(self.agrometeo, disponibles)
         self.assertNotIn(self.publico, disponibles)
 
-    def test_el_estado_de_pago_no_se_edita_sobre_una_suscripcion_existente(self):
+    def test_el_estado_de_pago_no_es_un_campo_del_formulario(self):
+        # `payment_status` no se elige al capturar: una suscripción nace
+        # `requested` y la mueven las acciones de estado (Facturar / Aprobar
+        # Pago). Fuera de `Meta.fields`, un ModelForm en update tampoco toca lo
+        # que no lista, así que una suscripción pagada sigue pagada al editarla.
         instancia = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.pronostico,
-            start_date=datetime(2026, 1, 15, 8, 0, tzinfo=timezone.get_current_timezone()),
-            end_date=datetime(2026, 2, 28, 8, 0, tzinfo=timezone.get_current_timezone()),
+            start_date=timezone.make_aware(datetime(2026, 1, 15)),
             quantity=45,
-            payment_status='pending',
+            payment_status='paid',
+            payment_method='qr',
         )
-        form = SubscriptionForm(instance=instancia)
-        self.assertTrue(form.fields['payment_status'].disabled)
-        self.assertTrue(form.fields['payment_status'].help_text)
-
-    def test_el_vencimiento_derivado_se_muestra_sin_javascript(self):
-        # El valor que se imprime en la plantilla lo calcula el servidor; el
-        # navegador sólo lo refresca mientras se edita.
-        instancia = ServiceSubscription.objects.create(
-            customer=self.customer,
-            service=self.agrometeo,
-            start_date=datetime(2026, 1, 15, 8, 0, tzinfo=timezone.get_current_timezone()),
-            end_date=datetime(2026, 2, 15, 8, 0, tzinfo=timezone.get_current_timezone()),
-            quantity=1,
-            payment_status='requested',
-        )
-        form = SubscriptionForm(instance=instancia)
-        self.assertEqual(form.derived_end_date.strftime('%d/%m/%Y %H:%M'), '15/02/2026 08:00')
-
-    def test_el_vencimiento_derivado_sigue_a_la_cantidad_del_post(self):
-        form = SubscriptionForm(data=self._data(service=self.agrometeo.pk, quantity='6'))
+        self.assertNotIn('payment_status', SubscriptionForm().fields)
+        form = SubscriptionForm(data=self._data(), instance=instancia)
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.derived_end_date.strftime('%d/%m/%Y %H:%M'), '15/07/2026 08:00')
+        self.assertEqual(form.save(commit=False).payment_status, 'paid')
 
-    def test_los_campos_del_formulario_se_rotulan_en_espanol(self):
-        # Campo declarado sin `label`, Django rotula con el nombre del atributo
-        # ("Start date") y el operador ve la interfaz en dos idiomas.
-        form = SubscriptionForm()
-        self.assertEqual(form.fields['start_date'].label, 'Fecha de inicio')
+    def test_el_metodo_de_pago_es_obligatorio(self):
+        form = SubscriptionForm(data=self._data(payment_method=''))
+        self.assertFalse(form.is_valid())
+        self.assertIn('payment_method', form.errors)
 
-    def test_el_vencimiento_derivado_es_none_sin_datos_para_calcularlo(self):
-        # Sin servicio no hay unidad, así que no hay vencimiento: la plantilla
-        # muestra el texto neutro en vez de una fecha inventada.
-        self.assertIsNone(SubscriptionForm().derived_end_date)
+    def test_el_metodo_de_pago_sale_de_las_choices_del_modelo(self):
+        # El formulario no duplica la lista: si el modelo agrega un medio de pago,
+        # el formulario lo ofrece sin tocar código.
+        self.assertEqual(
+            SubscriptionForm().fields['payment_method'].choices,
+            ServiceSubscription.PAYMENT_METHOD_CHOICES,
+        )
+
+    def test_el_metodo_de_pago_rechaza_un_valor_inexistente(self):
+        form = SubscriptionForm(data=self._data(payment_method='cripto'))
+        self.assertFalse(form.is_valid())
+        self.assertIn('payment_method', form.errors)
+
+    def test_el_metodo_de_pago_se_guarda(self):
+        form = SubscriptionForm(data=self._data(payment_method='transfer'))
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.save(commit=False).payment_method, 'transfer')
+
+    def test_el_formulario_no_expone_el_vencimiento_calculado(self):
+        # La suscripción no vence, así que no hay nada derivado que publicar: ni
+        # un atributo `derived_end_date` ni un valor derivado en el POST.
+        self.assertFalse(hasattr(SubscriptionForm(), 'derived_end_date'))
+
+    def test_el_formulario_no_tiene_ningun_campo_de_vencimiento(self):
+        # Invariante de superficie: ningún campo del formulario habla de
+        # vencimiento ni de expiración, sea con el nombre que tenga.
+        for nombre in SubscriptionForm().fields:
+            self.assertNotIn('end', nombre)
+            self.assertNotIn('expir', nombre)
 
 
 class ContractFormTests(TestCase):
@@ -962,7 +989,6 @@ class ContractFormTests(TestCase):
             customer=customer,
             service=service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
 
     def test_valid_contract_form(self):
@@ -1009,7 +1035,6 @@ class CertificateFormTests(TestCase):
             customer=customer,
             service=service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
 
     def test_valid_certificate_form(self):

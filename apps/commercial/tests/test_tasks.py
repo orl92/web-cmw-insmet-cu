@@ -1,4 +1,3 @@
-from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -102,7 +101,6 @@ class CertificateEmailTests(TestCase):
             customer=cls.customer,
             service=cls.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status='paid',
         )
 
@@ -115,7 +113,6 @@ class CertificateEmailTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         result = enviar_correo_certificado(sub_no_cert)
         self.assertFalse(result)
@@ -142,7 +139,6 @@ class CertificateEmailTests(TestCase):
             customer=customer_no_email,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         result = enviar_correo_certificado(sub)
         self.assertFalse(result)

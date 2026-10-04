@@ -12,8 +12,6 @@ renderizado:
   rompía el botón de descarga.
 """
 
-import datetime
-
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -57,7 +55,6 @@ class SubscriptionListActionsTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now().date(),
-            end_date=timezone.now().date() + datetime.timedelta(days=30),
             payment_status=payment_status,
             quantity=1,
             record_active=record_active,
@@ -228,7 +225,6 @@ class LatestInvoicePdfReadyAnnotationTests(TestCase):
                     customer=self.customer,
                     service=self.service,
                     start_date=timezone.now().date(),
-                    end_date=timezone.now().date() + datetime.timedelta(days=30),
                     payment_status='pending',
                     quantity=1,
                 )
@@ -270,7 +266,6 @@ class LatestInvoicePdfReadyAnnotationTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now().date(),
-            end_date=timezone.now().date() + datetime.timedelta(days=30),
             payment_status='pending',
             quantity=1,
         )
