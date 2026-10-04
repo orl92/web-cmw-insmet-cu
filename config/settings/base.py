@@ -1,9 +1,20 @@
-"""
-Django settings for Centro Meteorológico Provincial Camagüey
+"""Configuración compartida por los tres perfiles de `config.settings`.
+
+Contiene lo que NO depende del perfil: `.env`, plantillas, apps, DRF, i18n,
+estáticos, correo, LDAP, FTP, CSP y logging. Las decisiones de entorno (cookies
+seguras, STORAGES, debug toolbar, WhiteNoise y base de datos) viven en `dev.py`,
+`testing.py` y `production.py`.
+
+REGLA ESTRUCTURAL (no negociable): este módulo NO ramifica sobre `DEBUG` ni
+sobre `IS_PRODUCTION`, solo los lee como valores planos. Cada perfil hace
+`from .base import *`, que ejecuta este archivo ANTES de que el perfil pueda
+corregir nada: si aquí se calculara `DATABASES` con el `DEBUG` de `base`, el
+perfil ya no podría imponer el suyo. Ver odd/tasks/split-config-settings.md.
 """
 
 import logging
 import os
+import warnings
 from pathlib import Path
 
 from cryptography.fernet import Fernet
@@ -13,10 +24,13 @@ from django.core.management.utils import get_random_secret_key
 from django.urls import reverse_lazy
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 load_dotenv(BASE_DIR / '.env')
 
+# Las dos banderas que el dispatcher de `config/settings/__init__.py` usa para
+# elegir perfil. Son las MISMAS lecturas que hacía el monolito: perfil de
+# producción inalcanzable sin `PRODUCTION` en el entorno.
 IS_PRODUCTION = 'PRODUCTION' in os.environ
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
@@ -70,30 +84,40 @@ SECRET_KEY = decrypt_secret_key(
     os.getenv('ENCRYPTION_KEY'),
 )
 
+
+class EphemeralSecretKeyWarning(UserWarning):
+    """Categoría propia para el fallback a `get_random_secret_key()`.
+
+    No es un `UserWarning` pelado a propósito: con categoría propia el aviso es
+    grepeable y un operador puede endurecerlo después con
+    `-W error::config.settings.base.EphemeralSecretKeyWarning` sin tocar código.
+    """
+
+
 if SECRET_KEY is None:
-    if IS_PRODUCTION:
-        raise ImproperlyConfigured(
-            'SECRET_KEY y ENCRYPTION_KEY no están definidas. '
-            'Ejecute `python manage.py generate_env` (o `--production`) '
-            'para generar el archivo .env.'
-        )
-    # Sin .env en desarrollo: clave temporal por sesión para permitir
-    # arrancar comandos como generate_env antes de que exista .env.
+    # Sin .env cifrado: clave temporal por sesión. NO se puede fallar cerrado acá.
+    # `generate_env` es un management command, y `manage.py` importa los settings
+    # ANTES de despacharlo (`django.setup()`): un raise en este bloque dejaría sin
+    # arranque al propio comando que existe para generar la clave (paradoja de
+    # bootstrap; ver odd/tasks/harden-settings-profiles-deploy-gate.md).
+    # El fallback ES el bypass de bootstrap; el defecto nunca fue el fallback sino
+    # que fuera silencioso. Por eso ahora avisa. En producción `production.py`
+    # convierte este bloque en un fail-fast de verdad.
     SECRET_KEY = get_random_secret_key()
+    warnings.warn(
+        'SECRET_KEY ausente o no descifrable con ENCRYPTION_KEY: se está usando una clave '
+        'efímera que cambia en cada reinicio del proceso, así que todas las sesiones y '
+        'cookies firmadas quedan invalidadas. Ejecute `python manage.py generate_env` para '
+        'escribir un .env con SECRET_KEY y ENCRYPTION_KEY válidas. El perfil de producción '
+        '(PRODUCTION=1) falla cerrado ante esto; este aviso corresponde a dev o CI sin .env.',
+        EphemeralSecretKeyWarning,
+        # `stacklevel=1` y no 2: el aviso tiene que señalar el punto donde se acuña
+        # la clave efímera (este `warnings.warn`). Con 2 apuntaría al `from .base
+        # import *` del perfil o del dispatcher, que no es donde está la causa.
+        stacklevel=1,
+    )
 
-# Security
-if not DEBUG:
-    SECURE_SSL_REDIRECT = False  # Nginx termina TLS y redirige a HTTPS; Django no lo hace.
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_REFERRER_POLICY = 'same-origin'
-    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
-
+# ALLOWED_HOSTS / CSRF_TRUSTED_ORIGINS
 ALLOWED_HOSTS = [
     h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()
 ]
@@ -105,19 +129,27 @@ CSRF_TRUSTED_ORIGINS = [
     if o.strip()
 ]
 
-if external_hostname := os.getenv('EXTERNAL_HOSTNAME', ''):
+
+def apply_external_hostname(external_hostname, schemes):
+    """Agrega el dominio de EXTERNAL_HOSTNAME a ALLOWED_HOSTS/CSRF_TRUSTED_ORIGINS.
+
+    *schemes* es la decisión del perfil: solo `http://` en dev (el servidor local
+    no termina TLS) y `http://` + `https://` en testing y producción. El bloque
+    queda en una función porque el `import *` del perfil corre antes de que este
+    perfil pueda fijar sus esquemas.
+    """
     domain = (
         external_hostname.replace('https://', '').replace('http://', '').split('/')[0].split(':')[0]
     )
     if domain not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(domain)
-    schemes = ['http://', 'https://'] if not DEBUG else ['http://']
     for scheme in schemes:
         origin = f'{scheme}{domain}'
         if ':' in external_hostname.split('://')[-1]:
             origin += f':{external_hostname.split(":")[-1]}'
         if origin not in CSRF_TRUSTED_ORIGINS:
             CSRF_TRUSTED_ORIGINS.append(origin)
+
 
 # Application
 INSTALLED_APPS = [
@@ -143,10 +175,20 @@ INSTALLED_APPS = [
     'apps.dashboard.apps.DashboardConfig',
 ]
 
+# La lista base incluye WhiteNoise y el debug toolbar NO: cada perfil decide
+# si lo deja, si lo quita y si añade el toolbar. Los perfiles que modifiquen
+# estas listas deben COPIARLAS primero (`[*LIST, ...]`): `base` es un módulo
+# compartido, y una mutación in place (`.append`, `+=`, `.remove`) contaminaría
+# a los otros perfiles importados en el mismo proceso (p. ej. los tests que
+# cargan los tres para comparar la tabla de verdad).
+# En minúscula a propósito: un nombre en MAYÚSCULAS en un módulo de settings es
+# un setting, y Django copiaría la constante al objeto `settings`.
+whitenoise_middleware = 'whitenoise.middleware.WhiteNoiseMiddleware'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    whitenoise_middleware,
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -203,18 +245,13 @@ CONTENT_SECURITY_POLICY = {'DIRECTIVES': _CONTENT_SECURITY_POLICY_DIRECTIVES}
 # NOTE: django-csp 4.0 removed the `CSP_REPORT_ONLY` settings flag (it now emits
 # a csp.E001 system-check error); the env toggle drives the 4.0
 # CONTENT_SECURITY_POLICY_REPORT_ONLY dict instead.
+# La exclusión es mutua: existe CONTENT_SECURITY_POLICY o
+# CONTENT_SECURITY_POLICY_REPORT_ONLY, nunca los dos.
 if os.getenv('CSP_REPORT_ONLY', 'False') == 'True':
     CONTENT_SECURITY_POLICY = None
     CONTENT_SECURITY_POLICY_REPORT_ONLY = {
         'DIRECTIVES': _CONTENT_SECURITY_POLICY_DIRECTIVES,
     }
-
-DEBUG_TOOLBAR_ENABLED = DEBUG and not IS_PRODUCTION
-if DEBUG_TOOLBAR_ENABLED:
-    INSTALLED_APPS += ['debug_toolbar']
-    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
-    INTERNAL_IPS = ['127.0.0.1', '::1']
-    DEBUG_TOOLBAR_CONFIG = {'IS_RUNNING_TESTS': False}
 
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
@@ -241,15 +278,34 @@ TEMPLATES = [
 
 
 # Database
-def get_database_config():
-    if IS_PRODUCTION and 'DB_ENGINE' not in os.environ:
+def get_database_config(*, is_production=IS_PRODUCTION, prefer_sqlite=DEBUG):
+    """Construye el dict DATABASES a partir de las variables de entorno.
+
+    Los dos bandos se reciben como argumentos, con los valores de `base` por
+    defecto, porque cada perfil los impone DESPUÉS de su `import *`: quien llama
+    tiene que poder decir "mi perfil no prefiere sqlite" o "mi perfil no es
+    producción" sin que `base` se adelante.
+
+    - *is_production* activa el fail-closed sin `DB_ENGINE` (solo producción).
+    - *prefer_sqlite* hace que sqlite gane aunque `DB_ENGINE` esté definida
+      (equivalente al antiguo `if DEBUG or ...`, que solo dev lo pedía).
+    """
+    db_engine = os.getenv('DB_ENGINE', '').strip().lower()
+
+    if is_production and not db_engine:
         raise ImproperlyConfigured(
             'Falta la configuración de la base de datos. Defina DB_ENGINE (y DB_NAME, '
             'DB_USER, DB_HOST, DB_PASS) en el archivo .env. '
             'Ejecute `python manage.py generate_env --production` para generarlo.'
         )
 
-    if DEBUG or 'DB_ENGINE' not in os.environ:
+    # sqlite3 NO usa usuario, password ni host. La decisión va ANTES del chequeo de
+    # credenciales, no después: si el motor ya es sqlite, exigir DB_USER/DB_HOST/
+    # DB_PASS obligaría a inventar cuatro valores que el motor nunca lee, y un
+    # `.env` con `DB_ENGINE=sqlite3` (dev con DEBUG=False, staging, el gate de CI)
+    # no podría arrancar ningún perfil. Antes de este corte, el perfil `testing`
+    # fallaba con un mensaje que además decía "Para producción" sin serlo.
+    if prefer_sqlite or db_engine in {'', 'sqlite', 'sqlite3'}:
         return {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
@@ -259,10 +315,11 @@ def get_database_config():
 
     if not all(os.getenv(k) for k in ('DB_NAME', 'DB_USER', 'DB_HOST', 'DB_PASS')):
         raise ImproperlyConfigured(
-            'Para producción defina DB_NAME, DB_USER, DB_HOST y DB_PASS en el archivo .env.'
+            f'El motor "{db_engine}" necesita DB_NAME, DB_USER, DB_HOST y DB_PASS, y al menos '
+            'uno falta o está vacío en el entorno. (sqlite3 no los necesita: para él, alcanzaba '
+            'con DB_ENGINE=sqlite3.) Defina las cuatro en el archivo .env.'
         )
 
-    db_engine = os.getenv('DB_ENGINE', '').strip().lower()
     db_config = {
         'ENGINE': f'django.db.backends.{db_engine}',
         'NAME': os.getenv('DB_NAME'),
@@ -291,7 +348,8 @@ def get_database_config():
     return {'default': db_config}
 
 
-DATABASES = get_database_config()
+# El que arma DATABASES es el perfil (ver la nota de `get_database_config`), no
+# este módulo.
 
 # Auth
 AUTH_PASSWORD_VALIDATORS = [
@@ -357,22 +415,12 @@ DATETIME_INPUT_FORMATS = [
 ]
 
 # Static files
+# STORAGES lo fija cada perfil: WhiteNoise con manifest hasheado en producción
+# (Django 5.1+ usa STORAGES; STATICFILES_STORAGE quedó obsoleto y no tiene
+# efecto) y el backend estático simple en dev/testing.
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-
-if IS_PRODUCTION:
-    # Django 5.1+ usa STORAGES (STATICFILES_STORAGE quedó obsoleto y no tiene
-    # efecto). WhiteNoise con manifest hasheado exige collectstatic previo.
-    STORAGES = {
-        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
-        'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage'},
-    }
-else:
-    STORAGES = {
-        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
-        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
-    }
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -414,15 +462,21 @@ FTP_OBS_USER = os.getenv('FTP_OBS_USER')
 FTP_OBS_PASS = os.getenv('FTP_OBS_PASS')
 FTP_OBS_PORT = os.getenv('FTP_OBS_PORT', '990')
 
-# Flag derivada a import-time: en DEBUG local (no producción) el home sirve
-# las simulaciones SYNOP locales en vez de ir al FTP de observaciones. Espejo
-# de DEBUG_TOOLBAR_ENABLED (:211): NUNCA releer DEBUG a request-time (spec 022:74-78).
-OBS_LOCAL_ONLY_DEFAULT = DEBUG and not IS_PRODUCTION
-OBS_LOCAL_ONLY = (
-    OBS_LOCAL_ONLY_DEFAULT
-    if 'OBS_LOCAL_ONLY' not in os.environ
-    else os.getenv('OBS_LOCAL_ONLY', '0') in ('1', 'true', 'True', 'yes')
-)
+
+def resolve_obs_local_only(default):
+    """Resuelve OBS_LOCAL_ONLY a partir del default que impone el perfil.
+
+    Flag derivada a import-time: en DEBUG local (no producción) el home sirve
+    las simulaciones SYNOP locales en vez de ir al FTP de observaciones. Espejo
+    de DEBUG_TOOLBAR_ENABLED: NUNCA releer DEBUG a request-time (spec 022:74-78).
+    La variable de entorno OBS_LOCAL_ONLY tiene prioridad sobre el default.
+    """
+    return (
+        default
+        if 'OBS_LOCAL_ONLY' not in os.environ
+        else os.getenv('OBS_LOCAL_ONLY', '0') in ('1', 'true', 'True', 'yes')
+    )
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Centro Meteorológico Camagüey',
@@ -446,6 +500,12 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_URLS_REGEX = r'^/api/.*$'
 
 # Email
+# Path del backend de consola, compartido por los perfiles: `dev` lo usa como
+# default y `production` lo rechaza. Minúscula a propósito, igual que
+# `whitenoise_middleware`: en MAYÚSCULAS sería un setting y Django lo copiaría al
+# objeto `settings`. Comparar el path (y no importar la clase) es lo que permite
+# usarlo como constante sin arrastrar imports de mail a la importación de settings.
+console_email_backend = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST = os.getenv('EMAIL_HOST')
@@ -463,14 +523,9 @@ if os.getenv('LDAP_SERVER_URI'):
 
     logger = logging.getLogger('ldap3_auth')
     logger.addHandler(logging.StreamHandler())
-    logger.setLevel(logging.DEBUG if DEBUG else logging.INFO)
-
-# WhiteNoise
-if IS_PRODUCTION:
-    if 'whitenoise.middleware.WhiteNoiseMiddleware' not in MIDDLEWARE:
-        MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
-elif 'whitenoise.middleware.WhiteNoiseMiddleware' in MIDDLEWARE:
-    MIDDLEWARE.remove('whitenoise.middleware.WhiteNoiseMiddleware')
+    # El nivel es la única decisión de perfil de este bloque: `dev.py` lo sube
+    # a DEBUG. Aquí no se puede ramificar sobre DEBUG (ver la regla del módulo).
+    logger.setLevel(logging.INFO)
 
 # Logging
 LOGGING = {

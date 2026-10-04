@@ -1,21 +1,38 @@
 """Tests for media-root-init (014): move MEDIA_ROOT mkdir out of settings import."""
 
-import importlib
-import inspect
 import pathlib
 import tempfile
 
 from django.test import TestCase
 
+import config.settings
+
 
 class SettingsImportNoSideEffectTest(TestCase):
-    """REQ-1: config/settings.py must NOT create media/ at import time."""
+    """REQ-1: the settings package must NOT create media/ at import time."""
 
-    def test_no_mkdir_in_settings_source(self):
+    def _settings_sources(self):
+        """Yield (name, source) for every module in the `config.settings` package.
+
+        Since the settings-package split (odd/tasks/split-config-settings.md),
+        `config.settings` is a package: `inspect.getsource` on it returns only
+        `__init__.py`, so a check scoped to the entry module no longer reaches
+        the file where MEDIA_ROOT actually lives (`base.py`). Asserting on the
+        entry module alone made this test incapable of failing. Every module in
+        the package is read instead, which is strictly stronger than the
+        pre-split check.
+        """
+        package_dir = pathlib.Path(config.settings.__file__).resolve().parent
+        modules = sorted(package_dir.glob('*.py'))
+        self.assertTrue(modules, f'no settings modules found in {package_dir}')
+        return [(path.name, path.read_text(encoding='utf-8')) for path in modules]
+
+    def test_no_mkdir_in_any_settings_module(self):
         """The import-time 'if not MEDIA_ROOT.exists(): MEDIA_ROOT.mkdir' branch is gone."""
-        source = inspect.getsource(importlib.import_module('config.settings'))
-        self.assertNotIn('MEDIA_ROOT.mkdir', source)
-        self.assertNotIn('if not MEDIA_ROOT.exists():', source)
+        for name, source in self._settings_sources():
+            with self.subTest(module=name):
+                self.assertNotIn('MEDIA_ROOT.mkdir', source)
+                self.assertNotIn('if not MEDIA_ROOT.exists():', source)
 
 
 class CoreConfigReadyMediaRootTest(TestCase):

@@ -36,28 +36,11 @@ jobs:
       - name: Run Bandit
         run: bandit -r apps config manage.py -ll -x "*test*.py,*migrations*"
 
-  # Django deployment checks gate (change 013-check-deploy-ci). Runs
-  # `manage.py check --deploy` on a fresh checkout (no .env; DEBUG defaults to
-  # False so the production security block is active) and fails the pipeline on
-  # any deployment WARNING/ERROR. security.W008 (SECURE_SSL_REDIRECT) is
-  # expected to be silenced in settings because Nginx terminates TLS and
-  # performs the HTTPS redirect; Django must not redirect too.
-  deploy-check:
-    name: Django deploy check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.14"
-          cache: pip
-
-      - name: Install system dependencies (pycairo)
-        run: sudo apt-get update && sudo apt-get install -y libcairo2-dev
-
-      - name: Install dependencies
-        run: pip install -r requirements/prod.txt
-
-      - name: Run Django deployment system checks
-        run: python manage.py check --deploy --fail-level WARNING
+  # El gate de `check --deploy` (change 013-check-deploy-ci) estuvo ACA hasta que
+  # `config/settings.py` se partió en perfiles. Corría sin `PRODUCTION` en el
+  # entorno, así que el dispatcher elegía `testing`, NO `production`: el job
+  # comprobaba un perfil que producción nunca usa, y su comentario ("DEBUG
+  # defaults to False so the production security block is active") quedó en
+  # falso sin que nadie lo notara. Vive ahora en ci.yml como `deploy-check`,
+  # corriendo bajo `PRODUCTION=1` y con su propio par Fernet, que es el estado
+  # que de verdad se despliega. Este workflow queda solo con Bandit.
