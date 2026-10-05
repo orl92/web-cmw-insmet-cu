@@ -706,6 +706,10 @@ ask() {
         printf '%s' "$answer"
         return 0
     fi
+    # Antes de pintar la pregunta hay que borrar la linea de la barra. Sin
+    # esto el prompt aparece pegado al porcentaje:
+    #   [#----------] 4%  Usuario SMTP: ...
+    progress_break
     while :; do
         printf '%s [%s]: ' "$question" "$default" >&2
         IFS= read -r answer || die "EOF leyendo la respuesta de $key."
@@ -772,6 +776,7 @@ ask_secret() {
         printf '%s' "$answer"
         return 0
     fi
+    progress_break
     while :; do
         if [ -n "$default" ]; then
             printf '%s (Enter = se conserva la actual): ' "$question" >&2
@@ -824,6 +829,7 @@ ask_optional_secret() {
         printf '%s' "$answer"
         return 0
     fi
+    progress_break
     printf '%s (Enter = dejarlo vacio): ' "$question" >&2
     IFS= read -r -s answer || die "EOF leyendo $key."
     printf '\n' >&2
@@ -839,13 +845,19 @@ ask_optional_secret() {
     # salida y sin saber por que, asi que los tres reintentos estan contados.
 # Y con una respuesta que no sea si/no NO se asume el default: "se asume si" por
     # culpa de una tecla mal apretada es como se instala lo que no se queria.
-# Redibuja la barra despues de que el operador responda algo. Un prompt es una
-# linea que se escribe encima de la barra, asi que hay que romperla antes
-# (progress_break, via el printf del prompt) y volver a levantar la barra
-# despues. Sin esto, respondiendo el prompt de PostgreSQL la barra se quedaba
-# en el renglon anterior y no avanzaba el resto de la seccion: el operador veia
-# el % congelado y pensaba que el instalador se habia colgado.
-progress_after_prompt() { progress_draw; }
+# Un prompt NUNCA se escribe encima de la barra: primero se borra la linea con
+# progress_break, se imprime la pregunta, y la barra vuelve sola en el proximo
+# step.
+#
+# Que NO se redibuje la barra despues del prompt es deliberado. Se intento, y
+# queda peor: progress_draw no emite salto de linea, asi que al volver a pintar
+# la barra el siguiente prompt se pegaba a ella en la misma linea:
+#
+#   [#-----------------------------]   4%  Usuario SMTP: login o correo completo
+#
+# Ademas el prompt se pide con la barra al 4%, cuando en realidad no hay nada
+# que mostrar todavia. La barra se levanta en cada step, y un step siempre esta
+# seguido de un log o de un comando en vivo, que si.info redibujan.
 
 ask_yes_no() {
     local default=$1 question=$2 answer='' other tries=0
@@ -858,35 +870,38 @@ ask_yes_no() {
     progress_break
     while :; do
         printf '%s [%s/%s] (vacio = %s): ' "$question" "$default" "$other" "$default" >&2
-        IFS= read -r answer || { progress_after_prompt; die "EOF leyendo la respuesta."; }
+        IFS= read -r answer || die "EOF leyendo la respuesta."
         answer=${answer:-$default}
         case "$answer" in
             s | S | si | SI | yes | y | Y)
                 ANSWER_SOURCES+=("($1)=si")
-                progress_after_prompt
                 return 0 ;;
             n | N | no | NO)
                 ANSWER_SOURCES+=("($1)=no")
-                progress_after_prompt
                 return 1 ;;
         esac
         tries=$((tries + 1))
         printf '  Se entiende si/no. Reintenta.\n' >&2
         if [ "$tries" -ge "$MAX_PROMPT_TRIES" ]; then
             printf '  %s intentos agotados.\n' "$MAX_PROMPT_TRIES" >&2
-            progress_after_prompt
             return 1
         fi
     done
 }
 
 # ask_one_of <CLAVE> <default> <pregunta> <opcion1> <opcion2> ...
-# Devuelve el valor literal de la opcion elegida. Se usa donde la respuesta es
-# una palabra y el numero es incomodo de recordar despues (que elijiste, 1 o 2).
+# Devuelve SIEMPRE el TOKEN de la opcion, nunca el texto de descripcion: las
+# opciones se escriben como "token: descripcion" para poder imprimir una ayuda
+# legible en el prompt, pero el valor que consume el resto del instalador es el
+# token. Se usa donde la respuesta es una palabra y el numero es incomodo de
+# recordar (que elegiste, 1 o 2).
 ask_one_of() {
     local key=$1 default=$2 question=$3
     shift 3
-    local index=0 option answer tries=0 shift_count=0
+    local index=0 option answer tries=0 shift_count=0 token
+    # El break va ANTES del for: estas opciones se imprimen una por linea y la
+    # primera se pegaba a la barra.
+    progress_break
     for option in "$@"; do
         index=$((index + 1))
         printf '    %s) %s\n' "$index" "$option" >&2
@@ -902,22 +917,44 @@ ask_one_of() {
         IFS= read -r answer || die "EOF leyendo la respuesta de $key."
         answer=${answer:-$default}
         if [ "$answer" = "$default" ]; then
-            printf '%s' "$answer"
+            printf '%s' "$default"
             ANSWER_SOURCES+=("$key=$default")
             return 0
         fi
+        # El operador puede responder por numero o por palabra, y ambos tienen
+        # que caer en el MISMO token. Antes el numero devolvia el texto entero
+        # ("nginx-local: Nginx instalado y configurado..."), y como todos los
+        # call sites comparan con el token, elegir 1 en el prompt de PROXY_MODE
+        # terminaba con un valor que no matcheaba NINGUNA de las ramas: ni
+        # nginx-local ni external. Un instalador que recibe la respuesta que le
+        # pediste y luego la ignora es peor que uno que no pregunta.
         if printf '%s' "$answer" | grep -Eq '^[0-9]+$'; then
             index=$answer
             shift_count=0
             for option in "$@"; do
                 shift_count=$((shift_count + 1))
                 if [ "$shift_count" -eq "$index" ]; then
-                    printf '%s' "$option"
-                    ANSWER_SOURCES+=("$key=$option")
+                    token=${option%%:*}
+                    printf '%s' "$token"
+                    ANSWER_SOURCES+=("$key=$token")
                     return 0
                 fi
             done
         fi
+        # Acepta tambien la PALABRA que abre cada opcion, que es lo que decia el
+        # propio mensaje de error de abajo ("o el texto exacto") y lo que el
+        # docstring promete ("donde la respuesta es una palabra"). Antes solo
+        # pasaba el default: escribir 'no' o 'external' caia siempre en
+        # "Opcion invalida", asi que a un operador atento le quedaba la
+        # sensacion de que el prompt no entendia su propia pregunta.
+        for option in "$@"; do
+            token=${option%%:*}
+            if [ "$answer" = "$token" ]; then
+                printf '%s' "$token"
+                ANSWER_SOURCES+=("$key=$token")
+                return 0
+            fi
+        done
         # No se repregunta para siempre: un bucle infinito de repregunta deja al
         # operador sin salida y sin saber por que.
         tries=$((tries + 1))
