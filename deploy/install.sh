@@ -1011,7 +1011,7 @@ else
 fi
 EMAIL_HOST_USER=$(ask EMAIL_HOST_USER "meteocamaguey" 'Usuario SMTP: login o correo completo (vacio = SMTP sin usuario)' valid_smtp_user) || die 'Usuario SMTP invalido.'
 EMAIL_HOST_PASSWORD=$(ask_optional_secret EMAIL_HOST_PASSWORD "" 'Contrasena SMTP (vacio = SMTP sin contrasena)') || die 'Contrasena SMTP invalida.'
-DEFAULT_FROM_EMAIL=$(ask DEFAULT_FROM_EMAIL "" 'Remitente (nombre <correo>); vacio = $EMAIL_HOST_USER') || die 'Remitente invalido.'
+DEFAULT_FROM_EMAIL=$(ask DEFAULT_FROM_EMAIL 'Centro Meteorológico Provincial Camagüey <meteocamaguey@caonao.cu>' 'Remitente (nombre <correo>)') || die 'Remitente invalido.'
 
 # "Configurado" es solo "hay servidor SMTP". Un relay sin usuario ni contrasena
 # (un relay interno en el puerto 25, tipico en un servidor de correo corporativo)
@@ -1428,6 +1428,10 @@ if [ "$EMAIL_CONFIGURED" -eq 1 ]; then
     # `meteocamaguey`, que no es un addr-spec valido y Django lo rechaza al
     # sanitizar la cabecera From. En ese caso se deja vacio y se avisa: es mejor
     # un remitente vacio, visible, que uno mal formado que revienta en cada envio.
+    #
+    # El default de la pregunta (T26) ya trae nombre y direccion, asi que este
+    # fallback casi no se alcanza: queda para cuando el operador borra el valor a
+    # mano y deja la pregunta vacia.
     if [ -n "$DEFAULT_FROM_EMAIL" ]; then
         apply_env_value DEFAULT_FROM_EMAIL "$DEFAULT_FROM_EMAIL"
     elif valid_email "$EMAIL_HOST_USER"; then

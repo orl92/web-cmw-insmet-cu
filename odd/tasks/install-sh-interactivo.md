@@ -67,6 +67,7 @@ falla por construcción y el deploy se bloquea con un sitio perfectamente sano.
 | T23 | `install.sh`: tres validadores de correo roto impedían configurar SMTP; se arreglan y el prompt del host dice dónde va el `@` | `deploy/install.sh` |
 | T24 | `install.sh`: los defaults reales del proyecto — `meteocamaguey.cu` como dominio y `mx.caonao.cu` como servidor SMTP | `deploy/install.sh` |
 | T25 | `install.sh`: usuario SMTP y superusuario por defecto `meteocamaguey`, con los dos derivados que eso rompía | `deploy/install.sh` |
+| T26 | `install.sh`: `DEFAULT_FROM_EMAIL` por defecto `Centro Meteorológico Provincial Camagüey <meteocamaguey@caonao.cu>`, con acentos y ángulos | `deploy/install.sh` |
 
 Fuera de alcance: tocar `config/settings/**` (el `.env` tiene que alcanzar con lo que ya existe),
 el workflow `.github/workflows/deploy.yml`, y la suite de `apps/`. Si algo de T1-T18 descubre que
@@ -313,6 +314,28 @@ Verificado: `bash -n`; ambos defaults pasan sus propios validadores; los tres ca
 sin agotar reintentos; dry-run completo sale 0 y muestra `correo mx.caonao.cu`,
 `superusuario meteocamaguey` y el aviso de `DEFAULT_FROM_EMAIL`.
 
+### T26 — `DEFAULT_FROM_EMAIL` con el nombre real del proyecto
+
+Default: `Centro Meteorológico Provincial Camagüey <meteocamaguey@caonao.cu>`. Tiene espacios,
+acentos (`ó`, `ü`) y ángulos, así que se verificó que sobrevive las dos capas por las que pasa:
+
+1. **Pregunta.** `ask` no trunca: Enter devuelve los 68 bytes exactos, comparados con `=` contra el
+   literal esperado.
+2. **Escritura.** `env_set` reescribe la línea vía `awk` con el valor en `ENVIRON`; el `.env`
+   resultante se volvió a leer con `python-dotenv` — el mismo lector que usa
+   `config/settings/base.py:27` — y devuelve el valor idéntico, sin comillas de más. Las claves
+   vecinas del archivo no se tocaron. Verificado también que sin comillas y con comillas simples
+   dotenv devuelve lo mismo, y que el `CHANGE_ME` que deja el generador
+   (`'Centro Meteorológico Camagüey <CHANGE_ME>'`) queda sobreescrito.
+3. **Django.** El addr-spec `meteocamaguey@caonao.cu` pasa el regex de
+   `django.core.mail.message`, así que la cabecera `From` no se rechaza. Los acentos del nombre se
+   serializan como `=?utf-8?q?Meteorol=C3=B3gico_...?=`, que es la codificación RFC 2047 correcta:
+   verificado que `decode_header` devuelve exactamente `Centro Meteorológico Provincial Camagüey`.
+   No es mojibake ni pérdida de acentos, es el formato que el protocolo exige.
+
+Con esto el aviso de `DEFAULT_FROM_EMAIL` vacío que T25 agregó deja de dispararse en el camino por
+default, y sigue existiendo para cuando el operador borre el valor a mano.
+
 ## Ruta de ejecución: inline, no delegada
 
 | Tarea | Ruta | Evidencia del trigger |
@@ -322,6 +345,7 @@ sin agotar reintentos; dry-run completo sale 0 y muestra `correo mx.caonao.cu`,
 | T22 | **inline** | Un archivo ya leído de punta a punta; el diseño (motor constante, puerto con default) estaba decidido por el usuario antes de abrir el archivo. |
 | T24 | **inline** | Dos valores literales decididos por el usuario. No hay diseño abierto. |
 | T25 | **inline** | Dos defaults, pero el trabajo real fue auditar los **consumidores** de esos valores (`SUPERUSER_EMAIL`, `DEFAULT_FROM_EMAIL`, `ACME_EMAIL`), que es lectura dirigida en un archivo ya leído, no exploración. Delegarlo habría transferido el hallazgo de que el default era un login y no un correo. |
+| T26 | **inline** | Un default literal. La verificación exigía extraer `env_set`/`ask` del archivo y una corrida con `python-dotenv` y `email.header`, o sea herramientas locales en secuencia sobre un archivo ya leído. |
 | T23 | **inline** | Defectos deterministas con evidencia ya observada en la sesión: el error del operador se reprodujo y los tres call sites del archivo se leyeron antes de editar. Delegar exigiría transferir el hallazgo, no reducir contexto. |
 
 Se ejecuta en el padre y no en un subagente, por dos razones concretas, no por preferencia:
@@ -396,6 +420,7 @@ verificarse en ejecución.
 - [x] T23 — Validadores de correo reparados (`valid_email`, `valid_smtp_host`, `valid_smtp_user`)
 - [x] T24 — Defaults reales: `meteocamaguey.cu` y `mx.caonao.cu`
 - [x] T25 — Usuario SMTP y superusuario `meteocamaguey`, con los derivados reparados
+- [x] T26 — `DEFAULT_FROM_EMAIL` = `Centro Meteorológico Provincial Camagüey <meteocamaguey@caonao.cu>`
 
 Los ocho bloques T1-T18 se marcan como entregados porque el commit `a9e01c6` los contiene y sus
 checks pasaron. T19-T21 se marcan según su propia evidencia, registrada abajo.
