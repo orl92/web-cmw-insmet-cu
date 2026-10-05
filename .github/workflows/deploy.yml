@@ -52,6 +52,13 @@ jobs:
     name: Deploy to web.cmw.insmet.cu
     runs-on: ubuntu-latest
 
+    # El deploy dura alrededor de 5 minutos, de los cuales ~3 son de
+    # `collectstatic` (hashear y comprimir en gzip+brotli los ~900 estaticos,
+    # 114 MB). Es un piso, no un techo: si collectstatic va bien, se acerca a 2.
+    # 30 deja margen de sobra y evita que un `deploy.sh` colgado queme el runner
+    # las 6 horas que es el timeout por defecto de un job.
+    timeout-minutes: 30
+
     # El environment expone sus secretos como `environment.*`. Si se define el
     # secret a nivel de repo con el mismo nombre, no hay colision: el del
     # environment tiene prioridad y es el que se resuelve.
