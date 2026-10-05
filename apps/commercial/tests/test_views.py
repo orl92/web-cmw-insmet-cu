@@ -1136,8 +1136,7 @@ class BatchInvoiceQuantityTests(TestCase):
         view = InvoiceCreateView()
         admin = _make_superuser('batchadmin')
         view.request = _build_request(admin)
-        start = timezone.now().date()
-        view.process_batch_invoice(customer, start, start, 'REG-001', [sub])
+        view.process_batch_invoice(customer, 'Mayo 2026', 'REG-001', [sub])
         item = InvoiceItem.objects.get(subscription=sub)
         invoice = item.invoice
         self.assertEqual(item.cantidad, 3)
@@ -1167,8 +1166,7 @@ class BatchInvoiceQuantityTests(TestCase):
         view = InvoiceCreateView()
         admin = _make_superuser('batchadmin2')
         view.request = _build_request(admin)
-        start = timezone.now().date()
-        view.process_batch_invoice(customer, start, start, 'REG-002', [sub])
+        view.process_batch_invoice(customer, 'Mayo 2026', 'REG-002', [sub])
         item = InvoiceItem.objects.get(subscription=sub)
         invoice = item.invoice
         self.assertEqual(item.cantidad, 10)
@@ -1208,7 +1206,7 @@ class BatchInvoiceQuantityTests(TestCase):
         view.request = _build_request(_make_superuser('batchstartadmin'))
 
         # El período facturado es deliberadamente otro.
-        view.process_batch_invoice(customer, date(2026, 5, 1), date(2026, 5, 31), 'REG-003', [sub])
+        view.process_batch_invoice(customer, 'Mayo 2026', 'REG-003', [sub])
 
         sub.refresh_from_db()
         self.assertEqual(sub.start_date, elegido)
@@ -1258,9 +1256,7 @@ class BatchInvoiceQuantityTests(TestCase):
 
         view = InvoiceCreateView()
         view.request = _build_request(_make_superuser('batchgroupadmin'))
-        invoice = view.process_batch_invoice(
-            customer, date(2026, 5, 1), date(2026, 5, 31), 'REG-004', subs
-        )
+        invoice = view.process_batch_invoice(customer, 'Mayo 2026', 'REG-004', subs)
 
         self.assertEqual(Invoice.objects.filter(customer=customer).count(), 1)
         self.assertEqual(invoice.items.count(), 3)
@@ -1935,8 +1931,7 @@ class InvoiceSubscriptionLinkTests(TestCase):
         view.request = _build_request(
             _make_superuser(f'batchadmin-link-{seq if seq is not None else id(subs)}')
         )
-        day = timezone.now().date()
-        view.process_batch_invoice(customer, day, day, 'REG-LINK', subs)
+        view.process_batch_invoice(customer, 'Mayo 2026', 'REG-LINK', subs)
         return InvoiceItem.objects.filter(subscription__in=subs).first().invoice
 
     def test_for_subscription_finds_invoice_linked_only_by_item(self):

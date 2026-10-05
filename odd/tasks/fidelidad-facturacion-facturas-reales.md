@@ -131,7 +131,7 @@ contra el PDF actual.
         son el período impreso, y borrarlos sería otra tarea.
       - El campo va en la tarjeta "Período de Facturación", arriba de las fechas,
         que quedan rotuladas como datos operativos del cálculo.
-- [ ] **T3** Rediseño de períodos en el formulario de facturación. Es la tarea que
+- [x] **T3** Rediseño de períodos en el formulario de facturación. Es la tarea que
       desbloquea la confusión del operador, así que va antes que el resto.
       - **Dos períodos distintos, dos lugares distintos.** El período del
         *contrato* (`ServiceSubscription.start_date` + `quantity`) y el período
@@ -204,15 +204,15 @@ suscripciones, con validación de servidor, es un encargo independiente
 - [x] El PDF de una factura con reparto de centros muestra exactamente las filas
       guardadas, con sus porcentajes, y valen 100 %.
 - [x] No queda ningún literal de centro de costo en el template.
-- [ ] El PDF nunca muestra "Desde X hasta X" con X == Y.
-- [ ] El periodo se imprime tal como lo escribió el operador.
+- [x] El PDF nunca muestra "Desde X hasta X" con X == Y.
+- [x] El periodo se imprime tal como lo escribió el operador.
 - [ ] `U/M` sale como `U` y la descripción conserva "por meses"/"por días".
 - [ ] Una factura de una persona natural se puede generar sin registro comercial
       y sin contrato, y `Contract`/`Certificate` no imprimen `None`.
 - [x] Guardar un reparto que no suma 100 % falla con mensaje en el formulario.
 - [ ] Una factura por lote muestra el contrato correcto, no el de una suscripción
       arbitraria.
-- [ ] `python manage.py check` y `python manage.py test apps.commercial` verdes;
+- [x] `python manage.py check` y `python manage.py test apps.commercial` verdes;
       Ruff y djLint limpios.
 
 ## Verificación prevista
@@ -243,12 +243,20 @@ commit, se pregunta una vez por la estrategia de encadenado.
 
 ## Progreso
 
-_(pendiente)_
+- **T1** cerrada (commit `b8dfda0`, mergeado en `main` por el PR #82).
+- **T2** cerrada (commit `5b4665d`, mergeado en `main` por el PR #82).
+- **T3** implementada en la rama `feat/invoice-form-period-redesign`, sin commit
+  todavía al momento de escribir esta entrada.
 
 ## Próximo paso
 
-T1: `InvoiceCostAllocation` con validación de suma 100, prefill desde el prefijo
-del código de servicio, y render en el PDF en lugar del literal hardcodeado.
+T4: `U/M` = `U` y la descripción del ítem lleva "por meses"/"por días" según la
+categoría del servicio.
+
+**Decisión pendiente del usuario (T3):** con el rango de fechas fuera del
+formulario, `cantidad` ya no se propone y el operador la escribe en cada línea
+manual. Si el caso común es una línea de un mes o un día, el valor por defecto
+`1` haría el caso común un clic sin mentir. Falta la confirmación del usuario.
 ## Evidencia de T1
 
 RED observado antes de implementar:
@@ -305,3 +313,71 @@ firma desactualizada dos capas más abajo.
 devuelva un 404 sin explicación. Es un problema de diagnosticabilidad preexistente
 y fuera del alcance de T2, pero conviene tenerlo anotado: la próxima vez que un
 test de descarga falle con 404, revisar primero la firma de lo que se mockeó.
+
+## Evidencia de T3
+
+Rama: `feat/invoice-form-period-redesign` (base `main` en `0c37723`).
+
+RED observado antes de implementar, sobre
+`apps.commercial/tests/test_invoice_line_period.py`:
+
+```
+Ran 26 tests ... FAILED (failures=19, errors=5)
+```
+
+Los fallos eran los del contrato nuevo: el campo por línea no existía, el
+formset renderizaba una fila fantasma, `period_label` se ignoraba, el flash
+anunciaba un rango de fechas, y las firmas viejas seguían activas.
+
+GREEN y verificación:
+
+| Comando | Resultado |
+|---|---|
+| `python manage.py test apps.commercial` | 451 tests, OK (baseline previo: 440) |
+| `python manage.py test apps.commercial.tests.test_invoice_line_period` | 30 tests, OK |
+| `python manage.py check` | no issues |
+| `ruff check apps/commercial/` | All checks passed |
+| `ruff format --check apps/commercial/` | 42 files already formatted |
+| `djlint apps/commercial/templates/pages/commercial/invoice/ --check` | 0 files would be updated |
+| `djlint . --lint` | 168 files, 0 errors |
+
+### Bug real que T3 destapó: `period_label` nunca se guardaba
+
+`Invoice.period_label`, su `help_text` y el lector del PDF
+(`_periodo_facturacion`) existían desde T2, pero `InvoiceCreateView` nunca lo
+escribía. El campo caía al piso y el PDF siempre imprimía la fecha de emisión.
+El criterio "el periodo se imprime tal como lo escribió el operador" no se
+podía cumplir sin arreglar esto, y el flash era el segundo síntoma del mismo
+agujero.
+
+### Gotcha de Django que costó un test: `formset_factory(initial=...)`
+
+`formset_factory(InvoiceItemForm, initial=[{...}])` **no** es "initial de los
+formularios extra": Django interpreta `len(initial)` como
+`initial_form_count()`, así que una fila pasa a ser formulario *inicial* y
+igualmente se agrega `extra` — quedan dos filas, la segunda en blanco, y
+`INITIAL_FORMS` vale 1. La forma correcta de sembrar las filas extra es
+`form_kwargs={'initial': {...}}`, que es lo que quedó en `_items_inicial()`.
+
+### Desviaciones respecto del texto de T3, y por qué
+
+1. El período de cada suscripción en modo lote se muestra como
+   `desde 15/05/2026 · 3 meses`, con año, y no `desde 15/05 · 3 meses` como decía
+   el ejemplo del spec. Sin año, una suscripción de mayo de 2025 se lee como si
+   hubiera empezado este año, que es justo la confusión que T3 viene a quitar.
+   El año hace la diferencia real entre dos contratos distintos.
+2. `quantity-days` se quitó del widget de `cantidad`. La clase sólo la usaba el
+   JavaScript eliminado y un grep de todo el repo no encontró otrosselectores.
+3. Un `try/except/pass` preexistente en `get_initial` pasó a
+   `contextlib.suppress(Customer.DoesNotExist)` (SIM105). Era una violación de
+   lint en `HEAD` y `ruff check` es comando de verificación obligatorio de esta
+   tarea. Semánticamente idéntico.
+
+### Lo que T3 deja sin cubrir
+
+- El JavaScript (`proposeLineStartDate`, `mostrarFacturacionManual`) no tiene
+  aserción de test. El contrato de Python que replican sí está cubierto: una
+  sola fila, fecha de la factura por defecto, y fecha obligatoria.
+  Merece una pasada manual en el navegador.
+- `cantidad` ya no se propone: sin rango de fechas no hay nada honesto que
+  medir, así que la línea manual sale vacía y el operador la escribe.

@@ -1,6 +1,7 @@
+import contextlib
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
@@ -34,6 +35,7 @@ from apps.commercial.models import (
     ServiceSubscription,
 )
 from apps.commercial.views.invoice_utils import (
+    _periodo_facturacion,
     _prefill_cost_allocations_from_items,
     enviar_correo_factura,
 )
@@ -84,41 +86,19 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     success_url = reverse_lazy('commercial:factura_list')
 
     def get_initial(self):
+        """Sólo propone el cliente: las fechas ya no son un dato de la factura.
+
+        El período facturado es texto libre (`period_label`) y el del contrato
+        viaja por línea, así que acá no queda ningún rango que prellenar. La
+        suscripción a regenerar ya no aporta fechas tampoco: se muestra su
+        período en read-only en el listado de pendientes.
+        """
         initial = super().get_initial()
-        today = timezone.localdate()
-        regenerar = self.suscripcion_a_regenerar()
         customer_uuid = self.request.GET.get('customer_uuid')
-        if customer_uuid:
-            try:
-                customer = Customer.objects.get(uuid=customer_uuid)
-                initial['customer'] = customer
-                # La suscripción a regenerar manda en las fechas propuestas: es la
-                # que el operador está por volver a facturar.
-                pending_sub = (
-                    regenerar
-                    if regenerar and regenerar.customer_id == customer.pk
-                    else ServiceSubscription.objects.filter(
-                        customer=customer,
-                        payment_status__in=['requested', 'pending'],
-                        start_date__isnull=False,
-                    ).first()
-                )
-                if pending_sub:
-                    # El periodo facturado lo fija el operador en el formulario,
-                    # no la suscripción: ésta ya no tiene expiración que sugiera
-                    # uno. Se propone desde la fecha de inicio que eligió el
-                    # cliente, que sí es un dato conocido y coherente.
-                    inicio = pending_sub.start_date.date() if pending_sub.start_date else today
-                    initial['start_date'] = inicio.isoformat()
-                    initial['end_date'] = (inicio + timedelta(days=30)).isoformat()
-                else:
-                    initial['start_date'] = today.isoformat()
-                    initial['end_date'] = (today + timedelta(days=30)).isoformat()
-            except Customer.DoesNotExist:
-                pass
-        else:
-            initial['start_date'] = today.isoformat()
-            initial['end_date'] = (today + timedelta(days=30)).isoformat()
+        if not customer_uuid:
+            return initial
+        with contextlib.suppress(Customer.DoesNotExist):
+            initial['customer'] = Customer.objects.get(uuid=customer_uuid)
         return initial
 
     def get_context_data(self, **kwargs):
@@ -127,7 +107,9 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         context['parent'] = 'facturacion'
         context['segment'] = 'facturas'
         context['url_list'] = reverse_lazy('commercial:factura_list')
-        context['items_formset'] = InvoiceItemFormSet(prefix='items')
+        context['items_formset'] = InvoiceItemFormSet(
+            prefix='items', form_kwargs=self._items_inicial()
+        )
         context['cost_allocations_formset'] = (
             kwargs['cost_allocations_formset']
             if 'cost_allocations_formset' in kwargs
@@ -143,6 +125,24 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         )
         context['company'] = CompanySettings.get_instance()
         return context
+
+    def _items_inicial(self):
+        """Valores por defecto de cada línea manual.
+
+        `start_date` es `ServiceSubscription.start_date`: un contrato que
+        persiste y que ninguna facturación posterior corrige. El caso común es
+        que el servicio empiece a facturarse hoy, así que se propone esa fecha y
+        el operador la cambia sólo cuando el cliente empezó antes. Un rango
+        compartido no puede expresar eso: el caso real —agrometeo de mayo a julio
+        y pronóstico desde el 10 de junio— obliga a mentir en una de las dos
+        líneas.
+
+        Va como `form_kwargs` y no como `initial` del formset porque `initial` es
+        una lista por *forma inicial*: pasar un solo dict hace que Django cuente
+        esa fila como inicial y agrega otra, dejando una línea en blanco con un
+        campo requerido que el operador no llenó nunca.
+        """
+        return {'initial': {'start_date': timezone.localdate().isoformat()}}
 
     def suscripcion_a_regenerar(self):
         """Suscripción que el operador pidió regenerar, si el pedido es válido.
@@ -211,8 +211,6 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
 
     def form_valid(self, form):
         customer = form.cleaned_data['customer']
-        start_date = form.cleaned_data['start_date']
-        end_date = form.cleaned_data['end_date']
         commercial_registry = form.cleaned_data['commercial_registry']
         subscriptions = form.cleaned_data.get('subscriptions')
         regenerar = self.suscripcion_a_regenerar()
@@ -233,12 +231,19 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             # todas las seleccionadas se facturan en el mismo periodo en vez de
             # agruparse por un dato que ya no existe.
             nueva = self.process_batch_invoice(
-                customer, start_date, end_date, commercial_registry, subscriptions, cost_formset
+                customer,
+                form.cleaned_data['period_label'],
+                commercial_registry,
+                subscriptions,
+                cost_formset,
             )
+            # El aviso anuncia el período tal como lo va a imprimir el PDF
+            # (`_periodo_facturacion`), no un rango de fechas: desde T2 el PDF
+            # imprime el texto del operador y un "desde X hasta Y" acá sería una
+            # inconsistencia que la propia pantalla acaba de eliminar.
             messages.success(
                 self.request,
-                f'Se generó la factura del período {start_date.strftime("%d/%m/%Y")} - '
-                f'{end_date.strftime("%d/%m/%Y")}.',
+                f'Se generó la factura {nueva.number} del período {_periodo_facturacion(nueva)}.',
             )
             # Después de crear, nunca antes: la factura anterior sólo se anula
             # cuando su reemplazo ya existe.
@@ -249,9 +254,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             # suscripción regenerada no está en esta factura y no hay nada que
             # reemplazar. Se avisa en vez de anular a ciegas.
             self.anular_factura_previa(regenerar, subscriptions)
-            return self.process_manual_invoice(
-                form, customer, start_date, end_date, commercial_registry, cost_formset
-            )
+            return self.process_manual_invoice(form, customer, commercial_registry, cost_formset)
 
     def anular_factura_previa(self, regenerar, subscriptions, nuevas_facturas=None):
         """Anula la factura que la nueva reemplaza, sólo si la nueva la reemplaza.
@@ -346,20 +349,28 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def process_batch_invoice(
         self,
         customer,
-        start_date,
-        end_date,
+        period_label,
         commercial_registry,
         subscriptions,
         cost_formset=None,
     ):
         """Crea la factura de un período y la devuelve.
 
+        `period_label` es el texto que el operador escribió y que va al PDF. No
+        viajan fechas: el período del contrato es de cada suscripción y aquí no
+        se toca (ver el comentario más abajo), y un rango de fechas ya no se
+        imprime en ningún lado.
+
         El retorno lo usa `form_valid`: al regenerar, la factura anterior se
         anula por diferencia, así que hay que saber cuáles son las nuevas para
         no dejar el reemplazo anulado junto con lo que reemplaza.
         """
         invoice = Invoice.objects.create(
-            subscription=None, customer=customer, amount=0, number=self.generate_invoice_number()
+            subscription=None,
+            customer=customer,
+            amount=0,
+            number=self.generate_invoice_number(),
+            period_label=period_label or '',
         )
         total = 0
         items = []
@@ -434,9 +445,14 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
         return invoice
 
-    def process_manual_invoice(
-        self, form, customer, start_date, end_date, commercial_registry, cost_formset=None
-    ):
+    def process_manual_invoice(self, form, customer, commercial_registry, cost_formset=None):
+        """Crea la factura a mano, una suscripción nueva por línea.
+
+        El inicio de cada suscripción sale de su propia línea
+        (`InvoiceItemForm.start_date`), no de un rango compartido: el contrato
+        con el cliente empieza cuando él empezó a usar el servicio, y eso puede
+        ser una fecha distinta en cada línea de la misma factura.
+        """
         items_formset = InvoiceItemFormSet(self.request.POST, prefix='items')
         if not items_formset.is_valid():
             messages.error(self.request, 'Corrige los errores en las líneas de factura.')
@@ -445,7 +461,11 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             return self.render_to_response(context)
 
         invoice = Invoice.objects.create(
-            subscription=None, customer=customer, amount=0, number=self.generate_invoice_number()
+            subscription=None,
+            customer=customer,
+            amount=0,
+            number=self.generate_invoice_number(),
+            period_label=form.cleaned_data.get('period_label') or '',
         )
         total = 0
         items = []
@@ -462,7 +482,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     customer=customer,
                     service=service,
                     start_date=timezone.make_aware(
-                        datetime.combine(start_date, datetime.min.time())
+                        datetime.combine(cd['start_date'], datetime.min.time())
                     ),
                     payment_status='pending',
                     record_active=True,
@@ -747,10 +767,20 @@ def ajax_pending_subscriptions(request):
         return HttpResponse('<p class="text-muted">No hay suscripciones pendientes.</p>')
     html = ''
     for sub in subs:
-        start_str = sub.start_date.strftime('%Y-%m-%d') if sub.start_date else ''
         title = escape(sub.service.title or '')
         summary = escape(sub.service.summary or '')
-        unidad = escape(sub.get_quantity_period_display())
+        # El período del contrato se muestra, no se edita: es un dato que la
+        # suscripción ya tiene (su inicio y la cantidad que multiplica al
+        # precio) y que la pantalla ocultaba. La unidad sale de
+        # `get_quantity_period_display()`, que ya la deriva de la categoría del
+        # servicio, así que no hay dos lugares que puedan discrepar.
+        #
+        # La fecha va con año: `desde 15/05` de una suscripción del año pasado se
+        # lee como del año en curso, que es justo la confusión que el rediseño
+        # viene a cerrar.
+        unidad = sub.get_quantity_period_display()
+        inicio = sub.start_date.strftime('%d/%m/%Y') if sub.start_date else 'sin fecha'
+        periodo = escape(f'desde {inicio} · {unidad}')
         # El código del servicio sí viaja, y es lo que permite al navegador
         # derivar el centro de costo: el prefijo del código lo trae
         # (`700501072507005` es `700.50107 | 2507 | 005`). Sin `data-code` la
@@ -758,21 +788,20 @@ def ajax_pending_subscriptions(request):
         # se rechaza con un reparto vacío que el operador nunca escribió.
         #
         # El periodo facturado, en cambio, no se manda: lo fija el operador en
-        # el formulario. La suscripción sólo aporta su inicio y la cantidad que
-        # multiplica al precio, así que no hay `data-end` ni `data-days` que
-        # calcular.
+        # el formulario. La suscripción no aporta ninguna fecha para escribirlo.
         code = escape(sub.service.code or '')
         html += f'''
         <div class="form-check">
           <input class="form-check-input subscription-check" type="checkbox"
                  name="subscriptions" value="{sub.pk}"
-                 id="sub_{sub.pk}" data-start="{start_str}"
+                 id="sub_{sub.pk}"
                  data-quantity="{sub.quantity}"
-                 data-unidad="{unidad}"
+                 data-periodo="{periodo}"
                  data-code="{code}"
                  data-service="{title}" data-summary="{summary}">
           <label class="form-check-label" for="sub_{sub.pk}">
-            <strong>{title}</strong> <span class="text-muted">({unidad})</span>
+            <strong>{title}</strong>
+            <br><span class="text-muted">{periodo}</span>
             <br><small class="text-muted">{summary}</small>
           </label>
         </div>

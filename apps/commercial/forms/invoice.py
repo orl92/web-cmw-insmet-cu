@@ -22,6 +22,15 @@ class InvoiceItemForm(forms.Form):
         label='Servicio',
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
+    start_date = forms.DateField(
+        label='Inicio del servicio',
+        help_text=(
+            'Fecha en que el servicio empieza para el cliente. Ya viene con la '
+            'fecha de la factura: cambiala sólo si el servicio empezó antes.'
+        ),
+        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
     codigo = forms.CharField(
         max_length=50,
         required=False,
@@ -32,7 +41,7 @@ class InvoiceItemForm(forms.Form):
         required=True,
         label='Cantidad',
         help_text='Cantidad de meses o días según el tipo de servicio.',
-        widget=forms.NumberInput(attrs={'class': 'form-control quantity-days', 'min': '1'}),
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
     )
     unidad_medida = forms.CharField(
         max_length=5,
@@ -54,7 +63,11 @@ class InvoiceItemForm(forms.Form):
         them. `unidad_medida` follows the service category: agrometeo bills months,
         every other category bills days, so the same period means 3 for agrometeo
         and 90 for pronostico. `cantidad` is the opposite — the operator owns it,
-        and the browser only proposes a value for it.
+        and `start_date` is its own too: it is the contract with the customer, so
+        it travels per line and is never derived from the invoice.
+
+        There is no unit selector on purpose: it would duplicate a fact that
+        `service_category` already states.
         """
         cleaned_data = super().clean()
         service = cleaned_data.get('service')
@@ -134,20 +147,20 @@ InvoiceCostAllocationFormSet = modelformset_factory(
 
 
 class InvoiceForm(forms.Form):
+    """Datos de la factura. Los períodos no están acá.
+
+    El período facturado es `period_label` y nada más: es el texto que se
+    imprime. El período del contrato (`ServiceSubscription.start_date` +
+    `quantity`) es de otra entidad y viaja en cada línea de la facturación
+    manual —`InvoiceItemForm.start_date`—, porque una sola fecha compartida
+    obligaría a mentir en cuanto el cliente empezó dos servicios en días
+    distintos.
+    """
+
     customer = forms.ModelChoiceField(
         queryset=Customer.objects.filter(record_active=True),
         label='Cliente',
         widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_customer'}),
-    )
-    start_date = forms.DateField(
-        label='Fecha de inicio',
-        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
-    )
-    end_date = forms.DateField(
-        label='Fecha de fin',
-        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
     commercial_registry = forms.CharField(
         max_length=50,

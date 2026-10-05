@@ -1121,9 +1121,12 @@ class InvoiceItemFormTests(TestCase):
         )
 
     def _data(self, service, **overrides):
-        # El navegador manda el precio del servicio; clean() lo vuelve a derivar igual.
+        # El navegador manda el precio del servicio; clean() lo vuelve a derivar
+        # igual. El inicio viaja por línea: es el acuerdo con el cliente y no el
+        # período de la factura.
         data = {
             'service': service.pk,
+            'start_date': '15/01/2026',
             'codigo': service.code or '',
             'cantidad': 3,
             'unidad_medida': 'U',

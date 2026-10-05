@@ -52,6 +52,7 @@ def _make_superuser(username):
 
 
 def _periodo(offset_days=1):
+    """Fecha inicial de una línea de facturación manual."""
     inicio = timezone.now().date()
     return inicio.isoformat(), (inicio + timedelta(days=offset_days)).isoformat()
 
@@ -113,11 +114,11 @@ class RegenerarCasoBase(TestCase):
         self.client.force_login(self.admin)
 
     def _formulario(self):
-        inicio, fin = _periodo()
+        # El lote factura el período que escribió el operador; las fechas del
+        # contrato no viajan: las tiene cada suscripción.
         return {
             'customer': self.customer.pk,
-            'start_date': inicio,
-            'end_date': fin,
+            'period_label': 'Mayo 2026',
             'commercial_registry': 'REG-RGN-01',
             'subscriptions': [str(self.sub.pk)],
             'regenerar': str(self.sub.uuid),
@@ -345,11 +346,10 @@ class RegenerarEnFacturacionManualTests(RegenerarCasoBase):
     """Facturación manual: la suscripción regenerada no está en la factura."""
 
     def _formulario_manual(self):
-        inicio, fin = _periodo()
+        inicio, _fin = _periodo()
         return {
             'customer': self.customer.pk,
-            'start_date': inicio,
-            'end_date': fin,
+            'period_label': 'Mayo 2026',
             'commercial_registry': 'REG-RGN-02',
             'regenerar': str(self.sub.uuid),
             'items-TOTAL_FORMS': '1',
@@ -357,6 +357,7 @@ class RegenerarEnFacturacionManualTests(RegenerarCasoBase):
             'items-MIN_NUM_FORMS': '0',
             'items-MAX_NUM_FORMS': '1000',
             'items-0-service': str(self.service.pk),
+            'items-0-start_date': inicio,
             'items-0-cantidad': '5',
             'items-0-precio': '45.00',
             'items-0-unidad_medida': 'DÍA',

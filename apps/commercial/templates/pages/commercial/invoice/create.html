@@ -65,7 +65,7 @@
   </div>
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Período de Facturación' %}
-  <!-- Período impreso en la factura: texto libre, como en las facturas reales -->
+  <!-- Sólo el período facturado: el del contrato es de cada línea, no de la factura -->
   <div class="row">
     <div class="col-12 mb-3">
       <label class="form-label" for="{{ form.period_label.id_for_label }}">{{ form.period_label.label }}</label>
@@ -83,20 +83,6 @@
         <div class="invalid-feedback d-block">{{ form.period_label.errors.0 }}</div>
       {% endif %}
     </div>
-  </div>
-  <!-- Fechas y duración: datos operativos del cálculo, no del texto impreso -->
-  <div class="row">
-    <div class="col-md-4 mb-3">
-      {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
-    </div>
-    <div class="col-md-4 mb-3">
-      {% include 'includes/dashboard/date_field.html' with field=form.end_date value=form.end_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
-    </div>
-    <div class="col-md-4 mb-3">
-      <label class="form-label">Días del período</label>
-      <input type="text" class="form-control" id="days-count" value="0" readonly />
-    </div>
-  </div>
   </div>
   </div>
   </div>
@@ -123,38 +109,47 @@
           <div id="items-container">
             {% for item_form in items_formset %}
               <div class="item-row card mb-3">
-                <div class="card-body d-flex align-items-end">
-                  <div class="flex-grow-1 row g-3">
-                    <div class="col-md-4">
-                      <label class="form-label">{{ item_form.service.label }}</label>
-                      {{ item_form.service }}
+                <div class="card-body">
+                  <div class="d-flex align-items-start">
+                    <div class="flex-grow-1">
+                      <div class="row g-3">
+                        <div class="col-md-4 mb-0">
+                          <label class="form-label">{{ item_form.service.label }}</label>
+                          {{ item_form.service }}
+                        </div>
+                        <div class="col-md-4">
+                          {% include 'includes/dashboard/date_field.html' with field=item_form.start_date value=item_form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
+                        </div>
+                        <div class="col-md-2 mb-0">
+                          <label class="form-label">{{ item_form.cantidad.label }}</label>
+                          {{ item_form.cantidad }}
+                          <small class="form-text text-muted">{{ item_form.cantidad.help_text }}</small>
+                        </div>
+                        <div class="col-md-2 mb-0">
+                          <label class="form-label">{{ item_form.codigo.label }}</label>
+                          {{ item_form.codigo }}
+                        </div>
+                      </div>
+                      <div class="row g-3">
+                        <div class="col-md-2 mb-0">
+                          <label class="form-label">{{ item_form.unidad_medida.label }}</label>
+                          {{ item_form.unidad_medida }}
+                        </div>
+                        <div class="col-md-4 mb-0">
+                          <label class="form-label">{{ item_form.precio.label }}</label>
+                          {{ item_form.precio }}
+                        </div>
+                      </div>
                     </div>
-                    <div class="col-md-2">
-                      <label class="form-label">{{ item_form.codigo.label }}</label>
-                      {{ item_form.codigo }}
+                    <div class="ms-3">
+                      <button type="button"
+                              class="btn btn-sm btn-icon btn-outline-danger remove-row"
+                              data-bs-toggle="tooltip"
+                              data-bs-placement="bottom"
+                              title="Eliminar servicio">
+                        <i class="icon ti ti-trash"></i>
+                      </button>
                     </div>
-                    <div class="col-md-2">
-                      <label class="form-label">{{ item_form.cantidad.label }}</label>
-                      {{ item_form.cantidad }}
-                      <small class="form-text text-muted">{{ item_form.cantidad.help_text }}</small>
-                    </div>
-                    <div class="col-md-1">
-                      <label class="form-label">{{ item_form.unidad_medida.label }}</label>
-                      {{ item_form.unidad_medida }}
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label">{{ item_form.precio.label }}</label>
-                      {{ item_form.precio }}
-                    </div>
-                  </div>
-                  <div class="ms-3">
-                    <button type="button"
-                            class="btn btn-sm btn-icon btn-outline-danger remove-row"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="bottom"
-                            title="Eliminar servicio">
-                      <i class="icon ti ti-trash"></i>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -480,9 +475,6 @@
   const customerSelect = document.getElementById('id_customer');
   const groupedContainer = document.getElementById('subscriptions-grouped');
   const manualContainer = document.getElementById('manual-container');
-  const startDateInput = document.getElementById('id_start_date');
-  const endDateInput = document.getElementById('id_end_date');
-  const daysCountInput = document.getElementById('days-count');
   // Suscripción que el operador pidió regenerar: el servidor la pasa en un
   // campo oculto y acá se usa para dejarla marcada. Sin esto el operador ve el
   // grupo de pendientes sin nada seleccionado y factura cualquier otra cosa.
@@ -508,121 +500,43 @@
       .replace(/'/g, '&#039;');
   }
 
-  // Convierte el valor visible del picker (dd/mm/yyyy) a Date.
-  // Usa window.pickerDateToIso cuando está disponible (lo define tempus-init en
-  // DOMContentLoaded). Si aún no existe —el script corre durante el parseo, antes
-  // de ese evento— aplica el mismo parseo local para no depender del orden de carga.
-  function parsePickerDate(value) {
-    let iso = '';
-    if (typeof window.pickerDateToIso === 'function') {
-      iso = window.pickerDateToIso(value);
-    } else if (value) {
-      const s = String(value).trim();
-      const parts = s.split('/');
-      if (parts.length === 3) {
-        iso = parts[2] + '-' + parts[1] + '-' + parts[0];
-      } else if (s.split('-').length === 3 && s.split('-')[0].length === 4) {
-        iso = s;
-      }
-    }
-    if (!iso) return null;
-    const d = new Date(iso + 'T00:00:00');
-    return isNaN(d) ? null : d;
-  }
-
-  // Fija la fecha en el picker Tempus (y en el input) a partir de un ISO yyyy-mm-dd.
-  function setPickerValue(input, isoDateStr) {
-    const dt = new Date(isoDateStr + 'T00:00:00');
-    const picker = window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id];
-    if (picker && picker.dates && typeof picker.dates.setValue === 'function') {
-      picker.dates.setValue(dt);
-    }
-    // window.formatPickerDate se define en tempus-init (DOMContentLoaded); si aún
-    // no existe, formateamos localmente (dd/mm/aaaa) para no depender del orden.
-    if (typeof window.formatPickerDate === 'function') {
-      input.value = window.formatPickerDate(dt);
-    } else {
-      const pad = n => String(n).padStart(2, '0');
-      input.value = pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear();
-    }
-    updateDaysFromInputs();
-  }
-
   // ========== Helpers ==========
-  function calculateDays(start, end) {
-    const s = parsePickerDate(start);
-    const e = parsePickerDate(end);
-    if (!s || !e) return 0;
-    const diff = e - s;
-    return diff >= 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
-  }
-
-  // Meses que reproducen lo más cerca posible el período elegido por el operador.
   //
-  // Se redondea contra el promedio real del año (365.2425/12) porque contar
-  // "meses completos" deja casi todos los meses a medio camino y el operador ve
-  // un número que no corresponde al período facturado.
-  const DAYS_PER_MONTH = 365.2425 / 12;
-
-  function calculateMonths(start, end) {
-    const s = parsePickerDate(start);
-    const e = parsePickerDate(end);
-    if (!s || !e || e < s) return 0;
-    const months = Math.round((e - s) / (DAYS_PER_MONTH * 24 * 60 * 60 * 1000));
-    return Math.max(months, 0);
+  // No queda ningún rango de fechas en la pantalla, así que no hay nada que
+  // medir: `cantidad` y `start_date` son de la línea y los pone el operador. Lo
+  // único que se propone es la fecha de la factura como inicio, que es el caso
+  // común (el servicio empieza a facturarse hoy) y se cambia sólo si el cliente
+  // empezó antes.
+  function fechaDeFactura() {
+    const hoy = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return pad(hoy.getDate()) + '/' + pad(hoy.getMonth() + 1) + '/' + hoy.getFullYear();
   }
 
-  // Propuesta para la línea manual: el período medido en la unidad del servicio.
-  // Nunca por debajo de 1 porque el campo exige min_value=1. El operador la ajusta.
-  function proposeQuantity(row) {
-    const serviceSelect = row.querySelector('select[id$="-service"]');
-    const data = servicesMap[serviceSelect ? serviceSelect.value : ''];
-    const quantity = data && data.unit === 'MES'
-      ? calculateMonths(startDateInput.value, endDateInput.value)
-      : calculateDays(startDateInput.value, endDateInput.value);
-    return Math.max(quantity, 1);
+  // Sólo el input: el picker de una fila clonada no existe (tempus-init inicializa
+  // los `[data-tempus]` una vez, en DOMContentLoaded), así que la fecha se escribe
+  // en dd/mm/aaaa, que es lo que el form acepta igual.
+  function proposeLineStartDate(row) {
+    const input = row.querySelector('input[id$="-start_date"]');
+    if (input) input.value = fechaDeFactura();
   }
-
-  function updateDaysFromInputs() {
-    daysCountInput.value = calculateDays(startDateInput.value, endDateInput.value);
-    document.querySelectorAll('#items-container .item-row').forEach(row => {
-      const quantityInput = row.querySelector('.quantity-days');
-      if (quantityInput) quantityInput.value = proposeQuantity(row);
-    });
-  }
-
-  // *** MEJORA: actualización en tiempo real al cambiar fechas (picker + input) ***
-  function wirePicker(input) {
-    // El picker se crea en DOMContentLoaded (tempus-init). Si aún no existe,
-    // reintentamos en DOMContentLoaded (que corre después de tempus-init).
-    function subscribe() {
-      if (!window.tempusDominus || !window.tempusDominus._instances) return;
-      const picker = window.tempusDominus._instances[input.id];
-      if (picker && picker.subscribe && window.tempusDominus.Namespace) {
-        picker.subscribe(window.tempusDominus.Namespace.events.change, updateDaysFromInputs);
-      }
-    }
-    subscribe();
-    if (!(window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id])) {
-      document.addEventListener('DOMContentLoaded', subscribe);
-    }
-    input.addEventListener('change', updateDaysFromInputs);
-    input.addEventListener('input', updateDaysFromInputs);
-  }
-  if (startDateInput && endDateInput) {
-    wirePicker(startDateInput);
-    wirePicker(endDateInput);
-    updateDaysFromInputs(); // valor inicial
-  }
-  // ***********************************************************************************************************************
 
   function switchToManualInvoice() {
     groupedContainer.style.display = 'none';
     manualContainer.style.display = 'block';
-    const today = new Date().toISOString().split('T')[0];
-    const nextMonth = new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0];
-    setPickerValue(startDateInput, today);
-    setPickerValue(endDateInput, nextMonth);
+    // Las líneas ya nacieron con la fecha de la factura; sólo las que el operador
+    // vació o las que agrega después la necesitan de vuelta.
+    document.querySelectorAll('#items-container .item-row').forEach(proposeLineStartDate);
+  }
+
+  // Un cliente sin suscripciones pendientes factura igual a mano, así que el
+  // formulario tiene que quedar listo para usar sin que el operador llegue a
+  // tocar el botón "Facturación manual" que en ese caso no existe.
+  function mostrarFacturacionManual() {
+    groupedContainer.innerHTML = '';
+    groupedContainer.style.display = 'none';
+    manualContainer.style.display = 'block';
+    switchToManualInvoice();
   }
 
   // ========== Carga de suscripciones ==========
@@ -642,10 +556,7 @@
         tempDiv.innerHTML = html;
         const checkboxes = tempDiv.querySelectorAll('.subscription-check');
         if (checkboxes.length === 0) {
-          groupedContainer.innerHTML = '';
-          groupedContainer.style.display = 'none';
-          manualContainer.style.display = 'block';
-          updateDaysFromInputs();
+          mostrarFacturacionManual();
           return;
         }
 
@@ -662,25 +573,30 @@
         `;
 
         checkboxes.forEach(cb => {
-          const start = cb.dataset.start || '';
           let summary = cb.dataset.summary ? cb.dataset.summary : '';
           if (summary.length > 80) {
             summary = summary.substring(0, 80) + '…';
           }
-          const unidad = cb.dataset.unitidad ? `<span class="text-muted">(${escapeHtml(cb.dataset.unidad)})</span> ` : '';
+          // El período del contrato se muestra tal como lo devuelve el servidor
+          // (fecha de inicio + unidad derivada): es un dato de la suscripción, no
+          // algo que la factura pueda cambiar. El período facturado es el de
+          // arriba y no se manda desde acá.
+          const periodo = cb.dataset.periodo
+            ? `<span class="text-muted">${escapeHtml(cb.dataset.periodo)}</span><br>`
+            : '';
           htmlResult += `
               <div class="form-check">
                 <input class="form-check-input subscription-check" type="checkbox"
                        name="subscriptions" value="${cb.value}" id="sub_${cb.value}"
-                       data-start="${start}"
                        data-quantity="${cb.dataset.quantity}"
+                       data-periodo="${escapeHtml(cb.dataset.periodo || '')}"
                        data-code="${escapeHtml(cb.dataset.code || '')}"
                        data-service="${escapeHtml(cb.dataset.service)}"
-                       data-unidad="${escapeHtml(cb.dataset.unidad || '')}"
                        data-summary="${escapeHtml(summary)}">
                 <label class="form-check-label" for="sub_${cb.value}">
-                  <strong>${escapeHtml(cb.dataset.service)}</strong> ${unidad}
-                  ${summary ? `<br><small class="text-muted">${escapeHtml(summary)}</small>` : ''}
+                  <strong>${escapeHtml(cb.dataset.service)}</strong>
+                  ${periodo}
+                  ${summary ? `<small class="text-muted">${escapeHtml(summary)}</small>` : ''}
                 </label>
               </div>
           `;
@@ -701,7 +617,6 @@
         }
 
         preseleccionarRegeneracion();
-        updateDaysFromInputs();
       })
       .catch(function(error) {
         console.error('Error al cargar suscripciones:', error);
@@ -821,8 +736,9 @@
       priceInput.value = '';
       unitInput.value = 'U';
     }
-    const quantityInput = row.querySelector('.quantity-days');
-    if (quantityInput) quantityInput.value = proposeQuantity(row);
+    // La cantidad no se propone: sin rango de fechas ya no hay nada que medir, y un
+    // número inventado que el operador no revisa es peor que un campo vacío que
+    // lo obliga a pensar cuánto se está cobrando. El campo exige `min=1`.
   }
 
   function bindRowEvents(row) {
@@ -836,6 +752,10 @@
         if (currentCount <= 1) {
           row.querySelectorAll('input:not([type="hidden"]), textarea').forEach(el => el.value = '');
           row.querySelector('select').selectedIndex = 0;
+          // La fecha es obligatoria: borrar la fila es dejarla en blanco para
+          // que el operador la escriba, no dejar un campo requerido sin valor
+          // que impide mandar el formulario.
+          proposeLineStartDate(row);
           updateRowFromService(row);
           return;
         }
@@ -876,6 +796,9 @@
     container.appendChild(newRow);
     totalForms.value = currentCount + 1;
     bindRowEvents(newRow);
+    // La fila nueva arranca con la fecha de la factura; el servicio y la
+    // cantidad los elige el operador.
+    proposeLineStartDate(newRow);
     updateRowFromService(newRow);
   });
 
