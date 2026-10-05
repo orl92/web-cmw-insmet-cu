@@ -1,15 +1,19 @@
 import uuid
-from datetime import timedelta
 
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
-from django.utils import timezone
+from django.db.models import Count, Q
 
 from apps.core.models import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
-from apps.core.validators import validate_account, validate_nit, validate_phones, validate_reeup
+from apps.core.validators import (
+    validate_account,
+    validate_image_upload,
+    validate_nit,
+    validate_phones,
+    validate_reeup,
+)
 
 
 class Customer(SoftDeleteModel):
@@ -23,6 +27,12 @@ class Customer(SoftDeleteModel):
         choices=ClientType.choices,
         default=ClientType.JURIDICA,
         verbose_name='Tipo de Cliente',
+    )
+    identity_document = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        verbose_name='Documento de identidad',
     )
     company_name = models.CharField(
         max_length=100,
@@ -80,10 +90,30 @@ class Customer(SoftDeleteModel):
             ('delete_customer', 'Eliminar'),
         )
 
-    def __str__(self):
+    @property
+    def display_name(self):
+        """Nombre del cliente tal como debe mostrarse en la interfaz.
+
+        `company_name` solo existe para personas jurídicas: en una natural está
+        vacío, y las plantillas que leían el campo crudo imprimían `None` en
+        lugar del nombre de la persona, que vive en el User. Se centraliza acá
+        para que listados, tooltips y atributos `data-*` no diverjan.
+        """
+        try:
+            user = self.user
+        except ObjectDoesNotExist:
+            # Una instancia sin `user_id` todavía (no guardada, o
+            # cargada con `.only()`) no tiene a quién mostrarle nombre: se
+            # devuelve un placeholder legible en vez de explotar en la plantilla.
+            user = None
+        full_name = user.get_full_name() if user else ''
+        fallback = full_name or (user.username if user else '')
         if self.client_type == self.ClientType.NATURAL:
-            return f'{self.user.get_full_name() or self.user.username}'
-        return self.company_name or self.user.get_full_name() or self.user.username
+            return fallback or '—'
+        return self.company_name or fallback or '—'
+
+    def __str__(self):
+        return self.display_name
 
 
 class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
@@ -119,7 +149,11 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
         upload_to=pdf_upload_path, blank=True, null=True, verbose_name='Archivo PDF'
     )
     image = models.ImageField(
-        upload_to=image_upload_path, blank=True, null=True, verbose_name='Imagen'
+        upload_to=image_upload_path,
+        blank=True,
+        null=True,
+        verbose_name='Imagen',
+        validators=[validate_image_upload],
     )
     code = models.CharField(
         max_length=50, unique=True, null=True, blank=True, verbose_name='Código del servicio'
@@ -163,19 +197,12 @@ class Service(SoftDeleteModel, FileHandlerMixin, models.Model):
             return ''
         return f'${self.price:.2f} / {self.get_billing_period_display()}'
 
-    @staticmethod
-    def compute_end_date(start_date, quantity, category='pronostico'):
-        if category == 'agrometeo':
-            return start_date + relativedelta(months=quantity)
-        return start_date + timedelta(days=quantity)
-
 
 class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
     PAYMENT_STATUS_CHOICES = [
         ('requested', 'Solicitado'),
         ('pending', 'Pendiente de pago'),
         ('paid', 'Pagado'),
-        ('expired', 'Expirado'),
     ]
     PAYMENT_METHOD_CHOICES = [
         ('qr', 'Pago por Código QR'),
@@ -187,7 +214,6 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='Cliente')
     service = models.ForeignKey(Service, on_delete=models.CASCADE, verbose_name='Servicio')
     start_date = models.DateTimeField(verbose_name='Fecha de inicio', null=True, blank=True)
-    end_date = models.DateTimeField(verbose_name='Fecha de expiración', null=True, blank=True)
     quantity = models.PositiveIntegerField(
         default=1,
         validators=[MinValueValidator(1)],
@@ -221,13 +247,12 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
             ('delete_subscription', 'Eliminar'),
         )
 
-    def clean(self):
-        if self.start_date and self.end_date and self.start_date >= self.end_date:
-            raise ValidationError('La fecha de inicio debe ser anterior a la fecha de expiración.')
-
     @property
     def is_active(self):
-        return self.payment_status == 'paid' and self.end_date and self.end_date > timezone.now()
+        """Una suscripción está activa cuando está pagada y no ha sido cancelada."""
+        if not self.record_active:
+            return False
+        return self.payment_status == 'paid'
 
     def get_quantity_period_display(self):
         """Cantidad + unidad de facturación: `1 día`, `3 meses`, `30 días`."""
@@ -237,20 +262,62 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
 
     @property
     def status_display(self):
-        if self.payment_status == 'paid' and self.end_date and self.end_date > timezone.now():
-            return 'activo'
-        elif self.payment_status == 'pending':
-            return 'pendiente de pago'
-        elif self.payment_status == 'requested':
-            return 'solicitado'
-        else:
-            return 'expirado'
+        """Estado único del ciclo de vida, para listados y exportaciones.
+
+        `cancelada` sale de la baja lógica (`record_active`), no de un valor
+        propio de `payment_status`: anular ya marca `record_active=False`, y
+        llevar el mismo dato en dos campos es la forma más directa de que
+        diverjan. El estado es sólo el del pago: una suscripción no tiene
+        expiración que consultarse acá.
+        """
+        if not self.record_active:
+            return 'cancelada'
+        return {
+            'requested': 'solicitado',
+            'pending': 'pendiente',
+            'paid': 'pagado',
+        }.get(self.payment_status, 'solicitado')
 
     def __str__(self):
         return f'{self.customer.company_name} - {self.service.title}'
 
 
+class InvoiceQuerySet(models.QuerySet):
+    def for_subscription(self, sub):
+        """Facturas de una suscripción, por cualquiera de los dos caminos.
+
+        `Invoice.subscription` es un ancla de conveniencia y queda NULL cuando la
+        factura cubre varias suscripciones: la facturación por lote agrupa
+        suscripciones con el mismo período y la manual de varios servicios sólo
+        cuelga la primera. El vínculo que nunca falta es el de cada línea
+        (`InvoiceItem.subscription`), así que leer sólo la relación inversa deja
+        al cliente sin botones de factura justo en esos casos.
+        """
+        return self.filter(Q(subscription=sub) | Q(items__subscription=sub)).distinct()
+
+    def with_display_status(self):
+        """Anota el conteo de líneas pagadas para no repetir la consulta por fila.
+
+        `Invoice.status_display` cae a las líneas cuando no encuentra estas
+        anotaciones, así que sin esto el listado pagaría una consulta por
+        factura.
+        """
+        return self.annotate(
+            items_total=Count(
+                'items__subscription',
+                distinct=True,
+                filter=Q(items__subscription__isnull=False),
+            ),
+            items_paid=Count(
+                'items__subscription',
+                distinct=True,
+                filter=Q(items__subscription__payment_status='paid'),
+            ),
+        )
+
+
 class Invoice(SoftDeleteModel, FileHandlerMixin):
+    objects = InvoiceQuerySet.as_manager()
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     subscription = models.ForeignKey(
         ServiceSubscription,
@@ -270,15 +337,58 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
     )
     number = models.CharField(max_length=50, unique=True, verbose_name='Número de factura')
     issue_date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de emisión')
+    period_label = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Período facturado',
+        help_text=(
+            'Texto libre tal como se imprime en la factura. Ej.: '
+            '"Mes de mayo y junio de 2025", "octubre y noviembre del 2025". '
+            'Si se deja vacío se usa la fecha de emisión.'
+        ),
+    )
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Monto')
     pdf = models.FileField(
         upload_to=pdf_upload_path, verbose_name='Archivo PDF', blank=True, null=True
     )
     is_cancelled = models.BooleanField(default=False, verbose_name='¿Anulada?')
-    email_sent = models.BooleanField(default=False, verbose_name='Correo enviado')
+
+    class PdfStatus(models.TextChoices):
+        PENDING = 'pending', 'Pendiente'
+        READY = 'ready', 'Generado'
+        FAILED = 'failed', 'Falló'
+
+    class EmailStatus(models.TextChoices):
+        PENDING = 'pending', 'Pendiente'
+        SENT = 'sent', 'Enviado'
+        FAILED = 'failed', 'Falló'
+
+    pdf_status = models.CharField(
+        max_length=10,
+        choices=PdfStatus.choices,
+        default=PdfStatus.PENDING,
+        verbose_name='Estado del PDF',
+    )
+    pdf_error = models.TextField(blank=True, null=True, verbose_name='Error al generar el PDF')
+    email_status = models.CharField(
+        max_length=10,
+        choices=EmailStatus.choices,
+        default=EmailStatus.PENDING,
+        verbose_name='Estado del correo',
+    )
     email_error = models.TextField(blank=True, null=True, verbose_name='Error al enviar')
 
     file_fields = ['pdf']
+
+    @property
+    def pdf_ready(self):
+        """El PDF se puede mostrar y descargar solo si el render terminó bien.
+
+        No alcanza con que el archivo exista: un render fallido a mitad de
+        camino deja el campo `pdf` PopulationError. El estado explícito es lo
+        que decide si los botones aparecen.
+        """
+        return self.pdf_status == self.PdfStatus.READY and bool(self.pdf)
 
     class Meta:
         verbose_name = 'Factura'
@@ -295,6 +405,31 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
     def clean(self):
         if self.amount is not None and self.amount <= 0:
             raise ValidationError('El monto de la factura debe ser mayor que cero.')
+
+    @property
+    def status_display(self):
+        """Estado derivado: la fuente de verdad del pago es la suscripción.
+
+        No hay campo de estado en la factura a propósito. La facturación por
+        lote cubre varias suscripciones y cada una se aprueba por separado, así
+        que un campo propio sólo añadiría una segunda fuente de verdad capaz de
+        divergir de la real. Se lee de las líneas, o de las anotaciones que
+        deja `with_display_status()` cuando el listado ya las trajo.
+        """
+        if self.is_cancelled:
+            return 'cancelada'
+        if hasattr(self, 'items_total'):
+            total, paid = self.items_total, self.items_paid
+        else:
+            # `filter`, nunca `exclude`: `items` es una relación inversa, y
+            # excluir sobre una relación multi-valorada arma un subquery que
+            # termina descartando todas las líneas.
+            subs = self.items.filter(subscription__isnull=False).values_list(
+                'subscription__payment_status', flat=True
+            )
+            states = list(subs)
+            total, paid = len(states), states.count('paid')
+        return 'pagada' if total and paid == total else 'pendiente'
 
     def __str__(self):
         if self.subscription:
@@ -341,6 +476,49 @@ class InvoiceItem(models.Model):
         self.importe = self.cantidad * self.precio
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class InvoiceCostAllocation(models.Model):
+    """Reparto del importe de una factura entre centros de costo.
+
+    Las tres facturas reales del CMP reparten de forma distinta: 182 a un solo
+    centro al 100 %, 279 a dos centros (90/10) y 276 a tres centros (25/65/10).
+    Con un solo centro el reparto era un literal fijo en el template, y las otras
+    dos facturas salían con la imputación contable equivocada.
+
+    No es un dato derivable de los ítems: la 276 tiene un único ítem repartido en
+    tres centros, cosa que ningún cálculo sobre montos puede producir. Por eso es
+    una tabla y no una columna. Lo único derivable es el centro por defecto, que
+    viaja en el prefijo del código de servicio.
+
+    La regla de que las filas sumen 100 % NO se valida acá a propósito: vive en el
+    formset, porque en el modelo impediría borrar y rehacer el reparto con
+    `can_delete`, que es la operación normal cuando el operador corrige.
+    """
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='cost_allocations')
+    codigo = models.CharField(max_length=50, verbose_name='Centro de Costo')
+    porcentaje = models.DecimalField(max_digits=6, decimal_places=2, verbose_name='Porcentaje')
+
+    class Meta:
+        verbose_name = 'Asignación de centro de costo'
+        verbose_name_plural = 'Asignaciones de centro de costo'
+        ordering = ['codigo']
+        default_permissions = ()
+        permissions = (
+            ('view_invoice_cost_allocation', 'Ver'),
+            ('add_invoice_cost_allocation', 'Añadir'),
+            ('change_invoice_cost_allocation', 'Editar'),
+            ('delete_invoice_cost_allocation', 'Eliminar'),
+        )
+
+    def __str__(self):
+        return f'{self.codigo} {self.porcentaje:f} %'
+
+    def clean(self):
+        if self.porcentaje is not None and self.porcentaje <= 0:
+            raise ValidationError('El porcentaje debe ser mayor que cero.')
 
 
 class Contract(SoftDeleteModel):

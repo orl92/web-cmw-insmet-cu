@@ -28,6 +28,22 @@ class SafeCacheDegradationTests(TestCase):
         safe_cache_set('healthy:key', 'value', 60)
         self.assertEqual(safe_cache_get('healthy:key'), 'value')
 
+    def test_safe_cache_get_degrades_when_driver_package_missing(self):
+        # `redis` ships in prod.txt only, so USE_REDIS_CACHE=True on a box
+        # without it raises ModuleNotFoundError at the first cache call. That
+        # is an ImportError, not an OSError: if the wrappers only caught the
+        # latter, a dev asking for Redis would get a 500 instead of a cache miss.
+        missing = ModuleNotFoundError("No module named 'redis'")
+        backend = caches['default']
+        with patch.object(backend, 'get', side_effect=missing):
+            self.assertEqual(safe_cache_get('missing-key', 'fallback'), 'fallback')
+
+    def test_safe_cache_set_swallows_missing_driver(self):
+        missing = ModuleNotFoundError("No module named 'redis'")
+        backend = caches['default']
+        with patch.object(backend, 'set', side_effect=missing):
+            safe_cache_set('k', 'v', 60)  # must not raise
+
 
 class CacheBackendConfigTests(TestCase):
     """CACHE-1: backend selection is environment-driven with LocMemCache fallback."""
@@ -63,7 +79,7 @@ class CacheBackendConfigTests(TestCase):
 
 
 class RateLimitIpRegressionTests(TestCase):
-    """rate_limit_ip must keep working against the (now shared) default cache."""
+    """rate_limit_ip must keep working against the shared default cache."""
 
     def test_rate_limit_blocks_after_threshold(self):
         factory = RequestFactory()

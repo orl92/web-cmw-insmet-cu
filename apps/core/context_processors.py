@@ -39,40 +39,44 @@ def menu_notifications(request):
 
     if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
         try:
+            from django.db.models import Count, Q
+
             from apps.commercial.models import ServiceSubscription
 
-            context['staff_requested_count'] = ServiceSubscription.objects.filter(
-                payment_status='requested', record_active=True
-            ).count()
-            context['staff_pending_count'] = ServiceSubscription.objects.filter(
-                payment_status='pending', record_active=True
-            ).count()
-            context['staff_expired_count'] = ServiceSubscription.objects.filter(
-                payment_status='expired', record_active=True
-            ).count()
+            # Una sola consulta agregada en vez de un count por estado: los
+            # badges salen en cada página del panel.
+            counts = ServiceSubscription.objects.filter(record_active=True).aggregate(
+                requested=Count('pk', filter=Q(payment_status='requested')),
+                pending=Count('pk', filter=Q(payment_status='pending')),
+            )
+            context['staff_requested_count'] = counts['requested']
+            context['staff_pending_count'] = counts['pending']
         except Exception as e:
             logger.warning('Staff counts query failed: %s', e)
             context['staff_requested_count'] = 0
             context['staff_pending_count'] = 0
-            context['staff_expired_count'] = 0
 
     if request.user.is_authenticated and hasattr(request.user, 'commercial_customer'):
         try:
+            from django.db.models import Count, Q
+
             from apps.commercial.models import ServiceSubscription
 
             customer = request.user.commercial_customer
-            context['client_requested_count'] = ServiceSubscription.objects.filter(
-                customer=customer, payment_status='requested', record_active=True
-            ).count()
-            context['client_pending_count'] = ServiceSubscription.objects.filter(
-                customer=customer, payment_status='pending', record_active=True
-            ).count()
-            context['client_expired_count'] = ServiceSubscription.objects.filter(
-                customer=customer, payment_status='expired', record_active=True
-            ).count()
-            context['client_active_count'] = ServiceSubscription.objects.filter(
-                customer=customer, payment_status='paid', end_date__gt=now, record_active=True
-            ).count()
+            counts = ServiceSubscription.objects.filter(
+                customer=customer, record_active=True
+            ).aggregate(
+                requested=Count('pk', filter=Q(payment_status='requested')),
+                pending=Count('pk', filter=Q(payment_status='pending')),
+                active=Count('pk', filter=Q(payment_status='paid')),
+                total=Count('pk'),
+            )
+            context['client_requested_count'] = counts['requested']
+            context['client_pending_count'] = counts['pending']
+            context['client_active_count'] = counts['active']
+            # El total es lo que decide si "Mis Servicios" aparece: el cliente
+            # lo necesita con cualquier suscripción, también pagada y vencida.
+            context['client_subscriptions_count'] = counts['total']
             context['client_pending_actions'] = (
                 context['client_requested_count'] + context['client_pending_count']
             )
@@ -80,10 +84,9 @@ def menu_notifications(request):
             logger.warning('Client counts query failed: %s', e)
             context['client_requested_count'] = 0
             context['client_pending_count'] = 0
-            context['client_expired_count'] = 0
             context['client_active_count'] = 0
+            context['client_subscriptions_count'] = 0
             context['client_pending_actions'] = 0
-            context['client_total_notifications'] = 0
 
     context.setdefault('early_warning_count', 0)
     context.setdefault('tropical_cyclone_count', 0)

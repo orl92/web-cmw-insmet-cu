@@ -3,15 +3,18 @@ from decimal import Decimal
 
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 
 from apps.commercial.models import (
+    Certificate,
     Customer,
     Invoice,
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import natural_customer
 from apps.core.models import SiteConfiguration
 
 
@@ -55,9 +58,8 @@ class BulkExportTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance()
         cls.admin = _make_superuser('bulkadmin')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('bulexpcust'),
+        cls.customer = natural_customer(
+            _make_user('bulexpcust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -126,16 +128,14 @@ class BulkDeleteTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance()
         cls.admin = _make_superuser('bulkdeladmin')
-        cls.customer1 = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('bulkdel1'),
+        cls.customer1 = natural_customer(
+            _make_user('bulkdel1'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
         )
-        cls.customer2 = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('bulkdel2'),
+        cls.customer2 = natural_customer(
+            _make_user('bulkdel2'),
             address='Addr2',
             phone='87654321',
             account='9876543210987654',
@@ -202,9 +202,8 @@ class BulkPermissionTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance()
         cls.user = _make_user('bulknoperm')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('bulknopermcust'),
+        cls.customer = natural_customer(
+            _make_user('bulknopermcust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -270,9 +269,8 @@ class BulkUpdateTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance()
         cls.admin = _make_superuser('bulkupdadmin')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('bulkupdcust'),
+        cls.customer = natural_customer(
+            _make_user('bulkupdcust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',
@@ -292,6 +290,13 @@ class BulkUpdateTests(TestCase):
         )
 
     def test_bulk_update_payment_status(self):
+        # Marcar `paid` exige el certificado entregado al cliente: sin ese
+        # respaldo la suscripción quedaría cobrada sin comprobante. Por eso la
+        # prueba del camino feliz crea el certificado antes de actualizar.
+        Certificate.objects.create(
+            subscription=self.sub,
+            pdf=SimpleUploadedFile('bulk.pdf', b'%PDF-1.4 test', 'application/pdf'),
+        )
         self.client.force_login(self.admin)
         _add_perm(self.admin, ServiceSubscription, 'change_subscription')
         url = reverse('commercial:suscripcion_bulk')
@@ -340,9 +345,8 @@ class BulkAuditTests(TestCase):
     def setUpTestData(cls):
         _disable_maintenance()
         cls.admin = _make_superuser('bulkauditadmin')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=_make_user('bulkaudcust'),
+        cls.customer = natural_customer(
+            _make_user('bulkaudcust'),
             address='Addr',
             phone='12345678',
             account='1234567890123456',

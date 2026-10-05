@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 
 from apps.commercial.models import Customer
+from apps.core.validators import validate_image_upload
 from apps.user_auth.models import Profile
 
 
@@ -87,6 +88,15 @@ class ProfileForm(forms.ModelForm):
                 if customer.client_type == customer.ClientType.JURIDICA:
                     for field_name in ['company_name', 'reeup', 'nit']:
                         self.fields[field_name].required = True
+
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get('avatar')
+        # Only validate a NEW upload: a pre-existing avatar that is already
+        # corrupted on disk must not block editing the name, the email or any
+        # other field of the profile.
+        if avatar is not None and self.files.get('avatar'):
+            validate_image_upload(avatar)
+        return avatar
 
     def clean_email(self):
         email = self.cleaned_data.get('email')

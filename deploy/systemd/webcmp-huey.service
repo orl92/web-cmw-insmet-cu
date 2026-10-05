@@ -1,0 +1,54 @@
+# Unidad systemd para el worker de Huey (correos y PDFs en segundo plano).
+#
+# Instalar en el servidor:
+#   sudo cp deploy/systemd/webcmp-huey.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now webcmp-huey
+#
+# Es un servicio aparte y a proposito: el WSGI responde HTTP y el worker de Huey
+# genera PDFs, que tarda. Meterlo en el mismo proceso hacia que un PDF largo
+# bloquee requests, y meterlo en el mismo unit hacia que reiniciar la app tumbe
+# los correos a medio enviar.
+
+[Unit]
+Description=CMP Camaguey - worker de Huey (correos y PDFs)
+Documentation=https://github.com/orl92/web-cmw-insmet-cu
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+# Huey NO implementa sd_notify, asi que aqui no cabe Type=notify: systemd
+# declararia "activo" al segundo, sin saber si el consumer arranco.
+#
+# Tampoco cabe `WatchdogSec`: el watchdog mide un heartbeat que solo existe con
+# Type=notify, asi que en un Type=simple no vigila nada. Un consumer trabado
+# (base de datos caida) NO se detecta solo; hay que mirarlo
+# (`systemctl status webcmp-huey`, journalctl -u webcmp-huey).
+Type=simple
+User=webcmp
+Group=webcmp
+
+WorkingDirectory=/srv/webcmp
+EnvironmentFile=-/etc/webcmp/encryption.env
+Environment=PRODUCTION=1
+Environment=DJANGO_SETTINGS_MODULE=config.settings
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/webcmp/media /srv/webcmp/logs
+
+# El log va a stdout, no a un archivo: journald ya lo rota, lo comprime y lo
+# indexa. Un --logfile en el codigo es un log que nadie rota nunca.
+ExecStart=/srv/webcmp/.venv/bin/huey_consumer config.huey_consumer_entry.huey --verbose
+
+Restart=always
+RestartSec=10
+TimeoutStopSec=60
+
+MemoryMax=1G
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

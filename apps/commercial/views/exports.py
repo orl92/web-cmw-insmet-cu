@@ -9,10 +9,10 @@ from apps.commercial.models import (
 from apps.core.views.exports import CSVExportView
 
 _SUBSCRIPTION_STATUS = {
-    'activo': 'Activo',
-    'pendiente de pago': 'Pendiente de pago',
     'solicitado': 'Solicitado',
-    'expirado': 'Expirado',
+    'pendiente': 'Pendiente',
+    'pagado': 'Pagado',
+    'cancelada': 'Cancelada',
 }
 
 
@@ -104,11 +104,8 @@ class ServiceSubscriptionCSVExportView(CSVExportView):
         ('Cliente', lambda o: str(o.customer) if o.customer else ''),
         ('Servicio', lambda o: o.service.title if o.service else ''),
         ('Inicio', lambda o: o.start_date.strftime('%d/%m/%Y %H:%M') if o.start_date else ''),
-        ('Expiración', lambda o: o.end_date.strftime('%d/%m/%Y %H:%M') if o.end_date else ''),
         ('Estado', lambda o: _SUBSCRIPTION_STATUS.get(o.status_display, o.status_display.title())),
-        ('Pago', lambda o: o.get_payment_status_display()),
         ('Método de Pago', lambda o: o.get_payment_method_display() if o.payment_method else ''),
-        ('Registro Activo', lambda o: 'Sí' if o.record_active else 'No'),
     ]
 
 
@@ -123,7 +120,8 @@ class InvoiceCSVExportView(CSVExportView):
         ('Servicio(s)', _invoice_services),
         ('Monto', 'amount'),
         ('Estado', lambda o: 'Anulada' if o.is_cancelled else 'Activa'),
-        ('Correo Enviado', lambda o: 'Sí' if o.email_sent else 'No'),
+        ('Estado del correo', lambda o: o.get_email_status_display()),
+        ('Error del correo', lambda o: (o.email_error or '')[:200]),
     ]
 
 

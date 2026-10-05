@@ -33,12 +33,10 @@
               {% if request.user.is_staff %}
                 {% if staff_requested_count > 0 %}<span class="badge bg-blue-lt ms-1">{{ staff_requested_count }}</span>{% endif %}
                 {% if staff_pending_count > 0 %}<span class="badge bg-orange-lt ms-1">{{ staff_pending_count }}</span>{% endif %}
-                {% if staff_expired_count > 0 %}<span class="badge bg-red-lt ms-1">{{ staff_expired_count }}</span>{% endif %}
               {% endif %}
               {% if not request.user.is_staff %}
                 {% if client_requested_count > 0 %}<span class="badge bg-blue-lt ms-1">{{ client_requested_count }}</span>{% endif %}
                 {% if client_pending_count > 0 %}<span class="badge bg-orange-lt ms-1">{{ client_pending_count }}</span>{% endif %}
-                {% if client_expired_count > 0 %}<span class="badge bg-red-lt ms-1">{{ client_expired_count }}</span>{% endif %}
               {% endif %}
             </a>
           {% endif %}

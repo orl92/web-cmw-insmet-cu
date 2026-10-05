@@ -13,16 +13,26 @@ Covers tasks 5.1-5.4:
 
 import re
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template.defaultfilters import date as django_date_filter
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.commercial.models import Certificate, Customer, Invoice, Service, ServiceSubscription
+from apps.commercial.models import (
+    Certificate,
+    Customer,
+    Invoice,
+    InvoiceItem,
+    Service,
+    ServiceSubscription,
+)
 from apps.core.models import SiteConfiguration
+from apps.home.views.servicios.comerciales.views import CommercialServicesListView
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -61,7 +71,7 @@ class PaymentMethodIconFilterTests(TestCase):
 
 
 class ServicesPublicUiTests(TestCase):
-    """Tasks 5.1-5.3 — pages/home/services/public.html."""
+    """pages/home/services/public.html."""
 
     PAGINATE_BY = 10
 
@@ -100,7 +110,7 @@ class ServicesPublicUiTests(TestCase):
         # component reports the current position ("Pág. 2 de 2").
         self.assertIn('href="?page=1"', html)
         self.assertIn('<span class="page-link">Pág. 2 de 2</span>', html)
-        # The old manual step-links markup must be gone entirely.
+        # The pagination must not ship the manual step-links markup.
         self.assertNotIn('step-links', html)
         self.assertNotIn('&laquo; primera', html)
         self.assertNotIn('aria-current="page"', html)
@@ -144,7 +154,7 @@ class ServicesPublicUiTests(TestCase):
 
 
 class ServicesCommercialUiTests(TestCase):
-    """Task 5.4 — pages/home/services/commercial.html."""
+    """pages/home/services/commercial.html."""
 
     PAGINATE_BY = 10
 
@@ -178,7 +188,6 @@ class ServicesCommercialUiTests(TestCase):
                 customer=customer,
                 service=service,
                 start_date=timezone.now() - timedelta(days=10 - index),
-                end_date=timezone.now() + timedelta(days=30),
                 payment_status='paid',
                 payment_method='transfer',
             )
@@ -263,57 +272,141 @@ class CommercialServicesListViewStateScopeTests(TestCase):
             customer=self.customer,
             service=service,
             start_date=timezone.now() - timedelta(days=30),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status=status,
             payment_method=payment_method,
         )
 
+    def _make_orphan_invoice(self, sub):
+        """Replica `process_batch_invoice`: factura sin ancla, línea con la
+        suscripción. Es la forma en que quedan realmente en la base."""
+        invoice = Invoice.objects.create(
+            customer=self.customer,
+            subscription=None,
+            number=f'2026-{Invoice.objects.count() + 1:04d}',
+            issue_date=timezone.now().date(),
+            amount=10,
+            pdf=SimpleUploadedFile('f.pdf', b'%PDF-1.4 fake', content_type='application/pdf'),
+        )
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=sub,
+            codigo=sub.service.code or '',
+            descripcion=sub.service.title,
+            cantidad=1,
+            unidad_medida='DÍA',
+            precio=10,
+            importe=10,
+        )
+        return invoice
+
+    def test_pending_shows_invoice_button_for_manual_invoice(self):
+        """D1: la factura cuelga del `InvoiceItem`, no del ancla de la factura.
+
+        La facturación por lote crea la factura con `subscription = NULL` y
+        cada línea apunta a su suscripción, así que buscarla sólo por
+        `Invoice.subscription` devolvía `None` y el botón "Ver factura" no se
+        renderizaba: la tarjeta "pendiente de pago" salía con el bloque de
+        acciones vacío. El admin sí la veía porque su listado no pasa por la
+        suscripción.
+        """
+        sub = self._make_sub('pending', 'manual-invoice')
+        invoice = self._make_orphan_invoice(sub)
+        self.client.force_login(self.client_user)
+        html = self.client.get(reverse('home:services_commercial')).content.decode()
+        self.assertIn('Ver factura', html)
+        self.assertIn(
+            reverse('commercial:factura_download', args=[invoice.uuid]),
+            html,
+        )
+
+    def test_subscription_does_not_show_another_services_invoice(self):
+        """Cada suscripción ve SÓLO la factura de su propia línea.
+
+        Filtrar por cliente encajaba cualquier factura manual del mismo cliente
+        en cualquier tarjeta: con dos servicios y dos facturas, la suscripción
+        de un servicio recibía el botón de descarga del otro.
+        """
+        sub_a = self._make_sub('pending', 'servicio-a')
+        sub_b = self._make_sub('pending', 'servicio-b')
+        invoice_a = self._make_orphan_invoice(sub_a)
+        invoice_b = self._make_orphan_invoice(sub_b)
+
+        view = CommercialServicesListView()
+        view.request = RequestFactory().get('/')
+        view.request.user = self.client_user
+        resolved = {s.pk: s.latest_invoice_uuid for s in view.get_queryset()}
+
+        self.assertEqual(resolved[sub_a.pk], invoice_a.uuid)
+        self.assertEqual(resolved[sub_b.pk], invoice_b.uuid)
+        self.assertNotEqual(resolved[sub_a.pk], invoice_b.uuid)
+
+    def test_cancelled_manual_invoice_is_not_offered(self):
+        """Una factura anulada no es pagable, así que no se ofrece el botón."""
+        self._make_sub('pending', 'cancelled-invoice')
+        Invoice.objects.create(
+            customer=self.customer,
+            subscription=None,
+            issue_date=timezone.now().date(),
+            amount=10,
+            is_cancelled=True,
+            pdf=SimpleUploadedFile('f.pdf', b'%PDF-1.4 fake', content_type='application/pdf'),
+        )
+        self.client.force_login(self.client_user)
+        html = self.client.get(reverse('home:services_commercial')).content.decode()
+        self.assertNotIn('Ver factura', html)
+
     def test_lists_all_subscription_states_in_priority_order(self):
-        self._make_sub('expired', 'expirado')
-        self._make_sub('paid', 'activo')
+        # 'expired' ya no es un payment_status: la baja lógica produce
+        # status_display == 'cancelada' y el queryset de Home excluye las
+        # suscripciones con record_active=False, así que sólo quedan tres
+        # estados visibles (solicitado, pendiente, pagado).
+        self._make_sub('paid', 'pagado')
         self._make_sub('pending', 'pendiente')
         self._make_sub('requested', 'solicitado')
         self.client.force_login(self.client_user)
         html = self.client.get(reverse('home:services_commercial')).content.decode()
         self.assertIn('Servicio solicitado', html)
         self.assertIn('Servicio pendiente', html)
-        self.assertIn('Servicio activo', html)
-        self.assertIn('Servicio expirado', html)
-        # El orden Case/When: requested(0) -> pending(1) -> paid(2) -> expired(3).
+        self.assertIn('Servicio pagado', html)
+        # El orden Case/When: requested(0) -> pending(1) -> paid(2).
         positions = [
             html.index('Servicio solicitado'),
             html.index('Servicio pendiente'),
-            html.index('Servicio activo'),
-            html.index('Servicio expirado'),
+            html.index('Servicio pagado'),
         ]
         self.assertEqual(positions, sorted(positions))
 
     def test_ribbon_class_and_label_per_subscription_state(self):
         # REQ-03: el ribbon se resuelve vía status_ribbon|get_item:status_display
-        # (activo -> bg-green, pendiente de pago -> bg-orange, solicitado ->
-        # bg-blue, expirado -> bg-red); nunca hardcodeado.
+        # (pagado -> bg-green, pendiente -> bg-orange, solicitado -> bg-blue,
+        # cancelada -> bg-red); nunca hardcodeado.
         self._make_sub('requested', 'ribbon-solicitado')
         self._make_sub('pending', 'ribbon-pendiente')
-        self._make_sub('paid', 'ribbon-activo')
-        self._make_sub('expired', 'ribbon-expirado')
+        self._make_sub('paid', 'ribbon-pagado')
+        # Una suscripción dada de baja (baja lógica) queda en 'cancelada' pero
+        # NO se renderiza: el listado de Home filtra record_active=True.
+        cancelada = self._make_sub('requested', 'ribbon-cancelada')
+        cancelada.delete()
+        self.assertEqual(cancelada.status_display, 'cancelada')
         self.client.force_login(self.client_user)
         response = self.client.get(reverse('home:services_commercial'))
         html = response.content.decode()
         self.assertEqual(
             response.context['status_ribbon'],
             {
-                'activo': 'bg-green',
-                'pendiente de pago': 'bg-orange',
+                'pagado': 'bg-green',
+                'pendiente': 'bg-orange',
                 'solicitado': 'bg-blue',
-                'expirado': 'bg-red',
+                'cancelada': 'bg-red',
             },
         )
-        # Un ribbon por card, con la clase y el texto del estado correctos.
-        self.assertEqual(html.count('ribbon-bookmark'), 4)
-        self.assertIn('ribbon-bookmark bg-green">activo', html)
-        self.assertIn('ribbon-bookmark bg-orange">pendiente de pago', html)
+        # Un ribbon por card activa, con la clase y el texto del estado correctos.
+        self.assertEqual(html.count('ribbon-bookmark'), 3)
+        self.assertIn('ribbon-bookmark bg-green">pagado', html)
+        self.assertIn('ribbon-bookmark bg-orange">pendiente', html)
         self.assertIn('ribbon-bookmark bg-blue">solicitado', html)
-        self.assertIn('ribbon-bookmark bg-red">expirado', html)
+        # La cancelada no aparece en Home (soft delete la saca del queryset).
+        self.assertNotIn('ribbon-cancelada', html)
 
     def test_calendar_icon_precedes_date_range_in_dom(self):
         # REQ-05: el icono de calendario aparece antes del rango de fechas en
@@ -354,19 +447,19 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         self.assertNotIn('CUP/', meta_html)
 
     def test_subscription_lines_have_strong(self):
-        # REQ-05 S4: la línea de fechas usa "Vigencia:" con el rango
-        # start-end en <strong> (d/m/Y); la línea de período de facturación
-        # (ti-calendar-event) usa "Período:" con get_billing_period_display en
-        # <strong>; la línea de categoría (ti-tag) usa <strong> con
+        # La línea de fechas usa "Inicio:" con la fecha de arranque en <strong>
+        # (d/m/Y). Ya no hay rango: la suscripción no vence, así que no existe
+        # una segunda fecha que acotar el período. La línea de período de
+        # facturación (ti-calendar-event) sigue mostrando el período facturado;
+        # la línea de categoría (ti-tag) usa <strong> con
         # get_service_category_display (patrón de service_detail).
         subscription = self._make_sub('paid', 'metadatos-strong')
         self.client.force_login(self.client_user)
         html = self.client.get(reverse('home:services_commercial')).content.decode()
         start_label = django_date_filter(subscription.start_date, 'd/m/Y')
-        end_label = django_date_filter(subscription.end_date, 'd/m/Y')
         self.assertIn('ti-calendar-event', html)
         self.assertIn('Período: <strong>1 día</strong>', html)
-        self.assertIn(f'Vigencia: <strong>{start_label} - {end_label}</strong>', html)
+        self.assertIn(f'Inicio: <strong>{start_label}</strong>', html)
         self.assertIn('Categoría: <strong>Pronóstico</strong>', html)
 
     def test_subscription_payment_icon_presencial(self):
@@ -411,7 +504,6 @@ class CommercialServicesListViewStateScopeTests(TestCase):
             customer=self.customer,
             service=service,
             start_date=timezone.now() - timedelta(days=30),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status='paid',
             payment_method='transfer',
         )
@@ -421,16 +513,14 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         meta_end = html.index('justify-content-end gap-2', meta_start)
         meta_html = html[meta_start:meta_end]
         start_label = django_date_filter(subscription.start_date, 'd/m/Y')
-        end_label = django_date_filter(subscription.end_date, 'd/m/Y')
         self.assertNotIn('display-6', meta_html)
         self.assertIn('ti-calendar', meta_html)
-        self.assertIn(f'Vigencia: <strong>{start_label} - {end_label}</strong>', meta_html)
+        self.assertIn(f'Inicio: <strong>{start_label}</strong>', meta_html)
 
     def test_subscription_price_no_suffix(self):
         # REQ-05 S2: el precio destacado es SOLO el monto format_cup, sin el
-        # sufijo "CUP/<período>" (en Mis Servicios el período de facturación es
-        # la línea "Período: start - end" — hoy "Vigencia: start - end" — que
-        # aparece antes del precio).
+        # sufijo "CUP/<período>" (en Mis Servicios la línea de período de
+        # facturación aparece antes del precio).
         self._make_sub('paid', 'precio-sin-sufijo')
         self.client.force_login(self.client_user)
         html = self.client.get(reverse('home:services_commercial')).content.decode()
@@ -491,7 +581,6 @@ class CommercialServicesListContextualActionsTests(TestCase):
             customer=self.customer,
             service=service,
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status=status,
             payment_method=payment_method,
         )
@@ -499,6 +588,53 @@ class CommercialServicesListContextualActionsTests(TestCase):
     def _html(self):
         self.client.force_login(self.client_user)
         return self.client.get(reverse('home:services_commercial')).content.decode()
+
+    def test_paid_subscription_keeps_invoice_and_certificate_both_visible(self):
+        """Los documentos son ACUMULATIVOS: pagar no borra la factura.
+
+        Antes la rama `is_active` del template mostraba sólo el certificado y
+        la factura desaparecía del card justo cuando el cliente la necesitaba
+        como respaldo. Ahora ambos botones se renderizan por separado.
+        """
+        sub = self._sub('paid')
+        invoice = Invoice.objects.create(
+            subscription=sub,
+            number='F002-001',
+            amount=10,
+        )
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=sub,
+            descripcion='Servicio',
+            cantidad=Decimal('1'),
+            precio=Decimal('10.00'),
+        )
+        certificate = Certificate.objects.create(
+            subscription=sub,
+            pdf='certificate_pdfs/cert-paid.pdf',
+        )
+        html = self._html()
+        self.assertIn('Ver factura', html)
+        self.assertIn(f'factura/{invoice.uuid}/pdf/?inline=1', html)
+        self.assertIn('Ver certificado', html)
+        self.assertIn(
+            f'certificado/{certificate.uuid}/pdf/?inline=1',
+            html,
+        )
+
+    def test_paid_subscription_without_certificate_says_so(self):
+        sub = self._sub('paid')
+        invoice = Invoice.objects.create(subscription=sub, number='F002-002', amount=10)
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=sub,
+            descripcion='Servicio',
+            cantidad=Decimal('1'),
+            precio=Decimal('10.00'),
+        )
+        html = self._html()
+        self.assertIn('Ver factura', html)
+        self.assertIn('Sin certificado', html)
 
     def test_pending_qr_offers_invoice_and_qr_payment(self):
         sub = self._sub('pending', payment_method='qr')
@@ -569,7 +705,7 @@ class CommercialServicesListContextualActionsTests(TestCase):
 
 
 class ServicesCommercialStaffButtonTests(TestCase):
-    """Task 6.3 — staff/management buttons on the public commercial view."""
+    """staff/management buttons on the public commercial view."""
 
     @classmethod
     def setUpTestData(cls):
@@ -653,8 +789,8 @@ class ServicesCommercialStaffButtonTests(TestCase):
         self.assertIn('<i class="icon ti ti-login"></i> Iniciar sesión', html)
 
     def test_pending_non_qr_public_catalog_is_state_neutral(self):
-        """REQ-06: la guía 'Ver factura' para pending sin QR vive en Mis Servicios
-        (template de la fase 3); el catálogo público no la renderiza."""
+        """REQ-06: la guía 'Ver factura' para pending sin QR vive en Mis Servicios;
+        el catálogo público no la renderiza."""
         client_user = User.objects.create_user(
             'clientnonq',
             'clientnonq@test.com',
@@ -676,7 +812,6 @@ class ServicesCommercialStaffButtonTests(TestCase):
             payment_status='pending',
             payment_method='transfer',
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=10),
         )
         self.client.force_login(client_user)
         html = self._get_page().content.decode()
@@ -737,7 +872,7 @@ class CommercialCatalogCodeAndCategoryUITests(TestCase):
         )
         html = self._catalog_html()
         # Espec: el icono ti-tag con me-1 aparece ANTES del label
-        # "Categoría:" en su línea <div class="mb-2"> (ya no badge apiñado).
+        # "Categoría:" en su línea <div class="mb-2">.
         category_marker = html.index('Categoría:')
         line_start = html.rfind('<div class="mb-2">', 0, category_marker)
         line_end = html.index('</div>', category_marker)
@@ -757,7 +892,7 @@ class CommercialCatalogCodeAndCategoryUITests(TestCase):
         )
         html = self._catalog_html()
         # Espec: el icono ti-tag con me-1 aparece ANTES del label
-        # "Categoría:" en su línea <div class="mb-2"> (ya no badge apiñado).
+        # "Categoría:" en su línea <div class="mb-2">.
         category_marker = html.index('Categoría:')
         line_start = html.rfind('<div class="mb-2">', 0, category_marker)
         line_end = html.index('</div>', category_marker)
@@ -933,7 +1068,6 @@ class ServiceReRequestUiTests(TestCase):
             'customer': self.customer,
             'service': self.service,
             'start_date': timezone.now() - timedelta(days=1),
-            'end_date': timezone.now() + timedelta(days=30),
         }
         defaults.update(kwargs)
         return ServiceSubscription.objects.create(**defaults)
@@ -944,21 +1078,40 @@ class ServiceReRequestUiTests(TestCase):
         html = self.client.get(self._detail_url()).content.decode()
         self.assertIn('subscription-form', html)
         self.assertIn('Solicitar', html)
-        self.assertIn('activa hasta', html)
+        # Sin `end_date` no hay "vigente" que anunciar: la suscripción no vence.
+        # El aviso decía que la nueva solicitud se procesaría junto a la
+        # vigente, lo cual promete algo que el sistema no coordina.
+        self.assertNotIn('Ya tiene este servicio activo', html)
+        self.assertNotIn('activa hasta', html)
+        self.assertNotIn('la vigente', html)
         self.assertNotIn('Ya tienes una solicitud o suscripción para este servicio.', html)
 
-    def test_in_flight_hides_form_and_button(self):
+    def test_cancelled_subscription_no_se_anuncia_como_activa(self):
+        """Una baja lógica no borra la fila: sólo la marca.
+
+        Sin filtrar por `record_active` una suscripción anulada seguía
+        apareciendo como activa en el detalle.
+        """
+        sub = self._make_sub(payment_status='paid', payment_method='transfer')
+        sub.delete()
+        self._login()
+        html = self.client.get(self._detail_url()).content.decode()
+        self.assertNotIn('Ya tiene este servicio activo', html)
+        self.assertIn('subscription-form', html)
+
+    def test_in_flight_still_shows_form(self):
+        """B1: una solicitud en vuelo avisa pero no oculta el formulario."""
         self._make_sub(payment_status='requested', payment_method='transfer')
         self._login()
         html = self.client.get(self._detail_url()).content.decode()
-        self.assertNotIn('id="subscription-form"', html)
+        self.assertIn('id="subscription-form"', html)
         self.assertIn('Ya has solicitado este servicio. Estamos procesando tu solicitud.', html)
 
-    def test_in_flight_pending_hides_form(self):
+    def test_in_flight_pending_still_shows_form(self):
         self._make_sub(payment_status='pending', payment_method='transfer')
         self._login()
         html = self.client.get(self._detail_url()).content.decode()
-        self.assertNotIn('id="subscription-form"', html)
+        self.assertIn('id="subscription-form"', html)
 
     def test_public_list_active_shows_state_neutral_card(self):
         # REQ-06: el catálogo es neutral al estado; sin ribbon ni re-solicitud.
@@ -1173,7 +1326,6 @@ class MisServiciosMenuItemTests(TestCase):
             'customer': self.customer,
             'service': self.service,
             'start_date': timezone.now() - timedelta(days=30),
-            'end_date': timezone.now() + timedelta(days=30),
             'payment_status': status,
             'payment_method': 'transfer',
         }
@@ -1213,8 +1365,19 @@ class MisServiciosMenuItemTests(TestCase):
         html = self._menu_html()
         self.assertRegex(html, self._menu_item_regex())
 
-    def test_menu_shows_mis_servicios_with_expired_subscription(self):
-        self._sub('expired', end_date=timezone.now() - timedelta(days=1))
+    def test_menu_shows_mis_servicios_with_ancient_subscription(self):
+        """El enlace aparece con cualquier suscripción, no con estados sueltos.
+
+        Antes la condición enumeraba `active/requested/pending` y existía sólo
+        porque `payment_status='expired'` se escribía a mano en los tests: en
+        producción la suspendida nunca se guardaba. Ahora manda el total.
+
+        Este caso usaba una suscripción con el periodo vencido para provar que
+        el enlace no dependía de la vigencia. Sin `end_date` no hay periodo que
+        venza: la antigüedad es ahora el caso más fuerte de esa misma idea, así
+        que se prueba con una suscripción de hace una década.
+        """
+        self._sub('paid', start_date=timezone.now() - timedelta(days=3650))
         self.client.force_login(self.client_user)
         html = self._menu_html()
         self.assertRegex(html, self._menu_item_regex())

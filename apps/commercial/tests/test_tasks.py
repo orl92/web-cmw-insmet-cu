@@ -1,4 +1,3 @@
-from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -7,12 +6,12 @@ from django.test import TestCase
 from django.utils import timezone
 
 from apps.commercial.models import (
-    Customer,
     Invoice,
     InvoiceItem,
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import natural_customer
 
 
 class InvoiceUtilsTests(TestCase):
@@ -25,12 +24,8 @@ class InvoiceUtilsTests(TestCase):
             first_name='Test',
             last_name='User',
         )
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.invoice = Invoice.objects.create(
             customer=cls.customer,
@@ -59,7 +54,7 @@ class InvoiceUtilsTests(TestCase):
         )
         self.assertTrue(result)
         self.invoice.refresh_from_db()
-        self.assertTrue(self.invoice.email_sent)
+        self.assertEqual(self.invoice.email_status, Invoice.EmailStatus.SENT)
 
     @patch('apps.commercial.views.invoice_utils.render_to_string')
     @patch('apps.commercial.views.invoice_utils.EmailMessage')
@@ -77,6 +72,7 @@ class InvoiceUtilsTests(TestCase):
         )
         self.assertFalse(result)
         self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.email_status, Invoice.EmailStatus.FAILED)
         self.assertIn('SMTP error', self.invoice.email_error or '')
 
 
@@ -90,12 +86,8 @@ class CertificateEmailTests(TestCase):
             first_name='Test',
             last_name='User',
         )
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -109,7 +101,6 @@ class CertificateEmailTests(TestCase):
             customer=cls.customer,
             service=cls.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
             payment_status='paid',
         )
 
@@ -122,7 +113,6 @@ class CertificateEmailTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         result = enviar_correo_certificado(sub_no_cert)
         self.assertFalse(result)
@@ -139,9 +129,8 @@ class CertificateEmailTests(TestCase):
             first_name='No',
             last_name='Email',
         )
-        customer_no_email = Customer.objects.create(
-            client_type='natural',
-            user=user_no_email,
+        customer_no_email = natural_customer(
+            user_no_email,
             address='Addr',
             phone='12345678',
             account='9999999999999999',
@@ -150,7 +139,6 @@ class CertificateEmailTests(TestCase):
             customer=customer_no_email,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         result = enviar_correo_certificado(sub)
         self.assertFalse(result)

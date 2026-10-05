@@ -42,6 +42,7 @@ from apps.commercial.views.invoices import (
     InvoiceListView,
     InvoicePDFDownloadView,
     ResendInvoiceEmailView,
+    RetryInvoicePdfView,
     ajax_pending_subscriptions,
 )
 from apps.commercial.views.services import (
@@ -62,7 +63,6 @@ from apps.commercial.views.subscriptions import (
     SubscriptionCreateView,
     SubscriptionHardDeleteView,
     SubscriptionListView,
-    SubscriptionRenewView,
     SubscriptionUpdateView,
 )
 
@@ -121,11 +121,6 @@ urlpatterns = [
         name='suscripcion_delete',
     ),
     path(
-        'renovar/suscripcion/<uuid:uuid>/',
-        SubscriptionRenewView.as_view(),
-        name='suscripcion_renew',
-    ),
-    path(
         'regenerar-factura/<uuid:uuid>/', RegenerateInvoiceView.as_view(), name='factura_regenerate'
     ),
     path(
@@ -167,6 +162,11 @@ urlpatterns = [
         'reenviar/correo/factura/<uuid:uuid>/',
         ResendInvoiceEmailView.as_view(),
         name='factura_resend_email',
+    ),
+    path(
+        'reintentar/pdf/factura/<uuid:uuid>/',
+        RetryInvoicePdfView.as_view(),
+        name='factura_retry_pdf',
     ),
     path(
         'ajax/suscripciones-pendientes/',

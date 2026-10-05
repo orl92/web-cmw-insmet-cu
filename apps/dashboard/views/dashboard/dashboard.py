@@ -1,3 +1,4 @@
+import hashlib
 import html
 import json
 import logging
@@ -9,6 +10,7 @@ from django.contrib.sessions.models import Session
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models import Count, Exists, OuterRef, Sum
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.views.generic import TemplateView, View
@@ -34,7 +36,9 @@ def serialize_sub(sub):
     return {
         'customer': html.escape(sub.customer.company_name or 'N/A') if sub.customer else 'N/A',
         'service': html.escape(sub.service.title or 'N/A') if sub.service else 'N/A',
-        'end_date': sub.end_date.strftime('%d/%m/%Y') if sub.end_date else 'N/A',
+        # Sin vencimiento: la suscripción queda vigente hasta que se anule, así
+        # que lo único que hay que fechar es cuándo arranca el servicio.
+        'start_date': sub.start_date.strftime('%d/%m/%Y') if sub.start_date else 'N/A',
     }
 
 
@@ -263,16 +267,12 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             try:
                 customer = Customer.objects.get(user=user)
                 subs = ServiceSubscription.objects.filter(customer=customer, record_active=True)
-                context['client_active_subs'] = subs.filter(payment_status='paid', end_date__gt=now)
+                # Ninguna suscripción vence: `client_active_subs` son las pagadas
+                # y no anuladas, y lo siguen siendo para siempre. Por eso no
+                # existen "vencidas" ni "por vencer": una vez pagada, la única
+                # forma de perder la vigencia es anularla.
+                context['client_active_subs'] = subs.filter(payment_status='paid')
                 context['client_pending_subs'] = subs.filter(payment_status='pending')
-                context['client_expired_subs'] = subs.filter(
-                    payment_status='paid', end_date__lte=now
-                )
-                context['client_expiring_soon'] = subs.filter(
-                    payment_status='paid',
-                    end_date__gt=now,
-                    end_date__lte=now + timezone.timedelta(days=30),
-                )
                 context['client_requested_subs'] = subs.filter(payment_status='requested')
                 context['client_invoices'] = Invoice.objects.filter(customer=customer).order_by(
                     '-issue_date'
@@ -280,8 +280,6 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             except Customer.DoesNotExist:
                 context['client_active_subs'] = ServiceSubscription.objects.none()
                 context['client_pending_subs'] = ServiceSubscription.objects.none()
-                context['client_expired_subs'] = ServiceSubscription.objects.none()
-                context['client_expiring_soon'] = ServiceSubscription.objects.none()
                 context['client_requested_subs'] = ServiceSubscription.objects.none()
                 context['client_invoices'] = Invoice.objects.none()
 
@@ -307,23 +305,18 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             if 'commercial' in shared:
                 context.update(shared['commercial'])
 
+            # Las suscripciones no vencen: `active_subs` son las pagadas y no
+            # anuladas. Las métricas `expired_subs` y `expiring_soon` se
+            # eliminaron porque no tienen un conjunto que contar — una suscripción
+            # pagada nunca pasa a "vencida" sola.
             context['active_subs'] = ServiceSubscription.objects.filter(
-                payment_status='paid', end_date__gt=now, record_active=True
-            ).count()
-            context['expired_subs'] = ServiceSubscription.objects.filter(
-                payment_status='paid', end_date__lte=now, record_active=True
+                payment_status='paid', record_active=True
             ).count()
             context['pending_subs'] = ServiceSubscription.objects.filter(
                 payment_status='pending', record_active=True
             ).count()
             context['requested_subs'] = ServiceSubscription.objects.filter(
                 payment_status='requested', record_active=True
-            ).count()
-            context['expiring_soon'] = ServiceSubscription.objects.filter(
-                payment_status='paid',
-                end_date__gt=now,
-                end_date__lte=now + timezone.timedelta(days=30),
-                record_active=True,
             ).count()
 
             month_end = (month_start + timezone.timedelta(days=32)).replace(day=1)
@@ -338,17 +331,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['month_income'] = float(month_income_paid)
 
             active_subs_qs = (
-                ServiceSubscription.objects.filter(
-                    payment_status='paid', end_date__gt=now, record_active=True
-                )
-                .select_related('customer', 'service')
-                .order_by('customer__company_name')[:20]
-            )
-
-            expired_subs_qs = (
-                ServiceSubscription.objects.filter(
-                    payment_status='paid', end_date__lte=now, record_active=True
-                )
+                ServiceSubscription.objects.filter(payment_status='paid', record_active=True)
                 .select_related('customer', 'service')
                 .order_by('customer__company_name')[:20]
             )
@@ -366,7 +349,6 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             )
 
             context['active_subs_list'] = json.dumps([serialize_sub(s) for s in active_subs_qs])
-            context['expired_subs_list'] = json.dumps([serialize_sub(s) for s in expired_subs_qs])
             context['pending_subs_list'] = json.dumps([serialize_sub(s) for s in pending_subs_qs])
             context['requested_subs_list'] = json.dumps(
                 [serialize_sub(s) for s in requested_subs_qs]
@@ -402,23 +384,93 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         return context
 
 
+def _paso_a_reintentar(execution, paso_pedido):
+    """Qué paso de la tarea de factura hay que reintentar.
+
+    Devuelve 'pdf', 'email' o None (dejar que la tarea decida sola).
+
+    Si el operador pidió un paso explícito, se respeta. Si no, se deduce del
+    estado de la factura, que es la fuente de verdad: si el PDF quedó `ready`
+    y el correo `failed`, el único paso que sirve reintentar es el correo.
+    """
+    if paso_pedido in ('pdf', 'email'):
+        return paso_pedido
+    if not (execution.logical_key or '').startswith('invoice:'):
+        return None
+    try:
+        from apps.commercial.models import Invoice
+
+        invoice = Invoice.objects.get(uuid=execution.logical_key.split(':', 1)[1])
+    except Exception:
+        return None
+    if not invoice.pdf_ready and invoice.pdf_status == Invoice.PdfStatus.FAILED:
+        return 'pdf'
+    if invoice.email_status == Invoice.EmailStatus.FAILED:
+        return 'email'
+    return None
+
+
+def _tabla_fingerprint(qs):
+    """Token barato que cambia si y solo si cambia lo que la tabla muestra.
+
+    El cliente lo consulta cada pocos segundos y solo descarga y repinta la
+    tabla cuando el token se movió. Sin esto, estaríamos renderizando el
+    partial completo cada 5 segundos para reemplazar filas idénticas, que es
+    trabajo de servidor y red tirados a la basura.
+
+    El modelo no tiene `updated_at`, así que la huella se arma con los campos
+    que la tabla muestra de verdad: si ninguno cambió, la pantalla tampoco
+    tiene nada nuevo que pintar.
+    """
+    filas = list(
+        qs.values_list(
+            'pk',
+            'status',
+            'attempts',
+            'enqueued_at',
+            'started_at',
+            'finished_at',
+            'summary',
+        )
+    )
+    return hashlib.sha1(repr(filas).encode('utf-8')).hexdigest()[:16]
+
+
 class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'pages/dashboard/tasks.html'
+    max_rows = 500
 
     def test_func(self):
         return self.request.user.is_superuser
+
+    def get(self, request, *args, **kwargs):
+        # La sonda de "¿cambió algo?" no renderiza nada: responde un token.
+        if request.GET.get('fingerprint'):
+            return JsonResponse({'token': _tabla_fingerprint(self._queryset())})
+        return super().get(request, *args, **kwargs)
+
+    def get_template_names(self):
+        # El polling del cliente pide solo la tabla (?partial=1) para
+        # recargar los datos sin reconstruir la página ni la instancia de
+        # DataTables: si no, cada pasada pierde el orden y la búsqueda.
+        if self.request.GET.get('partial'):
+            return ['pages/dashboard/tasks_table.html']
+        return [self.template_name]
+
+    def _queryset(self):
+        qs = TaskExecutionLog.objects.all()
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs[: self.max_rows]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         now = timezone.now()
         stale_threshold_minutes = 5
 
-        qs = TaskExecutionLog.objects.all()
-        status_filter = self.request.GET.get('status')
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        executions = qs[:500]
-
+        qs = self._queryset()
+        executions = qs
         stale_count = TaskExecutionLog.objects.filter(
             status=TaskExecutionLog.STATUS_ENQUEUED,
             enqueued_at__lt=now - timezone.timedelta(minutes=stale_threshold_minutes),
@@ -432,6 +484,10 @@ class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 'segment': 'task_monitoring',
                 'executions': executions,
                 'status_choices': TaskExecutionLog.STATUS_CHOICES,
+                # Para marcar qué botón de filtro está aplicado: sin esto, el
+                # operador no tiene forma de saber qué está viendo después de
+                # filtrar, porque el filtro ya no recarga la página.
+                'current_status': self.request.GET.get('status', ''),
                 'stale_threshold_minutes': stale_threshold_minutes,
                 'stale_count': stale_count,
                 'error_count': error_count,
@@ -470,8 +526,22 @@ class TaskMonitoringActionView(LoginRequiredMixin, UserPassesTestMixin, View):
                 module_name, _, func_name = execution.func_name.rpartition('.')
                 func = getattr(import_module(module_name), func_name)
                 payload = _json.loads(execution.func_args)
-                func(*payload.get('args', []), **payload.get('kwargs', {}))
-                messages.success(request, f'Tarea {execution.task_name} reencolada.')
+                args = list(payload.get('args', []))
+                kwargs = dict(payload.get('kwargs', {}))
+                # Reintentar el paso que falló, no la tarea entera: si el PDF
+                # ya salió bien y lo que no salió fue el correo, volver a
+                # renderizar el PDF no arregla nada y lo deja con una marca de
+                # tiempo nueva. La tarea es idempotente, así que
+                # `_paso_a_reintentar` solo decide qué se le pide explícitamente.
+                paso = _paso_a_reintentar(execution, request.POST.get('paso'))
+                if paso:
+                    kwargs['solo_paso'] = paso
+                func(*args, **kwargs)
+                messages.success(
+                    request,
+                    f'Tarea reencolada'
+                    f'{f" (paso: {paso})" if paso else ""}. Se actualizó la misma fila.',
+                )
             except Exception:
                 logger.exception('No se pudo reintentar la tarea %s', execution.func_name)
                 messages.error(request, 'No se pudo reintentar la tarea. Revise los logs.')

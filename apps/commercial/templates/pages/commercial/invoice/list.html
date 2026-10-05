@@ -28,13 +28,13 @@
       {% if invoice.subscription %}
         <span data-bs-toggle="tooltip"
               data-bs-placement="bottom"
-              title="{{ invoice.subscription.customer.company_name }}">
-          {{ invoice.subscription.customer.company_name|truncatechars:30 }}
+              title="{{ invoice.subscription.customer.display_name }}">
+          {{ invoice.subscription.customer.display_name|truncatechars:30 }}
         </span>
       {% elif invoice.customer %}
         <span data-bs-toggle="tooltip"
               data-bs-placement="bottom"
-              title="{{ invoice.customer.company_name }}">{{ invoice.customer.company_name|truncatechars:30 }}</span>
+              title="{{ invoice.customer.display_name }}">{{ invoice.customer.display_name|truncatechars:30 }}</span>
       {% else %}
         <span class="text-muted">—</span>
       {% endif %}
@@ -59,66 +59,105 @@
     </td>
     <td>$ {{ invoice.amount|floatformat:2 }}</td>
     <td>
-      {% if invoice.is_cancelled %}
-        <span class="badge badge-outline text-secondary">Anulada</span>
+      {% if invoice.status_display == 'pagada' %}
+        <span class="badge bg-green-lt">Pagada</span>
+      {% elif invoice.status_display == 'cancelada' %}
+        <span class="badge bg-red-lt">Cancelada</span>
       {% else %}
-        <span class="badge badge-outline text-green">Activa</span>
+        <span class="badge bg-orange-lt">Pendiente</span>
       {% endif %}
     </td>
     <td class="text-end">
-      <a href="{% url 'commercial:factura_download' invoice.uuid %}"
-         class="btn btn-icon btn-outline-success btn-sm"
-         data-bs-toggle="tooltip"
-         data-bs-placement="bottom"
-         aria-label="Descargar Factura"
-         data-bs-original-title="Descargar Factura">
-        <i class="icon ti ti-download"></i>
-      </a>
-      <button type="button"
-              class="btn btn-icon btn-outline-primary btn-sm"
-              data-bs-toggle="modal"
-              data-bs-target="#documentPdfModal"
-              data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
-              data-pdf-title="Factura {{ invoice.number }}"
-              data-bs-toggle="tooltip"
-              data-bs-placement="bottom"
-              aria-label="Ver PDF"
-              data-bs-original-title="Ver PDF">
-        <i class="icon ti ti-file-type-pdf"></i>
-      </button>
-      {% if not invoice.email_sent and not invoice.is_cancelled %}
-        <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}"
-           class="btn btn-icon btn-outline-warning btn-sm"
-           data-bs-toggle="tooltip"
-           data-bs-placement="bottom"
-           title="Reenviar correo">
-          <i class="icon ti ti-mail-forward"></i>
-        </a>
-      {% endif %}
-      {% if not invoice.is_cancelled and perms.commercial.delete_invoice %}
-        <button type="button"
-                class="btn btn-icon btn-outline-danger btn-sm action-btn"
+      <div class="d-flex flex-wrap justify-content-end gap-2 align-items-center">
+        {% if invoice.pdf_ready %}
+          <a href="{% url 'commercial:factura_download' invoice.uuid %}"
+             class="btn btn-icon btn-outline-success btn-sm"
+             data-bs-toggle="tooltip"
+             data-bs-placement="bottom"
+             aria-label="Descargar Factura"
+             data-bs-original-title="Descargar Factura">
+            <i class="icon ti ti-download"></i>
+          </a>
+          <button type="button"
+                  class="btn btn-icon btn-outline-primary btn-sm"
+                  data-bs-toggle="modal"
+                  data-bs-target="#documentPdfModal"
+                  data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
+                  data-pdf-title="Factura {{ invoice.number }}"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  aria-label="Ver Factura"
+                  data-bs-original-title="Ver Factura">
+            <i class="icon ti ti-file-type-pdf"></i>
+          </button>
+        {% elif invoice.status_display == 'pagada' %}
+          {# El PDF es asíncrono: la factura puede quedar pagada sin él, y eso es
+           más grave que un render fallido en una factura pendiente (dinero
+           cobrado sin comprobante). Por eso el aviso escalado va primero y el
+           error concreto queda en el tooltip. #}
+          <span class="badge bg-orange-lt"
                 data-bs-toggle="tooltip"
-                data-bs-placement="bottom"
-                title="Anular factura"
-                data-action="anular"
-                data-uuid="{{ invoice.uuid }}"
-                data-number="{{ invoice.number }}">
-          <i class="icon ti ti-trash"></i>
-        </button>
-      {% endif %}
-      {% if is_superuser and invoice.is_cancelled %}
-        <button type="button"
-                class="btn btn-icon btn-outline-danger btn-sm action-btn"
+                data-bs-original-title="{{ invoice.pdf_error|truncatechars:160 }}"
+                title="La factura está pagada pero su PDF no está generado. Reintentá la generación.">
+            <i class="icon ti ti-file-type-pdf me-1"></i>Pagada sin PDF
+          </span>
+        {% elif invoice.pdf_status == 'failed' %}
+          <span class="badge bg-red-lt"
                 data-bs-toggle="tooltip"
-                data-bs-placement="bottom"
-                title="Eliminar permanentemente"
-                data-action="eliminar"
-                data-uuid="{{ invoice.uuid }}"
-                data-number="{{ invoice.number }}">
-          <i class="icon ti ti-trash"></i>
-        </button>
-      {% endif %}
+                data-bs-original-title="{{ invoice.pdf_error|truncatechars:160 }}"
+                title="No se pudo generar el PDF. Reintentá desde el monitoreo de tareas.">
+            <i class="icon ti ti-file-type-pdf me-1"></i>PDF falló
+          </span>
+        {% endif %}
+        {% if not invoice.pdf_ready and not invoice.is_cancelled and perms.commercial.change_invoice %}
+          <form method="post"
+                action="{% url 'commercial:factura_retry_pdf' invoice.uuid %}"
+                style="display:inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="btn btn-icon btn-outline-primary btn-sm"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    aria-label="Generar PDF"
+                    data-bs-original-title="Generar PDF">
+              <i class="icon ti ti-refresh"></i>
+            </button>
+          </form>
+        {% endif %}
+        {% if invoice.email_status != 'sent' and not invoice.is_cancelled %}
+          <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}"
+             class="btn btn-icon btn-outline-warning btn-sm"
+             data-bs-toggle="tooltip"
+             data-bs-placement="bottom"
+             title="{% if invoice.email_status == 'failed' %}Reenviar correo (el anterior falló){% else %}Reenviar correo{% endif %}">
+            <i class="icon ti ti-mail-forward"></i>
+          </a>
+        {% endif %}
+        {% if not invoice.is_cancelled and perms.commercial.delete_invoice %}
+          <button type="button"
+                  class="btn btn-icon btn-outline-danger btn-sm action-btn"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  title="Anular factura"
+                  data-action="anular"
+                  data-uuid="{{ invoice.uuid }}"
+                  data-number="{{ invoice.number }}">
+            <i class="icon ti ti-trash"></i>
+          </button>
+        {% endif %}
+        {% if is_superuser and invoice.is_cancelled %}
+          <button type="button"
+                  class="btn btn-icon btn-outline-danger btn-sm action-btn"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  title="Eliminar permanentemente"
+                  data-action="eliminar"
+                  data-uuid="{{ invoice.uuid }}"
+                  data-number="{{ invoice.number }}">
+            <i class="icon ti ti-trash"></i>
+          </button>
+        {% endif %}
+      </div>
     </td>
   {% endwith %}
 {% endblock %}

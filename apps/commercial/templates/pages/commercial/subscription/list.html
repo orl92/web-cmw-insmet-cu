@@ -12,12 +12,7 @@
   {% endif %}
   <th>Servicio</th>
   <th>Inicio</th>
-  <th>Expiración</th>
   <th>Estado</th>
-  <th>Pago</th>
-  {% if request.user.is_staff %}
-    <th>Registro</th>
-  {% endif %}
   <th class="text-end">Acciones</th>
 {% endblock %}
 {% block row %}
@@ -33,8 +28,8 @@
         <a href="{% url 'commercial:cliente_update' subscription.customer.uuid %}"
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
-           title="{{ subscription.customer.company_name }}">
-          {{ subscription.customer.company_name|truncatechars:30 }}
+           title="{{ subscription.customer.display_name }}">
+          {{ subscription.customer.display_name|truncatechars:30 }}
         </a>
       </td>
     {% endif %}
@@ -43,47 +38,21 @@
         title="{{ subscription.service.title }}">{{ subscription.service.title|truncatechars:30 }}</td>
     <td>{{ subscription.start_date|date:"d/m/Y h:i A" }}</td>
     <td>
-      {{ subscription.end_date|date:"d/m/Y h:i A" }}
-      {% if subscription.end_date < now %}
-        <span class="badge badge-outline text-red ms-1">Vencido</span>
-      {% endif %}
-    </td>
-    <td>
-      {% if subscription.status_display == 'activo' %}
-        <span class="badge badge-outline text-green">Activo</span>
-      {% elif subscription.status_display == 'pendiente de pago' %}
-        <span class="badge badge-outline text-orange">Pendiente de pago</span>
+      {% if subscription.status_display == 'pagado' %}
+        <span class="badge bg-green-lt">Pagado</span>
+      {% elif subscription.status_display == 'pendiente' %}
+        <span class="badge bg-orange-lt">Pendiente</span>
       {% elif subscription.status_display == 'solicitado' %}
-        <span class="badge badge-outline text-blue">Solicitado</span>
+        <span class="badge bg-blue-lt">Solicitado</span>
       {% else %}
-        <span class="badge badge-outline text-red">Expirado</span>
+        <span class="badge bg-red-lt">Cancelada</span>
       {% endif %}
     </td>
-    <td>
-      {% if subscription.payment_status == 'paid' %}
-        <span class="badge badge-outline text-green">Pagado</span>
-      {% elif subscription.payment_status == 'pending' %}
-        <span class="badge badge-outline text-orange">Pendiente</span>
-      {% elif subscription.payment_status == 'requested' %}
-        <span class="badge badge-outline text-blue">Solicitado</span>
-      {% else %}
-        <span class="badge badge-outline text-red">Expirado</span>
-      {% endif %}
-    </td>
-    {% if request.user.is_staff %}
-      <td>
-        {% if subscription.record_active %}
-          <span class="badge badge-outline text-green">Activa</span>
-        {% else %}
-          <span class="badge badge-outline text-secondary">Desactivada</span>
-        {% endif %}
-      </td>
-    {% endif %}
     <td class="text-end">
-      {% if request.user.is_staff %}
-        {% with invoice=subscription.invoices.first %}
-          {% if invoice %}
-            <a href="{% url 'commercial:factura_download' invoice.uuid %}"
+      <div class="d-flex flex-wrap justify-content-end gap-2">
+        {% if request.user.is_staff %}
+          {% if subscription.latest_invoice_uuid and subscription.latest_invoice_pdf_ready %}
+            <a href="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}"
                class="btn btn-icon btn-outline-success btn-sm"
                data-bs-toggle="tooltip"
                data-bs-placement="bottom"
@@ -94,191 +63,191 @@
                     class="btn btn-icon btn-outline-primary btn-sm"
                     data-bs-toggle="modal"
                     data-bs-target="#documentPdfModal"
-                    data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
-                    data-pdf-title="Factura {{ invoice.number }}"
+                    data-pdf-url="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}?inline=1"
+                    data-pdf-title="Factura {{ subscription.latest_invoice_number }}"
                     data-bs-toggle="tooltip"
                     data-bs-placement="bottom"
-                    aria-label="Ver PDF"
-                    data-bs-original-title="Ver PDF">
+                    aria-label="Ver Factura"
+                    data-bs-original-title="Ver Factura">
               <i class="icon ti ti-file-type-pdf"></i>
             </button>
           {% endif %}
-        {% endwith %}
-        {% if subscription.payment_status == 'paid' %}
-          {% with certificate=subscription.certificates.first %}
-            {% if certificate and certificate.pdf %}
-              <a href="{% url 'commercial:certificado_pdf' certificate.uuid %}"
-                 class="btn btn-icon btn-outline-success btn-sm"
-                 data-bs-toggle="tooltip"
-                 data-bs-placement="bottom"
-                 title="Descargar Certificado">
-                <i class="icon ti ti-download"></i>
-              </a>
-              <button type="button"
-                      class="btn btn-icon btn-outline-primary btn-sm"
-                      data-bs-toggle="modal"
-                      data-bs-target="#documentPdfModal"
-                      data-pdf-url="{% url 'commercial:certificado_pdf' certificate.uuid %}?inline=1"
-                      data-pdf-title="Certificado"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="bottom"
-                      aria-label="Ver PDF"
-                      data-bs-original-title="Ver PDF">
-                <i class="icon ti ti-file-type-pdf"></i>
-              </button>
-              <a href="{% url 'commercial:certificado_resend' subscription.uuid %}"
-                 class="btn btn-icon btn-outline-warning btn-sm"
-                 data-bs-toggle="tooltip"
-                 data-bs-placement="bottom"
-                 title="Reenviar certificado por correo">
-                <i class="icon ti ti-mail-forward"></i>
-              </a>
-            {% endif %}
-          {% endwith %}
-        {% endif %}
-        <a href="{% url 'commercial:suscripcion_update' subscription.uuid %}"
-           class="btn btn-icon btn-outline-warning btn-sm"
-           data-bs-toggle="tooltip"
-           data-bs-placement="bottom"
-           title="Editar">
-          <i class="icon ti ti-edit"></i>
-        </a>
-        {% if subscription.record_active and perms.commercial.delete_subscription %}
-          <button type="button"
-                  class="btn btn-icon btn-outline-danger btn-sm action-btn"
-                  data-bs-toggle="tooltip"
-                  data-bs-placement="bottom"
-                  title="Anular suscripción"
-                  data-action="anular"
-                  data-uuid="{{ subscription.uuid }}"
-                  data-customer="{{ subscription.customer.company_name }}"
-                  data-service="{{ subscription.service.title }}">
-            <i class="icon ti ti-trash"></i>
-          </button>
-        {% endif %}
-        {% if is_superuser and not subscription.record_active %}
-          <button type="button"
-                  class="btn btn-icon btn-outline-danger btn-sm action-btn"
-                  data-bs-toggle="tooltip"
-                  data-bs-placement="bottom"
-                  title="Eliminar permanentemente"
-                  data-action="eliminar"
-                  data-uuid="{{ subscription.uuid }}"
-                  data-customer="{{ subscription.customer.company_name }}"
-                  data-service="{{ subscription.service.title }}">
-            <i class="icon ti ti-trash"></i>
-          </button>
-        {% endif %}
-        {% if subscription.payment_status == 'requested' %}
-          <a href="{% url 'commercial:factura_create' %}?customer_uuid={{ subscription.customer.uuid }}"
-             class="btn btn-icon btn-outline-primary btn-sm"
-             data-bs-toggle="tooltip"
-             data-bs-placement="bottom"
-             title="Facturar">
-            <i class="icon ti ti-file-invoice"></i>
-          </a>
-        {% endif %}
-        {% if subscription.payment_status == 'pending' %}
-          <a href="{% url 'commercial:suscripcion_approve' subscription.uuid %}"
-             class="btn btn-icon btn-outline-success btn-sm"
-             data-bs-toggle="tooltip"
-             data-bs-placement="bottom"
-             title="Aprobar Pago">
-            <i class="icon ti ti-circle-check"></i>
-          </a>
-          {% if subscription.invoices.exists %}
-            <form method="post"
-                  action="{% url 'commercial:factura_regenerate' subscription.uuid %}"
-                  style="display:inline"
-                  onsubmit="return confirm('¿Estás seguro de regenerar la factura?');">
-              {% csrf_token %}
-              <button type="submit"
-                      class="btn btn-icon btn-outline-warning btn-sm"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="bottom"
-                      title="Regenerar factura">
-                <i class="icon ti ti-refresh"></i>
-              </button>
-            </form>
+          {% if subscription.payment_status == 'paid' %}
+            {% with certificate=subscription.certificates.first %}
+              {% if certificate and certificate.pdf %}
+                <a href="{% url 'commercial:certificado_pdf' certificate.uuid %}"
+                   class="btn btn-icon btn-outline-success btn-sm"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="bottom"
+                   title="Descargar Certificado">
+                  <i class="icon ti ti-download"></i>
+                </a>
+                <button type="button"
+                        class="btn btn-icon btn-outline-primary btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#documentPdfModal"
+                        data-pdf-url="{% url 'commercial:certificado_pdf' certificate.uuid %}?inline=1"
+                        data-pdf-title="Certificado"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        aria-label="Ver Certificado"
+                        data-bs-original-title="Ver Certificado">
+                  <i class="icon ti ti-file-type-pdf"></i>
+                </button>
+                <a href="{% url 'commercial:certificado_resend' subscription.uuid %}"
+                   class="btn btn-icon btn-outline-warning btn-sm"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="bottom"
+                   title="Reenviar certificado por correo">
+                  <i class="icon ti ti-mail-forward"></i>
+                </a>
+              {% endif %}
+            {% endwith %}
           {% endif %}
-        {% endif %}
-      {% else %}
-        {% if subscription.payment_status == 'paid' %}
-          {% with certificate=subscription.certificates.first %}
-            {% if certificate and certificate.pdf %}
-              <a href="{% url 'commercial:certificado_pdf' certificate.uuid %}"
-                 class="btn btn-icon btn-outline-success btn-sm"
-                 data-bs-toggle="tooltip"
-                 data-bs-placement="bottom"
-                 title="Descargar Certificado">
-                <i class="icon ti ti-download"></i>
-              </a>
-              <button type="button"
-                      class="btn btn-icon btn-outline-primary btn-sm"
-                      data-bs-toggle="modal"
-                      data-bs-target="#documentPdfModal"
-                      data-pdf-url="{% url 'commercial:certificado_pdf' certificate.uuid %}?inline=1"
-                      data-pdf-title="Certificado"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="bottom"
-                      aria-label="Ver PDF"
-                      data-bs-original-title="Ver PDF">
-                <i class="icon ti ti-file-type-pdf"></i>
-              </button>
-              <a href="{% url 'commercial:certificado_resend' subscription.uuid %}"
-                 class="btn btn-icon btn-outline-warning btn-sm"
-                 data-bs-toggle="tooltip"
-                 data-bs-placement="bottom"
-                 title="Reenviar certificado por correo">
-                <i class="icon ti ti-mail-forward"></i>
-              </a>
-            {% else %}
-              <span class="btn btn-icon btn-outline-secondary btn-sm disabled"
-                    title="Sin certificado">
-                <i class="icon ti ti-certificate-off"></i>
-              </span>
-            {% endif %}
-          {% endwith %}
-        {% elif subscription.payment_status == 'pending' %}
-          {% with invoice=subscription.invoices.first %}
-            {% if invoice %}
-              <a href="{% url 'commercial:factura_download' invoice.uuid %}"
-                 class="btn btn-icon btn-outline-success btn-sm"
-                 data-bs-toggle="tooltip"
-                 data-bs-placement="bottom"
-                 title="Descargar Factura">
-                <i class="icon ti ti-download"></i>
-              </a>
-              <button type="button"
-                      class="btn btn-icon btn-outline-primary btn-sm"
-                      data-bs-toggle="modal"
-                      data-bs-target="#documentPdfModal"
-                      data-pdf-url="{% url 'commercial:factura_download' invoice.uuid %}?inline=1"
-                      data-pdf-title="Factura {{ invoice.number }}"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="bottom"
-                      aria-label="Ver PDF"
-                      data-bs-original-title="Ver PDF">
-                <i class="icon ti ti-file-type-pdf"></i>
-              </button>
-            {% endif %}
-          {% endwith %}
-          {% if subscription.payment_method == 'qr' %}
-            <a href="{% url 'home:payment' %}"
+          {% if subscription.record_active and subscription.payment_status == 'requested' %}
+            <a href="{% url 'commercial:factura_create' %}?customer_uuid={{ subscription.customer.uuid }}"
                class="btn btn-icon btn-outline-primary btn-sm"
                data-bs-toggle="tooltip"
                data-bs-placement="bottom"
-               title="Pagar con QR">
-              <i class="icon ti ti-qrcode"></i>
+               title="Facturar">
+              <i class="icon ti ti-file-invoice"></i>
             </a>
           {% endif %}
-        {% elif subscription.payment_status == 'requested' %}
-          <span class="btn btn-icon btn-outline-secondary btn-sm disabled"
-                title="En espera">
-            <i class="icon ti ti-clock-24"></i>
-          </span>
+          {% if subscription.record_active and subscription.payment_status == 'pending' %}
+            <a href="{% url 'commercial:suscripcion_approve' subscription.uuid %}"
+               class="btn btn-icon btn-outline-success btn-sm"
+               data-bs-toggle="tooltip"
+               data-bs-placement="bottom"
+               title="Aprobar Pago">
+              <i class="icon ti ti-circle-check"></i>
+            </a>
+            {% if subscription.latest_invoice_uuid %}
+              <form method="post"
+                    action="{% url 'commercial:factura_regenerate' subscription.uuid %}"
+                    style="display:inline"
+                    onsubmit="return confirm('¿Regenerar la factura? Se abrirá el formulario de facturación. La factura anterior se anulará y su certificado se dará de baja sólo cuando confirmes la factura nueva; si cerrás el formulario, no se anula nada.');">
+                {% csrf_token %}
+                <button type="submit"
+                        class="btn btn-icon btn-outline-warning btn-sm"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        title="Regenerar factura">
+                  <i class="icon ti ti-refresh"></i>
+                </button>
+              </form>
+            {% endif %}
+          {% endif %}
+          {% if subscription.record_active %}
+            <a href="{% url 'commercial:suscripcion_update' subscription.uuid %}"
+               class="btn btn-icon btn-outline-warning btn-sm"
+               data-bs-toggle="tooltip"
+               data-bs-placement="bottom"
+               title="Editar">
+              <i class="icon ti ti-edit"></i>
+            </a>
+          {% endif %}
+          {% if subscription.record_active and perms.commercial.delete_subscription %}
+            <button type="button"
+                    class="btn btn-icon btn-outline-danger btn-sm action-btn"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    title="Anular suscripción"
+                    data-action="anular"
+                    data-uuid="{{ subscription.uuid }}"
+                    data-customer="{{ subscription.customer.display_name }}"
+                    data-service="{{ subscription.service.title }}">
+              <i class="icon ti ti-trash"></i>
+            </button>
+          {% endif %}
+          {% if is_superuser and not subscription.record_active %}
+            <button type="button"
+                    class="btn btn-icon btn-outline-danger btn-sm action-btn"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    title="Eliminar permanentemente"
+                    data-action="eliminar"
+                    data-uuid="{{ subscription.uuid }}"
+                    data-customer="{{ subscription.customer.display_name }}"
+                    data-service="{{ subscription.service.title }}">
+              <i class="icon ti ti-trash"></i>
+            </button>
+          {% endif %}
+        {% else %}
+          {% if subscription.latest_invoice_uuid and subscription.latest_invoice_pdf_ready %}
+            <a href="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}"
+               class="btn btn-icon btn-outline-success btn-sm"
+               data-bs-toggle="tooltip"
+               data-bs-placement="bottom"
+               title="Descargar Factura">
+              <i class="icon ti ti-download"></i>
+            </a>
+            <button type="button"
+                    class="btn btn-icon btn-outline-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#documentPdfModal"
+                    data-pdf-url="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}?inline=1"
+                    data-pdf-title="Factura {{ subscription.latest_invoice_number }}"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    aria-label="Ver Factura"
+                    data-bs-original-title="Ver Factura">
+              <i class="icon ti ti-file-type-pdf"></i>
+            </button>
+          {% endif %}
+          {% if subscription.payment_status == 'paid' %}
+            {% with certificate=subscription.certificates.first %}
+              {% if certificate and certificate.pdf %}
+                <a href="{% url 'commercial:certificado_pdf' certificate.uuid %}"
+                   class="btn btn-icon btn-outline-success btn-sm"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="bottom"
+                   title="Descargar Certificado">
+                  <i class="icon ti ti-download"></i>
+                </a>
+                <button type="button"
+                        class="btn btn-icon btn-outline-primary btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#documentPdfModal"
+                        data-pdf-url="{% url 'commercial:certificado_pdf' certificate.uuid %}?inline=1"
+                        data-pdf-title="Certificado"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        aria-label="Ver Certificado"
+                        data-bs-original-title="Ver Certificado">
+                  <i class="icon ti ti-file-type-pdf"></i>
+                </button>
+                <a href="{% url 'commercial:certificado_resend' subscription.uuid %}"
+                   class="btn btn-icon btn-outline-warning btn-sm"
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="bottom"
+                   title="Reenviar certificado por correo">
+                  <i class="icon ti ti-mail-forward"></i>
+                </a>
+              {% else %}
+                <span class="btn btn-icon btn-outline-secondary btn-sm disabled"
+                      title="Sin certificado">
+                  <i class="icon ti ti-certificate-off"></i>
+                </span>
+              {% endif %}
+            {% endwith %}
+          {% elif subscription.payment_status == 'pending' %}
+            {% if subscription.payment_method == 'qr' %}
+              <a href="{% url 'home:payment' %}"
+                 class="btn btn-icon btn-outline-primary btn-sm"
+                 data-bs-toggle="tooltip"
+                 data-bs-placement="bottom"
+                 title="Pagar con QR">
+                <i class="icon ti ti-qrcode"></i>
+              </a>
+            {% endif %}
+          {% elif subscription.payment_status == 'requested' %}
+            <span class="btn btn-icon btn-outline-secondary btn-sm disabled"
+                  title="En espera">
+              <i class="icon ti ti-clock-24"></i>
+            </span>
+          {% endif %}
         {% endif %}
-      {% endif %}
+      </div>
     </td>
   {% endwith %}
 {% endblock %}

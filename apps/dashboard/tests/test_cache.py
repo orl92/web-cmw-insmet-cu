@@ -120,7 +120,6 @@ class DashboardNoClientLeakTests(TestCase):
             service=service,
             payment_status='paid',
             start_date=timezone.now(),
-            end_date=timezone.now() + timezone.timedelta(days=30),
         )
         Invoice.objects.create(
             customer=cls.customer_a, subscription=sub_a, number='INV-A', amount='100.00'
@@ -130,7 +129,6 @@ class DashboardNoClientLeakTests(TestCase):
             service=service,
             payment_status='paid',
             start_date=timezone.now(),
-            end_date=timezone.now() + timezone.timedelta(days=30),
         )
         Invoice.objects.create(
             customer=cls.customer_b, subscription=sub_b, number='INV-B', amount='200.00'

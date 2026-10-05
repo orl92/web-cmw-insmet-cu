@@ -3,6 +3,26 @@
 {% load static %}
 {% block form %}
   <div id="form-messages"></div>
+  {% if regenerar_sub %}
+    <input type="hidden"
+           name="regenerar"
+           value="{{ regenerar_sub.uuid }}"
+           data-pk="{{ regenerar_sub.pk }}" />
+    <div class="alert alert-warning" role="alert">
+      <div class="d-flex">
+        <div>
+          <i class="icon alert-icon ti ti-alert-triangle"></i>
+        </div>
+        <div class="ms-3">
+          <h4 class="alert-title">Regenerando la factura de {{ regenerar_sub.service.title }}</h4>
+          <p class="text-muted mb-0">
+            Al guardar, se anulará la factura anterior y se dará de baja su certificado.
+            Si cerrás el formulario ahora, no se anula nada: la factura actual sigue vigente.
+          </p>
+        </div>
+      </div>
+    </div>
+  {% endif %}
   {% include 'includes/dashboard/form_card.html' with card_title='Cliente' %}
   <div class="row">
     <!-- Cliente -->
@@ -45,7 +65,26 @@
   </div>
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Período de Facturación' %}
-  <!-- Fechas y duración -->
+  <!-- Período impreso en la factura: texto libre, como en las facturas reales -->
+  <div class="row">
+    <div class="col-12 mb-3">
+      <label class="form-label" for="{{ form.period_label.id_for_label }}">{{ form.period_label.label }}</label>
+      <input type="text"
+             class="form-control"
+             id="{{ form.period_label.id_for_label }}"
+             name="{{ form.period_label.html_name }}"
+             value="{{ form.period_label.value|default:'' }}"
+             maxlength="255"
+             placeholder="Mes de mayo y junio de 2025" />
+      {% if form.period_label.help_text %}
+        <small class="form-hint">{{ form.period_label.help_text }}</small>
+      {% endif %}
+      {% if form.period_label.errors %}
+        <div class="invalid-feedback d-block">{{ form.period_label.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <!-- Fechas y duración: datos operativos del cálculo, no del texto impreso -->
   <div class="row">
     <div class="col-md-4 mb-3">
       {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
@@ -63,7 +102,7 @@
   </div>
   <!-- Bloque dinámico -->
   <div id="dynamic-fields">
-    <!-- Suscripciones agrupadas por período -->
+    <!-- Suscripciones pendientes -->
     <div id="subscriptions-grouped" style="display: none;"></div>
     <!-- Facturación manual -->
     <div id="manual-container" style="display: none;">
@@ -96,11 +135,8 @@
                     </div>
                     <div class="col-md-2">
                       <label class="form-label">{{ item_form.cantidad.label }}</label>
-                      <input type="text"
-                             name="{{ item_form.cantidad.html_name }}"
-                             value="{{ item_form.cantidad.value|default:'' }}"
-                             class="form-control quantity-days"
-                             readonly />
+                      {{ item_form.cantidad }}
+                      <small class="form-text text-muted">{{ item_form.cantidad.help_text }}</small>
                     </div>
                     <div class="col-md-1">
                       <label class="form-label">{{ item_form.unidad_medida.label }}</label>
@@ -126,11 +162,69 @@
           </div>
         </div>
       </div>
+      <div class="card mt-3">
+        <div class="card-header">
+          <h3 class="card-title">Imputación a centros de costo</h3>
+          <div class="card-actions">
+            <div class="col-auto">
+              <button type="button"
+                      class="btn btn-sm btn-icon btn-outline-primary add-cost-row"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      title="Añadir centro de costo">
+                <i class="icon ti ti-plus"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">
+            El reparto entre centros de costo debe sumar 100 %. El centro se precarga desde el
+            código del servicio, pero el reparto lo confirma quien emite la factura.
+          </p>
+          {% if cost_allocations_formset.non_form_errors %}
+            <div class="alert alert-danger" role="alert">
+              {% for error in cost_allocations_formset.non_form_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {{ cost_allocations_formset.management_form }}
+          <div id="cost-container">
+            {% for cost_form in cost_allocations_formset %}
+              <div class="cost-row card mb-3">
+                <div class="card-body d-flex align-items-end">
+                  <div class="flex-grow-1 row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">{{ cost_form.codigo.label }}</label>
+                      {{ cost_form.codigo }}
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">{{ cost_form.porcentaje.label }}</label>
+                      {{ cost_form.porcentaje }}
+                    </div>
+                    <div class="col-md-2 d-none">{{ cost_form.DELETE }}</div>
+                  </div>
+                  <div class="ms-3">
+                    <button type="button"
+                            class="btn btn-sm btn-icon btn-outline-danger remove-cost-row"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            title="Eliminar centro de costo">
+                      <i class="icon ti ti-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 {% endblock %}
 {% block modal %}
-  <!-- Modal para editar Datos de la Empresa (sin cambios) -->
+  <!-- Modal para editar Datos de la Empresa -->
   <div class="modal modal-blur fade"
        id="modal-company-settings"
        tabindex="-1"
@@ -371,7 +465,16 @@
   // ============================================================
   const servicesData = JSON.parse('{{ commercial_services_json|escapejs }}');
   const servicesMap = {};
-  servicesData.forEach(s => { servicesMap[s.id] = { code: s.code, price: s.price, unit: "U" }; });
+  // La unidad no es elegible: sale de la categoría del servicio (agrometeo → MES,
+  // resto → DÍA), así que un mismo período propone 3 o 90 según la fila.
+  // El form aplica la misma regla en el servidor.
+  servicesData.forEach(s => {
+    servicesMap[s.id] = {
+      code: s.code,
+      price: s.price,
+      unit: s.service_category === 'agrometeo' ? 'MES' : 'DÍA',
+    };
+  });
 
   const ajaxUrl = "{% url 'commercial:ajax_pending_subscriptions' %}";
   const customerSelect = document.getElementById('id_customer');
@@ -380,6 +483,30 @@
   const startDateInput = document.getElementById('id_start_date');
   const endDateInput = document.getElementById('id_end_date');
   const daysCountInput = document.getElementById('days-count');
+  // Suscripción que el operador pidió regenerar: el servidor la pasa en un
+  // campo oculto y acá se usa para dejarla marcada. Sin esto el operador ve el
+  // grupo de pendientes sin nada seleccionado y factura cualquier otra cosa.
+  const regenerarInput = document.querySelector('input[name="regenerar"]');
+  const regenerarPk = regenerarInput ? regenerarInput.dataset.pk : '';
+
+  function preseleccionarRegeneracion() {
+    if (!regenerarPk) return;
+    const cb = groupedContainer.querySelector('.subscription-check[value="' + regenerarPk + '"]');
+    if (!cb) return;
+    cb.checked = true;
+  }
+
+  // Escapa el HTML que llega del endpoint AJAX antes de inyectarlo. El resumen
+  // del servicio es texto libre escrito por el staff, así que interpolarlo crudo
+  // en el DOM abriría la puerta a XSS desde la vista de facturación.
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
   // Convierte el valor visible del picker (dd/mm/yyyy) a Date.
   // Usa window.pickerDateToIso cuando está disponible (lo define tempus-init en
@@ -430,11 +557,37 @@
     return diff >= 0 ? Math.ceil(diff / (1000 * 60 * 60 * 24)) : 0;
   }
 
+  // Meses que reproducen lo más cerca posible el período elegido por el operador.
+  //
+  // Se redondea contra el promedio real del año (365.2425/12) porque contar
+  // "meses completos" deja casi todos los meses a medio camino y el operador ve
+  // un número que no corresponde al período facturado.
+  const DAYS_PER_MONTH = 365.2425 / 12;
+
+  function calculateMonths(start, end) {
+    const s = parsePickerDate(start);
+    const e = parsePickerDate(end);
+    if (!s || !e || e < s) return 0;
+    const months = Math.round((e - s) / (DAYS_PER_MONTH * 24 * 60 * 60 * 1000));
+    return Math.max(months, 0);
+  }
+
+  // Propuesta para la línea manual: el período medido en la unidad del servicio.
+  // Nunca por debajo de 1 porque el campo exige min_value=1. El operador la ajusta.
+  function proposeQuantity(row) {
+    const serviceSelect = row.querySelector('select[id$="-service"]');
+    const data = servicesMap[serviceSelect ? serviceSelect.value : ''];
+    const quantity = data && data.unit === 'MES'
+      ? calculateMonths(startDateInput.value, endDateInput.value)
+      : calculateDays(startDateInput.value, endDateInput.value);
+    return Math.max(quantity, 1);
+  }
+
   function updateDaysFromInputs() {
-    const days = calculateDays(startDateInput.value, endDateInput.value);
-    daysCountInput.value = days;
-    document.querySelectorAll('#items-container .quantity-days').forEach(input => {
-      input.value = days;
+    daysCountInput.value = calculateDays(startDateInput.value, endDateInput.value);
+    document.querySelectorAll('#items-container .item-row').forEach(row => {
+      const quantityInput = row.querySelector('.quantity-days');
+      if (quantityInput) quantityInput.value = proposeQuantity(row);
     });
   }
 
@@ -463,117 +616,7 @@
   }
   // ***********************************************************************************************************************
 
-  function setPeriodFields(start, end) {
-    setPickerValue(startDateInput, start);
-    setPickerValue(endDateInput, end);
-  }
-
-  // ========== Tooltip helpers ==========
-  function getOrCreateTooltip(el) {
-    const Tooltip = window.bootstrap?.Tooltip;
-    if (!Tooltip) return null;
-    let instance = Tooltip.getInstance(el);
-    if (!instance) {
-      instance = new Tooltip(el, { trigger: 'hover', placement: 'bottom' });
-    }
-    return instance;
-  }
-
-  function updateTooltipContent(sw) {
-    const tooltip = getOrCreateTooltip(sw);
-    if (tooltip) {
-      tooltip.setContent({ '.tooltip-inner': sw.title });
-    }
-  }
-
-  // ========== Funciones de control de período ==========
-  // Activa un período (switch encendido, fechas, bloquea otros) sin modificar checkboxes
-  function setPeriodActive(start, end) {
-    setPeriodFields(start, end);
-    document.querySelectorAll('.period-switch').forEach(sw => {
-      if (sw.dataset.start === start && sw.dataset.end === end) {
-        sw.checked = true;
-        sw.title = 'Desactivar período';
-        sw.disabled = false;
-      } else {
-        sw.checked = false;
-        sw.title = 'Activar período';
-        sw.disabled = true;
-      }
-      updateTooltipContent(sw);
-    });
-    // Bloquear checkboxes de otros períodos, desmarcarlos
-    document.querySelectorAll('.subscription-check').forEach(cb => {
-      if (cb.dataset.start === start && cb.dataset.end === end) {
-        cb.disabled = false;
-      } else {
-        cb.disabled = true;
-        cb.checked = false;
-      }
-    });
-  }
-
-  // Desactiva cualquier período (libera switches y checkboxes)
-  function setPeriodInactive() {
-    document.querySelectorAll('.period-switch').forEach(sw => {
-      sw.checked = false;
-      sw.title = 'Activar período';
-      sw.disabled = false;
-      updateTooltipContent(sw);
-    });
-    document.querySelectorAll('.subscription-check').forEach(cb => {
-      cb.disabled = false;
-      cb.checked = false;
-    });
-  }
-
-  // Activar período y marcar TODOS los checkboxes del grupo
-  function selectAllInPeriod(start, end) {
-    setPeriodActive(start, end);
-    document.querySelectorAll(`.subscription-check[data-start="${start}"][data-end="${end}"]`).forEach(cb => {
-      cb.checked = true;
-    });
-  }
-
-  // Desactivar período y desmarcar TODOS los checkboxes del grupo
-  function clearAllInPeriod(start, end) {
-    setPeriodInactive();
-    // No es necesario desmarcar porque setPeriodInactive ya desmarca todo
-  }
-
-  // ========== Eventos ==========
-  function onPeriodSwitchChange(e) {
-    const sw = e.target;
-    const start = sw.dataset.start;
-    const end = sw.dataset.end;
-    if (sw.checked) {
-      selectAllInPeriod(start, end);
-    } else {
-      clearAllInPeriod(start, end);
-    }
-  }
-
-  function onCheckboxChange(e) {
-    const cb = e.target;
-    const start = cb.dataset.start;
-    const end = cb.dataset.end;
-
-    if (cb.checked) {
-      // Acaba de marcar este checkbox → activar período (bloquear otros)
-      setPeriodActive(start, end);
-    } else {
-      // Se desmarcó, comprobar si aún hay alguno marcado en este período
-      const anyChecked = document.querySelector(`.subscription-check[data-start="${start}"][data-end="${end}"]:checked`);
-      if (!anyChecked) {
-        // Ninguno marcado → desactivar período
-        setPeriodInactive();
-      }
-      // Si aún hay otros marcados, no hacer nada (el período sigue activo)
-    }
-  }
-
   function switchToManualInvoice() {
-    setPeriodInactive();
     groupedContainer.style.display = 'none';
     manualContainer.style.display = 'block';
     const today = new Date().toISOString().split('T')[0];
@@ -583,7 +626,10 @@
   }
 
   // ========== Carga de suscripciones ==========
-  function loadGroupedSubscriptions(customerId) {
+  // Sin vencimiento, las suscripciones pendientes no forman grupos por período:
+  // el período facturado es único y lo fija el operador en el formulario de
+  // arriba. Se listan planas y las marcadas se facturan todas juntas.
+  function loadPendingSubscriptions(customerId) {
     if (!customerId) {
       groupedContainer.style.display = 'none';
       manualContainer.style.display = 'none';
@@ -603,14 +649,6 @@
           return;
         }
 
-        // Agrupar por período
-        const groups = {};
-        checkboxes.forEach(cb => {
-          const key = cb.dataset.start + '|' + cb.dataset.end;
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(cb);
-        });
-
         let htmlResult = `
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0">Suscripciones Pendientes</h5>
@@ -619,72 +657,49 @@
               Facturación manual
             </button>
           </div>
+          <div class="card mb-3">
+            <div class="card-body">
         `;
 
-        for (const key in groups) {
-          const [start, end] = key.split('|');
-          const days = calculateDays(start, end);
+        checkboxes.forEach(cb => {
+          const start = cb.dataset.start || '';
+          let summary = cb.dataset.summary ? cb.dataset.summary : '';
+          if (summary.length > 80) {
+            summary = summary.substring(0, 80) + '…';
+          }
+          const unidad = cb.dataset.unitidad ? `<span class="text-muted">(${escapeHtml(cb.dataset.unidad)})</span> ` : '';
           htmlResult += `
-            <div class="card mb-3">
-              <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h6 class="card-title mb-0">
-                    <span class="fw-bold">${start} → ${end}</span>
-                    <span class="badge bg-blue-lt ms-2">${days} días</span>
-                  </h6>
-                  <div class="form-check form-switch form-switch-lg mb-0">
-                    <input class="form-check-input period-switch" type="checkbox" id="switch-${start}-${end}" data-start="${start}" data-end="${end}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Activar período">
-                    <label class="form-check-label" for="switch-${start}-${end}"></label>
-                  </div>
-                </div>
-                <div id="group-${start}-${end}">
-          `;
-          groups[key].forEach(cb => {
-            let summary = cb.dataset.summary ? cb.dataset.summary : '';
-            if (summary.length > 80) {
-              summary = summary.substring(0, 80) + '…';
-            }
-            htmlResult += `
               <div class="form-check">
-                <input class="form-check-input subscription-check" type="checkbox" name="subscriptions" value="${cb.value}" id="sub_${cb.value}" data-start="${start}" data-end="${end}" data-service="${cb.dataset.service}" data-days="${days}" data-summary="${summary}">
+                <input class="form-check-input subscription-check" type="checkbox"
+                       name="subscriptions" value="${cb.value}" id="sub_${cb.value}"
+                       data-start="${start}"
+                       data-quantity="${cb.dataset.quantity}"
+                       data-service="${escapeHtml(cb.dataset.service)}"
+                       data-unidad="${escapeHtml(cb.dataset.unidad || '')}"
+                       data-summary="${escapeHtml(summary)}">
                 <label class="form-check-label" for="sub_${cb.value}">
-                  <strong>${cb.dataset.service}</strong>
-                  ${summary ? `<br><small class="text-muted">${summary}</small>` : ''}
+                  <strong>${escapeHtml(cb.dataset.service)}</strong> ${unidad}
+                  ${summary ? `<br><small class="text-muted">${escapeHtml(summary)}</small>` : ''}
                 </label>
               </div>
-            `;
-          });
-          htmlResult += `</div></div></div>`;
-        }
+          `;
+        });
+
+        htmlResult += `
+            </div>
+          </div>
+        `;
 
         groupedContainer.innerHTML = htmlResult;
         groupedContainer.style.display = 'block';
         manualContainer.style.display = 'none';
 
-        // Inicializar tooltips de Bootstrap en los switches
-        const Tooltip = window.bootstrap?.Tooltip;
-        if (Tooltip) {
-          groupedContainer.querySelectorAll('.period-switch').forEach(sw => {
-            new Tooltip(sw, { trigger: 'hover', placement: 'bottom' });
-          });
-        }
-
-        // Evento del botón "Facturación manual"
         const switchBtn = document.getElementById('switch-to-manual-btn');
         if (switchBtn) {
           switchBtn.addEventListener('click', switchToManualInvoice);
         }
 
-        // Eventos de los switches y checkboxes
-        document.querySelectorAll('.period-switch').forEach(sw => {
-          sw.addEventListener('change', onPeriodSwitchChange);
-        });
-        document.querySelectorAll('.subscription-check').forEach(cb => {
-          cb.addEventListener('change', onCheckboxChange);
-        });
-
-        // Estado inicial: sin período activo, todo habilitado
-        setPeriodInactive();
+        preseleccionarRegeneracion();
         updateDaysFromInputs();
       })
       .catch(function(error) {
@@ -693,14 +708,14 @@
   }
 
   customerSelect.addEventListener('change', function() {
-    loadGroupedSubscriptions(this.value);
+    loadPendingSubscriptions(this.value);
   });
 
   if (customerSelect && customerSelect.value) {
-    loadGroupedSubscriptions(customerSelect.value);
+    loadPendingSubscriptions(customerSelect.value);
   }
 
-  // ========== Facturación manual (sin cambios) ==========
+  // ========== Facturación manual ==========
   function updateRowFromService(row) {
     const serviceSelect = row.querySelector('select[id$="-service"]');
     const codeInput = row.querySelector('input[id$="-codigo"]');
@@ -717,9 +732,8 @@
       priceInput.value = '';
       unitInput.value = 'U';
     }
-    const days = calculateDays(startDateInput.value, endDateInput.value);
     const quantityInput = row.querySelector('.quantity-days');
-    if (quantityInput) quantityInput.value = days;
+    if (quantityInput) quantityInput.value = proposeQuantity(row);
   }
 
   function bindRowEvents(row) {
@@ -774,6 +788,51 @@
     totalForms.value = currentCount + 1;
     bindRowEvents(newRow);
     updateRowFromService(newRow);
+  });
+
+  /* Imputación a centros de costo: mismo patrón que las líneas de servicio,
+     con su propio prefijo y su propio contador TOTAL_FORMS. */
+  function bindCostRowEvents(row) {
+    const removeBtn = row.querySelector('.remove-cost-row');
+    if (!removeBtn) return;
+    removeBtn.addEventListener('click', function() {
+      const totalForms = document.getElementById('id_cost_allocations-TOTAL_FORMS');
+      const container = document.getElementById('cost-container');
+      const rows = container.querySelectorAll('.cost-row');
+      if (rows.length <= 1) {
+        row.querySelectorAll('input:not([type="hidden"])').forEach(el => { el.value = ''; });
+        return;
+      }
+      row.remove();
+      const remaining = container.querySelectorAll('.cost-row');
+      totalForms.value = remaining.length;
+      remaining.forEach((r, index) => {
+        r.querySelectorAll('input, textarea, select').forEach(input => {
+          const name = input.name;
+          if (name) {
+            input.name = name.replace(/cost_allocations-\d+-/, `cost_allocations-${index}-`);
+            input.id = input.name;
+          }
+        });
+      });
+    });
+  }
+
+  document.querySelectorAll('.cost-row').forEach(row => bindCostRowEvents(row));
+
+  document.querySelector('.add-cost-row').addEventListener('click', function() {
+    const totalForms = document.getElementById('id_cost_allocations-TOTAL_FORMS');
+    const currentCount = parseInt(totalForms.value);
+    const container = document.getElementById('cost-container');
+    const lastRow = container.querySelector('.cost-row:last-child');
+    if (!lastRow) return;
+    const newRow = lastRow.cloneNode(true);
+    const regex = new RegExp(`cost_allocations-${currentCount - 1}-`, 'g');
+    newRow.innerHTML = newRow.innerHTML.replace(regex, `cost_allocations-${currentCount}-`);
+    newRow.querySelectorAll('input:not([type="hidden"])').forEach(input => { input.value = ''; });
+    container.appendChild(newRow);
+    totalForms.value = currentCount + 1;
+    bindCostRowEvents(newRow);
   });
   </script>
 {% endblock %}

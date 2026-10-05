@@ -154,6 +154,9 @@ class CustomerHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, uuid):
         customer = get_object_or_404(Customer, uuid=uuid)
         company_name = customer.company_name
+        # `company_name` es NULL en una natural: el mensaje que ve el operador
+        # decía literalmente "Cliente None eliminado permanentemente".
+        customer_name = customer.display_name
         user = customer.user
         log_action(
             user=self.request.user,
@@ -165,7 +168,7 @@ class CustomerHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         if user and user.pk != self.request.user.pk:
             with contextlib.suppress(Exception):
                 user.delete()
-        messages.success(request, f'Cliente {company_name} eliminado permanentemente.')
+        messages.success(request, f'Cliente {customer_name} eliminado permanentemente.')
         return redirect('commercial:cliente_list')
 
 

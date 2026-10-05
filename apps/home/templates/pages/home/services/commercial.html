@@ -31,7 +31,7 @@
                     <div class="d-flex flex-column flex-grow-1 text-secondary mb-3">
                       <div class="mb-2">
                         <i class="icon me-1 ti ti-calendar"></i>
-                        Vigencia: <strong>{{ subscription.start_date|date:'d/m/Y' }} - {{ subscription.end_date|date:'d/m/Y' }}</strong>
+                        Inicio: <strong>{{ subscription.start_date|date:'d/m/Y' }}</strong>
                       </div>
                       <div class="mb-2">
                         <i class="icon me-1 ti ti-tag"></i>
@@ -55,43 +55,39 @@
                     </div>
                     <!-- Acciones contextuales por estado -->
                     <div class="d-flex flex-wrap justify-content-end gap-2">
-                      {% if subscription.is_active %}
-                        {% with certificate=subscription.certificates.first %}
-                          {% if certificate and certificate.pdf %}
-                            {% url 'commercial:certificado_pdf' certificate.uuid as cert_pdf_url %}
-                            <button type="button"
-                                    class="btn btn-pill btn-outline-primary"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#documentPdfModal"
-                                    data-pdf-url="{{ cert_pdf_url }}?inline=1"
-                                    data-pdf-title="{{ subscription.service.title }}">
-                              <i class="icon ti ti-file-type-pdf"></i>
-                              Ver PDF
-                            </button>
-                          {% else %}
-                            <span class="text-muted">Sin certificado</span>
-                          {% endif %}
-                        {% endwith %}
-                      {% elif subscription.payment_status == 'pending' %}
-                        {% if subscription.latest_invoice_uuid %}
-                          <a href="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}?inline=1"
-                             class="btn btn-pill btn-outline-secondary">
-                            <i class="icon ti ti-receipt"></i> Ver factura
-                          </a>
+                      {% if subscription.latest_invoice_uuid %}
+                        <button type="button"
+                                class="btn btn-pill btn-outline-secondary"
+                                data-bs-toggle="modal"
+                                data-bs-target="#documentPdfModal"
+                                data-pdf-url="{% url 'commercial:factura_download' subscription.latest_invoice_uuid %}?inline=1"
+                                data-pdf-title="Factura de {{ subscription.service.title }}">
+                          <i class="icon ti ti-receipt"></i> Ver factura
+                        </button>
+                      {% endif %}
+                      {% with certificate=subscription.certificates.first %}
+                        {% if certificate and certificate.pdf %}
+                          {% url 'commercial:certificado_pdf' certificate.uuid as cert_pdf_url %}
+                          <button type="button"
+                                  class="btn btn-pill btn-outline-primary"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#documentPdfModal"
+                                  data-pdf-url="{{ cert_pdf_url }}?inline=1"
+                                  data-pdf-title="{{ subscription.service.title }}">
+                            <i class="icon ti ti-file-type-pdf"></i>
+                            Ver certificado
+                          </button>
+                        {% elif subscription.payment_status == 'paid' %}
+                          <span class="text-muted">Sin certificado</span>
                         {% endif %}
-                        {% if subscription.payment_method == 'qr' %}
-                          <a href="{% url 'home:payment' %}"
-                             class="btn btn-pill btn-outline-primary">
-                            <i class="icon ti ti-qrcode"></i> Pagar con QR
-                          </a>
-                        {% endif %}
+                      {% endwith %}
+                      {% if subscription.payment_status == 'pending' and subscription.payment_method == 'qr' %}
+                        <a href="{% url 'home:payment' %}"
+                           class="btn btn-pill btn-outline-primary">
+                          <i class="icon ti ti-qrcode"></i> Pagar con QR
+                        </a>
                       {% elif subscription.payment_status == 'requested' %}
                         <span class="badge bg-blue-lt"><i class="icon ti ti-clock"></i> En proceso</span>
-                      {% else %}
-                        <a href="{% url 'home:services_commercial_detail' subscription.service.uuid %}"
-                           class="btn btn-pill btn-outline-primary">
-                          <i class="icon ti ti-send"></i> Solicitar
-                        </a>
                       {% endif %}
                     </div>
                   </div>

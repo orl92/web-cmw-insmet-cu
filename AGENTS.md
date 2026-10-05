@@ -226,5 +226,5 @@ Lo que gentle-ai **no** cubre es la verificación funcional (`review validate --
 ## API + Deploy + Locale
 
 - **API**: DRF con `DjangoModelPermissionsOrAnonReadOnly`; rate limit 100/h anon, 1000/h user; schema en `/api/schema/`
-- **Deploy**: Nginx + Gunicorn (`gunicorn.sh`) + Supervisor; estáticos por Nginx en `/static/`, media en `/media/`; socket `/tmp/gunicorn-webcmp.sock`
+- **Deploy**: Nginx + Gunicorn vía **systemd** (no supervisor, no `gunicorn.sh`); unidades y ejemplo de Nginx versionados en `deploy/systemd/` y `deploy/nginx/`. Estáticos por Nginx en `/static/`, media en `/media/`; socket `unix:/run/webcmp/gunicorn.sock` (vía `RuntimeDirectory` del unit, no `/tmp`). Worker de Huey en su propio unit.
 - **Locale**: `LANGUAGE_CODE = 'es-mx'`, `TIME_ZONE = 'America/Havana'`

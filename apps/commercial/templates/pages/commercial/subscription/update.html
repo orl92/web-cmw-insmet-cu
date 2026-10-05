@@ -1,110 +1,99 @@
 {% extends 'layouts/form.html' %}
 {% load form_filters %}
+{% load my_filters %}
+{% load static %}
 {% block form %}
-  {% include 'includes/dashboard/form_card.html' with card_title='Suscripción' %}
+  {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Solicitud' %}
   <div class="row">
     <div class="col-md-6 mb-3">
       <label class="form-label required" for="{{ form.customer.id_for_label }}">{{ form.customer.label }}</label>
-      {{ form.customer }}
+      <select class="form-control
+                     {% if form.customer.errors %}is-invalid{% endif %}"
+              id="{{ form.customer.id_for_label }}"
+              name="{{ form.customer.name }}"
+              required>
+        {% for choice_value, choice_label in form.fields.customer.choices %}
+          <option value="{{ choice_value }}"
+                  {% if form.customer.value == choice_value|stringformat:'s' %}selected{% endif %}>{{ choice_label }}</option>
+        {% endfor %}
+      </select>
       {% if form.customer.errors %}
         <div class="invalid-feedback d-block">{{ form.customer.errors.0 }}</div>
       {% endif %}
     </div>
     <div class="col-md-6 mb-3">
       <label class="form-label required" for="{{ form.service.id_for_label }}">{{ form.service.label }}</label>
-      {{ form.service }}
+      <select class="form-control
+                     {% if form.service.errors %}is-invalid{% endif %}"
+              id="{{ form.service.id_for_label }}"
+              name="{{ form.service.name }}"
+              required>
+        {% for choice_value, choice_label in form.fields.service.choices %}
+          <option value="{{ choice_value }}"
+                  {% if form.service.value == choice_value|stringformat:'s' %}selected{% endif %}>{{ choice_label }}</option>
+        {% endfor %}
+      </select>
       {% if form.service.errors %}
         <div class="invalid-feedback d-block">{{ form.service.errors.0 }}</div>
       {% endif %}
     </div>
   </div>
-  <div class="mb-3">
-    <label class="form-label required" for="{{ form.period.id_for_label }}">{{ form.period.label }}</label>
-    {{ form.period }}
-    {% if form.period.errors %}
-      <div class="invalid-feedback d-block">{{ form.period.errors.0 }}</div>
-    {% endif %}
-  </div>
-  </div>
-  </div>
-  </div>
-  {% include 'includes/dashboard/form_card.html' with card_title='Período de Vigencia' %}
   <div class="row">
     <div class="col-md-6 mb-3">
-      {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm' %}
+      {% include 'includes/dashboard/date_field.html' with field=form.start_date value=form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
     </div>
     <div class="col-md-6 mb-3">
-      {% include 'includes/dashboard/date_field.html' with field=form.end_date value=form.end_date.value|fmt_datetime mode='datetime' placeholder='dd/mm/aaaa hh:mm' %}
+      <label class="form-label required"
+             for="{{ form.quantity.id_for_label }}"
+             data-period-quantity-label>{{ form.quantity.label }}</label>
+      <input type="number"
+             min="1"
+             class="form-control
+                    {% if form.quantity.errors %}is-invalid{% endif %}"
+             id="{{ form.quantity.id_for_label }}"
+             name="{{ form.quantity.name }}"
+             value="{{ form.quantity.value|default:'' }}"
+             required>
+      <small class="form-hint" id="{{ form.quantity.auto_id }}_helptext">{{ form.quantity.help_text }}</small>
+      {% if form.quantity.errors %}
+        <div class="invalid-feedback d-block">{{ form.quantity.errors.0 }}</div>
+      {% endif %}
     </div>
   </div>
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Método de pago' card_title_id='payment_method_group' %}
   <div class="mb-3">
-    <label class="form-label" for="{{ form.payment_status.id_for_label }}">{{ form.payment_status.label }}</label>
-    {{ form.payment_status }}
-    {% if form.payment_status.errors %}
-      <div class="invalid-feedback d-block">{{ form.payment_status.errors.0 }}</div>
+    <div class="form-selectgroup flex-column flex-md-row
+                {% if form.payment_method.errors %}is-invalid{% endif %}"
+         role="radiogroup"
+         aria-labelledby="payment_method_group"
+         {% if form.payment_method.errors %}aria-invalid="true"{% endif %}>
+      {% for choice in form.payment_method %}
+        <label class="form-selectgroup-item flex-md-fill">
+          <input type="radio"
+                 class="form-selectgroup-input"
+                 name="payment_method"
+                 value="{{ choice.data.value }}"
+                 {% if choice.data.selected %}checked{% endif %}
+                 {% if forloop.first and not form.payment_method.value %}checked{% endif %} />
+          <span class="form-selectgroup-label">
+            <i class="icon me-1 ti {{ choice.data.value|payment_method_icon }}"></i>
+            {{ choice.data.label }}
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+    {% if form.payment_method.errors %}
+      <div class="invalid-feedback d-block">{{ form.payment_method.errors.0 }}</div>
     {% endif %}
-    <small class="text-muted">{{ form.payment_status.help_text }}</small>
+    {% include 'includes/dashboard/payment_method_help.html' with payment_method=form.payment_method.value %}
   </div>
   </div>
   </div>
   </div>
 {% endblock %}
 {% block extrajs %}
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const periodSelect = document.getElementById('id_period');
-    const startInput = document.getElementById('id_start_date');
-    const endInput = document.getElementById('id_end_date');
-
-    function toIsoDateTime(date) {
-      const pad = n => String(n).padStart(2, '0');
-      return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
-        'T' + pad(date.getHours()) + ':' + pad(date.getMinutes());
-    }
-
-    function setPickerValue(input, isoDateTimeStr) {
-      const dt = new Date(isoDateTimeStr);
-      const picker = window.tempusDominus && window.tempusDominus._instances && window.tempusDominus._instances[input.id];
-      if (picker && picker.dates && typeof picker.dates.setValue === 'function') {
-        picker.dates.setValue(dt);
-      }
-      // window.formatPickerDateTime se define en tempus-init (DOMContentLoaded); si
-      // aún no existe —el script corre durante el parseo— formateamos localmente.
-      if (typeof window.formatPickerDateTime === 'function') {
-        input.value = window.formatPickerDateTime(dt);
-      } else {
-        const pad = n => String(n).padStart(2, '0');
-        let h = dt.getHours();
-        const meridiem = h >= 12 ? 'PM' : 'AM';
-        let h12 = h % 12;
-        if (h12 === 0) h12 = 12;
-        input.value = pad(dt.getDate()) + '/' + pad(dt.getMonth() + 1) + '/' + dt.getFullYear() +
-          ' ' + h12 + ':' + pad(dt.getMinutes()) + ' ' + meridiem;
-      }
-    }
-
-    function updateFields() {
-      const val = periodSelect.value;
-      if (val === 'custom') {
-        startInput.disabled = false;
-        endInput.disabled = false;
-      } else {
-        startInput.disabled = true;
-        endInput.disabled = true;
-        if (!startInput.value) {
-          const now = new Date();
-          setPickerValue(startInput, toIsoDateTime(now));
-          if (val === '1m') now.setDate(now.getDate() + 30);
-          else if (val === '3m') now.setDate(now.getDate() + 90);
-          else if (val === '6m') now.setDate(now.getDate() + 180);
-          else if (val === '1y') now.setDate(now.getDate() + 365);
-          if (val !== 'custom') setPickerValue(endInput, toIsoDateTime(now));
-        }
-      }
-    }
-
-    periodSelect.addEventListener('change', updateFields);
-    updateFields();
-  });
-  </script>
+  <script src="{% static 'dist/js/subscription-quantity-label.js' %}" defer></script>
 {% endblock %}

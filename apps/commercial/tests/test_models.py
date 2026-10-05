@@ -17,6 +17,13 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import (
+    IncompleteCustomerDataError,
+    make_user,
+    natural_customer,
+    valid_natural_customer,
+)
+from apps.commercial.tests.test_views import disable_maintenance_mode
 from apps.core.tests.base import FileHandlingTestCase
 
 
@@ -33,9 +40,8 @@ def _make_user(username='testuser', **kwargs):
 class CustomerModelTests(TestCase):
     def test_create_natural_customer(self):
         user = _make_user('nat')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=user,
+        customer = natural_customer(
+            user,
             address='Calle 1 #123',
             phone='12345678',
             account='1234567890123456',
@@ -73,12 +79,8 @@ class CustomerModelTests(TestCase):
 
     def test_soft_delete(self):
         user = _make_user('softdel')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=user,
-            address='Test',
-            phone='12345678',
-            account='1234567890123456',
+        customer = natural_customer(
+            user, address='Test', phone='12345678', account='1234567890123456'
         )
         customer.delete()
         customer.refresh_from_db()
@@ -87,12 +89,8 @@ class CustomerModelTests(TestCase):
 
     def test_hard_delete(self):
         user = _make_user('harddel')
-        customer = Customer.objects.create(
-            client_type='natural',
-            user=user,
-            address='Test',
-            phone='12345678',
-            account='1234567890123456',
+        customer = natural_customer(
+            user, address='Test', phone='12345678', account='1234567890123456'
         )
         pk = customer.pk
         customer.hard_delete()
@@ -101,21 +99,68 @@ class CustomerModelTests(TestCase):
     def test_unique_account(self):
         user1 = _make_user('u1')
         user2 = _make_user('u2')
-        Customer.objects.create(
-            client_type='natural',
-            user=user1,
-            address='Addr1',
-            phone='11111111',
-            account='1111111111111111',
-        )
+        natural_customer(user1, address='Addr1', phone='11111111', account='1111111111111111')
         with self.assertRaises(IntegrityError):
-            Customer.objects.create(
-                client_type='natural',
-                user=user2,
-                address='Addr2',
-                phone='22222222',
-                account='1111111111111111',
-            )
+            natural_customer(user2, address='Addr2', phone='22222222', account='1111111111111111')
+
+
+class CustomerDisplayNameTests(TestCase):
+    """`display_name` es lo que muestran los listados. Antes las plantillas leían
+    `company_name` directo, que es NULL en toda persona natural: el listado
+    imprimía la palabra `None` en lugar del nombre de la persona."""
+
+    def test_natural_usa_el_nombre_del_usuario(self):
+        customer = natural_customer(
+            make_user('natnombre', first_name='Ana', last_name='Norte'),
+        )
+        self.assertEqual(customer.display_name, 'Ana Norte')
+
+    def test_natural_sin_nombres_cae_al_username(self):
+        customer = natural_customer(
+            make_user('sinnombres', first_name='', last_name=''),
+        )
+        self.assertEqual(customer.display_name, 'sinnombres')
+
+    def test_juridica_usa_el_nombre_de_la_empresa(self):
+        customer = Customer.objects.create(
+            client_type='juridica',
+            user=make_user('jurnombre', first_name='Ana', last_name='Norte'),
+            company_name='Empresa Test',
+            reeup='123.4.5678',
+            nit='12345678901',
+            account='1234567890123456',
+            address='Calle 2 #456',
+            phone='87654321',
+        )
+        self.assertEqual(customer.display_name, 'Empresa Test')
+
+    def test_juridica_sin_razon_social_cae_al_nombre_del_usuario(self):
+        customer = Customer.objects.create(
+            client_type='juridica',
+            user=make_user('jur.sin.razon', first_name='Ana', last_name='Norte'),
+            company_name='',
+            reeup='123.4.5679',
+            nit='12345678902',
+            account='1234567890123457',
+            address='Calle 3 #789',
+            phone='87654322',
+        )
+        self.assertEqual(customer.display_name, 'Ana Norte')
+
+    def test_natural_sin_usuario_devuelve_placeholder_y_no_none(self):
+        customer = Customer(
+            client_type='natural',
+            identity_document='34111234567',
+            account='1234567890123458',
+            address='Calle 4 #111',
+            phone='87654323',
+        )
+        self.assertEqual(customer.display_name, '—')
+        self.assertIsNotNone(customer.display_name)
+
+    def test_str_usa_display_name(self):
+        customer = natural_customer(make_user('strcheck', first_name='Ana', last_name='Norte'))
+        self.assertEqual(str(customer), customer.display_name)
 
 
 class ServiceModelTests(FileHandlingTestCase):
@@ -178,24 +223,6 @@ class ServiceModelTests(FileHandlingTestCase):
         )
         self.assertIn('120.00', service.get_price_per_period_display())
         self.assertIn('mes', service.get_price_per_period_display())
-
-    def test_compute_end_date_agrometeo_no_overflow(self):
-        from datetime import date as date_cls
-
-        result = Service.compute_end_date(date_cls(2026, 1, 31), 2, 'agrometeo')
-        self.assertEqual(result, date_cls(2026, 3, 31))
-
-    def test_compute_end_date_pronostico_daily(self):
-        from datetime import date as date_cls
-
-        result = Service.compute_end_date(date_cls(2026, 1, 1), 5, 'pronostico')
-        self.assertEqual(result, date_cls(2026, 1, 6))
-
-    def test_compute_end_date_default_category_is_pronostico(self):
-        from datetime import date as date_cls
-
-        result = Service.compute_end_date(date_cls(2026, 2, 10), 3)
-        self.assertEqual(result, date_cls(2026, 2, 13))
 
     def test_create_public_service(self):
         service = Service.objects.create(
@@ -276,12 +303,8 @@ class ServiceSubscriptionModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('subuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -297,7 +320,6 @@ class ServiceSubscriptionModelTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         self.assertIsNotNone(sub.uuid)
         self.assertIn(self.service.title, str(sub))
@@ -307,7 +329,6 @@ class ServiceSubscriptionModelTests(TestCase):
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         self.assertEqual(sub.quantity, 1)
 
@@ -317,7 +338,6 @@ class ServiceSubscriptionModelTests(TestCase):
             service=self.service,
             quantity=0,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         with self.assertRaises(ValidationError):
             sub.full_clean()
@@ -328,7 +348,6 @@ class ServiceSubscriptionModelTests(TestCase):
             service=self.service,
             quantity=30,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         self.assertEqual(sub.get_quantity_period_display(), '30 días')
 
@@ -345,7 +364,6 @@ class ServiceSubscriptionModelTests(TestCase):
             service=agrometeo,
             quantity=3,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=90),
         )
         self.assertEqual(sub.get_quantity_period_display(), '3 meses')
 
@@ -355,7 +373,6 @@ class ServiceSubscriptionModelTests(TestCase):
             service=self.service,
             quantity=1,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         self.assertEqual(sub.get_quantity_period_display(), '1 día')
 
@@ -371,38 +388,53 @@ class ServiceSubscriptionModelTests(TestCase):
         self.assertEqual(perms, expected)
         self.assertEqual(meta.default_permissions, ())
 
-    def test_clean_rejects_invalid_dates(self):
-        sub = ServiceSubscription(
-            customer=self.customer,
-            service=self.service,
-            start_date=timezone.now(),
-            end_date=timezone.now() - timedelta(days=1),
-        )
-        with self.assertRaises(ValidationError):
-            sub.clean()
-
     def test_is_active_property(self):
-        future = timezone.now() + timedelta(days=30)
         sub = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=future,
             payment_status='paid',
         )
         self.assertTrue(sub.is_active)
-        self.assertEqual(sub.status_display, 'activo')
+        self.assertEqual(sub.status_display, 'pagado')
+
+    def test_is_active_solo_exige_pago_y_no_estar_anulada(self):
+        """La vigencia no tiene componente temporal: sólo pago aprobado y baja viva.
+
+        Antes `is_active` miraba `end_date` y una suscripción pagada con el
+        período terminado se leía como inactiva. La suscripción ya no vence, así
+        que las dos condiciones que quedan son las que se combinan en la tabla.
+        """
+        for estado in ('requested', 'pending', 'paid'):
+            for activa in (True, False):
+                with self.subTest(payment_status=estado, record_active=activa):
+                    sub = ServiceSubscription.objects.create(
+                        customer=self.customer,
+                        service=self.service,
+                        start_date=timezone.now(),
+                        payment_status=estado,
+                        record_active=activa,
+                    )
+                    self.assertEqual(sub.is_active, estado == 'paid' and activa)
 
     def test_is_active_expired(self):
-        past = timezone.now() - timedelta(days=1)
-        sub = ServiceSubscription.objects.create(
+        """Sin `end_date` no hay vencimiento: lo único que apaga es la anulación.
+
+        El nombre histórico se conserva porque es el caso que se sigue
+        vigilando, pero lo que afirma es la regla nueva: una suscripción pagada
+        sigue activa aunque su período haya pasado, y se apaga en cuanto se
+        anula, esté pagada o no.
+        """
+        pagada = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.service,
             start_date=timezone.now() - timedelta(days=60),
-            end_date=past,
             payment_status='paid',
         )
-        self.assertFalse(sub.is_active)
+        self.assertTrue(pagada.is_active)
+
+        pagada.delete()
+        self.assertFalse(pagada.is_active)
 
     def test_status_display_values(self):
         sub = ServiceSubscription(
@@ -412,16 +444,57 @@ class ServiceSubscriptionModelTests(TestCase):
         )
         self.assertEqual(sub.status_display, 'solicitado')
         sub.payment_status = 'pending'
-        self.assertEqual(sub.status_display, 'pendiente de pago')
-        sub.payment_status = 'expired'
-        self.assertEqual(sub.status_display, 'expirado')
+        self.assertEqual(sub.status_display, 'pendiente')
+        sub.payment_status = 'paid'
+        self.assertEqual(sub.status_display, 'pagado')
+
+    def test_status_display_is_cancelled_by_soft_delete(self):
+        """La baja lógica es lo que cancela, no un valor de `payment_status`.
+
+        Anular ya marca `record_active=False`; llevar además un 'cancelled' en
+        `payment_status` sería el mismo dato en dos campos, y la forma más
+        segura de que se contradigan.
+        """
+        sub = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            payment_status='paid',
+        )
+        self.assertEqual(sub.status_display, 'pagado')
+        sub.delete()
+        self.assertEqual(sub.status_display, 'cancelada')
+
+    def test_status_display_ignores_the_elapsed_period(self):
+        """`status_display` es el estado del pago y nada más.
+
+        No queda ninguna fecha que consultar: la suscripción no tiene
+        vencimiento, así que el rótulo sale sólo de `record_active` y de
+        `payment_status`. La pasada del período no puede volver a cambiarlo.
+        """
+        sub = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.service,
+            start_date=timezone.now() - timedelta(days=60),
+            payment_status='paid',
+        )
+        self.assertEqual(sub.status_display, 'pagado')
+
+    def test_expired_is_not_a_valid_payment_status(self):
+        from django.core.exceptions import ValidationError
+
+        sub = ServiceSubscription(
+            customer=self.customer,
+            service=self.service,
+            payment_status='expired',
+        )
+        with self.assertRaises(ValidationError):
+            sub.full_clean()
 
     def test_soft_delete(self):
         sub = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
         sub.delete()
         sub.refresh_from_db()
@@ -433,12 +506,8 @@ class InvoiceModelTests(FileHandlingTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('invuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
 
     def test_create_invoice(self):
@@ -514,12 +583,8 @@ class InvoiceItemModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('itemuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.invoice = Invoice.objects.create(
             customer=cls.customer,
@@ -584,12 +649,8 @@ class ContractModelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('contuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -603,7 +664,6 @@ class ContractModelTests(TestCase):
             customer=cls.customer,
             service=cls.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
 
     def test_create_contract(self):
@@ -645,12 +705,8 @@ class CertificateModelTests(FileHandlingTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('certuser')
-        cls.customer = Customer.objects.create(
-            client_type='natural',
-            user=cls.user,
-            address='Addr',
-            phone='12345678',
-            account='1234567890123456',
+        cls.customer = natural_customer(
+            cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         cls.service = Service.objects.create(
             user=cls.user,
@@ -664,7 +720,6 @@ class CertificateModelTests(FileHandlingTestCase):
             customer=cls.customer,
             service=cls.service,
             start_date=timezone.now(),
-            end_date=timezone.now() + timedelta(days=30),
         )
 
     def test_create_certificate(self):
@@ -710,3 +765,122 @@ class CertificateModelTests(FileHandlingTestCase):
 
     def test_file_fields_defined(self):
         self.assertEqual(Certificate.file_fields, ['pdf'])
+
+
+class InvoiceDerivedStatusTests(TestCase):
+    """La factura no tiene campo de estado: el pago se deriva de las líneas.
+
+    El lote agrupa suscripciones y cada una se aprueba por separado, así que un
+    campo propio en la factura sería una segunda fuente de verdad capaz de
+    contradecir a la real.
+    """
+
+    def setUp(self):
+        disable_maintenance_mode()
+        customer = natural_customer(
+            User.objects.create_user(
+                username='invstatus',
+                email='invstatus@example.com',
+                first_name='Ana',
+                last_name='Sur',
+            )
+        )
+        provider = User.objects.create_user(username='invprov', email='invprov@example.com')
+        self.service = Service.objects.create(
+            user=provider,
+            title='S',
+            summary='S',
+            service_type='commercial',
+            code='INV1',
+            price=Decimal('10.00'),
+        )
+        self.customer = customer
+        self.invoice = Invoice.objects.create(
+            customer=customer, subscription=None, number='2026-7001', amount=20
+        )
+
+    def _sub(self, code, status):
+        sub = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=Service.objects.create(
+                user=self.service.user,
+                title=f'S {code}',
+                summary='S',
+                service_type='commercial',
+                code=code,
+                price=Decimal('10.00'),
+            ),
+            payment_status=status,
+        )
+        InvoiceItem.objects.create(
+            invoice=self.invoice,
+            subscription=sub,
+            codigo=code,
+            descripcion=sub.service.title,
+            cantidad=1,
+            precio=Decimal('10.00'),
+            importe=Decimal('10.00'),
+        )
+        return sub
+
+    def test_invoice_without_subscriptions_is_pending(self):
+        self.assertEqual(self.invoice.status_display, 'pendiente')
+
+    def test_invoice_is_pending_while_any_subscription_is_unpaid(self):
+        self._sub('S1', 'paid')
+        self._sub('S2', 'pending')
+        self.assertEqual(self.invoice.status_display, 'pendiente')
+
+    def test_invoice_is_paid_when_every_subscription_is_paid(self):
+        self._sub('S3', 'paid')
+        self._sub('S4', 'paid')
+        self.assertEqual(self.invoice.status_display, 'pagada')
+
+    def test_cancelled_invoice_wins_over_paid_subscriptions(self):
+        self._sub('S5', 'paid')
+        self.invoice.is_cancelled = True
+        self.invoice.save(update_fields=['is_cancelled'])
+        self.assertEqual(self.invoice.status_display, 'cancelada')
+
+    def test_annotation_matches_the_property_without_extra_queries(self):
+        self._sub('S6', 'paid')
+        self._sub('S7', 'paid')
+        annotated = Invoice.objects.with_display_status().get(pk=self.invoice.pk)
+        with self.assertNumQueries(0):
+            self.assertEqual(annotated.status_display, 'pagada')
+
+
+class CustomerFactoryTests(TestCase):
+    """La factory tiene que fallar ruidosamente: un cliente a medio construir
+    llegaba a la base y el `None` aparecía tres pantallas más abajo."""
+
+    def test_cliente_natural_nace_completo(self):
+        customer = natural_customer()
+        self.assertEqual(customer.client_type, Customer.ClientType.NATURAL)
+        self.assertTrue(customer.identity_document)
+        self.assertTrue(customer.agency_bank)
+        self.assertTrue(customer.address)
+        self.assertTrue(customer.phone)
+        self.assertTrue(customer.user.first_name)
+        self.assertTrue(customer.user.last_name)
+        # Completo = mostrable: el listado no puede imprimir `None`.
+        self.assertNotIn('None', customer.display_name)
+
+    def test_error_dice_que_falta(self):
+        with self.assertRaises(IncompleteCustomerDataError) as ctx:
+            natural_customer(identity_document='', agency_bank='')
+        mensaje = str(ctx.exception)
+        self.assertIn('identity_document', mensaje)
+        self.assertIn('agency_bank', mensaje)
+
+    def test_error_dice_el_formato_invalido(self):
+        with self.assertRaises(IncompleteCustomerDataError) as ctx:
+            natural_customer(phone='1234')
+        self.assertIn('phone', str(ctx.exception))
+
+    def test_reutiliza_un_cliente_valido_existente(self):
+        existente = natural_customer()
+        self.assertEqual(valid_natural_customer().pk, existente.pk)
+
+    def test_crea_cliente_si_no_hay_ninguno_valido(self):
+        self.assertIsNotNone(valid_natural_customer().identity_document)

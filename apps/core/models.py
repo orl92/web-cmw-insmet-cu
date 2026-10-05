@@ -7,7 +7,13 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 
-from apps.core.validators import validate_account, validate_nit, validate_phones, validate_reeup
+from apps.core.validators import (
+    validate_account,
+    validate_image_upload,
+    validate_nit,
+    validate_phones,
+    validate_reeup,
+)
 
 
 def pdf_upload_path(instance, filename):
@@ -176,10 +182,24 @@ class SiteConfiguration(FileHandlerMixin):
         default='1',
         verbose_name='Radio de esquina',
     )
+    # The validator lives on the model, not on SiteConfigurationForm, so the
+    # admin (whose ModelForm is built from the model) is covered too. Without
+    # it, branding files were the only ImageFields in the project that a corrupt
+    # upload could reach storage through unchecked.
     brand_logo = models.ImageField(
-        upload_to='brand/', null=True, blank=True, verbose_name='Logo de marca'
+        upload_to='brand/',
+        null=True,
+        blank=True,
+        verbose_name='Logo de marca',
+        validators=[validate_image_upload],
     )
-    favicon = models.ImageField(upload_to='brand/', null=True, blank=True, verbose_name='Favicon')
+    favicon = models.ImageField(
+        upload_to='brand/',
+        null=True,
+        blank=True,
+        verbose_name='Favicon',
+        validators=[validate_image_upload],
+    )
 
     file_fields = ['brand_logo', 'favicon']
 
@@ -323,6 +343,14 @@ class TaskExecutionLog(models.Model):
 
     task_id = models.CharField(max_length=255, db_index=True)
     task_name = models.CharField(max_length=255)
+    # Clave estable del trabajo lógico, no del intento. Un reintento genera un
+    # `task.id` nuevo, así que buscar por `task_id` abría una fila nueva en
+    # cada intento y el error original quedaba congelado. Con esta clave el
+    # reintento actualiza la misma fila y `task_id` se refresca al nuevo id.
+    logical_key = models.CharField(max_length=255, blank=True, default='', db_index=True)
+    # Texto legible de a quién pertenece la tarea, para que la tabla no.obligue
+    # a abrir el log para saber de qué cliente habla.
+    summary = models.CharField(max_length=255, blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ENQUEUED)
     enqueued_at = models.DateTimeField(null=True, blank=True)
     started_at = models.DateTimeField(null=True, blank=True)

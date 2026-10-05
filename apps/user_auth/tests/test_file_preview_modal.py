@@ -1,6 +1,6 @@
 """Verification tests for the user_auth profile update form template.
 
-Asserts that the avatar image no longer opens in a blank tab and instead uses
+Asserts that the avatar image must not open in a blank tab and instead uses
 the vendored fslightbox (data-fslightbox). Templates are NOT modified.
 
 The profile middleware (CheckUserProfileMiddleware) redirects incomplete
@@ -12,21 +12,40 @@ social-media links — out of scope — so we assert the *avatar anchor* does no
 use ``target="_blank"`` rather than the whole page.
 """
 
-import base64
+import io
 import tempfile
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from apps.user_auth.models import Profile
 
 User = get_user_model()
 
-PNG_BYTES = base64.b64decode(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-)
+
+def _png_1x1():
+    """Devuelve los bytes de un PNG 1x1 generado por Pillow, no un literal.
+
+    El literal base64 que estaba acá antes estaba corrupto: después del chunk
+    IDAT, el decoder leía una longitud de 2 GiB y un tipo de chunk b'\\x00\\x00IE'
+    en lugar de IEND. `Image.open()` es perezoso y solo lee la cabecera, así que
+    los bytes malos pasaban inadvertidos... hasta que `Profile.save()` reabre el
+    avatar del disco y lo re-codifica, lo que fuerza `load()` y levanta
+    `OSError: Truncated File Read`. Este test es justamente el que re-codifica.
+
+    Generar los bytes con Pillow elimina de raíz la clase de bug "alguien
+    tipeó mal el base64", que acá se camufullaba detrás de un comentario que
+    además afirmaba que el PNG era válido.
+    """
+    buffer = io.BytesIO()
+    Image.new('RGB', (1, 1), (200, 200, 200)).save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
+PNG_BYTES = _png_1x1()
 
 
 def assert_file_anchor_not_blank_tab(test_case, content, file_url):

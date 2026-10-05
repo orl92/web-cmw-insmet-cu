@@ -1,49 +1,219 @@
 import logging
 import os
+from decimal import ROUND_HALF_UP, Decimal
+from functools import lru_cache
 
-import pdfkit
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
+from weasyprint import HTML
 
+from apps.commercial.models import Contract, Customer, Invoice
 from apps.core.models import CompanySettings
 
 logger = logging.getLogger(__name__)
 
 
-def generate_invoice_pdf_standalone(
-    invoice, customer, start_date, end_date, commercial_registry, items
-):
+@lru_cache(maxsize=1)
+def require_pdf_renderer():
+    """Se niega a generar un PDF sin que el motor de renderizado funcione.
+
+    `WeasyPrint` es una biblioteca pura de Python, pero necesita la pila
+    del sistema (Pango, Harfbuzz, GdkPixbuf) para convertir HTML a PDF. Si
+    esa pila falta, el primer `write_pdf()` falla con un error profundo,
+    no con un `ImportError` claro. Este chequeo previene que el worker
+    de Huey intente generar facturas en ese estado y deja constancia de
+    qué dependencias del sistema faltan, antes de tocar ningún archivo.
+
+    Ejecuta una prueba real de renderizado (no solo una importación): al
+    hacerlo una única vez por proceso (cacheado) se paga el costo de
+    arranque de Pango como mucho una vez y, lo más importante, el chequeo
+    ocurre ANTES de que se escriba un PDF a medio crear.
+    """
+
+    try:
+        HTML(string='<p>ok</p>').write_pdf()
+    except Exception as exc:
+        raise RuntimeError(
+            'No se puede generar el PDF de la factura: faltan bibliotecas del '
+            'sistema necesarias para WeasyPrint (Pango/Harfbuzz).\n'
+            '  Debian/Ubuntu: sudo apt install libpango-1.0-0 '
+            'libpangoft2-1.0-0 libharfbuzz0b libgdk-pixbuf-2.0-0\n'
+            '  Otras plataformas: consulte la documentación de WeasyPrint '
+            'para las dependencias del sistema.'
+        ) from exc
+
+
+def _centro_de_costo_de_codigo(codigo):
+    """Centro de costo embebido en el prefijo del código de servicio.
+
+    Los códigos reales empiezan por el centro: `700501072507005` es
+    `700.50107 | 2507 | 005`. Se devuelve `None` cuando el código es demasiado
+    corto para contenerlo, porque inventar un centro sería peor que no tener
+    ninguno: el operador lo carga a mano.
+    """
+    codigo = (codigo or '').strip()
+    if len(codigo) < 8 or not codigo[:8].isdigit():
+        return None
+    return f'{codigo[:3]}.{codigo[3:8]}'
+
+
+def _prefill_cost_allocations_from_items(items):
+    """Reparto inicial a partir de los centros de los ítems facturados.
+
+    Ojo con lo que esto NO es: el reparto real de las facturas del CMP no sale de
+    los ítems. La factura 276 tiene un único ítem repartido en tres centros
+    (25/65/10), y ningún cálculo sobre montos produce tres porcentajes de una
+    sola línea. El reparto es una decisión del operador; esto es sólo el punto de
+    partida que le ahorra escribir los códigos.
+
+    Lo que sí sale de los ítems es el centro, porque viaja en el prefijo. El
+    reparto en partes iguales está ajustado para sumar EXACTAMENTE 100.00 (con
+    tres centros quedan 33.33/33.33/33.34, porque el residuo del redondeo se
+    absorbe en la última fila) ya que un reparto que no suma 100 es justo lo que
+    el formset después rechaza.
+    """
+    centros = []
+    for item in items:
+        centro = _centro_de_costo_de_codigo(getattr(item, 'codigo', None))
+        if centro and centro not in centros:
+            centros.append(centro)
+
+    if not centros:
+        return []
+
+    base = (Decimal('100') / len(centros)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    reparto = [{'codigo': centro, 'porcentaje': base} for centro in centros]
+    # El residuo del redondeo se absorbe en la última fila para que la suma sea
+    # exacta en cents y no 99.99.
+    reparto[-1]['porcentaje'] += Decimal('100.00') - sum(
+        (fila['porcentaje'] for fila in reparto), Decimal('0')
+    )
+    return reparto
+
+
+def _contrato_de_factura(invoice):
+    """El contrato de la suscripción facturada, o `None`.
+
+    `Contract.subscription` es un `OneToOneField`, así que `subscription.contract`
+    lanza `Contract.DoesNotExist` cuando la suscripción todavía no tiene
+    contrato: eso es un caso normal (la factura manual no tiene suscripción), no
+    un error, y por eso se devuelve `None` en vez de dejar subir la excepción.
+    """
+    subscription = invoice.subscription if invoice else None
+    if subscription is None:
+        return None
+    try:
+        return subscription.contract
+    except Contract.DoesNotExist:
+        return None
+
+
+def _datos_proveedor(company, contract):
+    """Datos del ejecutor, con el bloque de contrato resuelto.
+
+    El registro comercial del contrato es el más específico (es el de esa
+    suscripción), así que gana; si el contrato no lo trae, se usa el de la
+    empresa. Sin contrato, los tres campos quedan vacíos en vez de romper.
+    """
+    return {
+        'nombre': company.nombre,
+        'direccion': company.direccion,
+        'codigo_reeup': company.codigo_reeup,
+        'nit': company.nit,
+        'cuenta_bancaria': company.cuenta_bancaria,
+        'agencia_bancaria': company.agencia_bancaria,
+        'telefonos': company.telefonos,
+        'registro_comercial': (
+            (contract.commercial_registry if contract else '') or company.registro_comercial
+        ),
+        'no_contrato': contract.number if contract else '',
+        'fecha_contrato': contract.date.strftime('%d/%m/%Y') if contract else '',
+    }
+
+
+def _datos_cliente(customer):
+    """Datos del cliente, ya resueltos según su tipo.
+
+    La plantilla solo decide qué imprimir con `es_juridica`; qué valores van en
+    cada caso se calcula acá, que es donde se puede razonar sin HTML.
+
+    El nombre se resuelve por tipo y nunca queda en blanco: una jurídica
+    imprime su razón social (es lo que imprimía antes, y es lo que va en una
+    factura legal) y una persona natural su nombre, que vive en el `User`. Si
+    alguno de los dos falta, se degrada al otro y, en último caso, al nombre de
+    usuario. Es la misma prioridad que usa `Customer.__str__`.
+    """
+    if customer is None:
+        return {
+            'es_juridica': False,
+            'nombre': '',
+            'documento_identidad': '',
+            'direccion': '',
+            'codigo_reeup': '',
+            'nit': '',
+            'cuenta_bancaria': '',
+            'agencia_bancaria': '',
+            'telefonos': '',
+        }
+
+    es_juridica = customer.client_type == Customer.ClientType.JURIDICA
+    user = customer.user
+    nombre_persona = user.get_full_name() if user else ''
+    if es_juridica:
+        nombre = customer.company_name or nombre_persona
+    else:
+        nombre = nombre_persona or customer.company_name
+    if not nombre and user:
+        nombre = user.username
+
+    return {
+        'es_juridica': es_juridica,
+        'nombre': nombre or '',
+        'documento_identidad': customer.identity_document or '',
+        'direccion': customer.address,
+        'codigo_reeup': customer.reeup or '',
+        'nit': customer.nit or '',
+        'cuenta_bancaria': customer.account or '',
+        'agencia_bancaria': customer.agency_bank or '',
+        'telefonos': customer.phone or '',
+    }
+
+
+def _periodo_facturacion(invoice):
+    """El período facturado, tal como lo escribió el operador.
+
+    Las facturas reales del CMP lo escriben como texto libre ("Mes de mayo y
+    junio de 2025", "octubre y noviembre del 2025"), y ninguno de esos textos se
+    puede derivar de un par de fechas. Por eso es un `CharField` y no un rango:
+    componer "Desde X hasta Y" rinde un rango imposible en el caso normal, que
+    es una factura emitida de una sola fecha.
+
+    Si el campo está vacío (facturas emitidas antes de que existiera), cae a la
+    fecha de emisión. No es una migración de datos a propósito: en este proyecto
+    las migraciones no se versionan, así que una migración de datos se perdería
+    en silencio y dejaría facturas viejas sin período.
+    """
+    if invoice.period_label:
+        return invoice.period_label
+    return invoice.issue_date.strftime('%d/%m/%Y')
+
+
+def generate_invoice_pdf_standalone(invoice, customer, items):
     company = CompanySettings.get_instance()
-    periodo = f'Desde {start_date.strftime("%d/%m/%Y")} hasta {end_date.strftime("%d/%m/%Y")}'
     context = {
+        'cost_allocations': [
+            {'codigo': asignacion.codigo, 'porcentaje': asignacion.porcentaje}
+            for asignacion in invoice.cost_allocations.all()
+        ],
         'numero_factura': invoice.number,
         'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
-        'periodo_facturacion': periodo,
-        'cliente': {
-            'nombre': customer.company_name,
-            'direccion': customer.address,
-            'codigo_reeup': customer.reeup or '',
-            'nit': customer.nit or '',
-            'cuenta_bancaria': customer.account or '',
-            'agencia_bancaria': customer.agency_bank or '',
-            'telefonos': customer.phone or '',
-        },
-        'proveedor': {
-            'nombre': company.nombre,
-            'direccion': company.direccion,
-            'codigo_reeup': company.codigo_reeup,
-            'nit': company.nit,
-            'cuenta_bancaria': company.cuenta_bancaria,
-            'agencia_bancaria': company.agencia_bancaria,
-            'telefonos': company.telefonos,
-            'registro_comercial': commercial_registry,
-            'no_contrato': '',
-            'fecha_contrato': '',
-        },
+        'periodo_facturacion': _periodo_facturacion(invoice),
+        'cliente': _datos_cliente(customer),
+        'proveedor': _datos_proveedor(company, _contrato_de_factura(invoice)),
         'items': [
             {
                 'codigo': item.codigo,
@@ -58,28 +228,41 @@ def generate_invoice_pdf_standalone(
         'total': float(invoice.amount),
         'current_year': timezone.now().year,
     }
-    html_string = render_to_string('pages/commercial/invoice/factura_template.html', context)
-    options = {
-        'page-size': 'A4',
-        'margin-top': '10mm',
-        'margin-bottom': '10mm',
-        'margin-left': '10mm',
-        'margin-right': '10mm',
-        'encoding': 'UTF-8',
-        'no-outline': None,
-        'enable-local-file-access': None,
-    }
-    pdf_bytes = pdfkit.from_string(html_string, False, options=options)
+    require_pdf_renderer()
+    html_string = render_to_string('pages/commercial/invoice/template.html', context)
+    pdf_bytes = HTML(string=html_string).write_pdf()
     filename = f'factura_{invoice.id}.pdf'
     invoice.pdf.save(filename, ContentFile(pdf_bytes))
+    return pdf_bytes
+
+
+def marcar_pdf(invoice, error=None):
+    """Deja el estado del PDF alineado con lo que pasó en el render.
+
+    Vive acá y no en la tarea porque hay dos caminos que generan el PDF (la
+    tarea Huey y el comando de pruebas) y el estado tiene que quedar escrito
+    igual en los dos.
+    """
+    invoice.pdf_status = Invoice.PdfStatus.FAILED if error else Invoice.PdfStatus.READY
+    invoice.pdf_error = str(error) if error else None
+    invoice.save(update_fields=['pdf_status', 'pdf_error'])
+    return invoice
 
 
 def enviar_correo_factura(invoice, customer, request=None, base_url=None):
     """
-    Envía el correo con la factura en PDF y actualiza flags email_sent/email_error.
-    Retorna True si se envió correctamente, False en caso contrario.
+    Envía el correo con la factura en PDF y registra el resultado en
+    `email_status`/`email_error`.
+
+    Retorna True si salió, False si no. **No propaga la excepción**: quien
+    llama decide si eso es un error fatal o solo un estado que hay que
+    mostrar. Tragar el error acá es lo que hacía que la tarea Huey reportara
+    éxito con el correo sin enviar.
     """
     if not customer.user or not customer.user.email:
+        invoice.email_status = Invoice.EmailStatus.FAILED
+        invoice.email_error = 'El cliente no tiene correo registrado.'
+        invoice.save(update_fields=['email_status', 'email_error'])
         return False
 
     first_item = invoice.items.first()
@@ -142,14 +325,14 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
 
     try:
         email.send()
-        invoice.email_sent = True
+        invoice.email_status = Invoice.EmailStatus.SENT
         invoice.email_error = None
-        invoice.save()
+        invoice.save(update_fields=['email_status', 'email_error'])
         logger.info(f'Factura {invoice.number} enviada a {customer.user.email}')
         return True
     except Exception as e:
         logger.error(f'Error enviando factura {invoice.number}: {e}')
-        invoice.email_sent = False
+        invoice.email_status = Invoice.EmailStatus.FAILED
         invoice.email_error = str(e)
-        invoice.save()
+        invoice.save(update_fields=['email_status', 'email_error'])
         return False

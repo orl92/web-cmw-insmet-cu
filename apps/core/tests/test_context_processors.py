@@ -39,12 +39,12 @@ class MenuNotificationsClientCountsTests(TestCase):
             price=10,
         )
 
-    def _sub(self, status, end_date=None):
+    def _sub(self, status, record_active=True):
         return ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.service,
             start_date=timezone.now() - timedelta(days=30),
-            end_date=end_date or timezone.now() + timedelta(days=30),
+            record_active=record_active,
             payment_status=status,
             payment_method='transfer',
         )
@@ -62,10 +62,27 @@ class MenuNotificationsClientCountsTests(TestCase):
         self.assertEqual(context['client_pending_count'], 1)
         self.assertEqual(context['client_pending_actions'], 2)
 
-    def test_client_counts_distinguish_active_and_expired(self):
-        self._sub('paid')
-        self._sub('expired', end_date=timezone.now() - timedelta(days=1))
+    def test_client_active_count_ignores_el_tiempo_transcurrido(self):
+        """Activa = pagada y no anulada; el tiempo que pasa ya no la apaga.
+
+        Este test usaba dos suscripciones pagadas y esperaba que sólo contara
+        la primera, porque la segunda tenía el periodo ya vencido. Al quitarse
+        `end_date` ese filtro por fechas no existe: lo único que saca una
+        suscripción del conteo es la anulación (soft delete).
+        """
+        vigente = self._sub('paid')
+        # El paso del tiempo no puede sacar a `vigente` del conteo: sin
+        # `end_date` no hay nada que expire.
+        vigente.start_date = timezone.now() - timedelta(days=3650)
+        vigente.save(update_fields=['start_date'])
+        self.assertTrue(vigente.is_active)
+
+        self._sub('paid', record_active=False)
+
         context = self._context()
         self.assertEqual(context['client_active_count'], 1)
-        self.assertEqual(context['client_expired_count'], 1)
         self.assertEqual(context['client_pending_actions'], 0)
+        # El total también es 1: la anulada no entra ni como vigente ni como
+        # total, porque el manager por defecto filtra las filas con
+        # `record_active=False`. "Mis Servicios" se apoya en ese total.
+        self.assertEqual(context['client_subscriptions_count'], 1)

@@ -45,7 +45,7 @@
               <table class="table table-bordered">
                 <tr>
                   <th>Cliente:</th>
-                  <td>{{ object.subscription.customer.company_name }}</td>
+                  <td>{{ object.subscription.customer.display_name }}</td>
                 </tr>
                 <tr>
                   <th>Servicio:</th>
@@ -54,10 +54,6 @@
                 <tr>
                   <th>Inicio:</th>
                   <td>{{ object.subscription.start_date|date:"d/m/Y" }}</td>
-                </tr>
-                <tr>
-                  <th>Fin:</th>
-                  <td>{{ object.subscription.end_date|date:"d/m/Y" }}</td>
                 </tr>
               </table>
             </div>

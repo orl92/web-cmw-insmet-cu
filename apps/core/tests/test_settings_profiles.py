@@ -23,6 +23,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase
 
 from config.settings import base
+from config.settings._testing_keys import inject_testing_key_pair
 
 DEBUG_TOOLBAR_APP = 'debug_toolbar'
 DEBUG_TOOLBAR_MIDDLEWARE = 'debug_toolbar.middleware.DebugToolbarMiddleware'
@@ -32,10 +33,14 @@ SQLITE_ENGINE = 'django.db.backends.sqlite3'
 # Literal, no el `base.console_email_backend`: el test tiene que fijar la cadena
 # exacta que el perfil de producción rechaza, no seguir a la constante.
 CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# `filebased` y `locmem` comparten el modo de fallo de `console`: aceptan el
+# mensaje y lo descartan. Literales, por la misma razón que arriba.
+FILEBASED_EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+LOCMEM_EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 DJANGO_SMTP_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 CUSTOM_EMAIL_BACKEND = 'config.custom_email_backend.CustomSTARTTLSBackend'
 
-# El bloque de cookies seguras del monolito (`if not DEBUG:`) setting por setting.
+# El bloque de cookies seguras, setting por setting.
 SECURE_COOKIE_VALUES = {
     'SECURE_SSL_REDIRECT': False,
     'SECURE_PROXY_SSL_HEADER': ('HTTP_X_FORWARDED_PROTO', 'https'),
@@ -50,37 +55,34 @@ SECURE_COOKIE_VALUES = {
 }
 
 
-def load_profile(module_path, env):
+def load_profile(module_path, env=None, *, with_secret=True, secret_pair=None):
     """Carga `module_path` con `env` como único entorno.
 
     Recarga `base` primero: es el que lee `DEBUG`/`IS_PRODUCTION` y el que
     ejecuta `load_dotenv()` (neutralizado acá para que `.env` no decida por
     nosotros). No toca el objeto `django.conf.settings`, que ya copió sus valores.
+
+    Por defecto inyecta un par de claves válido, porque `base` falla cerrado sin
+    uno y casi ningún test de este archivo está probando esa regla. Los que SÍ
+    la prueban pasan `with_secret=False` (y `secret_pair=` para una rama parcial).
     """
+    env = dict(env or {})
+    if with_secret:
+        env.update(secret_pair or secret_env())
     with (
         mock.patch.dict(os.environ, env, clear=True),
         mock.patch('dotenv.load_dotenv'),
         warnings.catch_warnings(),
     ):
-        # Los perfiles que se cargan SIN par de claves recorren el fallback a
-        # clave efímera, y ese camino ahora avisa (`EphemeralSecretKeyWarning`).
-        # Sin este ignore, cada `reload` de `base` escupe 6 líneas de warning a la
-        # salida del runner y termina tapando los avisos que sí importan.
-        # El filtro va por MENSAJE y no por la clase a propósito: `reload(base)`
-        # crea un `EphemeralSecretKeyWarning` nuevo (identidad distinta) en cada
-        # pasada, así que un filtro por categoría quedaría viejo al segundo reload.
-        # Los tests que sí necesitan observar el aviso (EphemeralSecretKeyFallbackTests)
-        # no pasan por acá: usan su propio helper.
-        warnings.filterwarnings('ignore', message='^SECRET_KEY ausente', category=UserWarning)
         importlib.reload(base)
         return importlib.reload(importlib.import_module(module_path))
 
 
 def secret_env():
-    """Par `SECRET_KEY`/`ENCRYPTION_KEY` válido, como el que genera `generate_env`.
+    """Par `SECRET_KEY`/`ENCRYPTION_KEY` válido, como el que genera el script.
 
-    Sin esto el perfil de producción hace fail-fast en el import y no hay forma
-    de examinar el resto de sus decisiones.
+    Sin esto `base` falla cerrado en el import y no hay forma de examinar el
+    resto de las decisiones de un perfil.
     """
     key = Fernet.generate_key()
     return {
@@ -99,7 +101,7 @@ class SecureCookieAssertionsMixin:
             )
 
     def assert_no_secure_cookies(self, module):
-        # Ausentes, no "con el default de Django": el monolito no los definía.
+        # Ausentes, no "con el default de Django".
         for name in SECURE_COOKIE_VALUES:
             self.assertNotIn(name, vars(module), f'{module.__name__} no debe definir {name}')
 
@@ -116,7 +118,7 @@ class DebugToolbarAssertionsMixin:
         self.assertIs(module.DEBUG_TOOLBAR_ENABLED, False)
         self.assertNotIn(DEBUG_TOOLBAR_APP, module.INSTALLED_APPS)
         self.assertNotIn(DEBUG_TOOLBAR_MIDDLEWARE, module.MIDDLEWARE)
-        # El toolbar desaparecía con sus dos settings, no con un default.
+        # El toolbar va con sus dos settings o con ninguno: no queda en un default.
         self.assertNotIn('DEBUG_TOOLBAR_CONFIG', vars(module))
         self.assertNotIn('INTERNAL_IPS', vars(module))
 
@@ -214,8 +216,8 @@ class TestingProfileTests(SecureCookieAssertionsMixin, DebugToolbarAssertionsMix
         )
         self.assertEqual(module.DATABASES['default']['ENGINE'], 'django.db.backends.postgresql')
 
-    def test_random_secret_key_fallback(self):
-        """013-check-deploy-ci afirma que CI no debe fallar por una clave ausente."""
+    def test_secret_key_comes_from_the_injected_pair(self):
+        """El perfil `testing` arranca sin `.env` porque su par sale del par inyectado."""
         self.assertTrue(self.module.SECRET_KEY)
 
     def test_ftp_simulations_off(self):
@@ -275,10 +277,17 @@ class ProductionProfileTests(
         self.assertIn('DB_ENGINE', str(ctx.exception))
 
     def test_missing_secret_key_raises_before_database(self):
-        """Sin claves y sin DB_ENGINE, el primer error es el de SECRET_KEY (orden del monolito)."""
+        """Sin claves y sin DB_ENGINE, el primer error es el de SECRET_KEY.
+
+        `with_secret=False` porque el default de `load_profile` inyecta un par
+        válido, y con par este perfil llega hasta el error de base de datos: el
+        orden que se quiere verificar es justamente que la clave se queja antes.
+        """
         with self.assertRaises(ImproperlyConfigured) as ctx:
-            load_profile('config.settings.production', {'PRODUCTION': '1'})
-        self.assertIn('SECRET_KEY', str(ctx.exception))
+            load_profile('config.settings.production', {'PRODUCTION': '1'}, with_secret=False)
+        message = str(ctx.exception)
+        self.assertIn('SECRET_KEY', message)
+        self.assertNotIn('DB_ENGINE', message)
 
     def test_debug_is_pinned_false(self):
         """`DEBUG=True` en el entorno no se hereda: producción lo pinea en False.
@@ -290,19 +299,23 @@ class ProductionProfileTests(
         self.assertIs(module.DEBUG, False)
 
     def test_console_email_backend_is_rejected(self):
-        """Rama NEGATIVA del assert: consola en producción es un `.env` regenerable.
+        """Rama NEGATIVA del assert: un backend que descarta en producción es un
+        `.env` regenerable.
 
-        El pie real no es "dev usa consola", es "producción usa consola en silencio":
-        los correos se descartan sin un solo error.
+        El pie real no es "dev usa consola", es "producción descarta el correo sin
+        un solo error": el mensaje se acepta y se pierde. `filebased` y `locmem`
+        fallan igual, aunque el README los recomiende para desarrollo.
         """
-        with self.assertRaises(ImproperlyConfigured) as ctx:
-            load_profile(
-                'config.settings.production',
-                {**self.DB_ENV, 'EMAIL_BACKEND': CONSOLE_EMAIL_BACKEND},
-            )
-        message = str(ctx.exception)
-        self.assertIn(CONSOLE_EMAIL_BACKEND, message)
-        self.assertIn('generate_env --production', message)
+        for backend in (CONSOLE_EMAIL_BACKEND, FILEBASED_EMAIL_BACKEND, LOCMEM_EMAIL_BACKEND):
+            with self.subTest(backend=backend):
+                with self.assertRaises(ImproperlyConfigured) as ctx:
+                    load_profile(
+                        'config.settings.production',
+                        {**self.DB_ENV, 'EMAIL_BACKEND': backend},
+                    )
+                message = str(ctx.exception)
+                self.assertIn(backend, message)
+                self.assertIn('generate_env.py --production', message)
 
     def test_real_email_backends_are_accepted(self):
         """Rama POSITIVA del assert: todo backend menos consola pasa."""
@@ -317,59 +330,158 @@ class ProductionProfileTests(
         self.assertIs(self.module.OBS_LOCAL_ONLY_DEFAULT, False)
 
 
-class EphemeralSecretKeyFallbackTests(SimpleTestCase):
-    """El fallback a clave efímera se queda (es el bypass de bootstrap) pero avisa.
+class SecretKeyFailClosedTests(SimpleTestCase):
+    """Sin un par de claves que descifre, la aplicación NO arranca. En ningún perfil.
 
-    Ver odd/tasks/harden-settings-profiles-deploy-gate.md: `generate_env` es un
-    management command y `manage.py` importa los settings antes de despacharlo,
-    así que fallar cerrado aquí dejaría sin arranque al generador de claves.
+    La regla tiene un solo dueño, `base.load_secret_key()`, y es implementable
+    porque el generador (`scripts/generate_env.py`) no importa Django: corre en el
+    estado exacto en que la aplicación todavía no puede arrancar.
+    Ver odd/tasks/production-deploy-systemd.md.
     """
 
-    WARNING = 'EphemeralSecretKeyWarning'
+    def load_base(self, env):
+        """Carga `base` SIN inyectarle par: el par, cuando hace falta, va en `env`.
 
-    def reload_base(self, env):
-        """Recarga `base` con `env` como único entorno, capturando los warnings.
+        El default de `load_profile` es inyectarlo, y para una clase cuyo objeto
+        es probar la ausencia del par, ese default es exactamente lo contrario de
+        lo que se quiere.
+        """
+        return load_profile('config.settings.base', env, with_secret=False)
 
-        `importlib.reload` borra `__warningregistry__`, así que el aviso se
-        vuelve a emitir en cada recarga: por eso se usa `simplefilter('always')`.
+    def assert_refuses(self, env, expected):
+        with self.assertRaises(ImproperlyConfigured) as ctx:
+            self.load_base(env)
+        self.assertIn(expected, str(ctx.exception))
+
+    def test_no_env_at_all_refuses(self):
+        """El caso del servidor recién estrenado: no hay `.env`."""
+        self.assert_refuses({'DEBUG': 'True'}, 'Falta el archivo .env')
+
+    def test_message_names_the_command_to_run(self):
+        """Un mensaje que no dice QUÉ ejecutar convierte el arranque en una adivinanza."""
+        with self.assertRaises(ImproperlyConfigured) as ctx:
+            self.load_base({'DEBUG': 'True'})
+        self.assertIn('scripts/generate_env.py', str(ctx.exception))
+
+    def test_secret_without_encryption_key_refuses(self):
+        """Producción: la clave de descifrado llega por systemd, no por el `.env`.
+
+        El mensaje tiene que señalar el archivo externo, porque ese es el paso que
+        falta y no se deduce del resto.
+        """
+        # El valor es ruido a propósito: lo que se prueba es la AUSENCIA de
+        # ENCRYPTION_KEY. El pragma evita que `detect-secrets` lo tome por un
+        # secreto, que es la lectura que tendría un escáner mirando esta línea.
+        self.assert_refuses(
+            {'DEBUG': 'True', 'SECRET_KEY': 'lo-que-sea'},  # pragma: allowlist secret
+            'EnvironmentFile=-/etc/webcmp/encryption.env',
+        )
+
+    def test_encryption_key_without_secret_refuses(self):
+        self.assert_refuses(
+            {'DEBUG': 'True', 'ENCRYPTION_KEY': Fernet.generate_key().decode()},
+            'Falta SECRET_KEY',
+        )
+
+    def test_mismatched_pair_refuses(self):
+        """Un `.env` copiado de otro servidor es el caso real, no uno teórico."""
+        other_key = Fernet.generate_key()
+        self.assert_refuses(
+            {
+                'DEBUG': 'True',
+                'SECRET_KEY': Fernet(other_key).encrypt(b'de-otra-instalacion').decode(),
+                'ENCRYPTION_KEY': Fernet.generate_key().decode(),
+            },
+            'no descifra',
+        )
+
+    def test_valid_pair_loads_and_decrypts(self):
+        """Con par válido, `SECRET_KEY` es exactamente el texto que se cifró."""
+        module = self.load_base({'DEBUG': 'True', **secret_env()})
+        self.assertEqual(module.SECRET_KEY, 'secret-key-de-prueba')
+
+    def test_loading_base_does_not_mutate_the_environment(self):
+        """`base` no inyecta nada: si el par falta, se niega; no se auto-parchea.
+
+        Un perfil que se rellena a sí mismo es un perfil que vuelve a fallar en
+        el proceso siguiente, y esta vez sin explanation.
         """
         with (
-            mock.patch.dict(os.environ, env, clear=True),
+            mock.patch.dict(os.environ, {'DEBUG': 'True'}, clear=True),
             mock.patch('dotenv.load_dotenv'),
-            warnings.catch_warnings(record=True) as caught,
         ):
-            warnings.simplefilter('always')
-            module = importlib.reload(base)
-        return module, caught
+            with self.assertRaises(ImproperlyConfigured):
+                importlib.reload(base)
+            self.assertNotIn('SECRET_KEY', os.environ)
+            self.assertNotIn('ENCRYPTION_KEY', os.environ)
 
-    def warned(self, caught):
-        return [w for w in caught if w.category.__name__ == self.WARNING]
+    def test_testing_profile_is_the_bootstrap_escape_hatch(self):
+        """El perfil `testing` inyecta su par antes de importar `base`.
 
-    def test_missing_key_falls_back_and_warns(self):
-        """Sin clave descifrable: cae a efímera Y deja un warning accionable."""
-        module, caught = self.reload_base({'DEBUG': 'True'})
-        self.assertTrue(module.SECRET_KEY)
-        warned = self.warned(caught)
-        self.assertEqual(len(warned), 1, 'el fallback tiene que avisar exactamente una vez')
-        self.assertIn('generate_env', str(warned[0].message))
-
-    def test_key_generator_can_still_boot(self):
-        """La paradoja de bootstrap: `base` no puede fail-closed, o `generate_env` no arranca.
-
-        Este test es la razón de que el test anterior espere un warning y no un raise.
+        Es lo que permite que `base` sea fail-closed sin que la suite tenga que
+        hacer bootstrap: CI y un clon limpio no tienen `.env`.
         """
-        module, caught = self.reload_base({'DEBUG': 'True'})
+        with (
+            mock.patch.dict(os.environ, {'DEBUG': 'False'}, clear=True),
+            mock.patch('dotenv.load_dotenv'),
+        ):
+            inject_testing_key_pair()
+            module = importlib.reload(importlib.import_module('config.settings.testing'))
         self.assertTrue(module.SECRET_KEY)
-        self.assertTrue(self.warned(caught), 'y el bypass tiene que seguir siendo visible')
+        self.assertIs(module.DEBUG, False)
 
-    def test_valid_pair_does_not_warn(self):
-        """Con un par Fernet válido el fallback no se alcanza: nada que avisar."""
-        _module, caught = self.reload_base({'DEBUG': 'False', **secret_env()})
-        self.assertEqual(self.warned(caught), [])
+    def test_testing_pair_is_deterministic_across_calls(self):
+        """Un texto plano FIJO, no uno nuevo por corrida: con clave nueva, la
+        firma de sesión de un test contra otro sería indeterminista.
+
+        Lo que tiene que ser estable es el PLANO, no el cifrado: Fernet mete un
+        IV aleatorio y una marca de tiempo, así que dos llamadas dan dos
+        ciphertexts distintos. Lo que importa es que los dos descifren al mismo
+        texto, que es lo que realmente firman las cookies.
+        """
+        plains = []
+        for _ in range(2):
+            with mock.patch.dict(os.environ, {}, clear=True):
+                inject_testing_key_pair()
+                with (
+                    mock.patch.dict(
+                        os.environ,
+                        {
+                            'SECRET_KEY': os.environ['SECRET_KEY'],
+                            'ENCRYPTION_KEY': os.environ['ENCRYPTION_KEY'],
+                        },
+                        clear=True,
+                    ),
+                    mock.patch('dotenv.load_dotenv'),
+                ):
+                    plains.append(importlib.reload(base).SECRET_KEY)
+        self.assertEqual(plains[0], plains[1])
+
+    def test_testing_pair_satisfies_the_deploy_secret_key_check(self):
+        """El job `deploy-check` de CI corre `check --deploy` sobre ESTE perfil, así
+        que el par inyectado tiene que pasar `security.W009` (>=50 caracteres y
+        >=5 distintos) o el gate empieza a avisar por el material de prueba."""
+        from django.core.checks.security.base import _check_secret_key
+
+        with mock.patch.dict(os.environ, {}, clear=True):
+            inject_testing_key_pair()
+            module = importlib.reload(base)
+        self.assertTrue(
+            _check_secret_key(module.SECRET_KEY),
+            'el par de testing no pasa el criterio de security.W009',
+        )
+
+    def test_testing_pair_does_not_override_a_real_one(self):
+        """Si el operador exporta material real para correr la suite, no se pisa."""
+        real = secret_env()
+        with mock.patch.dict(os.environ, real, clear=True):
+            inject_testing_key_pair()
+            self.assertEqual(os.environ['ENCRYPTION_KEY'], real['ENCRYPTION_KEY'])
+            self.assertEqual(os.environ['SECRET_KEY'], real['SECRET_KEY'])
 
 
 class DispatcherTests(SimpleTestCase):
-    """La restricción dura: el perfil lo eligen las MISMAS variables de antes."""
+    """La restricción dura: el perfil lo eligen estas DOS variables de entorno."""
 
     def test_flags_are_read_from_the_environment(self):
         from config import settings

@@ -51,7 +51,7 @@ class SiteConfigurationTemplateTests(TestCase):
         response = self._get_edit_page()
         self.assertEqual(response.status_code, 200)
         # The page must use the standard form shell (multipart + novalidate),
-        # which the template now obtains by extending layouts/form.html.
+        # obtained by extending layouts/form.html.
         self.assertContains(response, 'enctype="multipart/form-data"')
         self.assertContains(response, 'novalidate')
 

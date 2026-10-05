@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import threading
 import time
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +26,10 @@ class FileObs:
         self.PASS = settings.FTP_OBS_PASS
         self.PORT = settings.FTP_OBS_PORT
         self.REMOTE_DIR = '/Reportes Procesados'
-        self.TEMP_DIR = './media/temp'
-        self.FINAL_DIR = './media/obs'
+        # Siguen a MEDIA_ROOT para que aislen los tests y no dependan del cwd;
+        # quedan como str porque el resto del archivo las usa con os.path y lftp.
+        self.TEMP_DIR = str(Path(settings.MEDIA_ROOT) / 'temp')
+        self.FINAL_DIR = str(Path(settings.MEDIA_ROOT) / 'obs')
         self.horas_validas = ['00', '03', '06', '09', '12', '15', '18', '21']
         self.max_retries = 3
         self.retry_delay = 5  # segundos entre reintentos

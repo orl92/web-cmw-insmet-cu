@@ -2,10 +2,13 @@
   Abre una card de sección para formularios basados en layouts/form.html.
   Uso: incluir este partial y cerrar el body con tres divs:
     card-body, card y col-12 (el body es el tercer div abierto).
+  `card_title_id` es opcional: sólo lo necesitan las cards cuyo título nombra un
+  grupo de controles (`aria-labelledby`) en vez de un campo suelto.
 -->
 <div class="col-12">
   <div class="card">
     <div class="card-body">
       {% if card_title %}
-        <h3 class="subheader text-muted fw-medium mb-3">{{ card_title }}</h3>
+        <h3 class="subheader text-muted fw-medium mb-3"
+            {% if card_title_id %}id="{{ card_title_id }}"{% endif %}>{{ card_title }}</h3>
       {% endif %}

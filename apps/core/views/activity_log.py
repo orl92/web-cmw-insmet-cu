@@ -63,6 +63,11 @@ class ActivityLogListView(ListView):
             User.objects.filter(activity_logs__isnull=False).distinct().order_by('username')
         )
         context['action_flags'] = ActivityLog.ACTIVITY_FLAG_CHOICES
+        # El estado vacío lo pinta DataTables (el template no renderiza una fila
+        # con colspan: rompería el mapeo por posición de celdas). En una vista
+        # con filtros, el mensaje genérico pierde el matiz, así que se declara
+        # uno propio.
+        context['empty_table_message'] = 'No hay registros que coincidan con los filtros.'
         context['current_filters'] = {
             'user': self.request.GET.get('user', ''),
             'action_flag': self.request.GET.get('action_flag', ''),

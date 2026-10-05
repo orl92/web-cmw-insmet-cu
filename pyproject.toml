@@ -29,11 +29,13 @@ select = [
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
-# Decodificadores de formatos WMO: nombres de función/variable siguen el spec
-# meteorológico (FM12, iW, get_ddViento) y comentarios de spec largos.
-# Se mantienen tal cual por legibilidad con el estándar WMO.
+# Los perfiles hacen `from .base import *` a propósito: cada uno es un módulo de
+# settings completo, no un selector. F403/F405 son consecuencia de eso, no descuido.
+"config/settings/*.py" = ["F403", "F405"]
+# Decodificadores de formatos WMO: los nombres siguen el spec meteorológico (FM12,
+# iW, get_ddViento) y los comentarios de spec se dejan tal cual por legibilidad.
 "apps/api/data/*.py" = ["E501", "N802", "N803", "N806", "F403", "F405"]
-# Notación meteorológica estándar (T, Td, RM, LM, MW) en generadores de gráficos.
+# Notación meteorológica estándar (T, Td, RM, LM, MW) en los generadores de gráficos.
 "apps/home/data/plot_generators.py" = ["N806"]
 
 [tool.ruff.format]

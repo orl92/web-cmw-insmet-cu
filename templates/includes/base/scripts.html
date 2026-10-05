@@ -6,9 +6,9 @@
 <script src="{% static 'dist/js/tempus-init.js' %}"></script>
 <script src="{% static 'dist/js/input-sanitize.js' %}"></script>
 <script>
-	// The floating theme switch was removed: font, radius, base and primary
-	// color are now admin-only and come from the SiteConfiguration model.
-	// The visitor can only toggle light/dark via the navbar (tabler-theme.min.js).
+	// Font, radius, base and primary color are admin-only and come from the
+	// SiteConfiguration model. The visitor can only toggle light/dark via the
+	// navbar (tabler-theme.min.js).
 	// This block re-applies the model values on DOMContentLoaded so the DOM
 	// stays consistent even if the head inline script ran before the page
 	// rendered (the head script already applied them before first paint).

@@ -1,10 +1,12 @@
+import datetime
 import os
 import tempfile
 
 from django.core import mail
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 
 from apps.core.tasks import send_email_task
+from config.huey import huey
 
 LOCMEM = 'django.core.mail.backends.locmem.EmailBackend'
 
@@ -84,3 +86,61 @@ class SendEmailTaskTests(TestCase):
         )
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].attachments, [])
+
+
+class RetryBackoffTests(SimpleTestCase):
+    """La espera entre reintentos tiene que CRECER de verdad.
+
+    Estuvo en `retry_backoff=True` y eso no hacia nada: huey multiplica la espera
+    por ese valor en cada reintento (`task.retry_delay *= task.retry_backoff`), y
+    `True` es truthy pero vale 1, asi que las tres esperas eran de 30 s. El sintoma
+    era invisible en los tests: nadie mireaba la espera, solo el exito.
+    """
+
+    tareas = (
+        'apps.core.tasks.generate_invoice_pdf_and_email_task',
+        'apps.core.tasks.send_email_task',
+    )
+
+    def test_el_backoff_es_un_numero_y_no_un_booleano(self):
+        for nombre in self.tareas:
+            with self.subTest(tarea=nombre):
+                task = self._task(nombre)
+                self.assertNotIsInstance(
+                    task.retry_backoff,
+                    bool,
+                    f'{nombre}: True es truthy pero vale 1, el backoff no crece',
+                )
+                self.assertGreater(task.retry_backoff, 1)
+
+    def test_la_espera_crece_en_cada_reintento(self):
+        for nombre in self.tareas:
+            with self.subTest(tarea=nombre):
+                task = self._task(nombre)
+                ahora = datetime.datetime.now()
+                esperas = [task.retry_delay]
+                for _ in range(task.retries):
+                    huey._requeue_task(task, ahora)
+                    esperas.append(task.retry_delay)
+
+                self.assertEqual(len(set(esperas)), len(esperas), f'{nombre}: la espera se repitio')
+                self.assertEqual(esperas, sorted(esperas), f'{nombre}: la espera no crece')
+                self.assertTrue(
+                    all(b > a for a, b in zip(esperas, esperas[1:], strict=False)),
+                    f'{nombre}: esperas {esperas} sin crecimiento real',
+                )
+
+    def test_el_eta_se_aleja_en_cada_reintento(self):
+        task = self._task('apps.core.tasks.send_email_task')
+        ahora = datetime.datetime.now()
+        etas = []
+        for _ in range(task.retries):
+            huey._requeue_task(task, ahora)
+            etas.append(task.eta)
+
+        self.assertEqual(len(set(etas)), len(etas), f'etas repetidos: {etas}')
+
+    @staticmethod
+    def _task(nombre):
+        """La clase `Task` que huey registro para esa tarea, ya instanciada."""
+        return huey._registry._registry[nombre]()

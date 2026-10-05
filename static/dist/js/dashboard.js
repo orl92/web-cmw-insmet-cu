@@ -146,16 +146,16 @@ document.addEventListener("DOMContentLoaded", function () {
   if (subsChartEl) {
     var activeSubs = parseInt(subsChartEl.dataset.active);
     var pendingSubs = parseInt(subsChartEl.dataset.pending);
-    var expiredSubs = parseInt(subsChartEl.dataset.expired);
     var requestedSubs = parseInt(subsChartEl.dataset.requested);
-    var totalSubs = activeSubs + pendingSubs + expiredSubs + requestedSubs;
+    var totalSubs = activeSubs + pendingSubs + requestedSubs;
     var subsData = {
       active: { label: 'Activas', list: JSON.parse(subsChartEl.dataset.activeList) },
       pending: { label: 'Pendientes', list: JSON.parse(subsChartEl.dataset.pendingList) },
-      expired: { label: 'Vencidas', list: JSON.parse(subsChartEl.dataset.expiredList) },
       requested: { label: 'Solicitadas', list: JSON.parse(subsChartEl.dataset.requestedList) }
     };
-    var subsCategories = ['active', 'pending', 'expired', 'requested'];
+    // Sin vencimiento no hay categoría "Vencidas": una suscripción pagada sigue
+    // activa hasta que se anula, así que la torta tiene tres categorías.
+    var subsCategories = ['active', 'pending', 'requested'];
 
     function escapeHtml(str) {
       return String(str)
@@ -171,10 +171,10 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!data.list.length) {
         return '<div class="text-center text-muted py-5">No hay suscripciones en esta categoría</div>';
       }
-      var html = '<div class="table-responsive"><table class="table table-sm table-hover table-vcenter table-bordered mb-0"><thead><tr><th>Cliente</th><th>Servicio</th><th>Vencimiento</th></tr></thead><tbody>';
+      var html = '<div class="table-responsive"><table class="table table-sm table-hover table-vcenter table-bordered mb-0"><thead><tr><th>Cliente</th><th>Servicio</th><th>Inicio</th></tr></thead><tbody>';
       for (var i = 0; i < data.list.length; i++) {
         var s = data.list[i];
-        html += '<tr><td>' + escapeHtml(s.customer) + '</td><td>' + escapeHtml(s.service) + '</td><td>' + s.end_date + '</td></tr>';
+        html += '<tr><td>' + escapeHtml(s.customer) + '</td><td>' + escapeHtml(s.service) + '</td><td>' + s.start_date + '</td></tr>';
       }
       html += '</tbody></table></div>';
       return html;
@@ -199,9 +199,9 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
       },
-      series: [activeSubs, pendingSubs, expiredSubs, requestedSubs],
-      labels: ["Activas", "Pendientes", "Vencidas", "Solicitadas"],
-      colors: ["#2fb344", "#f59f00", "#d63939", "#17a2b8"],
+      series: [activeSubs, pendingSubs, requestedSubs],
+      labels: ["Activas", "Pendientes", "Solicitadas"],
+      colors: ["#2fb344", "#f59f00", "#17a2b8"],
       stroke: { width: 2 },
       plotOptions: {
         pie: {

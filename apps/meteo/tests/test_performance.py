@@ -48,7 +48,9 @@ class WarningListViewQueryCountTests(TestCase):
         # If select_related('user') is dropped, each of the 25 rendered rows
         # would add a user query -> count would scale with row count.
         self.client.force_login(self.admin)
-        with self.assertNumQueries(13):
+        # 11 (was 13): the subscription badges in the context processor now come
+        # from a single conditional aggregate instead of one count per state.
+        with self.assertNumQueries(11):
             response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 

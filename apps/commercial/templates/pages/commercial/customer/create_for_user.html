@@ -29,6 +29,42 @@
   </div>
   </div>
   </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Datos Personales' %}
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.first_name.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.first_name.errors %}is-invalid{% endif %}"
+             id="{{ form.first_name.id_for_label }}"
+             name="{{ form.first_name.name }}"
+             value="{{ form.first_name.value|default:form.first_name.initial|default:'' }}"
+             placeholder="Nombre"
+             maxlength="150"
+             autocomplete="given-name">
+      {% if form.first_name.errors %}
+        <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.last_name.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.last_name.errors %}is-invalid{% endif %}"
+             id="{{ form.last_name.id_for_label }}"
+             name="{{ form.last_name.name }}"
+             value="{{ form.last_name.value|default:form.last_name.initial|default:'' }}"
+             placeholder="Apellidos"
+             maxlength="150"
+             autocomplete="family-name">
+      {% if form.last_name.errors %}
+        <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
+      {% endif %}
+    </div>
+  </div>
+  </div>
+  </div>
+  </div>
   <div id="juridica-fields">
     {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Empresa' %}
     <div class="mb-3">
@@ -80,6 +116,27 @@
           <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
         {% endif %}
       </div>
+    </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  <div id="natural-fields">
+    {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Persona Natural' %}
+    <div class="mb-3">
+      <label class="form-label required">{{ form.identity_document.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.identity_document.errors %}is-invalid{% endif %}"
+             id="{{ form.identity_document.id_for_label }}"
+             name="{{ form.identity_document.name }}"
+             value="{{ form.identity_document.value|default:'' }}"
+             placeholder="34111234567"
+             maxlength="20"
+             autocomplete="off">
+      {% if form.identity_document.errors %}
+        <div class="invalid-feedback d-block">{{ form.identity_document.errors.0 }}</div>
+      {% endif %}
     </div>
   </div>
   </div>
@@ -174,6 +231,10 @@
 function toggleClientType(value) {
   var container = document.getElementById('juridica-fields');
   var inputs = container.querySelectorAll('input');
+  // El documento de identidad es de la persona natural: es el bloque espejo del
+  // de la empresa, y se oculta para las jurídicas.
+  var natural = document.getElementById('natural-fields');
+  if (natural) natural.style.display = value === 'natural' ? 'block' : 'none';
   if (value === 'natural') {
     container.style.display = 'none';
     inputs.forEach(function(inp) {

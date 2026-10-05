@@ -5,13 +5,14 @@ for the six Camagüey stations (78350-78355) so the pipeline
 ``FileObs -> OpenFileObs -> Descodificador -> GetData`` can be exercised
 without the INSMET FTPS server — fully offline, no network, no lftp.
 
-The files feed the same ``media/obs`` directory the production downloader
+The files feed the same ``MEDIA_ROOT/obs`` directory the production downloader
 uses; named per the existing convention (``NN = str(station)[2:]``).
 """
 
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.api.data.SynopSimulator import SynopSimulator
@@ -45,8 +46,8 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             '--output',
-            default='media/obs',
-            help='Output directory for the generated files (default: media/obs).',
+            default=str(Path(settings.MEDIA_ROOT) / 'obs'),
+            help='Output directory for the generated files (default: MEDIA_ROOT/obs).',
         )
 
     def handle(self, *args, **options):

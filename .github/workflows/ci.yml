@@ -124,25 +124,21 @@ jobs:
         run: pip install -r requirements/prod.txt
 
       # El .env está en .gitignore y CI no puede tener claves reales, así que el
-      # gate genera su propio par Fernet. Se usa `get_random_secret_key()` como
-      # texto plano (el MISMO generador que usa generate_env) y no una cadena fija:
-      # `security.W009` rechaza claves de menos de 50 caracteres o con menos de 5
-      # caracteres distintos, y una constante tipo "xxxxx" hace fallar el gate por
-      # una causa que no es una regresión de seguridad.
+      # gate genera su propio par con el MISMO generador que usa el servidor.
       #
-      # El script escribe en GITHUB_ENV, que inyecta las variables en los pasos
-      # siguientes. Nada se persiste en el checkout.
+      # `scripts/generate_env.py` no importa Django, así que funciona en un
+      # checkout limpio, que es el estado de este job. Que el gate dependa del
+      # script de producción es lo que hace que una regresión en el generador se
+      # vea acá y no en el servidor.
+      #
+      # El archivo va a RUNNER_TEMP, NO al checkout: el job no corre producción
+      # (produce SQLite y DEBUG=True), así que lo que necesita son las dos
+      # variables en el entorno del paso siguiente. Nada se commitea ni persiste.
       - name: Generate throwaway Fernet pair
         run: |
-          python - <<'PY' >> "$GITHUB_ENV"
-          from cryptography.fernet import Fernet
-          from django.core.management.utils import get_random_secret_key
-
-          encryption_key = Fernet.generate_key().decode()
-          secret_key = Fernet(encryption_key.encode()).encrypt(get_random_secret_key().encode()).decode()
-          print(f'ENCRYPTION_KEY={encryption_key}')
-          print(f'SECRET_KEY={secret_key}')
-          PY
+          python scripts/generate_env.py --development --env-file "$RUNNER_TEMP/.env"
+          grep -E '^(SECRET_KEY|ENCRYPTION_KEY)=' "$RUNNER_TEMP/.env" >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/.env"
 
       - name: Run deployment checks (production profile)
         env:
@@ -154,11 +150,10 @@ jobs:
           # modelos importa el ENGINE, así que este paso detecta un driver faltante en
           # requirements/prod.txt -- el fallo que de verdad mata un deploy:
           # `ImproperlyConfigured: Error loading psycopg2 or psycopg module`, antes de
-          # tocar la base. Con sqlite3 el gate era ciego a eso.
+          # tocar la base. Con sqlite3 el gate no vería un driver faltante.
           # `check --deploy` NO abre conexiones: las credenciales de abajo existen solo
           # porque `get_database_config` las exige para un motor de red. El pragma de
-          # `DB_PASS` es lo que corresponde a un placeholder; en la versión sqlite3 no
-          # hacía falta porque ese motor no pedía ninguna.
+          # `DB_PASS` marca el valor inventado como placeholder para `detect-secrets`.
           DB_ENGINE: postgresql
           DB_NAME: webcmp
           DB_USER: webcmp

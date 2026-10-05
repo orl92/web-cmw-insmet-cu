@@ -172,10 +172,10 @@ class OpenAPISchemaPaginationTests(APITestCase):
 
 
 class PublicServicesOrderedTests(APITestCase):
-    """Requirement: the public services list is ordered newest-first (010 follow-up).
+    """Requirement: the public services list is ordered newest-first.
 
-    Registers the `.order_by('-date')` fix that removes the
-    ``UnorderedObjectListWarning`` on the Service queryset.
+    `.order_by('-date')` on the Service queryset is what keeps
+    ``UnorderedObjectListWarning`` from being raised.
     """
 
     @classmethod

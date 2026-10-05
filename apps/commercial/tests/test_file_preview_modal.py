@@ -1,40 +1,52 @@
 """Verification tests for the dashboard "edit/create" form templates.
 
-These tests assert that uploaded files NO LONGER open in a blank browser tab
+These tests assert that uploaded files must not open in a blank browser tab
 (``target="_blank"`` on the file anchor) and instead rely on the shared
 ``#documentPdfModal`` for PDFs and the vendored fslightbox for images.
 Templates are NOT modified; we only assert on rendered output.
 
 NOTE: the base layout footer intentionally keeps ``target="_blank"`` on its
 social-media links (Instagram/Facebook/X/Telegram) — that is out of scope and
-unrelated to the file-preview change, so we assert the *file anchor* does not
+unrelated to the file preview, so we assert the *file anchor* does not
 use ``target="_blank"`` rather than the whole page.
 """
 
-import base64
+import io
 import tempfile
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from apps.commercial.models import Certificate, Customer, Service, ServiceSubscription
 
 User = get_user_model()
 
 PDF_BYTES = b'%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF'
-# Minimal valid 1x1 PNG (Pillow can open/resize it for ImageField paths).
-PNG_BYTES = base64.b64decode(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-)
+
+
+def _png_1x1():
+    """Devuelve los bytes de un PNG 1x1 generado por Pillow, no un literal.
+
+    El literal base64 que estaba aca antes estaba corrupto: despues del chunk
+    IDAT, el decoder leia una longitud de 2 GiB y un tipo de chunk
+    ``b'\x00\x00IE'`` en lugar de IEND. ``Image.open()`` es perezoso y solo lee
+    la cabecera, asi que los bytes malos pasaban inadvertidos en los tests que
+    solo guardan el archivo. Generar los bytes elimina de raiz la clase de bug
+    "alguien tipo mal el base64".
+    """
+    buffer = io.BytesIO()
+    Image.new('RGB', (1, 1), (200, 200, 200)).save(buffer, format='PNG')
+    return buffer.getvalue()
+
+
+PNG_BYTES = _png_1x1()
 
 
 def assert_file_anchor_not_blank_tab(test_case, content, file_url):
-    """The legacy pattern opened a file via ``<a href="<url>" target="_blank">``.
-
-    Assert that exact combination no longer exists for the uploaded file.
-    """
+    """Assert the uploaded file's anchor is not ``<a href="<url>" target="_blank">``."""
     needle = ('href="' + file_url + '" target="_blank"').encode()
     test_case.assertNotIn(needle, content)
 
@@ -86,10 +98,10 @@ class CommercialFilePreviewModalTests(TestCase):
         resp = self.client.get(url)
 
         self.assertEqual(resp.status_code, 200)
-        # PDF preview now uses the shared modal.
+        # PDF preview uses the shared modal.
         self.assertIn(b'documentPdfModal', resp.content)
         self.assertIn(b'data-pdf-url=', resp.content)
-        # Image preview now uses fslightbox.
+        # Image preview uses fslightbox.
         self.assertIn(b'data-fslightbox', resp.content)
         # The uploaded pdf/image anchors must NOT open a blank tab.
         assert_file_anchor_not_blank_tab(self, resp.content, self.service.pdf.url)
@@ -122,7 +134,7 @@ class CommercialFilePreviewModalTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn(b'documentPdfModal', resp.content)
         self.assertIn(b'fslightbox', resp.content)
-        # The current certificate's PDF now previews in the shared modal.
+        # The current certificate's PDF previews in the shared modal.
         self.assertIn(b'data-pdf-url=', resp.content)
         cert = self.subscription.certificates.first()
         assert_file_anchor_not_blank_tab(self, resp.content, cert.pdf.url)

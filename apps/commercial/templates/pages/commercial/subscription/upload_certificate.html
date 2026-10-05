@@ -5,15 +5,15 @@
   <div class="datagrid">
     <div class="datagrid-item">
       <div class="datagrid-title">Cliente</div>
-      <div class="datagrid-content">{{ object.customer.company_name }}</div>
+      <div class="datagrid-content">{{ object.customer.display_name }}</div>
     </div>
     <div class="datagrid-item">
       <div class="datagrid-title">Servicio</div>
       <div class="datagrid-content">{{ object.service.title }}</div>
     </div>
     <div class="datagrid-item">
-      <div class="datagrid-title">Período</div>
-      <div class="datagrid-content">{{ object.start_date|date:"d/m/Y" }} - {{ object.end_date|date:"d/m/Y" }}</div>
+      <div class="datagrid-title">Inicio</div>
+      <div class="datagrid-content">{{ object.start_date|date:"d/m/Y" }}</div>
     </div>
   </div>
   </div>

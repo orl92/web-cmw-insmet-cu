@@ -20,8 +20,10 @@ class ContractListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'commercial.view_contract'
 
     def get_queryset(self):
+        # `customer__user` porque la columna Cliente muestra `display_name`,
+        # que para una persona natural lee los nombres del User.
         return Contract.objects.select_related(
-            'subscription__customer', 'subscription__service'
+            'subscription__customer__user', 'subscription__service'
         ).all()
 
     def get_context_data(self, **kwargs):
@@ -76,7 +78,9 @@ class ContractDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
 
     def get_object(self, queryset=None):
         return get_object_or_404(
-            Contract.objects.select_related('subscription__customer', 'subscription__service'),
+            Contract.objects.select_related(
+                'subscription__customer__user', 'subscription__service'
+            ),
             uuid=self.kwargs['uuid'],
         )
 

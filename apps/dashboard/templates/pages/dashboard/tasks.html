@@ -9,7 +9,9 @@
     <div class="col-auto ms-auto d-print-none">
       <div class="btn-list">
         <a href="{% url 'dashboard:tasks' %}"
-           class="btn btn-icon btn-outline-secondary"
+           class="btn btn-icon btn-outline-secondary{% if not current_status %}
+                    active{% endif %}"
+           data-tasks-filter
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
            aria-label="Todos"
@@ -17,7 +19,9 @@
           <i class="icon ti ti-list"></i>
         </a>
         <a href="{% url 'dashboard:tasks' %}?status=ERROR"
-           class="btn btn-icon btn-outline-danger"
+           class="btn btn-icon btn-outline-danger{% if current_status == 'ERROR' %}
+                    active{% endif %}"
+           data-tasks-filter
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
            aria-label="Errores"
@@ -25,7 +29,9 @@
           <i class="icon ti ti-alert-triangle"></i>
         </a>
         <a href="{% url 'dashboard:tasks' %}?status=ENQUEUED"
-           class="btn btn-icon btn-outline-info"
+           class="btn btn-icon btn-outline-info{% if current_status == 'ENQUEUED' %}
+                    active{% endif %}"
+           data-tasks-filter
            data-bs-toggle="tooltip"
            data-bs-placement="bottom"
            aria-label="En cola"
@@ -56,121 +62,8 @@
     </div>
   {% endif %}
   <div class="card">
-    <div class="card-body p-4 table-responsive rounded-3">
-      <table id="tasks-table" class="table table-vcenter" style="width:100%">
-        <thead>
-          <tr>
-            <th>Tarea</th>
-            <th>Estado</th>
-            <th class="text-center">Intentos</th>
-            <th>En cola</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th>Args</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for execution in executions %}
-            <tr>
-              <td>{{ execution.task_name }}</td>
-              <td>
-                {% if execution.status == 'ENQUEUED' %}
-                  <span class="badge bg-info-lt">En cola</span>
-                {% elif execution.status == 'EXECUTING' %}
-                  <span class="badge bg-primary-lt">En ejecución</span>
-                {% elif execution.status == 'SUCCESS' %}
-                  <span class="badge bg-success-lt">Correcto</span>
-                {% elif execution.status == 'ERROR' %}
-                  <span class="badge bg-danger-lt">Error</span>
-                {% elif execution.status == 'RETRYING' %}
-                  <span class="badge bg-warning-lt">Reintentando</span>
-                {% elif execution.status == 'REVOKED' %}
-                  <span class="badge bg-secondary-lt">Revocada</span>
-                {% endif %}
-              </td>
-              <td class="text-center">{{ execution.attempts }}</td>
-              <td>{{ execution.enqueued_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
-              <td>{{ execution.started_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
-              <td>{{ execution.finished_at|date:"d/m/Y H:i:s"|default:"—" }}</td>
-              <td class="text-muted text-truncate"
-                  style="max-width:220px"
-                  data-bs-toggle="tooltip"
-                  data-bs-placement="bottom"
-                  title="{{ execution.args_repr|default:'—' }}">{{ execution.args_repr|default:"—"|truncatechars:45 }}</td>
-              <td class="text-nowrap">
-                <div class="btn-list">
-                  {% if execution.status == 'ERROR' %}
-                    <button type="button"
-                            class="btn btn-icon btn-outline-primary btn-sm"
-                            data-bs-toggle="modal"
-                            data-bs-target="#tb-{{ execution.id }}"
-                            aria-label="Ver traceback"
-                            data-bs-original-title="Ver traceback">
-                      <i class="icon ti ti-code"></i>
-                    </button>
-                  {% endif %}
-                  {% if execution.func_name and execution.func_args %}
-                    <button type="submit"
-                            class="btn btn-icon btn-outline-info btn-sm"
-                            form="retry-{{ execution.pk }}"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="bottom"
-                            aria-label="Reintentar"
-                            data-bs-original-title="Reintentar">
-                      <i class="icon ti ti-refresh"></i>
-                    </button>
-                  {% endif %}
-                  <button type="button"
-                          class="btn btn-icon btn-outline-danger btn-sm action-btn"
-                          data-action="eliminar"
-                          data-pk="{{ execution.pk }}"
-                          data-name="{{ execution.task_name }}"
-                          data-bs-toggle="tooltip"
-                          data-bs-placement="bottom"
-                          aria-label="Eliminar"
-                          data-bs-original-title="Eliminar">
-                    <i class="icon ti ti-trash"></i>
-                  </button>
-                </div>
-                {% if execution.func_name and execution.func_args %}
-                  <form id="retry-{{ execution.pk }}"
-                        action="{% url 'dashboard:tasks_action' execution.pk %}"
-                        method="post"
-                        class="d-none">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="retry" />
-                  </form>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <div class="card-body p-4 table-responsive rounded-3">{% include 'pages/dashboard/tasks_table.html' %}</div>
   </div>
-  {% for execution in executions %}
-    {% if execution.status == 'ERROR' %}
-      <div class="modal fade" id="tb-{{ execution.id }}" tabindex="-1">
-        <div class="modal-dialog modal-dialog-scrollable modal-lg">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">Traceback — {{ execution.task_name }}</h5>
-              <button type="button"
-                      class="btn-close"
-                      data-bs-dismiss="modal"
-                      aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-              <pre class="bg-dark text-light p-3 mb-0 rounded-2"
-                   style="max-height:60vh;
-                          overflow:auto">{{ execution.traceback }}</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-    {% endif %}
-  {% endfor %}
   <div class="modal modal-blur fade"
        id="confirmTaskDeleteModal"
        tabindex="-1"
@@ -202,15 +95,9 @@
 {% endblock %}
 {% block extrajs %}
   <script src="{% static 'dist/libs/datatables/datatables.min.js' %}"></script>
+  <script src="{% static 'dist/js/tasks-monitor.js' %}"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      new DataTable('#tasks-table', {
-        processing: true,
-        language: {
-          url: "{% static 'dist/libs/datatables/Spanish.json' %}"
-        }
-      })
-
       /* --- Confirmación de borrado de registro (modal estilo listados) --- */
       var confirmModal = document.getElementById('confirmTaskDeleteModal')
       var Bootstrap = (window.tabler && window.tabler.bootstrap) || window.bootstrap

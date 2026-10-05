@@ -6,7 +6,6 @@ from django.core.paginator import Paginator
 from django.db.models import Case, IntegerField, OuterRef, Subquery, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
-from django.utils import timezone
 from django.views.generic import FormView, ListView
 
 from apps.commercial.forms import PaymentMethodForm
@@ -20,10 +19,10 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
     paginate_by = 10
 
     STATUS_RIBBONS = {
-        'activo': 'bg-green',
-        'pendiente de pago': 'bg-orange',
+        'pagado': 'bg-green',
+        'pendiente': 'bg-orange',
         'solicitado': 'bg-blue',
-        'expirado': 'bg-red',
+        'cancelada': 'bg-red',
     }
 
     def get_queryset(self):
@@ -31,7 +30,13 @@ class CommercialServicesListView(LoginRequiredMixin, ListView):
             customer = self.request.user.commercial_customer
         except Customer.DoesNotExist:
             return ServiceSubscription.objects.none()
-        latest_invoice = Invoice.objects.filter(subscription=OuterRef('pk')).order_by('-issue_date')
+        # `for_subscription` cubre el ancla de la factura y el vínculo por línea; las
+        # anuladas no se ofrecen porque no hay nada que pagar.
+        latest_invoice = (
+            Invoice.objects.for_subscription(OuterRef('pk'))
+            .filter(is_cancelled=False)
+            .order_by('-issue_date')
+        )
         return (
             ServiceSubscription.objects.filter(customer=customer, record_active=True)
             .select_related('service', 'service__user')
@@ -99,7 +104,7 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
         context['parent'] = 'servicios'
         context['segment'] = 'comerciales'
         # El precio crudo se expone vía context['service'].price; el template
-        # compone el formato con el filtro format_cup (fase 3).
+        # compone el formato con el filtro format_cup.
         related_qs = (
             Service.objects.filter(
                 service_type=Service.COMMERCIAL,
@@ -117,20 +122,19 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
 
         if self.request.user.is_authenticated and hasattr(self.request.user, 'commercial_customer'):
             customer = self.request.user.commercial_customer
-            subs = ServiceSubscription.objects.filter(customer=customer, service=self.service)
+            # Sin `record_active` una suscripción anulada (baja lógica) seguía
+            # apareciendo como activa: la baja no borra la fila, la marca.
+            subs = ServiceSubscription.objects.filter(
+                customer=customer,
+                service=self.service,
+                record_active=True,
+            )
             in_flight = (
                 subs.filter(payment_status__in=['requested', 'pending'])
                 .order_by('-start_date')
                 .first()
             )
-            active = (
-                subs.filter(
-                    payment_status='paid',
-                    end_date__gt=timezone.now(),
-                )
-                .order_by('-start_date')
-                .first()
-            )
+            active = subs.filter(payment_status='paid').order_by('-start_date').first()
             context['in_flight_subscription'] = in_flight
             context['active_subscription'] = active
         return context
@@ -149,26 +153,15 @@ class ServiceDetailView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         customer = self.request.user.commercial_customer
-        existing = (
-            ServiceSubscription.objects.filter(customer=customer, service=self.service)
-            .filter(payment_status__in=['requested', 'pending'])
-            .first()
-        )
-        if existing:
-            messages.warning(
-                self.request, 'Ya tienes una solicitud o suscripción para este servicio.'
-            )
-            return redirect('home:services_commercial_detail', uuid=self.service.uuid)
-
         start_date = form.cleaned_data['start_date']
         quantity = form.cleaned_data['quantity']
-        end_date = Service.compute_end_date(start_date, quantity, self.service.service_category)
 
+        # Sin `end_date`: la suscripción no vence, se queda viva hasta que se
+        # cancele. La cantidad es sólo el factor que multiplica al precio.
         ServiceSubscription.objects.create(
             customer=customer,
             service=self.service,
             start_date=start_date,
-            end_date=end_date,
             quantity=quantity,
             payment_status='requested',
             payment_method=form.cleaned_data['payment_method'],

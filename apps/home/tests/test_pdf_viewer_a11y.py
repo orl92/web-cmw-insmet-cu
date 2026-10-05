@@ -36,7 +36,7 @@ from apps.publications.models import Author, ScientificPublication
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-# Legacy PDF.js markers that must no longer appear in shipped code.
+# PDF.js markers that must not appear in shipped code.
 LEGACY_MARKERS = (
     'pdf-viewer.js',
     'pdf.min.js',
@@ -67,17 +67,7 @@ class NoDeadLoadPdfCallsTests(TestCase):
         offenders = []
         for path in self._shipped_html_and_js_files():
             text = path.read_text(encoding='utf-8')
-            # Skip the legacy files themselves (deleted by the cleanup pass).
             rel = str(path.relative_to(REPO_ROOT))
-            if rel in (
-                'static/dist/js/pdf-viewer.js',
-                'static/dist/css/pdf-viewer.css',
-                'static/dist/libs/PDF/pdf.min.js',
-                'static/dist/libs/PDF/pdf.worker.min.js',
-                'templates/includes/home/pdf_preview.html',
-                'templates/includes/home/pdf_modal.html',
-            ):
-                continue
             # `document_pdf_modal.html` legitimately contains the substring
             # "pdf_modal.html"; strip it so the legacy marker check is exact.
             cleaned = text.replace('document_pdf_modal.html', '')
@@ -96,7 +86,7 @@ class NoDeadLoadPdfCallsTests(TestCase):
 
 
 class AvisosLayoutSharedPartialTests(TestCase):
-    """Tasks 2.1-2.4 — layouts/avisos.html delegates to the shared partials."""
+    """layouts/avisos.html delegates to the shared partials."""
 
     @classmethod
     def setUpTestData(cls):
@@ -187,7 +177,7 @@ class PublicationsSharedPartialTests(TestCase):
         self.assertContains(response, 'id="documentPdfModal"')
         self.assertContains(response, 'id="documentPdfDownload"')
         self.assertContains(response, 'dist/js/document-modal.js')
-        # Legacy PDF.js assets must be gone.
+        # PDF.js assets must not be referenced.
         self.assertNotContains(response, 'dist/js/pdf-viewer.js')
         self.assertNotContains(response, 'pdf.worker.min.js')
         html = response.content.decode()
@@ -196,7 +186,7 @@ class PublicationsSharedPartialTests(TestCase):
     def test_ver_pdf_button_carries_url_and_title(self):
         pub = self._create_publication(title='Deep Learning Paper')
         html = self._get_page().content.decode()
-        # The trigger is now a <button> (no href="#") carrying both attributes.
+        # The trigger is a <button> (no href="#") carrying both attributes.
         pdf_url = reverse('home:publication_pdf', args=[pub.uuid]) + '?inline=1'
         pattern = (
             rf'data-pdf-url="{re.escape(pdf_url)}"'

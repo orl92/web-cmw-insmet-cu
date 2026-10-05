@@ -10,7 +10,7 @@
       {% if request.user.is_superuser %}
         <h3 class="alert-title">¿Está seguro que desea eliminar esta suscripción?</h3>
         <p class="text-muted">
-          Esta acción eliminará físicamente la suscripción de <strong>{{ object.customer.company_name }}</strong>
+          Esta acción eliminará físicamente la suscripción de <strong>{{ object.customer.display_name }}</strong>
           para el servicio <strong>{{ object.service.title }}</strong>, junto con todas sus facturas y certificados asociados.
           <br>
           <span class="text-danger">¡No se podrá recuperar!</span>
@@ -18,7 +18,7 @@
       {% else %}
         <h3 class="alert-title">¿Está seguro que desea desactivar esta suscripción?</h3>
         <p class="text-muted">
-          Esta acción desactivará la suscripción de <strong>{{ object.customer.company_name }}</strong>
+          Esta acción desactivará la suscripción de <strong>{{ object.customer.display_name }}</strong>
           para el servicio <strong>{{ object.service.title }}</strong>.
           <br>
           El registro se mantendrá en la base de datos pero no será visible para el cliente.
@@ -66,7 +66,7 @@
                   aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p>¿Estás seguro de que deseas <strong class="text-danger">eliminar permanentemente</strong> la suscripción de <strong>{{ object.customer.company_name }}</strong>?</p>
+          <p>¿Estás seguro de que deseas <strong class="text-danger">eliminar permanentemente</strong> la suscripción de <strong>{{ object.customer.display_name }}</strong>?</p>
           <p class="text-danger mb-0">⚠️ Esta acción no se puede deshacer.</p>
         </div>
         <div class="modal-footer">
@@ -99,7 +99,7 @@
                   aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p>¿Estás seguro de que deseas <strong>desactivar</strong> la suscripción de <strong>{{ object.customer.company_name }}</strong>?</p>
+          <p>¿Estás seguro de que deseas <strong>desactivar</strong> la suscripción de <strong>{{ object.customer.display_name }}</strong>?</p>
           <p class="text-muted mb-0">El cliente ya no verá este servicio activo en su panel, pero los datos se conservarán.</p>
         </div>
         <div class="modal-footer">

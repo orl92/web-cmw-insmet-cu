@@ -242,6 +242,12 @@ huey.db
 huey.db-shm
 huey.db-wal
 
+# Correos de desarrollo (backend `filebased`): llevan datos de clientes, nunca
+# deben terminar en un commit. Ojo: el backend escribe archivos `.log`, no `.eml`
+# (`%s-%s.log` en django/core/mail/backends/filebased.py), y `*.log` de arriba ya
+# los tapa; lo que protege la ruta es ignorar el directorio. Ver EMAIL_FILE_PATH.
+tmp/
+
 ### CodeGraph + dirs de trabajo temporales ###
 .codegraph/
 squashfs-root/

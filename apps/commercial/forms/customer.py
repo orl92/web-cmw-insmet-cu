@@ -6,9 +6,16 @@ from django.db import transaction
 from apps.commercial.models import Customer
 from apps.core.validators import validate_account, validate_nit, validate_phones, validate_reeup
 
+IDENTITY_REQUIRED_ERROR = 'El documento de identidad es obligatorio para personas naturales.'
+IDENTITY_TAKEN_ERROR = 'Este documento de identidad ya está registrado.'
+
 
 class CustomerForm(forms.ModelForm):
     username = forms.CharField(max_length=150, required=True, label='Nombre de Usuario')
+    # Nombre y apellido alimentan `display_name` del cliente y el perfil del
+    # usuario: sin ellos `CheckUserProfileMiddleware` manda a /accounts/profile/update/
+    first_name = forms.CharField(max_length=150, required=True, label='Nombre')
+    last_name = forms.CharField(max_length=150, required=True, label='Apellidos')
     password = forms.CharField(widget=forms.PasswordInput, required=True, label='Contraseña')
     password2 = forms.CharField(
         widget=forms.PasswordInput, required=True, label='Confirmar Contraseña'
@@ -19,6 +26,7 @@ class CustomerForm(forms.ModelForm):
         model = Customer
         fields = [
             'client_type',
+            'identity_document',
             'company_name',
             'reeup',
             'nit',
@@ -32,7 +40,13 @@ class CustomerForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['client_type'].widget = forms.RadioSelect(attrs={'class': 'form-check-input'})
         for field_name, field in self.fields.items():
-            if field_name not in ['username', 'password', 'password2', 'email', 'client_type']:
+            if field_name not in [
+                'username',
+                'password',
+                'password2',
+                'email',
+                'client_type',
+            ]:
                 field.widget.attrs.update({'class': 'form-control'})
         self.fields['agency_bank'].required = True
         self._set_juridica_required()
@@ -47,10 +61,23 @@ class CustomerForm(forms.ModelForm):
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
             self.fields['nit'].required = True
+            self.fields['identity_document'].required = False
         else:
             self.fields['company_name'].required = False
             self.fields['reeup'].required = False
             self.fields['nit'].required = False
+            self.fields['identity_document'].required = True
+
+    def clean_identity_document(self):
+        identity_document = (self.cleaned_data.get('identity_document') or '').strip()
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.NATURAL and not identity_document:
+            raise ValidationError(IDENTITY_REQUIRED_ERROR)
+        if not identity_document:
+            return None
+        if Customer.objects.filter(identity_document=identity_document).exists():
+            raise ValidationError(IDENTITY_TAKEN_ERROR)
+        return identity_document or None
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup')
@@ -100,6 +127,8 @@ class CustomerForm(forms.ModelForm):
                     username=self.cleaned_data['username'],
                     password=self.cleaned_data['password'],
                     email=self.cleaned_data['email'],
+                    first_name=self.cleaned_data['first_name'],
+                    last_name=self.cleaned_data['last_name'],
                 )
                 customer.user = user
                 customer.save()
@@ -113,6 +142,7 @@ class CustomerUpdateForm(forms.ModelForm):
         model = Customer
         fields = [
             'client_type',
+            'identity_document',
             'company_name',
             'reeup',
             'nit',
@@ -143,10 +173,26 @@ class CustomerUpdateForm(forms.ModelForm):
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
             self.fields['nit'].required = True
+            self.fields['identity_document'].required = False
         else:
             self.fields['company_name'].required = False
             self.fields['reeup'].required = False
             self.fields['nit'].required = False
+            self.fields['identity_document'].required = True
+
+    def clean_identity_document(self):
+        identity_document = (self.cleaned_data.get('identity_document') or '').strip()
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.NATURAL and not identity_document:
+            raise ValidationError(IDENTITY_REQUIRED_ERROR)
+        if not identity_document:
+            return None
+        qs = Customer.objects.filter(identity_document=identity_document).exclude(
+            pk=self.instance.pk
+        )
+        if qs.exists():
+            raise ValidationError(IDENTITY_TAKEN_ERROR)
+        return identity_document or None
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup', '')
@@ -192,11 +238,16 @@ class CustomerUpdateForm(forms.ModelForm):
 
 class CustomerForUserForm(forms.ModelForm):
     email = forms.EmailField(required=True, label='Correo Electrónico')
+    # El usuario ya existe, pero su nombre puede venir vacío (registro antigo o
+    # alta por admin): se pide explícitamente para que el cliente sea identificable.
+    first_name = forms.CharField(max_length=150, required=True, label='Nombre')
+    last_name = forms.CharField(max_length=150, required=True, label='Apellidos')
 
     class Meta:
         model = Customer
         fields = [
             'client_type',
+            'identity_document',
             'company_name',
             'reeup',
             'nit',
@@ -211,6 +262,8 @@ class CustomerForUserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.user:
             self.fields['email'].initial = self.user.email
+            self.fields['first_name'].initial = self.user.first_name
+            self.fields['last_name'].initial = self.user.last_name
         self.fields['client_type'].widget = forms.RadioSelect(attrs={'class': 'form-check-input'})
         for field_name, field in self.fields.items():
             if field_name not in ['email', 'client_type']:
@@ -232,10 +285,26 @@ class CustomerForUserForm(forms.ModelForm):
             self.fields['company_name'].required = True
             self.fields['reeup'].required = True
             self.fields['nit'].required = True
+            self.fields['identity_document'].required = False
         else:
             self.fields['company_name'].required = False
             self.fields['reeup'].required = False
             self.fields['nit'].required = False
+            self.fields['identity_document'].required = True
+
+    def clean_identity_document(self):
+        identity_document = (self.cleaned_data.get('identity_document') or '').strip()
+        client_type = self.cleaned_data.get('client_type')
+        if client_type == Customer.ClientType.NATURAL and not identity_document:
+            raise ValidationError(IDENTITY_REQUIRED_ERROR)
+        if not identity_document:
+            return None
+        qs = Customer.objects.filter(identity_document=identity_document)
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError(IDENTITY_TAKEN_ERROR)
+        return identity_document
 
     def clean_reeup(self):
         reeup = self.cleaned_data.get('reeup', '')
@@ -283,7 +352,10 @@ class CustomerForUserForm(forms.ModelForm):
         customer.user = self.user
         if commit:
             customer.save()
-            if self.user and 'email' in self.cleaned_data:
-                self.user.email = self.cleaned_data['email']
+            if self.user:
+                if 'email' in self.cleaned_data:
+                    self.user.email = self.cleaned_data['email']
+                self.user.first_name = self.cleaned_data.get('first_name', '')
+                self.user.last_name = self.cleaned_data.get('last_name', '')
                 self.user.save()
         return customer
