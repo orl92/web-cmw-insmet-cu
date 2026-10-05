@@ -674,6 +674,7 @@
                        name="subscriptions" value="${cb.value}" id="sub_${cb.value}"
                        data-start="${start}"
                        data-quantity="${cb.dataset.quantity}"
+                       data-code="${escapeHtml(cb.dataset.code || '')}"
                        data-service="${escapeHtml(cb.dataset.service)}"
                        data-unidad="${escapeHtml(cb.dataset.unidad || '')}"
                        data-summary="${escapeHtml(summary)}">
@@ -709,6 +710,94 @@
 
   customerSelect.addEventListener('change', function() {
     loadPendingSubscriptions(this.value);
+  });
+
+  /* ===== Imputación a centros de costo en vivo =====
+     Al elegir suscripciones, el reparto se arma con los centros de los códigos de
+     servicio elegidos. El operador confirma y ajusta: el reparto real NUNCA sale
+     de los ítems (la factura 276 tiene un único ítem repartido en tres centros).
+
+     Por qué se reconstruye en cada cambio: el reparto deriva de lo que se está
+     facturando, así que si cambiás los servicios, los centros cambian. Un reparto
+     que ya ajustaste a mano se recalcula al volver a elegir; hay que volver a
+     ajustarlo después.
+
+     Si la selección no deja ningún centro no se toca nada: se presume que lo que
+     hay en las filas es del operador y borrarlo le perdería un trabajo que puede
+     no tener sentido recuperar. */
+  function centroDeCostoDeCodigo(codigo) {
+    codigo = (codigo || '').trim();
+    if (codigo.length < 8 || !/^\d+$/.test(codigo.slice(0, 8))) return '';
+    return codigo.slice(0, 3) + '.' + codigo.slice(3, 8);
+  }
+
+  function repartoEnPartesIguales(centros) {
+    // Todo en cents enteros y con ROUND_HALF_UP, igual que el servidor, y no con
+    // floats: `Math.floor((100 / 6) * 100) / 100` trunca donde Python redondea, así
+    // que con 6 centros el navegador ponía 16.66 y el servidor 16.67. Aunque la
+    // suma ya daba 100 en ambos casos, el reparto que el operador ve tiene que ser
+    // el mismo que el que el servidor regenera.
+    const totalCents = 10000;
+    const n = centros.length;
+    const baseCents = Math.floor((totalCents / n) + 0.5);
+    const filas = centros.map(function(centro) {
+      return { codigo: centro, porcentaje: (baseCents / 100).toFixed(2) };
+    });
+    // El residuo del redondeo se absorbe en la última fila: sin esto 3 centros dan
+    // 99.99 y el formset rechaza el reparto.
+    filas[n - 1].porcentaje = ((totalCents - baseCents * (n - 1)) / 100).toFixed(2);
+    return filas;
+  }
+
+  function prefijarImputacion() {
+    const marcados = groupedContainer.querySelectorAll('.subscription-check:checked');
+    const centros = [];
+    marcados.forEach(function(cb) {
+      const centro = centroDeCostoDeCodigo(cb.dataset.code);
+      if (centro && centros.indexOf(centro) === -1) centros.push(centro);
+    });
+
+    const container = document.getElementById('cost-container');
+    const totalForms = document.getElementById('id_cost_allocations-TOTAL_FORMS');
+    if (centros.length === 0 || !container || !totalForms) return;
+
+    const template = container.querySelector('.cost-row');
+    if (!template) return;
+
+    const filas = repartoEnPartesIguales(centros);
+    container.innerHTML = '';
+    filas.forEach(function(fila, index) {
+      const row = template.cloneNode(true);
+      row.innerHTML = row.innerHTML.replace(
+        new RegExp('cost_allocations-\\d+-', 'g'),
+        'cost_allocations-' + index + '-'
+      );
+      row.querySelectorAll('input, textarea, select').forEach(function(input) {
+        const name = input.name;
+        if (name) {
+          input.name = name.replace(/cost_allocations-\d+-/, 'cost_allocations-' + index + '-');
+          input.id = input.name;
+        }
+      });
+      row.querySelectorAll('input:not([type="hidden"])').forEach(function(input) {
+        input.value = '';
+      });
+      const campoCodigo = row.querySelector('[name$="-codigo"]');
+      const campoPorcentaje = row.querySelector('[name$="-porcentaje"]');
+      if (campoCodigo) campoCodigo.value = fila.codigo;
+      if (campoPorcentaje) campoPorcentaje.value = fila.porcentaje;
+      container.appendChild(row);
+      bindCostRowEvents(row);
+    });
+    totalForms.value = filas.length;
+  }
+
+  // Delegado, no directo: `loadPendingSubscriptions` reemplaza el innerHTML del
+  // contenedor y los checkboxes nuevos no existirían para un listener suscrito antes.
+  groupedContainer.addEventListener('change', function(event) {
+    if (event.target && event.target.classList.contains('subscription-check')) {
+      prefijarImputacion();
+    }
   });
 
   if (customerSelect && customerSelect.value) {

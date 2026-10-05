@@ -493,3 +493,101 @@ class InvoiceCostAllocationVistaTests(TestCase):
 
         formset = response.context['cost_allocations_formset']
         self.assertEqual([f.initial.get('codigo') for f in formset.forms], ['700.50107'])
+
+    def test_la_factura_por_lote_abre_sin_imputacion_precargada(self):
+        """Sin `?regenerar=` no hay nada precargado: nada que mostrar.
+
+        El endpoint y el prefill en vivo llenan esta parte; el GET no puede
+        hacerlo porque todavía no se eligió qué suscripción facturar.
+        """
+        response = self.client.get(self.url)
+
+        formset = response.context['cost_allocations_formset']
+        self.assertEqual([f.initial.get('codigo') for f in formset.forms], [None])
+
+
+class AjaxPendingSubscriptionsTests(TestCase):
+    """El endpoint de pendientes tiene que mandar el código del servicio.
+
+    En la facturación por lote la imputación se arma en el navegador: cuando el
+    operador tilda una suscripción, el JS deriva el centro del código del
+    servicio y precarga la fila. Sin `data-code` el formset queda vacío y el
+    POST se rechaza con "Corrige el reparto entre centros de costo de la
+    factura", sin que el operador haya hecho nada mal — que es exactamente el
+    síntoma reportado.
+    """
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='ajaxcost',
+            email='ajaxcost@example.com',
+            password='pass',  # pragma: allowlist secret
+            first_name='Ajax',
+            last_name='Costo',
+        )
+        customer = Customer.objects.create(
+            client_type='juridica',
+            user=User.objects.create_user(
+                'ajaxcust',
+                'ajaxcust@example.com',
+                'pass',  # pragma: allowlist secret
+                first_name='Cli',
+                last_name='Ajax',
+            ),
+            company_name='Empresa Ajax',
+            reeup='123.4.5678',
+            nit='12345678901',
+            account='9001000000000001',
+            agency_bank='Banco Ajax',
+        )
+        service = Service.objects.create(
+            user=self.admin,
+            title='Pronóstico ajax',
+            summary='Servicio para el endpoint',
+            service_type='commercial',
+            service_category='pronostico',
+            code='700501072507005',
+            price=Decimal('45.00'),
+        )
+        self.subscription = ServiceSubscription.objects.create(
+            customer=customer,
+            service=service,
+            quantity=10,
+            payment_status='pending',
+            start_date=timezone.now(),
+        )
+        self.url = reverse('commercial:factura_create').replace(
+            'crear/factura/', 'ajax/suscripciones-pendientes/'
+        )
+        self.client.force_login(self.admin)
+
+    def test_el_ajax_manda_el_codigo_del_servicio(self):
+        """Sin esto el navegador no puede derivar el centro de costo."""
+        response = self.client.get(self.url, {'customer': self.subscription.customer_id})
+
+        self.assertContains(response, 'data-code="700501072507005"')
+
+    def test_el_codigo_va_por_suscripcion_y_no_por_cliente(self):
+        """Cada checkbox lleva el código de SU servicio: el reparto se arma
+        seleccionando, no asumiendo un único centro para el cliente."""
+        otro = Service.objects.create(
+            user=self.admin,
+            title='Agrometeo ajax',
+            summary='Otro servicio del mismo cliente',
+            service_type='commercial',
+            service_category='agrometeo',
+            code='700502072507015',
+            price=Decimal('80.00'),
+        )
+        ServiceSubscription.objects.create(
+            customer=self.subscription.customer,
+            service=otro,
+            quantity=2,
+            payment_status='requested',
+            start_date=timezone.now(),
+        )
+
+        response = self.client.get(self.url, {'customer': self.subscription.customer_id})
+
+        self.assertContains(response, 'data-code="700501072507005"')
+        self.assertContains(response, 'data-code="700502072507015"')
