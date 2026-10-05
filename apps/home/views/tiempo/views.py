@@ -31,7 +31,7 @@ class WeatherReportDetailView(DetailView):
     def get_object(self):
         return (
             WeatherReport.objects.filter(
-                report_type=self.get_report_type(), date__date=timezone.now().date()
+                report_type=self.get_report_type(), date__date=timezone.localdate()
             )
             .select_related('user')
             .first()
