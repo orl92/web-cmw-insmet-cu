@@ -751,10 +751,17 @@ def ajax_pending_subscriptions(request):
         title = escape(sub.service.title or '')
         summary = escape(sub.service.summary or '')
         unidad = escape(sub.get_quantity_period_display())
-        # El periodo facturado no viaja por acá: lo fija el operador en el
-        # formulario. La suscripción sólo aporta su inicio y la cantidad que
+        # El código del servicio sí viaja, y es lo que permite al navegador
+        # derivar el centro de costo: el prefijo del código lo trae
+        # (`700501072507005` es `700.50107 | 2507 | 005`). Sin `data-code` la
+        # imputación no se puede precargar al elegir la suscripción y el POST
+        # se rechaza con un reparto vacío que el operador nunca escribió.
+        #
+        # El periodo facturado, en cambio, no se manda: lo fija el operador en
+        # el formulario. La suscripción sólo aporta su inicio y la cantidad que
         # multiplica al precio, así que no hay `data-end` ni `data-days` que
         # calcular.
+        code = escape(sub.service.code or '')
         html += f'''
         <div class="form-check">
           <input class="form-check-input subscription-check" type="checkbox"
@@ -762,6 +769,7 @@ def ajax_pending_subscriptions(request):
                  id="sub_{sub.pk}" data-start="{start_str}"
                  data-quantity="{sub.quantity}"
                  data-unidad="{unidad}"
+                 data-code="{code}"
                  data-service="{title}" data-summary="{summary}">
           <label class="form-check-label" for="sub_{sub.pk}">
             <strong>{title}</strong> <span class="text-muted">({unidad})</span>
