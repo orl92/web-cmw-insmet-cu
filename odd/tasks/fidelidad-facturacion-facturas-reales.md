@@ -164,6 +164,10 @@ contra el PDF actual.
         `process_batch_invoice`: aparecen en la firma y nunca en el cuerpo.
 - [ ] **T4** `U/M` = `U`. La descripción del ítem lleva "por meses"/"por días"
       según la categoría del servicio.
+      - El rótulo de `cantidad` ya nombra la unidad ("Cantidad de meses"/"Cantidad
+        de días"), con lo que al neutralizar `U/M` pasa a ser el único lugar donde
+        el operador lee si escribe meses o días. No se quite: es el contrato del
+        campo, no decoración.
 - [ ] **T5** Filtro por categoría de servicio en la facturación manual: elegir
       categoría y sólo ver los servicios de esa categoría. Se mantiene en un
       commit propio, separado del rediseño de períodos, porque son riesgos
@@ -255,10 +259,12 @@ commit, se pregunta una vez por la estrategia de encadenado.
 T4: `U/M` = `U` y la descripción del ítem lleva "por meses"/"por días" según la
 categoría del servicio.
 
-**Decisión pendiente del usuario (T3):** con el rango de fechas fuera del
-formulario, `cantidad` ya no se propone y el operador la escribe en cada línea
-manual. Si el caso común es una línea de un mes o un día, el valor por defecto
-`1` haría el caso común un clic sin mentir. Falta la confirmación del usuario.
+**Decisión del usuario (cerrada):** con el rango de fechas fuera del formulario,
+`cantidad` no se propone y el operador la escribe en cada línea manual. **No hay
+valor por defecto**: las cantidades reales de las tres facturas del CMP son 30,
+31, 2 y 4 —los días de mayo y junio, o los meses de un agrometeo— y nunca 1, así
+que un `1` por defecto no sería un atajo sino una subfacturación silenciosa en
+cuanto el operador no lo revisara. `cantidad` queda `required=True` y vacía.
 ## Evidencia de T1
 
 RED observado antes de implementar:
@@ -383,3 +389,74 @@ igualmente se agrega `extra` — quedan dos filas, la segunda en blanco, y
   Merece una pasada manual en el navegador.
 - `cantidad` ya no se propone: sin rango de fechas no hay nada honesto que
   medir, así que la línea manual sale vacía y el operador la escribe.
+
+## Seguimiento de T3: el rótulo de `cantidad` dice la unidad
+
+T3 dejó la línea manual con un rótulo neutro "Cantidad" y una ayuda que decía
+"Cantidad de meses o días según el tipo de servicio.". Con `U/M` neutra —que es
+lo que pide T4— ese texto se vuelve el único lugar donde el operador lee la
+unidad, y obligarlo a deducirla es exactamente la confusión que T3 vino a
+quitar. El rótulo ahora la nombra, igual que ya hacía `SubscriptionForm`:
+`Cantidad de meses` para agrometeo, `Cantidad de días` para el resto.
+
+El rótulo se resuelve **en el servidor**, no sólo desde JavaScript. Es lo que
+permite que una fila que vuelve a renderizarse por un error de validación llegue
+ya rotulada, sin depender de que el script haya corrido: `__init__` lee el
+servicio del POST con `add_prefix` (la misma clase se usa suelta y dentro del
+formset, donde los datos llegan como `items-0-service`), y un servicio
+inexistente, público o dado de baja dejan el rótulo neutro en vez de romper el
+render. Sin servicio elegido el rótulo queda en "Cantidad": no hay unidad que
+nombrar todavía.
+
+El `help_text` se borró porque repetía lo que el rótulo ya resolvió, y con él el
+`<small>` que lo imprimía. `cantidad` no ganó valor por defecto: la decisión del
+usuario quedó registrada arriba.
+
+La misma regla se aplica en el JavaScript de `create.html`, en
+`updateRowFromService`, que ya reescribía `codigo`, `precio` y `unidad_medida`
+de la fila. El `<label>` recibió su `for` para que el script lo encuentre por
+fila con el mismo `label[for$="-cantidad"]` que usa `proposeLineStartDate` con
+`input[id$="-start_date"]`. El clon de "añadir línea" y el borrado de la última
+fila ya pasaban por `updateRowFromService`, así que la fila nueva y la fila
+vaciada vuelven al rótulo neutro sin código nuevo.
+
+### Evidencia
+
+RED observado antes de implementar, sobre
+`apps/commercial.tests.test_invoice_line_period.ElRotuloDiceLaUnidadTests`:
+
+```
+Ran 15 tests ... FAILED (failures=8, errors=1)
+```
+
+GREEN y verificación:
+
+| Comando | Resultado |
+|---|---|
+| `python manage.py test apps.commercial` | 466 tests, OK (baseline previo: 451) |
+| `python manage.py test apps.commercial.tests.test_invoice_line_period.ElRotuloDiceLaUnidadTests` | 15 tests, OK |
+| `python manage.py check` | no issues |
+| `ruff check apps/commercial/` | All checks passed |
+| `ruff format --check apps/commercial/` | 42 files already formatted |
+| `djlint apps/commercial/templates/pages/commercial/invoice/ --check` | 0 files would be updated |
+
+### Un test que pasaba en verde por el texto viejo
+
+La primera versión del test de render usaba `assertContains(response, 'Cantidad
+de meses')` y daba verde sin implementar nada: la ayuda vieja —"Cantidad de meses
+o días según el tipo de servicio."— contenía esa cadena. Un `assertContains` sobre
+el HTML completo no distingue el rótulo de la ayuda. El test ahora extrae el
+texto del `<label>` por `for` con una expresión regular, que es lo que dice la
+unidad. Merece recordarlo para cualquier rótulo que se compruebe sobre HTML
+impreso.
+
+### Lo que este seguimiento deja sin cubrir
+
+- El JavaScript que reescribe el rótulo no tiene aserción de comportamiento: la
+  suite no corre navegador. Lo que sí se cubre es su contrato de entrada —que
+  `commercial_services_json` siga trayendo `service_category`, sin lo cual el
+  rótulo se quedaría en "Cantidad"— y el gancho del `<label>` que busca el
+  script. El movimiento del rótulo al cambiar de servicio necesita una pasada
+  manual en el navegador.
+- `unidad_medida` sigue escribiendo `MES`/`DÍA` en `InvoiceItemForm.clean()`. Es
+  T4 y no se tocó.

@@ -121,9 +121,9 @@
                           {% include 'includes/dashboard/date_field.html' with field=item_form.start_date value=item_form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
                         </div>
                         <div class="col-md-2 mb-0">
-                          <label class="form-label">{{ item_form.cantidad.label }}</label>
+                          <label class="form-label"
+                                 for="{{ item_form.cantidad.id_for_label }}">{{ item_form.cantidad.label }}</label>
                           {{ item_form.cantidad }}
-                          <small class="form-text text-muted">{{ item_form.cantidad.help_text }}</small>
                         </div>
                         <div class="col-md-2 mb-0">
                           <label class="form-label">{{ item_form.codigo.label }}</label>
@@ -460,14 +460,17 @@
   // ============================================================
   const servicesData = JSON.parse('{{ commercial_services_json|escapejs }}');
   const servicesMap = {};
-  // La unidad no es elegible: sale de la categoría del servicio (agrometeo → MES,
-  // resto → DÍA), así que un mismo período propone 3 o 90 según la fila.
-  // El form aplica la misma regla en el servidor.
+  // La unidad no es elegible: sale de la categoría del servicio (agrometeo → meses,
+  // resto → días), así que un mismo período propone 3 o 90 según la fila, y el
+  // rótulo de la cantidad la nombra porque `U/M` va a ser `U` y no dice nada. Es la
+  // misma regla que aplica el form en el servidor: sin JavaScript el rótulo ya
+  // viene resuelto.
   servicesData.forEach(s => {
     servicesMap[s.id] = {
       code: s.code,
       price: s.price,
       unit: s.service_category === 'agrometeo' ? 'MES' : 'DÍA',
+      period: s.service_category === 'agrometeo' ? 'meses' : 'días',
     };
   });
 
@@ -725,16 +728,24 @@
     const codeInput = row.querySelector('input[id$="-codigo"]');
     const priceInput = row.querySelector('input[id$="-precio"]');
     const unitInput = row.querySelector('input[id$="-unidad_medida"]');
+    const cantidadLabel = row.querySelector('label[for$="-cantidad"]');
     const selectedId = serviceSelect.value;
     if (selectedId && servicesMap[selectedId]) {
       const data = servicesMap[selectedId];
       codeInput.value = data.code;
       priceInput.value = data.price;
       unitInput.value = data.unit;
+      // El rótulo se mueve con el servicio: es lo único que dice si el operador
+      // cuenta días o meses. Sin él, un 30 en una línea de pronóstico parece un
+      // mes entero.
+      if (cantidadLabel) cantidadLabel.textContent = 'Cantidad de ' + data.period;
     } else {
       codeInput.value = '';
       priceInput.value = '';
       unitInput.value = 'U';
+      // Sin servicio no hay unidad que nombrar: el rótulo neutro es el que ya
+      // trae el servidor en la pantalla recién abierta.
+      if (cantidadLabel) cantidadLabel.textContent = 'Cantidad';
     }
     // La cantidad no se propone: sin rango de fechas ya no hay nada que medir, y un
     // número inventado que el operador no revisa es peor que un campo vacío que

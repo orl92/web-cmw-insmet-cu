@@ -23,6 +23,8 @@ selector de unidad duplicaría un dato que ya existe.
 """
 
 import inspect
+import json
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import patch
@@ -32,7 +34,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.commercial.forms.invoice import InvoiceForm, InvoiceItemForm
+from apps.commercial.forms.invoice import InvoiceForm, InvoiceItemForm, InvoiceItemFormSet
 from apps.commercial.models import Invoice, InvoiceItem, Service, ServiceSubscription
 from apps.commercial.tests.factories import make_user, natural_customer
 from apps.commercial.tests.test_views import _make_superuser
@@ -346,6 +348,212 @@ class PeriodoDeLoteReadOnlyTests(_FacturacionBase):
         html = response.content.decode()
         self.assertEqual(html.count('<input'), 1)
         self.assertNotIn('data-start=', html)
+
+
+class ElRotuloDiceLaUnidadTests(_FacturacionBase):
+    """La unidad de `cantidad` se lee en el rótulo, y sólo en el rótulo.
+
+    Las tres facturas reales del CMP muestran por qué: su columna `U/M` nunca
+    dice `MES` ni `DÍA`, dice `U` o nada. Con `U/M` neutra, el rótulo de la
+    cantidad es el único lugar donde el operador lee si está escribiendo meses o
+    días, así que es parte del contrato del campo y no decoración.
+
+    Y la unidad no es un dato propio: sale de `service_category` (agrometeo
+    factura meses, todo lo demás días), igual que ya hacía `clean()` y que ya
+    rotulaba `SubscriptionForm`. Por eso el rótulo se resuelve en el servidor y
+    no sólo después de que corra el JavaScript: una fila que vuelve a
+    renderizarse por un error de validación se rotula igual sin haber ejecutado
+    una línea de script.
+
+    `cantidad` no trae valor por defecto. Las cantidades observadas son 30, 31,
+    2 y 4 —el número de días de mayo y junio, o el de meses de un agrometeo— y
+    nunca 1: un número inventado en este campo subfactura en silencio.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        # Fuera del queryset del campo: un POST con esta fila tiene que quedar
+        # neutra, no reventar el render ni rotular con la categoría de un
+        # servicio que la pantalla no ofrece.
+        cls.baja = Service.objects.create(
+            user=cls.admin,
+            title='Agrometeorológico dado de baja',
+            summary='Retirado de la oferta',
+            service_type=Service.COMMERCIAL,
+            service_category='agrometeo',
+            code='700501072507007',
+            price=Decimal('100.00'),
+            record_active=False,
+        )
+
+    def _formset(self, **linea):
+        datos = {
+            'items-TOTAL_FORMS': '1',
+            'items-INITIAL_FORMS': '0',
+            'items-MIN_NUM_FORMS': '0',
+            'items-MAX_NUM_FORMS': '1000',
+        }
+        datos.update(linea)
+        # El prefijo es el de la vista: sin él el formset no encuentra su propio
+        # management form y se queda sin filas.
+        return InvoiceItemFormSet(data=datos, prefix='items')
+
+    def _rotulo_renderizado(self, html, indice=0):
+        """Texto del `<label>` de la cantidad, y nada más.
+
+        Buscar la cadena suelta no sirve: la vieja ayuda "Cantidad de meses o
+        días según el tipo de servicio." hacía que un `assertContains` pasara con
+        el rótulo todavía en `Cantidad`. Lo que dice la unidad es el `<label>`.
+        """
+        coincidencia = re.search(
+            rf'<label[^>]*for="id_items-{indice}-cantidad"[^>]*>(.*?)</label>', html, re.S
+        )
+        self.assertIsNotNone(coincidencia, 'el rótulo de la cantidad no está en el HTML')
+        return coincidencia.group(1).strip()
+
+    def test_el_rotulo_de_una_linea_agrometeo_dice_meses(self):
+        formset = self._formset(**{'items-0-service': str(self.agro.pk)})
+
+        self.assertEqual(formset.forms[0]['cantidad'].label, 'Cantidad de meses')
+
+    def test_el_rotulo_de_una_linea_no_agrometeo_dice_dias(self):
+        """Pronóstico factura por días: mismo campo, otra unidad."""
+        formset = self._formset(**{'items-0-service': str(self.pronostico.pk)})
+
+        self.assertEqual(formset.forms[0]['cantidad'].label, 'Cantidad de días')
+
+    def test_el_rotulo_es_neutro_sin_servicio_elegido(self):
+        """Sin servicio no hay unidad que nombrar: la pantalla inicial no puede inventarla."""
+        formset = InvoiceItemFormSet()
+
+        self.assertEqual(formset.forms[0]['cantidad'].label, 'Cantidad')
+
+    def test_cada_linea_rotula_por_su_propio_servicio(self):
+        """La unidad es de la fila, no de la factura: dos filas, dos rótulos."""
+        formset = InvoiceItemFormSet(
+            data={
+                'items-TOTAL_FORMS': '2',
+                'items-INITIAL_FORMS': '0',
+                'items-MIN_NUM_FORMS': '0',
+                'items-MAX_NUM_FORMS': '1000',
+                'items-0-service': str(self.agro.pk),
+                'items-1-service': str(self.pronostico.pk),
+            },
+            prefix='items',
+        )
+
+        self.assertEqual(formset.forms[0]['cantidad'].label, 'Cantidad de meses')
+        self.assertEqual(formset.forms[1]['cantidad'].label, 'Cantidad de días')
+
+    def test_el_rotulo_no_falla_con_un_servicio_inventado(self):
+        """Una pestaña vieja o un POST a mano no rompen el render."""
+        formset = self._formset(**{'items-0-service': 'no-existe'})
+
+        self.assertEqual(formset.forms[0]['cantidad'].label, 'Cantidad')
+
+    def test_el_rotulo_no_usa_un_servicio_dado_de_baja(self):
+        """Fuera del queryset no cuenta: la pantalla no lo ofrece, así que no rotula."""
+        formset = self._formset(**{'items-0-service': str(self.baja.pk)})
+
+        self.assertEqual(formset.forms[0]['cantidad'].label, 'Cantidad')
+
+    def test_el_rotulo_ya_dice_los_meses_sin_javascript(self):
+        """Re-render por error de validación: el rótulo ya viene resuelto del servidor."""
+        response = self.client.post(
+            self.url_crear,
+            self._manual([self._linea(0, self.agro, '', '2026-05-15')]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self._rotulo_renderizado(response.content.decode()), 'Cantidad de meses')
+
+    def test_el_rotulo_ya_dice_los_dias_sin_javascript(self):
+        response = self.client.post(
+            self.url_crear,
+            self._manual([self._linea(0, self.pronostico, '', '2026-05-15')]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self._rotulo_renderizado(response.content.decode()), 'Cantidad de días')
+
+    def test_la_pantalla_limpia_no_promete_ninguna_unidad(self):
+        """Al abrir el formulario todavía no hay servicio: no hay unidad que prometer."""
+        html = self.client.get(self.url_crear).content.decode()
+
+        self.assertEqual(self._rotulo_renderizado(html), 'Cantidad')
+
+    def test_la_ayuda_redundante_no_se_imprime(self):
+        """La ayuda repetía la unidad mientras el rótulo ya la resolvió.
+
+        Se comprueba el `aria-describedby` y no el texto viejo: es la prueba
+        estructural de que el campo quedó sin `help_text`, y no depende de cómo
+        estuviera escrito. En el GET limpio no aparece ninguno; al re-renderizar
+        el error, sólo queda el id del error.
+        """
+        limpio = self.client.get(self.url_crear).content.decode()
+        self.assertNotIn('_cantidad_helptext', limpio)
+        self.assertNotIn('aria-describedby="id_items-0-cantidad', limpio)
+
+        response = self.client.post(
+            self.url_crear,
+            self._manual([self._linea(0, self.agro, '', '2026-05-15')]),
+        )
+        con_error = response.content.decode()
+        self.assertNotIn('_cantidad_helptext', con_error)
+        self.assertIn('aria-describedby="id_items-0-cantidad_error"', con_error)
+
+    def test_cantidad_no_trae_valor_por_defecto(self):
+        """Nada de `initial`, `default`, placeholder ni prellenado: lo escribe el operador."""
+        form = InvoiceItemFormSet().forms[0]
+        campo = form.fields['cantidad']
+
+        self.assertFalse(campo.initial)
+        self.assertNotIn('value=', campo.widget.render('cantidad', None, attrs={'id': 'x'}))
+        self.assertNotIn('placeholder', str(campo.widget.attrs))
+
+    def test_cantidad_sigue_obligatoria_y_el_futuro_numero_no_la_pasa(self):
+        form = InvoiceItemForm(
+            data={
+                'service': self.pronostico.pk,
+                'precio': '5.00',
+                'unidad_medida': 'U',
+                'start_date': '2026-05-15',
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('cantidad', form.errors)
+        self.assertTrue(form.fields['cantidad'].required)
+        self.assertEqual(form.fields['cantidad'].min_value, 1)
+
+    def test_el_texto_de_ayuda_ya_no_repite_la_unidad(self):
+        """Con el rótulo resolviéndola, la ayuda sobra: repetía "meses o días"."""
+        self.assertEqual(InvoiceItemForm().fields['cantidad'].help_text, '')
+
+    def test_el_javascript_recibe_la_categoria_que_define_la_unidad(self):
+        """Guarda del contrato del script: sin `service_category` no puede rotular.
+
+        Es el dato que el JavaScript necesita para mover el rótulo, y el que la
+        vista ya serializa. El rótulo en sí lo escribe el script y eso no se
+        prueba acá: no hay navegador en la suite.
+        """
+        response = self.client.get(self.url_crear)
+
+        categorias = {
+            s['id']: s['service_category']
+            for s in json.loads(response.context['commercial_services_json'])
+        }
+
+        self.assertEqual(categorias[self.agro.pk], 'agrometeo')
+        self.assertEqual(categorias[self.pronostico.pk], 'pronostico')
+
+    def test_el_rotulo_de_la_cantidad_tiene_el_gancho_que_busca_el_script(self):
+        """El `for` del `<label>` es lo que permite al script encontrarlo por fila."""
+        html = self.client.get(self.url_crear).content.decode()
+
+        self.assertIn('for="id_items-0-cantidad"', html)
+        self.assertIn('label[for$="-cantidad"]', html)
 
 
 class FlashDelPeriodoTests(_FacturacionBase):

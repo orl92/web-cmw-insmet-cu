@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.forms import formset_factory, modelformset_factory
 from django.forms.models import BaseModelFormSet
 
+from apps.commercial.forms.subscription import _pluralize_period
 from apps.commercial.models import (
     Customer,
     InvoiceCostAllocation,
@@ -16,6 +17,19 @@ from apps.core.models import CompanySettings
 
 
 class InvoiceItemForm(forms.Form):
+    """Una línea de facturación manual.
+
+    El rótulo de `cantidad` nombra la unidad —"Cantidad de meses" o "Cantidad de
+    días"— porque es el único lugar donde el operador puede leerla: la columna
+    `U/M` de las facturas reales del CMP nunca dice `MES` ni `DÍA`, dice `U` o
+    nada. La unidad no es un dato propio, sale de la categoría del servicio, y
+    se resuelve en el servidor para que una fila que vuelve a renderizarse por
+    un error se rotule igual sin que haya corrido una línea de JavaScript.
+
+    `cantidad` no trae valor por defecto. Las cantidades reales son 30, 31, 2 y
+    4, nunca 1: un número inventado en este campo subfactura en silencio.
+    """
+
     service = forms.ModelChoiceField(
         queryset=Service.objects.filter(service_type=Service.COMMERCIAL, record_active=True),
         required=True,
@@ -36,11 +50,12 @@ class InvoiceItemForm(forms.Form):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
     )
+    # Sin `initial` y sin `default` a propósito: la cantidad la cuenta quien
+    # factura, y un valor propuesto que no revisa cobra de menos.
     cantidad = forms.IntegerField(
         min_value=1,
         required=True,
         label='Cantidad',
-        help_text='Cantidad de meses o días según el tipo de servicio.',
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
     )
     unidad_medida = forms.CharField(
@@ -54,6 +69,36 @@ class InvoiceItemForm(forms.Form):
         decimal_places=2,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        unidad = self._selected_billing_period()
+        if unidad:
+            self.fields['cantidad'].label = f'Cantidad de {_pluralize_period(unidad)}'
+
+    def _selected_billing_period(self):
+        """Unidad de facturación del servicio ya elegido, o `''` si no hay ninguno.
+
+        Se resuelve acá y no en el `clean()` porque el rótulo se imprime antes de
+        validar: una fila que vuelve a la pantalla por un error tiene que llegar
+        rotulada, y en ese momento el POST todavía no es válido. Igual que en
+        `SubscriptionForm`, sólo un servicio del queryset cuenta: uno
+        inexistente, uno público o uno dado de baja dejan el rótulo neutro en vez
+        de romper el render.
+
+        `add_prefix` porque la misma clase se usa suelta y dentro del formset,
+        donde los datos llegan como `items-0-service` y no como `service`.
+        """
+        if not self.is_bound:
+            return ''
+        elegido = self.data.get(self.add_prefix('service'))
+        if not elegido:
+            return ''
+        try:
+            servicio = self.fields['service'].clean(elegido)
+        except ValidationError:
+            return ''
+        return servicio.get_billing_period_display() if servicio else ''
 
     def clean(self):
         """Rebuild the readonly fields from the service, never from the POST body.
