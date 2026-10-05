@@ -204,7 +204,7 @@
   </div>
 {% endblock %}
 {% block extrajs %}
-  <script src="{% static '' %}dist/libs/fslightbox/index.js?1692870487" defer></script>
+  <script src="{% static 'dist/libs/fslightbox/index.js' %}" defer></script>
   <!-- Configuración para el script de GIF -->
   <script>
         // Configuración global para el modal de GIF
@@ -215,6 +215,6 @@
         };
   </script>
   <!-- Scripts separados -->
-  <script src="{% static '' %}dist/js/maps.js"></script>
-  <script src="{% static '' %}dist/js/gif-download.js"></script>
+  <script src="{% static 'dist/js/maps.js' %}"></script>
+  <script src="{% static 'dist/js/gif-download.js' %}"></script>
 {% endblock extrajs %}
