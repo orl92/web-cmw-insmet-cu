@@ -162,12 +162,26 @@ contra el PDF actual.
         el PDF dejó de imprimir en T2. Inconsistencia introducida por T2.
       - **Quitar los parámetros muertos** `start_date`/`end_date` de
         `process_batch_invoice`: aparecen en la firma y nunca en el cuerpo.
-- [ ] **T4** `U/M` = `U`. La descripción del ítem lleva "por meses"/"por días"
-      según la categoría del servicio.
+- [ ] **T4** `U/M` = `U`, y el sistema no le pega nada a la descripción.
       - El rótulo de `cantidad` ya nombra la unidad ("Cantidad de meses"/"Cantidad
         de días"), con lo que al neutralizar `U/M` pasa a ser el único lugar donde
         el operador lee si escribe meses o días. No se quite: es el contrato del
         campo, no decoración.
+      - **`unidad_medida` se borra del formulario**, no se deja como eco `readonly`
+        de `U`. Un campo que siempre dice lo mismo ocupa una columna de la pantalla
+        para repetir el `default='U'` del modelo, y obliga a conservar el código que
+        lo reescribía —el que inventaba `MES`/`DÍA`—. Sin campo, el valor tiene un
+        solo dueño y el POST no tiene ni el nombre para intentar fijarlo: la
+        garantía es estructural y no depende de que `clean()` se acuerde.
+      - **La descripción NO lleva sufijo "por meses"/"por días".** Esto corrige lo
+        que decía la primera versión de esta tarea, y fue una mala lectura de las
+        tres facturas. En la 279 el "por meses" es parte del nombre del servicio en
+        el catálogo —"Certificación Agrometeorológica Especializada **por meses**"—, no
+        un sufijo que agrega el sistema: las dos facturas de pronóstico (182 y 276)
+        no lo tienen y su descripción es el título tal cual. Agregárselo les
+        inventaría una palabra. Verificado: las tres rutas que escriben `descripcion`
+        usan `service.title` y ninguna compone texto.
+
 - [ ] **T5** Filtro por categoría de servicio en la facturación manual: elegir
       categoría y sólo ver los servicios de esa categoría. Se mantiene en un
       commit propio, separado del rediseño de períodos, porque son riesgos
@@ -210,7 +224,7 @@ suscripciones, con validación de servidor, es un encargo independiente
 - [x] No queda ningún literal de centro de costo en el template.
 - [x] El PDF nunca muestra "Desde X hasta X" con X == Y.
 - [x] El periodo se imprime tal como lo escribió el operador.
-- [ ] `U/M` sale como `U` y la descripción conserva "por meses"/"por días".
+- [x] `U/M` sale como `U`, y la descripción es el título del servicio sin sufijo.
 - [ ] Una factura de una persona natural se puede generar sin registro comercial
       y sin contrato, y `Contract`/`Certificate` no imprimen `None`.
 - [x] Guardar un reparto que no suma 100 % falla con mensaje en el formulario.
@@ -256,8 +270,9 @@ commit, se pregunta una vez por la estrategia de encadenado.
 
 ## Próximo paso
 
-T4: `U/M` = `U` y la descripción del ítem lleva "por meses"/"por días" según la
-categoría del servicio.
+T4 cerrada. La descripción del ítem NO lleva sufijo: el "por meses" de la 279 es
+parte del título del catálogo, y agregárselo a las facturas de pronóstico (182 y
+276) les inventaría una palabra.
 
 **Decisión del usuario (cerrada):** con el rango de fechas fuera del formulario,
 `cantidad` no se propone y el operador la escribe en cada línea manual. **No hay
@@ -304,9 +319,9 @@ Tests existentes que hubo que actualizar, porque ahora el POST exige la imputaci
 
 ## Pendiente para T3
 
-`U/M` sigue siendo `M` y la descripción del ítem todavía no lleva "por meses" ni
-"por días". El usuario ya confirmó que `U/M` pasa a `U` y que el período va dentro
-de la descripción del servicio.
+`U/M` seguía escribiendo `MES`/`DÍA` en `InvoiceItemForm.clean()`. Era T4 y no se
+tocó acá; T4 lo resolvió borrando el campo y dejando que el `default='U'` del
+modelo sea el dueño del valor.
 
 ## Hallazgo de T2: un error de render se disfraza de 404
 
@@ -458,5 +473,5 @@ impreso.
   rótulo se quedaría en "Cantidad"— y el gancho del `<label>` que busca el
   script. El movimiento del rótulo al cambiar de servicio necesita una pasada
   manual en el navegador.
-- `unidad_medida` sigue escribiendo `MES`/`DÍA` en `InvoiceItemForm.clean()`. Es
-  T4 y no se tocó.
+- `unidad_medida` seguía escribiendo `MES`/`DÍA` en `InvoiceItemForm.clean()`. Era
+  T4: ya no es campo, y el `default='U'` de `InvoiceItem` es el único dueño.

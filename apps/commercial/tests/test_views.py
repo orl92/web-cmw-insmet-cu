@@ -1112,7 +1112,13 @@ class AjaxPendingSubscriptionsTests(TestCase):
 
 
 class BatchInvoiceQuantityTests(TestCase):
-    """process_batch_invoice uses quantity × price and period unit."""
+    """process_batch_invoice uses quantity × price, and `U/M` stays `U`.
+
+    La columna `U/M` de las facturas reales del CMP nunca dice `MES` ni `DÍA`: dice
+    `U` o nada, con cantidades de 30, 31, 2 y 4. La unidad de la fila vive en el
+    rótulo de `cantidad`, no en `unidad_medida`, así que el lote deja que el
+    `default='U'` del modelo sea el dueño del valor.
+    """
 
     def test_agrometeo_batch_uses_monthly_quantity(self):
         from apps.commercial.views.invoices import InvoiceCreateView
@@ -1141,7 +1147,7 @@ class BatchInvoiceQuantityTests(TestCase):
         invoice = item.invoice
         self.assertEqual(item.cantidad, 3)
         self.assertEqual(item.importe, Decimal('300.00'))
-        self.assertEqual(item.unidad_medida, 'MES')
+        self.assertEqual(item.unidad_medida, 'U')
         self.assertEqual(invoice.amount, Decimal('300.00'))
 
     def test_pronostico_batch_uses_daily_quantity(self):
@@ -1171,7 +1177,7 @@ class BatchInvoiceQuantityTests(TestCase):
         invoice = item.invoice
         self.assertEqual(item.cantidad, 10)
         self.assertEqual(item.importe, Decimal('50.00'))
-        self.assertEqual(item.unidad_medida, 'DÍA')
+        self.assertEqual(item.unidad_medida, 'U')
         self.assertEqual(invoice.amount, Decimal('50.00'))
 
     def test_facturar_no_sobreescribe_el_inicio_de_la_suscripcion(self):
@@ -1434,7 +1440,7 @@ class SubscriptionCancelViewTests(TestCase):
             codigo='CANCEL',
             descripcion='Svc anulable',
             cantidad=1,
-            unidad_medida='DÍA',
+            unidad_medida='U',
             precio=Decimal('50.00'),
         )
         return invoice
@@ -2059,7 +2065,7 @@ class ClientPendingInvoiceButtonsTests(TestCase):
                 codigo=sub.service.code,
                 descripcion=sub.service.title,
                 cantidad=cantidad,
-                unidad_medida='DÍA',
+                unidad_medida='U',
                 precio=sub.service.price,
                 importe=sub.service.price * cantidad,
             )

@@ -95,7 +95,7 @@ class RegenerarCasoBase(TestCase):
             codigo='RGN01',
             descripcion='Pronóstico diario',
             cantidad=Decimal('10'),
-            unidad_medida='DÍA',
+            unidad_medida='U',
             precio=Decimal('45.00'),
             importe=Decimal('450.00'),
         )
@@ -360,7 +360,6 @@ class RegenerarEnFacturacionManualTests(RegenerarCasoBase):
             'items-0-start_date': inicio,
             'items-0-cantidad': '5',
             'items-0-precio': '45.00',
-            'items-0-unidad_medida': 'DÍA',
             'items-0-codigo': 'RGN01',
             # La imputación a centros de costo es obligatoria: una factura
             # comercial sin centro es justo el defecto que este formset impide.

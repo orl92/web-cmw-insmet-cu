@@ -131,11 +131,7 @@
                         </div>
                       </div>
                       <div class="row g-3">
-                        <div class="col-md-2 mb-0">
-                          <label class="form-label">{{ item_form.unidad_medida.label }}</label>
-                          {{ item_form.unidad_medida }}
-                        </div>
-                        <div class="col-md-4 mb-0">
+                        <div class="col-md-6 mb-0">
                           <label class="form-label">{{ item_form.precio.label }}</label>
                           {{ item_form.precio }}
                         </div>
@@ -460,16 +456,15 @@
   // ============================================================
   const servicesData = JSON.parse('{{ commercial_services_json|escapejs }}');
   const servicesMap = {};
-  // La unidad no es elegible: sale de la categoría del servicio (agrometeo → meses,
-  // resto → días), así que un mismo período propone 3 o 90 según la fila, y el
-  // rótulo de la cantidad la nombra porque `U/M` va a ser `U` y no dice nada. Es la
-  // misma regla que aplica el form en el servidor: sin JavaScript el rótulo ya
-  // viene resuelto.
+  // Sólo el código y el precio vienen del servicio. La unidad no viaja, y no por
+  // descuido: `U/M` vale siempre `U` —así en las facturas reales del CMP—, así que
+  // no hay nada que proponer en esa columna y la unidad la nombra el rótulo de la
+  // cantidad. Que el mismo período proponga 3 o 90 según la fila lo decide el
+  // rótulo (`period`), que el servidor ya manda resuelto.
   servicesData.forEach(s => {
     servicesMap[s.id] = {
       code: s.code,
       price: s.price,
-      unit: s.service_category === 'agrometeo' ? 'MES' : 'DÍA',
       period: s.service_category === 'agrometeo' ? 'meses' : 'días',
     };
   });
@@ -727,22 +722,19 @@
     const serviceSelect = row.querySelector('select[id$="-service"]');
     const codeInput = row.querySelector('input[id$="-codigo"]');
     const priceInput = row.querySelector('input[id$="-precio"]');
-    const unitInput = row.querySelector('input[id$="-unidad_medida"]');
     const cantidadLabel = row.querySelector('label[for$="-cantidad"]');
     const selectedId = serviceSelect.value;
     if (selectedId && servicesMap[selectedId]) {
       const data = servicesMap[selectedId];
       codeInput.value = data.code;
       priceInput.value = data.price;
-      unitInput.value = data.unit;
       // El rótulo se mueve con el servicio: es lo único que dice si el operador
-      // cuenta días o meses. Sin él, un 30 en una línea de pronóstico parece un
-      // mes entero.
+      // cuenta días o meses. `U/M` no lo dice —siempre vale `U`—, así que sin este
+      // rótulo un 30 en una línea de pronóstico parece un mes entero.
       if (cantidadLabel) cantidadLabel.textContent = 'Cantidad de ' + data.period;
     } else {
       codeInput.value = '';
       priceInput.value = '';
-      unitInput.value = 'U';
       // Sin servicio no hay unidad que nombrar: el rótulo neutro es el que ya
       // trae el servidor en la pantalla recién abierta.
       if (cantidadLabel) cantidadLabel.textContent = 'Cantidad';

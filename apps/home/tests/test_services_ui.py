@@ -299,7 +299,7 @@ class CommercialServicesListViewStateScopeTests(TestCase):
             codigo=sub.service.code or '',
             descripcion=sub.service.title,
             cantidad=1,
-            unidad_medida='DÍA',
+            unidad_medida='U',
             precio=10,
             importe=10,
         )

@@ -88,7 +88,9 @@ class _FacturacionBase(TestCase):
             f'items-{index}-cantidad': str(cantidad),
             f'items-{index}-start_date': inicio,
             # El navegador manda lo derivado; clean() lo vuelve a sacar del
-            # servicio y el POST no puede fijar nada de esto.
+            # servicio y el POST no puede fijar nada de esto. `unidad_medida` es el
+            # caso interesante: ya no hay campo con ese nombre, así que viaja como
+            # una clave que el formulario ignora por completo.
             f'items-{index}-precio': '9999.99',
             f'items-{index}-unidad_medida': 'MES',
             f'items-{index}-codigo': 'HACKED',
@@ -170,10 +172,15 @@ class FechaDeInicioPorLineaTests(_FacturacionBase):
         self.assertTrue(campo.required)
 
     def test_la_linea_no_ofrece_un_selector_de_unidad(self):
-        """La unidad se deriva de `service_category`; un selector la duplicaría."""
+        """La unidad no es un dato de la línea: la nombra el rótulo de `cantidad`.
+
+        `unidad_medida` tampoco está, y a propósito. Un campo `readonly` que siempre
+        dice `U` ocuparía una columna para repetir el `default='U'` del modelo, y
+        obligaría a conservar el código que lo reescribía con `MES`/`DÍA`.
+        """
         self.assertEqual(
             set(InvoiceItemForm().fields),
-            {'service', 'codigo', 'cantidad', 'unidad_medida', 'precio', 'start_date'},
+            {'service', 'codigo', 'cantidad', 'precio', 'start_date'},
         )
 
     def test_la_linea_acepta_el_formato_legible(self):
@@ -267,8 +274,15 @@ class ElCasoRealTests(_FacturacionBase):
         self.assertEqual(subs[0].start_date.date(), date(2026, 5, 15))
         self.assertEqual(subs[1].start_date.date(), date(2026, 6, 10))
 
-    def test_la_unidad_se_deriva_del_servicio_y_no_del_post(self):
-        """La línea manda `unidad_medida='MES'` para las dos: no puede ganarle."""
+    def test_la_unidad_de_medida_no_sale_del_post_ni_de_la_categoria(self):
+        """Las dos líneas mandan `unidad_medida='MES'`; queda `U` en las dos.
+
+        La columna `U/M` de las facturas reales del CMP no dice `MES` ni `DÍA` en
+        ningún lado: dice `U` o nada, con cantidades de 30, 31, 2 y 4. La unidad de
+        la fila la nombra el rótulo de `cantidad`, así que aquí no hay nada que
+        derivar: el `default='U'` del modelo manda y el POST no tiene campo por el
+        que ganarle.
+        """
         self.client.post(
             self.url_crear,
             self._manual(
@@ -280,7 +294,7 @@ class ElCasoRealTests(_FacturacionBase):
         )
 
         unidades = sorted(InvoiceItem.objects.values_list('unidad_medida', flat=True))
-        self.assertEqual(unidades, ['DÍA', 'MES'])
+        self.assertEqual(unidades, ['U', 'U'])
 
     def test_una_linea_sin_fecha_no_crea_la_suscripcion(self):
         linea = self._linea(0, self.agro, 3, '2026-05-15')
@@ -305,6 +319,52 @@ class ElCasoRealTests(_FacturacionBase):
 
         self.assertEqual(Invoice.objects.filter(customer=self.customer).count(), 1)
         self.assertEqual(InvoiceItem.objects.count(), 2)
+
+    def test_la_descripcion_es_el_titulo_del_servicio_y_no_un_titulo_con_sufijo(self):
+        """La factura manual escribe el título del catálogo, sin pegarle nada.
+
+        El "por meses" de la 279 es parte del nombre del servicio en el catálogo,
+        no un sufijo que el sistema agrega: las facturas de pronóstico (182 y 276)
+        no lo tienen. Este es el test que lo verifica de punta a punta, porque acá
+        sí pasa por `process_manual_invoice`, que es donde una descripción podría
+        inventarse.
+        """
+        self.client.post(
+            self.url_crear,
+            self._manual(
+                [
+                    self._linea(0, self.agro, 2, '2026-05-15'),
+                    self._linea(1, self.pronostico, 4, '2026-06-10'),
+                ]
+            ),
+        )
+
+        self.assertEqual(
+            sorted(InvoiceItem.objects.values_list('descripcion', flat=True)),
+            sorted([self.agro.title, self.pronostico.title]),
+        )
+
+    def test_la_unidad_medida_vale_u_y_la_cantidad_la_escribe_el_operador(self):
+        """`U/M` = `U` en las dos, con las cantidades que puso el operador.
+
+        Las cantidades reales son 30, 31, 2 y 4: el número de días del mes o de
+        meses del agrometeo. Por eso `U/M` no dice nada y el rótulo de `cantidad` la
+        nombra.
+        """
+        self.client.post(
+            self.url_crear,
+            self._manual(
+                [
+                    self._linea(0, self.agro, 2, '2026-05-15'),
+                    self._linea(1, self.pronostico, 31, '2026-06-10'),
+                ]
+            ),
+        )
+
+        self.assertEqual(
+            sorted(InvoiceItem.objects.values_list('cantidad', 'unidad_medida')),
+            [(2, 'U'), (31, 'U')],
+        )
 
 
 class PeriodoDeLoteReadOnlyTests(_FacturacionBase):
@@ -356,14 +416,15 @@ class ElRotuloDiceLaUnidadTests(_FacturacionBase):
     Las tres facturas reales del CMP muestran por qué: su columna `U/M` nunca
     dice `MES` ni `DÍA`, dice `U` o nada. Con `U/M` neutra, el rótulo de la
     cantidad es el único lugar donde el operador lee si está escribiendo meses o
-    días, así que es parte del contrato del campo y no decoración.
+    días, así que es parte del contrato del campo y no decoración. Antes de T4 esa
+    columna decía `MES` o `DÍA` según la categoría, y entonces el rótulo no
+    agregaba nada; hoy `U/M` no dice nada y el rótulo carga con la unidad entera.
 
     Y la unidad no es un dato propio: sale de `service_category` (agrometeo
-    factura meses, todo lo demás días), igual que ya hacía `clean()` y que ya
-    rotulaba `SubscriptionForm`. Por eso el rótulo se resuelve en el servidor y
-    no sólo después de que corra el JavaScript: una fila que vuelve a
-    renderizarse por un error de validación se rotula igual sin haber ejecutado
-    una línea de script.
+    factura meses, todo lo demás días), igual que ya rotulaba `SubscriptionForm`.
+    Por eso el rótulo se resuelve en el servidor y no sólo después de que corra el
+    JavaScript: una fila que vuelve a renderizarse por un error de validación se
+    rotula igual sin haber ejecutado una línea de script.
 
     `cantidad` no trae valor por defecto. Las cantidades observadas son 30, 31,
     2 y 4 —el número de días de mayo y junio, o el de meses de un agrometeo— y

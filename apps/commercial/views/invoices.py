@@ -378,14 +378,18 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             price = sub.service.price or 0
             quantity = sub.quantity
             amount = price * quantity
-            unidad_medida = 'MES' if sub.service.service_category == 'agrometeo' else 'DÍA'
+            # `unidad_medida` no se pasa a propósito: la pone el `default='U'` del
+            # modelo, que es lo que imprimen las facturas reales del CMP. La unidad
+            # de la fila la nombra el rótulo de `cantidad`. Y `descripcion` es el
+            # título tal cual, sin sufijo: el "por meses" de la 279 es parte del
+            # nombre en el catálogo, y pegárselo acá le agregaría una palabra a las
+            # facturas de pronóstico (182 y 276), que no lo tienen.
             item = InvoiceItem.objects.create(
                 invoice=invoice,
                 subscription=sub,
                 codigo=sub.service.code or '',
                 descripcion=sub.service.title,
                 cantidad=quantity,
-                unidad_medida=unidad_medida,
                 precio=price,
                 importe=amount,
             )
@@ -476,7 +480,6 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 cd = item_form.cleaned_data
                 service = cd['service']
                 cantidad = cd['cantidad']
-                unidad_medida = 'MES' if service.service_category == 'agrometeo' else 'DÍA'
 
                 sub = ServiceSubscription.objects.create(
                     customer=customer,
@@ -497,7 +500,12 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     codigo=cd.get('codigo', service.code or ''),
                     descripcion=service.title,
                     cantidad=cantidad,
-                    unidad_medida=cd.get('unidad_medida') or unidad_medida,
+                    # Sin `unidad_medida`: la deja el `default='U'` del modelo, que es
+                    # lo que dicen las facturas reales del CMP. La unidad de la fila
+                    # la nombra el rótulo de `cantidad` —"Cantidad de meses" o
+                    # "Cantidad de días"—, y `descripcion` va sin sufijo porque el
+                    # "por meses" de la 279 es parte del título del catálogo y las
+                    # facturas de pronóstico no lo llevan.
                     precio=cd['precio'],
                     importe=cantidad * cd['precio'],
                 )

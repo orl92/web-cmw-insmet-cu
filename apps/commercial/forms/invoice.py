@@ -22,9 +22,10 @@ class InvoiceItemForm(forms.Form):
     El rótulo de `cantidad` nombra la unidad —"Cantidad de meses" o "Cantidad de
     días"— porque es el único lugar donde el operador puede leerla: la columna
     `U/M` de las facturas reales del CMP nunca dice `MES` ni `DÍA`, dice `U` o
-    nada. La unidad no es un dato propio, sale de la categoría del servicio, y
-    se resuelve en el servidor para que una fila que vuelve a renderizarse por
-    un error se rotule igual sin que haya corrido una línea de JavaScript.
+    nada, así que no hay unidad que leer en ninguna columna de la factura. La
+    unidad sale de la categoría del servicio y se resuelve en el servidor para que
+    una fila que vuelve a renderizarse por un error se rotule igual sin que haya
+    corrido una línea de JavaScript.
 
     `cantidad` no trae valor por defecto. Las cantidades reales son 30, 31, 2 y
     4, nunca 1: un número inventado en este campo subfactura en silencio.
@@ -58,12 +59,15 @@ class InvoiceItemForm(forms.Form):
         label='Cantidad',
         widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
     )
-    unidad_medida = forms.CharField(
-        max_length=5,
-        initial='U',
-        label='UM',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
-    )
+    # `unidad_medida` no es un campo, y es deliberado. Las tres facturas reales
+    # del CMP la impresión casi siempre vacía y a veces como `U`, con cantidades
+    # de 30, 31, 2 y 4: ninguna dice `MES` ni `DÍA`. La unidad de la fila la
+    # nombra el rótulo de `cantidad`, así que `U/M` no aporta nada que leer y su
+    # valor tiene un solo dueño, el `default='U'` de `InvoiceItem`. Un campo
+    # `readonly` acá sólo repetiría esa constante en la pantalla y obligaría a
+    # mantener el código que lo reescribía —el que inventaba `MES`/`DÍA`—, que
+    # es justo lo que esta tarea vino a borrar. Sin campo, el POST tampoco tiene
+    # el nombre para intentar fijarlo.
     precio = forms.DecimalField(
         min_value=0.01,
         decimal_places=2,
@@ -103,16 +107,19 @@ class InvoiceItemForm(forms.Form):
     def clean(self):
         """Rebuild the readonly fields from the service, never from the POST body.
 
-        `codigo`, `precio` and `unidad_medida` exist so the operator can see what
-        is being charged, not so a stale page or a hand-crafted request can set
-        them. `unidad_medida` follows the service category: agrometeo bills months,
-        every other category bills days, so the same period means 3 for agrometeo
-        and 90 for pronostico. `cantidad` is the opposite — the operator owns it,
-        and `start_date` is its own too: it is the contract with the customer, so
-        it travels per line and is never derived from the invoice.
+        `codigo` and `precio` exist so the operator can see what is being charged,
+        not so a stale page or a hand-crafted request can set them. `cantidad` is
+        the opposite — the operator owns it, and `start_date` is its own too: it is
+        the contract with the customer, so it travels per line and is never
+        derived from the invoice.
+
+        `unidad_medida` is not rebuilt here because it is not a field: the view
+        leaves `InvoiceItem.unidad_medida` at the model default, which is already
+        the `U` the real invoices use. `descripcion` is likewise not a field, so no
+        unit can be appended to the service title from here.
 
         There is no unit selector on purpose: it would duplicate a fact that
-        `service_category` already states.
+        `service_category` already states, and `U/M` states nothing at all.
         """
         cleaned_data = super().clean()
         service = cleaned_data.get('service')
@@ -120,9 +127,6 @@ class InvoiceItemForm(forms.Form):
         if service:
             cleaned_data['codigo'] = service.code or ''
             cleaned_data['precio'] = service.price
-            cleaned_data['unidad_medida'] = (
-                'MES' if service.service_category == 'agrometeo' else 'DÍA'
-            )
 
         return cleaned_data
 
