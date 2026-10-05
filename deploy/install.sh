@@ -1254,9 +1254,15 @@ fi
 # con un "awk: cannot open /srv/webcmp/deploy/..." que no dice que el problema es
 # que --dry-run no clona.
 need_checkout() {
+    # Con checkout: hay con que trabajar, el consumidor sigue de largo.
     [ "$HAVE_CHECKOUT" -eq 1 ] && return 0
+    # Sin checkout: se avisa Y se devuelve error, para que el consumidor se
+    # SALTE el bloque. Antes devolvia 0 en las dos ramas, con lo cual los cuatro
+    # `|| need_checkout` de mas abajo nunca cortaban: los bloques corrigual
+    # renders desde deploy/systemd, deploy/nginx y deploy/sudoers, que en un
+    # dry-run sin checkout no existen.
     printf '  [dry-run] sin checkout: %s\n' "$1" >&2
-    return 0
+    return 1
 }
 
 # --- C.4 Base de datos ---------------------------------------------------

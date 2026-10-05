@@ -251,10 +251,18 @@ env_set() {
 # Configuracion
 # --------------------------------------------------------------------------
 
-[ -r "$CONFIG" ] || die "No existe $CONFIG (root, 600). Vease deploy/README-deploy.md."
-
-# shellcheck disable=SC1090
-source "$CONFIG"
+# OJO: en modo --configure NO se exige que el archivo exista, porque este modo
+# existe justamente para CREARLO. El guard de mas abajo mataba el flag en un host
+# limpio con `No existe /etc/webcmp/deploy.env`, 167 lineas antes de llegar a la
+# funcion que si sabe escribirlo (`configure_deploy_env`, con su `[ ! -f ]`).
+# Los prompts de esa funcion leen $APP_DIR, $PUBLIC_HOSTNAME y las HEALTHCHECK_*,
+# asi que sin `source` tienen que venir de los defaults de mas abajo, que en un
+# host recien instalado son los mismos valores que install.sh escribe.
+if [ "$MODE" != configure ]; then
+    [ -r "$CONFIG" ] || die "No existe $CONFIG (root, 600). Vease deploy/README-deploy.md."
+    # shellcheck disable=SC1090
+    source "$CONFIG"
+fi
 
 # Se captura ESTA DEFINIDA antes de aplicar los defaults, y no por estilo.
 # `${VAR:=}` no distingue "la clave no esta en deploy.env" de "la clave esta con
@@ -271,7 +279,19 @@ HEALTHCHECK_RESOLVE_DEFINED=${HEALTHCHECK_RESOLVE+si}
 : "${HUEY_UNIT:=webcmp-huey}"
 : "${ENCRYPTION_ENV:=/etc/webcmp/encryption.env}"
 : "${PYTHON:=$APP_DIR/.venv/bin/python}"
-: "${PIP:=$APP_DIR/.venv/bin/python/pip}"
+# `PIP` NO se invoca por su shim (`$VENV/bin/pip`): ese shim no existe siempre.
+# Un venv creado con `uv` no lo trae, y el `.venv` de desarrollo de este repo es
+# justo ese caso: tiene `pip3` y `pip3.14`, y NO tiene `pip`. Por eso el comando
+# real es `python -m pip`, que no depende del shim.
+#
+# Son DOS palabras, asi que no puede vivir en un string: `readonly` + quoting
+# partirian mal los argumentos. Va en un array. `PIP` se sigue leyendo del
+# entorno/deploy.env, y ahi si significa "un unico ejecutable".
+if [ -n "${PIP:-}" ]; then
+    PIP_CMD=("$PIP")
+else
+    PIP_CMD=("$PYTHON" -m pip)
+fi
 : "${PUBLIC_HOSTNAME:=web.cmw.insmet.cu}"
 # Modo de proxy declarado por el instalador. NO decide nada en este script: el
 # health check se despacha por las claves HEALTHCHECK_* de mas abajo. Se guarda
@@ -308,11 +328,14 @@ HEALTHCHECK_RESOLVE_DEFINED=${HEALTHCHECK_RESOLVE+si}
 # tapa el resto del log. Lo declara tambien webcmp.service.
 : "${MPLCONFIGDIR:=$APP_DIR/.cache/matplotlib}"
 
-readonly APP_DIR DEPLOY_USER GUNICORN_UNIT HUEY_UNIT ENCRYPTION_ENV PYTHON PIP
+readonly APP_DIR DEPLOY_USER GUNICORN_UNIT HUEY_UNIT ENCRYPTION_ENV PYTHON
 readonly PUBLIC_HOSTNAME PROXY_MODE HEALTHCHECK_URL HEALTHCHECK_RESOLVE
 readonly HEALTHCHECK_UNIX_SOCKET HEALTHCHECK_HOST_HEADER HEALTHCHECK_INSECURE
 readonly HEALTHCHECK_URL_DEFINED HEALTHCHECK_RESOLVE_DEFINED
 readonly PIP_CACHE_DIR MPLCONFIGDIR
+# El array se congela aparte: `readonly PIP_CMD` sin `-a` no protege el contenido
+# de un array en bash < 5.0.
+readonly -a PIP_CMD
 
 # Validacion del destino del health check, en el arranque y NO solo en el punto
 # 8: en --check tiene que ser el reporte, y en un deploy fallar aqui con un
@@ -661,7 +684,7 @@ rollback() {
     # Con un prefix simple (`sudo -u user VAR=val cmd`) sudo tambien la respeta, pero
     # `env` es explicito y no depende de la configuracion de sudoers del servidor.
     sudo -u "$DEPLOY_USER" env "PIP_CACHE_DIR=$PIP_CACHE_DIR" \
-        "$PIP" install --quiet -r "$APP_DIR/requirements/prod.txt" || warn "Falló el pip install del rollback; se reinicia igual."
+        "${PIP_CMD[@]}" install --quiet -r "$APP_DIR/requirements/prod.txt" || warn "Falló el pip install del rollback; se reinicia igual."
 
     manage collectstatic --no-input || warn "Falló collectstatic en el rollback."
     systemctl restart "$GUNICORN_UNIT" || warn "Falló el restart de $GUNICORN_UNIT."
@@ -739,7 +762,7 @@ current_sha=$(gitapp rev-parse HEAD)
 # 2. Dependencias
 log "Instalando requirements/prod.txt"
 sudo -u "$DEPLOY_USER" env "PIP_CACHE_DIR=$PIP_CACHE_DIR" \
-    "$PIP" install --quiet --disable-pip-version-check -r "$APP_DIR/requirements/prod.txt"
+    "${PIP_CMD[@]}" install --quiet --disable-pip-version-check -r "$APP_DIR/requirements/prod.txt"
 
 # 3. Generar migraciones desde los modelos
 #
