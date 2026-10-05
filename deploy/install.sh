@@ -104,6 +104,14 @@ HAVE_CHECKOUT=0
 CHANGED=0
 ANSWER_SOURCES=()
 
+# Canal lateral de `ask_secret`: un archivo temporal con un nombre de clave por
+# linea para cada secreto que GENERO el instalador, para que el padre sepa si
+# tiene que mostrarlo. Se borra al salir, incluso con Ctrl-C o `die`, para no
+# dejar un archivo con nombres de claves tirado en /tmp.
+ASK_GENERATED_FILE=$(mktemp -t webcmp-generated.XXXXXX)
+cleanup_generated_flags() { [ -n "${ASK_GENERATED_FILE:-}" ] && rm -f "$ASK_GENERATED_FILE"; }
+trap cleanup_generated_flags EXIT INT TERM
+
 log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33mAVISO:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -473,12 +481,26 @@ ask() {
     done
 }
 
+# Canal lateral para avisar "este secreto lo genero el instalador".
+#
+# No puede ser una variable global: `ask_secret` se invoca dentro de una
+# sustitucion de comando (`X=$(ask_secret ...)`), asi que corre en un subshell y
+# cualquier `ANSWER_SOURCES+=` suyo muere con el subshell. Por eso el flag viaja
+# en un archivo temporal: lo escribe el subshell y lo lee el padre, que es el
+# unico que decide si el secreto hay que mostrarlo.
+# (ASK_GENERATED_FILE se crea arriba, junto a los demas estado del instalador.)
+secret_was_generated() {
+    [ -n "$ASK_GENERATED_FILE" ] && [ -f "$ASK_GENERATED_FILE" ] || return 1
+    grep -Fxq -- "$1" "$ASK_GENERATED_FILE"
+}
+
 # ask_secret <CLAVE> <default> <pregunta> [validador]
 #
 # `read -s`: una contrasena tipeada en un servidor sale en el scrollback del
 # terminal y en cualquier grabacion de sesion. Si se deja vacio se genera una y
-# se imprime UNA vez. En una corrida no interactiva NO se imprime: el valor
-# podria estar yendo a un log de CI, y un secreto en un log ya no es un secreto.
+# se imprime UNA vez, solo en ese caso (ver `secret_was_generated`). En una
+# corrida no interactiva NO se imprime: el valor podria estar yendo a un log de
+# CI, y un secreto en un log ya no es un secreto.
 ask_secret() {
     local key=$1 default=$2 question=$3 validator=${4:-}
     local answer='' tries=0
@@ -489,6 +511,7 @@ ask_secret() {
             answer=$default
         else
             answer=$(gen_secret)
+            [ -n "$ASK_GENERATED_FILE" ] && printf '%s\n' "$key" >>"$ASK_GENERATED_FILE"
             printf '  [dry-run] %s=<generada, escrita en el .env, no impresa>\n' "$key" >&2
             printf '%s' "$answer"
             return 0
@@ -509,6 +532,7 @@ ask_secret() {
         answer=${answer:-$default}
         if [ -z "$answer" ]; then
             answer=$(gen_secret)
+            [ -n "$ASK_GENERATED_FILE" ] && printf '%s\n' "$key" >>"$ASK_GENERATED_FILE"
             printf '%s' "$answer"
             ANSWER_SOURCES+=("$key=generada")
             return 0
@@ -971,12 +995,14 @@ if [ "$ENV_FILE_EXISTS" -eq 1 ]; then
 else
     EXISTING_DB_PASS=
 fi
-DB_PASS_GENERATED=0
-if [ -z "$EXISTING_DB_PASS" ]; then
-    DB_PASS_GENERATED=1
-fi
+# Mismo criterio que SUPERUSER_PASSWORD: el aviso depende de si el operador
+# dejo el campo vacio (y entonces se genero), no de si no habia una antes. Si la
+# tecleo, ya la tiene; volver a imprimirla solo la mete en el scrollback.
 DB_PASS=$(ask_secret DB_PASS "$EXISTING_DB_PASS" 'Contrasena de la base de datos') || die 'Contrasena invalida.'
-if [ "$DB_PASS_GENERATED" -eq 1 ] && [ "$DRY_RUN" -eq 0 ]; then
+# INTERACTIVE y no solo DRY_RUN: un `DRY_RUN=0 --non-interactive` es un job de CI,
+# y ahi el aviso fuera del prompt se va al log. Sin operador delante, "guardar esto"
+# no tiene a quien avisarle y el secreto ya quedo en el .env de todas formas.
+if secret_was_generated DB_PASS && [ "$INTERACTIVE" -eq 1 ] && [ "$DRY_RUN" -eq 0 ]; then
     print_once_secret 'DB_PASS' "$DB_PASS" recover_env_password
 fi
 
@@ -1030,7 +1056,7 @@ cat >&2 <<EOF
   Superusuario de Django. La cuenta se crea con `createsuperuser --noinput` por
   systemd-run, con la ENCRYPTION_KEY cargada y PRODUCTION=1.
 EOF
-SUPERUSER_USERNAME=$(ask SUPERUSER_USERNAME meteocamaguey 'Usuario del superusuario' valid_app_user) || die 'Usuario invalido.'
+SUPERUSER_USERNAME=$(ask SUPERUSER_USERNAME admin 'Usuario del superusuario' valid_app_user) || die 'Usuario invalido.'
 # El default NO puede ser `$EMAIL_HOST_USER` a secas: con el usuario SMTP por
 # defecto ahora siendo `meteocamaguey` (un login, no un correo), `valid_email`
 # lo rechazaba y el operador que solo hacia Enter con la cabeza en otra parte
@@ -1042,12 +1068,17 @@ else
     SUPERUSER_EMAIL_DEFAULT=
 fi
 SUPERUSER_EMAIL=$(ask SUPERUSER_EMAIL "$SUPERUSER_EMAIL_DEFAULT" 'Correo del superusuario' valid_email) || die 'Correo invalido.'
-SUPERUSER_PASS_GENERATED=0
-if [ -z "${SUPERUSER_PASSWORD:-}" ]; then
-    SUPERUSER_PASS_GENERATED=1
-fi
+# El aviso depende de SI EL OPERADOR DEJO EL CAMPO VACIO, no de si el entorno
+# venia vacio. Vacio => `ask_secret` genera y lo anota en ASK_GENERATED_FILE;
+# tecleada => el archivo no se toca. Preguntar eso es lo unico que puede decir con
+# certeza si la contrasena es nueva y hay que mostrarla o si el operador ya la
+# tiene y repetirla solo la mete en el scrollback y en cualquier grabacion de
+# sesion. Antes el flag se sacaba del entorno, asi que teclear una contrasena
+# tambien la imprimia: un secreto que el operador eligio, impreso sin que se lo
+# pidieran.
 SUPERUSER_PASSWORD=$(ask_secret SUPERUSER_PASSWORD "${SUPERUSER_PASSWORD:-}" 'Contrasena del superusuario') || die 'Contrasena invalida.'
-if [ "$SUPERUSER_PASS_GENERATED" -eq 1 ] && [ "$DRY_RUN" -eq 0 ]; then
+# Mismo criterio que DB_PASS: en CI no hay nadie a quien avisarle.
+if secret_was_generated SUPERUSER_PASSWORD && [ "$INTERACTIVE" -eq 1 ] && [ "$DRY_RUN" -eq 0 ]; then
     print_once_secret 'SUPERUSER_PASSWORD' "$SUPERUSER_PASSWORD" recover_env_password
 fi
 

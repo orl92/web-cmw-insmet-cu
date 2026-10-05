@@ -68,6 +68,8 @@ falla por construcción y el deploy se bloquea con un sitio perfectamente sano.
 | T24 | `install.sh`: los defaults reales del proyecto — `meteocamaguey.cu` como dominio y `mx.caonao.cu` como servidor SMTP | `deploy/install.sh` |
 | T25 | `install.sh`: usuario SMTP y superusuario por defecto `meteocamaguey`, con los dos derivados que eso rompía | `deploy/install.sh` |
 | T26 | `install.sh`: `DEFAULT_FROM_EMAIL` por defecto `Centro Meteorológico Provincial Camagüey <meteocamaguey@caonao.cu>`, con acentos y ángulos | `deploy/install.sh` |
+| T27 | `install.sh`: el aviso de contraseña generada se muestra solo si el operador dejó el campo vacío, nunca en CI | `deploy/install.sh` |
+| T28 | `install.sh`: usuario del superusuario `admin` por defecto | `deploy/install.sh` |
 
 Fuera de alcance: tocar `config/settings/**` (el `.env` tiene que alcanzar con lo que ya existe),
 el workflow `.github/workflows/deploy.yml`, y la suite de `apps/`. Si algo de T1-T18 descubre que
@@ -336,6 +338,58 @@ acentos (`ó`, `ü`) y ángulos, así que se verificó que sobrevive las dos cap
 Con esto el aviso de `DEFAULT_FROM_EMAIL` vacío que T25 agregó deja de dispararse en el camino por
 default, y sigue existiendo para cuando el operador borre el valor a mano.
 
+### T27 — El aviso de contraseña se muestra solo si el operador la dejó generar
+
+El aviso "GUARDA ESTE VALOR AHORA" es lo que evita que un operador se quede sin
+acceso al admin, así que tiene que seguir existiendo. Lo que estaba mal era
+**cuándo** se disparaba.
+
+El flag se sacaba del entorno, antes de preguntar:
+
+```bash
+SUPERUSER_PASS_GENERATED=0
+if [ -z "${SUPERUSER_PASSWORD:-}" ]; then SUPERUSER_PASS_GENERATED=1; fi   # <- antes de preguntar
+SUPERUSER_PASSWORD=$(ask_secret ...)
+if [ "$SUPERUSER_PASS_GENERATED" -eq 1 ]; then print_once_secret ...; fi
+```
+
+En una instalación nueva el entorno viene vacío, así que el flag era `1` siempre.
+Consecuencia: **teclear una contraseña también la imprimía**. No era una fuga
+grave — el operador la acababa de teclear, y `read -s` ya la ocultó — pero la
+metía en el scrollback, en cualquier grabación de sesión y en el log del
+instalador sin que nadie lo pidiera. El comentario del código prometía lo
+contrario: "una contrasena tipeada sale en el scrollback".
+
+La corrección no podía ser "consultar `ANSWER_SOURCES`", que ya distingue
+`generada` de `pregunta`. `ask_secret` se invoca en una sustitución de comando
+(`X=$(ask_secret ...)`), o sea en un **subshell**: su `ANSWER_SOURCES+=` muere
+con el subshell y el padre nunca lo ve. Se comprobó: con el `case` sobre
+`ANSWER_SOURCES` el flag daba `0` incluso en el caso de generación.
+
+Por eso el flag viaja en un archivo temporal (`ASK_GENERATED_FILE`, un nombre de
+clave por línea). El subshell lo escribe, el padre lo lee con
+`secret_was_generated`, y un `trap ... EXIT INT TERM` lo borra para no dejar
+nombres de claves tirados en `/tmp`.
+
+Al probarlo salió un **segundo bug**: la guarda era `&& [ "$DRY_RUN" -eq 0 ]`, y
+un `DRY_RUN=0 --non-interactive` es exactamente un job de CI — ahí `DRY_RUN` es
+`0` y el aviso se imprimía al log. La condición correcta es
+`INTERACTIVE -eq 1 && DRY_RUN -eq 0`: sin operador delante, "guardar esto" no
+tiene a quién avisarle, y el secreto ya quedó en el `.env` igual. El comentario
+de `ask_secret` ya decía "en una corrida no interactiva NO se imprime"; el código
+no lo cumplía.
+
+Matriz verificada (harness con `sed` sobre las funciones reales):
+
+| Modo | Tecleada | Vacía |
+|---|---|---|
+| interactivo | no imprime | **imprime** |
+| interactivo + dry-run | no imprime | no imprime |
+| CI (`--non-interactive`, `DRY_RUN=0`) | no imprime | no imprime |
+
+`DB_PASS` tenía el bug idéntico y se corrigió con el mismo mecanismo: es el otro
+secreto que se autogenera y sin aviso se pierde.
+
 ## Ruta de ejecución: inline, no delegada
 
 | Tarea | Ruta | Evidencia del trigger |
@@ -346,6 +400,8 @@ default, y sigue existiendo para cuando el operador borre el valor a mano.
 | T24 | **inline** | Dos valores literales decididos por el usuario. No hay diseño abierto. |
 | T25 | **inline** | Dos defaults, pero el trabajo real fue auditar los **consumidores** de esos valores (`SUPERUSER_EMAIL`, `DEFAULT_FROM_EMAIL`, `ACME_EMAIL`), que es lectura dirigida en un archivo ya leído, no exploración. Delegarlo habría transferido el hallazgo de que el default era un login y no un correo. |
 | T26 | **inline** | Un default literal. La verificación exigía extraer `env_set`/`ask` del archivo y una corrida con `python-dotenv` y `email.header`, o sea herramientas locales en secuencia sobre un archivo ya leído. |
+| T27 | **inline** | Una lectura dirigida del rango exacto: el subshell de la sustitución de comando, la guarda de `DRY_RUN`, y una matriz de 6 casos con un harness de las funciones reales. El diagnóstico fue leer los rangos exactos del archivo (subshell, guarda de `DRY_RUN`) y una matriz de 6 casos con un harness de las funciones reales. |
+| T28 | **inline** | Un default literal y el validador ya estaba probado; inline sin discusión. |
 | T23 | **inline** | Defectos deterministas con evidencia ya observada en la sesión: el error del operador se reprodujo y los tres call sites del archivo se leyeron antes de editar. Delegar exigiría transferir el hallazgo, no reducir contexto. |
 
 Se ejecuta en el padre y no en un subagente, por dos razones concretas, no por preferencia:
@@ -421,6 +477,8 @@ verificarse en ejecución.
 - [x] T24 — Defaults reales: `meteocamaguey.cu` y `mx.caonao.cu`
 - [x] T25 — Usuario SMTP y superusuario `meteocamaguey`, con los derivados reparados
 - [x] T26 — `DEFAULT_FROM_EMAIL` = `Centro Meteorológico Provincial Camagüey <meteocamaguey@caonao.cu>`
+- [x] T27 — Aviso de contraseña solo cuando el operador la dejó generar; nunca en CI
+- [x] T28 — Superusuario `admin` por defecto
 
 Los ocho bloques T1-T18 se marcan como entregados porque el commit `a9e01c6` los contiene y sus
 checks pasaron. T19-T21 se marcan según su propia evidencia, registrada abajo.
