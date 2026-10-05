@@ -1760,7 +1760,15 @@ for _cand in es_CU.utf8 es_CU.UTF-8 es_ES.utf8 es_ES.UTF-8 C.utf8 C.UTF-8; do
     # -x para matchear la linea completa, -i porque locale -a puede reportar
     # "es_cu.utf8" en minusculas. Se guarda la linea TAL CUAL la reporta el
     # sistema: es la forma que setlocale() va a aceptar.
-    _found=$(locale -a 2>/dev/null | grep -Fxi "$_cand" | head -1)
+    #
+    # `|| true` es OBLIGATORIO, no es redundante. Un candidato que NO existe
+    # hace que grep salga con 1; con `set -o pipefail` eso llega a la
+    # asignacion, la asignacion sale con 1, y `set -e` mata el script AQUI,
+    # en silencio, antes de correr psql. El sintoma en una corrida real fue
+    # exactamente ese: el step se imprimia, despues volvia al prompt sin un
+    # solo mensaje de error. La decision se toma por CONTENIDO (-n), nunca
+    # por el exit status, para que funcione con o sin pipefail.
+    _found=$(locale -a 2>/dev/null | grep -Fxi "$_cand" | head -1 || true)
     if [ -n "$_found" ]; then
         DB_LOCALE=$_found
         DB_HAS_LOCALE=true
