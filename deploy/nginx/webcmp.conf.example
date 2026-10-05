@@ -11,6 +11,18 @@
 # El socket de Gunicorn vive en /run/webcmp/gunicorn.sock (RuntimeDirectory del
 # unit), no en /tmp: /run es un tmpfs limpio en cada arranque, y un socket en
 # /tmp sobrevive al reinicio y deja a Nginx proxying a un archivo fantasma.
+#
+# www-data TIENE que estar en el grupo webcmp, o Nginx no llega a tocar el socket:
+#
+#   sudo usermod -aG webcmp www-data
+#   sudo systemctl restart nginx        # reinicio, no reload: los grupos se leen
+#                                        # al crear los workers
+#
+# El socket sale 0770 webcmp:webcmp y el directorio 0750, asi que sin eso cada
+# respuesta es 502 y el log de Nginx dice "connect() failed (13: Permission
+# denied)" apuntando a un problema que no parece de permisos. No hace falta abrir
+# el socket al mundo: /srv/webcmp/.env es 0600, asi que entrar al grupo webcmp no
+# da acceso a la SECRET_KEY ni a la contrasena de la base.
 
 proxy_cache_path /cache/nginx/tmpfs levels=1:2 keys_zone=webcmp:100m max_size=100m inactive=3h use_temp_path=off;
 
@@ -37,9 +49,16 @@ server {
     # Headers que Django necesita para resolver is_secure() detras del proxy.
     # SECURE_PROXY_SSL_HEADER lee X-Forwarded-Proto: sin esta linea, las cookies
     # de sesion seguras NO se envian y el usuario entra en un bucle de logout.
+    #
+    # OJO: Nginx NO hereda estos headers dentro de `location /`, y no es por un
+    # bug. `proxy_set_header` se hereda del nivel padre solo si el nivel hijo NO
+    # declara ninguno; en cuanto `location /` define uno para el websocket, TODOS
+    # los de arriba se descartan para esa location. El Host vuelve al default,
+    # que es `$proxy_host`, o sea el nombre del upstream: Gunicorn recibia
+    # `Host: webcmp` y contestaba DisallowedHost en TODAS las peticiones.
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Host $host;
     proxy_redirect off;
 
     # 300s: la exportacion de graficos y los PDFs server-side tardan. Con el
@@ -63,6 +82,14 @@ server {
 
     location / {
          proxy_pass http://webcmp;
+
+         # Repetidos a proposito: ver el comentario de herencia mas arriba. Si se
+         # borran de aca, Django vuelve a rechazar el Host y el sitio entero
+         # responde 400 sin que Nginx registre ningun error.
+         proxy_set_header Host $http_host;
+         proxy_set_header X-Forwarded-Proto $scheme;
+         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+         proxy_set_header X-Forwarded-Host $host;
 
          # Requerido por las websockets del grafico de sounding.
          proxy_set_header Upgrade $http_upgrade;

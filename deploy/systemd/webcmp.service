@@ -66,6 +66,8 @@ ExecStart=/srv/webcmp/.venv/bin/gunicorn config.wsgi:application \
     --workers 3 \
     --bind unix:/run/webcmp/gunicorn.sock \
     --umask 007 \
+    --control-socket /run/webcmp/gunicorn.ctl \
+    --control-socket-mode 0600 \
     --access-logfile - \
     --error-logfile - \
     --capture-output
@@ -76,10 +78,23 @@ TimeoutStopSec=30
 Restart=always
 RestartSec=5
 
-# Un worker trabado mantiene las conexiones abiertas y el usuario ve un sitio que
-# "carga y no pasa" en vez de un error. Con Type=notify, systemd puede notar el
-# watchdog perdido y matar el proceso en vez de esperar al reinicio del kernel.
-WatchdogSec=60
+# NO hay WatchdogSec, a proposito.
+#
+# Gunicorn implementa sd_notify pero solo envia READY=1 al arrancar el master; no
+# manda WATCHDOG=1 nunca. `WatchdogSec=60` hacia que systemd esperara un ping que
+# no llega, y a los 60 s mataba el master con SIGABRT. Con Restart=always eso es
+# un ciclo: el sitio se caia cada minuto y volviaa levantar solo, con los workers
+# de adentro a mitad de una peticion. Medido en el servidor de prueba: 5 reinicios
+# en 6 minutos.
+#
+# Lo que realmente rescata de un worker trabado es `--timeout` (30s por defecto,
+# el worker que deja de avisarle al arbiter muere solo), no el watchdog de systemd.
+#
+# El control socket va con ruta explicita. Con solo RuntimeDirectory, Gunicorn lo
+# deja en $XDG_RUNTIME_DIR y, si no existe, en $HOME/.gunicorn/; `webcmp` es una
+# cuenta de sistema sin home y con ProtectHome=true, asi que el socket no se podia
+# crear y cada arranque dejaba un "[ERROR] Control server error: Permission
+# denied: /home/webcmp" en el log.
 
 # Un consumo anomalo no se come el servidor entero: con limites de memoria, el
 # OOM killer elige victima dentro del servicio y no el proceso de al lado.
