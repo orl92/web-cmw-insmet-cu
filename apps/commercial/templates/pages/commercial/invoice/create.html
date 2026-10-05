@@ -95,7 +95,7 @@
       <div class="card">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title">Añadir servicios manualmente</h5>
+            <h3 class="subheader text-muted fw-medium mb-0">Añadir servicios</h3>
             <button type="button"
                     id="add-item"
                     class="btn btn-sm btn-icon btn-outline-primary"
@@ -105,19 +105,23 @@
               <i class="icon ti ti-plus"></i>
             </button>
           </div>
+          <p class="text-muted">
+            La fecha de inicio de cada servicio ya viene con la fecha de la factura. Sólo
+            cambiala cuando el servicio empezó antes.
+          </p>
           {{ items_formset.management_form }}
           <div id="items-container">
             {% for item_form in items_formset %}
               <div class="item-row card mb-3">
                 <div class="card-body">
-                  <div class="d-flex align-items-start">
+                  <div class="d-flex align-items-end">
                     <div class="flex-grow-1">
                       <div class="row g-3">
                         <div class="col-md-4 mb-0">
                           <label class="form-label">{{ item_form.service.label }}</label>
                           {{ item_form.service }}
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-2 mb-0">
                           {% include 'includes/dashboard/date_field.html' with field=item_form.start_date value=item_form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
                         </div>
                         <div class="col-md-2 mb-0">
@@ -129,15 +133,13 @@
                           <label class="form-label">{{ item_form.codigo.label }}</label>
                           {{ item_form.codigo }}
                         </div>
-                      </div>
-                      <div class="row g-3">
-                        <div class="col-md-6 mb-0">
+                        <div class="col-md-2 mb-0">
                           <label class="form-label">{{ item_form.precio.label }}</label>
                           {{ item_form.precio }}
                         </div>
                       </div>
                     </div>
-                    <div class="ms-3">
+                    <div class="ms-2">
                       <button type="button"
                               class="btn btn-sm btn-icon btn-outline-danger remove-row"
                               data-bs-toggle="tooltip"
@@ -154,21 +156,17 @@
         </div>
       </div>
       <div class="card mt-3">
-        <div class="card-header">
-          <h3 class="card-title">Imputación a centros de costo</h3>
-          <div class="card-actions">
-            <div class="col-auto">
-              <button type="button"
-                      class="btn btn-sm btn-icon btn-outline-primary add-cost-row"
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="bottom"
-                      title="Añadir centro de costo">
-                <i class="icon ti ti-plus"></i>
-              </button>
-            </div>
-          </div>
-        </div>
         <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="subheader text-muted fw-medium mb-0">Imputación a centros de costo</h3>
+            <button type="button"
+                    class="btn btn-sm btn-icon btn-outline-primary add-cost-row"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
+                    title="Añadir centro de costo">
+              <i class="icon ti ti-plus"></i>
+            </button>
+          </div>
           <p class="text-muted">
             El reparto entre centros de costo debe sumar 100 %. El centro se precarga desde el
             código del servicio, pero el reparto lo confirma quien emite la factura.
@@ -186,17 +184,17 @@
               <div class="cost-row card mb-3">
                 <div class="card-body d-flex align-items-end">
                   <div class="flex-grow-1 row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-6 mb-0">
                       <label class="form-label">{{ cost_form.codigo.label }}</label>
                       {{ cost_form.codigo }}
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6 mb-0">
                       <label class="form-label">{{ cost_form.porcentaje.label }}</label>
                       {{ cost_form.porcentaje }}
                     </div>
-                    <div class="col-md-2 d-none">{{ cost_form.DELETE }}</div>
                   </div>
-                  <div class="ms-3">
+                  <div class="d-none">{{ cost_form.DELETE }}</div>
+                  <div class="ms-2">
                     <button type="button"
                             class="btn btn-sm btn-icon btn-outline-danger remove-cost-row"
                             data-bs-toggle="tooltip"

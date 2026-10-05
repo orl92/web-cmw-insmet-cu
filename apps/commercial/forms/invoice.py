@@ -38,11 +38,12 @@ class InvoiceItemForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
     start_date = forms.DateField(
-        label='Inicio del servicio',
-        help_text=(
-            'Fecha en que el servicio empieza para el cliente. Ya viene con la '
-            'fecha de la factura: cambiala sólo si el servicio empezó antes.'
-        ),
+        label='Inicio',
+        # Sin `help_text` a propósito: la regla ("viene con la fecha de la
+        # factura; cambiala sólo si el servicio empezó antes") se explica una
+        # sola vez en el encabezado de la card de servicios. Repetida en cada
+        # línea ocupaba medio campo por servicio y partía el card en dos filas
+        # de controles.
         input_formats=['%d/%m/%Y', '%Y-%m-%d'],
         widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
