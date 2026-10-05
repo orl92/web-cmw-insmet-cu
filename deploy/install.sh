@@ -196,7 +196,7 @@ Opciones:
 
 Variables de entorno que se respetan (las preguntas usan el mismo nombre):
   REPO_URL, REPO_REF, APP_DIR, SERVICE_USER, DEPLOY_LOGIN_USER, SCRIPT_PATH,
-  CONFIG_DIR, CONFIG_FILE, ENCRYPTION_ENV, DB_ENGINE, DB_NAME, DB_USER,
+  CONFIG_DIR, CONFIG_FILE, ENCRYPTION_ENV, DB_NAME, DB_USER,
   DB_PASS, DB_HOST, DB_PORT, DB_SSL_MODE, EMAIL_HOST, EMAIL_PORT,
   EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, DEFAULT_FROM_EMAIL, PUBLIC_HOSTNAME,
   REDIS_URL, USE_REDIS_CACHE, LOG_LEVEL, SUPERUSER_USERNAME, SUPERUSER_EMAIL,
@@ -256,8 +256,15 @@ valid_hostname() {
 
 valid_email() {
     [ -n "$1" ] || return 1
+    # La clase DEBE incluir `@`. Sin ella el `case` rechaza toda direccion antes
+    # de que el regex la mire, y ningun correo valido pasa: los dos casos que
+    # usan este validador (ACME_EMAIL, SUPERUSER_EMAIL) quedan inalcanzables.
+    #
+    # El guion va AL FINAL a proposito. En `+-@` bash lee un RANGE (0x2B..0x40)
+    # y acepta de mas `:` `/` `<` `=` `?`, caracteres que no pertenecen a un
+    # correo. Con `@+-` cada simbolo es literal.
     case "$1" in
-        *[!a-zA-Z0-9._%+-]*) return 1 ;;
+        *[!a-zA-Z0-9._%@+-]*) return 1 ;;
     esac
     printf '%s' "$1" | grep -Eq '^[^@ ]+@[^@ ]+\.[^@ ]+$'
 }
@@ -272,6 +279,19 @@ valid_db_name() {
         -*) return 1 ;;
     esac
     printf '%s' "$1" | grep -Eq '^[a-zA-Z_][a-zA-Z0-9_$-]*$'
+}
+
+# Servidor SMTP. Acepta un hostname (`smtp.caonao.cu`, `mail.corp`) y tambien
+# un `host:puerto` IPv4 literal, porque algunos relays internos se dan asi.
+# NO acepta una direccion de correo: el `@` pertenece al usuario, no al host, y
+# ademas romperia el `source` de deploy.env. Por eso el error dice que se puso un
+# correo donde va el servidor.
+valid_smtp_host() {
+    valid_host "$1" || return 1
+    case "$1" in
+        *@*) return 1 ;;
+    esac
+    return 0
 }
 
 valid_db_user() {
@@ -297,6 +317,18 @@ valid_app_user() {
     return 0
 }
 
+# Username de SMTP. Acepta las dos formas reales: un login corto (`admin`, que
+# usan los relays internos) y la direccion completa (`meteocamaguey@caonao.cu`,
+# que es lo que casi todo proveedor publico exige como AUTH LOGIN). Usar
+# valid_app_user aqui rechazaba la direccion entera, que es el caso mayoritario.
+valid_smtp_user() {
+    [ -n "$1" ] || return 1
+    if valid_email "$1"; then
+        return 0
+    fi
+    valid_app_user "$1"
+}
+
 valid_abs_path() {
     [ -n "$1" ] || return 1
     case "$1" in
@@ -317,12 +349,11 @@ valid_choice() {
     return 1
 }
 
-# Los tres motores que get_database_config() sabe construir. La lista no es
-# arbitraria: son exactamente los tres `elif` de config/settings/base.py, y un
-# motor distinto termina en `django.db.backends.<engine>` inexistente.
-valid_db_engine() {
-    valid_choice 'postgresql mysql sqlite3' "$1"
-}
+# No hay validador de motor de base de datos, y es a proposito: el motor ya no
+# se pregunta, es constante (postgresql). `get_database_config()` de
+# config/settings/base.py sigue aceptando mysql y sqlite3, y el .env de
+# desarrollo (sqlite3) no cambia por esto; lo que cambia es que el instalador de
+# PRODUCCION solo maneja PostgreSQL.
 
 # El generador escribe DEBUG|INFO|WARNING|ERROR|CRITICAL y Django no valida este
 # valor: uno mal escrito no da error, solo desactiva el logging en un nivel y deja
@@ -643,21 +674,11 @@ env_get() {
     awk -v k="$2" 'index($0, k "=") == 1 { sub("^" k "=", ""); print; exit }' "$1"
 }
 
-# sql_quote <valor>  -> literal SQL con comillas simples
-#
-# Para MySQL/PostgreSQL. El escapado es la unica defensa contra una contrasena con
-# comilla: sin esto, una contrasena con `'` cierra el literal y el resto se
-# ejecuta. Los rollbacks de SQL por construccion, no por confianza.
-sql_quote() {
-    local v=$1
-    v=${v//\'/\'\'}
-    printf "'%s'" "$v"
-}
-
 # psql_quote <valor> -> argumento de \set de psql entre comillas simples
 #
-# Distinto de sql_quote porque va por el lexer de psql, no por SQL. Ahi el
-# escapado es con barra invertida, no con comilla duplicada.
+# El escapado es la unica defensa contra una contrasena con comilla o barra: sin
+# esto, un `'` cierra el literal de psql y el resto se ejecuta. El escapado es
+# con barra invertida, porque aca lo hace el lexer de \set, no SQL.
 psql_quote() {
     local v=$1
     v=${v//\\/\\\\}
@@ -865,7 +886,7 @@ fi
 
 log "Configuracion (todo tiene default; Enter para conservarlo)"
 
-EXTERNAL_HOSTNAME=$(ask PUBLIC_HOSTNAME "${PUBLIC_HOSTNAME:-web.cmw.insmet.cu}" \
+EXTERNAL_HOSTNAME=$(ask PUBLIC_HOSTNAME "${PUBLIC_HOSTNAME:-meteocamaguey.cu}" \
     'Dominio publico del sitio (EXTERNAL_HOSTNAME del .env, server_name de Nginx, SNI del health check)' \
     valid_hostname) || die 'Dominio invalido.'
 
@@ -909,50 +930,38 @@ EOF
         'self-signed: certificado autofirmado, con las consecuencias de arriba' \
         ) || die 'Opcion invalida.'
     if [ "$TLS_MODE" = certbot ]; then
-        ACME_EMAIL=$(ask ACME_EMAIL "" "Correo para el registro de Let's Encrypt (vacio = sin registro)" valid_email) || die 'Correo invalido.'
+        # Default vacio a proposito: este bloque (TLS) va ANTES del bloque de correo, asi
+# que EMAIL_HOST_USER todavia no esta preguntado. Ponerlo de default usaria una
+# variable sin asignar bajo `set -u`, que en bash no es "" sino un error que
+# mata el instalador. El correo de ACME lo elige el operador explicitamente.
+ACME_EMAIL=$(ask ACME_EMAIL "" "Correo para el registro de Let's Encrypt (vacio = sin registro)" valid_email) || die 'Correo invalido.'
     fi
 fi
 
 # --- Base de datos -------------------------------------------------------
 
+# Constante, no pregunta: PostgreSQL es el unico motor de produccion. Asignacion
+# lisa a proposito, sin `:=` ni lectura del entorno, para que un DB_ENGINE
+# exportado por error no pueda contradecir la decision.
+DB_ENGINE=postgresql
+
 cat >&2 <<EOF
 
-  Base de datos. PostgreSQL es el default porque requirements/prod.txt trae
-  psycopg[binary]; es lo que el README del proyecto asume.
-  MySQL NO tiene driver en requirements/prod.txt: si se elige, el instalador
-  instala mysqlclient en el venv y avisa de que queda fuera de los pins.
-  SQLite no tiene concurrencia y no lee DB_NAME/DB_USER/DB_HOST/DB_PASS: sirve
-  para una prueba, no para un sitio con usuarios entrando.
+  Base de datos: PostgreSQL.
+  El motor no se pregunta. Es el unico que trae driver en requirements/prod.txt
+  (psycopg[binary]), y el unico que el proyecto asume para produccion. MySQL
+  exigiria instalar mysqlclient fuera de los pins, y SQLite no tiene
+  concurrencia ni lee DB_*; ninguno de los dos corresponde a un sitio con
+  usuarios entrando.
 EOF
-DB_ENGINE=$(ask_one_of DB_ENGINE postgresql 'Motor de base de datos' \
-    'postgresql: driver en requirements/prod.txt' \
-    'mysql: hay que instalar mysqlclient ademas' \
-    'sqlite3: sin concurrencia, sin DB_* (solo prueba)' \
-    ) || die 'Opcion invalida.'
-
-if [ "$DB_ENGINE" = postgresql ]; then
-    DEFAULT_DB_PORT=5432
-    DEFAULT_SSL_MODE=prefer
-elif [ "$DB_ENGINE" = mysql ]; then
-    DEFAULT_DB_PORT=3306
-    DEFAULT_SSL_MODE=PREFERRED
-else
-    DEFAULT_DB_PORT=
-    DEFAULT_SSL_MODE=
-fi
 
 DB_NAME=$(ask DB_NAME webcmp 'Nombre de la base' valid_db_name) || die 'Nombre de base invalido.'
-DB_USER=$(ask DB_USER webcmp 'Usuario de la base (rol en PostgreSQL, usuario en MySQL)' valid_app_user) || die 'Usuario de base invalido.'
+DB_USER=$(ask DB_USER webcmp 'Usuario de la base (rol en PostgreSQL)' valid_app_user) || die 'Usuario de base invalido.'
 DB_HOST=$(ask DB_HOST localhost 'Host de la base de datos' valid_host) || die 'Host invalido.'
-if [ "$DB_ENGINE" != sqlite3 ]; then
-    DB_PORT=$(ask DB_PORT "$DEFAULT_DB_PORT" 'Puerto de la base de datos' valid_port) || die 'Puerto invalido.'
-    DB_SSL_MODE=$(ask DB_SSL_MODE "$DEFAULT_SSL_MODE" \
-        'DB_SSL_MODE (postgresql: disable|allow|prefer|require|verify-ca|verify-full; mysql: DISABLED|PREFERRED|REQUIRED|VERIFY_CA|VERIFY_IDENTITY)' \
-        ) || die 'Valor invalido.'
-else
-    DB_PORT=''
-    DB_SSL_MODE=''
-fi
+DB_PORT=$(ask DB_PORT 5432 'Puerto de PostgreSQL (Enter = 5432)' valid_port) || die 'Puerto invalido.'
+DB_SSL_MODE=$(ask DB_SSL_MODE prefer \
+    'DB_SSL_MODE (disable|allow|prefer|require|verify-ca|verify-full)' \
+    ) || die 'Valor invalido.'
 
 # El default del password es el que YA esta en el .env, si lo hay. Es lo que
 # hace segura una re-corrida: sin esto, cada pasada por el instalador cambiaria
@@ -978,8 +987,13 @@ cat >&2 <<EOF
   Correo. En produccion, config/settings/production.py RECHAZA los backends
   silenciosos (consola, filebased, locmem): aceptan el mensaje y lo descartan.
   El instalador no ofrece esa opcion a proposito.
+
+  Se configura el correo aunque el servidor todavia no responda: el instalador
+  no prueba conectividad SMTP en ningun momento, solo valida el formato. Si el
+  host no existe todavia, escribe el que va a existir y el envio funcionara en
+  cuanto el servidor este arriba.
 EOF
-EMAIL_HOST=$(ask EMAIL_HOST "" 'Servidor SMTP (vacio = todavia no hay correo)' valid_host) || die 'Host SMTP invalido.'
+EMAIL_HOST=$(ask EMAIL_HOST "mx.caonao.cu" 'Servidor SMTP, SIN @ (vacio = todavia no hay correo)' valid_smtp_host) || die 'Host SMTP invalido. Es el servidor sin @ (ej. mx.caonao.cu); la direccion de correo va en "Usuario SMTP".'
 EMAIL_PORT=$(ask EMAIL_PORT 587 'Puerto SMTP' valid_port) || die 'Puerto SMTP invalido.'
 EMAIL_USE_TLS=si
 EMAIL_USE_SSL=no
@@ -995,7 +1009,7 @@ elif ask_yes_no si 'STARTTLS en el SMTP? (EMAIL_USE_TLS)'; then
 else
     EMAIL_USE_TLS=no
 fi
-EMAIL_HOST_USER=$(ask EMAIL_HOST_USER "" 'Usuario SMTP (vacio = SMTP sin usuario)' valid_app_user) || die 'Usuario SMTP invalido.'
+EMAIL_HOST_USER=$(ask EMAIL_HOST_USER "" 'Usuario SMTP: login o correo completo (vacio = SMTP sin usuario)' valid_smtp_user) || die 'Usuario SMTP invalido.'
 EMAIL_HOST_PASSWORD=$(ask_optional_secret EMAIL_HOST_PASSWORD "" 'Contrasena SMTP (vacio = SMTP sin contrasena)') || die 'Contrasena SMTP invalida.'
 DEFAULT_FROM_EMAIL=$(ask DEFAULT_FROM_EMAIL "" 'Remitente (nombre <correo>); vacio = $EMAIL_HOST_USER') || die 'Remitente invalido.'
 
@@ -1062,7 +1076,7 @@ cat <<EOF
   usuario         $SERVICE_USER:$SERVICE_GROUP (shell $SERVICE_SHELL)
   dominio         $EXTERNAL_HOSTNAME${WWW_HOSTNAME:+, $WWW_HOSTNAME}
   proxy           $PROXY_MODE (TLS: $TLS_MODE)
-  base            $DB_ENGINE db=$DB_NAME user=$DB_USER host=${DB_HOST:-local}
+  base            $DB_ENGINE db=$DB_NAME user=$DB_USER host=${DB_HOST:-local}:$DB_PORT
   correo          ${EMAIL_HOST:-SIN CONFIGURAR}
   superusuario    $SUPERUSER_USERNAME
   deploy.sh       $SCRIPT_PATH
@@ -1105,15 +1119,8 @@ APT_PACKAGES=(
 if [ "$PROXY_MODE" = nginx-local ]; then
     APT_PACKAGES+=(nginx)
 fi
-# El driver de MySQL no esta en requirements/ (ver el bloque de arriba), asi que
-# se instala aparte y con aviso, no en silencio.
-if [ "$DB_ENGINE" = mysql ]; then
-    warn "MySQL no tiene driver en requirements/prod.txt. Se va a instalar"
-    warn "mysqlclient en el venv, fuera de los pins: si se actualiza el venv sin"
-    warn "reinstalarlo, el sitio cae con ImproperlyConfigured."
-    MYSQL_BUILD_DEPS=(libmysqlclient-dev pkg-config)
-    APT_PACKAGES+=("${MYSQL_BUILD_DEPS[@]}")
-fi
+# psycopg[binary] viene con su binario, asi que no hacen falta build-essential
+# ni headers de PostgreSQL para compilar el driver.
 
 if [ "$DRY_RUN" -eq 1 ]; then
     printf '  [dry-run] apt-get install -y %s\n' "${APT_PACKAGES[*]}"
@@ -1126,19 +1133,14 @@ else
         || die "apt-get install fallo. Revisa el repositorio de la distro y volve a correr."
 fi
 
-# El servidor de base de datos NO se instala sin permiso. Instalar PostgreSQL o
-# MySQL es una decision de infraestructura (backup, locale, puerto, version) que
-# el instalador no tiene derecho a tomar por su cuenta, y un `apt-get install
-# postgresql` de surprise puede abrir el 5432 al mundo segun la configuracion de
+# El servidor de base de datos NO se instala sin permiso. Instalar PostgreSQL es
+# una decision de infraestructura (backup, locale, puerto, version) que el
+# instalador no tiene derecho a tomar por su cuenta, y un `apt-get install
+# postgresql` de sorpresa puede abrir el 5432 al mundo segun la configuracion de
 # la distro.
-DB_SERVER_PACKAGE=
-case "$DB_ENGINE" in
-    postgresql) DB_SERVER_PACKAGE=postgresql ;;
-    mysql)      DB_SERVER_PACKAGE=default-mysql-server ;;
-esac
-if [ -n "$DB_SERVER_PACKAGE" ] && ! command -v "$([ "$DB_ENGINE" = postgresql ] && echo psql || echo mysql)" >/dev/null 2>&1
-then
-    warn "No encontre el cliente de $DB_ENGINE en el servidor."
+DB_SERVER_PACKAGE=postgresql
+if ! command -v psql >/dev/null 2>&1; then
+    warn "No encontre el cliente de PostgreSQL (psql) en el servidor."
     if ask_yes_no no "Instalar $DB_SERVER_PACKAGE con apt?"; then
         if [ "$DRY_RUN" -eq 1 ]; then
             printf '  [dry-run] apt-get install -y %s\n' "$DB_SERVER_PACKAGE"
@@ -1257,8 +1259,8 @@ need_checkout() {
     # Con checkout: hay con que trabajar, el consumidor sigue de largo.
     [ "$HAVE_CHECKOUT" -eq 1 ] && return 0
     # Sin checkout: se avisa Y se devuelve error, para que el consumidor se
-    # SALTE el bloque. Antes devolvia 0 en las dos ramas, con lo cual los cuatro
-    # `|| need_checkout` de mas abajo nunca cortaban: los bloques corrigual
+    # SALTE el bloque. Antes devolvia 0 en las dos ramas, con lo cual los
+    # cuatro `|| need_checkout` de mas abajo nunca cortaban: los bloques ejecutaban
     # renders desde deploy/systemd, deploy/nginx y deploy/sudoers, que en un
     # dry-run sin checkout no existen.
     printf '  [dry-run] sin checkout: %s\n' "$1" >&2
@@ -1267,27 +1269,25 @@ need_checkout() {
 
 # --- C.4 Base de datos ---------------------------------------------------
 
-if [ "$DB_ENGINE" != sqlite3 ]; then
-    log "Base de datos $DB_ENGINE: rol y base"
-    if [ "$DB_ENGINE" = postgresql ]; then
-        # El password viaja por el STDIN de psql, no por `-v` en la linea de
-        # comandos: un `-v dbpass=...` queda visible en `ps aux` mientras el
-        # comando corre, y basta otro usuario con permiso de ver la tabla de
-        # procesos para leer la contrasena de la base.
-        #
-        # `\set` + `:'dbuser'` / `:"dbuser"` hacen el escapado por nosotros.
-        # Interpolar el valor a mano dentro de un DO $$ ... $$ se rompe con
-        # cualquier password que tenga un `$`, y se INYECTA con una que tenga una
-        # comilla simple: por eso psql_quote() y no concatenacion de strings.
-        #
-        # Idempotencia: el rol se crea solo si no existe, la base idem, y la
-        # contrasena se ALTERA al valor preguntado. Nunca hay DROP: tirar la
-        # base de un sitio en produccion es el peor error que puede cometer un
-        # instalador, y ningun idempotencia lo justifica.
-        if [ "$DRY_RUN" -eq 1 ]; then
-            printf '  [dry-run] runuser -u postgres -- psql (crea rol %s y base %s)\n' "$DB_USER" "$DB_NAME"
-        else
-            runuser -u postgres -- psql --quiet --set=ON_ERROR_STOP=1 <<SQL
+log "Base de datos $DB_ENGINE: rol y base"
+
+# El password viaja por el STDIN de psql, no por `-v` en la linea de comandos: un
+# `-v dbpass=...` queda visible en `ps aux` mientras el comando corre, y basta
+# otro usuario con permiso de ver la tabla de procesos para leer la contrasena.
+#
+# `\set` + `:'dbuser'` / `:"dbuser"` hacen el escapado por nosotros. Interpolar el
+# valor a mano dentro de un DO $$ ... $$ se rompe con cualquier password que
+# tenga un `$`, y se INYECTA con una que tenga una comilla simple: por eso
+# psql_quote() y no concatenacion de strings.
+#
+# Idempotencia: el rol se crea solo si no existe, la base idem, y la contrasena
+# se ALTERA al valor preguntado. Nunca hay DROP: tirar la base de un sitio en
+# produccion es el peor error que puede cometer un instalador, y ninguna
+# idempotencia lo justifica.
+if [ "$DRY_RUN" -eq 1 ]; then
+    printf '  [dry-run] runuser -u postgres -- psql (crea rol %s y base %s)\n' "$DB_USER" "$DB_NAME"
+else
+    runuser -u postgres -- psql --quiet --set=ON_ERROR_STOP=1 <<SQL
 \\set dbuser $(psql_quote "$DB_USER")
 \\set dbpass $(psql_quote "$DB_PASS")
 \\set dbname $(psql_quote "$DB_NAME")
@@ -1300,34 +1300,8 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'dbname')
 \\gexec
 \\echo 'rol y base listos'
 SQL
-        fi
-    else
-        # MySQL: el cliente se ejecuta como root y el socket unix autentica por
-        # credenciales del sistema, asi que no hay password de root que manejar.
-        # `CREATE USER IF NOT EXISTS` y `CREATE DATABASE IF NOT EXISTS` existen
-        # en MySQL 5.7+ y en MariaDB 10.1+, asi que la re-corredura es segura.
-        if [ "$DRY_RUN" -eq 1 ]; then
-            printf '  [dry-run] mysql (crea usuario %s y base %s)\n' "$DB_USER" "$DB_NAME"
-        else
-            mysql --protocol=socket <<SQL
-CREATE USER IF NOT EXISTS $(sql_quote "$DB_USER")@'localhost'
-    IDENTIFIED BY $(sql_quote "$DB_PASS");
-ALTER USER $(sql_quote "$DB_USER")@'localhost'
-    IDENTIFIED BY $(sql_quote "$DB_PASS");
-CREATE DATABASE IF NOT EXISTS $(sql_quote "$DB_NAME")
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT ALL PRIVILEGES ON $(sql_quote "$DB_NAME").* TO $(sql_quote "$DB_USER")@'localhost';
-FLUSH PRIVILEGES;
-SQL
-        fi
-    fi
-    echo "  rol y base listos (nunca se borra una base existente)."
-else
-    log "Base de datos sqlite3"
-    warn "SQLite: sin concurrencia y sin DB_NAME/DB_USER/DB_HOST/DB_PASS."
-    warn "get_database_config() devuelve sqlite3 porque DB_ENGINE=sqlite3; la"
-    warn "base es $APP_DIR/db.sqlite3 y Django la crea sola en el migrate."
 fi
+echo "  rol y base listos (nunca se borra una base existente)."
 
 # --- C.5 venv ------------------------------------------------------------
 
@@ -1344,16 +1318,12 @@ fi
 # generador importa Fernet y no Django, asi que el venv es la unica forma de
 # tener esa dependencia sin tocar el Python del sistema.
 log "Instalando requirements/prod.txt"
+# `-m pip` y NO el shim `$VENV_DIR/bin/pip`: ese shim no esta garantizado (un
+# venv creado con uv no lo trae) y, si falta, la instalacion de requirements
+# falla con "No such file or directory". Mismo criterio que el PIP_CMD de
+# deploy.sh.
 run_sh "runuser -u '$SERVICE_USER' -- env 'PIP_CACHE_DIR=$PIP_CACHE_DIR' \
-    '$VENV_DIR/bin/pip' install --quiet --disable-pip-version-check -r '$APP_DIR/requirements/prod.txt'"
-
-if [ "$DB_ENGINE" = mysql ]; then
-    log "Driver de MySQL (fuera de requirements/prod.txt)"
-    run_sh "runuser -u '$SERVICE_USER' -- env 'PIP_CACHE_DIR=$PIP_CACHE_DIR' \
-        '$VENV_DIR/bin/pip' install --quiet --disable-pip-version-check mysqlclient"
-    warn "mysqlclient quedo en el venv pero NO en requirements/prod.txt. Si se"
-    warn "recrea el venv, hay que volver a instalarlo."
-fi
+    '$VENV_DIR/bin/python' -m pip install --quiet --disable-pip-version-check -r '$APP_DIR/requirements/prod.txt'"
 
 # --- C.6 .env ------------------------------------------------------------
 
@@ -1429,14 +1399,12 @@ apply_env_value CSRF_TRUSTED_ORIGINS "$ORIGINS"
 apply_env_value CORS_ALLOWED_ORIGINS "$ORIGINS"
 
 apply_env_value DB_ENGINE "$DB_ENGINE"
-if [ "$DB_ENGINE" != sqlite3 ]; then
-    apply_env_value DB_NAME "$DB_NAME"
-    apply_env_value DB_USER "$DB_USER"
-    apply_env_value DB_PASS "$DB_PASS"
-    apply_env_value DB_HOST "$DB_HOST"
-    apply_env_value DB_PORT "$DB_PORT"
-    apply_env_value DB_SSL_MODE "$DB_SSL_MODE"
-fi
+apply_env_value DB_NAME "$DB_NAME"
+apply_env_value DB_USER "$DB_USER"
+apply_env_value DB_PASS "$DB_PASS"
+apply_env_value DB_HOST "$DB_HOST"
+apply_env_value DB_PORT "$DB_PORT"
+apply_env_value DB_SSL_MODE "$DB_SSL_MODE"
 
 if [ "$EMAIL_CONFIGURED" -eq 1 ]; then
     apply_env_value EMAIL_HOST "$EMAIL_HOST"
@@ -2009,7 +1977,11 @@ GUNICORN_UNIT=$GUNICORN_UNIT
 HUEY_UNIT=$HUEY_UNIT
 ENCRYPTION_ENV=$ENCRYPTION_ENV
 PYTHON=$VENV_DIR/bin/python
-PIP=$VENV_DIR/bin/pip
+# NO se escribe PIP aqui, a proposito: deploy.sh lo resuelve solo como
+# "\$PYTHON -m pip", leyendo PYTHON de la linea de arriba. Escribir PIP=...
+# apuntaria al shim bin/pip, que un venv creado con uv no trae. Si alguna vez
+# hace falta otro pip, se escribe a mano en este archivo y deploy.sh lo respeta
+# como override de una palabra.
 PIP_CACHE_DIR=$PIP_CACHE_DIR
 MPLCONFIGDIR=$MPLCONFIGDIR
 PUBLIC_HOSTNAME=$EXTERNAL_HOSTNAME

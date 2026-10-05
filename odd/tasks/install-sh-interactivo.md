@@ -63,6 +63,9 @@ falla por construcción y el deploy se bloquea con un sitio perfectamente sano.
 | T19 | `deploy.sh`: invocar pip como `python -m pip` en vez del shim `bin/pip`, que no existe | `deploy/deploy.sh` |
 | T20 | `deploy.sh`: `--configure` debe poder **crear** `/etc/webcmp/deploy.env` en un host limpio | `deploy/deploy.sh` |
 | T21 | `install.sh`: `need_checkout` debe cortar de verdad los bloques que renderizan desde el checkout | `deploy/install.sh` |
+| T22 | `install.sh`: la elección de motor de base de datos desaparece; PostgreSQL es constante y el puerto se pregunta con default 5432 | `deploy/install.sh` |
+| T23 | `install.sh`: tres validadores de correo roto impedían configurar SMTP; se arreglan y el prompt del host dice dónde va el `@` | `deploy/install.sh` |
+| T24 | `install.sh`: los defaults reales del proyecto — `meteocamaguey.cu` como dominio y `mx.caonao.cu` como servidor SMTP | `deploy/install.sh` |
 
 Fuera de alcance: tocar `config/settings/**` (el `.env` tiene que alcanzar con lo que ya existe),
 el workflow `.github/workflows/deploy.yml`, y la suite de `apps/`. Si algo de T1-T18 descubre que
@@ -179,12 +182,114 @@ hace que el consumidor se salte el bloque, que es lo que el nombre de la funció
 flujo es correcto: la CI pega la **pública** en GitHub como secret y la **privada** nunca sale
 del servidor. `authorized_keys` no aplica. Queda anotado para que nadie lo "arregle" después.
 
+### T22 — Se quitó la elección de motor de base de datos (decisión del usuario)
+
+El instalador preguntaba el motor entre `postgresql`, `mysql` y `sqlite3`. Ya no se pregunta:
+`DB_ENGINE=postgresql` es una **constante**, asignada y no tomada del entorno, para que un
+`DB_ENGINE=mysql` exportado por error no contradiga la decisión.
+
+Qué se eliminó al dejar de haber elección:
+
+| Se fue | Por qué ya no aplica |
+|---|---|
+| `ask_one_of DB_ENGINE` y su bloque explicativo | El motor es único |
+| `valid_db_engine()` | Sin entrada del operador, no hay qué validar |
+| Bloque MySQL de C.4 (`sql_quote`, `CREATE USER IF NOT EXISTS`) | Sin motor MySQL |
+| `MYSQL_BUILD_DEPS` + aviso de driver fuera de pins en C.1 | `psycopg[binary]` trae su binario, no compila |
+| `case "$DB_ENGINE"` del `DB_SERVER_PACKAGE` | Ahora es `postgresql` fijo, y `psql` es el único cliente a buscar |
+| Instalación de `mysqlclient` en el venv (C.5) | Fuera de los pins era un riesgo que ya no se corre |
+| `sql_quote()` | Solo la usaba el bloque MySQL. `psql_quote()` sigue, y es la que protege la contraseña real |
+| `if [ "$DB_ENGINE" != sqlite3 ]` que envolvía los `apply_env_value` | Los seis `DB_*` se escriben siempre |
+
+El puerto se sigue preguntando, con el default del motor: `ask DB_PORT 5432`. Cambiarlo sigue
+siendo una decisión del operador, que es lo que se pidió; lo que se quitó fue la elección de
+**motor**, no la de dirección de conexión. `DB_SSL_MODE` también queda con su default `prefer`
+y su lista de valores de PostgreSQL, sin las opciones de MySQL.
+
+**Lo que NO cambió:** `config/settings/base.py`. `get_database_config()` sigue aceptando `mysql`
+y `sqlite3`, y el `.env` de desarrollo del repo sigue en `sqlite3`. El cambio es del instalador
+de producción, no de la capa de settings. Tocar `base.py` saldría de la superficie autorizada de
+esta feature y rompería el desarrollo local.
+
+### Bug opportunista corregido de paso (T22)
+
+C.5 invocaba `'$VENV_DIR/bin/pip'` para instalar requirements: **el mismo shim que T19
+eliminó de `deploy.sh`**. Un venv creado con `uv` no lo trae, y el `.venv` de este repo es
+justo ese caso. Ahora es `'$VENV_DIR/bin/python' -m pip`. Sin esto, quitar el motor MySQL
+dejaba el camino de PostgreSQL installando requirements por un shim que puede no existir.
+
+### T23 — Los validadores de correo impedían configurar SMTP
+
+El operadorTrying de configurar el correo en el servidor real y el instalador le rejected tres
+veces con `Valor invalido para EMAIL_HOST`. Al reproducirlo en local aparecieron **tres defectos
+deterministas**, todos en el mismo archivo y todos del mismo tipo: un validador que rechaza el
+valor que la pregunta pide.
+
+**1. `valid_email` rechazaba TODO correo.** La clase de caracteres del `case` era
+`[!a-zA-Z0-9._%+-]`: no incluía `@`. El `case` corría **antes** que el regex, así que ninguna
+dirección llegaba a validarse. `ACME_EMAIL` y `SUPERUSER_EMAIL` eran inalcanzables: con un correo
+válido el operador perdía tres intentos y el instalador moría. Agregar `@` a la clase.
+
+**2. `valid_smtp_host` no existía; `valid_host` no daba ninguna pista.** El error decía
+`Valor invalido para EMAIL_HOST`, que no dice qué se espera ni por qué falló. Se agregó un
+validador dedicado que además rechaza explícitamente el `@`, y el prompt dice "SIN @ (ej.
+smtp.caonao.cu)" y el `die` final repite dónde va el correo. La restricción del `@` en el host
+se mantiene a propósito: `EMAIL_HOST` llega a `settings.py`, al vhost de Nginx y al `source` de
+`deploy.env`, donde un `@` rompe el archivo.
+
+**3. `EMAIL_HOST_USER` usaba `valid_app_user`, que rechaza `@`.** El usuario de AUTH de casi
+todo proveedor público **es** la dirección completa. Con `valid_app_user` el correo entero se
+rechazaba tres veces, igual que en el host. Se agregó `valid_smtp_user`, que acepta las dos
+formas reales: login corto (`admin`, relays internos) y dirección completa.
+
+**Sobre "aunque el servidor no esté disponible":** el instalador **nunca** prueba conectividad
+SMTP — no hay `nc`, ni `telnet`, ni `swaks`, ni un `timeout` contra el host. Se verificó con grep
+sobre el archivo. Solo valida formato, así que configurar un host que todavía no responde es un
+camino soportado: el correo funciona en cuanto el servidor esté arriba. Eso se dice explícito en
+el texto del bloque, porque la ausencia de la prueba no era evidente.
+
+**Bug de rango encontrado de paso.** Al validar `valid_email` con `:`, `/`, `<`, `=`, `?` se
+aceptaban. La clase `+-@` no es tres literales: bash la lee como el rango 0x2B..0x40 y arrastra
+todo lo que hay en medio. Se movió el guion al final (`@+-`), donde sí es literal.
+
+Verificación: `bash -n`; los cuatro validadores extraídos del archivo real con `sed` (no
+reimplementados) reproducen los tres rechazos del operador y aceptan el camino correcto;
+`valid_smtp_user` acepta login corto, dirección completa y vacío; `valid_email` sigue rechazando
+`@x.cu`, `a@b`, espacios y `a@b@c.cu`; dry-run completo pasa con `EMAIL_CONFIGURED=1` y puerto
+465 → `EMAIL_USE_SSL=si`, `EMAIL_USE_TLS=no`.
+
+### T24 — Defaults reales del proyecto
+
+`install.sh` traía `web.cmw.insmet.cu` y `EMAIL_HOST` vacío como defaults. Son valores de otro
+dominio, no de este proyecto, y convertían cada instalación real en una tanda de correcciones
+manuales. Ahora el default del dominio es `meteocamaguey.cu` y el del servidor SMTP es
+`mx.caonao.cu`.
+
+Consecuencia que vale la pena registrar: `EMAIL_HOST` con default **no vacío** cambia el punto de
+entrada del correo. `EMAIL_CONFIGURED` pasa a ser `1` pordefault (antes solo lo era si el operador
+escribía algo), así que el bloque `.env` ya no deja `CHANGE_ME` en la sección de correo y el gate
+del `.env` no se para. Ese es el comportamiento correcto para este proyecto: hay un servidor de
+correo que se va a usar.
+
+`ACME_EMAIL` se dejó con default vacío a propósito. El bloque de TLS va **antes** del bloque de
+correo, así que `EMAIL_HOST_USER` todavía no está preguntado ahí; usarlo como default sería leer
+una variable sin asignar, y con `set -u` en bash eso no es `""` sino un error que mata el
+instalador. Se intentó primero y se revirtió por esa razón.
+
+Verificado: `bash -n`; el dominio fluye correctamente a `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`,
+`CORS_ALLOWED_ORIGINS`, `server_name`, CN y SAN del certificado, `--cert-name`, health check con
+SNI y rutas de `TLS_CERT`/`TLS_KEY`; `www.meteocamaguey.cu` se deriva solo; el override por
+entorno (`PUBLIC_HOSTNAME`, `EMAIL_HOST`) sigue mandando sobre el default en modo no interactivo;
+`mx.caonao.cu` pasa su propio validador; dry-run completo sale 0 con ambos defaults.
+
 ## Ruta de ejecución: inline, no delegada
 
 | Tarea | Ruta | Evidencia del trigger |
 |---|---|---|
 | T19, T20 | **inline** | Una sola edición por archivo, sin diseño pendiente: el valor correcto y la ubicación exacta ya están verificados con número de línea. |
 | T21 | **inline** | Una línea. El cambio de `return 0` a `return 1` está determinado por los cuatro call sites ya leídos. |
+| T22 | **inline** | Un archivo ya leído de punta a punta; el diseño (motor constante, puerto con default) estaba decidido por el usuario antes de abrir el archivo. |
+| T23 | **inline** | Defectos deterministas con evidencia ya observada en la sesión: el error del operador se reprodujo y los tres call sites del archivo se leyeron antes de editar. Delegar exigiría transferir el hallazgo, no reducir contexto. |
 
 Se ejecuta en el padre y no en un subagente, por dos razones concretas, no por preferencia:
 
@@ -254,6 +359,9 @@ verificarse en ejecución.
 - [x] T19 — `PIP` como `python -m pip`
 - [x] T20 — `--configure` puede crear `deploy.env` en host limpio
 - [x] T21 — `need_checkout` corta de verdad
+- [x] T22 — PostgreSQL como constante, puerto con default 5432
+- [x] T23 — Validadores de correo reparados (`valid_email`, `valid_smtp_host`, `valid_smtp_user`)
+- [x] T24 — Defaults reales: `meteocamaguey.cu` y `mx.caonao.cu`
 
 Los ocho bloques T1-T18 se marcan como entregados porque el commit `a9e01c6` los contiene y sus
 checks pasaron. T19-T21 se marcan según su propia evidencia, registrada abajo.
