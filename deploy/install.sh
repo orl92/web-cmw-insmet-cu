@@ -1719,24 +1719,127 @@ step 2 "Base de datos $DB_ENGINE: rol y base"
 # se ALTERA al valor preguntado. Nunca hay DROP: tirar la base de un sitio en
 # produccion es el peor error que puede cometer un instalador, y ninguna
 # idempotencia lo justifica.
+#
+# TEMPLATE template0 es OBLIGATORIO, no un detalle. Sin TEMPLATE, CREATE DATABASE
+# usa template1, que hereda el encoding del CLUSTER. Si el initdb corrio con
+# locale C o POSIX (tipico en Debian/Ubuntu en un servidor sin locale UTF-8
+# configurado), el cluster es SQL_ASCII y el CREATE revienta con:
+#
+#   ERROR: new encoding (UTF8) is incompatible with the encoding of the
+#          template database (SQL_ASCII)
+#   HINT:  Use the same encoding as in the template database, or use
+#          template0 as template.
+#
+# template0 existe justamente para esto: es la plantilla neutra que permite
+# crear una base con un encoding distinto al del cluster. template1 es la
+# plantilla "con el locale ya puesto", por eso no se puede cambiarle el encoding.
+#
+# Pero template0 solo arregla el ENCODING, no el locale: la base nueva hereda
+# LC_CTYPE del cluster, y si el initdb corrio con locale C, el resultado es
+# UTF8 con LC_CTYPE='C'. Con eso PostgreSQL no pliega mayusculas de caracteres
+# acentuados, y en la practica el sitio queda asi:
+#
+#   lower('ÁÉÍÓÚ')                     -> 'ÁÉÍÓÚ'   (sin cambiar)
+#   ILIKE '%CAMAGÜEY%' sobre 'camagüey' -> 0 coincidencias
+#   ORDER BY                           -> 'México, Ultima, Zulia, camagüey,
+#                                          Ávila'   (orden de bytes, no espanol)
+#
+# O sea: un `icontains` de Django sobre cualquier nombre con tilde no encuentra
+# NADA. Por eso LC_CTYPE/LC_COLLATE se pasan explicitamente.
+#
+# El locale se toma SIEMPRE de `locale -a`, nunca se inventa: PostgreSQL valida
+# el nombre contra el sistema dentro del CREATE y uno que no exista aborta la
+# instalacion entera con "invalid LC_COLLATE locale name". Preferencia: es_CU
+# (Camagüey) > es_ES > C.utf8. Si ninguno existe se omite la clausula y la base
+# queda UTF8 con LC_CTYPE=C: degradada, pero instalada. Ningun locale disponible
+# es preferible a una instalacion que revienta.
+DB_LOCALE=""
+DB_HAS_LOCALE=false
+for _cand in es_CU.utf8 es_CU.UTF-8 es_ES.utf8 es_ES.UTF-8 C.utf8 C.UTF-8; do
+    # -F porque el candidato es literal (el punto de "C.utf8" no es regex),
+    # -x para matchear la linea completa, -i porque locale -a puede reportar
+    # "es_cu.utf8" en minusculas. Se guarda la linea TAL CUAL la reporta el
+    # sistema: es la forma que setlocale() va a aceptar.
+    _found=$(locale -a 2>/dev/null | grep -Fxi "$_cand" | head -1)
+    if [ -n "$_found" ]; then
+        DB_LOCALE=$_found
+        DB_HAS_LOCALE=true
+        break
+    fi
+done
+unset _cand _found
+
 if [ "$DRY_RUN" -eq 1 ]; then
-    printf '  [dry-run] runuser -u postgres -- psql (crea rol %s y base %s)\n' "$DB_USER" "$DB_NAME"
+    printf '  [dry-run] runuser -u postgres -- psql (crea rol %s y base %s, template0, UTF8, locale %s)\n' \
+        "$DB_USER" "$DB_NAME" "${DB_LOCALE:-<el del cluster>}"
 else
     runuser -u postgres -- psql --quiet --set=ON_ERROR_STOP=1 <<SQL
 \\set dbuser $(psql_quote "$DB_USER")
 \\set dbpass $(psql_quote "$DB_PASS")
 \\set dbname $(psql_quote "$DB_NAME")
+\\set haslocale $DB_HAS_LOCALE
+\\set lc $(psql_quote "$DB_LOCALE")
 SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'dbuser', :'dbpass')
 WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'dbuser')
 \\gexec
 ALTER ROLE :"dbuser" WITH LOGIN PASSWORD :'dbpass';
-SELECT format('CREATE DATABASE %I OWNER %I ENCODING %L', :'dbname', :'dbuser', 'UTF8')
+\\if :haslocale
+SELECT format('CREATE DATABASE %I OWNER %I ENCODING %L TEMPLATE template0 LC_CTYPE %L LC_COLLATE %L',
+              :'dbname', :'dbuser', 'UTF8', :'lc', :'lc')
 WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'dbname')
+\\else
+SELECT format('CREATE DATABASE %I OWNER %I ENCODING %L TEMPLATE template0',
+              :'dbname', :'dbuser', 'UTF8')
+WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'dbname')
+\\endif
 \\gexec
 \\echo 'rol y base listos'
 SQL
 fi
 echo "  rol y base listos (nunca se borra una base existente)."
+
+# La verificacion va DESPUES y aparte, porque el `WHERE NOT EXISTS` de arriba
+# salta en silencio si la base ya existe. Si en una corrida anterior se creo en
+# SQL_ASCII, o si alguien la creo a mano, la creacion no falla, no avisa nada, y
+# el error recien aparece en Django al guardar el primer texto con un acento.
+# Chequear aca es la diferencia entre "instalacion exitosa que despues revienta"
+# y un aviso en el paso donde paso.
+if [ "$DRY_RUN" -eq 0 ]; then
+    DB_ENCODING=$(runuser -u postgres -- psql -tA -d "$DB_NAME" -c \
+        'SHOW server_encoding' 2>/dev/null || echo '')
+    case "$DB_ENCODING" in
+        UTF8)
+            DB_CTYPE=$(runuser -u postgres -- psql -tA -d "$DB_NAME" -c \
+                'SHOW lc_ctype' 2>/dev/null || echo '')
+            case "$DB_CTYPE" in
+                C|POSIX)
+                    warn "La base $DB_NAME es UTF8 pero con LC_CTYPE='$DB_CTYPE'."
+                    echo "  Con ese locale no se pliegan mayusculas de acentos: un"
+                    echo "  'icontains' de Django sobre 'Camagüey' o 'meteorológico'"
+                    echo "  no va a encontrar nada. Locale disponible en este"
+                    echo "  sistema: ${DB_LOCALE:-ninguno UTF-8}."
+                    echo "  PostgreSQL no permite cambiar lc_ctype de una base ya"
+                    echo "  creada, para eso hay que recrearla (y esta NO se toca"
+                    echo "  sola nunca). Dejalo anotado si el busca no funciona."
+                    ;;
+                '')
+                    echo "  encoding de $DB_NAME: UTF8 (locale no verificable)."
+                    ;;
+                *)
+                    echo "  encoding de $DB_NAME: UTF8, locale $DB_CTYPE (ok)."
+                    ;;
+            esac
+            ;;
+        *)
+            warn "La base $DB_NAME quedo en encoding '${DB_ENCODING:-desconocido}', no UTF8."
+            echo "  Django guarda texto con acentos y con ese encoding va a fallar al"
+            echo "  guardar. Para recrearla (CONSERVANDO TODO LO DEMAS):"
+            echo "    runuser -u postgres -- dropdb --force $DB_NAME"
+            echo "  y volver a correr este instalador; template0 la creara en UTF8."
+            echo "  Si preferis no tocarla, al menos revisa que no haya datos previos."
+            ;;
+    esac
+fi
 
 # --- C.5 venv ------------------------------------------------------------
 
