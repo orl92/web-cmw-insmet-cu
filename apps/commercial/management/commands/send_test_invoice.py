@@ -286,7 +286,7 @@ class Command(BaseCommand):
             Contract.objects.create(
                 subscription=subscription,
                 number=f'{DEMO_PREFIX}CONT-{len(invoices) + 1:04d}',
-                date=timezone.now().date(),
+                date=timezone.localdate(),
                 commercial_registry=f'RC-DEMO-{len(invoices) + 1:04d}',
             )
 
