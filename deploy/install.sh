@@ -110,7 +110,18 @@ ANSWER_SOURCES=()
 # dejar un archivo con nombres de claves tirado en /tmp.
 ASK_GENERATED_FILE=$(mktemp -t webcmp-generated.XXXXXX)
 cleanup_generated_flags() { [ -n "${ASK_GENERATED_FILE:-}" ] && rm -f "$ASK_GENERATED_FILE"; }
-trap cleanup_generated_flags EXIT INT TERM
+
+# El trap tambien para el spinner. Sin esto, Ctrl-C durante el pip install deja
+# el subshell del spinner vivo: el operador vuelve a su prompt y el spinner le
+# sigue escribiendo "\\r| pip install [02m[01m04s]" encima de lo que esta
+# escribiendo, hasta que el subshell muera solo por mucho sleep 0.1. Se ve como
+# la terminal corrupta y no es recuperable sin abrir otra pestana.
+#
+# `command -v` porque `spinner_stop` se define mas abajo (linea ~250) y este trap
+# se registra antes: si el script muriera entremedio, un `spinner_stop` pelado
+# daria "command not found" y taparia el error real con otro error.
+trap 'cleanup_generated_flags; command -v spinner_stop >/dev/null && spinner_stop; exit 130' INT
+trap 'cleanup_generated_flags; command -v spinner_stop >/dev/null && spinner_stop' EXIT TERM
 
 # Contadores del resumen final. Todos arrancan en 0 y SOLO pasan a 1 en el punto
 # exacto donde la cosa ocurrio, asi que el resumen final no puede afirmar nada que
@@ -186,9 +197,127 @@ progress_break() {
     PROGRESS_CURRENT=
 }
 
+# --------------------------------------------------------------------------
+# Salida en vivo: spinner, reloj y log con timestamp
+# --------------------------------------------------------------------------
+#
+# La barra de secciones (arriba) dice EN QUE PARTE va la instalacion. Esto dice
+# QUE ESTA PASANDO ahora mismo: un comando que tarda tres minutos sin decir una
+# palabra parece colgado, y la primera pregunta del operador va a ser si hay que
+# esperar o si semurio.
+#
+# El problema tecnico de fondo es que el spinner escribe a stderr desde un
+# proceso en background mientras el comando watched escribe a stderr en el
+# primer plano. Los dos borran la misma linea con `\r\033[K` y se pisan. Por eso
+# NADA imprime directo: el spinner solo dibuja, y toda linea de log pasa por
+# `log_line`, que borra el spinner, imprime, y lo vuelve a dibujar. Es el unico
+# orden que no produce lineas a medio escribir.
+SPINNER_PID=
+SPINNER_START=
+SPINNER_MSG=
+ELAPSED_START=
+
+# Frames ASCII, no Unicode: el instalador corre por SSH a un servidor donde el
+# locale puede ser POSIX y un braille UTF-8 sale como "??????". Un spinner que
+# se ve roto en el servidor es peor que uno sin spinner.
+SPINNER_FRAMES=('|' '-' '\' '/')
+
+spinner_render() {
+    local frame elapsed
+    elapsed=$(( $(date +%s) - ELAPSED_START ))
+    if [ -n "$SPINNER_MSG" ]; then
+        frame=${SPINNER_FRAMES[$(( (elapsed * 10) % 4 ))]}
+        # mm:ss, no "[%dm%02ds]": ese formato imprimia literalmente "[0m03s]",
+        # que en un terminal se ve como un escape ANSI a medio escribir. Un reloj
+        # que parece un error de formato hace desconfiar del installing entero.
+        printf '\r\033[K  \033[36m%s\033[0m %s \033[2m(%02d:%02d)\033[0m' \
+            "$frame" "$SPINNER_MSG" "$((elapsed / 60))" "$((elapsed % 60))" >&2
+    fi
+}
+
+spinner_start() {
+    SPINNER_MSG=$1
+    ELAPSED_START=$(date +%s)
+    progress_on || return 0
+    spinner_render
+    (
+        while :; do
+            sleep 0.1
+            spinner_render
+        done
+    ) &
+    SPINNER_PID=$!
+}
+
+# El subshell del spinner hereda SPINNER_MSG y ELAPSED_START por fork, asi que
+# alcanza con asignarlos ANTES de lanzarlo. Por eso el orden importa: primero los
+# dos, despues el `&`.
+spinner_stop() {
+    local pid=$SPINNER_PID
+    [ -n "$pid" ] || return 0
+    SPINNER_PID=
+    kill "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    progress_clear
+}
+
+# log_line <texto>
+#
+# Toda linea de salida de un comando pasa por aca. Escribe arriba de la barra y
+# la vuelve a dibujar debajo: el operador ve el log growing mientras el comando
+# corre, que es la mitad del pedido.
+log_line() {
+    local text=$1
+    [ -n "$text" ] || return 0
+    if [ -n "$SPINNER_PID" ]; then progress_clear; fi
+    printf '  \033[2m%s\033[0m %s\n' "$(date +%H:%M:%S)" "$text" >&2
+    spinner_render
+}
+
+# El "ok" del comando terminado tiene su propia funcion y NO pasa por `log_line`
+# con escapes adentro: un `\033[32m` embebido en el texto llega literal a
+# cualquier filtro de log, a un `tee`, y a un pager que no sabe de ANSI. El
+# color se aplica en el printf, no en los datos.
+log_ok() {
+    local label=$1
+    printf '  \033[2m%s\033[0m \033[32mok\033[0m  %s\n' "$(date +%H:%M:%S)" "$label" >&2
+}
+
+# run_live <etiqueta> <comando> [args...]
+#
+# Corre un comando largo con spinner y log en vivo. A diferencia de `run`, el
+# comando NO puede fallar en silencio: su codigo de salida sube intacto para que
+# el `|| die` de quien lo llama siga funcionando igual.
+run_live() {
+    local label=$1
+    shift
+    if [ "$DRY_RUN" -eq 1 ]; then
+        run "$label" "$@"
+        return 0
+    fi
+    if ! progress_on; then
+        # Sin terminal no hay spinner que dibujar. Se corre el comando con su
+        # salida normal: en CI el log crudo es exactamente lo que se quiere.
+        "$@"
+        CHANGED=1
+        return $?
+    fi
+    spinner_start "$label"
+    "$@" 2>&1 | while IFS= read -r line; do log_line "$line"; done
+    local status=${PIPESTATUS[0]}
+    # El spinner se para ANTES del "ok": si no, el `log_line` de abajo tendria que
+    # pelear con el subshell que sigue redibujando, y la linea queda cortada.
+    spinner_stop
+    if [ "$status" -eq 0 ]; then
+        log_ok "$label"
+    fi
+    CHANGED=1
+    return "$status"
+}
+
 log()  { progress_break; printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { progress_break; printf '\033[1;33mAVISO:\033[0m %s\n' "$*" >&2; }
-die()  { progress_break; printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+die()  { spinner_stop; progress_break; printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
 # log_paso <peso> <titulo>
 #
@@ -908,6 +1037,21 @@ manage() {
         printf ' %s\n' "$*"
         return 0
     fi
+    if [ "${LIVE_MANAGE:-0}" -eq 1 ]; then
+        # El log de `manage.py` va en vivo (ver `run_live`). Las migraciones de
+        # un proyecto con apps de produccion son la parte mas lenta de esta
+        # seccion y sin esto el operador ve la barra parada en "Migraciones" sin
+        # saber si Django esta aplicando 40 migraciones o colgado.
+        run_live "manage.py $*" \
+            systemd-run --quiet --pipe --wait \
+            --uid="$SERVICE_USER" --gid="$SERVICE_USER" \
+            -p "EnvironmentFile=$ENCRYPTION_ENV" \
+            -p Environment=PRODUCTION=1 \
+            -p "Environment=MPLCONFIGDIR=$MPLCONFIGDIR" \
+            --working-directory="$APP_DIR" \
+            "$VENV_DIR/bin/python" manage.py "$@"
+        return $?
+    fi
     systemd-run --quiet --pipe --wait \
         --uid="$SERVICE_USER" --gid="$SERVICE_USER" \
         -p "EnvironmentFile=$ENCRYPTION_ENV" \
@@ -1292,10 +1436,15 @@ if [ "$DRY_RUN" -eq 1 ]; then
     printf '  [dry-run] apt-get install -y %s\n' "${APT_PACKAGES[*]}"
 else
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq || die "apt-get update fallo."
+    # `apt-get update` y el install se muestran en vivo: son el primer comando
+    # que el operador ve correr y el que mas tiempo tarda sin decir nada. Un
+    # instalador que se queda mudo 90 segundos en el paso 1 parece colgado.
+    run_live 'apt-get update' apt-get update -qq \
+        || die "apt-get update fallo."
     # Se instala lo que falte: `apt-get install` sobre un paquete ya presente no
     # hace nada, asi que no hace falta un ciclo de deteccion por paquete.
-    apt-get install -y -qq "${APT_PACKAGES[@]}" \
+    run_live 'apt-get install (paquetes del sistema)' \
+        apt-get install -y -qq "${APT_PACKAGES[@]}" \
         || die "apt-get install fallo. Revisa el repositorio de la distro y volve a correr."
 fi
 
@@ -1386,7 +1535,12 @@ else
     if [ "$DRY_RUN" -eq 1 ]; then
         printf '  [dry-run] runuser -u %s -- git clone %s %s\n' "$SERVICE_USER" "$REPO_URL" "$APP_DIR"
     else
-        runuser -u "$SERVICE_USER" -- git clone --quiet --branch "$REPO_REF" "$REPO_URL" "$APP_DIR" \
+        # En vivo y sin `--quiet`: es el primer comando que depende de Internet y
+        # el que mas se traba por firewall o DNS. Con el log el operador ve si
+        # esta bajando o si se quedo esperando, que es justo lo que hay que
+        # distinguir antes de decidir si toca abrir puertos.
+        run_live "git clone $REPO_URL" \
+            runuser -u "$SERVICE_USER" -- git clone --branch "$REPO_REF" "$REPO_URL" "$APP_DIR" \
             || die "No se pudo clonar $REPO_URL en $APP_DIR. Revisa salida a Internet, DNS y permisos de $APP_DIR."
     fi
 fi
@@ -1488,8 +1642,21 @@ step 25 "Instalando requirements/prod.txt"
 # venv creado con uv no lo trae) y, si falta, la instalacion de requirements
 # falla con "No such file or directory". Mismo criterio que el PIP_CMD de
 # deploy.sh.
-run_sh "runuser -u '$SERVICE_USER' -- env 'PIP_CACHE_DIR=$PIP_CACHE_DIR' \
-    '$VENV_DIR/bin/python' -m pip install --quiet --disable-pip-version-check -r '$APP_DIR/requirements/prod.txt'"
+# El pip install es el comando mas largo de toda la instalacion, y con
+# `--quiet` no imprimia NADA: eran minutos de pantalla muerta con la barra
+# clavada en 71%. Se saca `--quiet` justamente para eso, y el spinner muestra el
+# reloj mientras corre. El log en vivo tambien deja ver que paquete esta yendo,
+# que es la forma de distinguir "compilando cryptography" de "colgado".
+if [ "$DRY_RUN" -eq 1 ]; then
+    printf '  [dry-run] runuser -u %s -- env PIP_CACHE_DIR=%s %s -m pip install -r %s\n' \
+        "$SERVICE_USER" "$PIP_CACHE_DIR" "$VENV_DIR/bin/python" "$APP_DIR/requirements/prod.txt"
+else
+    run_live 'pip install -r requirements/prod.txt' \
+        runuser -u "$SERVICE_USER" -- env "PIP_CACHE_DIR=$PIP_CACHE_DIR" \
+        "$VENV_DIR/bin/python" -m pip install --disable-pip-version-check \
+        -r "$APP_DIR/requirements/prod.txt" \
+        || die 'El pip install fallo. Revisa la red del servidor y volve a correr.'
+fi
 
 # --- C.6 .env ------------------------------------------------------------
 
@@ -1665,11 +1832,19 @@ if [ -n "$PENDING_CHANGES" ]; then
     warn "La migracion queda pendiente: hay que volver a correr este instalador"
     warn "cuando esten completos los valores de arriba."
 else
+    # LIVE_MANAGE=1 hace que manage() muestre el log en vivo (ver manage()).
+    LIVE_MANAGE=1
     run manage makemigrations
     run manage migrate --noinput
     run manage migrate --check
+    LIVE_MANAGE=0
 fi
+# collectstatic tambien va en vivo: con DEBUG=False no imprime una linea hasta
+# terminar, y en un proyecto con estaticos vendoreados son varios segundos en
+# los que no se ve nada pasar.
+LIVE_MANAGE=1
 run manage collectstatic --no-input
+LIVE_MANAGE=0
 # El mismo gate que corre deploy.sh en cada deploy, corrido una vez con la
 # configuracion real. security.W008 no aparece porque production.py lo silencia
 # en SILENCED_SYSTEM_CHECKS: el TLS y el redirect los termina el proxy, no
