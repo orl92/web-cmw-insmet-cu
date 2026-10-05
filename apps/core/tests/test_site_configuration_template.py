@@ -86,9 +86,11 @@ class SiteConfigurationTemplateTests(TestCase):
 
     def test_reset_theme_defaults_button_and_modal(self):
         response = self._get_edit_page()
-        # The reset button lives in the page-header title_actions and carries
-        # the page-context label "Restablecer tema".
-        self.assertContains(response, 'Restablecer tema')
+        # The reset button lives in the page-header title_actions. Its label was
+        # shortened to "Restablecer" in 75eca8e, so assert the label anchored to
+        # its own element instead of a bare word that could match anywhere.
+        self.assertContains(response, 'data-bs-target="#reset-theme-modal"')
+        self.assertContains(response, 'id="reset-theme-modal-title">Restablecer<')
         self.assertContains(response, 'reset-theme-modal')
         self.assertContains(response, 'reset_theme_defaults')
 
