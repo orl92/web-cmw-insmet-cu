@@ -207,6 +207,19 @@ celerybeat-schedule.*
 
 # Environments
 .env
+# Copias del .env que alguien se hace para tocar una variable y se le olvida
+# borrar. `.env` esta ignorado, `.env.bak` no: un `git add -A` se lleva la
+# contrasena de la base y el SMTP al repo. `env.bak/` de mas abajo es un patron
+# de DIRECTORIO y no cubre un archivo llamado .env.bak.
+#
+# `.env.*` y no una lista: enumerar los sufijos (`.env.bak`, `.env.local`,
+# `.env.*.bak`) deja pasar el que se invente en el momento, que es justo el que
+# se cuela. Los backups con timestamp son los peores, porque el nombre parece
+# de buildup y no de config.
+.env.*
+# El unico archivo de esta familia que SÍ va versionado: la plantilla sin
+# secretos. La negacion tiene que ir despues de `.env.*`.
+!.env.example
 .venv
 env/
 venv/

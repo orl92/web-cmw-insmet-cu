@@ -24,11 +24,29 @@ BASE_DIR = Path(settings.BASE_DIR)
 
 # ?v=151 cache busting on the 4 vendored assets (3 CSS in head.html, 1 JS in
 # scripts.html). Order matters: [0:3] are the head.html stylesheet links.
+# Esta lista es para aserciones sobre HTML RENDERIZADO.
 VENDORED_CACHE_BUSTED_LINKS = [
     'dist/css/tabler.min.css?v=151',
     'dist/css/tabler-themes.min.css?v=151',
     'dist/css/tabler-icons.min.css?v=151',
     'dist/js/tabler.min.js?v=151',
+]
+
+# La misma lista, pero para aserciones sobre el TEXTO DEL ARCHIVO. No se puede
+# buscar `path?v=151` como substring contiguo: el `{% static %}` ya no lleva el
+# `''`: eso era lo roto, porque `{% static '' %}` devuelve solo el prefijo de
+# STATIC_URL y no pasa por el manifest de WhiteNoise, con lo que en produccion
+# los cuatro assets se piden por su nombre sin hash y no existen: asi que entre
+# la ruta y la query queda el cierre del tag.
+#
+# Lo que el contrato exige de verdad es que el cache-buster siga UNIDO a la ruta
+# correcta, no que la ruta y la query sean adyacentes. Por eso se busca el cierre
+# del tag en medio: si alguien saca el `?v=151` o lo mueve a otro link, esto falla.
+VENDORED_CACHE_BUSTED_LINKS_IN_SOURCE = [
+    "dist/css/tabler.min.css' %}?v=151",
+    "dist/css/tabler-themes.min.css' %}?v=151",
+    "dist/css/tabler-icons.min.css' %}?v=151",
+    "dist/js/tabler.min.js' %}?v=151",
 ]
 
 TABLER_ASSETS = [
@@ -109,12 +127,12 @@ class Tabler151UpgradeFileContractTests(TestCase):
 
     def test_head_html_cache_busts_three_swapped_css(self):
         head = self._read('templates/includes/base/head.html')
-        for link in VENDORED_CACHE_BUSTED_LINKS[:3]:
+        for link in VENDORED_CACHE_BUSTED_LINKS_IN_SOURCE[:3]:
             self.assertIn(link, head, msg=link)
 
     def test_scripts_html_cache_busts_swapped_js(self):
         scripts = self._read('templates/includes/base/scripts.html')
-        self.assertIn(VENDORED_CACHE_BUSTED_LINKS[3], scripts)
+        self.assertIn(VENDORED_CACHE_BUSTED_LINKS_IN_SOURCE[3], scripts)
 
     def test_layouts_carry_static_light_theme_attribute(self):
         for layout in ('templates/layouts/base.html', 'templates/layouts/base-auth.html'):

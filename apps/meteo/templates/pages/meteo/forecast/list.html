@@ -300,7 +300,7 @@
 {% block extrajs %}
   {{ block.super }}
   {% include 'includes/dashboard/modal_delete_js.html' with delete_url_name='meteo:pronostico_delete' %}
-  <script src="{% static '' %}dist/libs/datatables/datatables.min.js"></script>
+  <script src="{% static 'dist/libs/datatables/datatables.min.js' %}"></script>
   <script>
     new DataTable('table.display', {
       processing: true,

@@ -19,7 +19,16 @@ para correos y PDFs. Interfaz y configuración en español (`es-mx`, `America/Ha
 - [Convenciones que te van a morder](#convenciones-que-te-van-a-morder) — las reglas duras del proyecto
 - [Tests](#tests) — cómo correrlos y qué corre CI
 - [Probar el worker y los correos](#probar-el-worker-y-los-correos) — PDF + email de punta a punta
-- [Despliegue en producción](#despliegue-en-producción) — servidor nuevo, paso a paso
+- [Despliegue en producción](#despliegue-en-producción) — servidor nuevo, de cero a deploy automático
+  - [1. Prerrequisitos de sistema](#1-prerrequisitos-de-sistema)
+  - [2. Base de datos](#2-base-de-datos)
+  - [3. Código, venv y `.env`](#3-código-venv-y-env)
+  - [4. systemd](#4-systemd)
+  - [5. Nginx](#5-nginx)
+  - [6. Datos iniciales y usuario administrador](#6-datos-iniciales-y-usuario-administrador)
+  - [7. Verificar](#7-verificar)
+  - [8. Deploy automático con GitHub Actions](#8-deploy-automático-con-github-actions)
+  - [9. Operación](#9-operación)
 - [Contribuir](#contribuir) — flujo de trabajo del proyecto
 - [Licencia](#licencia)
 
@@ -35,6 +44,16 @@ cd web-cmw-insmet-cu
 
 # Dependencias del sistema para PDFs (wkhtmltopdf) y MySQL (libmysqlclient)
 sudo apt install libcairo2-dev pkg-config python3-dev wkhtmltopdf
+
+# En Python 3.14 no hay ruedas para varios pins de requirements/prod.txt
+# (pycairo entre otros) y hay que compilar. Sin esto pip falla con
+# "Running cc --version gave [Errno 2] No such file or directory: 'cc'".
+sudo apt install build-essential
+
+# WeasyPrint (facturacion en PDF) carga libpango por cffi. Sin esto,
+# `manage.py check` muere con "ffi.dlopen('libpango-1.0.so.0')".
+# Ojo con el nombre: en Ubuntu 24.04+ es libpango1.0-dev, NO libpango-1.0-dev.
+sudo apt install libpango1.0-dev
 
 make setup
 ```
@@ -309,22 +328,80 @@ Nginx (TLS, estáticos, media) → Gunicorn (systemd) → PostgreSQL
 
 Redis es opcional: el caché por defecto corre en memoria del proceso.
 
-Los tres archivos de configuración están versionados en `deploy/`. Son **ejemplos
-deterministas sin secretos**: lo que cambia por instalación son rutas y certificados,
-y eso se edita en el servidor.
+> Ojo: `scripts/generate_env.py --production` escribe `USE_REDIS_CACHE=True`, así que
+> o instalás Redis (`sudo apt install redis-server && sudo systemctl enable --now
+> redis-server`) o ponés `USE_REDIS_CACHE=False` en el `.env`. Con `True` y sin
+> servidor Redis, el fallo aparece en la primera escritura al caché, en producción.
+>
+> Y aunque no uses Redis, el caché en memoria es **por proceso**: con varios workers
+> cada uno tiene su copia y no se invalidan entre sí. Para el portal público no es
+> grave; para el panel de administración, donde un estado obsoleto se traduce en
+> "no veo el cliente que acabo de crear", conviene Redis.
 
-### 1. Sistema
+Todo lo que se instala en el servidor está versionado en `deploy/`. Son **ejemplos
+deterministas sin secretos**: lo que cambia por instalación son rutas, dominio y
+certificados, y eso se edita en el servidor.
+
+| Archivo | Para qué |
+| --- | --- |
+| `deploy/install.sh` | Bootstrap del andamiaje de deploy. Idempotente, corre una vez por servidor |
+| `deploy/deploy.sh` | La lógica del deploy, en un solo lugar. Se instala como `/usr/local/sbin/webcmp-deploy` |
+| `deploy/deploy.env.example` | Config del deploy → `/etc/webcmp/deploy.env` |
+| `deploy/systemd/*.service` | Gunicorn y el worker Huey |
+| `deploy/nginx/webcmp.conf.example` | El vhost de Nginx |
+| `deploy/sudoers/webcmp-deploy` | El sudoers acotado a un único comando |
+| `deploy/README-deploy.md` | Los porqués del diseño, el rollback y los errores que solo salen en producción |
+
+La separación es deliberada: **toda la lógica del deploy vive en
+`deploy/deploy.sh`** y el workflow es un cliente SSH delgado que lo invoca. Un
+deploy que se puede correr a mano desde el servidor es un deploy que se puede
+depurar; uno que solo existe como YAML de GitHub no.
+
+### 1. Prerrequisitos de sistema
 
 ```bash
 sudo apt update
-sudo apt install -y python3.14 python3.14-venv postgresql nginx
+sudo apt install -y \
+  git python3.14 python3.14-venv postgresql nginx redis-server \
+  build-essential pkg-config libcairo2-dev libpango1.0-dev \
+  python3-dev wkhtmltopdf
+```
 
-# Usuario dedicado. El servicio NUNCA corre como root.
+Faltan tres paquetes en la lista corta, y sin ellos ni `pip install` ni `manage.py`
+llegan a empezar:
+
+| Paquete | Por qué |
+| --- | --- |
+| `build-essential` | Python 3.14 no tiene ruedas para varios pins de `prod.txt` y hay que compilar |
+| `libpango1.0-dev` | WeasyPrint (PDF) lo carga por cffi |
+| `redis-server` | El `.env` de producción trae `USE_REDIS_CACHE=True` |
+
+Los dos primeros fallan con errores que no dicen qué falta:
+
+```bash
+# Sin build-essential
+#   Running cc --version gave [Errno 2] No such file or directory: 'cc'
+
+# Sin libpango1.0-dev
+#   ffi.dlopen('libpango-1.0.so.0')
+```
+
+> Ojo con el nombre: en Ubuntu 24.04+ es `libpango1.0-dev`, **no**
+> `libpango-1.0-dev`.
+
+Usuario dedicado del servicio:
+
+```bash
+# El servicio NUNCA corre como root, y este usuario no tiene shell a proposito:
+# existe para correr Gunicorn y Huey, no para que alguien se loguee.
 sudo useradd -r -s /bin/false webcmp
 sudo mkdir -p /srv/webcmp && sudo chown webcmp:webcmp /srv/webcmp
 ```
 
-### 2. PostgreSQL
+### 2. Base de datos
+
+El rol de PostgreSQL y el del servicio son el mismo (`webcmp`), y la base es
+propiedad de ese rol. `psycopg[binary]` ya viene en `requirements/prod.txt`.
 
 ```bash
 sudo -u postgres psql <<'SQL'
@@ -336,9 +413,33 @@ GRANT ALL ON SCHEMA public TO webcmp;
 SQL
 ```
 
-`psycopg[binary]` ya está en `requirements/prod.txt`.
+El `GRANT` explícito sobre el esquema `public` no es redundante con el `CREATE
+DATABASE OWNER`: en PostgreSQL 15+ `PUBLIC` ya no tiene `CREATE` en `public`, pero
+sin ese `GRANT` el rol tampoco puede escribirlo, y `migrate` falla al crear la
+primera tabla.
 
-### 3. Código y `.env`
+Si vas a correr la suite de tests en el mismo servidor, el rol necesita poder
+crear la base de prueba:
+
+```bash
+sudo -u postgres psql -c 'ALTER ROLE webcmp CREATEDB'
+```
+
+Sin eso, `python manage.py test` muere con `permission denied to create database`
+después de encontrar los 1184 tests.
+
+Cambiar la contraseña después es en **los dos lados**: el rol y el `DB_PASS` del
+`.env`. Si la cambiás en uno solo, cada request muere con `password authentication
+failed for user "webcmp"`, que parece un problema de red y no de clave.
+
+```bash
+sudo -u postgres psql -c "ALTER USER webcmp WITH PASSWORD 'NUEVA_CLAVE'"
+sudo nano /srv/webcmp/.env      # DB_PASS
+sudo chown webcmp:webcmp /srv/webcmp/.env && sudo chmod 600 /srv/webcmp/.env
+sudo systemctl restart webcmp
+```
+
+### 3. Código, venv y `.env`
 
 ```bash
 sudo -u webcmp git clone https://github.com/orl92/web-cmw-insmet-cu.git /srv/webcmp
@@ -346,26 +447,85 @@ cd /srv/webcmp
 sudo -u webcmp python3.14 -m venv .venv
 sudo -u webcmp .venv/bin/pip install -r requirements/prod.txt
 
-sudo -u webcmp .venv/bin/python scripts/generate_env.py --production
+# `generate_env.py` tiene que correr como root: escribe /etc/webcmp/encryption.env,
+# que es root con modo 600 y webcmp no puede crear. Correlo como webcmp falla y no
+# escribe nada (falla cerrado, lo cual esta bien).
+sudo install -d -m 0755 -o root -g root /etc/webcmp
+sudo .venv/bin/python scripts/generate_env.py --production
+
+# Las migraciones NO se versionan (ver .gitignore), asi que en un clone limpio no
+# existen: `migrate` solo no alcanza, hay que generarlas antes desde los modelos.
+sudo -u webcmp .venv/bin/python manage.py makemigrations
 sudo -u webcmp .venv/bin/python manage.py migrate
 sudo -u webcmp .venv/bin/python manage.py collectstatic --no-input
 ```
+
+> **Los `manage.py` de este bloque son un caso especial.** Corren a secas, sin el
+> `systemd-run` que sí usan los pasos 6 y 7, y funcionan solo porque los tres
+> comandos de acá (`makemigrations`, `migrate`, `collectstatic`) no necesitan la
+> `ENCRYPTION_KEY`: leen el `.env` como webcmp y el perfil de desarrollo les sirve.
+>
+> El día que quieras correr **otro** `manage.py` a mano, ese no es el camino. Sin el
+> `PRODUCTION=1` del unit caés al perfil de desarrollo y `migrate` se ejecuta
+> contra **SQLite**: dice que todo bien y el sitio sigue en PostgreSQL. Para
+> cualquier otro comando, el contexto correcto es el del paso 6, que es lo que
+> hace `deploy/deploy.sh`.
+>
+> Y `systemd-run` va con `sudo`, nunca con `sudo -u webcmp`: necesita hablar con el
+> systemd del sistema, y el drop de privilegios lo hace `--uid=webcmp`. Con `sudo
+> -u webcmp systemd-run` el comando muere con `Failed to start transient service
+> unit: Access denied`.
 
 El script escribe dos archivos:
 
 | Archivo | Contiene | Permisos |
 | --- | --- | --- |
-| `/srv/webcmp/.env` | `SECRET_KEY` cifrada, `DEBUG=False`, `DB_*`, SMTP | `600` |
+| `/srv/webcmp/.env` | `SECRET_KEY` cifrada, `DEBUG=False`, `DB_*`, SMTP | `600`, **webcmp** |
 | `/etc/webcmp/encryption.env` | `ENCRYPTION_KEY` (clave de descifrado) | `600`, root |
 
-Editá los `CHANGE_ME` del `.env` (SMTP y `DB_PASS`) y dejá los permisos así:
+El `.env` es de `webcmp` y no de root porque Django corre como ese usuario y tiene
+que poder leerlo. La `ENCRYPTION_KEY` queda en root y el `.env` en 600: entrar al
+grupo `webcmp` (lo necesita Nginx, ver el paso 5) no da acceso a ninguna de las dos.
+
+Después de generar el `.env` hay que **cambiar el hostname**: el generador escribe
+`EXTERNAL_HOSTNAME=cmw.insmet.cu` por default y no tiene flag para pasarlo, así
+que hay que editar a mano `EXTERNAL_HOSTNAME`, `ALLOWED_HOSTS`,
+`CSRF_TRUSTED_ORIGINS` y `CORS_ALLOWED_ORIGINS`. Si no, el sitio responde
+`DisallowedHost` a cada petición.
 
 ```bash
 sudo nano /srv/webcmp/.env
+sudo chown webcmp:webcmp /srv/webcmp/.env && sudo chmod 600 /srv/webcmp/.env
 sudo chown root:root /etc/webcmp/encryption.env && sudo chmod 600 /etc/webcmp/encryption.env
-sudo mkdir -p /srv/webcmp/{media,logs,staticfiles}
-sudo chown -R webcmp:webcmp /srv/webcmp/{media,logs,staticfiles}
+
+# `staticfiles/` y `media/` los necesita escribibles por el usuario del servicio,
+# y `.cache/` para MPLCONFIGDIR: con `ProtectSystem=full` el worker no puede
+# crearse solo ese directorio, y el unit lo declara en `ReadWritePaths=`.
+sudo mkdir -p /srv/webcmp/{media,logs,staticfiles,.cache/matplotlib}
+sudo chown -R webcmp:webcmp /srv/webcmp/{media,logs,staticfiles,.cache}
 ```
+
+El `.env` sale con dos cosas que hay que completar antes de que el sitio sirva de
+verdad:
+
+| Variable | Qué hacer |
+| --- | --- |
+| `EXTERNAL_HOSTNAME`, `ALLOWED_HOSTS` | El dominio real |
+| `CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS` | Idem |
+
+Sin esas cuatro, cada petición es un `DisallowedHost`.
+
+Y las de SMTP: `EMAIL_HOST_USER` y `EMAIL_HOST_PASSWORD` salen como
+`CHANGE_ME_placeholder`, con lo que los correos no se van.
+
+> `webcmp` es una cuenta de sistema **sin home**, así que pip no encuentra dónde
+> escribir su caché y cada `pip install` baja todo desde PyPI. Dedicale uno:
+> `sudo install -d -m 0700 -o webcmp -g webcmp /var/cache/webcmp-pip`. El deploy lo
+> exporta solo (`PIP_CACHE_DIR` en `/etc/webcmp/deploy.env`).
+
+> `collectstatic` **no es instantáneo**: son ~917 archivos y ~114 MB, y con
+> `CompressedManifestStaticFilesStorage` genera además el `.gz` y el `.br` de cada
+> uno. En esta máquina son unos 3 minutos. El deploy completo anda por los 5.
 
 ### 4. systemd
 
@@ -395,17 +555,96 @@ sudo cp deploy/nginx/webcmp.conf.example /etc/nginx/sites-available/webcmp.conf
 sudo nano /etc/nginx/sites-available/webcmp.conf   # certificados y rutas
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -s /etc/nginx/sites-available/webcmp.conf /etc/nginx/sites-enabled/
+
+# www-data tiene que poder tocar el socket de Gunicorn, que sale
+# 0770 webcmp:webcmp. Sin esto Nginx devuelve 502 en cada respuesta y el log dice
+# "connect() failed (13: Permission denied)", que no parece un problema de grupo.
+sudo usermod -aG webcmp www-data
+
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+> **Reinicio de Nginx, no `reload`.** Los grupos suplementarios se leen al crear
+> los workers. Un `reload` alcanza para leer la config, pero si acabás de cambiar
+> la pertenencia a un grupo, reiniciá el servicio.
 
 > **No quites `proxy_set_header X-Forwarded-Proto $scheme;`.** Django lo lee con
 > `SECURE_PROXY_SSL_HEADER` para resolver `request.is_secure()`. Sin esa línea las
 > cookies de sesión seguras no se envían y el usuario entra en un bucle de logout.
 
-### 6. Verificar
+> **`Host` está repetido dentro de `location /`, y no es una redundancia.** En
+> Nginx, `proxy_set_header` se hereda del `server` solo si el `location` no declara
+> ninguno. `location /` declara dos (para el websocket), así que los del `server`
+> se descartan ahí y el `Host` vuelve al default, que es `$proxy_host`: el nombre
+> del upstream. Gunicorn recibía `Host: webcmp` y contestaba `DisallowedHost` en
+> todas las peticiones. Si sacás esas líneas, el sitio entero responde 400.
+
+### 6. Datos iniciales y usuario administrador
+
+Una base migrada está vacía: sin municipios ni estaciones, las páginas de pronóstico
+no tienen contra qué renderizar.
 
 ```bash
-sudo -u webcmp systemd-run --pipe --wait \
+sudo systemd-run --pipe --wait --uid=webcmp \
+  -p EnvironmentFile=/etc/webcmp/encryption.env \
+  -p Environment=PRODUCTION=1 --working-directory=/srv/webcmp \
+  /srv/webcmp/.venv/bin/python manage.py add_stations_data
+```
+
+Toma `--provincia` (default `Camagüey`) y `--tipo` (`municipios`, `estaciones` o
+`todo`, que es el default).
+
+El usuario administrador se crea con `createsuperuser`. Hay dos formas, y la
+diferencia importa:
+
+```bash
+# Interactivo (la normal). -t le da terminal al comando.
+sudo systemd-run --pipe --wait --uid=webcmp -t \
+  -p EnvironmentFile=/etc/webcmp/encryption.env \
+  -p Environment=PRODUCTION=1 --working-directory=/srv/webcmp \
+  /srv/webcmp/.venv/bin/python manage.py createsuperuser
+
+# No interactivo, para un servidor que se arma por script.
+sudo systemd-run --pipe --wait --uid=webcmp \
+  -p EnvironmentFile=/etc/webcmp/encryption.env \
+  -p Environment=PRODUCTION=1 \
+  -p Environment=DJANGO_SUPERUSER_PASSWORD='CONTRASENA_LARGA_Y_UNICA' \ # pragma: allowlist secret
+  --working-directory=/srv/webcmp \
+  /srv/webcmp/.venv/bin/python manage.py createsuperuser \
+    --noinput --username admin --email admin@insmet.cu
+```
+
+> **La contraseña va adentro del `systemd-run`, no en tu shell.**
+> `systemd-run` no hereda el entorno de quien lo invoca, así que
+> `DJANGO_SUPERUSER_PASSWORD=x systemd-run ... createsuperuser` **crea el usuario
+> con una contraseña inservible y no avisa**. El síntoma es un login que siempre
+> rechaza la clave. Por eso va como `-p Environment=DJANGO_SUPERUSER_PASSWORD=...`.
+>
+> `--uid=webcmp` tampoco es opcional: sin él el comando corre como root, no puede
+> leer el `.env` (600 de `webcmp`) y falla con un error de descifrado que parece un
+> problema de claves.
+
+Después del primer login, el usuario va a ser redirigido a
+`/accounts/profile/update/` en cada navegación hasta que complete email, nombre y
+apellido. No es un bug: es `CheckUserProfileMiddleware` (`apps/core/middleware.py`),
+que manda a cualquier usuario con el perfil incompleto a esa página. Completalo y
+seguí.
+
+Para crear más usuarios sin panel:
+
+```bash
+sudo systemd-run --pipe --wait --uid=webcmp \
+  -p EnvironmentFile=/etc/webcmp/encryption.env \
+  -p Environment=PRODUCTION=1 --working-directory=/srv/webcmp \
+  /srv/webcmp/.venv/bin/python manage.py shell -c \
+  "from django.contrib.auth.models import User; \
+   User.objects.create_superuser('nombre', 'correo@insmet.cu', 'CONTRASENA')"
+```
+
+### 7. Verificar
+
+```bash
+sudo systemd-run --pipe --wait --uid=webcmp \
   -p EnvironmentFile=/etc/webcmp/encryption.env \
   -p Environment=PRODUCTION=1 --working-directory=/srv/webcmp \
   /srv/webcmp/.venv/bin/python manage.py check --deploy
@@ -413,10 +652,165 @@ sudo -u webcmp systemd-run --pipe --wait \
 curl -I https://web.cmw.insmet.cu
 ```
 
-`check --deploy` tiene que salir con 0 issues. Lo único tolerado es `W008` (el TLS lo
-termina Nginx, no Django) y está silenciado en `config/settings/production.py`.
+`check --deploy` tiene que salir con 0 issues. Lo único tolerado es `security.W008` (el
+TLS lo termina Nginx, no Django) y está silenciado en `config/settings/base.py`.
 
-### Operación
+### 8. Deploy automático con GitHub Actions
+
+Hasta acá el servidor sirve, pero cada cambio hay que desplegarlo a mano. A partir
+de acá, `main` en verde se despliega solo.
+
+#### 8.1 Instalar el andamiaje en el servidor (una vez)
+
+El deploy por workflow no es autocontenido: la primera vez hay que instalar el
+usuario de despliegue, su clave, el script, la config y el sudoers.
+
+```bash
+sudo ./deploy/install.sh --dry-run   # muestra qué haría, sin tocar nada
+sudo ./deploy/install.sh
+```
+
+Qué hace, y por qué en ese orden:
+
+| Paso | Qué instala |
+| --- | --- |
+| 1 | Usuario `deploy` + su keypair SSH (distinto de `webcmp`, que tiene shell `/bin/false`) |
+| 2 | `deploy.sh` en `/usr/local/sbin/webcmp-deploy`, **fuera** del checkout |
+| 3 | `/etc/webcmp/deploy.env` desde el ejemplo, sin pisar uno existente |
+| 4 | `/etc/sudoers.d/webcmp-deploy`, validado con `visudo -c` **antes** de instalar |
+| 5 | `www-data` al grupo `webcmp`, para que Nginx toque el socket de Gunicorn |
+
+Es idempotente: correrlo dos veces no cambia nada y no regenera secretos. Importa
+porque el script se puede necesitar correr más de una vez, y porque cada paso que
+regenera una clave o pisa una config editada a mano convierte un reintento en un
+incidente.
+
+A propósito **no** hace: generar el `.env`, crear el venv, instalar prerrequisitos
+de sistema, ni tocar Nginx o los certificados. Son cosas que dependen del dominio
+real, y automatizarlas a ciega deja más basura de la que recoge.
+
+> **Por qué el script vive en `/usr/local/sbin` y no en `/srv/webcmp/deploy/`.** El
+> deploy corre como root y el checkout es escribible por `webcmp`. Con el sudoers
+> de `deploy/sudoers/webcmp-deploy`, tener el script dentro del checkout sería una
+> escalada trivial: alcanza con editar ese archivo para ejecutar root. En
+> `/usr/local/sbin`, propiedad de root, el usuario de despliegue no puede escribirlo.
+>
+> Y las reglas de sudoers son **estrechas a propósito**: el script acepta el commit
+> de destino por argumento, así que con un `(ALL) NOPASSWD: ALL` cualquier SHA de
+> cualquier rama llegaría a producción.
+
+Editá `/etc/webcmp/deploy.env` antes de seguir. Lo que más se olvida:
+
+```bash
+sudo nano /etc/webcmp/deploy.env
+```
+
+| Variable | Por qué importa |
+| --- | --- |
+| `PUBLIC_HOSTNAME` | Debe ser el `server_name` de Nginx y el `EXTERNAL_HOSTNAME` del `.env` |
+| `HEALTHCHECK_INSECURE` | Ver abajo |
+
+`PUBLIC_HOSTNAME` tiene que ser **exactamente** esos otros dos, porque el health
+check entra por `127.0.0.1:443` con ese nombre como SNI y como `Host`: si no
+coinciden, TLS no encaja y el deploy falla aunque el sitio esté perfecto.
+
+Mientras `HEALTHCHECK_INSECURE=1`, el health check corre `curl --insecure` y deja de
+detectar un certificado vencido o con nombre incorrecto. Sacalo cuando tengas un
+certificado de una CA real.
+
+#### 8.2 Secrets de GitHub
+
+En **Settings → Environments → `production`** (no secrets del repo: el environment
+puede pedir aprobación humana, y las credenciales de producción no quedan
+visibles desde cualquier workflow).
+
+| Secret | Qué es |
+| --- | --- |
+| `DEPLOY_HOST` | IP o hostname del servidor |
+| `DEPLOY_USER` | `deploy` |
+| `DEPLOY_SSH_KEY` | La clave **privada** ed25519 en PEM, con `BEGIN`/`END` |
+| `DEPLOY_SSH_KNOWN_HOSTS` | Salida de `ssh-keyscan -p 22 <host>` |
+
+```bash
+# El .pub del keypair que creó install.sh
+cat /home/deploy/.ssh/id_ed25519.pub
+
+# El known_hosts del servidor
+ssh-keyscan -p 22 <host-del-servidor>
+```
+
+`DEPLOY_SSH_KNOWN_HOSTS` no es decorativo: el workflow usa
+`StrictHostKeyChecking=yes`. Va ahí, y no con `accept-new`, porque `accept-new`
+acepta cualquier clave la primera vez — un deploy que no verifica a quién se conecta
+le entrega la clave de despliegue a cualquiera que responda ese puerto.
+
+> **Los runners de GitHub no llegan a una IP privada.** Si `DEPLOY_HOST` es algo en
+> `192.168.x.x` o `10.x.x.x`, el job se queda colgado en `ConnectTimeout=20` y falla.
+> Hace falta una IP pública alcanzable, un runner self-hosted dentro de la red, o
+> un bastion.
+
+#### 8.3 Qué dispara el deploy
+
+`.github/workflows/deploy.yml` corre en dos casos:
+
+| Disparador | Qué hace |
+| --- | --- |
+| `workflow_run` sobre CI, con `conclusion == success` y `branches: [main]` | Despliega el commit que quedó en verde |
+| `workflow_dispatch` | Manual, desde la pestaña Actions |
+
+`workflow_dispatch` es el que se usa para los dos casos raros: un rollback
+apegado a un SHA viejo, y un primer deploy antes de fiarse del automático.
+
+El concurrency group es `deploy-production` con `cancel-in-progress: false`: dos
+deploys se ejecutan **uno después del otro**, nunca superpuestos. Cancelar el que
+está corriendo para arrancar otro deja el servidor en un estado intermedio que
+nadie pidió.
+
+#### 8.4 Qué hace el deploy
+
+En orden, y todo en `deploy/deploy.sh`:
+
+```text
+flock → aborted si hay cambios sin commitear → checkout del SHA → pip install
+      → makemigrations → check --deploy → migrate → collectstatic
+      → restart → health check
+```
+
+El `flock` del principio no es un detalle: dos pushes seguidos no pueden migrar a
+la vez. Y el `check --deploy` va **antes** de `migrate` a propósito, para que un
+deploy con la configuración rota no llegue a tocar el esquema.
+
+Dos cosas que parecen raras y no lo son:
+
+**`makemigrations` y no `makemigrations --check`.** El proyecto no versiona las
+migraciones (están en `.gitignore`), así que en un clone limpio no existen. El
+deploy las genera desde los modelos y las aplica; un `--check` fallaría siempre.
+
+**`check --deploy` contra la configuración real del servidor**, no el del CI. El del
+CI corre sin `ENCRYPTION_KEY` ni con el par de testing, y pasa sobre cosas que en
+producción no. Este es el gate que de verdad importa, y corre con los valores con
+los que el sitio va a servir.
+
+#### 8.5 Rollback
+
+Automático: si algo falla **después** de que el checkout se movió, un
+`trap rollback EXIT` devuelve el servidor al commit anterior y reinicia los
+servicios. Si el fallo es antes de mover nada, no hay nada que deshacer.
+
+```bash
+# Rollback manual a un SHA que ya se sabe que es bueno
+sudo /usr/local/sbin/webcmp-deploy <sha>
+sudo journalctl -u webcmp -n 100      # ver qué pasó
+```
+
+**El primer deploy en serio: hacelo a mano.** Un `sudo /usr/local/sbin/webcmp-deploy`
+con un SHA conocido te dice si el servidor está listo sin meter un workflow de
+GitHub en el medio. Recién después, probá el automático.
+
+Los porqués del diseño y la tabla de errores que solo aparecen en producción están
+en [`deploy/README-deploy.md`](deploy/README-deploy.md).
+
+### 9. Operación
 
 ```bash
 sudo systemctl restart webcmp   # reinicio sin cortar conexiones
@@ -442,7 +836,7 @@ sudo -u webcmp .venv/bin/python manage.py cleanup_orphan_media --dry-run
 
 1. `sudo systemctl stop supervisor` (o sacá los programas de
    `/etc/supervisor/conf.d/webcmp.conf` y `supervisorctl update`).
-2. Seguí los pasos 3 a 6 en el servidor nuevo.
+2. Seguí los pasos 3 a 7 en el servidor nuevo.
 3. Nginx debe apuntar al socket nuevo: `unix:/run/webcmp/gunicorn.sock`.
 4. `gunicorn.sh` ya no está en el repo; el unit lo reemplaza con `ExecStart` directo.
 

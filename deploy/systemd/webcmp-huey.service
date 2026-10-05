@@ -33,11 +33,15 @@ EnvironmentFile=-/etc/webcmp/encryption.env
 Environment=PRODUCTION=1
 Environment=DJANGO_SETTINGS_MODULE=config.settings
 
+# Ver el comentario en webcmp.service: sin esto Matplotlib regenera la cache de
+# fuentes en cada arranque del worker.
+Environment=MPLCONFIGDIR=/srv/webcmp/.cache/matplotlib
+
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-ReadWritePaths=/srv/webcmp/media /srv/webcmp/logs
+ReadWritePaths=/srv/webcmp/media /srv/webcmp/logs /srv/webcmp/.cache
 
 # El log va a stdout, no a un archivo: journald ya lo rota, lo comprime y lo
 # indexa. Un --logfile en el codigo es un log que nadie rota nunca.

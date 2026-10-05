@@ -1,0 +1,47 @@
+# Usuario de despliegue: el dueno de la clave SSH que usa GitHub Actions.
+#
+# NO es el usuario del servicio. `webcmp` existe para correr Gunicorn y Huey, y
+# tiene el shell en /bin/false justamente para que nadie pueda loguearse con el.
+# El despliegue necesita un usuario con shell y con privilege escalation acotado,
+# que son dos cosas distintas.
+#
+# Crear el usuario (una vez):
+#   sudo useradd -m -s /bin/bash deploy
+#   sudo install -o root -g root -m 0440 deploy/sudoers/webcmp-deploy /etc/sudoers.d/webcmp-deploy
+#   sudo visudo -c -f /etc/sudoers.d/webcmp-deploy
+#   sudo install -o root -g root -m 0755 deploy/deploy.sh /usr/local/sbin/webcmp-deploy
+#   sudo install -o root -g root -m 0600 deploy/deploy.env.example /etc/webcmp/deploy.env
+#
+# Publicar la clave publica como secret DEPLOY_SSH_KEY de GitHub:
+#   cat /home/deploy/.ssh/id_ed25519.pub
+#
+# La ruta de /usr/local/sbin NO es arbitraria. Si el script viviera en
+# /srv/webcmp/deploy/deploy.sh, que es escribible por webcmp, este sudoers seria
+# una escalada de privilegios trivial: bastaria con editar ese archivo para
+# ejecutar root. En /usr/local/sbin, propiedad de root, el usuario de despliegue
+# no puede escribirlo.
+#
+# Que estas reglas sean estrechas importa tambien para el rollback. El script
+# acepta el commit de destino por argumento, asi que con un `(ALL) NOPASSWD: ALL`
+# cualquier SHA de cualquier rama llegaria a produccion.
+#
+# Notar que no hay reglas para git, systemctl ni manage.py: el usuario de
+# despliegue no opera el servidor, solo invoca el script, que ya hace lo que
+# corresponde. El workflow resuelve el SHA con git ls-remote desde el runner de
+# GitHub, no desde el servidor.
+#
+# Sintaxis de /etc/sudoers.d/: a diferencia de una linea suelta pegada al final de
+# /etc/sudoers, un archivo de este directorio NO admite una lista de comandos a
+# pelo. Cada linea necesita usuario, host, runas y comando; si falta el
+# `deploy ALL=(root)` sudo se queja con "garbage at end of line" y el archivo
+# entero se descarta. Conviene validar con `visudo -c -f <archivo>` ANTES de
+# instalarlo: un sudoers invalido deja al usuario de despliegue sin sudo, que es
+# un fallo ruidos y visible, pero igual tapa el deploy.
+#
+# Las dos lineas hacen falta. La primera cubre la invocacion sin argumentos
+# (manual, o el chequeo de uso), la segunda la invocacion con el SHA. El comodin
+# `*` no es decorativo: sin el, `sudo webcmp-deploy b50de53` no matchea nada y el
+# deploy falla con un "command not allowed" que parece un problema de sudoers y
+# es de argumentos.
+deploy ALL=(root) NOPASSWD: /usr/local/sbin/webcmp-deploy
+deploy ALL=(root) NOPASSWD: /usr/local/sbin/webcmp-deploy *

@@ -37,7 +37,20 @@ def menu_notifications(request):
         context['tropical_cyclone_count'] = 0
         context['storm_warning_count'] = 0
 
-    if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
+    # `request.user` no siempre existe: lo pone AuthenticationMiddleware, que va
+    # DESPUES de SecurityMiddleware y CommonMiddleware. Si cualquiera de esos dos
+    # levanta una excepcion (un Host no permitido, por ejemplo), Django entra al
+    # handler de error con una request que todavia no tiene `.user`, y aca el
+    # AttributeError tapa el error real con un 500: el cliente ve "error interno"
+    # en lugar del 400 que corresponde, y el log muestra el context processor en
+    # vez de la causa.
+    #
+    # O sea: los handlers de error de este proyecto (apps/core/utils.py) renderizan
+    # plantillas, y toda plantilla pasa por este context processor. Sin el getattr,
+    # la pagina de error se cae sola, que es el peor momento para que se caiga.
+    user = getattr(request, 'user', None)
+
+    if user is not None and user.is_authenticated and (user.is_staff or user.is_superuser):
         try:
             from django.db.models import Count, Q
 
@@ -56,13 +69,13 @@ def menu_notifications(request):
             context['staff_requested_count'] = 0
             context['staff_pending_count'] = 0
 
-    if request.user.is_authenticated and hasattr(request.user, 'commercial_customer'):
+    if user is not None and user.is_authenticated and hasattr(user, 'commercial_customer'):
         try:
             from django.db.models import Count, Q
 
             from apps.commercial.models import ServiceSubscription
 
-            customer = request.user.commercial_customer
+            customer = user.commercial_customer
             counts = ServiceSubscription.objects.filter(
                 customer=customer, record_active=True
             ).aggregate(
