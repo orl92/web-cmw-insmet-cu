@@ -131,15 +131,50 @@ contra el PDF actual.
         son el período impreso, y borrarlos sería otra tarea.
       - El campo va en la tarjeta "Período de Facturación", arriba de las fechas,
         que quedan rotuladas como datos operativos del cálculo.
-- [ ] **T3** `U/M` = `U`. La descripción del ítem lleva "por meses"/"por días"
+- [ ] **T3** Rediseño de períodos en el formulario de facturación. Es la tarea que
+      desbloquea la confusión del operador, así que va antes que el resto.
+      - **Dos períodos distintos, dos lugares distintos.** El período del
+        *contrato* (`ServiceSubscription.start_date` + `quantity`) y el período
+        *facturado* (`Invoice.period_label`) son datos de entidades distintas. El
+        formulario los mezclaba en una sola tarjeta titulada "Período de
+        Facturación", y por eso no cerraba.
+      - **La fecha de inicio pasa a ser por línea.** `start_date` es un contrato
+        que persiste: el propio código dice "al facturar sólo cambia el estado de
+        pago". Escribir una fecha que no es la real al crear la suscripción la
+        deja mal para siempre, y ninguna facturación posterior la corrige. El caso
+        real —agrometeo de mayo a julio y pronóstico desde el 10 de junio— obliga
+        a mentirle a una de las dos líneas con una fecha compartida.
+      - **La unidad no se guarda, se deriva** de `service_category`, igual que hoy
+        en `get_quantity_period_display()` y en el `InvoiceItem`. Agregar un
+        selector de unidad sería duplicar un dato que ya existe.
+      - **Cada línea arranca con la fecha de la factura por defecto** y el
+        operador la cambia sólo cuando hace falta: el caso común es un clic y el
+        raro queda expresado.
+      - **`#days-count` se borra**: no tiene atributo `name`, nunca se postea, no
+        se guarda. Es decoración JS (`create.html:587`).
+      - **`start_date`/`end_date` salen de la tarjeta "Período de Facturación"**,
+        que queda con `period_label` y nada más.
+      - **En modo lote se muestra el período de cada suscripción en read-only**
+        (`desde 15/05 · 3 meses`). No son campos nuevos: es mostrar el dato que la
+        suscripción ya tiene y que la pantalla ocultaba.
+      - **Corregir el flash de éxito** (`invoices.py:241`), que sigue
+        anunciando `período {start_date} - {end_date}`: es un rango de fechas que
+        el PDF dejó de imprimir en T2. Inconsistencia introducida por T2.
+      - **Quitar los parámetros muertos** `start_date`/`end_date` de
+        `process_batch_invoice`: aparecen en la firma y nunca en el cuerpo.
+- [ ] **T4** `U/M` = `U`. La descripción del ítem lleva "por meses"/"por días"
       según la categoría del servicio.
-- [ ] **T4** `Contract.__str__` y `Certificate.__str__` delegan en
+- [ ] **T5** Filtro por categoría de servicio en la facturación manual: elegir
+      categoría y sólo ver los servicios de esa categoría. Se mantiene en un
+      commit propio, separado del rediseño de períodos, porque son riesgos
+      distintos.
+- [ ] **T6** `Contract.__str__` y `Certificate.__str__` delegan en
       `Customer.display_name`.
-- [ ] **T5** `commercial_registry` deja de ser obligatorio y su obligatoriedad
+- [ ] **T7** `commercial_registry` deja de ser obligatorio y su obligatoriedad
       depende de `client_type`.
-- [ ] **T6** `Customer.clean()` condicional: jurídica exige REEUP + NIT + cuenta;
+- [ ] **T8** `Customer.clean()` condicional: jurídica exige REEUP + NIT + cuenta;
       natural no. Se resuelve también el riesgo de `''` contra UNIQUE.
-- [ ] **T7** `_contrato_de_factura` resuelve el contrato en facturas por lote en
+- [ ] **T9** `_contrato_de_factura` resuelve el contrato en facturas por lote en
       vez de leer una suscripción arbitraria.
 
 ### Etapa 2 — deuda estructural, documento aparte, NO en esta etapa
