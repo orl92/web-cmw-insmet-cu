@@ -1009,7 +1009,7 @@ elif ask_yes_no si 'STARTTLS en el SMTP? (EMAIL_USE_TLS)'; then
 else
     EMAIL_USE_TLS=no
 fi
-EMAIL_HOST_USER=$(ask EMAIL_HOST_USER "" 'Usuario SMTP: login o correo completo (vacio = SMTP sin usuario)' valid_smtp_user) || die 'Usuario SMTP invalido.'
+EMAIL_HOST_USER=$(ask EMAIL_HOST_USER "meteocamaguey" 'Usuario SMTP: login o correo completo (vacio = SMTP sin usuario)' valid_smtp_user) || die 'Usuario SMTP invalido.'
 EMAIL_HOST_PASSWORD=$(ask_optional_secret EMAIL_HOST_PASSWORD "" 'Contrasena SMTP (vacio = SMTP sin contrasena)') || die 'Contrasena SMTP invalida.'
 DEFAULT_FROM_EMAIL=$(ask DEFAULT_FROM_EMAIL "" 'Remitente (nombre <correo>); vacio = $EMAIL_HOST_USER') || die 'Remitente invalido.'
 
@@ -1030,8 +1030,18 @@ cat >&2 <<EOF
   Superusuario de Django. La cuenta se crea con `createsuperuser --noinput` por
   systemd-run, con la ENCRYPTION_KEY cargada y PRODUCTION=1.
 EOF
-SUPERUSER_USERNAME=$(ask SUPERUSER_USERNAME admin 'Usuario del superusuario' valid_app_user) || die 'Usuario invalido.'
-SUPERUSER_EMAIL=$(ask SUPERUSER_EMAIL "$EMAIL_HOST_USER" 'Correo del superusuario' valid_email) || die 'Correo invalido.'
+SUPERUSER_USERNAME=$(ask SUPERUSER_USERNAME meteocamaguey 'Usuario del superusuario' valid_app_user) || die 'Usuario invalido.'
+# El default NO puede ser `$EMAIL_HOST_USER` a secas: con el usuario SMTP por
+# defecto ahora siendo `meteocamaguey` (un login, no un correo), `valid_email`
+# lo rechazaba y el operador que solo hacia Enter con la cabeza en otra parte
+# perdia tres intentos y el instalador moria. Se usa el correo solo cuando el
+# usuario SMTP SI es una direccion completa; si es un login corto, default vacio.
+if valid_email "$EMAIL_HOST_USER"; then
+    SUPERUSER_EMAIL_DEFAULT=$EMAIL_HOST_USER
+else
+    SUPERUSER_EMAIL_DEFAULT=
+fi
+SUPERUSER_EMAIL=$(ask SUPERUSER_EMAIL "$SUPERUSER_EMAIL_DEFAULT" 'Correo del superusuario' valid_email) || die 'Correo invalido.'
 SUPERUSER_PASS_GENERATED=0
 if [ -z "${SUPERUSER_PASSWORD:-}" ]; then
     SUPERUSER_PASS_GENERATED=1
@@ -1413,7 +1423,21 @@ if [ "$EMAIL_CONFIGURED" -eq 1 ]; then
     apply_env_value EMAIL_USE_SSL "$EMAIL_USE_SSL"
     apply_env_value EMAIL_HOST_USER "$EMAIL_HOST_USER"
     apply_env_value EMAIL_HOST_PASSWORD "$EMAIL_HOST_PASSWORD"
-    apply_env_value DEFAULT_FROM_EMAIL "${DEFAULT_FROM_EMAIL:-$EMAIL_HOST_USER}"
+    # El fallback a `$EMAIL_HOST_USER` solo vale si ese valor ES un correo. Con
+    # un login corto (que es el default: `meteocamaguey`) el remitente caeria en
+    # `meteocamaguey`, que no es un addr-spec valido y Django lo rechaza al
+    # sanitizar la cabecera From. En ese caso se deja vacio y se avisa: es mejor
+    # un remitente vacio, visible, que uno mal formado que revienta en cada envio.
+    if [ -n "$DEFAULT_FROM_EMAIL" ]; then
+        apply_env_value DEFAULT_FROM_EMAIL "$DEFAULT_FROM_EMAIL"
+    elif valid_email "$EMAIL_HOST_USER"; then
+        apply_env_value DEFAULT_FROM_EMAIL "$EMAIL_HOST_USER"
+    else
+        apply_env_value DEFAULT_FROM_EMAIL ""
+        warn "DEFAULT_FROM_EMAIL quedo vacio: el usuario SMTP ($EMAIL_HOST_USER) es"
+        warn "un login, no una direccion. Pon 'Remitente (nombre <correo>)' si queres"
+        warn "que los correos salgan con un remitente valido."
+    fi
 else
     # EMAIL_BACKEND se deja como lo escribio el generador
     # (config.custom_email_backend.CustomSTARTTLSBackend, que no es silencioso

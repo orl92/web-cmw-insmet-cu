@@ -66,6 +66,7 @@ falla por construcción y el deploy se bloquea con un sitio perfectamente sano.
 | T22 | `install.sh`: la elección de motor de base de datos desaparece; PostgreSQL es constante y el puerto se pregunta con default 5432 | `deploy/install.sh` |
 | T23 | `install.sh`: tres validadores de correo roto impedían configurar SMTP; se arreglan y el prompt del host dice dónde va el `@` | `deploy/install.sh` |
 | T24 | `install.sh`: los defaults reales del proyecto — `meteocamaguey.cu` como dominio y `mx.caonao.cu` como servidor SMTP | `deploy/install.sh` |
+| T25 | `install.sh`: usuario SMTP y superusuario por defecto `meteocamaguey`, con los dos derivados que eso rompía | `deploy/install.sh` |
 
 Fuera de alcance: tocar `config/settings/**` (el `.env` tiene que alcanzar con lo que ya existe),
 el workflow `.github/workflows/deploy.yml`, y la suite de `apps/`. Si algo de T1-T18 descubre que
@@ -282,6 +283,36 @@ SNI y rutas de `TLS_CERT`/`TLS_KEY`; `www.meteocamaguey.cu` se deriva solo; el o
 entorno (`PUBLIC_HOSTNAME`, `EMAIL_HOST`) sigue mandando sobre el default en modo no interactivo;
 `mx.caonao.cu` pasa su propio validador; dry-run completo sale 0 con ambos defaults.
 
+### T25 — Usuario SMTP y superusuario con el default del proyecto
+
+`EMAIL_HOST_USER` pasa a `meteocamaguey` y `SUPERUSER_USERNAME` también. El segundo es el que el
+operador probablemente quiere para entrar al panel.
+
+Poner `meteocamaguey` como usuario SMTP rompió **dos** derivados que antes funcionaban solo por
+casualidad, porque los dos asumían que `EMAIL_HOST_USER` siempre iba a ser un correo:
+
+1. **`SUPERUSER_EMAIL` usaba `$EMAIL_HOST_USER` como default de `valid_email`.** Con un login
+   corto, `valid_email meteocamaguey` falla, así que el operador que solo presionaba Enter perdía
+   tres intentos y el instalador moría en un campo obligatorio. Ahora el default se deriva con un
+   `valid_email` explícito: si el usuario SMTP **es** una dirección, se usa; si es un login, el
+   default queda vacío y `ask` lo acepta (vacío con default vacío es una respuesta válida por
+   diseño de T1).
+
+2. **`DEFAULT_FROM_EMAIL` hacía `${DEFAULT_FROM_EMAIL:-$EMAIL_HOST_USER}` al escribir el `.env`.**
+   Con login corto eso escribía `DEFAULT_FROM_EMAIL=meteocamaguey`, que no es un addr-spec válido:
+   Django lo rechaza al sanitizar la cabecera `From` en cada envío. Confirmado contra el regex de
+   `django.core.mail.message`: `meteocamaguey` → inválido, `meteocamaguey@caonao.cu` → válido.
+   Ahora hay tres caminos explícitos (lo preguntado / fallback si el usuario es correo / vacío con
+   aviso), y el vacío es visible en el dry-run en vez de fallar en producción.
+
+El patrón es el mismo de T24: cambiar un defaultwhose valor es de otra cosa arrastra a quien lo
+deriva. Por eso se verificó cada consumidor del valor, no solo el campo.
+
+Verificado: `bash -n`; ambos defaults pasan sus propios validadores; los tres caminos de
+`DEFAULT_FROM_EMAIL` evaluados; `SUPERUSER_EMAIL` acepta Enter en los dos casos (login y correo)
+sin agotar reintentos; dry-run completo sale 0 y muestra `correo mx.caonao.cu`,
+`superusuario meteocamaguey` y el aviso de `DEFAULT_FROM_EMAIL`.
+
 ## Ruta de ejecución: inline, no delegada
 
 | Tarea | Ruta | Evidencia del trigger |
@@ -289,6 +320,8 @@ entorno (`PUBLIC_HOSTNAME`, `EMAIL_HOST`) sigue mandando sobre el default en mod
 | T19, T20 | **inline** | Una sola edición por archivo, sin diseño pendiente: el valor correcto y la ubicación exacta ya están verificados con número de línea. |
 | T21 | **inline** | Una línea. El cambio de `return 0` a `return 1` está determinado por los cuatro call sites ya leídos. |
 | T22 | **inline** | Un archivo ya leído de punta a punta; el diseño (motor constante, puerto con default) estaba decidido por el usuario antes de abrir el archivo. |
+| T24 | **inline** | Dos valores literales decididos por el usuario. No hay diseño abierto. |
+| T25 | **inline** | Dos defaults, pero el trabajo real fue auditar los **consumidores** de esos valores (`SUPERUSER_EMAIL`, `DEFAULT_FROM_EMAIL`, `ACME_EMAIL`), que es lectura dirigida en un archivo ya leído, no exploración. Delegarlo habría transferido el hallazgo de que el default era un login y no un correo. |
 | T23 | **inline** | Defectos deterministas con evidencia ya observada en la sesión: el error del operador se reprodujo y los tres call sites del archivo se leyeron antes de editar. Delegar exigiría transferir el hallazgo, no reducir contexto. |
 
 Se ejecuta en el padre y no en un subagente, por dos razones concretas, no por preferencia:
@@ -362,6 +395,7 @@ verificarse en ejecución.
 - [x] T22 — PostgreSQL como constante, puerto con default 5432
 - [x] T23 — Validadores de correo reparados (`valid_email`, `valid_smtp_host`, `valid_smtp_user`)
 - [x] T24 — Defaults reales: `meteocamaguey.cu` y `mx.caonao.cu`
+- [x] T25 — Usuario SMTP y superusuario `meteocamaguey`, con los derivados reparados
 
 Los ocho bloques T1-T18 se marcan como entregados porque el commit `a9e01c6` los contiene y sus
 checks pasaron. T19-T21 se marcan según su propia evidencia, registrada abajo.
