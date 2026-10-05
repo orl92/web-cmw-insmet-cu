@@ -91,7 +91,6 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
         context['segment'] = 'suscripciones'
         context['is_superuser'] = self.request.user.is_superuser
         context['now'] = timezone.now()
-        context['url_export'] = reverse_lazy('commercial:suscripcion_export_csv')
         if self.request.user.is_staff or self.request.user.is_superuser:
             context['btn'] = 'Añadir Suscripción'
             context['url_create'] = reverse_lazy('commercial:suscripcion_create')

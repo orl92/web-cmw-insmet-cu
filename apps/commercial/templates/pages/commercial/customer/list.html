@@ -1,11 +1,6 @@
 {% extends 'layouts/list.html' %}
 {% load static %}
 {% block columns %}
-  <th class="bulk-check-col" style="width:40px">
-    <input type="checkbox"
-           class="form-check-input bulk-select-all"
-           aria-label="Seleccionar todos">
-  </th>
   <th>Cliente</th>
   <th>Tipo de Cliente</th>
   <th>Identificación</th>
@@ -16,12 +11,6 @@
   <th class="text-end">Acciones</th>
 {% endblock %}
 {% block row %}
-  <td class="bulk-check-col">
-    <input type="checkbox"
-           class="form-check-input bulk-row-checkbox"
-           data-uuid="{{ object.uuid }}"
-           aria-label="Seleccionar">
-  </td>
   <td>
     <div class="d-flex align-items-center">
       <div>
@@ -100,39 +89,6 @@
       </button>
     {% endif %}
   </td>
-{% endblock %}
-{% block bulk_toolbar %}
-  <div class="bulk-toolbar d-none"
-       id="bulkToolbar"
-       style="margin-bottom:0.5rem">
-    <div class="card">
-      <div class="card-body py-2 px-3">
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <span class="text-muted" id="bulkCount">0 seleccionados</span>
-          <div class="vr"></div>
-          {% if perms.commercial.view_customer %}
-            <button type="button"
-                    class="btn btn-outline-success btn-sm bulk-action-btn"
-                    data-action="export"
-                    data-bulk-url="{% url 'commercial:cliente_bulk' %}">
-              <i class="icon ti ti-file-download me-1"></i> Exportar
-            </button>
-          {% endif %}
-          {% if perms.commercial.delete_customer %}
-            <button type="button"
-                    class="btn btn-outline-danger btn-sm bulk-action-btn bulk-action-delete"
-                    data-action="delete"
-                    data-bulk-url="{% url 'commercial:cliente_bulk' %}"
-                    data-confirm-title="Desactivar registros"
-                    data-confirm-message="¿Está seguro de desactivar los registros seleccionados? Se conservarán en la base de datos.">
-              <i class="icon ti ti-trash me-1"></i> Desactivar
-            </button>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
-  {% include 'includes/bulk_confirm_modal.html' %}
 {% endblock %}
 {% block modal %}
   <div class="modal modal-blur fade"

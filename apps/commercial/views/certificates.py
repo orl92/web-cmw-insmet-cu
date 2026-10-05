@@ -34,7 +34,6 @@ class CertificateListView(LoginRequiredMixin, PermissionRequiredMixin, ListView)
         context['url_create'] = reverse_lazy('commercial:certificado_create')
         context['url_list'] = reverse_lazy('commercial:certificado_list')
         context['is_superuser'] = self.request.user.is_superuser
-        context['url_export'] = reverse_lazy('commercial:certificado_export_csv')
         return context
 
 

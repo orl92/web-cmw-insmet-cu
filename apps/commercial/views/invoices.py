@@ -73,7 +73,6 @@ class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = 'Añadir Factura'
         context['url_create'] = reverse_lazy('commercial:factura_create')
         context['url_list'] = reverse_lazy('commercial:factura_list')
-        context['url_export'] = reverse_lazy('commercial:factura_export_csv')
         context['is_superuser'] = self.request.user.is_superuser
         return context
 
@@ -86,7 +85,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
 
     def get_initial(self):
         initial = super().get_initial()
-        today = timezone.now().date()
+        today = timezone.localdate()
         regenerar = self.suscripcion_a_regenerar()
         customer_uuid = self.request.GET.get('customer_uuid')
         if customer_uuid:
@@ -395,7 +394,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 subscription=sub,
                 defaults={
                     'number': self.generate_contract_number(),
-                    'date': timezone.now().date(),
+                    'date': timezone.localdate(),
                     'commercial_registry': commercial_registry,
                 },
             )

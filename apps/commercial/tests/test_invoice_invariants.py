@@ -3,12 +3,11 @@
 Dos reglas que el código no escribía y que la base de desarrollo ya tenía
 incumplidas:
 
-- **Suscripción `paid` ⇒ al menos un certificado con PDF.** La acción masiva de
-  suscripciones permite `payment_status='paid'` en su allow-list y lo aplicaba
-  sin mirar documentos, así que una suscripción podía quedar pagada sin
-  certificado. El camino normal para aprobar el pago
-  (`ApproveSubscriptionView`) sube el certificado antes de marcar `paid`, y por
-  eso estos tests también lo fijan para que nadie lo rompa.
+- **Suscripción `paid` ⇒ al menos un certificado con PDF.** Una suscripción
+  pagada sin comprobante es un cobro sin respaldo, así que el camino que marca
+  `paid` tiene que subir el certificado antes. El camino normal para aprobar el
+  pago es `ApproveSubscriptionView`, y estos tests lo fijan para que nadie lo
+  rompa ni lo sustituya por un atajo que se lo salte.
 - **Factura pagada ⇒ PDF disponible.** El PDF se genera en una tarea Huey
   asíncrona que puede fallar o no correr (en desarrollo el worker no siempre
   está vivo), así que la factura pagada sin PDF no se puede volver imposible:
@@ -17,13 +16,11 @@ incumplidas:
   puede volver a encolar para renderizar el PDF sin reenviar el correo.
 """
 
-import json
 import re
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from django.contrib.contenttypes.models import ContentType
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -56,11 +53,6 @@ def _suscripcion(customer, service, payment_status='requested'):
         quantity=10,
         payment_status=payment_status,
     )
-
-
-def _certificado(subscription, con_pdf=True):
-    pdf = SimpleUploadedFile('cert.pdf', b'%PDF-1.4 test', 'application/pdf') if con_pdf else ''
-    return Certificate.objects.create(subscription=subscription, pdf=pdf)
 
 
 def _factura(
@@ -105,105 +97,6 @@ class _CasoBase(TestCase):
 
     def _sub(self, payment_status='requested'):
         return _suscripcion(self.customer, self.service, payment_status)
-
-
-class AccionMasivaCertificadoTests(_CasoBase):
-    """`paid` no se alcanza por la acción masiva sin certificado con PDF."""
-
-    @classmethod
-    def setUpTestData(cls):
-        super().setUpTestData()
-        cls.sin_certificado = _suscripcion(cls.customer, cls.service, 'requested')
-        cls.con_certificado = _suscripcion(cls.customer, cls.service, 'requested')
-        cls.certificado = _certificado(cls.con_certificado)
-        cls.url = reverse('commercial:suscripcion_bulk')
-
-    def setUp(self):
-        self.client.force_login(self.admin)
-        ct = ContentType.objects.get_for_model(ServiceSubscription)
-        self.admin.user_permissions.add(ct.permission_set.get(codename='change_subscription'))
-
-    def _update(self, subs, value, field='payment_status'):
-        data = {
-            'action': 'update',
-            'uuids': [str(sub.uuid) for sub in subs],
-            'field': field,
-            'value': value,
-        }
-        return self.client.post(self.url, json.dumps(data), content_type='application/json')
-
-    def test_rechaza_paid_en_una_suscripcion_sin_certificado(self):
-        response = self._update([self.sin_certificado], 'paid')
-
-        self.assertEqual(response.status_code, 400)
-        cuerpo = response.json()
-        self.assertEqual(cuerpo['processed'], 0)
-        self.assertIn('certificado', cuerpo['error'].lower())
-        self.sin_certificado.refresh_from_db()
-        self.assertEqual(self.sin_certificado.payment_status, 'requested')
-
-    def test_rechaza_paid_si_el_certificado_no_tiene_pdf(self):
-        sub = self._sub('requested')
-        cert = _certificado(sub, con_pdf=False)
-        self.assertEqual(cert.pdf.name, '', 'precondición: certificado sin archivo')
-
-        response = self._update([sub], 'paid')
-
-        self.assertEqual(response.status_code, 400)
-        sub.refresh_from_db()
-        self.assertEqual(sub.payment_status, 'requested')
-
-    def test_rechaza_paid_si_el_certificado_esta_dado_de_baja(self):
-        sub = self._sub('requested')
-        _certificado(sub).delete()
-
-        response = self._update([sub], 'paid')
-
-        self.assertEqual(response.status_code, 400)
-        sub.refresh_from_db()
-        self.assertEqual(sub.payment_status, 'requested')
-
-    def test_acepta_paid_cuando_ya_hay_certificado(self):
-        response = self._update([self.con_certificado], 'paid')
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['processed'], 1)
-        self.con_certificado.refresh_from_db()
-        self.assertEqual(self.con_certificado.payment_status, 'paid')
-
-    def test_una_seleccion_mixta_no_aplica_nada(self):
-        """O se cumple para todas, o no se toca ninguna: nada de estados a medias."""
-        response = self._update([self.con_certificado, self.sin_certificado], 'paid')
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['processed'], 0)
-        self.con_certificado.refresh_from_db()
-        self.sin_certificado.refresh_from_db()
-        self.assertEqual(self.con_certificado.payment_status, 'requested')
-        self.assertEqual(self.sin_certificado.payment_status, 'requested')
-
-    def test_requested_y_pending_siguen_funcionando(self):
-        response = self._update([self.sin_certificado], 'pending')
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['processed'], 1)
-        self.sin_certificado.refresh_from_db()
-        self.assertEqual(self.sin_certificado.payment_status, 'pending')
-
-        sub = self._sub('requested')
-        respuesta = self._update([sub], 'requested')
-        self.assertEqual(respuesta.status_code, 200)
-        self.assertEqual(respuesta.json()['processed'], 1)
-
-    def test_el_campo_no_permitido_sigue_siendo_rechazado_primero(self):
-        response = self._update(
-            [self.sin_certificado],
-            str(self.customer.pk),
-            field='customer',
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('allow-list', response.json()['error'])
 
 
 class AprobarPagoMantieneLaInvarianteTests(_CasoBase):

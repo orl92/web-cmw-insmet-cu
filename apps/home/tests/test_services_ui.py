@@ -37,6 +37,23 @@ from apps.home.views.servicios.comerciales.views import CommercialServicesListVi
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
+def _dmy(value):
+    """Format a date the way Django's ``{{ value|date:'d/m/Y' }}`` renders it.
+
+    The template ``date`` filter converts aware datetimes to the current
+    timezone (``TIME_ZONE``) before formatting. ``defaultfilters.date()``
+    called directly from Python does not, so on an aware UTC value the two
+    disagree by one day whenever the local time is 00:00-04:59.
+
+    The subscriptions under test are built with ``timezone.now()``, an
+    instant, so the divergence is time-of-day dependent: these assertions
+    used to fail only during a few hours each day.
+    """
+    if timezone.is_aware(value):
+        value = timezone.localtime(value)
+    return django_date_filter(value, 'd/m/Y')
+
+
 def _disable_maintenance_mode():
     SiteConfiguration.objects.update_or_create(defaults={'maintenance_mode': False})
 
@@ -93,9 +110,6 @@ class ServicesPublicUiTests(TestCase):
         return self.client.get(reverse('home:services_public'), query)
 
     def test_renders_tabler_pagination_bound_to_page_obj(self):
-        # 21 public services with paginate_by=10 -> three pages. Request the
-        # middle page so both the previous ("Página anterior") and next
-        # ("Página siguiente") pagination links render with real aria-labels.
         self._create_services(self.PAGINATE_BY * 2 + 1)
         html = self._get_page(page=2).content.decode()
         self.assertIn('<ul class="pagination pagination-sm', html)
@@ -106,11 +120,8 @@ class ServicesPublicUiTests(TestCase):
     def test_pagination_links_use_page_param_and_report_position(self):
         self._create_services(self.PAGINATE_BY + 1)
         html = self._get_page(page=2).content.decode()
-        # Previous/first links point back to page 1, and the compact
-        # component reports the current position ("Pág. 2 de 2").
         self.assertIn('href="?page=1"', html)
         self.assertIn('<span class="page-link">Pág. 2 de 2</span>', html)
-        # The pagination must not ship the manual step-links markup.
         self.assertNotIn('step-links', html)
         self.assertNotIn('&laquo; primera', html)
         self.assertNotIn('aria-current="page"', html)
@@ -140,15 +151,12 @@ class ServicesPublicUiTests(TestCase):
         self.assertRegex(html, pattern)
 
     def test_metadata_autor_and_publicado_on_separate_lines(self):
-        # Mismo estilo que servicios comerciales y Mis Servicios: autor y
-        # fecha en líneas separadas (mb-2) con título sugerente "Publicado:".
         User.objects.filter(pk=self.provider.pk).update(first_name='Yoilán', last_name='Meteoro')
         self.provider.refresh_from_db()
         self._create_services(1)
         html = self._get_page().content.decode()
         self.assertIn('Autor: <strong>Yoilán Meteoro</strong>', html)
         self.assertRegex(html, r'Publicado: <strong>\d{1,2}/\d{1,2}/\d{4}</strong>')
-        # Las líneas van dentro de un contenedor columna con separación mb-2.
         self.assertIn('d-flex flex-column flex-grow-1 text-secondary mb-3', html)
         self.assertNotIn('d-flex flex-wrap gap-2 text-secondary mt-auto', html)
 
@@ -203,8 +211,6 @@ class ServicesCommercialUiTests(TestCase):
         return self.client.get(reverse('home:services_commercial'), query)
 
     def test_renders_tabler_pagination_bound_to_page_obj(self):
-        # 3 pages of subscriptions; request the middle page so both previous
-        # and next pagination links render with real aria-labels.
         self._login_with_subscriptions(self.PAGINATE_BY * 2 + 1)
         html = self._get_page(page=2).content.decode()
         self.assertIn('<ul class="pagination pagination-sm', html)
@@ -414,7 +420,7 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         subscription = self._make_sub('paid', 'orden-calendario')
         self.client.force_login(self.client_user)
         html = self.client.get(reverse('home:services_commercial')).content.decode()
-        start_label = django_date_filter(subscription.start_date, 'd/m/Y')
+        start_label = _dmy(subscription.start_date)
         self.assertIn('ti-calendar', html)
         self.assertIn(start_label, html)
         self.assertLess(html.index('ti-calendar'), html.index(start_label))
@@ -456,7 +462,7 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         subscription = self._make_sub('paid', 'metadatos-strong')
         self.client.force_login(self.client_user)
         html = self.client.get(reverse('home:services_commercial')).content.decode()
-        start_label = django_date_filter(subscription.start_date, 'd/m/Y')
+        start_label = _dmy(subscription.start_date)
         self.assertIn('ti-calendar-event', html)
         self.assertIn('Período: <strong>1 día</strong>', html)
         self.assertIn(f'Inicio: <strong>{start_label}</strong>', html)
@@ -512,7 +518,7 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         meta_start = html.index('d-flex flex-column flex-grow-1 text-secondary mb-3')
         meta_end = html.index('justify-content-end gap-2', meta_start)
         meta_html = html[meta_start:meta_end]
-        start_label = django_date_filter(subscription.start_date, 'd/m/Y')
+        start_label = _dmy(subscription.start_date)
         self.assertNotIn('display-6', meta_html)
         self.assertIn('ti-calendar', meta_html)
         self.assertIn(f'Inicio: <strong>{start_label}</strong>', meta_html)

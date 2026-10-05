@@ -184,7 +184,7 @@ class ForecastAPIView(CacheAPIMixin, GenericAPIView):
 
     def get(self, request, date=None):
         if date is None:
-            date = timezone.now().date()
+            date = timezone.localdate()
         else:
             date = timezone.datetime.strptime(date, '%Y-%m-%d').date()
 

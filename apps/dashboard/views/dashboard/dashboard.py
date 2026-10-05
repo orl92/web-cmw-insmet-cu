@@ -191,7 +191,7 @@ def build_shared_kpis(time_range, income_range, *, forecast=False, alerts=False,
     shared = safe_cache_get(cache_key) or {}
     if forecast and 'forecast' not in shared:
         series = _build_forecast_series(
-            timezone.now().date()
+            timezone.localdate()
             - timezone.timedelta(
                 days=30 if time_range == '30d' else 90 if time_range == '3m' else 7
             )
@@ -357,7 +357,7 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if user.is_superuser:
             context['user_stats'] = {
                 'total_users': User.objects.count(),
-                'active_today': User.objects.filter(last_login__date=timezone.now().date()).count(),
+                'active_today': User.objects.filter(last_login__date=timezone.localdate()).count(),
                 'staff_users': User.objects.filter(is_staff=True).count(),
             }
 
@@ -433,7 +433,10 @@ def _tabla_fingerprint(qs):
             'summary',
         )
     )
-    return hashlib.sha1(repr(filas).encode('utf-8')).hexdigest()[:16]
+    return hashlib.sha1(
+        repr(filas).encode('utf-8'),
+        usedforsecurity=False,
+    ).hexdigest()[:16]
 
 
 class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

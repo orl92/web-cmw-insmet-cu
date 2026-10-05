@@ -4,15 +4,6 @@
   <div class="col-auto ms-auto d-print-none">
     <div class="d-flex justify-content-end flex-wrap gap-1">
       {% if has_data %}
-        <a href="{{ url_export }}?date={{ date_iso }}"
-           type="button"
-           class="btn btn-icon btn-outline-success btn-sm"
-           data-bs-toggle="tooltip"
-           data-bs-placement="bottom"
-           title="Exportar CSV"
-           aria-label="Exportar CSV">
-          <i class="icon ti ti-file-download"></i>
-        </a>
         {% for forecast in forecasts %}
           <a href="{% url 'meteo:pronostico_update' forecast.uuid %}"
              type="button"

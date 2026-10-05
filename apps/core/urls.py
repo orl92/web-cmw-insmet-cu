@@ -5,7 +5,6 @@ from apps.core.views import (
     CompanySettingsAjaxUpdateView,
     CompanySettingsUpdateView,
     EmailRecipientListCreateView,
-    EmailRecipientListCSVExportView,
     EmailRecipientListDeleteView,
     EmailRecipientListListView,
     EmailRecipientListUpdateView,
@@ -33,11 +32,6 @@ urlpatterns = [
         'listas-correo/<uuid:pk>/eliminar/',
         EmailRecipientListDeleteView.as_view(),
         name='email_recipient_delete',
-    ),
-    path(
-        'listas-correo/exportar/csv/',
-        EmailRecipientListCSVExportView.as_view(),
-        name='email_recipient_export_csv',
     ),
     path('auditoria/', ActivityLogListView.as_view(), name='activity_log'),
 ]
