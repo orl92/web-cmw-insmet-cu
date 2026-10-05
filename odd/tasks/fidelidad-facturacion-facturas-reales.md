@@ -245,8 +245,10 @@ commit, se pregunta una vez por la estrategia de encadenado.
 
 - **T1** cerrada (commit `b8dfda0`, mergeado en `main` por el PR #82).
 - **T2** cerrada (commit `5b4665d`, mergeado en `main` por el PR #82).
-- **T3** implementada en la rama `feat/invoice-form-period-redesign`, sin commit
-  todavía al momento de escribir esta entrada.
+- **T3** cerrada en el commit `c298471`, en la rama
+  `feat/invoice-form-period-redesign`. Verificación independiente con las diez
+  afirmaciones verificadas y ninguna en contradicción. No pusheada: el push es
+  decisión del usuario.
 
 ## Próximo paso
 
