@@ -433,7 +433,10 @@ def _tabla_fingerprint(qs):
             'summary',
         )
     )
-    return hashlib.sha1(repr(filas).encode('utf-8')).hexdigest()[:16]
+    return hashlib.sha1(
+        repr(filas).encode('utf-8'),
+        usedforsecurity=False,
+    ).hexdigest()[:16]
 
 
 class TaskMonitoringView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
