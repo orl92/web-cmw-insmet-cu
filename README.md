@@ -36,6 +36,16 @@ cd web-cmw-insmet-cu
 # Dependencias del sistema para PDFs (wkhtmltopdf) y MySQL (libmysqlclient)
 sudo apt install libcairo2-dev pkg-config python3-dev wkhtmltopdf
 
+# En Python 3.14 no hay ruedas para varios pins de requirements/prod.txt
+# (pycairo entre otros) y hay que compilar. Sin esto pip falla con
+# "Running cc --version gave [Errno 2] No such file or directory: 'cc'".
+sudo apt install build-essential
+
+# WeasyPrint (facturacion en PDF) carga libpango por cffi. Sin esto,
+# `manage.py check` muere con "ffi.dlopen('libpango-1.0.so.0')".
+# Ojo con el nombre: en Ubuntu 24.04+ es libpango1.0-dev, NO libpango-1.0-dev.
+sudo apt install libpango1.0-dev
+
 make setup
 ```
 
@@ -309,6 +319,16 @@ Nginx (TLS, estáticos, media) → Gunicorn (systemd) → PostgreSQL
 
 Redis es opcional: el caché por defecto corre en memoria del proceso.
 
+> Ojo: `scripts/generate_env.py --production` escribe `USE_REDIS_CACHE=True`, así que
+> o instalás Redis (`sudo apt install redis-server && sudo systemctl enable --now
+> redis-server`) o ponés `USE_REDIS_CACHE=False` en el `.env`. Con `True` y sin
+> servidor Redis, el fallo aparece en la primera escritura al caché, en producción.
+>
+> Y aunque no uses Redis, el caché en memoria es **por proceso**: con varios workers
+> cada uno tiene su copia y no se invalidan entre sí. Para el portal público no es
+> grave; para el panel de administración, donde un estado obsoleto se traduce en
+> "no veo el cliente que acabo de crear", conviene Redis.
+
 Los tres archivos de configuración están versionados en `deploy/`. Son **ejemplos
 deterministas sin secretos**: lo que cambia por instalación son rutas y certificados,
 y eso se edita en el servidor.
@@ -346,25 +366,54 @@ cd /srv/webcmp
 sudo -u webcmp python3.14 -m venv .venv
 sudo -u webcmp .venv/bin/pip install -r requirements/prod.txt
 
-sudo -u webcmp .venv/bin/python scripts/generate_env.py --production
+# `generate_env.py` tiene que correr como root: escribe /etc/webcmp/encryption.env,
+# que es root con modo 600 y webcmp no puede crear. Correlo como webcmp falla y no
+# escribe nada (falla cerrado, lo cual esta bien).
+sudo install -d -m 0755 -o root -g root /etc/webcmp
+sudo .venv/bin/python scripts/generate_env.py --production
+
+# Las migraciones NO se versionan (ver .gitignore), asi que en un clone limpio no
+# existen: `migrate` solo no alcanza, hay que generarlas antes desde los modelos.
+sudo -u webcmp .venv/bin/python manage.py makemigrations
 sudo -u webcmp .venv/bin/python manage.py migrate
 sudo -u webcmp .venv/bin/python manage.py collectstatic --no-input
 ```
+
+> `manage.py` a secas, fuera del unit, no ve la `ENCRYPTION_KEY` de
+> `/etc/webcmp/encryption.env` (600, root). En el perfil de producción eso hace
+> que `SECRET_KEY` no se pueda descifrar. Para correrlos a mano con el mismo
+> contexto que el servicio: `systemd-run --pipe --wait --uid=webcmp
+> -p EnvironmentFile=/etc/webcmp/encryption.env -p Environment=PRODUCTION=1
+> --working-directory=/srv/webcmp .venv/bin/python manage.py ...`, que es lo que
+> hace `deploy/deploy.sh`.
 
 El script escribe dos archivos:
 
 | Archivo | Contiene | Permisos |
 | --- | --- | --- |
-| `/srv/webcmp/.env` | `SECRET_KEY` cifrada, `DEBUG=False`, `DB_*`, SMTP | `600` |
+| `/srv/webcmp/.env` | `SECRET_KEY` cifrada, `DEBUG=False`, `DB_*`, SMTP | `600`, **webcmp** |
 | `/etc/webcmp/encryption.env` | `ENCRYPTION_KEY` (clave de descifrado) | `600`, root |
 
-Editá los `CHANGE_ME` del `.env` (SMTP y `DB_PASS`) y dejá los permisos así:
+El `.env` es de `webcmp` y no de root porque Django corre como ese usuario y tiene
+que poder leerlo. La `ENCRYPTION_KEY` queda en root y el `.env` en 600: entrar al
+grupo `webcmp` (lo necesita Nginx, ver el paso 5) no da acceso a ninguna de las dos.
+
+Después de generar el `.env` hay que **cambiar el hostname**: el generador escribe
+`EXTERNAL_HOSTNAME=cmw.insmet.cu` por default y no tiene flag para pasarlo, así
+que hay que editar a mano `EXTERNAL_HOSTNAME`, `ALLOWED_HOSTS`,
+`CSRF_TRUSTED_ORIGINS` y `CORS_ALLOWED_ORIGINS`. Si no, el sitio responde
+`DisallowedHost` a cada petición.
 
 ```bash
 sudo nano /srv/webcmp/.env
+sudo chown webcmp:webcmp /srv/webcmp/.env && sudo chmod 600 /srv/webcmp/.env
 sudo chown root:root /etc/webcmp/encryption.env && sudo chmod 600 /etc/webcmp/encryption.env
-sudo mkdir -p /srv/webcmp/{media,logs,staticfiles}
-sudo chown -R webcmp:webcmp /srv/webcmp/{media,logs,staticfiles}
+
+# `staticfiles/` y `media/` los necesita escribibles por el usuario del servicio,
+# y `.cache/` para MPLCONFIGDIR: con `ProtectSystem=full` el worker no puede
+# crearse solo ese directorio, y el unit lo declara en `ReadWritePaths=`.
+sudo mkdir -p /srv/webcmp/{media,logs,staticfiles,.cache/matplotlib}
+sudo chown -R webcmp:webcmp /srv/webcmp/{media,logs,staticfiles,.cache}
 ```
 
 ### 4. systemd
@@ -395,12 +444,29 @@ sudo cp deploy/nginx/webcmp.conf.example /etc/nginx/sites-available/webcmp.conf
 sudo nano /etc/nginx/sites-available/webcmp.conf   # certificados y rutas
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -s /etc/nginx/sites-available/webcmp.conf /etc/nginx/sites-enabled/
+
+# www-data tiene que poder tocar el socket de Gunicorn, que sale
+# 0770 webcmp:webcmp. Sin esto Nginx devuelve 502 en cada respuesta y el log dice
+# "connect() failed (13: Permission denied)", que no parece un problema de grupo.
+sudo usermod -aG webcmp www-data
+
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+> **Reinicio de Nginx, no `reload`.** Los grupos suplementarios se leen al crear
+> los workers. Un `reload` alcanza para leer la config, pero si acabás de cambiar
+> la pertenencia a un grupo, reiniciá el servicio.
 
 > **No quites `proxy_set_header X-Forwarded-Proto $scheme;`.** Django lo lee con
 > `SECURE_PROXY_SSL_HEADER` para resolver `request.is_secure()`. Sin esa línea las
 > cookies de sesión seguras no se envían y el usuario entra en un bucle de logout.
+
+> **`Host` está repetido dentro de `location /`, y no es una redundancia.** En
+> Nginx, `proxy_set_header` se hereda del `server` solo si el `location` no declara
+> ninguno. `location /` declara dos (para el websocket), así que los del `server`
+> se descartan ahí y el `Host` vuelve al default, que es `$proxy_host`: el nombre
+> del upstream. Gunicorn recibía `Host: webcmp` y contestaba `DisallowedHost` en
+> todas las peticiones. Si sacás esas líneas, el sitio entero responde 400.
 
 ### 6. Verificar
 

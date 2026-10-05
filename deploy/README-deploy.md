@@ -18,12 +18,32 @@ El orden no es estetico, es la garantia:
 | 2 | Aborta si hay cambios sin commitear | `git checkout --force` los perderia |
 | 3 | `git checkout` del SHA exacto | Desplegar un SHA, no una rama: la rama se movio entre el CI y el deploy |
 | 4 | `pip install -r requirements/prod.txt` | Antes de los gates, que importan las deps |
-| 5 | Gate: `makemigrations --check --dry-run` | El modelo cambio y nadie escribio la migracion. Sin esto, el error sale en el primer request de un usuario |
+| 5 | `makemigrations` | Genera las migraciones desde los modelos. Ver la nota de abajo: **este proyecto no versiona las migraciones** |
 | 6 | Gate: `check --deploy` con la config real | Ver la nota de abajo |
-| 7 | `migrate` | Antes de que el codigo nuevo atienda un request |
+| 7 | `migrate` y `migrate --check` | Antes de que el codigo nuevo atienda un request. El `--check` confirma que no queda nada sin aplicar |
 | 8 | `collectstatic` | Antes de que el codigo nuevo emita HTML que los referencia |
 | 9 | `systemctl restart` de ambos units | `reload` NO alcanza, ver la nota de abajo |
 | 10 | Health check contra Nginx local | Atraviesa Nginx, TLS y el socket: el camino completo |
+
+### Por que `makemigrations` y no `makemigrations --check`
+
+El proyecto **no versiona las migraciones**: el `.gitignore` tiene
+`**/migrations/*` con la unica excepcion de `__init__.py`. Un clone limpio llega
+sin migraciones y el esquema se deriva de los modelos, que es exactamente lo que
+hace el job del CI (`makemigrations` y despues `migrate`).
+
+Por eso el gate que se suele poner en este lugar, `makemigrations --check
+--dry-run` ("el modelo cambio y nadie escribio la migracion"), no sirve: falla en
+todo clone limpio, porque las migraciones todavia no existen y `--check` lee "no
+hay migraciones para este modelo" como "falta la migracion". El script corre
+`makemigrations` a secas y despues `migrate`.
+
+Lo que eso implica, y conviene no perder de vista: **la migracion se genera y se
+aplica en el mismo deploy, sin revision**. Si un cambio de modelo llega con un
+`ALTER` destructivo, se aplica contra produccion sin que nadie lo mire, y el
+rollback del codigo no deshace el esquema. Versionar las migraciones es lo unico
+que vuelve eso revisable; mientras no se haga, el deploy es el unico lugar donde
+el schema se decide.
 
 ### Por que el `check --deploy` del servidor y no solo el del CI
 
@@ -55,7 +75,14 @@ contra sqlite3 y dice que todo bien mientras el sitio sigue en PostgreSQL.
 ## Rollback
 
 Automatico: si algo falla **despues** de `migrate`, el script vuelve al commit
-anterior, reinstala dependencias, recoloca estaticos y reinicia los units.
+anterior, reinstala dependencias, recoloca estaticos y reinicia los units. Sale
+con codigo 1, asi que el workflow lo marca fallido aunque el sitio haya quedado
+sirviendo la version anterior.
+
+La trampa que lo dispara es `trap rollback EXIT`, no `ERR`. No es indistinto:
+`trap ... ERR` no corre cuando el script hace `exit`, y `die()` -que es como
+termina practicamente todo el deploy, incluido el health check- hace `exit 1`.
+Con `ERR`, el rollback era inalcanzable justo en el caso para el que existe.
 
 Lo que **no** hace, y hay que saber antes de confiar en el:
 
@@ -82,6 +109,8 @@ deploy es automatico.
 # 1. Usuario de despliegue. Distinto de webcmp, que tiene shell /bin/false a
 #    proposito: existe para correr Gunicorn, no para que alguien se loguee.
 sudo useradd -m -s /bin/bash deploy
+sudo install -d -m 0700 -o deploy -g deploy /home/deploy/.ssh
+sudo -u deploy ssh-keygen -t ed25519 -C "github-actions-deploy" -N ""
 
 # 2. Script FUERA del checkout.
 sudo install -o root -g root -m 0755 deploy/deploy.sh /usr/local/sbin/webcmp-deploy
@@ -90,10 +119,60 @@ sudo install -o root -g root -m 0755 deploy/deploy.sh /usr/local/sbin/webcmp-dep
 sudo install -o root -g root -m 0600 deploy/deploy.env.example /etc/webcmp/deploy.env
 sudo nano /etc/webcmp/deploy.env   # rutas y PUBLIC_HOSTNAME
 
-# 4. Sudoers acotado a UN comando.
+# 4. Sudoers acotado a UN comando. Validar el archivo ANTES de instalarlo: un
+#    sudoers invalido deja al usuario de despliegue sin sudo.
+sudo visudo -c -f deploy/sudoers/webcmp-deploy
 sudo install -o root -g root -m 0440 deploy/sudoers/webcmp-deploy /etc/sudoers.d/webcmp-deploy
 sudo visudo -c
+
+# 5. www-data tiene que poder tocar el socket de Gunicorn (0770 webcmp:webcmp).
+#    Sin esto Nginx devuelve 502 en cada respuesta.
+sudo usermod -aG webcmp www-data
+sudo systemctl restart nginx     # reinicio, no reload: los grupos se leen al
+                                  # crear los workers
 ```
+
+### Prerrequisitos de sistema que el README del proyecto no lista
+
+Probado sobre Ubuntu 26.04 / Python 3.14. Lo que hay en el README del proyecto
+(`libcairo2-dev pkg-config python3-dev wkhtmltopdf`) no alcanza: `pip install`
+falla y `manage.py` no llega a importar.
+
+| Paquete | Por que |
+| --- | --- |
+| `build-essential` | En Python 3.14 no hay ruedas para varios pins (`pycairo` entre otros) y hay que compilar. Sin el, pip muere con `Running cc --version gave "No such file or directory: 'cc'"` |
+| `libpango1.0-dev` (ojo: el nombre en Ubuntu 26.04 **no** es `libpango-1.0-dev`) | WeasyPrint lo necesita para renderizar PDF. Sin el, `manage.py check` muere con `ffi.dlopen('libpango-1.0.so.0')` |
+| `redis-server` | El `.env` generado trae `USE_REDIS_CACHE=True` aunque el README diga que Redis es opcional. O se instala Redis o se pone `False` |
+| `libcairo2-dev pkg-config python3-dev` | Los que si lista el README, para `pycairo` |
+
+### Un paso del README del proyecto que no funciona como esta escrito
+
+El README dice generar el entorno asi:
+
+```
+sudo -u webcmp .venv/bin/python scripts/generate_env.py --production
+```
+
+Eso no puede escribir `/etc/webcmp/encryption.env`, que es root con modo 600, y
+el script falla sin escribir nada (falla cerrado, lo cual esta bien). Lo que
+funciona es generarlo **como root** y despues devolverle el `.env` a `webcmp`,
+porque Django corre como ese usuario y tiene que poder leerlo:
+
+```bash
+sudo install -d -m 0755 -o root -g root /etc/webcmp
+sudo .venv/bin/python scripts/generate_env.py --production
+sudo chown webcmp:webcmp /srv/webcmp/.env     # Django corre como webcmp
+sudo chmod 600 /srv/webcmp/.env
+```
+
+Ahi va el hostname real: el generador escribe `EXTERNAL_HOSTNAME=cmw.insmet.cu` por
+default y no tiene flag para cambiarlo, asi que `EXTERNAL_HOSTNAME`,
+`ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` y `CORS_ALLOWED_ORIGINS` hay que
+editarlos a mano. Si no, el sitio responde `DisallowedHost` a cada peticion.
+
+Con eso, `PublicHostname` del deploy, el `server_name` de Nginx y el
+`EXTERNAL_HOSTNAME` del `.env` tienen que ser exactamente el mismo: el health
+check entra a `127.0.0.1:443` con ese nombre como SNI y como `Host`.
 
 Por que el script va en `/usr/local/sbin` y no en `/srv/webcmp/deploy/deploy.sh`:
 el script corre como root y el checkout es escribible por `webcmp`. Con el sudoers
@@ -154,6 +233,32 @@ automatico no llega. Opciones, de peor a mejor:
 
 Este caso es relevante: el host es un `.cu` de red interna. **Probalo antes de
 confiar en el** con un deploy de prueba.
+
+## Errores que solo aparecen en produccion
+
+No los arregla este trabajo, pero conviene tenerlos a mano: son los que hacen que
+un `collectstatic` o un `manage.py check` en verde no digan nada del sitio real.
+Todos se reprodujeron en el servidor de prueba.
+
+| Sintoma | Causa |
+| --- | --- |
+| `ValueError: Missing staticfiles manifest entry for ''`, 500 en **cada** pagina | Las plantillas hacian `{% static '' %}ruta`, concatenando `STATIC_URL` a mano. Con el storage de manifest hay que pasar la ruta al tag. Ver el commit que lo arregla |
+| `DisallowedHost: Invalid HTTP_HOST header: 'webcmp'` en cada peticion | En Nginx, `proxy_set_header` se hereda del `server` **solo si el `location` no declara ninguno**. `location /` declara dos para el websocket, asi que el `Host` se perdia y volvia al default `$proxy_host`, que es el nombre del upstream |
+| Un 400 que se convierte en 500 | Los handlers de error renderizan plantillas, y el context processor leia `request.user` sin `getattr`. Ese atributo lo pone `AuthenticationMiddleware`, que corre despues de `CommonMiddleware`: si la excepcion salta antes, no existe |
+| 502 en todo, con `connect() failed (13: Permission denied)` en el log de Nginx | `www-data` no estaba en el grupo `webcmp`, y el socket sale `0770 webcmp:webcmp` |
+| El sitio se cae cada 60 s y vuelve solo | `WatchdogSec=60` en el unit, pero Gunicorn solo manda `READY=1`, nunca `WATCHDOG=1`. systemd esperaba un ping que no llega y mandaba `SIGABRT` |
+| `collectstatic` falla con `Post-processing 'x.js' failed!` | El `.min.js` termina en `//# sourceMappingURL=x.js.map` y el `.map` no esta en el repo. El storage de manifest tiene que resolver cada referencia |
+| `[ERROR] Control server error: Permission denied: '/home/webcmp'` en cada arranque | El control socket de Gunicorn 26 cae a `$HOME/.gunicorn/`, y `webcmp` no tiene home con `ProtectHome=true` |
+| `NodeNotFoundError` al correr `migrate` | Habia una migracion versionada (`commercial/0006`) que dependia de un padre nunca commiteado. Se elimino |
+| `the cache has been disabled` en cada deploy | `sudo` aplica `env_reset` y descarta `PIP_CACHE_DIR` del entorno del llamador. Hay que pasarla con `sudo -u user env PIP_CACHE_DIR=... cmd` |
+
+Dos de estos se detectan antes de tocar produccion y conviene que sigan asi:
+
+- `manage.py check --deploy` con la configuracion real ya esta en el deploy.
+- Las referencias del tag `static` se pueden revisar con un chequeo de dos
+  segundos: todas las rutas de `{% static '...' %}` tienen que existir en disco,
+  porque el manifest revienta en el **primer request** de esa pagina, no en el
+  deploy. Ignorar lo que esta dentro de `{% comment %}`: Django no lo evalua.
 
 ## Primer deploy: checklist
 
