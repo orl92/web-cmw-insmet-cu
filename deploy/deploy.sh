@@ -159,7 +159,15 @@ rollback() {
         exit 1
     }
 
-    sudo -u "$DEPLOY_USER" "$PIP" install --quiet -r "$APP_DIR/requirements/prod.txt" || warn "Falló el pip install del rollback; se reinicia igual."
+    # `env PIP_CACHE_DIR=...` no es opcional ni cosmetico. `sudo` aplica env_reset y
+# descarta las variables del entorno del llamador, asi que un `export
+# PIP_CACHE_DIR=...` de este script NO llega al pip que corre como DEPLOY_USER:
+# el cache sigue sin existir y cada deploy vuelve a descargar todo desde PyPI.
+# Pasandola por `env` queda en el entorno del comando, que es el que si hereda.
+# Con un prefix simple (`sudo -u user VAR=val cmd`) sudo tambien la respeta, pero
+# `env` es explicito y no depende de la configuracion de sudoers del servidor.
+sudo -u "$DEPLOY_USER" env "PIP_CACHE_DIR=$PIP_CACHE_DIR" \
+    "$PIP" install --quiet -r "$APP_DIR/requirements/prod.txt" || warn "Falló el pip install del rollback; se reinicia igual."
 
     manage collectstatic --no-input || warn "Falló collectstatic en el rollback."
     systemctl restart "$GUNICORN_UNIT" || warn "Falló el restart de $GUNICORN_UNIT."
@@ -181,6 +189,20 @@ rollback() {
 # del venv, de media/ y de staticfiles/. Como root quedarian con dueno root y el
 # servicio dejaria de poder escribir en ellos.
 manage() {
+    # Por que systemd-run y no un shell normal: `manage.py` necesita leer la
+    # ENCRYPTION_KEY de /etc/webcmp/encryption.env (600, root) y correr como
+    # DEPLOY_USER, que no puede leerla. systemd resuelve las dos cosas: lee el
+    # EnvironmentFile como root antes de hacer el drop de privilegios.
+    #
+    # Un `sudo -u webcmp manage.py ...` a secas no descifra nada y cae al perfil
+    # de desarrollo (SQLite, DEBUG, EMAIL_BACKEND de consola), que es el modo de
+    # fallo mas caro: el deploy "pasa" y migra la base equivocada.
+    #
+    # OJO: systemd-run NO hereda el entorno de quien llama. Un
+    # `DJANGO_SUPERUSER_PASSWORD=... systemd-run ... createsuperuser --noinput`
+    # crea la cuenta con una contrasena inservible y sin avisar, porque la
+    # variable se queda en el shell del operador. Para pasar algo, va con
+    # -p Environment=NOMBRE=valor.
     systemd-run --quiet --pipe --wait \
         --uid="$DEPLOY_USER" --gid="$DEPLOY_USER" \
         -p "EnvironmentFile=$ENCRYPTION_ENV" \
@@ -211,7 +233,8 @@ current_sha=$(gitapp rev-parse HEAD)
 
 # 2. Dependencias
 log "Instalando requirements/prod.txt"
-sudo -u "$DEPLOY_USER" "$PIP" install --quiet --disable-pip-version-check -r "$APP_DIR/requirements/prod.txt"
+sudo -u "$DEPLOY_USER" env "PIP_CACHE_DIR=$PIP_CACHE_DIR" \
+    "$PIP" install --quiet --disable-pip-version-check -r "$APP_DIR/requirements/prod.txt"
 
 # 3. Generar migraciones desde los modelos
 #
