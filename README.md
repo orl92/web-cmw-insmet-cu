@@ -608,7 +608,7 @@ sudo systemd-run --pipe --wait --uid=webcmp -t \
 sudo systemd-run --pipe --wait --uid=webcmp \
   -p EnvironmentFile=/etc/webcmp/encryption.env \
   -p Environment=PRODUCTION=1 \
-  -p Environment=DJANGO_SUPERUSER_PASSWORD='CONTRASENA_LARGA_Y_UNICA' \
+  -p Environment=DJANGO_SUPERUSER_PASSWORD='CONTRASENA_LARGA_Y_UNICA' \ # pragma: allowlist secret
   --working-directory=/srv/webcmp \
   /srv/webcmp/.venv/bin/python manage.py createsuperuser \
     --noinput --username admin --email admin@insmet.cu

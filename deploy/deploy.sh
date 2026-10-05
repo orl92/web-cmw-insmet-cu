@@ -311,11 +311,18 @@ systemctl is-active --quiet "$HUEY_UNIT" || die "$HUEY_UNIT quedo inactivo."
 # atraviesa Nginx, TLS y el socket de Gunicorn: prueba el camino completo, sin
 # salir del servidor y sin depender de que DNS resuelva desde aca.
 log "Health check"
+#
+# `|| true`, no `|| echo 000`. `--write-out '%{http_code}'` YA imprime `000` cuando
+# curl no logra conectarse, asi que un `|| echo 000` anade un segundo 000 y la
+# variable queda con `000000`. Ese valor no matchea el patron `000` del case de
+# abajo: un deploy con el sitio caido caia en el `*)` y decia "El sitio responde
+# 000000, se esperaba 2xx o 3xx", que no dice nada. El `000)` con el mensaje del
+# certificado autofirmado, que es el diagnostico util, era inalcanzable.
 code=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
     --max-time 15 \
     ${HEALTHCHECK_INSECURE:+--insecure} \
     --resolve "$PUBLIC_HOSTNAME:443:127.0.0.1" \
-    "https://$PUBLIC_HOSTNAME/" || echo 000)
+    "https://$PUBLIC_HOSTNAME/" || true)
 
 case "$code" in
     2* | 3*) log "El sitio responde $code." ;;
