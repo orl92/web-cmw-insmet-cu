@@ -1,7 +1,6 @@
 from django.urls import path
 
 from apps.meteo.views import (
-    exports,
     forecast,
     province,
     station,
@@ -33,11 +32,6 @@ urlpatterns = [
         'pronosticos/plantilla-excel/',
         forecast.ForecastExcelTemplateView.as_view(),
         name='excel_template',
-    ),
-    path(
-        'pronosticos/exportar/csv/',
-        exports.ForecastCSVExportView.as_view(),
-        name='pronostico_export_csv',
     ),
     # ──────────────────────────────────────────────
     # Weather Reports (today, tomorrow, commentary, note)
