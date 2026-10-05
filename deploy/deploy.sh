@@ -137,7 +137,9 @@ log "Deploy $target_sha sobre $(gitapp rev-parse --short "$previous_sha")"
 
 rollback() {
     local status=$?
-    trap - ERR
+    # Se desarma EXIT y ERR: el `exit` del final de esta funcion no tiene que
+    # volver a entrar aca.
+    trap - ERR EXIT
 
     if [ "$status" -eq 0 ] || [ "$current_sha" = "$previous_sha" ]; then
         exit "$status"
@@ -212,7 +214,18 @@ manage() {
         "$PYTHON" manage.py "$@"
 }
 
-trap rollback ERR
+# La trampa es EXIT y no ERR. No es indistinto: `trap ... ERR` NO se dispara
+# cuando el script hace `exit`, y `die()` -que es como termina practicamente todo
+# el deploy, incluido el health check- justamente hace `exit 1`. Con ERR, un deploy
+# que migraba y despues fallaba en el health check se dejaba el servidor en el
+# commit roto: el rollback era inalcanzable justo en el caso para el que existe.
+# Verificado en el servidor de prueba: fallo forzado del health check, el codigo
+# se quedo en el commit nuevo y el aviso de revertido nunca apareció.
+#
+# EXIT cubre las dos salidas: un comando que falla (set -e mata el script y el
+# status es el del comando) y un `exit` explicito de `die`. El caso status==0
+# esta contemplado mas abajo y no hace nada.
+trap rollback EXIT
 
 # --------------------------------------------------------------------------
 # 1. Codigo
@@ -319,7 +332,9 @@ dominio, que es exactamente lo que el health check deberia estar mirando."
     *) die "El sitio responde $code, se esperaba 2xx o 3xx." ;;
 esac
 
-trap - ERR
+# Desarma la trampa antes de imprimir el resumen: si fallara un `git rev-parse`
+# aca, el rollback intentaria volver al commit anterior... que es este mismo.
+trap - ERR EXIT
 
 log "Desplegado $(gitapp rev-parse --short HEAD)."
 printf '  Web:  https://%s\n' "$PUBLIC_HOSTNAME"
