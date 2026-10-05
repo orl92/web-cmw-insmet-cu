@@ -39,6 +39,12 @@ EnvironmentFile=-/etc/webcmp/encryption.env
 Environment=PRODUCTION=1
 Environment=DJANGO_SETTINGS_MODULE=config.settings
 
+# Matplotlib necesita un directorio de config escribible para la cache de
+# fuentes. `webcmp` es una cuenta de sistema SIN home, asi que sin esto cae en
+# /tmp y regenera el fontManager en cada import: tres workers, tres regeneraciones
+# por arranque, mas un WARNING en el log que esconde el resto.
+Environment=MPLCONFIGDIR=/srv/webcmp/.cache/matplotlib
+
 # El socket en /run y no en /tmp: /run es un tmpfs que systemd crea con el
 # permiso del usuario del servicio y limpia en cada arranque. Un socket en /tmp
 # sobrevive a un reinicio y Nginx se queda proxying a un archivo fantasma.
@@ -53,7 +59,7 @@ ProtectSystem=full
 ProtectHome=true
 # ProtectSystem=full deja /etc de solo lectura, que es lo que queremos; sin esta
 # excepcion el worker no podria escribir en media/, logs/ ni staticfiles/.
-ReadWritePaths=/srv/webcmp/media /srv/webcmp/logs /srv/webcmp/staticfiles
+ReadWritePaths=/srv/webcmp/media /srv/webcmp/logs /srv/webcmp/staticfiles /srv/webcmp/.cache
 
 ExecStart=/srv/webcmp/.venv/bin/gunicorn config.wsgi:application \
     --name webcmp \

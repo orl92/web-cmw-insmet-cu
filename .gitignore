@@ -207,6 +207,13 @@ celerybeat-schedule.*
 
 # Environments
 .env
+# Copias del .env que alguien se hace para tocar una variable y se le olvida
+# borrar. `.env` esta ignorado, `.env.bak` no: un `git add -A` se lleva la
+# contrasena de la base y el SMTP al repo. `env.bak/` de mas abajo es un patron
+# de DIRECTORIO y no cubre un archivo llamado .env.bak.
+.env.bak
+.env.local
+.env.*.bak
 .venv
 env/
 venv/
