@@ -184,19 +184,7 @@ def _datos_cliente(customer):
 
 
 def _periodo_facturacion(invoice):
-    """El período facturado, tal como lo escribió el operador.
-
-    Las facturas reales del CMP lo escriben como texto libre ("Mes de mayo y
-    junio de 2025", "octubre y noviembre del 2025"), y ninguno de esos textos se
-    puede derivar de un par de fechas. Por eso es un `CharField` y no un rango:
-    componer "Desde X hasta Y" rinde un rango imposible en el caso normal, que
-    es una factura emitida de una sola fecha.
-
-    Si el campo está vacío (facturas emitidas antes de que existiera), cae a la
-    fecha de emisión. No es una migración de datos a propósito: en este proyecto
-    las migraciones no se versionan, así que una migración de datos se perdería
-    en silencio y dejaría facturas viejas sin período.
-    """
+    """El período facturado, como lo imprimen las facturas del CMP."""
     if invoice.period_label:
         return invoice.period_label
     return invoice.issue_date.strftime('%d/%m/%Y')

@@ -86,13 +86,6 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     success_url = reverse_lazy('commercial:factura_list')
 
     def get_initial(self):
-        """Sólo propone el cliente: las fechas ya no son un dato de la factura.
-
-        El período facturado es texto libre (`period_label`) y el del contrato
-        viaja por línea, así que acá no queda ningún rango que prellenar. La
-        suscripción a regenerar ya no aporta fechas tampoco: se muestra su
-        período en read-only en el listado de pendientes.
-        """
         initial = super().get_initial()
         customer_uuid = self.request.GET.get('customer_uuid')
         if not customer_uuid:
@@ -129,18 +122,9 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def _items_inicial(self):
         """Valores por defecto de cada línea manual.
 
-        `start_date` es `ServiceSubscription.start_date`: un contrato que
-        persiste y que ninguna facturación posterior corrige. El caso común es
-        que el servicio empiece a facturarse hoy, así que se propone esa fecha y
-        el operador la cambia sólo cuando el cliente empezó antes. Un rango
-        compartido no puede expresar eso: el caso real —agrometeo de mayo a julio
-        y pronóstico desde el 10 de junio— obliga a mentir en una de las dos
-        líneas.
-
-        Va como `form_kwargs` y no como `initial` del formset porque `initial` es
-        una lista por *forma inicial*: pasar un solo dict hace que Django cuente
-        esa fila como inicial y agrega otra, dejando una línea en blanco con un
-        campo requerido que el operador no llenó nunca.
+        Va como `form_kwargs` y no como `initial` del formset: `initial` es una
+        lista por forma inicial, así que un dict hace que Django cuente esa fila
+        como inicial y agrega otra, dejando una línea en blanco.
         """
         return {'initial': {'start_date': timezone.localdate().isoformat()}}
 
@@ -191,10 +175,8 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def cost_allocations_formset(self):
         """Formset de imputación a centros de costo.
 
-        En el POST va ligado a lo enviado. En el GET se precarga desde los
-        servicios del cliente cuando ya se sabe cuál es —el caso de regenerar
-        una factura— porque sin cliente no hay códigos de los que deducir un
-        centro, y un reparto inventado sería peor que uno vacío.
+        En el GET se precarga desde los servicios del cliente cuando ya se sabe
+        cuál es; sin cliente no hay códigos de los que deducir un centro.
         """
         prefix = 'cost_allocations'
         if self.request.method == 'POST':
@@ -259,15 +241,9 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def anular_factura_previa(self, regenerar, subscriptions, nuevas_facturas=None):
         """Anula la factura que la nueva reemplaza, sólo si la nueva la reemplaza.
 
-        Va después de crear la factura nueva a propósito: el defecto que
-        reportaba el operador no era "se anuló la factura equivocada" sino "se
-        anuló antes de que existiera el reemplazo". Si algo falla antes de acá,
-        la factura anterior sigue viva.
-
-        No se envuelve en `transaction.atomic`: la tarea de PDF se encola dentro
-        de `process_batch_invoice`, y con la transacción abierta el worker
-        podría renderizar contra filas todavía sin confirmar. El orden ya da la
-        garantía que importa: crear primero, anular después.
+        Va después de crear la factura nueva: si algo falla antes, la factura
+        anterior sigue viva. Sin `transaction.atomic` porque la tarea de PDF se
+        encola adentro y el worker podría renderizar contra filas sin confirmar.
         """
         if regenerar is None:
             return
@@ -334,11 +310,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def anchor_invoice(self, invoice, subscriptions):
         """Cuelga la factura de la suscripción cuando hay una sola.
 
-        `Invoice.subscription` es un atajo de conveniencia: con varias
-        suscripciones no hay una respuesta única, así que se deja en NULL y el
-        vínculo real queda en cada línea. Cuando hay exactamente una se
-        completa, porque `subscription.invoices` es la relación que consulta
-        buena parte del código.
+        Con varias queda en NULL y el vínculo real está en cada línea.
         """
         unique = {sub.pk: sub for sub in subscriptions}
         if len(unique) == 1:
@@ -356,14 +328,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     ):
         """Crea la factura de un período y la devuelve.
 
-        `period_label` es el texto que el operador escribió y que va al PDF. No
-        viajan fechas: el período del contrato es de cada suscripción y aquí no
-        se toca (ver el comentario más abajo), y un rango de fechas ya no se
-        imprime en ningún lado.
-
-        El retorno lo usa `form_valid`: al regenerar, la factura anterior se
-        anula por diferencia, así que hay que saber cuáles son las nuevas para
-        no dejar el reemplazo anulado junto con lo que reemplaza.
+        El período del contrato es de cada suscripción y aquí no se toca.
         """
         invoice = Invoice.objects.create(
             subscription=None,
@@ -378,12 +343,9 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             price = sub.service.price or 0
             quantity = sub.quantity
             amount = price * quantity
-            # `unidad_medida` no se pasa a propósito: la pone el `default='U'` del
-            # modelo, que es lo que imprimen las facturas reales del CMP. La unidad
-            # de la fila la nombra el rótulo de `cantidad`. Y `descripcion` es el
-            # título tal cual, sin sufijo: el "por meses" de la 279 es parte del
-            # nombre en el catálogo, y pegárselo acá le agregaría una palabra a las
-            # facturas de pronóstico (182 y 276), que no lo tienen.
+            # `unidad_medida` no se pasa: lo pone el `default='U'` del modelo, que
+            # es lo que imprimen las facturas reales. `descripcion` es el título
+            # tal cual: el "por meses" de la 279 es parte del nombre en el catálogo.
             item = InvoiceItem.objects.create(
                 invoice=invoice,
                 subscription=sub,
@@ -452,10 +414,8 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def process_manual_invoice(self, form, customer, commercial_registry, cost_formset=None):
         """Crea la factura a mano, una suscripción nueva por línea.
 
-        El inicio de cada suscripción sale de su propia línea
-        (`InvoiceItemForm.start_date`), no de un rango compartido: el contrato
-        con el cliente empieza cuando él empezó a usar el servicio, y eso puede
-        ser una fecha distinta en cada línea de la misma factura.
+        El inicio sale de cada línea: el contrato con el cliente empieza cuando
+        él empezó a usar el servicio, y eso puede diferir entre líneas.
         """
         items_formset = InvoiceItemFormSet(self.request.POST, prefix='items')
         if not items_formset.is_valid():
@@ -578,9 +538,8 @@ class InvoicePDFDownloadView(ServeModelFileView):
     def get_permission_required(self, obj):
         """Staff con permiso, o el cliente titular de la factura.
 
-        El cliente ve sus PDFs en "Mis Suscripciones" (dashboard) y en el
-        portal; sin esto los botones Ver PDF/Descargar de sus propias facturas
-        devuelven 403 porque no tienen ``commercial.view_invoice``.
+        Sin esto sus botones Ver PDF/Descargar devuelven 403: no tienen
+        ``commercial.view_invoice``.
         """
         user = self.request.user
         if not hasattr(user, 'commercial_customer'):
@@ -669,11 +628,9 @@ class CancelInvoiceView(LoginRequiredMixin, PermissionRequiredMixin, View):
 class RetryInvoicePdfView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """Vuelve a encolar el render del PDF sin reenviar el correo.
 
-    El PDF se genera en una tarea Huey asíncrona, así que una factura puede
-    quedar pagada sin PDF (el worker caído, un render fallido) y no hay forma
-    de impedirlo sin volver síncrono el envío. Lo que sí tiene que existir es
-    la reparación: reencolar sólo el paso del PDF, que es idempotente y no
-    duplica el correo si el de la factura ya salió.
+    El PDF va en una tarea Huey asíncrona, así que puede quedar faltando sin que
+    nada lo impida. Reencolar sólo el PDF es idempotente y no duplica el correo
+    si el de la factura ya salió.
     """
 
     permission_required = 'commercial.change_invoice'

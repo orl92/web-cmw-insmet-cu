@@ -19,16 +19,13 @@ from apps.core.models import CompanySettings
 class InvoiceItemForm(forms.Form):
     """Una línea de facturación manual.
 
-    El rótulo de `cantidad` nombra la unidad —"Cantidad de meses" o "Cantidad de
-    días"— porque es el único lugar donde el operador puede leerla: la columna
-    `U/M` de las facturas reales del CMP nunca dice `MES` ni `DÍA`, dice `U` o
-    nada, así que no hay unidad que leer en ninguna columna de la factura. La
-    unidad sale de la categoría del servicio y se resuelve en el servidor para que
-    una fila que vuelve a renderizarse por un error se rotule igual sin que haya
-    corrido una línea de JavaScript.
+    El rótulo de `cantidad` nombra la unidad porque es el único lugar donde el
+    operador puede leerla: la columna `U/M` de las facturas del CMP dice `U` o
+    nada. Se resuelve en el servidor para que una fila que vuelve a renderizarse
+    por un error llegue rotulada sin JavaScript.
 
-    `cantidad` no trae valor por defecto. Las cantidades reales son 30, 31, 2 y
-    4, nunca 1: un número inventado en este campo subfactura en silencio.
+    `cantidad` no trae valor por defecto: las cantidades reales son 30, 31, 2 y
+    4, y un número inventado acá subfactura en silencio.
     """
 
     service = forms.ModelChoiceField(
@@ -84,15 +81,9 @@ class InvoiceItemForm(forms.Form):
     def _selected_billing_period(self):
         """Unidad de facturación del servicio ya elegido, o `''` si no hay ninguno.
 
-        Se resuelve acá y no en el `clean()` porque el rótulo se imprime antes de
-        validar: una fila que vuelve a la pantalla por un error tiene que llegar
-        rotulada, y en ese momento el POST todavía no es válido. Igual que en
-        `SubscriptionForm`, sólo un servicio del queryset cuenta: uno
-        inexistente, uno público o uno dado de baja dejan el rótulo neutro en vez
-        de romper el render.
-
-        `add_prefix` porque la misma clase se usa suelta y dentro del formset,
-        donde los datos llegan como `items-0-service` y no como `service`.
+        Va acá y no en `clean()` porque el rótulo se imprime antes de validar:
+        una fila que vuelve por un error tiene que llegar rotulada. `add_prefix`
+        porque la misma clase se usa suelta y dentro del formset.
         """
         if not self.is_bound:
             return ''
@@ -106,22 +97,9 @@ class InvoiceItemForm(forms.Form):
         return servicio.get_billing_period_display() if servicio else ''
 
     def clean(self):
-        """Rebuild the readonly fields from the service, never from the POST body.
-
-        `codigo` and `precio` exist so the operator can see what is being charged,
-        not so a stale page or a hand-crafted request can set them. `cantidad` is
-        the opposite — the operator owns it, and `start_date` is its own too: it is
-        the contract with the customer, so it travels per line and is never
-        derived from the invoice.
-
-        `unidad_medida` is not rebuilt here because it is not a field: the view
-        leaves `InvoiceItem.unidad_medida` at the model default, which is already
-        the `U` the real invoices use. `descripcion` is likewise not a field, so no
-        unit can be appended to the service title from here.
-
-        There is no unit selector on purpose: it would duplicate a fact that
-        `service_category` already states, and `U/M` states nothing at all.
-        """
+        # `codigo` y `precio` se reconstruyen desde el servicio y nunca desde el
+        # POST: existen para que el operador vea qué se está cobrando, no para que
+        # una página vieja o un POST a mano los fijen.
         cleaned_data = super().clean()
         service = cleaned_data.get('service')
 
@@ -150,14 +128,10 @@ class InvoiceCostAllocationForm(forms.ModelForm):
 class InvoiceCostAllocationFormSet(BaseModelFormSet):
     """Formset de centros de costo, con la regla de que sumen 100 %.
 
-    La suma se valida acá y no en `InvoiceCostAllocation.clean()` a propósito: en
-    el modelo no se podría borrar una fila y corregir el reparto, porque al
-    guardar la primera vez ya se exigiría el total. Sólo se cuentan las formas
-    vivas, así que `can_delete` recalcula bien.
-
-    Exige además al menos una fila viva: las tres facturas reales del CMP
-    imputan a algún centro, y una factura comercial sin imputación es
-    exactamente el defecto que este modelo viene a cerrar.
+    La suma se valida acá y no en el modelo: en `clean()` no se podría borrar
+    una fila y corregir el reparto, porque al guardar la primera vez ya se
+    exigiría el total. Sólo se cuentan las formas vivas, así que `can_delete`
+    recalcula bien.
     """
 
     def clean(self):
@@ -199,12 +173,9 @@ InvoiceCostAllocationFormSet = modelformset_factory(
 class InvoiceForm(forms.Form):
     """Datos de la factura. Los períodos no están acá.
 
-    El período facturado es `period_label` y nada más: es el texto que se
-    imprime. El período del contrato (`ServiceSubscription.start_date` +
-    `quantity`) es de otra entidad y viaja en cada línea de la facturación
-    manual —`InvoiceItemForm.start_date`—, porque una sola fecha compartida
-    obligaría a mentir en cuanto el cliente empezó dos servicios en días
-    distintos.
+    El período del contrato es de otra entidad y viaja por línea
+    (`InvoiceItemForm.start_date`): una fecha compartida obligaría a mentir en
+    cuanto el cliente empezó dos servicios en días distintos.
     """
 
     customer = forms.ModelChoiceField(
