@@ -839,6 +839,14 @@ ask_optional_secret() {
     # salida y sin saber por que, asi que los tres reintentos estan contados.
 # Y con una respuesta que no sea si/no NO se asume el default: "se asume si" por
     # culpa de una tecla mal apretada es como se instala lo que no se queria.
+# Redibuja la barra despues de que el operador responda algo. Un prompt es una
+# linea que se escribe encima de la barra, asi que hay que romperla antes
+# (progress_break, via el printf del prompt) y volver a levantar la barra
+# despues. Sin esto, respondiendo el prompt de PostgreSQL la barra se quedaba
+# en el renglon anterior y no avanzaba el resto de la seccion: el operador veia
+# el % congelado y pensaba que el instalador se habia colgado.
+progress_after_prompt() { progress_draw; }
+
 ask_yes_no() {
     local default=$1 question=$2 answer='' other tries=0
     other=$([ "$default" = si ] && echo no || echo si)
@@ -847,22 +855,26 @@ ask_yes_no() {
         [ "$default" = si ]
         return
     fi
+    progress_break
     while :; do
         printf '%s [%s/%s] (vacio = %s): ' "$question" "$default" "$other" "$default" >&2
-        IFS= read -r answer || die "EOF leyendo la respuesta."
+        IFS= read -r answer || { progress_after_prompt; die "EOF leyendo la respuesta."; }
         answer=${answer:-$default}
         case "$answer" in
             s | S | si | SI | yes | y | Y)
                 ANSWER_SOURCES+=("($1)=si")
+                progress_after_prompt
                 return 0 ;;
             n | N | no | NO)
                 ANSWER_SOURCES+=("($1)=no")
+                progress_after_prompt
                 return 1 ;;
         esac
         tries=$((tries + 1))
         printf '  Se entiende si/no. Reintenta.\n' >&2
         if [ "$tries" -ge "$MAX_PROMPT_TRIES" ]; then
             printf '  %s intentos agotados.\n' "$MAX_PROMPT_TRIES" >&2
+            progress_after_prompt
             return 1
         fi
     done
@@ -1159,11 +1171,32 @@ ENV_FILE_EXISTS=0
 [ -f "$ENV_FILE" ] && ENV_FILE_EXISTS=1
 CONFIG_FILE_EXISTS=0
 [ -f "$CONFIG_FILE" ] && CONFIG_FILE_EXISTS=1
-APP_DIR_EXISTS=0
-[ -d "$APP_DIR/.git" ] && APP_DIR_EXISTS=1
+# Tres estados distintos, y el nombre viejo los mezclaba en uno solo:
+# APP_DIR_EXISTS decia "existe", pero en realidadologia "-d $APP_DIR/.git", o
+# sea "¿es un checkout?". Con esa mentira el instalador no distinguia "directorio
+# vacio" de "directorio con cosas dentro que no son un checkout", y en el
+# segundo caso caia directo al git clone, que se niega a clonar sobre un destino
+# no vacio y abortaba con "destination path already exists and is not an empty
+# directory". Cada estado se resuelve distinto, asi que se mide cada uno.
+APP_DIR_PRESENT=0
+APP_DIR_EMPTY=1
+HAS_CHECKOUT=0
+if [ -d "$APP_DIR" ]; then
+    APP_DIR_PRESENT=1
+    [ -d "$APP_DIR/.git" ] && HAS_CHECKOUT=1
+    # -mindepth 1 porque la entrada "." del propio directorio no cuenta, y
+    # -print -quit corta en el primer hallazgo: para saber si hay algo alcanza
+    # con encontrar uno, y listar el arbol entero de media/ seria una TONELADA de
+    # lineas en pantalla.
+    [ -n "$(find "$APP_DIR" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ] \
+        && APP_DIR_EMPTY=0
+fi
 
-if [ "$APP_DIR_EXISTS" -eq 1 ]; then
+if [ "$HAS_CHECKOUT" -eq 1 ]; then
     echo "  $APP_DIR ya es un checkout: se reusa (idempotente)."
+fi
+if [ "$APP_DIR_PRESENT" -eq 1 ] && [ "$APP_DIR_EMPTY" -eq 0 ] && [ "$HAS_CHECKOUT" -eq 0 ]; then
+    echo "  $APP_DIR existe, tiene contenido y NO es un checkout de git."
 fi
 if [ "$ENV_FILE_EXISTS" -eq 1 ]; then
     echo "  $ENV_FILE ya existe: se conserva y sus valores son los defaults."
@@ -1439,12 +1472,15 @@ else
     # `apt-get update` y el install se muestran en vivo: son el primer comando
     # que el operador ve correr y el que mas tiempo tarda sin decir nada. Un
     # instalador que se queda mudo 90 segundos en el paso 1 parece colgado.
-    run_live 'apt-get update' apt-get update -qq \
+    # Sin `-qq`: ese flag es lo que hace que apt no diga ni "Leyendo listas de
+    # paquetes..." ni "Configurando <paquete>". Con el, el log en vivo llega
+    # practicamente vacio y el operador no ve nada pasar dentro del spinner.
+    run_live 'apt-get update' apt-get update \
         || die "apt-get update fallo."
     # Se instala lo que falte: `apt-get install` sobre un paquete ya presente no
     # hace nada, asi que no hace falta un ciclo de deteccion por paquete.
     run_live 'apt-get install (paquetes del sistema)' \
-        apt-get install -y -qq "${APT_PACKAGES[@]}" \
+        apt-get install -y "${APT_PACKAGES[@]}" \
         || die "apt-get install fallo. Revisa el repositorio de la distro y volve a correr."
 fi
 
@@ -1460,7 +1496,14 @@ if ! command -v psql >/dev/null 2>&1; then
         if [ "$DRY_RUN" -eq 1 ]; then
             printf '  [dry-run] apt-get install -y %s\n' "$DB_SERVER_PACKAGE"
         else
-            apt-get install -y -qq "$DB_SERVER_PACKAGE" \
+            # Con run_live, no con un apt-get pelado. Este es el comando mas
+            # LENTO de todo el instalador: instalar el server de PostgreSQL son
+            # 2-5 minutos en un VPS con SSD, y con -qq el operador se queda
+            # mirando una pantalla muerta sin poder distinguir "todavia baja" de
+            # "se trabo". El log deja ver si esta resolviendo dependencias o si
+            # esta esperando algo de red.
+            run_live "apt-get install $DB_SERVER_PACKAGE" \
+                apt-get install -y "$DB_SERVER_PACKAGE" \
                 || die "No se pudo instalar $DB_SERVER_PACKAGE. Instalalo a mano y volve a correr."
         fi
     else
@@ -1506,7 +1549,7 @@ ensure_dir "$TLS_DIR" 0700 root root
 
 step 6 "Checkout en $APP_DIR"
 
-if [ "$APP_DIR_EXISTS" -eq 1 ]; then
+if [ "$HAS_CHECKOUT" -eq 1 ]; then
     # Clone existente: se actualiza, NO se regenera. Un `rm -rf $APP_DIR` para
     # "empezar limpio" se llevaria por delante media/, .env y el venv, que es
     # justamente lo que este script existe para no perder.
@@ -1528,10 +1571,38 @@ if [ "$APP_DIR_EXISTS" -eq 1 ]; then
     run_sh "runuser -u '$SERVICE_USER' -- git -C '$APP_DIR' checkout --quiet '$REPO_REF'"
     run_sh "runuser -u '$SERVICE_USER' -- git -C '$APP_DIR' merge --ff-only --quiet 'origin/$REPO_REF' \
         || echo '  [aviso] no se pudo hacer fast-forward a origin/$REPO_REF; se deja el checkout como esta'"
-else
-    # git clone acepta un directorio destino existente VACIO, que es lo que se
-    # acaba de crear con ensure_dir. Clonar por el usuario de servicio y no
-    # como root evita el "dubious ownership" en el primer gitapp() del deploy.
+elif [ "$APP_DIR_PRESENT" -eq 1 ] && [ "$APP_DIR_EMPTY" -eq 0 ]; then
+    # El caso que antes moría con "destination path already exists": hay cosas
+    # adentro y no son un checkout. Casi siempre es media/, .env y .venv de una
+    # corrida anterior que se cortó a mitad, O un /srv que ya tenia algo del
+    # operador.
+    #
+    # NO se borra nada por cuenta propia. Un rm -rf aca es exactamente el
+    # escenario que este instalador existe para no perder: el .env con las claves
+    # de la base, los PDFs ya subidos y el venv con dos minutos de compilacion.
+    # Se ASK, y el default es no.
+    warn "$APP_DIR tiene contenido pero no es un checkout de git."
+    echo "  Primeros elementos:"
+    find "$APP_DIR" -mindepth 1 -maxdepth 1 -printf '    %f\n' 2>/dev/null | head -20
+    if ! ask_yes_no no "Mover $APP_DIR a $APP_DIR.preinstall-<fecha> y clonar de cero?"; then
+        # Sin default de "si" porque borrar datos del operador no puede ser la
+        # respuesta que se obtiene solo apretando Enter.
+        die "$APP_DIR tiene contenido que no es un checkout.
+       El instalador no lo borra solo. Revisa que sea, movelo a mano, o
+       responde 'si' la proxima vez para que lo guarde como $APP_DIR.preinstall-<fecha>."
+    fi
+    BACKUP_DIR="$APP_DIR.preinstall-$(date +%Y%m%d-%H%M%S)"
+    if [ "$DRY_RUN" -eq 1 ]; then
+        printf '  [dry-run] mv %s %s\n' "$APP_DIR" "$BACKUP_DIR"
+    else
+        run mv "$APP_DIR" "$BACKUP_DIR" \
+            || die "No se pudo mover $APP_DIR a $BACKUP_DIR. Revisa permisos de /srv."
+        echo "  contenido anterior conservado en $BACKUP_DIR (borralo cuando confirmes)."
+    fi
+    # ensure_dir vuelve a crear $APP_DIR vacio, y de ahi si entra el clone.
+    if [ "$DRY_RUN" -eq 0 ]; then
+        ensure_dir "$APP_DIR" 0755 "$SERVICE_USER" "$SERVICE_GROUP"
+    fi
     if [ "$DRY_RUN" -eq 1 ]; then
         printf '  [dry-run] runuser -u %s -- git clone %s %s\n' "$SERVICE_USER" "$REPO_URL" "$APP_DIR"
     else
@@ -1541,7 +1612,14 @@ else
         # distinguir antes de decidir si toca abrir puertos.
         run_live "git clone $REPO_URL" \
             runuser -u "$SERVICE_USER" -- git clone --branch "$REPO_REF" "$REPO_URL" "$APP_DIR" \
-            || die "No se pudo clonar $REPO_URL en $APP_DIR. Revisa salida a Internet, DNS y permisos de $APP_DIR."
+            || die "No se pudo clonar $REPO_URL en $APP_DIR.
+
+       Si el error fue 'destination path already exists and is not an empty
+       directory', eso ya se trata arriba; si se escapo de ahi, casi seguro hay
+       procesos con cwd en $APP_DIR o un montaje encima. Revisa con:
+         ls -A $APP_DIR ; findmnt -T $APP_DIR ; lsof +D $APP_DIR
+       Para red: salida a Internet, DNS, y que el proxy no este cortando
+       github.com. Comprobacion rapida: curl -sI https://github.com"
     fi
 fi
 
