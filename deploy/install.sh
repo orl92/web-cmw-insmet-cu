@@ -112,9 +112,131 @@ ASK_GENERATED_FILE=$(mktemp -t webcmp-generated.XXXXXX)
 cleanup_generated_flags() { [ -n "${ASK_GENERATED_FILE:-}" ] && rm -f "$ASK_GENERATED_FILE"; }
 trap cleanup_generated_flags EXIT INT TERM
 
-log()  { printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
-warn() { printf '\033[1;33mAVISO:\033[0m %s\n' "$*" >&2; }
-die()  { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+# Contadores del resumen final. Todos arrancan en 0 y SOLO pasan a 1 en el punto
+# exacto donde la cosa ocurrio, asi que el resumen final no puede afirmar nada que
+# no haya pasado. Ver C.13.
+STEPS_TOTAL=0
+STEPS_DONE=0
+DEPLOY_SSH_KEY_CREATED=0
+SUPERUSER_CREATED=0
+GUNICORN_ENABLED=0
+INSTALL_STARTED_AT=$(date +%s)
+
+# --------------------------------------------------------------------------
+# Barra de progreso
+# --------------------------------------------------------------------------
+#
+# La barra va a stderr y solo si stderr es un terminal. En un log de CI o en un
+# `| tee` un `\r` y 30 caracteres ANSI por seccion son basura que el que lee el
+# log tiene que filtrar a mano, y el CI no es un terminal.
+PROGRESS_TOTAL=0
+PROGRESS_DONE=0
+PROGRESS_CURRENT=
+progress_on() { [ -t 2 ] && [ "${NO_PROGRESS:-0}" != 1 ]; }
+
+# Ponderacion por peso de trabajo, no por numero de secciones. "Unidades systemd"
+# son 400 lineas y son instantaneas; "Instalando requirements/prod.txt" son 10 y
+# son minutos. Con el conteo de secciones (1/14) el operador ve la barra clavada
+# en 10% durante el pip install y despues tres saltos rapidos al final: ve mal
+# justo cuando tiene mas ganas de mirar. Con peso, la barra avanza poco a poco
+# donde el servidor esta trabajando de verdad.
+#
+# Los pesos son unidades relativas de trabajo esperado, no segundos.
+progress_reset() {
+    PROGRESS_DONE=0
+    PROGRESS_TOTAL=0
+    PROGRESS_CURRENT=
+    for _weight in "$@"; do PROGRESS_TOTAL=$((PROGRESS_TOTAL + _weight)); done
+    progress_draw
+}
+
+progress_draw() {
+    progress_on || return 0
+    [ "$PROGRESS_TOTAL" -gt 0 ] || return 0
+    local pct=$((PROGRESS_DONE * 100 / PROGRESS_TOTAL))
+    local filled=$((PROGRESS_DONE * 30 / PROGRESS_TOTAL))
+    local bar=''
+    local i
+    for ((i = 0; i < 30; i++)); do
+        if [ "$i" -lt "$filled" ]; then bar+='#'; else bar+='-'; fi
+    done
+    printf '\r\033[K  [%s] %3d%%  %s' "$bar" "$pct" "$PROGRESS_CURRENT" >&2
+}
+
+# Borra la linea de la barra. Todo lo que imprima mientras la barra este puesta
+# tiene que llamarla antes: si no, el texto sale pegado al final de la barra y la
+# lectura es un caos.
+progress_clear() {
+    progress_on || return 0
+    printf '\r\033[K' >&2
+}
+
+progress_done() {
+    PROGRESS_DONE=$((PROGRESS_DONE + $1))
+    progress_draw
+}
+
+# Cierra el bloque de la barra para que lo que venga abajo (un aviso, una
+# pregunta, el resumen) no quede encima.
+# Deja la barra en su propia linea para que lo que venga abajo salga debajo y no
+# al lado. En el log del pty se ve el problema: el texto de una seccion se
+# imprimia pegado al final del "[####] 71%" y las dos cosas quedaban ilegibles.
+progress_break() {
+    progress_clear
+    PROGRESS_CURRENT=
+}
+
+log()  { progress_break; printf '\n\033[1;34m==>\033[0m %s\n' "$*"; }
+warn() { progress_break; printf '\033[1;33mAVISO:\033[0m %s\n' "$*" >&2; }
+die()  { progress_break; printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
+
+# log_paso <peso> <titulo>
+#
+# Seccion que avanza la barra. El peso es trabajo esperado (ver progress_reset):
+# 1 = un instante, 10 = el pip install que se lleva la mayor parte del tiempo.
+step() {
+    local weight=$1 title=$2
+    STEPS_DONE=$((STEPS_DONE + 1))
+    log "$title"
+    progress_done "$weight"
+    progress_draw
+    # Newline tras la barra: lo que imprime el cuerpo de la seccion (apt-get,
+    # pip, migrate) sale DEBAJO y no pegado al "[####] 71%". Sin esto el
+    # operador lee la linea del comando y el porcentaje en la misma, y el
+    # progreso se pierde en un enredo que hay que leer dos veces.
+    progress_on && printf '\n' >&2
+    return 0
+}
+
+# Los pasos del plan, en orden, con su peso: "<peso> <nombre>". Se declara aqui
+# y no se deriva con grep sobre el archivo porque los pesos son una decision
+# (que parte se lleva el tiempo), no un dato.
+PROGRESS_PLAN=(
+    "2|Preflight"
+    "1|Configuracion"
+    "1|Resumen de lo que se va a instalar"
+    "8|Prerrequisitos de sistema"
+    "1|Usuario de servicio"
+    "6|Checkout"
+    "2|Base de datos: rol y base"
+    "2|Entorno virtual"
+    "25|requirements/prod.txt"
+    "1|Archivo .env"
+    "1|Valores del .env"
+    "8|Migraciones y estaticos"
+    "4|Unidades systemd"
+    "1|Configuracion del deploy"
+    "4|Arrancando los servicios"
+)
+progress_begin() {
+    local entry total=0
+    STEPS_TOTAL=${#PROGRESS_PLAN[@]}
+    for entry in "${PROGRESS_PLAN[@]}"; do total=$((total + ${entry%%|*})); done
+    PROGRESS_TOTAL=$total
+    PROGRESS_DONE=0
+    PROGRESS_CURRENT=
+    progress_draw
+}
 
 # --------------------------------------------------------------------------
 # Wrappers de ejecucion
@@ -809,7 +931,10 @@ require_systemd() {
 # error aqui deje el servidor exactamente como estaba.
 # ==========================================================================
 
-log "Preflight"
+# La barra arranca antes del primer paso, que es el Preflight.
+progress_begin
+
+step 2 "Preflight"
 
 [ "$(id -u)" -eq 0 ] || die "Hay que correrlo como root (sudo)."
 
@@ -908,7 +1033,7 @@ fi
 # aqui sin dejar el servidor a medio instalar.
 # ==========================================================================
 
-log "Configuracion (todo tiene default; Enter para conservarlo)"
+step 1 "Configuracion (todo tiene default; Enter para conservarlo)"
 
 EXTERNAL_HOSTNAME=$(ask PUBLIC_HOSTNAME "${PUBLIC_HOSTNAME:-meteocamaguey.cu}" \
     'Dominio publico del sitio (EXTERNAL_HOSTNAME del .env, server_name de Nginx, SNI del health check)' \
@@ -1111,7 +1236,7 @@ fi
 # FASE C. Ejecucion. De aca en adelante SI se toca el sistema.
 # ==========================================================================
 
-log "Resumen de lo que se va a instalar"
+step 1 "Resumen de lo que se va a instalar"
 cat <<EOF
   checkout        $APP_DIR ($REPO_URL @ $REPO_REF)
   usuario         $SERVICE_USER:$SERVICE_GROUP (shell $SERVICE_SHELL)
@@ -1133,7 +1258,7 @@ fi
 
 # --- C.1 Prerrequisitos de sistema --------------------------------------
 
-log "Prerrequisitos de sistema"
+step 8 "Prerrequisitos de sistema"
 
 # La lista no es la del README del proyecto: esa no alcanza. La tabla de
 # deploy/README-deploy.md documenta por que cada uno hace falta (build-essential
@@ -1196,7 +1321,7 @@ fi
 
 # --- C.2 Usuario de servicio y directorios -------------------------------
 
-log "Usuario de servicio $SERVICE_USER"
+step 1 "Usuario de servicio $SERVICE_USER"
 
 if id "$SERVICE_USER" >/dev/null 2>&1; then
     echo "  ya existe (shell: $(getent passwd "$SERVICE_USER" | cut -d: -f7))"
@@ -1230,7 +1355,7 @@ ensure_dir "$TLS_DIR" 0700 root root
 
 # --- C.3 Clone -----------------------------------------------------------
 
-log "Checkout en $APP_DIR"
+step 6 "Checkout en $APP_DIR"
 
 if [ "$APP_DIR_EXISTS" -eq 1 ]; then
     # Clone existente: se actualiza, NO se regenera. Un `rm -rf $APP_DIR` para
@@ -1310,7 +1435,7 @@ need_checkout() {
 
 # --- C.4 Base de datos ---------------------------------------------------
 
-log "Base de datos $DB_ENGINE: rol y base"
+step 2 "Base de datos $DB_ENGINE: rol y base"
 
 # El password viaja por el STDIN de psql, no por `-v` en la linea de comandos: un
 # `-v dbpass=...` queda visible en `ps aux` mientras el comando corre, y basta
@@ -1346,7 +1471,7 @@ echo "  rol y base listos (nunca se borra una base existente)."
 
 # --- C.5 venv ------------------------------------------------------------
 
-log "Entorno virtual"
+step 2 "Entorno virtual"
 
 if [ -x "$VENV_DIR/bin/python" ]; then
     echo "  ya existe en $VENV_DIR (idempotente)."
@@ -1358,7 +1483,7 @@ fi
 # scripts/generate_env.py. Por eso el venv va ANTES de generar el .env: el
 # generador importa Fernet y no Django, asi que el venv es la unica forma de
 # tener esa dependencia sin tocar el Python del sistema.
-log "Instalando requirements/prod.txt"
+step 25 "Instalando requirements/prod.txt"
 # `-m pip` y NO el shim `$VENV_DIR/bin/pip`: ese shim no esta garantizado (un
 # venv creado con uv no lo trae) y, si falta, la instalacion de requirements
 # falla con "No such file or directory". Mismo criterio que el PIP_CMD de
@@ -1368,7 +1493,7 @@ run_sh "runuser -u '$SERVICE_USER' -- env 'PIP_CACHE_DIR=$PIP_CACHE_DIR' \
 
 # --- C.6 .env ------------------------------------------------------------
 
-log "Archivo .env"
+step 1 "Archivo .env"
 
 # El generador es NO interactivo por diseño (su docstring lo dice: "un
 # generador que adivina el entorno es un generador que un día escribe el .env
@@ -1420,7 +1545,7 @@ apply_env_value() {
     printf '  %s=%s\n' "$1" "$(mask "$1" "$2")"
 }
 
-log "Sustituyendo los valores del .env"
+step 1 "Sustituyendo los valores del .env"
 apply_env_value EXTERNAL_HOSTNAME "$EXTERNAL_HOSTNAME"
 if [ -n "$WWW_HOSTNAME" ]; then
     ALLOWED_HOSTS="$EXTERNAL_HOSTNAME,$WWW_HOSTNAME"
@@ -1527,7 +1652,7 @@ echo "  .env completo."
 
 # --- C.7 Migraciones, estaticos, gate ------------------------------------
 
-log "Migraciones y estaticos"
+step 8 "Migraciones y estaticos"
 
 if [ -n "$PENDING_CHANGES" ]; then
     # Con un .env incompleto NO se migra. Las migraciones abren conexion a la base
@@ -1580,6 +1705,7 @@ else
             "$VENV_DIR/bin/python" manage.py createsuperuser --noinput \
             --username "$SUPERUSER_USERNAME" --email "$SUPERUSER_EMAIL"
         then
+            SUPERUSER_CREATED=1
             echo "  superusuario listo."
         else
             warn "No se pudo crear el superusuario. Se deja el resto instalado."
@@ -1595,7 +1721,7 @@ fi
 
 # --- C.8 Unidades systemd ------------------------------------------------
 
-log "Unidades systemd"
+step 4 "Unidades systemd"
 
 # RENDER, no copia. Las rutas de deploy/systemd/*.service estan escritas en el
 # archivo a proposito (en un unit, `APP_DIR=/srv/webcmp` no es una clave valida
@@ -1995,7 +2121,7 @@ fi
 
 # --- C.10 /etc/webcmp/deploy.env -----------------------------------------
 
-log "Configuracion del deploy en $CONFIG_FILE"
+step 1 "Configuracion del deploy en $CONFIG_FILE"
 
 # NO se pisa si existe sin confirmacion. Esta config se edita a mano
 # (PUBLIC_HOSTNAME sobre todo) y pisarla en un reintento deja el health check
@@ -2107,6 +2233,7 @@ setup_deploy_scaffold() {
         run ssh-keygen -t ed25519 -N '' -C "$DEPLOY_LOGIN_USER@$(hostname -s)" \
             -f "$DEPLOY_SSH_KEY" \
             || die "No se pudo generar el keypair en $DEPLOY_SSH_KEY."
+        DEPLOY_SSH_KEY_CREATED=1
         echo "  keypair ed25519 generado en $DEPLOY_SSH_KEY."
     fi
     # La privada la lee ssh como el usuario de despliegue, asi que su dueno es ese
@@ -2166,17 +2293,28 @@ fi
 
 # --- C.12 Arranque de los servicios --------------------------------------
 
+# El `step` va FUERA del if a proposito: con el .env incompleto la seccion igual
+# se visita e igual informa (dice que no arrancan y que hacer). Si el `step`
+# dependiera de la rama, en ese camino la barra quedaria en 92% para siempre,
+# colgada en un numero que no llego a 100% y sin explicacion de por que.
+step 4 "Arranque de los servicios"
+
 if [ -n "$PENDING_CHANGES" ]; then
-    log "Unidades systemd"
-    warn "No se arrancan $GUNICORN_UNIT ni $HUEY_UNIT: el .env esta incompleto."
+    log "No se arrancan $GUNICORN_UNIT ni $HUEY_UNIT: el .env esta incompleto."
     warn "Cuando se completen los valores:"
     printf '  sudo systemctl enable --now %s %s\n' "$GUNICORN_UNIT" "$HUEY_UNIT" >&2
 else
-    log "Arrancando $GUNICORN_UNIT y $HUEY_UNIT"
     run systemctl enable --now "$GUNICORN_UNIT"
     run systemctl enable --now "$HUEY_UNIT"
     sleep 2
-    run systemctl is-active --quiet "$GUNICORN_UNIT" || warn "$GUNICORN_UNIT quedo inactivo (journalctl -u $GUNICORN_UNIT)."
+    # GUNICORN_ENABLED mide que el servicio quedo ACTIVO, no que se le dio enable:
+    # `enable --now` puede salir 0 y dejar el unit caido, y el resumen no tiene
+    # que afirmar "arrancado" cuando lo que paso fue que quedo inactivo.
+    if run systemctl is-active --quiet "$GUNICORN_UNIT"; then
+        GUNICORN_ENABLED=1
+    else
+        warn "$GUNICORN_UNIT quedo inactivo (journalctl -u $GUNICORN_UNIT)."
+    fi
     run systemctl is-active --quiet "$HUEY_UNIT" || warn "$HUEY_UNIT quedo inactivo (journalctl -u $HUEY_UNIT)."
     if [ "$PROXY_MODE" = nginx-local ]; then
         run systemctl restart nginx
@@ -2186,11 +2324,32 @@ fi
 
 # --- C.13 Resumen --------------------------------------------------------
 
+progress_clear
 echo
 if [ "$DRY_RUN" -eq 1 ]; then
     echo "dry-run: no se cambio nada."
 else
-    echo "Instalado. Que cambio: $([ "$CHANGED" -eq 1 ] && echo 'si, algo' || echo 'nada, ya estaba')"
+    # Los "hechos" son los contadores que el propio instalador fue anotando. Nada
+    # de esto se deduce de un flag global tipo CHANGED, que decia "si, algo" y
+    # no le decia al operador nada: si fallo a mitad, el texto lo decia igual que
+    # si no hubiera fallado. Un resumen que no puede mentir tiene que salir de
+    # cosas que solo se cuentan cuando ocurrieron.
+    cat <<EOF
+
+  Instalado en $(( ( $(date +%s) - INSTALL_STARTED_AT ) / 60 )) min.
+  Se aplicaron $STEPS_DONE de $STEPS_TOTAL pasos.
+
+EOF
+    [ "$CHANGED" -eq 0 ] && printf '  No habia nada que cambiar: todo ya estaba como debia.\n'
+    [ "$DEPLOY_SSH_KEY_CREATED" -eq 1 ] && printf '  Se creo la clave del usuario de despliegue (%s).\n' "$DEPLOY_SSH_KEY.pub"
+    [ "$SUPERUSER_CREATED" -eq 1 ] && printf '  Superusuario %s creado.\n' "$SUPERUSER_USERNAME"
+    [ "$GUNICORN_ENABLED" -eq 1 ] && printf '  webcmp habilitado y arrancado.\n'
+    [ -f "$ENV_FILE" ] && printf '  Configuracion en %s.\n' "$ENV_FILE"
+
+    echo
+    echo "  Siguiente paso:"
+    printf '       sudo %s --check\n' "$SCRIPT_PATH"
+    printf '       %s://%s/\n' "$PROTOCOL_SCHEME" "$PUBLIC_HOSTNAME"
 fi
 
 if [ "$DRY_RUN" -eq 0 ] && [ "$INTERACTIVE" -eq 1 ] && [ "${#ANSWER_SOURCES[@]}" -gt 0 ]; then

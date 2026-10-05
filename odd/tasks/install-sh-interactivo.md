@@ -70,6 +70,7 @@ falla por construcción y el deploy se bloquea con un sitio perfectamente sano.
 | T26 | `install.sh`: `DEFAULT_FROM_EMAIL` por defecto `Centro Meteorológico Provincial Camagüey <meteocamaguey@caonao.cu>`, con acentos y ángulos | `deploy/install.sh` |
 | T27 | `install.sh`: el aviso de contraseña generada se muestra solo si el operador dejó el campo vacío, nunca en CI | `deploy/install.sh` |
 | T28 | `install.sh`: usuario del superusuario `admin` por defecto | `deploy/install.sh` |
+| T29 | `install.sh`: barra de progreso con porcentaje ponderado por trabajo real, y resumen final de hechos medidos | `deploy/install.sh` |
 
 Fuera de alcance: tocar `config/settings/**` (el `.env` tiene que alcanzar con lo que ya existe),
 el workflow `.github/workflows/deploy.yml`, y la suite de `apps/`. Si algo de T1-T18 descubre que
@@ -390,6 +391,72 @@ Matriz verificada (harness con `sed` sobre las funciones reales):
 `DB_PASS` tenía el bug idéntico y se corrigió con el mismo mecanismo: es el otro
 secreto que se autogenera y sin aviso se pierde.
 
+### T29 — Barra de progreso y resumen final
+
+**La barra se pesa por trabajo, no por secciones.** La primera versión era
+"paso 7 de 14" y era una mentira: "Unidades systemd" son 400 líneas y son
+instantáneas, "Instalando requirements" son 10 líneas y son minutos. Con el
+conteo el operador ve la barra clavada en 10% durante el `pip install` y
+después tres saltos rápidos al final — ve mal justo cuando tiene más ganas de
+mirar. Los pesos son unidades relativas de trabajo esperado:
+
+| Sección | Peso | | Sección | Peso |
+|---|---|---|---|---|
+| Preflight | 2 | | Archivo .env | 1 |
+| Configuración | 1 | | Valores del .env | 1 |
+| Resumen | 1 | | Migraciones y estáticos | 8 |
+| Prerrequisitos | 8 | | Unidades systemd | 4 |
+| Usuario de servicio | 1 | | Config. del deploy | 1 |
+| Checkout | 6 | | Arranque de servicios | 4 |
+| Base de datos | 2 | | requirements/prod.txt | 25 |
+| Entorno virtual | 2 | | | |
+
+`pip install` solo es el 38% del total porque de verdad se lleva la mayor parte
+del tiempo. Así la barra avanza poco a poco donde el servidor está trabajando.
+
+**Va a stderr y solo si stderr es terminal.** Un `\r` y 30 caracteres ANSI por
+sección en un log de CI o un `| tee` son basura que hay que filtrar a mano, y el
+CI no es un terminal. `progress_on` decide eso una vez. Verificado: con pty
+(`CR=336`) dibuja; sin TTY (`CR=0`) no aparece ni un `\r`.
+
+**Un detalle que salió de mirar el log, no el código.** En la primera corrida la
+barra quedaba pegada al final de la línea del comando:
+
+```
+[#####-------------------------]  17%  Prerrequisitos  [dry-run] apt-get install -y git sudo ...
+```
+
+El `\r` redibuja sobre la misma línea, así que lo que imprimiera el cuerpo de la
+sección salía al lado. `step` ahora cierra con un `\n`: el porcentaje queda en
+su propia línea y el contenido debajo.
+
+**`step` va fuera del `if`, a propósito.** C.12 tiene dos ramas: con el `.env`
+completo arranca los servicios, y sin él avisa que no puede. Si el `step`
+dependiera de la rama, en el camino incompleto la barra quedaría clavada en 92%
+para siempre, sin explicación. Ahora la sección se "visita" igual y llega a 100%.
+
+**El plan se verificó contra los `step` reales**: 15 entradas, 15 pasos, pesos
+idénticos en orden. Es una comprobación Easy: si alguien agrega una sección y
+olvida el peso, la barra no llega a 100%.
+
+**El resumen final es de hechos medidos, no de un flag global.** Decía
+`"Instalado. Que cambio: si, algo"` — un *si/algo* que no le dice nada a nadie, y
+que dice exactamente lo mismo si el instalador falló a la mitad que si terminó
+bien. Ahora cada línea sale de un flag que solo pasa a 1 en el punto donde la
+cosa ocurrió:
+
+- `SUPERUSER_CREATED` — dentro del `then` de `createsuperuser`.
+- `GUNICORN_ENABLED` — dentro del `if` de `systemctl is-active`, o sea mide que
+  el servicio quedó **activo**, no que se le dio `enable`. `enable --now` puede
+  salir 0 y dejar el unit caído, y el resumen no puede afirmar "arrancado" en
+  ese caso.
+- `DEPLOY_SSH_KEY_CREATED` — solo si se generó el keypair.
+- Duración real: `( $(date +%s) - INSTALL_STARTED_AT )`.
+
+Las tres salidas se probaron con los flags en cada estado: todo instalado, nada
+cambiado, y fallo a mitad. En el caso de fallo el resumen omite las líneas que no
+pasaron en vez de afirmarlas.
+
 ## Ruta de ejecución: inline, no delegada
 
 | Tarea | Ruta | Evidencia del trigger |
@@ -402,6 +469,7 @@ secreto que se autogenera y sin aviso se pierde.
 | T26 | **inline** | Un default literal. La verificación exigía extraer `env_set`/`ask` del archivo y una corrida con `python-dotenv` y `email.header`, o sea herramientas locales en secuencia sobre un archivo ya leído. |
 | T27 | **inline** | Una lectura dirigida del rango exacto: el subshell de la sustitución de comando, la guarda de `DRY_RUN`, y una matriz de 6 casos con un harness de las funciones reales. El diagnóstico fue leer los rangos exactos del archivo (subshell, guarda de `DRY_RUN`) y una matriz de 6 casos con un harness de las funciones reales. |
 | T28 | **inline** | Un default literal y el validador ya estaba probado; inline sin discusión. |
+| T29 | **inline** | Un archivo ya leído. Lo no obvio fue *verificar*, no escribir: correr el dry-run dentro de un pty para ver la barra de verdad, y contar pasos reales contra entradas del plan. Delegar la escritura sin ver el pty habría entregado una barra que "funciona" y se lee mal. |
 | T23 | **inline** | Defectos deterministas con evidencia ya observada en la sesión: el error del operador se reprodujo y los tres call sites del archivo se leyeron antes de editar. Delegar exigiría transferir el hallazgo, no reducir contexto. |
 
 Se ejecuta en el padre y no en un subagente, por dos razones concretas, no por preferencia:
@@ -479,6 +547,7 @@ verificarse en ejecución.
 - [x] T26 — `DEFAULT_FROM_EMAIL` = `Centro Meteorológico Provincial Camagüey <meteocamaguey@caonao.cu>`
 - [x] T27 — Aviso de contraseña solo cuando el operador la dejó generar; nunca en CI
 - [x] T28 — Superusuario `admin` por defecto
+- [x] T29 — Barra de progreso ponderada + resumen final minimalista
 
 Los ocho bloques T1-T18 se marcan como entregados porque el commit `a9e01c6` los contiene y sus
 checks pasaron. T19-T21 se marcan según su propia evidencia, registrada abajo.
