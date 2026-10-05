@@ -85,7 +85,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
 
     def get_initial(self):
         initial = super().get_initial()
-        today = timezone.now().date()
+        today = timezone.localdate()
         regenerar = self.suscripcion_a_regenerar()
         customer_uuid = self.request.GET.get('customer_uuid')
         if customer_uuid:
@@ -394,7 +394,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 subscription=sub,
                 defaults={
                     'number': self.generate_contract_number(),
-                    'date': timezone.now().date(),
+                    'date': timezone.localdate(),
                     'commercial_registry': commercial_registry,
                 },
             )

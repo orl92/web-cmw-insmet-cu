@@ -100,13 +100,13 @@ class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     @staticmethod
     def _parse_date_filter(date_string):
         if not date_string:
-            return timezone.now().date()
+            return timezone.localdate()
         for fmt in ('%d/%m/%Y', '%Y-%m-%d'):
             try:
                 return datetime.strptime(date_string, fmt).date()
             except ValueError:
                 continue
-        return timezone.now().date()
+        return timezone.localdate()
 
 
 class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -119,13 +119,13 @@ class AllForecastCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
     def get_date_value(self):
         date_string = self.request.POST.get('date') or self.request.GET.get('date')
         if not date_string:
-            return timezone.now().date()
+            return timezone.localdate()
         for fmt in ('%d/%m/%Y', '%Y-%m-%d'):
             try:
                 return datetime.strptime(date_string, fmt).date()
             except ValueError:
                 continue
-        return timezone.now().date()
+        return timezone.localdate()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
