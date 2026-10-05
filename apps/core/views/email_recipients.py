@@ -14,7 +14,6 @@ from django.views.generic import CreateView, ListView, UpdateView, View
 from apps.core.forms.email_recipients import EmailRecipientFormSet, EmailRecipientListForm
 from apps.core.models import EmailRecipientList
 from apps.core.utils import log_action
-from apps.core.views.exports import CSVExportView
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,6 @@ class EmailRecipientListListView(LoginRequiredMixin, PermissionRequiredMixin, Li
         context['url_create'] = reverse_lazy('core:email_recipient_create')
         context['url_list'] = reverse_lazy('core:email_recipient_list')
         context['is_superuser'] = self.request.user.is_superuser
-        context['url_export'] = reverse_lazy('core:email_recipient_export_csv')
         context['objects'] = EmailRecipientList.objects.all()
         return context
 
@@ -172,15 +170,3 @@ class EmailRecipientListDeleteView(LoginRequiredMixin, PermissionRequiredMixin, 
         except Exception as e:
             messages.error(request, str(e))
         return redirect('core:email_recipient_list')
-
-
-class EmailRecipientListCSVExportView(CSVExportView):
-    model = EmailRecipientList
-    permission_required = 'core.view_emailrecipientlist'
-    filename = 'listas_correo.csv'
-    columns = [
-        ('Nombre', 'name'),
-        ('Descripción', 'description'),
-        ('Cantidad Destinatarios', lambda o: str(o.recipients.count())),
-        ('Correos', lambda o: '; '.join(o.recipients.values_list('email', flat=True))),
-    ]

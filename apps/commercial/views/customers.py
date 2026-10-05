@@ -35,7 +35,6 @@ class CustomerListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = 'Añadir Cliente'
         context['url_create'] = reverse_lazy('commercial:cliente_create')
         context['url_list'] = reverse_lazy('commercial:cliente_list')
-        context['url_export'] = reverse_lazy('commercial:cliente_export_csv')
         context['is_superuser'] = self.request.user.is_superuser
         context['objects'] = Customer.objects.all().select_related('user')
         return context

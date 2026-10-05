@@ -1,11 +1,5 @@
 from django.urls import path
 
-from apps.commercial.views.bulk import (
-    CertificateBulkActionView,
-    CustomerBulkActionView,
-    InvoiceBulkActionView,
-    ServiceSubscriptionBulkActionView,
-)
 from apps.commercial.views.certificates import (
     CertificateCreateView,
     CertificateDeleteView,
@@ -26,14 +20,6 @@ from apps.commercial.views.customers import (
     CustomerHardDeleteView,
     CustomerListView,
     CustomerUpdateView,
-)
-from apps.commercial.views.exports import (
-    CertificateCSVExportView,
-    ContractCSVExportView,
-    CustomerCSVExportView,
-    InvoiceCSVExportView,
-    ServiceCSVExportView,
-    ServiceSubscriptionCSVExportView,
 )
 from apps.commercial.views.invoices import (
     CancelInvoiceView,
@@ -84,7 +70,6 @@ urlpatterns = [
         CustomerHardDeleteView.as_view(),
         name='cliente_hard_delete',
     ),
-    path('clientes/exportar/csv/', CustomerCSVExportView.as_view(), name='cliente_export_csv'),
     # Servicios
     path('servicios/', ServiceListView.as_view(), name='servicio_list'),
     path('crear/servicios/', ServiceCreateView.as_view(), name='servicio_create'),
@@ -100,7 +85,6 @@ urlpatterns = [
         ServiceHardDeleteView.as_view(),
         name='servicio_hard_delete',
     ),
-    path('servicios/exportar/csv/', ServiceCSVExportView.as_view(), name='servicio_export_csv'),
     path('servicios/<uuid:uuid>/pdf/', ServicePDFDownloadView.as_view(), name='servicio_pdf'),
     # Suscripciones
     path('suscripciones/', SubscriptionListView.as_view(), name='suscripcion_list'),
@@ -147,11 +131,6 @@ urlpatterns = [
         CertificateHardDeleteView.as_view(),
         name='certificado_hard_delete',
     ),
-    path(
-        'suscripciones/exportar/csv/',
-        ServiceSubscriptionCSVExportView.as_view(),
-        name='suscripcion_export_csv',
-    ),
     # Facturación
     path('facturacion/', InvoiceListView.as_view(), name='factura_list'),
     path('crear/factura/', InvoiceCreateView.as_view(), name='factura_create'),
@@ -173,7 +152,6 @@ urlpatterns = [
         ajax_pending_subscriptions,
         name='ajax_pending_subscriptions',
     ),
-    path('facturacion/exportar/csv/', InvoiceCSVExportView.as_view(), name='factura_export_csv'),
     # Contratos
     path('contratos/', ContractListView.as_view(), name='contrato_list'),
     path('crear/contrato/', ContractCreateView.as_view(), name='contrato_create'),
@@ -183,32 +161,5 @@ urlpatterns = [
         'eliminar/contrato/<uuid:uuid>/permanente/',
         ContractHardDeleteView.as_view(),
         name='contrato_hard_delete',
-    ),
-    path('contratos/exportar/csv/', ContractCSVExportView.as_view(), name='contrato_export_csv'),
-    path(
-        'certificados/exportar/csv/',
-        CertificateCSVExportView.as_view(),
-        name='certificado_export_csv',
-    ),
-    # Acciones masivas (bulk operations)
-    path(
-        'clientes/acciones-masivas/',
-        CustomerBulkActionView.as_view(),
-        name='cliente_bulk',
-    ),
-    path(
-        'suscripciones/acciones-masivas/',
-        ServiceSubscriptionBulkActionView.as_view(),
-        name='suscripcion_bulk',
-    ),
-    path(
-        'facturacion/acciones-masivas/',
-        InvoiceBulkActionView.as_view(),
-        name='factura_bulk',
-    ),
-    path(
-        'certificados/acciones-masivas/',
-        CertificateBulkActionView.as_view(),
-        name='certificado_bulk',
     ),
 ]

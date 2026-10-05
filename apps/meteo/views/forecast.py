@@ -95,7 +95,6 @@ class ForecastsListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         forecasts = Forecasts.objects.filter(date=date).prefetch_related('regions', 'extended_days')
         context['forecasts'] = forecasts
         context['has_data'] = forecasts.exists()
-        context['url_export'] = reverse_lazy('meteo:pronostico_export_csv')
         return context
 
     @staticmethod

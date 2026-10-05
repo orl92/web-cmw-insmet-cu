@@ -43,7 +43,6 @@ class ServiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['btn'] = 'Añadir Servicio'
         context['url_create'] = reverse_lazy('commercial:servicio_create')
         context['url_list'] = reverse_lazy('commercial:servicio_list')
-        context['url_export'] = reverse_lazy('commercial:servicio_export_csv')
         context['is_superuser'] = self.request.user.is_superuser
         return context
 
