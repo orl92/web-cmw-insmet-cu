@@ -6,6 +6,14 @@
 #   sudo cp deploy/nginx/webcmp.conf.example /etc/nginx/sites-available/webcmp.conf
 #   sudo nano /etc/nginx/sites-available/webcmp.conf     # certificados y rutas
 #   sudo ln -s /etc/nginx/sites-available/webcmp.conf /etc/nginx/sites-enabled/
+#
+# El directorio del proxy_cache_path de mas abajo NO lo crea Nginx: su mkdir()
+# no es recursivo y si falta el padre, `nginx -t` muere con
+# `mkdir() "/cache/nginx/tmpfs" failed (2: No such file or directory)`. Va con
+# dueno www-data, que es el user de los workers y el que escribe el cache:
+#
+#   sudo mkdir -p /cache/nginx/tmpfs && sudo chown www-data:www-data /cache/nginx/tmpfs
+#
 #   sudo nginx -t && sudo systemctl reload nginx
 #
 # El socket de Gunicorn vive en /run/webcmp/gunicorn.sock (RuntimeDirectory del

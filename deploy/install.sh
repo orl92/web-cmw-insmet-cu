@@ -255,8 +255,15 @@ spinner_stop() {
     local pid=$SPINNER_PID
     [ -n "$pid" ] || return 0
     SPINNER_PID=
-    kill "$pid" 2>/dev/null
-    wait "$pid" 2>/dev/null
+    # `|| true` en kill y wait, y NO es cosmetico: `wait` de un subshell
+    # matado con SIGTERM devuelve 143 (128 + 15), y con `set -e` esa linea
+    # mataba el instalador ACA, sin mensaje y sin llegar ni a `log_ok` ni a
+    # `return`. Era exactamente la muerte silenciosa del paso de migraciones:
+    # el unico `run_live` que no venia con `|| die` es el de `manage()`, asi
+    # que era el primero que pasaba por aca con `set -e` activo. `die()` tam-
+    # bien llama aca: con un spinner activo el ERROR ni siquiera se imprimia.
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
     progress_clear
 }
 
@@ -297,9 +304,15 @@ run_live() {
     if ! progress_on; then
         # Sin terminal no hay spinner que dibujar. Se corre el comando con su
         # salida normal: en CI el log crudo es exactamente lo que se quiere.
-        "$@"
-        CHANGED=1
-        return $?
+        # El status se captura y se devuelve, igual que en `run`: con el
+        # `CHANGED=1` seguido de `return $?` el exit code era SIEMPRE 0 (el
+        # status de la asignacion), asi que el `|| die` de apt-get, pip y git
+        # clone era codigo muerto en cualquier contexto sin TTY (CI, `| tee`,
+        # systemd-run --pipe): el comando fallaba y el instalador seguia.
+        local status=0
+        "$@" || status=$?
+        [ "$status" -eq 0 ] && CHANGED=1
+        return "$status"
     fi
     spinner_start "$label"
     "$@" 2>&1 | while IFS= read -r line; do log_line "$line"; done
@@ -377,18 +390,31 @@ run() {
     if [ "$DRY_RUN" -eq 1 ]; then
         printf '  [dry-run] %s\n' "$*"
     else
-        "$@"
-        CHANGED=1
+        # El status se captura y se DEVUELVE. Con dos lineas sueltas
+        # (`"$@"` despues `CHANGED=1`) había dos modos de fallo distintos
+        # segun el contexto: con `set -e` activo el script moria aca sin
+        # decir nada, y en un contexto `|| ...` el status se TAPIABA
+        # (CHANGED=1 devolvia 0), con lo que por ejemplo
+        #   run systemctl is-active --quiet $HUEY_UNIT || warn "..."
+        # nunca llegaba al warn: el aviso era codigo muerto.
+        local st=0
+        "$@" || st=$?
+        [ "$st" -eq 0 ] && CHANGED=1
+        return "$st"
     fi
 }
 
 # Para los comandos que son shell puro (redirecciones, &&), que `run` no cubre.
+# Igual que `run`: el status se captura y se devuelve, o un `|| ...` del llamador
+# queda tapado por el exit 0 del ultimo comando.
 run_sh() {
     if [ "$DRY_RUN" -eq 1 ]; then
         printf '  [dry-run] %s\n' "$1"
     else
-        eval "$1"
-        CHANGED=1
+        local st=0
+        eval "$1" || st=$?
+        [ "$st" -eq 0 ] && CHANGED=1
+        return "$st"
     fi
 }
 
@@ -1433,7 +1459,13 @@ fi
 
 # --- Superusuario --------------------------------------------------------
 
-cat >&2 <<EOF
+# Delimiter COMILLADO: sin las comillas los backticks del cuerpo se ejecutan
+# como sustitucion de comandos. Con `<<EOF` crudo, `createsuperuser --noinput`
+# se intentaba correr como comando del shell y el dry-run imprimia
+# "linea 1462: createsuperuser: command not found" en el medio de la seccion de
+# superusuario. Los otros dos backticks del archivo (location / y ssh-keyscan)
+# ya van escapados con `\`; este delimiter era el que faltaba.
+cat >&2 <<'EOF'
 
   Superusuario de Django. La cuenta se crea con `createsuperuser --noinput` por
   systemd-run, con la ENCRYPTION_KEY cargada y PRODUCTION=1.
@@ -1608,16 +1640,19 @@ else
     echo "  creado"
 fi
 
+# Solo el directorio raiz aca. Los de runtime (media/, logs/, staticfiles/,
+# .cache/ y MPLCONFIGDIR) se crean DESPUES del checkout: `git clone` se niega a
+# clonar sobre un destino que no este vacio, y con estos directorios adentro el
+# clone de una instalacion nueva fallaba con "destination path already exists
+# and is not an empty directory". Ademas, si el operador acepta mover el
+# directorio a un .preinstall, esos directorios se van con el backup y tenian
+# que volver a crearse en este mismo arranque, no en el proximo.
+#
 # MEDIA_ROOT, LOG_FILE, STATIC_ROOT y MPLCONFIGDIR viven adentro de APP_DIR y los
 # escribe el usuario de servicio. Con el directorio equivocado, collectstatic
 # escribe en / y el servicio no puede escribir sus propios logs: dos fallos
 # distintos que se ven igual.
 ensure_dir "$APP_DIR" 0755 "$SERVICE_USER" "$SERVICE_GROUP"
-ensure_dir "$APP_DIR/media" 0750 "$SERVICE_USER" "$SERVICE_GROUP"
-ensure_dir "$APP_DIR/logs" 0750 "$SERVICE_USER" "$SERVICE_GROUP"
-ensure_dir "$APP_DIR/staticfiles" 0755 "$SERVICE_USER" "$SERVICE_GROUP"
-ensure_dir "$APP_DIR/.cache" 0750 "$SERVICE_USER" "$SERVICE_GROUP"
-ensure_dir "$MPLCONFIGDIR" 0750 "$SERVICE_USER" "$SERVICE_GROUP"
 # Cache de pip. Sin esto, cada deploy vuelve a descargar todas las dependencias
 # desde PyPI: `webcmp` es cuenta de sistema sin home, asi que pip no encuentra
 # donde escribir ~/.cache. Ver la nota de PIP_CACHE_DIR en deploy.env.example.
@@ -1683,6 +1718,16 @@ elif [ "$APP_DIR_PRESENT" -eq 1 ] && [ "$APP_DIR_EMPTY" -eq 0 ]; then
     if [ "$DRY_RUN" -eq 0 ]; then
         ensure_dir "$APP_DIR" 0755 "$SERVICE_USER" "$SERVICE_GROUP"
     fi
+fi
+
+# El clone vive en un bloque PROPIO, condicionado a "todavia no hay checkout",
+# y no en un `else` del bloque de arriba: los tres caminos sin checkout (no
+# existe, existe vacio, o existia con contenido y se acaba de mover) tienen que
+# terminar aca. Antes el clone estaba SOLO en la rama "existe con contenido y no
+# es un repo", asi que una instalacion nueva no clonaba nada y moria en la
+# verificacion de mas abajo con "Falta .../deploy/deploy.sh: el clon esta
+# incompleto" sin haber intentado un solo `git clone`.
+if [ "$HAS_CHECKOUT" -eq 0 ]; then
     if [ "$DRY_RUN" -eq 1 ]; then
         printf '  [dry-run] runuser -u %s -- git clone %s %s\n' "$SERVICE_USER" "$REPO_URL" "$APP_DIR"
     else
@@ -1725,6 +1770,18 @@ if [ "$HAVE_CHECKOUT" -eq 1 ]; then
 else
     echo "  dry-run: los renders que necesitan el checkout se omiten."
 fi
+
+# Directorios de runtime, YA con el checkout adentro (ver por que no van antes
+# del clone en el comentario de ensure_dir mas arriba). Ademas: si el operador
+# acepto mover $APP_DIR a un .preinstall, estos cuatro se fueron con el backup y
+# hay que volver a crearlos en ESTE arranque. Sin esto, la corrida que mueve el
+# directorio termina sin media/ ni logs/ y el sitio no puede guardar archivos
+# ni escribir sus logs hasta la proxima corrida del instalador.
+ensure_dir "$APP_DIR/media" 0750 "$SERVICE_USER" "$SERVICE_GROUP"
+ensure_dir "$APP_DIR/logs" 0750 "$SERVICE_USER" "$SERVICE_GROUP"
+ensure_dir "$APP_DIR/staticfiles" 0755 "$SERVICE_USER" "$SERVICE_GROUP"
+ensure_dir "$APP_DIR/.cache" 0750 "$SERVICE_USER" "$SERVICE_GROUP"
+ensure_dir "$MPLCONFIGDIR" 0750 "$SERVICE_USER" "$SERVICE_GROUP"
 
 # need_checkout <que se haria con el>
 #
@@ -2182,25 +2239,38 @@ if [ "$HAS_BLOCKING_CRITICAL" -eq 1 ]; then
     warn "cuando esten completos los valores CRITICOS."
 else
     # LIVE_MANAGE=1 hace que manage() muestre el log en vivo (ver manage()).
+    #
+    # Los cinco `run manage ...` llevan `|| die`. No es ceremonia: `run` es un
+    # wrapper comun y corriente, y SIN el `|| die` el fallo salia del script
+    # por `set -e` en el punto exacto del comando, sin ERROR, sin decir cual
+    # de los cinco era y volviendo al prompt del operador. Con el `|| die`,
+    # ademas, `set -e` se suspende durante toda la cadena (run -> manage ->
+    # run_live), que es lo que permite que run_live capture el exit code en
+    # vez de morir a mitad del pipe.
     LIVE_MANAGE=1
-    run manage makemigrations
+    run manage makemigrations \
+        || die "makemigrations fallo. El log de arriba dice por que. Sin el, migrate no se corre."
     LIVE_MANAGE=0
-    run manage migrate --noinput
-    run manage migrate --check
+    run manage migrate --noinput \
+        || die "migrate --noinput fallo. El log de arriba dice por que; la base queda sin aplicar."
+    run manage migrate --check \
+        || die "migrate --check fallo: quedaron migraciones sin aplicar en la base."
     LIVE_MANAGE=0
 fi
 # collectstatic tambien va en vivo: con DEBUG=False no imprime una linea hasta
 # terminar, y en un proyecto con estaticos vendoreados son varios segundos en
 # los que no se ve nada pasar.
 LIVE_MANAGE=1
-run manage collectstatic --no-input
+run manage collectstatic --no-input \
+    || die "collectstatic fallo. El log de arriba dice por que; sin estaticos el sitio sirve CSS/JS 404."
 LIVE_MANAGE=0
 # El mismo gate que corre deploy.sh en cada deploy, corrido una vez con la
 # configuracion real. security.W008 no aparece porque production.py lo silencia
 # en SILENCED_SYSTEM_CHECKS: el TLS y el redirect los termina el proxy, no
 # Django.
 LIVE_MANAGE=1
-run manage check --deploy --fail-level WARNING
+run manage check --deploy --fail-level WARNING \
+    || die "check --deploy fallo con WARNINGs. El listado de arriba dice cual."
 LIVE_MANAGE=0
 
 if [ -n "$PENDING_CHANGES" ]; then
@@ -2440,6 +2510,30 @@ install_vhost() {
         run ln -s "$NGINX_AVAILABLE" "$NGINX_ENABLED"
     fi
 
+    # --- Cache de proxy ---
+    # El vhost declara `proxy_cache_path /cache/nginx/tmpfs ...` y Nginx NO crea
+    # ese path recursivamente: ngx_create_paths() hace mkdir() solo del ultimo
+    # componente, asi que con /cache/nginx ausente `nginx -t` muere con
+    #     mkdir() "/cache/nginx/tmpfs" failed (2: No such file or directory)
+    # apuntando a un error que parece de Nginx y en realidad es del vhost: nadie
+    # crea ese directorio. El camino se lee del vhost que se va a servir (no
+    # esta escrito a mano aca) para que un cambio de path en el ejemplo no lo
+    # deje desincronizado. Los padres quedan root:root y el leaf con dueno
+    # www-data, porque los workers (user www-data) son los que escriben el cache.
+    local cache_dir="" cache_src=""
+    if [ -f "$NGINX_AVAILABLE" ]; then
+        cache_src=$NGINX_AVAILABLE
+    elif [ -f "$vhost_src" ]; then
+        cache_src=$vhost_src
+    fi
+    if [ -n "$cache_src" ]; then
+        cache_dir=$(awk '$1 == "proxy_cache_path" { print $2; exit }' "$cache_src")
+    fi
+    if [ -n "$cache_dir" ]; then
+        ensure_dir "$(dirname "$cache_dir")" 0755 root root
+        ensure_dir "$cache_dir" 0750 www-data www-data
+    fi
+
     # nginx -t ANTES del reload, siempre. Un reload de una configuracion rota
     # deja al Nginx viejo sirviendo y el error queda en el log para cuando ya se
     # fue; con `nginx -t` primero, el instalador muere aca con el mensaje de Nginx.
@@ -2475,13 +2569,55 @@ setup_nginx_local() {
     # El sitio default de Debian es un symlink a sites-available/default, asi que
     # hace falta `-L` tambien: con un enlace roto, `-e` da falso y el conflicto
     # aparece despues como un fallo de nginx -t que no lo señala.
+    #
+    # OJO con el destino del rename: renombrarlo DENTRO de sites-enabled no
+    # deshabilita nada. El include del nginx.conf de Ubuntu/Debian es
+    # `include /etc/nginx/sites-enabled/*` y ese glob matchea cualquier nombre,
+    # `.disabled` incluido (los unicos que excluye son los ocultos). Por eso el
+    # rename anterior seguia dejando el sitio cargado y `nginx -t` seguia
+    # muriendo con "a duplicate default server for 0.0.0.0:80" citando el vhost
+    # de webcmp, que no era el culpable. La salida es sacarlo del directorio que
+    # se incluye y guardarlo en sites-available, donde estan los que no estan
+    # habilitados.
+    _mv_default_site_out() {
+        # sites-enabled/X -> sites-available/X.disabled (con sufijo de fecha si
+        # ya quedo algo ahi de una corrida anterior, para no pisarlo).
+        local src=$1 dest
+        dest="${src/sites-enabled/sites-available}"
+        case "$dest" in
+            *.disabled) ;;
+            *) dest="$dest.disabled" ;;
+        esac
+        if [ -e "$dest" ] || [ -L "$dest" ]; then
+            dest="$dest.$(date +%Y%m%d-%H%M%S)"
+        fi
+        run mv "$src" "$dest" || die "No se pudo mover $src a $dest."
+        echo "  deshabilitado: $src -> $dest"
+    }
+
+    # Autoreparacion sin preguntar: un `.disabled` que quedo DENTRO de
+    # sites-enabled es un estado invalido que dejo este mismo script en una
+    # corrida anterior con el rename viejo. El operador ya decidio deshabilitar
+    # ese sitio, no hay decision nueva que tomar, y si no se arregla aca
+    # `nginx -t` vuelve a fallar igual que antes.
+    if [ -e "$NGINX_DEFAULT_SITE.disabled" ] || [ -L "$NGINX_DEFAULT_SITE.disabled" ]; then
+        warn "$NGINX_DEFAULT_SITE.disabled quedo dentro de sites-enabled y el include"
+        warn "'sites-enabled/*' lo sigue cargando: eso hace fallar nginx -t con"
+        warn "'a duplicate default server'. Se saca de ese directorio."
+        _mv_default_site_out "$NGINX_DEFAULT_SITE.disabled"
+    fi
+
     if [ -e "$NGINX_DEFAULT_SITE" ] || [ -L "$NGINX_DEFAULT_SITE" ]; then
         log "Nginx ya tiene un sitio por defecto"
         warn "$NGINX_DEFAULT_SITE esta activo y pide los mismos puertos con"
         warn "default_server que el vhost de webcmp. Los dos no pueden levantar."
-        if ask_yes_no si "Deshabilitar $NGINX_DEFAULT_SITE (se mueve a .disabled)?"; then
-            run mv "$NGINX_DEFAULT_SITE" "$NGINX_DEFAULT_SITE.disabled"
-            echo "  deshabilitado (el archivo quedo como $NGINX_DEFAULT_SITE.disabled)."
+        if ask_yes_no si "Deshabilitar $NGINX_DEFAULT_SITE (se saca de sites-enabled)?"; then
+            _mv_default_site_out "$NGINX_DEFAULT_SITE"
+            # Corrida anterior con el rename viejo: el sitio ya estaba "deshabilitado"
+            # a medias y quedo el residuo en sites-enabled.
+            if [ -e "$NGINX_DEFAULT_SITE.disabled" ] || [ -L "$NGINX_DEFAULT_SITE.disabled" ]; then
+                _mv_default_site_out "$NGINX_DEFAULT_SITE.disabled"
+            fi
         else
             die "Sin resolver el conflicto de default_server, nginx -t falla y el sitio no levanta.
   Opciones: habilitar este instalador con esa pregunta en 'si', o quitar del
