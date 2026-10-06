@@ -2167,13 +2167,13 @@ if [ "$HAS_BLOCKING_CRITICAL" -eq 1 ]; then
     warn "cuando esten completos los valores CRITICOS."
 else
     # LIVE_MANAGE=1 hace que manage() muestre el log en vivo (ver manage()).
-    LIVE_MANAGE=1
+    LIVE_MANAGE=0
     run manage makemigrations
-    echo '  [debug] makemigrations finished'
+    echo '  [debug] makemigrations finished (rc: $?)'
     run manage migrate --noinput
-    echo '  [debug] migrate finished'
+    echo '  [debug] migrate finished (rc: $?)'
     run manage migrate --check
-    echo '  [debug] migrate --check finished'
+    echo '  [debug] migrate --check finished (rc: $?)'
     LIVE_MANAGE=0
 fi
 # collectstatic tambien va en vivo: con DEBUG=False no imprime una linea hasta
