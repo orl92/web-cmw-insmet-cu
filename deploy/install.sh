@@ -2008,6 +2008,13 @@ fi
 
 if [ "$ENV_REGENERATED" -eq 1 ]; then
     ENV_GEN_ARGS+=(--force)
+    # Si el par es inválido o forzamos regeneración, partimos de cero para
+    # evitar que un .env+encryption.env incompatibles hagan fallar a Django.
+    if [ "$DRY_RUN" -eq 1 ]; then
+        printf '  [dry-run] rm -f %s %s\n' "$ENV_FILE" "$ENCRYPTION_ENV"
+    else
+        rm -f "$ENV_FILE" "$ENCRYPTION_ENV"
+    fi
     # Se corre COMO ROOT y no como webcmp: el generador tiene que escribir
     # $ENCRYPTION_ENV, que es root:root 600. Corrido como webcmp aborta sin
     # escribir nada (falla cerrado, que esta bien) y el servidor queda igual.
