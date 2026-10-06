@@ -1412,6 +1412,13 @@ if [ -n "$EMAIL_HOST" ]; then
     EMAIL_CONFIGURED=1
 else
     EMAIL_CONFIGURED=0
+    # Si no se configura SMTP, dejar las claves vacias para que no quede CHANGE_ME
+    EMAIL_PORT=587
+    EMAIL_USE_TLS=si
+    EMAIL_USE_SSL=no
+    EMAIL_HOST_USER=
+    EMAIL_HOST_PASSWORD=
+    DEFAULT_FROM_EMAIL=
 fi
 
 # --- Superusuario --------------------------------------------------------
