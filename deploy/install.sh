@@ -2169,8 +2169,11 @@ else
     # LIVE_MANAGE=1 hace que manage() muestre el log en vivo (ver manage()).
     LIVE_MANAGE=1
     run manage makemigrations
+    echo '  [debug] makemigrations finished'
     run manage migrate --noinput
+    echo '  [debug] migrate finished'
     run manage migrate --check
+    echo '  [debug] migrate --check finished'
     LIVE_MANAGE=0
 fi
 # collectstatic tambien va en vivo: con DEBUG=False no imprime una linea hasta
