@@ -2050,28 +2050,36 @@ if [ "$LDAP_ENABLED" = si ]; then
     apply_env_value LDAP_USER_SEARCH_BASE "$LDAP_USER_SEARCH_BASE"
 fi
 
-# Gate del .env. Un CHANGE_ME que sobrevive es un sitio que responde 500 o se
-# queda sin correo, y el sintoma (un error de SMTP o de DB en el log) no dice
-# "falta un campo del .env". Falla cerrado salvo que el operador lo pida
-# explicitamente con --allow-incomplete-env, que deja TODO sin arrancar.
+# Gate del .env. Separar CHANGE_ME criticos (bloquean migraciones/arranque) de
+# opcionales (SMTP/FTP). SMTP incompleto NO debe impedir hacer migraciones.
 PENDING_CHANGES=$(grep -n 'CHANGE_ME' "$ENV_FILE" 2>/dev/null || true)
-if [ -n "$PENDING_CHANGES" ]; then
+CRITICAL_CHANGES=$(printf '%s\n' "$PENDING_CHANGES" | grep -v -E 'EMAIL_HOST|EMAIL_PORT|EMAIL_HOST_USER|EMAIL_HOST_PASSWORD|DEFAULT_FROM_EMAIL|FTP_OBS_' || true)
+if [ -n "$CRITICAL_CHANGES" ]; then
     if [ "$ALLOW_INCOMPLETE_ENV" -eq 1 ]; then
-        warn "Quedan CHANGE_ME en $ENV_FILE (--allow-incomplete-env):"
-        printf '%s\n' "$PENDING_CHANGES" | sed 's/^/    /' >&2
-        warn "El sitio NO se va a arrancar con esta configuracion."
+        warn "Quedan CHANGE_ME CRITICOS en $ENV_FILE (--allow-incomplete-env):"
+        printf '%s\n' "$CRITICAL_CHANGES" | sed 's/^/    /' >&2
+        warn "El sitio puede NO arrancar con esta configuracion."
     else
-        printf '%s\n' "$PENDING_CHANGES" | sed 's/^/    /' >&2
-        die "Quedan CHANGE_ME en $ENV_FILE. Se paro ANTES de migrar y de arrancar el sitio.
+        printf '%s\n' "$CRITICAL_CHANGES" | sed 's/^/    /' >&2
+        die "Quedan CHANGE_ME CRITICOS en $ENV_FILE. Se paro ANTES de migrar y de arrancar el sitio.
 
-Si de verdad todavia no hay SMTP o la base, se puede continuar a proposito con:
+Si de verdad todavia no hay valores criticos completos, se puede continuar con:
 
     sudo bash install.sh --allow-incomplete-env
 
-pero el sitio va a quedar SIN LEVANTAR hasta que se completen esos valores."
+pero el sitio puede quedar SIN LEVANTAR hasta que se completen esos valores."
     fi
 fi
-echo "  .env completo."
+if [ -n "$PENDING_CHANGES" ]; then
+    NONCRIT=$(printf '%s\n' "$PENDING_CHANGES" | grep -E 'EMAIL_HOST|EMAIL_PORT|EMAIL_HOST_USER|EMAIL_HOST_PASSWORD|DEFAULT_FROM_EMAIL|FTP_OBS_' || true)
+    if [ -n "$NONCRIT" ]; then
+        warn "CHANGE_ME NO CRITICOS detectados (SMTP/FTP): el envio de correos/FTP"
+        warn "NO funcionara hasta completarlos, pero migraciones/estaticos SI pueden"
+        warn "ejecutarse. Lines:"
+        printf '%s\n' "$NONCRIT" | sed 's/^/      /' >&2
+    fi
+fi
+echo "  .env revisado."
 
 # --- C.7 Migraciones, estaticos, gate ------------------------------------
 
