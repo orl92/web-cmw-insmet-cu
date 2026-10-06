@@ -2054,7 +2054,10 @@ fi
 # opcionales (SMTP/FTP). SMTP incompleto NO debe impedir hacer migraciones.
 PENDING_CHANGES=$(grep -n 'CHANGE_ME' "$ENV_FILE" 2>/dev/null || true)
 CRITICAL_CHANGES=$(printf '%s\n' "$PENDING_CHANGES" | grep -v -E 'EMAIL_HOST|EMAIL_PORT|EMAIL_HOST_USER|EMAIL_HOST_PASSWORD|DEFAULT_FROM_EMAIL|FTP_OBS_' || true)
+NONCRIT_CHANGES=$(printf '%s\n' "$PENDING_CHANGES" | grep -E 'EMAIL_HOST|EMAIL_PORT|EMAIL_HOST_USER|EMAIL_HOST_PASSWORD|DEFAULT_FROM_EMAIL|FTP_OBS_' || true)
+HAS_BLOCKING_CRITICAL=0
 if [ -n "$CRITICAL_CHANGES" ]; then
+    HAS_BLOCKING_CRITICAL=1
     if [ "$ALLOW_INCOMPLETE_ENV" -eq 1 ]; then
         warn "Quedan CHANGE_ME CRITICOS en $ENV_FILE (--allow-incomplete-env):"
         printf '%s\n' "$CRITICAL_CHANGES" | sed 's/^/    /' >&2
@@ -2070,14 +2073,11 @@ Si de verdad todavia no hay valores criticos completos, se puede continuar con:
 pero el sitio puede quedar SIN LEVANTAR hasta que se completen esos valores."
     fi
 fi
-if [ -n "$PENDING_CHANGES" ]; then
-    NONCRIT=$(printf '%s\n' "$PENDING_CHANGES" | grep -E 'EMAIL_HOST|EMAIL_PORT|EMAIL_HOST_USER|EMAIL_HOST_PASSWORD|DEFAULT_FROM_EMAIL|FTP_OBS_' || true)
-    if [ -n "$NONCRIT" ]; then
-        warn "CHANGE_ME NO CRITICOS detectados (SMTP/FTP): el envio de correos/FTP"
-        warn "NO funcionara hasta completarlos, pero migraciones/estaticos SI pueden"
-        warn "ejecutarse. Lines:"
-        printf '%s\n' "$NONCRIT" | sed 's/^/      /' >&2
-    fi
+if [ -n "$NONCRIT_CHANGES" ]; then
+    warn "CHANGE_ME NO CRITICOS detectados (SMTP/FTP): el envio de correos/FTP"
+    warn "NO funcionara hasta completarlos, pero migraciones/estaticos SI pueden"
+    warn "ejecutarse. Lines:"
+    printf '%s\n' "$NONCRIT_CHANGES" | sed 's/^/      /' >&2
 fi
 echo "  .env revisado."
 
@@ -2085,16 +2085,15 @@ echo "  .env revisado."
 
 step 8 "Migraciones y estaticos"
 
-if [ -n "$PENDING_CHANGES" ]; then
-    # Con un .env incompleto NO se migra. Las migraciones abren conexion a la base
+if [ "$HAS_BLOCKING_CRITICAL" -eq 1 ]; then
+    # Con CHANGE_ME criticos NO se migra. Las migraciones abren conexion a la base
     # y un CHANGE_ME en DB_PASS las hace fallar con un error de autenticacion que
-    # no dice "falta completar el .env"; peor, si el CHANGE_ME esta en una parte
-    # que todavia no importa, la migracion corre y el esquema queda medio aplicado.
-    warn "No se corre makemigrations ni migrate: el .env esta incompleto."
+    # no dice "falta completar el .env".
+    warn "No se corre makemigrations ni migrate: el .env tiene CHANGE_ME CRITICOS."
     warn "collectstatic y check --deploy si se corren: no tocan la base y sus"
     warn "resultados sirven igual para diagnosticar."
     warn "La migracion queda pendiente: hay que volver a correr este instalador"
-    warn "cuando esten completos los valores de arriba."
+    warn "cuando esten completos los valores CRITICOS."
 else
     # LIVE_MANAGE=1 hace que manage() muestre el log en vivo (ver manage()).
     LIVE_MANAGE=1
