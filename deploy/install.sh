@@ -1938,6 +1938,7 @@ step 1 "Archivo .env"
 # .env afinado a mano, y el instalador respeta ese comportamiento en vez de
 # quedar por encima.
 ENV_GEN_ARGS=(--production --env-file "$ENV_FILE" --encryption-key-file "$ENCRYPTION_ENV")
+ENV_REGENERATED=0
 if [ "$ENV_FILE_EXISTS" -eq 1 ]; then
     # Validar que el par ENCRYPTION_KEY/SECRET_KEY cifrada descifra correctamente.
     # Si hay un .env de instalación anterior con otro encryption.env, Django fallará
