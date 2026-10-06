@@ -1946,7 +1946,6 @@ if [ "$ENV_FILE_EXISTS" -eq 1 ]; then
     if [ "$DRY_RUN" -eq 0 ] && [ -x "$PYTHON_BIN" ]; then
         if "$PYTHON_BIN" -c "
 # validate
-import sys
 try:
     from cryptography.fernet import Fernet, InvalidToken
     env='$ENV_FILE'; enc='$ENCRYPTION_ENV'
@@ -1955,26 +1954,36 @@ try:
             with open(p) as f:
                 for line in f:
                     if line.startswith('ENCRYPTION_KEY='):
-                        return line.split('=',1)[1].rstrip('\n\r')
-        except Exception: pass
+                        k = line.split('=',1)[1].rstrip('\n\r')
+                        # trim spaces
+                        k = k.strip()
+                        return k
+        except Exception as e:
+            raise e
         return None
     ek=rk(enc)
-    if not ek: sys.exit(0)
-    Fernet(ek.encode())
+    if not ek:
+        raise RuntimeError('no encryption key')
+    f = Fernet(ek.encode())
     # check encrypted secret
     try:
-        with open(env) as f:
-            for line in f:
+        with open(env) as fenv:
+            for line in fenv:
                 s=line.strip()
                 if s.startswith('SECRET_KEY=') and '\$' in s:
+                    v = s.split('=',1)[1].rstrip()
                     try:
-                        Fernet(ek.encode()).decrypt(s.split('=',1)[1].rstrip().encode())
+                        f.decrypt(v.encode())
                     except InvalidToken:
-                        sys.exit(1)
-    except Exception: pass
+                        raise InvalidToken('mismatch')
+    except InvalidToken:
+        raise
+    except Exception as e:
+        raise e
     sys.exit(0)
-except SystemExit as e: sys.exit(e.code)
-except Exception: sys.exit(0)
+except Exception as e:
+    import sys
+    sys.exit(1)
 "; then
             :
         else
