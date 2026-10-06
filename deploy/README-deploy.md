@@ -101,9 +101,81 @@ sudo /usr/local/sbin/webcmp-deploy <commit-anterior>
 
 ## Instalacion en el servidor (una vez)
 
-El despliegue por workflow **no** es autocontenido: la primera vez hay que
-instalar el usuario, el script, la config y el sudoers a mano. Despues de eso, el
-deploy es automatico.
+Hay dos caminos. El instalador es el que corresponde; el manual queda como
+alternativa para servidores que ya estan armados o cuando se quiere ver cada
+paso.
+
+### Camino automatico: `install.sh`
+
+`install.sh` es un solo archivo y no necesita el repo: hace el preflight, clona,
+crea el usuario de servicio y el de despliegue, genera el `.env`, levanta venv,
+migraciones, estaticos, las dos unidades systemd, el vhost de Nginx y el
+`deploy.env` que usa el deploy.
+
+Primero, ver que va a hacer, sin tocar nada:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/orl92/web-cmw-insmet-cu/main/deploy/install.sh \
+    | sudo bash -s -- --dry-run
+```
+
+Despues, la corrida real. **Sin terminal el script aborta**: un instalador que
+adivina en un pipe escribe el `.env` equivocado y nadie lo ve hasta que el sitio
+responde `DisallowedHost`.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/orl92/web-cmw-insmet-cu/main/deploy/install.sh \
+    | sudo bash -s
+```
+
+Opciones que importan:
+
+| Opcion | Para que |
+| --- | --- |
+| `--dry-run`, `-n` | Imprime el plan y no ejecuta nada. Es el primer paso siempre |
+| `--non-interactive` | Sin preguntas: cada valor sale de la variable de entorno del mismo nombre o del default. Sin terminal esto es obligatorio |
+| `--allow-incomplete-env` | Deja los `CHANGE_ME` que sobren (por ejemplo, si el SMTP todavia no existe). NO migra, NO crea el superusuario y NO arranca los servicios |
+| `--skip-deploy-scaffold` | No crea el usuario de despliegue, su keypair ni el sudoers: para servidores donde el deploy se corre a mano |
+
+`sudo bash -s -- --help` imprime el uso y sale 0 sin exigir root ni terminal.
+
+Lo que decide el operador, y que antes habia que editar a mano en tres
+lugares distintos (`generate_env.py`, `server_name` de Nginx y `PublicHostname`
+del deploy): el dominio y su `www`, los puertos, la base de datos (rol y base
+creados de verdad con el usuario prompted), el correo, el superusuario y el modo
+de proxy. Todo eso sale en el mismo `.env` y en el mismo `deploy.env`, asi que no
+pueden quedar desincronizados.
+
+Certificado, segun el caso: **autofirmado** (sin red, funciona con DNS privado o
+con puertos cerrados; el navegador lo marca como no seguro y el health check
+deja de verificar el TLS) o **Let's Encrypt** con `certbot --webroot`. Con
+Let's Encrypt, la primera emision levanta el vhost con un autofirmado temporal
+para que el puerto 80 responda el challenge de ACME, y recien despues cambia el
+vhost al certificado real. Ese temporal queda en `/etc/webcmp/tls/` y ya no se
+usa: se puede borrar a mano.
+
+El instalador imprime la clave privada del superusuario **una sola vez**, y solo
+si la genero el. Las claves Django se pueden rotar despues con
+`manage.py rotatekeys`; la contrasena de la base esta en el `.env` y se edita
+alla.
+
+Al final imprime el keypair de despliegue. La publica va al secret
+`DEPLOY_SSH_KEY` de GitHub (ver **Secrets de GitHub**); la privada ya quedo en
+`/etc/webcmp/deploy_key` con modo `0600`.
+
+Re-correr el script es seguro: cada pregunta muestra el valor actual como
+default, no regenera claves, no borra la base y no pisa ni `/etc/webcmp/deploy.env`
+ni un `.env` afinado a mano sin confirmarlo.
+
+> Si el servidor ya venia de supervisor + `gunicorn.sh`, primero
+> `sudo systemctl stop supervisor`. Nginx tiene que apuntar a
+> `unix:/run/webcmp/gunicorn.sock`, no a `/tmp/gunicorn-webcmp.sock`.
+
+### Camino manual (alternativa)
+
+El despliegue por workflow **no** es autocontenido: sin el instalador hay que
+dejar el usuario, el script, la config y el sudoers a mano. Despues de eso, el
+deploy es automatico. Es exactamente lo que hace `install.sh`, paso por paso:
 
 ```bash
 # 1. Usuario de despliegue. Distinto de webcmp, que tiene shell /bin/false a
@@ -132,9 +204,22 @@ sudo systemctl restart nginx     # reinicio, no reload: los grupos se leen al
                                   # crear los workers
 ```
 
+El `deploy.env` del camino manual sale de `deploy.env.example`, que ya trae los
+mismos `HEALTHCHECK_*` que escribe el instalador: `HEALTHCHECK_URL`,
+`HEALTHCHECK_RESOLVE`, `HEALTHCHECK_UNIX_SOCKET`, `HEALTHCHECK_HOST_HEADER` y
+`HEALTHCHECK_INSECURE`. Para el proxy externo (opcion B), el health check va al
+socket unix y no a `https://`; para Nginx local, a `https://` con
+`HEALTHCHECK_RESOLVE` apuntando a `127.0.0.1`.
+
+`webcmp-deploy --configure` reescribe ese archivo preguntando lo mismo, y
+`webcmp-deploy --check` valida la configuracion sin desplegar nada.
+
 ### Prerrequisitos de sistema que el README del proyecto no lista
 
-Probado sobre Ubuntu 26.04 / Python 3.14. Lo que hay en el README del proyecto
+Probado sobre Ubuntu 26.04 / Python 3.14. `install.sh` instala todo esto por apt
+en el preflight, asi que en el camino automatico no hay que hacerlo a mano; la
+tabla importa para el camino manual y para saber que se puede quitar sin
+preguntar. Lo que hay en el README del proyecto
 (`libcairo2-dev pkg-config python3-dev wkhtmltopdf`) no alcanza: `pip install`
 falla y `manage.py` no llega a importar.
 
@@ -147,7 +232,9 @@ falla y `manage.py` no llega a importar.
 
 ### Un paso del README del proyecto que no funciona como esta escrito
 
-El README dice generar el entorno asi:
+Esto ya no aplica al camino automatico: `install.sh` genera el `.env` como root
+y devuelve el archivo a `webcmp`. Queda documentado para el camino manual. El
+README del proyecto dice generar el entorno asi:
 
 ```
 sudo -u webcmp .venv/bin/python scripts/generate_env.py --production
