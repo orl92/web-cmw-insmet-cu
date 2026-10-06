@@ -2052,7 +2052,7 @@ fi
 
 # Gate del .env. Separar CHANGE_ME criticos (bloquean migraciones/arranque) de
 # opcionales (SMTP/FTP). SMTP incompleto NO debe impedir hacer migraciones.
-PENDING_CHANGES=$(grep -n '^[^#]*CHANGE_ME' "$ENV_FILE" 2>/dev/null || true)
+PENDING_CHANGES=$(grep -n '^[[:space:]]*[^#[:space:]].*CHANGE_ME' "$ENV_FILE" 2>/dev/null || true)
 CRITICAL_CHANGES=$(printf '%s\n' "$PENDING_CHANGES" | grep -v -E 'EMAIL_HOST|EMAIL_PORT|EMAIL_HOST_USER|EMAIL_HOST_PASSWORD|DEFAULT_FROM_EMAIL|FTP_OBS_' || true)
 NONCRIT_CHANGES=$(printf '%s\n' "$PENDING_CHANGES" | grep -E 'EMAIL_HOST|EMAIL_PORT|EMAIL_HOST_USER|EMAIL_HOST_PASSWORD|DEFAULT_FROM_EMAIL|FTP_OBS_' || true)
 HAS_BLOCKING_CRITICAL=0
