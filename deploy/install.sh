@@ -2169,24 +2169,27 @@ else
     # LIVE_MANAGE=1 hace que manage() muestre el log en vivo (ver manage()).
     LIVE_MANAGE=0
     run manage makemigrations
-    echo '  [debug] makemigrations finished (rc: $?)'
+    echo "  [debug] makemigrations finished"
     run manage migrate --noinput
-    echo '  [debug] migrate finished (rc: $?)'
+    echo "  [debug] migrate finished"
     run manage migrate --check
-    echo '  [debug] migrate --check finished (rc: $?)'
+    echo "  [debug] migrate --check finished"
     LIVE_MANAGE=0
 fi
 # collectstatic tambien va en vivo: con DEBUG=False no imprime una linea hasta
 # terminar, y en un proyecto con estaticos vendoreados son varios segundos en
 # los que no se ve nada pasar.
-LIVE_MANAGE=1
+LIVE_MANAGE=0
 run manage collectstatic --no-input
+echo "  [debug] collectstatic finished"
 LIVE_MANAGE=0
 # El mismo gate que corre deploy.sh en cada deploy, corrido una vez con la
 # configuracion real. security.W008 no aparece porque production.py lo silencia
 # en SILENCED_SYSTEM_CHECKS: el TLS y el redirect los termina el proxy, no
 # Django.
 run manage check --deploy --fail-level WARNING
+echo "  [debug] check --deploy finished"
+LIVE_MANAGE=0
 
 if [ -n "$PENDING_CHANGES" ]; then
     log "Superusuario omitido"
