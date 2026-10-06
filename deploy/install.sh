@@ -1884,6 +1884,10 @@ if [ -x "$VENV_DIR/bin/python" ]; then
 else
     run_sh "$PYTHON_BIN -m venv '$VENV_DIR'"
 fi
+# Asegurar permisos del venv (evita EACCES cuando pip install corre como $SERVICE_USER)
+if [ "$DRY_RUN" -eq 0 ] && [ -d "$VENV_DIR" ]; then
+    chown -R "$SERVICE_USER:$APP_GROUP" "$VENV_DIR" || warn "No se pudo cambiar propietario de $VENV_DIR; pip install puede fallar"
+fi
 
 # requirements/prod.txt trae cryptography, que es lo unico que necesita
 # scripts/generate_env.py. Por eso el venv va ANTES de generar el .env: el
