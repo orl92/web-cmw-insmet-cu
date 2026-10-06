@@ -1119,7 +1119,7 @@ manage() {
         # saber si Django esta aplicando 40 migraciones o colgado.
         run_live "manage.py $*" \
             systemd-run --quiet --pipe --wait \
-            --uid="$SERVICE_USER" --gid="$SERVICE_USER" \
+            --uid="$SERVICE_USER" --gid="$SERVICE_GROUP" \
             -p "EnvironmentFile=$ENCRYPTION_ENV" \
             -p Environment=PRODUCTION=1 \
             -p "Environment=MPLCONFIGDIR=$MPLCONFIGDIR" \
@@ -1128,7 +1128,7 @@ manage() {
         return $?
     fi
     systemd-run --quiet --pipe --wait \
-        --uid="$SERVICE_USER" --gid="$SERVICE_USER" \
+        --uid="$SERVICE_USER" --gid="$SERVICE_GROUP" \
         -p "EnvironmentFile=$ENCRYPTION_ENV" \
         -p Environment=PRODUCTION=1 \
         -p "Environment=MPLCONFIGDIR=$MPLCONFIGDIR" \
@@ -1296,7 +1296,12 @@ PROXY_MODE=$(ask_one_of PROXY_MODE nginx-local 'Reverse proxy' \
     'external: hay un proxy externo (Nginx Proxy Manager). NO se instala Nginx' \
     ) || die 'Opcion invalida.'
 
-TLS_MODE=none
+# TLS_MODE NO se pre-asigna a `none` antes de la pregunta. ask_one_of en modo no
+# interactivo lee ${!key} y lo valida contra las opciones: con `none` ya puesto
+# la validacion fallaba SIEMPRE y el instalador moria aca con
+# "TLS_MODE='none' no es un valor valido". El default de la pregunta es `certbot`;
+# `none` es el valor del modo proxy externo, donde el TLS se resuelve afuera.
+TLS_MODE=${TLS_MODE:-}
 ACME_EMAIL=
 if [ "$PROXY_MODE" = nginx-local ]; then
     # El aviso va ACA y no despues de elegir, porque la eleccion de un
@@ -1325,6 +1330,11 @@ EOF
 # mata el instalador. El correo de ACME lo elige el operador explicitamente.
 ACME_EMAIL=$(ask ACME_EMAIL "" "Correo para el registro de Let's Encrypt (vacio = sin registro)" valid_email) || die 'Correo invalido.'
     fi
+else
+    # Proxy externo: el TLS se termina en el proxy, no aca. `none` es un valor
+    # fijo del modo, no una respuesta del operador, y por eso NO pasa por
+    # ask_one_of: con PROXY_MODE=external no hay eleccion que hacer.
+    TLS_MODE=none
 fi
 
 # --- Base de datos -------------------------------------------------------
@@ -1977,13 +1987,13 @@ try:
                     except InvalidToken:
                         raise InvalidToken('mismatch')
     except InvalidToken:
-        raise
-    except Exception as e:
-        raise e
+        raise InvalidToken('mismatch')
     sys.exit(0)
-except Exception as e:
-    import sys
+except InvalidToken:
     sys.exit(1)
+except Exception:
+    import sys
+    sys.exit(2)
 "; then
             :
         else
@@ -2022,8 +2032,13 @@ if [ "$ENV_REGENERATED" -eq 1 ]; then
     # Y despues hay que devolverle el .env a webcmp: Django corre como ese
     # usuario y tiene que poder leerlo. Con root:root 600 el sitio levanta y
     # falla al primer acceso con un 500 que no dice "no podi leer el .env".
-    run chown "$SERVICE_USER:$SERVICE_GROUP" "$ENV_FILE"
-    run chmod 0600 "$ENV_FILE"
+    if [ "$DRY_RUN" -eq 0 ]; then
+        chown "$SERVICE_USER:$SERVICE_GROUP" "$ENV_FILE" || true
+        chmod 0600 "$ENV_FILE" || true
+    else
+        run chown "$SERVICE_USER:$SERVICE_GROUP" "$ENV_FILE"
+        run chmod 0600 "$ENV_FILE"
+    fi
 fi
 
 if [ "$ENV_REGENERATED" -eq 0 ]; then
@@ -2167,28 +2182,25 @@ if [ "$HAS_BLOCKING_CRITICAL" -eq 1 ]; then
     warn "cuando esten completos los valores CRITICOS."
 else
     # LIVE_MANAGE=1 hace que manage() muestre el log en vivo (ver manage()).
-    LIVE_MANAGE=0
+    LIVE_MANAGE=1
     run manage makemigrations
-    echo "  [debug] makemigrations finished"
+    LIVE_MANAGE=0
     run manage migrate --noinput
-    echo "  [debug] migrate finished"
     run manage migrate --check
-    echo "  [debug] migrate --check finished"
     LIVE_MANAGE=0
 fi
 # collectstatic tambien va en vivo: con DEBUG=False no imprime una linea hasta
 # terminar, y en un proyecto con estaticos vendoreados son varios segundos en
 # los que no se ve nada pasar.
-LIVE_MANAGE=0
+LIVE_MANAGE=1
 run manage collectstatic --no-input
-echo "  [debug] collectstatic finished"
 LIVE_MANAGE=0
 # El mismo gate que corre deploy.sh en cada deploy, corrido una vez con la
 # configuracion real. security.W008 no aparece porque production.py lo silencia
 # en SILENCED_SYSTEM_CHECKS: el TLS y el redirect los termina el proxy, no
 # Django.
+LIVE_MANAGE=1
 run manage check --deploy --fail-level WARNING
-echo "  [debug] check --deploy finished"
 LIVE_MANAGE=0
 
 if [ -n "$PENDING_CHANGES" ]; then
@@ -2864,7 +2876,19 @@ EOF
     echo
     echo "  Siguiente paso:"
     printf '       sudo %s --check\n' "$SCRIPT_PATH"
-    printf '       %s://%s/\n' "$PROTOCOL_SCHEME" "$PUBLIC_HOSTNAME"
+fi
+
+# Checklist final con TODOs que SI pueden quedar sin resolver.
+PROTOCOL_SCHEME=${PROTOCOL_SCHEME:-http}
+if [ "$PROXY_MODE" = nginx-local ] && [ "$TLS_MODE" != none ]; then
+    PROTOCOL_SCHEME=https
+elif [ "$PROXY_MODE" = nginx-local ] && [ "$TLS_MODE" = none ]; then
+    PROTOCOL_SCHEME=http
+elif [ "$PROXY_MODE" = external ]; then
+    PROTOCOL_SCHEME=${PROTOCOL_SCHEME:-https}
+fi
+if [ "$DRY_RUN" -eq 0 ]; then
+    printf '       %s://%s/\n\n' "${PROTOCOL_SCHEME:-http}" "${PUBLIC_HOSTNAME:-meteocamaguey.cu}"
 fi
 
 if [ "$DRY_RUN" -eq 0 ] && [ "$INTERACTIVE" -eq 1 ] && [ "${#ANSWER_SOURCES[@]}" -gt 0 ]; then
