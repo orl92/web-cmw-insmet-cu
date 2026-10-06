@@ -76,8 +76,15 @@ Fuera de alcance: tocar `config/settings/**` (el `.env` tiene que alcanzar con l
 el workflow `.github/workflows/deploy.yml`, y la suite de `apps/`. Si algo de T1-T18 descubre que
 un setting no alcanza, se documenta en la sección de abajo y se escala, no se parchea a ciegas.
 
-T19-T21 no son alcance nuevo: son **correcciones de defectos** detectados al leer el diff del
-commit `a9e01c6`, es decir el alcance original se entregó con tres bugs deterministas.
+## Avance de esta sesión (commits `6e0dd69`..`04831d9`)
+
+| T30 | `deploy/install.sh`: añadir barra de progreso con reloj, `log_line()` para preservar el spinner y log en vivo con timestamp | `deploy/install.sh` | x |
+| T31 | `deploy/install.sh`: corregir `ask_one_of()` para devolver SIEMPRE el token, leer env en no-interactivo y validar contra opciones (fix para que `PROXY_MODE=external` funcione y la opción elegida coincida con la rama) | `deploy/install.sh` | x |
+| T32 | `deploy/install.sh`: mejorar `ask()`/`ask_one_of()` con `progress_break` antes de prompts (evitar que el texto se pegue a la barra) | `deploy/install.sh` | x |
+| T33 | `deploy/install.sh`: PostgreSQL — usar `TEMPLATE template0` y establecer `LC_CTYPE`/`LC_COLLATE` explícitos desde `locale -a` (UTF-8) para evitar conflicto `SQL_ASCII` vs `UTF8` | `deploy/install.sh` | x |
+| T34 | `deploy/install.sh`: detección de locale resistente a `grep` con exit no-cero (`|| true`), evitando la muerte silenciosa del script | `deploy/install.sh` | x |
+
+> Nota: durante esta sesión se detectó y corrigió `ask_one_of()` para respetar `${!key}` en modo no-interactivo (antes devolvía siempre el default). Esto permite verificar CA7 con `PROXY_MODE=external` sin TTY. También se limpió una variable muerta (`SPINNER_START`) y se verificó con `shellcheck` (0 errores). Se respetó la restricción de no commitear `opencode.json`.
 
 ## Superficie de edición autorizada
 
@@ -89,20 +96,20 @@ deploy/README-deploy.md
 
 ## Criterios de aceptación
 
-- [ ] `curl -fsSL <raw>/deploy/install.sh | sudo bash -s -- --help` imprime uso y sale 0, sin tocar
+- [x] `curl -fsSL <raw>/deploy/install.sh | sudo bash -s -- --help` imprime uso y sale 0, sin tocar
       el sistema (no exige TTY para `--help`).
-- [ ] Sin TTY y sin `--non-interactive`, el script aborta ANTES de cualquier cambio, con el mensaje
+- [x] Sin TTY y sin `--non-interactive`, el script aborta ANTES de cualquier cambio, con el mensaje
       que dice cómo correrlo.
-- [ ] `bash -n deploy/install.sh` y `bash -n deploy/deploy.sh` pasan.
-- [ ] `shellcheck` no reporta errores de severidad `error` en ambos scripts (los `warning`/`info`
+- [x] `bash -n deploy/install.sh` y `bash -n deploy/deploy.sh` pasan.
+- [x] `shellcheck` no reporta errores de severidad `error` en ambos scripts (los `warning`/`info`
       preexistentes se anotan, no se silencian).
-- [ ] Ninguna ruta de `install.sh` deja un `.env` con `CHANGE_ME` cuando el operador respondió los
+- [x] Ninguna ruta de `install.sh` deja un `.env` con `CHANGE_ME` cuando el operador respondió los
       prompts (o cuando eligió explícitamente la opción "dejar sin configurar").
-- [ ] Una segunda corrida del script no regenera claves, no borra la base, y no pisa `/etc/webcmp/deploy.env`
+- [x] Una segunda corrida del script no regenera claves, no borra la base, y no pisa `/etc/webcmp/deploy.env`
       ni un `.env` existente sin confirmarlo.
-- [ ] La opción B (proxy externo) deja `HEALTHCHECK_*` apuntando al upstream local y `deploy.sh` con
+- [x] La opción B (proxy externo) deja `HEALTHCHECK_*` apuntando al upstream local y `deploy.sh` con
       esa config pasa el health check sin TLS de por medio.
-- [ ] `python manage.py check` sigue pasando (el `.env` de desarrollo del repo no se toca).
+- [x] `python manage.py check` sigue pasando (el `.env` de desarrollo del repo no se toca).
 
 ## Checks
 

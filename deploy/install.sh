@@ -204,7 +204,7 @@ progress_break() {
 # La barra de secciones (arriba) dice EN QUE PARTE va la instalacion. Esto dice
 # QUE ESTA PASANDO ahora mismo: un comando que tarda tres minutos sin decir una
 # palabra parece colgado, y la primera pregunta del operador va a ser si hay que
-# esperar o si semurio.
+# esperar o si se murió.
 #
 # El problema tecnico de fondo es que el spinner escribe a stderr desde un
 # proceso en background mientras el comando watched escribe a stderr en el
@@ -213,7 +213,6 @@ progress_break() {
 # `log_line`, que borra el spinner, imprime, y lo vuelve a dibujar. Es el unico
 # orden que no produce lineas a medio escribir.
 SPINNER_PID=
-SPINNER_START=
 SPINNER_MSG=
 ELAPSED_START=
 
@@ -898,7 +897,7 @@ ask_yes_no() {
 ask_one_of() {
     local key=$1 default=$2 question=$3
     shift 3
-    local index=0 option answer tries=0 shift_count=0 token
+    local index=0 option answer tries=0 shift_count=0 token lista
     # El break va ANTES del for: estas opciones se imprimen una por linea y la
     # primera se pegaba a la barra.
     progress_break
@@ -908,7 +907,34 @@ ask_one_of() {
     done
     local prompt="$question"
     if ! can_prompt; then
-        printf '  [dry-run] %s=%s\n' "$key" "$(mask "$key" "$default")" >&2
+        # La respuesta sale de la variable de entorno del mismo nombre: es lo
+        # que promete el propio mensaje del preflight ("cada valor sale de la
+        # variable de entorno del mismo nombre o del default"). Antes esta
+        # funcion IGNORABA el env y devolvia siempre el default, y en modo no
+        # interactivo eso no es un detalle de comodidad: PROXY_MODE=external
+        # seguia dando nginx-local, la opcion B era inalcanzable sin terminal,
+        # y el instalador instalaba y configuraba Nginx donde se le habia
+        # pedido proxy externo. Mismo bug que el valor numerico de antes: se
+        # recibe la respuesta y despues no se usa.
+        if [ -n "${!key:-}" ]; then
+            answer=${!key}
+            # El valor del env se VALIDA contra las opciones. Un token que no
+            # matchea ninguna rama es la misma trampa: instalaria con un modo
+            # de proxy que ninguna rama del script conoce.
+            for option in "$@"; do
+                token=${option%%:*}
+                if [ "$answer" = "$token" ]; then
+                    printf '  [dry-run] %s=%s (%s)\n' "$key" "$(mask "$key" "$answer")" \
+                        "$([ "$DRY_RUN" -eq 1 ] && echo dry-run || echo no-interactivo)" >&2
+                    printf '%s' "$answer"
+                    return 0
+                fi
+            done
+            lista=''
+            for option in "$@"; do lista="$lista${option%%:*} "; done
+            die "$key='$answer' no es un valor valido. Opciones: $lista"
+        fi
+        printf '  [dry-run] %s=%s (default)\n' "$key" "$(mask "$key" "$default")" >&2
         printf '%s' "$default"
         return 0
     fi
