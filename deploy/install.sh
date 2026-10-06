@@ -1939,7 +1939,54 @@ step 1 "Archivo .env"
 # quedar por encima.
 ENV_GEN_ARGS=(--production --env-file "$ENV_FILE" --encryption-key-file "$ENCRYPTION_ENV")
 if [ "$ENV_FILE_EXISTS" -eq 1 ]; then
-    if ask_yes_no no "Regenerar $ENV_FILE con el generador (conserva SECRET_KEY y ENCRYPTION_KEY)?"; then
+    # Validar que el par ENCRYPTION_KEY/SECRET_KEY cifrada descifra correctamente.
+    # Si hay un .env de instalación anterior con otro encryption.env, Django fallará
+    # al cargar settings. En ese caso, regenerar con --force.
+    if [ "$DRY_RUN" -eq 0 ] && [ -x "$PYTHON_BIN" ]; then
+        if "$PYTHON_BIN" -c "
+# validate
+import sys
+try:
+    from cryptography.fernet import Fernet, InvalidToken
+    env='$ENV_FILE'; enc='$ENCRYPTION_ENV'
+    def rk(p):
+        try:
+            with open(p) as f:
+                for line in f:
+                    if line.startswith('ENCRYPTION_KEY='):
+                        return line.split('=',1)[1].rstrip('\n\r')
+        except Exception: pass
+        return None
+    ek=rk(enc)
+    if not ek: sys.exit(0)
+    Fernet(ek.encode())
+    # check encrypted secret
+    try:
+        with open(env) as f:
+            for line in f:
+                s=line.strip()
+                if s.startswith('SECRET_KEY=') and '\$' in s:
+                    try:
+                        Fernet(ek.encode()).decrypt(s.split('=',1)[1].rstrip().encode())
+                    except InvalidToken:
+                        sys.exit(1)
+    except Exception: pass
+    sys.exit(0)
+except SystemExit as e: sys.exit(e.code)
+except Exception: sys.exit(0)
+"; then
+            :
+        else
+            rc=$?
+            if [ "$rc" -eq 1 ]; then
+                warn "Par ENCRYPTION_KEY/SECRET_KEY inválido en .env existente. Se regenerará con --force."
+                ENV_REGENERATED=1
+            fi
+        fi
+    fi
+    if [ "$ENV_REGENERATED" -eq 1 ]; then
+        : # ya decidido
+    elif ask_yes_no no "Regenerar $ENV_FILE con el generador (conserva SECRET_KEY y ENCRYPTION_KEY)?"; then
         echo "  se conserva el .env existente."
         ENV_REGENERATED=0
     else
