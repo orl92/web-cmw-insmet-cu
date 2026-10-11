@@ -412,12 +412,11 @@ class InvoiceCostAllocationVistaTests(TestCase):
         hoy = timezone.localdate()
         datos = {
             'customer': self.customer.pk,
-            # El período del lote se deduce de cada suscripción; estos cuatro
-            # campos del formulario quedan igual de obligatorios que antes.
+            # En lote el período se deduce de cada suscripción; el formulario lo
+            # ignora, pero el año y los meses elegidos se mandan igual.
+            'year': str(hoy.year),
             'month_from': str(hoy.month),
-            'year_from': str(hoy.year),
             'month_to': str(hoy.month),
-            'year_to': str(hoy.year),
             'commercial_registry': 'REG-COST',
             'subscriptions': [str(self.subscription.pk)],
             'cost_allocations-TOTAL_FORMS': '1',

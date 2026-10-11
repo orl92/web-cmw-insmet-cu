@@ -1,5 +1,5 @@
 {% if field %}
-  <div class="mb-3">
+  <div class="{% if compact %}mb-0{% else %}mb-3{% endif %}">
     <label class="form-label{% if field.field.required %}
                     required{% endif %}"
            for="{{ field.id_for_label }}">{{ field.label }}</label>

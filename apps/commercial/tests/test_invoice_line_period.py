@@ -24,7 +24,6 @@ ya lo hacía `InvoiceItemForm.clean()` y `get_quantity_period_display()`. Un
 selector de unidad duplicaría un dato que ya existe.
 """
 
-import inspect
 import json
 import re
 from datetime import date, datetime
@@ -122,10 +121,9 @@ class _FacturacionBase(TestCase):
         # que se prueba es el período *del contrato*, línea por línea, y no la regla
         # "toda línea cae dentro del período facturado", que vive en
         # `test_invoice_period_label.LineaFueraDelPeriodoTests`.
+        datos.setdefault('year', '2026')
         datos.setdefault('month_from', '1')
-        datos.setdefault('year_from', '2026')
         datos.setdefault('month_to', '12')
-        datos.setdefault('year_to', '2026')
         for linea in lineas:
             datos.update(linea)
         datos.update(self._imputacion())
@@ -139,41 +137,21 @@ class _FacturacionBase(TestCase):
 class DosPeriodosEnLugaresDistintosTests(_FacturacionBase):
     """La tarjeta del período facturado elige meses y nada más."""
 
-    def test_el_formulario_de_factura_no_tiene_fechas(self):
-        """`start_date` y `end_date` no son de la factura: son de la línea."""
-        campos = InvoiceForm().fields
-
-        self.assertNotIn('start_date', campos)
-        self.assertNotIn('end_date', campos)
-
     def test_el_periodo_impreso_se_elige_por_meses(self):
         """Lo que sí es de la factura se queda: qué meses se facturan."""
         campos = InvoiceForm().fields
 
         self.assertEqual(
-            [nombre for nombre in campos if nombre.startswith(('month_', 'year_'))],
-            ['month_from', 'year_from', 'month_to', 'year_to'],
+            [nombre for nombre in campos if nombre in ('month_from', 'year', 'month_to')],
+            ['month_from', 'year', 'month_to'],
         )
         self.assertNotIn('period_label', campos)
         self.assertNotIn('period_months', campos)
 
-    def test_la_pantalla_no_tiene_el_rango_de_fechas(self):
-        html = self.client.get(self.url_crear).content.decode()
-
-        self.assertNotIn('id_start_date', html)
-        self.assertNotIn('id_end_date', html)
-
-    def test_el_conteo_de_dias_desaparece(self):
-        """`#days-count` nunca se posteó ni se guardó: era decoración JS."""
-        html = self.client.get(self.url_crear).content.decode()
-
-        self.assertNotIn('days-count', html)
-        self.assertNotIn('Días del período', html)
-
     def test_el_selector_de_meses_se_ve_en_la_tarjeta(self):
         html = self.client.get(self.url_crear).content.decode()
 
-        for nombre in ('month_from', 'year_from', 'month_to', 'year_to'):
+        for nombre in ('month_from', 'year', 'month_to'):
             self.assertIn(f'name="{nombre}"', html)
 
 
@@ -419,7 +397,7 @@ class PeriodoDeLoteReadOnlyTests(_FacturacionBase):
 
         self.assertContains(response, 'data-periodo="desde 15/05/2026 · 3 meses"')
 
-    def test_el_periodo_del_lote_no_es_un_campo_que_se_edaite(self):
+    def test_el_periodo_del_lote_no_es_un_campo_que_se_edite(self):
         """Lo único que la pantalla manda de cada suscripción es la casilla."""
         response = self.client.get(self.url_ajax, {'customer': self.customer.pk})
 
@@ -656,10 +634,9 @@ class FlashDelPeriodoTests(_FacturacionBase):
                 'commercial_registry': 'REG-FLASH',
                 # El período que se marca acá es el que la suscripción ignora:
                 # el del lote sale de la fecha de inicio y la cantidad.
+                'year': '2026',
                 'month_from': '5',
-                'year_from': '2026',
                 'month_to': '7',
-                'year_to': '2026',
                 'subscriptions': [str(self.sub.pk)],
                 **self._imputacion(),
                 **extra,
@@ -705,10 +682,9 @@ class FlashDelPeriodoTests(_FacturacionBase):
             {
                 'customer': self.customer.pk,
                 'commercial_registry': 'REG-LOTE',
+                'year': '2024',
                 'month_from': '1',
-                'year_from': '2024',
                 'month_to': '2',
-                'year_to': '2024',
                 'subscriptions': [str(self.sub.pk)],
                 **self._imputacion(),
             },
@@ -750,24 +726,7 @@ class FlashDelPeriodoTests(_FacturacionBase):
 
 
 class BatchSinFechasMuertasTests(_FacturacionBase):
-    """`start_date`/`end_date` no se usaban: quedaban en la firma y en ningún lado más."""
-
-    def test_process_batch_invoice_no_declara_fechas(self):
-        from apps.commercial.views.invoices import InvoiceCreateView
-
-        parametros = inspect.signature(InvoiceCreateView.process_batch_invoice).parameters
-
-        self.assertNotIn('start_date', parametros)
-        self.assertNotIn('end_date', parametros)
-
-    def test_process_manual_invoice_no_declara_fechas(self):
-        """El inicio llega por línea: la factura ya no lo pasa entero."""
-        from apps.commercial.views.invoices import InvoiceCreateView
-
-        parametros = inspect.signature(InvoiceCreateView.process_manual_invoice).parameters
-
-        self.assertNotIn('start_date', parametros)
-        self.assertNotIn('end_date', parametros)
+    """En lote el período sale de cada suscripción: la factura no toca su inicio."""
 
     def test_facturar_en_lote_no_toca_el_inicio_de_la_suscripcion(self):
         """El período del contrato es de la suscripción, no de la factura."""
@@ -785,10 +744,6 @@ class BatchSinFechasMuertasTests(_FacturacionBase):
             {
                 'customer': self.customer.pk,
                 'commercial_registry': 'REG-LOTE',
-                'month_from': '5',
-                'year_from': '2026',
-                'month_to': '7',
-                'year_to': '2026',
                 'subscriptions': [str(sub.pk)],
                 **self._imputacion(),
             },
@@ -797,42 +752,6 @@ class BatchSinFechasMuertasTests(_FacturacionBase):
         sub.refresh_from_db()
         self.assertEqual(sub.start_date, elegido)
         self.assertEqual(sub.payment_status, 'pending')
-
-    def test_un_post_con_las_fechas_viejas_se_ignora(self):
-        """Una pestaña vieja o un script con el payload anterior no rompe nada."""
-        elegido = timezone.make_aware(datetime(2025, 5, 15, 8, 0))
-        sub = ServiceSubscription.objects.create(
-            customer=self.customer,
-            service=self.agro,
-            start_date=elegido,
-            quantity=3,
-            payment_status='requested',
-        )
-
-        response = self.client.post(
-            self.url_crear,
-            {
-                'customer': self.customer.pk,
-                'commercial_registry': 'REG-LOTE-VIEJO',
-                'month_from': '1',
-                'year_from': '2026',
-                'month_to': '12',
-                'year_to': '2026',
-                # Campos del payload anterior: el formulario los ignora y el
-                # período del lote sigue saliendo de la suscripción.
-                'period_label': 'Mayo 2026',
-                'start_date': '01/05/2026',
-                'end_date': '31/05/2026',
-                'subscriptions': [str(sub.pk)],
-                **self._imputacion(),
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-        sub.refresh_from_db()
-        self.assertEqual(sub.start_date, elegido)
-        invoice = Invoice.objects.get(customer=self.customer)
-        self.assertEqual(invoice.period_label, 'De mayo a julio de 2025')
 
 
 class LoteAgrupadoPorPeriodoTests(_FacturacionBase):
@@ -853,12 +772,8 @@ class LoteAgrupadoPorPeriodoTests(_FacturacionBase):
             {
                 'customer': self.customer.pk,
                 'commercial_registry': 'REG-GRUPO',
-                # El rango del formulario es válido pero irrelevante: en lote la
-                # vista lo descarta y agrupa por el período de cada suscripción.
-                'month_from': '1',
-                'year_from': '2026',
-                'month_to': '12',
-                'year_to': '2026',
+                # En lote no se envía período: la vista lo descarta y agrupa por
+                # el de cada suscripción.
                 'subscriptions': [str(sub.pk) for sub in subs],
                 **self._imputacion(),
             },

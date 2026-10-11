@@ -114,14 +114,14 @@ class RegenerarCasoBase(TestCase):
         self.client.force_login(self.admin)
 
     def _formulario(self):
-        # El período del lote se deduce de cada suscripción: no viaja en el POST.
+        # El período del lote se deduce de cada suscripción: el formulario lo
+        # ignora, pero el año y los meses elegidos viajan igual.
         hoy = timezone.localdate()
         return {
             'customer': self.customer.pk,
+            'year': str(hoy.year),
             'month_from': str(hoy.month),
-            'year_from': str(hoy.year),
             'month_to': str(hoy.month),
-            'year_to': str(hoy.year),
             'commercial_registry': 'REG-RGN-01',
             'subscriptions': [str(self.sub.pk)],
             'regenerar': str(self.sub.uuid),
@@ -353,10 +353,9 @@ class RegenerarEnFacturacionManualTests(RegenerarCasoBase):
         hoy = timezone.localdate()
         return {
             'customer': self.customer.pk,
+            'year': str(hoy.year),
             'month_from': str(hoy.month),
-            'year_from': str(hoy.year),
             'month_to': str(hoy.month),
-            'year_to': str(hoy.year),
             'commercial_registry': 'REG-RGN-02',
             'regenerar': str(self.sub.uuid),
             'items-TOTAL_FORMS': '1',

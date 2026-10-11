@@ -131,14 +131,6 @@ def anios_del_periodo(hoy):
     return [(str(anio), str(anio)) for anio in range(hoy.year - 2, hoy.year + 2)]
 
 
-def _fecha_del_periodo(mes, anio, ultimo):
-    """El primer o el último día del mes elegido, o `None` si falta uno de los dos."""
-    if not mes or not anio:
-        return None
-    dia = calendar.monthrange(int(anio), int(mes))[1] if ultimo else 1
-    return date(int(anio), int(mes), dia)
-
-
 class InvoiceCostAllocationForm(forms.ModelForm):
     class Meta:
         model = InvoiceCostAllocation
@@ -211,22 +203,17 @@ class InvoiceForm(forms.Form):
     month_from = forms.ChoiceField(
         choices=(),
         label='Mes desde',
-        required=True,
+        required=False,
     )
-    year_from = forms.ChoiceField(
+    year = forms.ChoiceField(
         choices=(),
-        label='Año desde',
-        required=True,
+        label='Año',
+        required=False,
     )
     month_to = forms.ChoiceField(
         choices=(),
         label='Mes hasta',
-        required=True,
-    )
-    year_to = forms.ChoiceField(
-        choices=(),
-        label='Año hasta',
-        required=True,
+        required=False,
     )
     subscriptions = forms.ModelMultipleChoiceField(
         queryset=ServiceSubscription.objects.none(),
@@ -245,9 +232,9 @@ class InvoiceForm(forms.Form):
         for nombre in ('month_from', 'month_to'):
             self.fields[nombre].choices = [('', '---------')] + meses
             self.fields[nombre].widget.attrs.update({'class': 'form-select'})
-        for nombre in ('year_from', 'year_to'):
-            self.fields[nombre].choices = [('', '---------')] + anios
-            self.fields[nombre].widget.attrs.update({'class': 'form-select'})
+        self.fields['year'].choices = [('', '---------')] + anios
+        self.fields['year'].widget.attrs.update({'class': 'form-select'})
+        self.fields['year'].initial = str(hoy.year)
 
         customer_id = None
         if 'customer' in self.data:
@@ -267,17 +254,23 @@ class InvoiceForm(forms.Form):
             self.fields['subscriptions'].queryset = ServiceSubscription.objects.none()
 
     def clean(self):
-        super().clean()
-        start = _fecha_del_periodo(self.data.get('month_from'), self.data.get('year_from'), False)
-        end = _fecha_del_periodo(self.data.get('month_to'), self.data.get('year_to'), True)
-        if not start:
-            self.add_error('month_from', 'Elegí mes y año desde.')
-            return self.cleaned_data
-        if not end:
-            self.add_error('month_to', 'Elegí mes y año hasta.')
-            return self.cleaned_data
+        cleaned_data = super().clean()
+        # En lote el período NO se pide: lo deduce cada suscripción de su fecha de
+        # inicio y la vista lo descarta. Sólo la facturación manual necesita el rango.
+        if cleaned_data.get('subscriptions'):
+            return cleaned_data
+
+        anio = cleaned_data.get('year')
+        mes_desde = cleaned_data.get('month_from')
+        mes_hasta = cleaned_data.get('month_to')
+        if not anio or not mes_desde or not mes_hasta:
+            raise ValidationError('Elegí el año, el mes desde y el mes hasta del período.')
+
+        start = date(int(anio), int(mes_desde), 1)
+        end = date(int(anio), int(mes_hasta), calendar.monthrange(int(anio), int(mes_hasta))[1])
         if start > end:
             raise ValidationError('El mes de inicio no puede ser posterior al mes de fin.')
-        self.cleaned_data['period_start'] = start
-        self.cleaned_data['period_end'] = end
-        return self.cleaned_data
+
+        cleaned_data['period_start'] = start
+        cleaned_data['period_end'] = end
+        return cleaned_data

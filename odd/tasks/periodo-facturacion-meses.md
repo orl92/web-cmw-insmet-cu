@@ -78,6 +78,42 @@ se imprime'`. Consecuencias:
       manual" y el card "Añadir servicios" no tienen separación con el card de
       arriba: alinearlos con el resto (`mt-3`), como el card de imputación.
 
+## Ronda 2 (feedback del usuario sobre la pantalla)
+
+La pantalla quedó con defectos que la suite no ve porque son de interacción/HTML.
+El `<div>` de cierre del card de período faltaba, así que `#dynamic-fields`
+(contenido de lote y de facturación manual) quedaba *dentro* del card de período.
+Esa única etiqueta sin cerrar explica casi todos los síntomas.
+
+- [x] **T14 — Selector de período de un solo año.** En `InvoiceForm` reemplazar
+      `year_from`/`year_to` por un único `year`; `month_from`/`month_to` quedan
+      dentro de ese año (se elimina el rango "febrero 2026 → febrero 2025").
+      `anios_del_periodo` pasa a devolver años. `clean()`: el período es
+      obligatorio **sólo** cuando no hay suscripciones elegidas (facturación
+      manual); en lote no se pide ni se valida. `year` arranca en el año actual.
+- [x] **T15 — Card de período oculto en lote + "Aceptar" funcional.** Cerrar el
+      `</div>` faltante para que `#dynamic-fields` sea hermano del card;
+      `ocultarPeriodo` oculta la **columna entera** del card (`closest('.col-12')`)
+      y no sólo la fila de selects; se muestra en facturación manual y se oculta
+      mientras el lote está visible; guarda en el submit con aviso si no hay
+      suscripción marcada ni modo manual, para que Aceptar nunca sea un no-op
+      silencioso.
+- [x] **T16 — Alineación y espaciado.** Quitar el `mb-3` del include de fecha en
+      la fila de ítems (parámetro opcional `compact`) para que el botón "eliminar
+      servicio" quede alineado con los inputs (hoy el margen del include estira la
+      fila 16 px y el botón baja); revisar que el card "Añadir servicios" y el
+      header de lote queden separados del card de período.
+- [x] **T17 — Podar tests muertos.** Borrar los tests que sólo verifican la
+      ausencia de cosas ya removidas o introspeccionan firmas privadas
+      (`test_el_formulario_de_factura_no_tiene_fechas`,
+      `test_la_pantalla_no_tiene_el_rango_de_fechas`,
+      `test_el_conteo_de_dias_desaparece`, los dos
+      `test_process_*_no_declara_fechas` y
+      `test_un_post_con_las_fechas_viejas_se_ignora`). Conservar el resto.
+- [ ] **T18 — Estados en vivo en listados (backlog).** En el listado de
+      suscripciones (botón "Aprobar pago" / estado del PDF) y en el de
+      facturación, refrescar el estado sin recargar la página ni la tabla.
+
 ## Criterios de aceptación
 
 - El operador elige mes y año; no escribe texto. Un mes → texto de un mes; varios
@@ -123,6 +159,24 @@ Correcciones de la sesión:
 - Limpieza ruff (F401/W292) y reformateo ruff/djlint.
 
 Commit de la unidad de trabajo: `70c2203`.
+
+Ronda 2 (T14–T17) implementada sobre la misma rama. Verificación observada
+(2026-10-11):
+
+- `.venv/bin/python manage.py test apps.commercial` → `Ran 465 tests ... OK`
+  (471 base − 6 tests muertos podados)
+- `.venv/bin/python manage.py test apps.home` → `Ran 259 tests ... OK`
+- `.venv/bin/python manage.py check` → sin issues
+- `.venv/bin/ruff check apps/` y `ruff format --check apps/` → limpios
+- `.venv/bin/djlint <invoice + date_field> --check` → 0 files would be updated
+- Spot check del parent: `test_invoice_line_period` + `test_invoice_period_label`
+  → `Ran 49 tests ... OK`; `#dynamic-fields` quedó hermano del card de período
+  (L90-92 cierran `card-body`, `card` y el `col-12` del include).
+
+El guard de submit se engancha a `form.needs-validation`: el único listener
+`submit` que existía pertenecía al modal `#company-settings-form` (guardado AJAX)
+y el modal no lleva `needs-validation`, así que el selector es único en la página
+y no puede interferir con el modal.
 
 ---
 

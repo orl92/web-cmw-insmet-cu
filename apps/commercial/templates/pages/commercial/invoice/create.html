@@ -69,27 +69,24 @@
        En lote el período sale de cada suscripción, así que esta tarjeta se oculta
        y la vista agrupa las suscripciones que no comparten meses. -->
   <div id="period-months-group" class="row g-3">
-    <div class="col-md-3">
-      <label class="form-label required">Mes desde</label>
+    <div class="col-md-4">
+      <label class="form-label">Año</label>
+      {{ form.year }}
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Mes desde</label>
       {{ form.month_from }}
     </div>
-    <div class="col-md-3">
-      <label class="form-label required">Año desde</label>
-      {{ form.year_from }}
-    </div>
-    <div class="col-md-3">
-      <label class="form-label required">Mes hasta</label>
+    <div class="col-md-4">
+      <label class="form-label">Mes hasta</label>
       {{ form.month_to }}
-    </div>
-    <div class="col-md-3">
-      <label class="form-label required">Año hasta</label>
-      {{ form.year_to }}
     </div>
     {% if form.non_field_errors %}
       <div class="col-12">
         <div class="invalid-feedback d-block">{{ form.non_field_errors.0 }}</div>
       </div>
     {% endif %}
+  </div>
   </div>
   </div>
   </div>
@@ -129,7 +126,7 @@
                           {{ item_form.service }}
                         </div>
                         <div class="col-md-2 mb-0">
-                          {% include 'includes/dashboard/date_field.html' with field=item_form.start_date value=item_form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' %}
+                          {% include 'includes/dashboard/date_field.html' with field=item_form.start_date value=item_form.start_date.value|fmt_date mode='date' placeholder='dd/mm/aaaa' compact=True %}
                         </div>
                         <div class="col-md-2 mb-0">
                           <label class="form-label"
@@ -484,6 +481,26 @@
   const regenerarInput = document.querySelector('input[name="regenerar"]');
   const regenerarPk = regenerarInput ? regenerarInput.dataset.pk : '';
 
+  // "Aceptar" no puede quedar en un no-op silencioso: si el lote está visible y
+  // no hay ninguna suscripción marcada, el POST viaja vacío y el servidor no
+  // factura nada. En vez de eso avisamos y frenamos el envío.
+  const formulario = document.querySelector('form.needs-validation');
+  if (formulario) {
+    formulario.addEventListener('submit', function(event) {
+      const hayGrupo = groupedContainer && groupedContainer.style.display !== 'none'
+        && groupedContainer.querySelectorAll('.subscription-check').length > 0;
+      const manualVisible = manualContainer && manualContainer.style.display !== 'none';
+      if (hayGrupo && !manualVisible
+          && groupedContainer.querySelectorAll('.subscription-check:checked').length === 0) {
+        event.preventDefault();
+        window.showToast(
+          'Seleccioná al menos una suscripción pendiente o usá "Facturación manual".',
+          'warning'
+        );
+      }
+    });
+  }
+
   function preseleccionarRegeneracion() {
     if (!regenerarPk) return;
     const cb = groupedContainer.querySelector('.subscription-check[value="' + regenerarPk + '"]');
@@ -527,6 +544,7 @@
   function switchToManualInvoice() {
     groupedContainer.style.display = 'none';
     manualContainer.style.display = 'block';
+    ocultarPeriodo(false);
     // Las líneas ya nacieron con la fecha de la factura; sólo las que el operador
     // vació o las que agrega después la necesitan de vuelta.
     document.querySelectorAll('#items-container .item-row').forEach(proposeLineStartDate);
@@ -535,16 +553,20 @@
   // En lote el período no se elige: lo deduce cada suscripción de su fecha de
   // inicio, y las que no comparten meses se facturan por separado. Mostrar el
   // selector ahí haría creer que esos meses se usan, cuando la vista los descarta.
-  function ocultarPeriodo(cuantas) {
+  function ocultarPeriodo(ocultar) {
     const grupo = document.getElementById('period-months-group');
-    if (grupo) grupo.style.display = cuantas ? 'none' : '';
+    if (!grupo) return;
+    // Ocultamos la columna que abre `form_card.html`: si sólo escondiéramos la
+    // fila de selects quedaría el título "Período de Facturación" en el aire.
+    const columna = grupo.closest('.col-12') || grupo;
+    columna.style.display = ocultar ? 'none' : '';
   }
 
   function actualizarPeriodoSegunSeleccion() {
-    const marcadas = document.querySelectorAll(
-      '#subscriptions-grouped input[type="checkbox"]:checked'
-    );
-    ocultarPeriodo(marcadas.length > 0);
+    // En lote el período no se elige: sale de cada suscripción. Mientras la
+    // sección agrupada esté visible el selector no aplica, marque o no haya
+    // casillas: marcarlas no cambia a quién le corresponde el período.
+    ocultarPeriodo(groupedContainer.style.display !== 'none');
   }
 
   // Un cliente sin suscripciones pendientes factura igual a mano, así que el
