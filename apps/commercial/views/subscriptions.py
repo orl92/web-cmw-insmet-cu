@@ -29,6 +29,57 @@ from apps.core.utils import log_action
 logger = logging.getLogger(__name__)
 
 
+def queryset_de_suscripciones_con_estado(user):
+    """Suscripciones con el estado de su última factura, filtradas por rol.
+
+    Compartida por `SubscriptionListView` y `ajax_subscription_status`: el
+    endpoint no puede filtrar distinto que la vista de listado, o el polling
+    expondría filas ajenas al grupo `Clientes`.
+    """
+    qs = ServiceSubscription.objects.select_related('customer', 'service')
+    # El vínculo por línea es el que siempre existe: la factura de un lote o
+    # de varios servicios no cuelga de `Invoice.subscription`. Sin esto el
+    # cliente ve la suscripción pendiente sin ningún botón de factura.
+    latest_invoice = (
+        Invoice.objects.for_subscription(OuterRef('pk'))
+        .filter(is_cancelled=False)
+        .order_by('-issue_date')
+    )
+    qs = qs.annotate(
+        latest_invoice_uuid=Subquery(latest_invoice.values('uuid')[:1]),
+        latest_invoice_number=Subquery(latest_invoice.values('number')[:1]),
+        # `latest_invoice_pdf_ready` replica `Invoice.pdf_ready` en SQL, y
+        # hace falta: la propiedad no se puede usar en el template sin una
+        # consulta por fila, y anotar sólo el UUID no alcanza porque una
+        # factura con `pdf_status='failed'` igual dejaba botón de descarga
+        # apuntando a un archivo que no existe.
+        # La condición (`ready` Y pdf no vacío) es la misma de `pdf_ready`;
+        # `test_annotation_pdf_ready_coincide_con_la_propiedad` ata las dos
+        # versiones para que no diverjan sin que nadie lo note.
+        latest_invoice_pdf_ready=Subquery(
+            latest_invoice.annotate(
+                ready=Case(
+                    When(
+                        Q(pdf_status=Invoice.PdfStatus.READY) & Q(pdf__isnull=False) & ~Q(pdf=''),
+                        then=Value(True),
+                    ),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                )
+            ).values('ready')[:1]
+        ),
+    )
+    if user.is_superuser or user.is_staff:
+        return qs.order_by('-start_date')
+    elif user.groups.filter(name='Clientes').exists():
+        try:
+            customer = user.commercial_customer
+            return qs.filter(customer=customer, record_active=True).order_by('-start_date')
+        except Customer.DoesNotExist:
+            return qs.none()
+    raise PermissionDenied
+
+
 class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ServiceSubscription
     template_name = 'pages/commercial/subscription/list.html'
@@ -36,51 +87,7 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     permission_required = 'commercial.view_subscription'
 
     def get_queryset(self):
-        user = self.request.user
-        qs = super().get_queryset().select_related('customer', 'service')
-        # El vínculo por línea es el que siempre existe: la factura de un lote o
-        # de varios servicios no cuelga de `Invoice.subscription`. Sin esto el
-        # cliente ve la suscripción pendiente sin ningún botón de factura.
-        latest_invoice = (
-            Invoice.objects.for_subscription(OuterRef('pk'))
-            .filter(is_cancelled=False)
-            .order_by('-issue_date')
-        )
-        qs = qs.annotate(
-            latest_invoice_uuid=Subquery(latest_invoice.values('uuid')[:1]),
-            latest_invoice_number=Subquery(latest_invoice.values('number')[:1]),
-            # `latest_invoice_pdf_ready` replica `Invoice.pdf_ready` en SQL, y
-            # hace falta: la propiedad no se puede usar en el template sin una
-            # consulta por fila, y anotar sólo el UUID no alcanza porque una
-            # factura con `pdf_status='failed'` igual dejaba botón de descarga
-            # apuntando a un archivo que no existe.
-            # La condición (`ready` Y pdf no vacío) es la misma de `pdf_ready`;
-            # `test_annotation_pdf_ready_coincide_con_la_propiedad` ata las dos
-            # versiones para que no diverjan sin que nadie lo note.
-            latest_invoice_pdf_ready=Subquery(
-                latest_invoice.annotate(
-                    ready=Case(
-                        When(
-                            Q(pdf_status=Invoice.PdfStatus.READY)
-                            & Q(pdf__isnull=False)
-                            & ~Q(pdf=''),
-                            then=Value(True),
-                        ),
-                        default=Value(False),
-                        output_field=BooleanField(),
-                    )
-                ).values('ready')[:1]
-            ),
-        )
-        if user.is_superuser or user.is_staff:
-            return qs.order_by('-start_date')
-        elif user.groups.filter(name='Clientes').exists():
-            try:
-                customer = user.commercial_customer
-                return qs.filter(customer=customer, record_active=True).order_by('-start_date')
-            except Customer.DoesNotExist:
-                return qs.none()
-        raise PermissionDenied
+        return queryset_de_suscripciones_con_estado(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -1,0 +1,9 @@
+{% if subscription.status_display == 'pagado' %}
+  <span class="badge bg-green-lt">Pagado</span>
+{% elif subscription.status_display == 'pendiente' %}
+  <span class="badge bg-orange-lt">Pendiente</span>
+{% elif subscription.status_display == 'solicitado' %}
+  <span class="badge bg-blue-lt">Solicitado</span>
+{% else %}
+  <span class="badge bg-red-lt">Cancelada</span>
+{% endif %}

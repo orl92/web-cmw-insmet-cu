@@ -110,9 +110,11 @@ Esa única etiqueta sin cerrar explica casi todos los síntomas.
       `test_el_conteo_de_dias_desaparece`, los dos
       `test_process_*_no_declara_fechas` y
       `test_un_post_con_las_fechas_viejas_se_ignora`). Conservar el resto.
-- [ ] **T18 — Estados en vivo en listados (backlog).** En el listado de
+- [ ] **T18 — Estados en vivo en listados (movido).** En el listado de
       suscripciones (botón "Aprobar pago" / estado del PDF) y en el de
       facturación, refrescar el estado sin recargar la página ni la tabla.
+      Se separó a `odd/tasks/estados-en-vivo-listados.md`: es otra feature y no
+      toca el formulario de período.
 
 ## Criterios de aceptación
 

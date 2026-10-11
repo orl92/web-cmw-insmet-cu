@@ -1315,6 +1315,26 @@ class SubscriptionListStateAndActionsTests(TestCase):
             payment_status=status,
         )
 
+    def _invoice_with_pdf(self, subscription):
+        # Factura con PDF real (`pdf_status` + archivo) y su item: es la única
+        # combinación con la que las anotaciones `latest_invoice_*` del listado
+        # resuelven `latest_invoice_pdf_ready=True`.
+        invoice = Invoice.objects.create(
+            subscription=subscription,
+            number=f'F-{subscription.uuid.hex[:8].upper()}',
+            amount=Decimal('50.00'),
+            pdf='factura/invoice/live-status.pdf',
+            pdf_status=Invoice.PdfStatus.READY,
+        )
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=subscription,
+            descripcion='Svc estado sub',
+            cantidad=Decimal('1'),
+            precio=Decimal('50.00'),
+        )
+        return invoice
+
     def _render(self):
         self.client.force_login(self.admin)
         response = self.client.get(self.url)
@@ -1375,7 +1395,10 @@ class SubscriptionListStateAndActionsTests(TestCase):
         self.assertNotIn('aria-label="Ver PDF"', html)
 
     def test_edit_precedes_destructive_action_in_the_row(self):
-        self._subscription('pending')
+        sub = self._subscription('pending')
+        # "Aprobar Pago" sólo se muestra con PDF listo (gate T3), así que la
+        # suscripción pendiente necesita su factura con PDF real e item.
+        self._invoice_with_pdf(sub)
         html = self._render()
         edit_pos = html.index('title="Editar"')
         delete_pos = html.index('title="Anular suscripción"')
