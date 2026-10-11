@@ -97,21 +97,22 @@ sólo esté disponible cuando la factura esté **emitida** (PDF listo).
 
 ## Progreso
 
-Evidencia observada en la rama `feat/invoice-form-period-redesign` (sin commitear):
+Evidencia observada en la rama `feat/invoice-form-period-redesign`. Implementado por un
+worker (`gentle-ai-worker`), verificado por `gentle-ai-verify`, corregido y commiteado por el
+parent en **`64ce37b`**.
 
 - **T1** — Creados `includes/commercial/invoice/{status_cell,actions_cell}.html`
   y `includes/commercial/subscription/{status_cell,actions_cell}.html` con el
   markup exacto de los listados; ambos listados los incluyen. Verificado con
-  `manage.py test apps.commercial` (478 tests OK, incluye los que afirman
-  aria-labels y títulos de botones) y `djlint ... --check` + `--reformat --check`
-  (0 archivos pendientes).
+  `manage.py test apps.commercial` (incluye los que afirman aria-labels y títulos
+  de botones) y `djlint ... --check` + `--reformat --check` (0 archivos pendientes).
 - **T2** — `apps/commercial/views/list_status.py` con `ajax_invoice_status` y
   `ajax_subscription_status` (JSON + fragmentos vía `render_to_string(request=)`),
   URLs `commercial:ajax_invoice_status` (`/commercial/ajax/estado/facturas/`) y
   `commercial:ajax_subscription_status` (`/commercial/ajax/estado/suscripciones/`).
-  `apps/commercial/tests/test_list_live_status.py`: 13/13 OK. Nota: un usuario
-  logueado sin permiso recibe 302 al login y no 403 — comportamiento del
-  decorador `permission_required` sin `raise_exception`, igual que
+  `apps/commercial/tests/test_list_live_status.py`. Nota: un usuario logueado sin
+  permiso recibe 302 al login y no 403 — comportamiento del decorador
+  `permission_required` sin `raise_exception`, igual que
   `ajax_pending_subscriptions`.
 - **T3** — En el partial de acciones, "Aprobar Pago" anidado en
   `{% if subscription.latest_invoice_pdf_ready %}`, "Regenerar factura" intacto
@@ -126,7 +127,42 @@ Evidencia observada en la rama `feat/invoice-form-period-redesign` (sin commitea
 - **T5** — Tests de integración del fragmento: sin PDF listo el payload trae
   `pending: true` y `actions_html` sin "Aprobar Pago"; con PDF listo lo trae y
   `pending: false`; el endpoint de suscripciones no filtra filas ajenas para el
-  grupo `Clientes`. `manage.py test apps.commercial` completa en verde.
+  grupo `Clientes`.
+
+### Verificación y correcciones posteriores
+
+`gentle-ai-verify` confirmó los 7 puntos de la revisión (gate exacto en el partial,
+sin fuga de datos entre clientes, permisos alineados con `ajax_pending_subscriptions`,
+contrato JS↔endpoint correcto, partials como única fuente de verdad) y sugirió dos
+ajustes, ambos aplicados:
+
+1. **Transitorio mal definido.** Una suscripción pendiente **sin factura** se marcaba
+   `pending: true`; el PDF nunca iba a llegar y el polling quedaba vivo para siempre.
+   Ahora `fila_pendiente` exige `latest_invoice_uuid is not None and not
+   latest_invoice_pdf_ready`. El marcador `data-live-pending` del listado se alineó con
+   la misma regla (test `SubscriptionListMarkersTests` ata ambos lados).
+2. **Parentizado del `except` revertido.** El verificador lo marcó como riesgo de
+   portabilidad, pero `ruff format` (target `py314`) normaliza a la forma sin paréntesis
+   (PEP 758, igual que `views/invoices.py:610`); con paréntesis el `ruff format --check`
+   fallaba. Se volvió a la forma canónica del repo.
+
+Dos tests propios estaban mal, no el código: uno afirmaba `latest_invoice_uuid` sobre una
+instancia cruda (es **anotación del queryset**, no campo del modelo) y otro usaba
+`assertNotIn('Aprobar Pago', html)`, que matcheaba un comentario JS del propio template;
+ambos se corrigieron a `title="Aprobar Pago"`, el marcador real del botón. Además
+`detect-secrets` marcó la contraseña literal del helper de usuarios como falso positivo: se
+resolvió con `# pragma: allowlist secret`, la convención ya usada en
+`test_invoice_cost_allocation.py`.
+
+### Resultado
+
+- `manage.py check` → 0 issues.
+- `manage.py test apps.commercial` → **488 tests, OK** (141,8 s).
+- `ruff check` / `ruff format --check` sobre los archivos tocados → limpios.
+- `djlint --check` sobre los templates tocados → 0 archivos pendientes.
+- Commiteado en `64ce37b` (14 archivos). El hunk ajeno de `test_views.py`
+  (`AjaxPendingSubscriptionsTests`, `payment_status='pending'` → `'requested'`) quedó fuera
+  del commit: pertenece a otro change en curso en el mismo worktree.
 
 Criterios de aceptación: cubiertos (sin PDF → sin "Aprobar Pago"; cliente no ve
 suscripciones ajenas; nada de redibujado DataTables; `apps.commercial` verde,
