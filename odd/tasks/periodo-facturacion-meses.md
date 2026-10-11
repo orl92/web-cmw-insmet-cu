@@ -122,7 +122,7 @@ Correcciones de la sesión:
   subscriptions)`).
 - Limpieza ruff (F401/W292) y reformateo ruff/djlint.
 
-Commit de la unidad de trabajo: **pendiente de autorización del usuario**.
+Commit de la unidad de trabajo: `70c2203`.
 
 ---
 
