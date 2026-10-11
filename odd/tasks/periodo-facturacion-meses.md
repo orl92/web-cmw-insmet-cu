@@ -178,6 +178,8 @@ El guard de submit se engancha a `form.needs-validation`: el único listener
 y el modal no lleva `needs-validation`, así que el selector es único en la página
 y no puede interferir con el modal.
 
+Commit de la unidad de trabajo (Ronda 2): `f71c865`.
+
 ---
 
 # Contrato por cliente con vigencia
