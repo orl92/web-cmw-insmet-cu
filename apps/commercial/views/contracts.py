@@ -20,11 +20,7 @@ class ContractListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = 'commercial.view_contract'
 
     def get_queryset(self):
-        # `customer__user` porque la columna Cliente muestra `display_name`,
-        # que para una persona natural lee los nombres del User.
-        return Contract.objects.select_related(
-            'subscription__customer__user', 'subscription__service'
-        ).all()
+        return Contract.objects.select_related('customer__user').all()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -54,8 +50,7 @@ class ContractCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
             obj=self.object,
             action_flag=ADDITION,
             message=(
-                f'Contrato {self.object.number} creado para '
-                f'{self.object.subscription.customer.company_name}.'
+                f'Contrato {self.object.number} creado para {self.object.customer.company_name}.'
             ),
         )
         messages.success(self.request, 'Contrato creado con éxito.', extra_tags='success')
@@ -77,9 +72,7 @@ class ContractDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView
 
     def get_object(self, queryset=None):
         return get_object_or_404(
-            Contract.objects.select_related(
-                'subscription__customer__user', 'subscription__service'
-            ),
+            Contract.objects.select_related('customer__user'),
             uuid=self.kwargs['uuid'],
         )
 

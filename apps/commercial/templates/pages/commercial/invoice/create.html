@@ -65,24 +65,31 @@
   </div>
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Período de Facturación' %}
-  <!-- Sólo el período facturado: el del contrato es de cada línea, no de la factura -->
-  <div class="row">
-    <div class="col-12 mb-3">
-      <label class="form-label" for="{{ form.period_label.id_for_label }}">{{ form.period_label.label }}</label>
-      <input type="text"
-             class="form-control"
-             id="{{ form.period_label.id_for_label }}"
-             name="{{ form.period_label.html_name }}"
-             value="{{ form.period_label.value|default:'' }}"
-             maxlength="255"
-             placeholder="Mes de mayo y junio de 2025" />
-      {% if form.period_label.help_text %}
-        <small class="form-hint">{{ form.period_label.help_text }}</small>
-      {% endif %}
-      {% if form.period_label.errors %}
-        <div class="invalid-feedback d-block">{{ form.period_label.errors.0 }}</div>
-      {% endif %}
+  <!-- Sólo el período facturado: el del contrato es de cada línea, no de la factura.
+       En lote el período sale de cada suscripción, así que esta tarjeta se oculta
+       y la vista agrupa las suscripciones que no comparten meses. -->
+  <div id="period-months-group" class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label required">Mes desde</label>
+      {{ form.month_from }}
     </div>
+    <div class="col-md-3">
+      <label class="form-label required">Año desde</label>
+      {{ form.year_from }}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label required">Mes hasta</label>
+      {{ form.month_to }}
+    </div>
+    <div class="col-md-3">
+      <label class="form-label required">Año hasta</label>
+      {{ form.year_to }}
+    </div>
+    {% if form.non_field_errors %}
+      <div class="col-12">
+        <div class="invalid-feedback d-block">{{ form.non_field_errors.0 }}</div>
+      </div>
+    {% endif %}
   </div>
   </div>
   </div>
@@ -525,6 +532,21 @@
     document.querySelectorAll('#items-container .item-row').forEach(proposeLineStartDate);
   }
 
+  // En lote el período no se elige: lo deduce cada suscripción de su fecha de
+  // inicio, y las que no comparten meses se facturan por separado. Mostrar el
+  // selector ahí haría creer que esos meses se usan, cuando la vista los descarta.
+  function ocultarPeriodo(cuantas) {
+    const grupo = document.getElementById('period-months-group');
+    if (grupo) grupo.style.display = cuantas ? 'none' : '';
+  }
+
+  function actualizarPeriodoSegunSeleccion() {
+    const marcadas = document.querySelectorAll(
+      '#subscriptions-grouped input[type="checkbox"]:checked'
+    );
+    ocultarPeriodo(marcadas.length > 0);
+  }
+
   // Un cliente sin suscripciones pendientes factura igual a mano, así que el
   // formulario tiene que quedar listo para usar sin que el operador llegue a
   // tocar el botón "Facturación manual" que en ese caso no existe.
@@ -536,9 +558,10 @@
   }
 
   // ========== Carga de suscripciones ==========
-  // Sin vencimiento, las suscripciones pendientes no forman grupos por período:
-  // el período facturado es único y lo fija el operador en el formulario de
-  // arriba. Se listan planas y las marcadas se facturan todas juntas.
+  // Sin vencimiento, las suscripciones pendientes no forman grupos por período
+  // contractual. Se listan planas y cada una lleva su propio período deducido de
+  // su fecha de inicio: el servidor agrupa las que comparten meses y factura por
+  // separado las que no.
   function loadPendingSubscriptions(customerId) {
     if (!customerId) {
       groupedContainer.style.display = 'none';
@@ -613,6 +636,7 @@
         }
 
         preseleccionarRegeneracion();
+        actualizarPeriodoSegunSeleccion();
       })
       .catch(function(error) {
         console.error('Error al cargar suscripciones:', error);
@@ -708,6 +732,7 @@
   groupedContainer.addEventListener('change', function(event) {
     if (event.target && event.target.classList.contains('subscription-check')) {
       prefijarImputacion();
+      actualizarPeriodoSegunSeleccion();
     }
   });
 

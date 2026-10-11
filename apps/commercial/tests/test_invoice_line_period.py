@@ -5,8 +5,10 @@ Facturación" dos datos que no son el mismo dato:
 
 - el **período del contrato** (`ServiceSubscription.start_date` + `quantity`),
   que es un hecho persistente entre el proveedor y el cliente, y
-- el **período facturado** (`Invoice.period_label`), que es texto libre escrito
-  por el operador e impreso en la factura.
+- el **período facturado** (`Invoice.period_start` + `Invoice.period_end`, el
+  rango que el PDF convierte en frase), que elige el operador y que la vista
+  agrupa en facturas separadas cuando las suscripciones de un lote no comparten
+  meses.
 
 Compartiendo tarjeta, el formulario no cerraba nunca. El caso real lo muestra:
 agrometeo de mayo a julio y pronóstico desde el 10 de junio obligan a mentirle a
@@ -116,6 +118,14 @@ class _FacturacionBase(TestCase):
             'items-MIN_NUM_FORMS': '0',
             'items-MAX_NUM_FORMS': '1000',
         }
+        # Un período de doce meses que cubre todas las líneas del archivo: acá lo
+        # que se prueba es el período *del contrato*, línea por línea, y no la regla
+        # "toda línea cae dentro del período facturado", que vive en
+        # `test_invoice_period_label.LineaFueraDelPeriodoTests`.
+        datos.setdefault('month_from', '1')
+        datos.setdefault('year_from', '2026')
+        datos.setdefault('month_to', '12')
+        datos.setdefault('year_to', '2026')
         for linea in lineas:
             datos.update(linea)
         datos.update(self._imputacion())
@@ -127,7 +137,7 @@ class _FacturacionBase(TestCase):
 
 
 class DosPeriodosEnLugaresDistintosTests(_FacturacionBase):
-    """La tarjeta del período facturado queda con el texto y nada más."""
+    """La tarjeta del período facturado elige meses y nada más."""
 
     def test_el_formulario_de_factura_no_tiene_fechas(self):
         """`start_date` y `end_date` no son de la factura: son de la línea."""
@@ -136,9 +146,16 @@ class DosPeriodosEnLugaresDistintosTests(_FacturacionBase):
         self.assertNotIn('start_date', campos)
         self.assertNotIn('end_date', campos)
 
-    def test_el_periodo_impreso_sigue_en_el_formulario(self):
-        """Lo que sí es de la factura se queda: el texto que va al PDF."""
-        self.assertIn('period_label', InvoiceForm().fields)
+    def test_el_periodo_impreso_se_elige_por_meses(self):
+        """Lo que sí es de la factura se queda: qué meses se facturan."""
+        campos = InvoiceForm().fields
+
+        self.assertEqual(
+            [nombre for nombre in campos if nombre.startswith(('month_', 'year_'))],
+            ['month_from', 'year_from', 'month_to', 'year_to'],
+        )
+        self.assertNotIn('period_label', campos)
+        self.assertNotIn('period_months', campos)
 
     def test_la_pantalla_no_tiene_el_rango_de_fechas(self):
         html = self.client.get(self.url_crear).content.decode()
@@ -153,10 +170,11 @@ class DosPeriodosEnLugaresDistintosTests(_FacturacionBase):
         self.assertNotIn('days-count', html)
         self.assertNotIn('Días del período', html)
 
-    def test_el_periodo_impreso_se_ve_en_la_tarjeta(self):
+    def test_el_selector_de_meses_se_ve_en_la_tarjeta(self):
         html = self.client.get(self.url_crear).content.decode()
 
-        self.assertIn('name="period_label"', html)
+        for nombre in ('month_from', 'year_from', 'month_to', 'year_to'):
+            self.assertIn(f'name="{nombre}"', html)
 
 
 class FechaDeInicioPorLineaTests(_FacturacionBase):
@@ -618,17 +636,17 @@ class ElRotuloDiceLaUnidadTests(_FacturacionBase):
 
 
 class FlashDelPeriodoTests(_FacturacionBase):
-    """El flash anuncia el período facturado, no un rango que el PDF no imprime."""
+    """El flash anuncia el período deducido, no un rango que el PDF no imprime."""
 
     def _mensajes(self, response):
         return [str(m) for m in get_messages(response.wsgi_request)]
 
-    def _lote(self, period_label):
+    def _lote(self, inicio=datetime(2025, 5, 15, 8, 0), cantidad=3, **extra):
         self.sub = ServiceSubscription.objects.create(
             customer=self.customer,
             service=self.agro,
-            start_date=timezone.make_aware(datetime(2025, 9, 1, 8, 0)),
-            quantity=3,
+            start_date=timezone.make_aware(inicio),
+            quantity=cantidad,
             payment_status='requested',
         )
         return self.client.post(
@@ -636,57 +654,99 @@ class FlashDelPeriodoTests(_FacturacionBase):
             {
                 'customer': self.customer.pk,
                 'commercial_registry': 'REG-FLASH',
-                'period_label': period_label,
+                # El período que se marca acá es el que la suscripción ignora:
+                # el del lote sale de la fecha de inicio y la cantidad.
+                'month_from': '5',
+                'year_from': '2026',
+                'month_to': '7',
+                'year_to': '2026',
                 'subscriptions': [str(self.sub.pk)],
                 **self._imputacion(),
+                **extra,
             },
         )
 
-    def test_el_flash_anuncia_el_periodo_que_escribio_el_operador(self):
-        response = self._lote('Mes de mayo y junio de 2025')
+    def test_el_flash_anuncia_el_periodo_deducido_de_la_suscripcion(self):
+        """Mayo con cantidad 3 ocupa mayo, junio y julio: eso imprime el PDF."""
+        response = self._lote()
 
         self.assertEqual(response.status_code, 302)
         self.assertTrue(
-            any('Mes de mayo y junio de 2025' in m for m in self._mensajes(response)),
+            any('De mayo a julio de 2025' in m for m in self._mensajes(response)),
             f'mensajes: {self._mensajes(response)}',
         )
 
     def test_el_flash_no_anuncia_un_rango_de_fechas(self):
         """T2 dejó de imprimir "Desde X hasta Y": el flash tampoco puede hacerlo."""
-        response = self._lote('Mes de mayo y junio de 2025')
+        response = self._lote()
+
         self.assertEqual(response.status_code, 302)
+        self.assertNotIn(' - ', ' '.join(self._mensajes(response)))
 
-        joined = ' '.join(self._mensajes(response))
-        self.assertNotIn(' - ', joined)
-
-    def test_el_periodo_escrito_queda_guardado_en_la_factura(self):
-        """Sin esto el PDF no podría imprimir lo que el operador escribió."""
-        self._lote('Mes de mayo y junio de 2025')
+    def test_el_periodo_deducido_queda_guardado_en_la_factura(self):
+        """Sin el rango en la base el PDF no podría imprimir la frase."""
+        self._lote()
 
         invoice = Invoice.objects.get(customer=self.customer)
-        self.assertEqual(invoice.period_label, 'Mes de mayo y junio de 2025')
+        self.assertEqual(invoice.period_label, 'De mayo a julio de 2025')
 
-    def test_sin_periodo_escrito_el_flash_anuncia_la_fecha_de_emision(self):
-        response = self._lote('')
-
-        invoice = Invoice.objects.get(customer=self.customer)
-        self.assertTrue(
-            any(invoice.issue_date.strftime('%d/%m/%Y') in m for m in self._mensajes(response)),
-            f'mensajes: {self._mensajes(response)}',
+    def test_los_meses_elegidos_en_lote_no_lo_ganan(self):
+        """El período del lote sale de la suscripción, no de lo que se marcó en pantalla."""
+        self.sub = ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=self.agro,
+            start_date=timezone.make_aware(datetime(2025, 5, 15, 8, 0)),
+            quantity=1,
+            payment_status='requested',
         )
 
-    def test_el_periodo_escrito_tambien_se_guarda_en_una_factura_manual(self):
-        """El PDF se arma desde `period_label`: sin esto saldría la fecha de emisión."""
+        self.client.post(
+            self.url_crear,
+            {
+                'customer': self.customer.pk,
+                'commercial_registry': 'REG-LOTE',
+                'month_from': '1',
+                'year_from': '2024',
+                'month_to': '2',
+                'year_to': '2024',
+                'subscriptions': [str(self.sub.pk)],
+                **self._imputacion(),
+            },
+        )
+
+        invoice = Invoice.objects.get(customer=self.customer)
+        self.assertEqual(invoice.period_label, 'Mes de mayo de 2025')
+
+    def test_el_periodo_elegido_tambien_se_guarda_en_una_factura_manual(self):
+        """El PDF se arma desde el rango: sin esto saldría la fecha de emisión."""
         self.client.post(
             self.url_crear,
             self._manual(
                 [self._linea(0, self.agro, 3, '2026-05-15')],
-                period_label='Mes de mayo de 2026',
+                month_from='5',
+                month_to='7',
             ),
         )
 
         invoice = Invoice.objects.get(customer=self.customer)
-        self.assertEqual(invoice.period_label, 'Mes de mayo de 2026')
+        self.assertEqual(invoice.period_label, 'De mayo a julio de 2026')
+
+    def test_una_linea_manual_fuera_del_periodo_no_crea_nada(self):
+        """La regla es del modelo, y la transacción deshace también la suscripción."""
+        antes = ServiceSubscription.objects.count()
+
+        response = self.client.post(
+            self.url_crear,
+            self._manual(
+                [self._linea(0, self.agro, 3, '2026-08-15')],
+                month_from='5',
+                month_to='5',
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Invoice.objects.count(), 0)
+        self.assertEqual(ServiceSubscription.objects.count(), antes)
 
 
 class BatchSinFechasMuertasTests(_FacturacionBase):
@@ -725,7 +785,10 @@ class BatchSinFechasMuertasTests(_FacturacionBase):
             {
                 'customer': self.customer.pk,
                 'commercial_registry': 'REG-LOTE',
-                'period_label': 'Mes de mayo y junio de 2025',
+                'month_from': '5',
+                'year_from': '2026',
+                'month_to': '7',
+                'year_to': '2026',
                 'subscriptions': [str(sub.pk)],
                 **self._imputacion(),
             },
@@ -751,6 +814,12 @@ class BatchSinFechasMuertasTests(_FacturacionBase):
             {
                 'customer': self.customer.pk,
                 'commercial_registry': 'REG-LOTE-VIEJO',
+                'month_from': '1',
+                'year_from': '2026',
+                'month_to': '12',
+                'year_to': '2026',
+                # Campos del payload anterior: el formulario los ignora y el
+                # período del lote sigue saliendo de la suscripción.
                 'period_label': 'Mayo 2026',
                 'start_date': '01/05/2026',
                 'end_date': '31/05/2026',
@@ -762,4 +831,103 @@ class BatchSinFechasMuertasTests(_FacturacionBase):
         self.assertEqual(response.status_code, 302)
         sub.refresh_from_db()
         self.assertEqual(sub.start_date, elegido)
-        self.assertEqual(Invoice.objects.get(customer=self.customer).period_label, 'Mayo 2026')
+        invoice = Invoice.objects.get(customer=self.customer)
+        self.assertEqual(invoice.period_label, 'De mayo a julio de 2025')
+
+
+class LoteAgrupadoPorPeriodoTests(_FacturacionBase):
+    """Una factura por grupo de meses, no una sola para todo el lote."""
+
+    def _sub(self, inicio, cantidad=1, service=None):
+        return ServiceSubscription.objects.create(
+            customer=self.customer,
+            service=service or self.agro,
+            start_date=timezone.make_aware(inicio),
+            quantity=cantidad,
+            payment_status='requested',
+        )
+
+    def _lote(self, subs):
+        return self.client.post(
+            self.url_crear,
+            {
+                'customer': self.customer.pk,
+                'commercial_registry': 'REG-GRUPO',
+                # El rango del formulario es válido pero irrelevante: en lote la
+                # vista lo descarta y agrupa por el período de cada suscripción.
+                'month_from': '1',
+                'year_from': '2026',
+                'month_to': '12',
+                'year_to': '2026',
+                'subscriptions': [str(sub.pk) for sub in subs],
+                **self._imputacion(),
+            },
+        )
+
+    @staticmethod
+    def _meses_de(factura):
+        """Los (año, mes) que abarca el rango de una factura."""
+        year, month = factura.period_start.year, factura.period_start.month
+        fin = (factura.period_end.year, factura.period_end.month)
+        meses = []
+        while (year, month) <= fin:
+            meses.append((year, month))
+            month += 1
+            if month == 13:
+                year, month = year + 1, 1
+        return set(meses)
+
+    def test_suscripciones_del_mismo_periodo_comparten_factura(self):
+        mayo_a = self._sub(datetime(2025, 5, 10, 8, 0), cantidad=2)
+        mayo_b = self._sub(datetime(2025, 5, 28, 8, 0), cantidad=2)
+
+        self._lote([mayo_a, mayo_b])
+
+        facturas = Invoice.objects.filter(customer=self.customer)
+        self.assertEqual(facturas.count(), 1)
+        self.assertEqual(facturas.get().period_label, 'De mayo a junio de 2025')
+        self.assertEqual(facturas.get().items.count(), 2)
+
+    def test_suscripciones_de_periodos_distintos_van_a_facturas_distintas(self):
+        mayo = self._sub(datetime(2025, 5, 10, 8, 0), cantidad=2)
+        julio = self._sub(datetime(2025, 7, 10, 8, 0), cantidad=1)
+
+        self._lote([mayo, julio])
+
+        labels = sorted(Invoice.objects.filter(customer=self.customer).values_list('pk', flat=True))
+        self.assertEqual(len(labels), 2)
+        periodos = {
+            factura.period_label for factura in Invoice.objects.filter(customer=self.customer)
+        }
+        self.assertEqual(periodos, {'De mayo a junio de 2025', 'Mes de julio de 2025'})
+
+    def test_cada_linea_cae_en_el_periodo_de_su_factura(self):
+        """La regla del modelo se cumple por grupo, no sólo en el caso de una factura."""
+        mayo = self._sub(datetime(2025, 5, 10, 8, 0), cantidad=2)
+        julio = self._sub(datetime(2025, 7, 10, 8, 0), cantidad=1)
+
+        self._lote([mayo, julio])
+
+        for factura in Invoice.objects.filter(customer=self.customer):
+            meses = self._meses_de(factura)
+            for item in factura.items.all():
+                inicio = timezone.localtime(item.subscription.start_date).date()
+                self.assertIn((inicio.year, inicio.month), meses)
+
+    def test_un_pronostico_que_cruza_el_mes_ocupa_los_dos(self):
+        """A diferencia de `agrometeo`, acá la unidad son días, no meses."""
+        pronostico = Service.objects.create(
+            user=self.admin,
+            title='Pronóstico',
+            summary='Pronóstico diario',
+            service_type=Service.COMMERCIAL,
+            service_category='pronostico',
+            code='700501072507006',
+            price=Decimal('50.00'),
+        )
+        sub = self._sub(datetime(2025, 6, 20, 8, 0), cantidad=20, service=pronostico)
+
+        self._lote([sub])
+
+        factura = Invoice.objects.get(customer=self.customer)
+        self.assertEqual(factura.period_label, 'De junio a julio de 2025')

@@ -21,8 +21,12 @@
                   <td>{{ object.number }}</td>
                 </tr>
                 <tr>
-                  <th>Fecha:</th>
-                  <td>{{ object.date }}</td>
+                  <th>Vigencia desde:</th>
+                  <td>{{ object.start_date|date:"d/m/Y" }}</td>
+                </tr>
+                <tr>
+                  <th>Vigencia hasta:</th>
+                  <td>{{ object.end_date|date:"d/m/Y" }}</td>
                 </tr>
                 <tr>
                   <th>Registro Comercial:</th>
@@ -41,19 +45,23 @@
               </table>
             </div>
             <div class="col-md-6">
-              <h4>Suscripción</h4>
+              <h4>Cliente</h4>
               <table class="table table-bordered">
                 <tr>
                   <th>Cliente:</th>
-                  <td>{{ object.subscription.customer.display_name }}</td>
+                  <td>{{ object.customer.display_name }}</td>
                 </tr>
                 <tr>
-                  <th>Servicio:</th>
-                  <td>{{ object.subscription.service.title }}</td>
+                  <th>Tipo:</th>
+                  <td>{{ object.customer.get_client_type_display }}</td>
                 </tr>
                 <tr>
-                  <th>Inicio:</th>
-                  <td>{{ object.subscription.start_date|date:"d/m/Y" }}</td>
+                  <th>Dirección:</th>
+                  <td>{{ object.customer.address }}</td>
+                </tr>
+                <tr>
+                  <th>Teléfonos:</th>
+                  <td>{{ object.customer.phone }}</td>
                 </tr>
               </table>
             </div>

@@ -1,13 +1,17 @@
+import calendar
 import contextlib
+from datetime import date
 from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory, modelformset_factory
 from django.forms.models import BaseModelFormSet
+from django.utils import timezone
 
 from apps.commercial.forms.subscription import _pluralize_period
 from apps.commercial.models import (
+    MESES,
     Customer,
     InvoiceCostAllocation,
     Service,
@@ -113,6 +117,28 @@ class InvoiceItemForm(forms.Form):
 InvoiceItemFormSet = formset_factory(InvoiceItemForm, extra=1, can_delete=True)
 
 
+def meses_del_periodo():
+    return [(str(numero), nombre.capitalize()) for numero, nombre in enumerate(MESES, start=1)]
+
+
+def anios_del_periodo(hoy):
+    """Años ofrecidos, de dos años antes de hoy hasta el año siguiente.
+
+    Hacia atrás porque el período va atrasado con frecuencia real: la
+    certificación agrometeorológica que el cliente no pudo cumplir a tiempo se
+    factura igual, y es el caso que justifica que el período pueda ser del pasado.
+    """
+    return [(str(anio), str(anio)) for anio in range(hoy.year - 2, hoy.year + 2)]
+
+
+def _fecha_del_periodo(mes, anio, ultimo):
+    """El primer o el último día del mes elegido, o `None` si falta uno de los dos."""
+    if not mes or not anio:
+        return None
+    dia = calendar.monthrange(int(anio), int(mes))[1] if ultimo else 1
+    return date(int(anio), int(mes), dia)
+
+
 class InvoiceCostAllocationForm(forms.ModelForm):
     class Meta:
         model = InvoiceCostAllocation
@@ -171,13 +197,6 @@ InvoiceCostAllocationFormSet = modelformset_factory(
 
 
 class InvoiceForm(forms.Form):
-    """Datos de la factura. Los períodos no están acá.
-
-    El período del contrato es de otra entidad y viaja por línea
-    (`InvoiceItemForm.start_date`): una fecha compartida obligaría a mentir en
-    cuanto el cliente empezó dos servicios en días distintos.
-    """
-
     customer = forms.ModelChoiceField(
         queryset=Customer.objects.filter(record_active=True),
         label='Cliente',
@@ -189,17 +208,25 @@ class InvoiceForm(forms.Form):
         label='Registro Comercial',
         widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
-    period_label = forms.CharField(
-        max_length=255,
-        required=False,
-        label='Período facturado',
-        help_text=(
-            'Texto libre, tal como se imprime en la factura. Ej.: '
-            '"Mes de mayo y junio de 2025". Si se deja vacío se usa la fecha de emisión.'
-        ),
-        widget=forms.TextInput(
-            attrs={'class': 'form-control', 'placeholder': 'Mes de mayo y junio de 2025'}
-        ),
+    month_from = forms.ChoiceField(
+        choices=(),
+        label='Mes desde',
+        required=True,
+    )
+    year_from = forms.ChoiceField(
+        choices=(),
+        label='Año desde',
+        required=True,
+    )
+    month_to = forms.ChoiceField(
+        choices=(),
+        label='Mes hasta',
+        required=True,
+    )
+    year_to = forms.ChoiceField(
+        choices=(),
+        label='Año hasta',
+        required=True,
     )
     subscriptions = forms.ModelMultipleChoiceField(
         queryset=ServiceSubscription.objects.none(),
@@ -212,6 +239,15 @@ class InvoiceForm(forms.Form):
         super().__init__(*args, **kwargs)
         company = CompanySettings.get_instance()
         self.fields['commercial_registry'].initial = company.registro_comercial
+        hoy = timezone.localdate()
+        meses = meses_del_periodo()
+        anios = anios_del_periodo(hoy)
+        for nombre in ('month_from', 'month_to'):
+            self.fields[nombre].choices = [('', '---------')] + meses
+            self.fields[nombre].widget.attrs.update({'class': 'form-select'})
+        for nombre in ('year_from', 'year_to'):
+            self.fields[nombre].choices = [('', '---------')] + anios
+            self.fields[nombre].widget.attrs.update({'class': 'form-select'})
 
         customer_id = None
         if 'customer' in self.data:
@@ -229,3 +265,19 @@ class InvoiceForm(forms.Form):
             )
         else:
             self.fields['subscriptions'].queryset = ServiceSubscription.objects.none()
+
+    def clean(self):
+        super().clean()
+        start = _fecha_del_periodo(self.data.get('month_from'), self.data.get('year_from'), False)
+        end = _fecha_del_periodo(self.data.get('month_to'), self.data.get('year_to'), True)
+        if not start:
+            self.add_error('month_from', 'Elegí mes y año desde.')
+            return self.cleaned_data
+        if not end:
+            self.add_error('month_to', 'Elegí mes y año hasta.')
+            return self.cleaned_data
+        if start > end:
+            raise ValidationError('El mes de inicio no puede ser posterior al mes de fin.')
+        self.cleaned_data['period_start'] = start
+        self.cleaned_data['period_end'] = end
+        return self.cleaned_data

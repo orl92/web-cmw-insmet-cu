@@ -668,10 +668,9 @@ class ContractModelTests(TestCase):
 
     def test_create_contract(self):
         contract = Contract.objects.create(
-            subscription=self.subscription,
+            customer=self.customer,
             number='CONT-001',
-            date=date.today(),
-            commercial_registry='REG-001',
+            start_date=date.today(),
         )
         self.assertIn('CONT-001', str(contract))
         self.assertIsNotNone(contract.uuid)
@@ -690,10 +689,9 @@ class ContractModelTests(TestCase):
 
     def test_soft_delete(self):
         contract = Contract.objects.create(
-            subscription=self.subscription,
+            customer=self.customer,
             number='CONT-002',
-            date=date.today(),
-            commercial_registry='REG-002',
+            start_date=date.today(),
         )
         contract.delete()
         contract.refresh_from_db()

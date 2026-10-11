@@ -949,7 +949,7 @@ class ContractFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('conform')
-        customer = natural_customer(
+        cls.customer = natural_customer(
             cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         service = Service.objects.create(
@@ -961,7 +961,7 @@ class ContractFormTests(TestCase):
             price=Decimal('70.00'),
         )
         cls.sub = ServiceSubscription.objects.create(
-            customer=customer,
+            customer=cls.customer,
             service=service,
             start_date=timezone.now(),
         )
@@ -969,10 +969,10 @@ class ContractFormTests(TestCase):
     def test_valid_contract_form(self):
         form = ContractForm(
             data={
-                'subscription': self.sub.pk,
+                'customer': self.customer.pk,
                 'number': 'CONT-001',
-                'date': date.today().isoformat(),
-                'commercial_registry': 'REG-001',
+                'start_date': date.today().isoformat(),
+                'validity_years': '2',
             }
         )
         self.assertTrue(form.is_valid(), form.errors)
@@ -980,10 +980,10 @@ class ContractFormTests(TestCase):
     def test_contract_saves(self):
         form = ContractForm(
             data={
-                'subscription': self.sub.pk,
+                'customer': self.customer.pk,
                 'number': 'CONT-002',
-                'date': date.today().isoformat(),
-                'commercial_registry': 'REG-002',
+                'start_date': date.today().isoformat(),
+                'validity_years': '2',
             }
         )
         self.assertTrue(form.is_valid(), form.errors)

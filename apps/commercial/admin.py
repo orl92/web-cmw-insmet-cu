@@ -40,7 +40,7 @@ class InvoiceAdmin(admin.ModelAdmin):
 
 @admin.register(Contract)
 class ContractAdmin(admin.ModelAdmin):
-    list_display = ('number', 'subscription', 'date')
+    list_display = ('number', 'customer', 'start_date', 'end_date')
 
 
 @admin.register(Certificate)

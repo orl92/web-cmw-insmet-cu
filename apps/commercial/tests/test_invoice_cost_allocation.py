@@ -27,7 +27,6 @@ Por eso `InvoiceCostAllocation` existe como dato, y el prefill se marca
 explícitamente como punto de partida.
 """
 
-from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -410,10 +409,15 @@ class InvoiceCostAllocationVistaTests(TestCase):
         self.client.force_login(self.admin)
 
     def _formulario(self, **cost):
+        hoy = timezone.localdate()
         datos = {
             'customer': self.customer.pk,
-            'start_date': date(2026, 1, 1).isoformat(),
-            'end_date': date(2026, 1, 31).isoformat(),
+            # El período del lote se deduce de cada suscripción; estos cuatro
+            # campos del formulario quedan igual de obligatorios que antes.
+            'month_from': str(hoy.month),
+            'year_from': str(hoy.year),
+            'month_to': str(hoy.month),
+            'year_to': str(hoy.year),
             'commercial_registry': 'REG-COST',
             'subscriptions': [str(self.subscription.pk)],
             'cost_allocations-TOTAL_FORMS': '1',

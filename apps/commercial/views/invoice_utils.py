@@ -96,29 +96,19 @@ def _prefill_cost_allocations_from_items(items):
 
 
 def _contrato_de_factura(invoice):
-    """El contrato de la suscripción facturada, o `None`.
-
-    `Contract.subscription` es un `OneToOneField`, así que `subscription.contract`
-    lanza `Contract.DoesNotExist` cuando la suscripción todavía no tiene
-    contrato: eso es un caso normal (la factura manual no tiene suscripción), no
-    un error, y por eso se devuelve `None` en vez de dejar subir la excepción.
-    """
-    subscription = invoice.subscription if invoice else None
-    if subscription is None:
+    """Devuelve el contrato vigente para el cliente y el período facturado."""
+    if invoice is None:
         return None
-    try:
-        return subscription.contract
-    except Contract.DoesNotExist:
+    if invoice.customer_id is None:
         return None
+    # `period_start` es `DateField` y `issue_date.date()` normaliza el
+    # `DateTimeField`, así que `fecha` ya es siempre una `date`.
+    fecha = invoice.period_start or invoice.issue_date.date()
+    return Contract.objects.vigente_para(invoice.customer, fecha)
 
 
 def _datos_proveedor(company, contract):
-    """Datos del ejecutor, con el bloque de contrato resuelto.
 
-    El registro comercial del contrato es el más específico (es el de esa
-    suscripción), así que gana; si el contrato no lo trae, se usa el de la
-    empresa. Sin contrato, los tres campos quedan vacíos en vez de romper.
-    """
     return {
         'nombre': company.nombre,
         'direccion': company.direccion,
@@ -127,26 +117,14 @@ def _datos_proveedor(company, contract):
         'cuenta_bancaria': company.cuenta_bancaria,
         'agencia_bancaria': company.agencia_bancaria,
         'telefonos': company.telefonos,
-        'registro_comercial': (
-            (contract.commercial_registry if contract else '') or company.registro_comercial
-        ),
+        'registro_comercial': company.registro_comercial,
         'no_contrato': contract.number if contract else '',
-        'fecha_contrato': contract.date.strftime('%d/%m/%Y') if contract else '',
+        'fecha_contrato': contract.start_date.strftime('%d/%m/%Y') if contract else '',
     }
 
 
 def _datos_cliente(customer):
-    """Datos del cliente, ya resueltos según su tipo.
 
-    La plantilla solo decide qué imprimir con `es_juridica`; qué valores van en
-    cada caso se calcula acá, que es donde se puede razonar sin HTML.
-
-    El nombre se resuelve por tipo y nunca queda en blanco: una jurídica
-    imprime su razón social (es lo que imprimía antes, y es lo que va en una
-    factura legal) y una persona natural su nombre, que vive en el `User`. Si
-    alguno de los dos falta, se degrada al otro y, en último caso, al nombre de
-    usuario. Es la misma prioridad que usa `Customer.__str__`.
-    """
     if customer is None:
         return {
             'es_juridica': False,
@@ -183,13 +161,6 @@ def _datos_cliente(customer):
     }
 
 
-def _periodo_facturacion(invoice):
-    """El período facturado, como lo imprimen las facturas del CMP."""
-    if invoice.period_label:
-        return invoice.period_label
-    return invoice.issue_date.strftime('%d/%m/%Y')
-
-
 def generate_invoice_pdf_standalone(invoice, customer, items):
     company = CompanySettings.get_instance()
     context = {
@@ -199,7 +170,7 @@ def generate_invoice_pdf_standalone(invoice, customer, items):
         ],
         'numero_factura': invoice.number,
         'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
-        'periodo_facturacion': _periodo_facturacion(invoice),
+        'periodo_facturacion': invoice.period_label,
         'cliente': _datos_cliente(customer),
         'proveedor': _datos_proveedor(company, _contrato_de_factura(invoice)),
         'items': [
@@ -225,12 +196,7 @@ def generate_invoice_pdf_standalone(invoice, customer, items):
 
 
 def marcar_pdf(invoice, error=None):
-    """Deja el estado del PDF alineado con lo que pasó en el render.
 
-    Vive acá y no en la tarea porque hay dos caminos que generan el PDF (la
-    tarea Huey y el comando de pruebas) y el estado tiene que quedar escrito
-    igual en los dos.
-    """
     invoice.pdf_status = Invoice.PdfStatus.FAILED if error else Invoice.PdfStatus.READY
     invoice.pdf_error = str(error) if error else None
     invoice.save(update_fields=['pdf_status', 'pdf_error'])
@@ -238,15 +204,7 @@ def marcar_pdf(invoice, error=None):
 
 
 def enviar_correo_factura(invoice, customer, request=None, base_url=None):
-    """
-    Envía el correo con la factura en PDF y registra el resultado en
-    `email_status`/`email_error`.
 
-    Retorna True si salió, False si no. **No propaga la excepción**: quien
-    llama decide si eso es un error fatal o solo un estado que hay que
-    mostrar. Tragar el error acá es lo que hacía que la tarea Huey reportara
-    éxito con el correo sin enviar.
-    """
     if not customer.user or not customer.user.email:
         invoice.email_status = Invoice.EmailStatus.FAILED
         invoice.email_error = 'El cliente no tiene correo registrado.'

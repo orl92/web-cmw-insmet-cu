@@ -3,17 +3,15 @@
 {% block columns %}
   <th>Número</th>
   <th>Cliente</th>
-  <th>Servicio</th>
-  <th>Fecha</th>
+  <th>Vigencia</th>
   <th>Registro Comercial</th>
   <th>Estado</th>
   <th class="text-end">Acciones</th>
 {% endblock %}
 {% block row %}
   <td>{{ object.number }}</td>
-  <td>{{ object.subscription.customer.display_name }}</td>
-  <td>{{ object.subscription.service.title }}</td>
-  <td>{{ object.date }}</td>
+  <td>{{ object.customer.display_name }}</td>
+  <td>{{ object.start_date|date:"d/m/Y" }} — {{ object.end_date|date:"d/m/Y" }}</td>
   <td>{{ object.commercial_registry }}</td>
   <td>
     {% if object.record_active %}

@@ -114,11 +114,14 @@ class RegenerarCasoBase(TestCase):
         self.client.force_login(self.admin)
 
     def _formulario(self):
-        # El lote factura el período que escribió el operador; las fechas del
-        # contrato no viajan: las tiene cada suscripción.
+        # El período del lote se deduce de cada suscripción: no viaja en el POST.
+        hoy = timezone.localdate()
         return {
             'customer': self.customer.pk,
-            'period_label': 'Mayo 2026',
+            'month_from': str(hoy.month),
+            'year_from': str(hoy.year),
+            'month_to': str(hoy.month),
+            'year_to': str(hoy.year),
             'commercial_registry': 'REG-RGN-01',
             'subscriptions': [str(self.sub.pk)],
             'regenerar': str(self.sub.uuid),
@@ -347,9 +350,13 @@ class RegenerarEnFacturacionManualTests(RegenerarCasoBase):
 
     def _formulario_manual(self):
         inicio, _fin = _periodo()
+        hoy = timezone.localdate()
         return {
             'customer': self.customer.pk,
-            'period_label': 'Mayo 2026',
+            'month_from': str(hoy.month),
+            'year_from': str(hoy.year),
+            'month_to': str(hoy.month),
+            'year_to': str(hoy.year),
             'commercial_registry': 'REG-RGN-02',
             'regenerar': str(self.sub.uuid),
             'items-TOTAL_FORMS': '1',

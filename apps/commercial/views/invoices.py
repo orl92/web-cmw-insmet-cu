@@ -1,7 +1,7 @@
 import contextlib
 import json
 import logging
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
@@ -11,8 +11,9 @@ from django.contrib.auth.mixins import (
     PermissionRequiredMixin,
     UserPassesTestMixin,
 )
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -26,16 +27,16 @@ from apps.commercial.forms.invoice import (
     InvoiceItemFormSet,
 )
 from apps.commercial.models import (
-    Contract,
     Customer,
     Invoice,
     InvoiceCostAllocation,
     InvoiceItem,
     Service,
     ServiceSubscription,
+    primer_dia_del_mes,
+    ultimo_dia_del_mes,
 )
 from apps.commercial.views.invoice_utils import (
-    _periodo_facturacion,
     _prefill_cost_allocations_from_items,
     enviar_correo_factura,
 )
@@ -45,6 +46,69 @@ from apps.core.utils import log_action
 from apps.core.views import ServeModelFileView
 
 logger = logging.getLogger(__name__)
+
+
+def meses_de_la_suscripcion(subscription):
+    """Los meses que ocupa la suscripción, según lo que vende el catálogo.
+
+    En lote el período no lo elige el operador: se deduce de la fecha de inicio
+    y de la cantidad que el cliente contrató. La duración no se lee igual en los
+    dos servicios que existen: `agrometeo` se vende por meses, así que la cantidad
+    es el largo del período; `pronostico` se vende por días, así que lo que
+    define el período es hasta qué día llega la cobertura.
+    """
+    inicio = subscription.start_date
+    if inicio is None:
+        raise ValidationError(
+            f'La suscripción de {subscription.service.title} no tiene fecha de inicio: '
+            'no se puede deducir el período que se va a facturar.'
+        )
+    if timezone.is_naive(inicio):
+        inicio = timezone.make_aware(inicio)
+    inicio = timezone.localtime(inicio).date()
+
+    cantidad = max(subscription.quantity or 1, 1)
+    if subscription.service.service_category == 'pronostico':
+        # Días inclusivos: un pronóstico de un día cae en un solo mes, pero uno de
+        # 31 empieza en un mes y termina en el siguiente.
+        ultimo = inicio + timedelta(days=cantidad - 1)
+        meses = []
+        year, month = inicio.year, inicio.month
+        while (year, month) <= (ultimo.year, ultimo.month):
+            meses.append((year, month))
+            month += 1
+            if month == 13:
+                year, month = year + 1, 1
+        return tuple(meses)
+
+    # `agrometeo` y cualquier otra categoría se cuentan por meses, así que el
+    # período se arma mes a mes. La aritmética va sobre (año, mes) y no sobre días:
+    # sumar 31 días a un mes de 30 días se pasa al mes siguiente.
+    year, month = inicio.year, inicio.month
+    meses = []
+    for _ in range(cantidad):
+        meses.append((year, month))
+        month += 1
+        if month == 13:
+            year, month = year + 1, 1
+    return tuple(meses)
+
+
+def periodos_desde_el_formulario(form):
+    start = form.cleaned_data.get('period_start')
+    end = form.cleaned_data.get('period_end')
+    if start and end:
+        return (start, end)
+    return None
+
+
+def rango_desde_meses(meses):
+    if not meses:
+        return None, None
+    meses = sorted(meses)
+    y0, m0 = meses[0]
+    yn, mn = meses[-1]
+    return primer_dia_del_mes(date(y0, m0, 1)), ultimo_dia_del_mes(date(yn, mn, 1))
 
 
 class InvoiceListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -208,28 +272,27 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             )
 
         if subscriptions and subscriptions.exists():
-            # El periodo facturado es único y viene del formulario: la suscripción
-            # ya no tiene fecha de expiración que propose uno propio, así que
-            # todas las seleccionadas se facturan en el mismo periodo en vez de
-            # agruparse por un dato que ya no existe.
-            nueva = self.process_batch_invoice(
+            # El período sale de cada suscripción y las que no coinciden se
+            # facturan en facturas separadas: un lote puede abarcar mayo y junio y
+            # también un pronóstico de marzo, y meterlos en una sola factura
+            # obligaría a un período que ninguno de los dos ocupa.
+            nuevas = self.process_batch_invoice(
                 customer,
-                form.cleaned_data['period_label'],
                 commercial_registry,
                 subscriptions,
                 cost_formset,
             )
-            # El aviso anuncia el período tal como lo va a imprimir el PDF
-            # (`_periodo_facturacion`), no un rango de fechas: desde T2 el PDF
-            # imprime el texto del operador y un "desde X hasta Y" acá sería una
-            # inconsistencia que la propia pantalla acaba de eliminar.
+            # El aviso nombra cada factura con su propio período, que es lo que va
+            # a imprimir el PDF: con varias facturas por lote un único período
+            # sería falso para las que no lo comparten.
+            resumen = ', '.join(f'{factura.number} ({factura.period_label})' for factura in nuevas)
             messages.success(
                 self.request,
-                f'Se generó la factura {nueva.number} del período {_periodo_facturacion(nueva)}.',
+                f'Se generaron las facturas: {resumen}.',
             )
             # Después de crear, nunca antes: la factura anterior sólo se anula
             # cuando su reemplazo ya existe.
-            self.anular_factura_previa(regenerar, subscriptions, [nueva])
+            self.anular_factura_previa(regenerar, subscriptions, nuevas)
             return redirect(self.success_url)
         else:
             # Facturación manual: crea suscripciones nuevas, así que la
@@ -321,101 +384,105 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
     def process_batch_invoice(
         self,
         customer,
-        period_label,
         commercial_registry,
         subscriptions,
         cost_formset=None,
     ):
-        """Crea la factura de un período y la devuelve.
-
-        El período del contrato es de cada suscripción y aquí no se toca.
-        """
-        invoice = Invoice.objects.create(
-            subscription=None,
-            customer=customer,
-            amount=0,
-            number=self.generate_invoice_number(),
-            period_label=period_label or '',
-        )
-        total = 0
-        items = []
+        grupos = {}
         for sub in subscriptions:
-            price = sub.service.price or 0
-            quantity = sub.quantity
-            amount = price * quantity
-            # `unidad_medida` no se pasa: lo pone el `default='U'` del modelo, que
-            # es lo que imprimen las facturas reales. `descripcion` es el título
-            # tal cual: el "por meses" de la 279 es parte del nombre en el catálogo.
-            item = InvoiceItem.objects.create(
-                invoice=invoice,
-                subscription=sub,
-                codigo=sub.service.code or '',
-                descripcion=sub.service.title,
-                cantidad=quantity,
-                precio=price,
-                importe=amount,
-            )
-            items.append(item)
-            total += amount
+            grupos.setdefault(meses_de_la_suscripcion(sub), []).append(sub)
 
-            # La suscripción conserva la fecha de inicio que eligió quien la
-            # solicitó: es un dato del contrato con el cliente, no del periodo
-            # facturado, y sobreescribirlo lo convertía en un valor derivado de
-            # la factura. Al facturar sólo cambia el estado de pago. El periodo
-            # facturado es de la factura, no de la suscripción: las
-            # suscripciones no vencen por tiempo.
-            sub.payment_status = 'pending'
-            sub.save()
-
-            contract, created = Contract.objects.get_or_create(
-                subscription=sub,
-                defaults={
-                    'number': self.generate_contract_number(),
-                    'date': timezone.localdate(),
-                    'commercial_registry': commercial_registry,
-                },
+        facturas = []
+        for meses, grupo in grupos.items():
+            facturas.append(
+                self._facturar_grupo(customer, meses, commercial_registry, grupo, cost_formset)
             )
-            if not created:
-                contract.commercial_registry = commercial_registry
-                contract.save(update_fields=['commercial_registry'])
+
+        site_url = self.request.build_absolute_uri('/')
+        for factura in facturas:
+            generate_invoice_pdf_and_email_task(str(factura.uuid), site_url)
+        return facturas
+
+    def _facturar_grupo(self, customer, meses, commercial_registry, subscriptions, cost_formset):
+        """Crea la factura de un período del lote."""
+        with transaction.atomic():
+            start, end = rango_desde_meses(meses)
+            invoice = Invoice.objects.create(
+                subscription=None,
+                customer=customer,
+                amount=0,
+                number=self.generate_invoice_number(),
+                period_start=start,
+                period_end=end,
+            )
+
+            total = 0
+            items = []
+            for sub in subscriptions:
+                price = sub.service.price or 0
+                quantity = sub.quantity
+                amount = price * quantity
+                # `unidad_medida` no se pasa: lo pone el `default='U'` del modelo, que
+                # es lo que imprimen las facturas reales. `descripcion` es el título
+                # tal cual: el "por meses" de la 279 es parte del nombre en el catálogo.
+                item = InvoiceItem.objects.create(
+                    invoice=invoice,
+                    subscription=sub,
+                    codigo=sub.service.code or '',
+                    descripcion=sub.service.title,
+                    cantidad=quantity,
+                    precio=price,
+                    importe=amount,
+                )
+                items.append(item)
+                total += amount
+
+                # La suscripción conserva la fecha de inicio que eligió quien la
+                # solicitó: es un dato del contrato con el cliente, no del periodo
+                # facturado, y sobreescribirlo lo convertía en un valor derivado de
+                # la factura. Al facturar sólo cambia el estado de pago. El periodo
+                # facturado es de la factura, no de la suscripción: las
+                # suscripciones no vencen por tiempo.
+                sub.payment_status = 'pending'
+                sub.save()
+
+                log_action(
+                    user=self.request.user,
+                    obj=sub,
+                    action_flag=CHANGE,
+                    message=(
+                        f'Suscripción facturada en lote: {sub.service.title} '
+                        f'para {sub.customer.company_name}'
+                    ),
+                )
+
+            invoice.amount = total
+            invoice.save()
+            self.anchor_invoice(invoice, subscriptions)
 
             log_action(
                 user=self.request.user,
-                obj=sub,
-                action_flag=CHANGE,
+                obj=invoice,
+                action_flag=ADDITION,
                 message=(
-                    f'Suscripción facturada en lote: {sub.service.title} '
-                    f'para {sub.customer.company_name}'
+                    f'Factura por lote {invoice.number} - Cliente: '
+                    f'{customer.company_name} - Monto: ${total:.2f}'
                 ),
+                request=self.request,
             )
 
-        invoice.amount = total
-        invoice.save()
-        self.anchor_invoice(invoice, subscriptions)
-
-        log_action(
-            user=self.request.user,
-            obj=invoice,
-            action_flag=ADDITION,
-            message=(
-                f'Factura por lote {invoice.number} - Cliente: '
-                f'{customer.company_name} - Monto: ${total:.2f}'
-            ),
-            request=self.request,
-        )
-
-        # Las asignaciones se guardan antes del task: el PDF se genera aparte,
-        # y si no estuvieran ya en la base saldría sin imputación.
-        self._save_cost_allocations(invoice, cost_formset)
-        site_url = self.request.build_absolute_uri('/')
-        generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
+            # Las asignaciones se guardan antes del task: el PDF se genera aparte,
+            # y si no estuvieran ya en la base saldría sin imputación.
+            self._save_cost_allocations(invoice, cost_formset)
         return invoice
 
     def process_manual_invoice(self, form, customer, commercial_registry, cost_formset=None):
         """Crea la factura a mano, una suscripción nueva por línea.
 
         El inicio sale de cada línea: el contrato con el cliente empieza cuando
-        él empezó a usar el servicio, y eso puede diferir entre líneas.
+        él empezó a usar el servicio, y eso puede diferir entre líneas. El período
+        sale de los meses que eligió el operador y tiene que cubrir todas las
+        líneas, así que la factura se guarda entera o no se guarda.
         """
         items_formset = InvoiceItemFormSet(self.request.POST, prefix='items')
         if not items_formset.is_valid():
@@ -424,85 +491,114 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             context['items_formset'] = items_formset
             return self.render_to_response(context)
 
-        invoice = Invoice.objects.create(
-            subscription=None,
-            customer=customer,
-            amount=0,
-            number=self.generate_invoice_number(),
-            period_label=form.cleaned_data.get('period_label') or '',
-        )
-        total = 0
-        items = []
-        created_subs = []
+        try:
+            periodo = periodos_desde_el_formulario(form)
+            invoice, total, created_subs = self._guardar_factura_manual(
+                customer, periodo, items_formset, commercial_registry
+            )
+        except ValidationError as error:
+            messages.error(self.request, ' '.join(error.messages))
+            context = self.get_context_data(form=form)
+            context['items_formset'] = items_formset
+            return self.render_to_response(context)
 
-        for item_form in items_formset:
-            if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
-                cd = item_form.cleaned_data
-                service = cd['service']
-                cantidad = cd['cantidad']
-
-                sub = ServiceSubscription.objects.create(
-                    customer=customer,
-                    service=service,
-                    start_date=timezone.make_aware(
-                        datetime.combine(cd['start_date'], datetime.min.time())
-                    ),
-                    payment_status='pending',
-                    record_active=True,
-                    quantity=cantidad,
-                )
-
-                created_subs.append(sub)
-
-                item = InvoiceItem.objects.create(
-                    invoice=invoice,
-                    subscription=sub,
-                    codigo=cd.get('codigo', service.code or ''),
-                    descripcion=service.title,
-                    cantidad=cantidad,
-                    # Sin `unidad_medida`: la deja el `default='U'` del modelo, que es
-                    # lo que dicen las facturas reales del CMP. La unidad de la fila
-                    # la nombra el rótulo de `cantidad` —"Cantidad de meses" o
-                    # "Cantidad de días"—, y `descripcion` va sin sufijo porque el
-                    # "por meses" de la 279 es parte del título del catálogo y las
-                    # facturas de pronóstico no lo llevan.
-                    precio=cd['precio'],
-                    importe=cantidad * cd['precio'],
-                )
-                items.append(item)
-                total += cantidad * cd['precio']
-
-                log_action(
-                    user=self.request.user,
-                    obj=sub,
-                    action_flag=ADDITION,
-                    message=(
-                        f'Suscripción creada manualmente: {customer.company_name} - {service.title}'
-                    ),
-                )
-
-        invoice.amount = total
-        invoice.save()
-        self.anchor_invoice(invoice, created_subs)
-
-        log_action(
-            user=self.request.user,
-            obj=invoice,
-            action_flag=ADDITION,
-            message=(
-                f'Factura manual {invoice.number} - Cliente: '
-                f'{customer.company_name} - Monto: ${total:.2f}'
-            ),
-            request=self.request,
-        )
-
-        # Las asignaciones se guardan antes del task: el PDF se genera aparte,
-        # y si no estuvieran ya en la base saldría sin imputación.
+        # Fuera de la transacción: el worker del PDF no debe renderizar contra
+        # filas sin confirmar.
         self._save_cost_allocations(invoice, cost_formset)
         site_url = self.request.build_absolute_uri('/')
         generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
-        messages.success(self.request, 'Factura manual generada (con suscripciones creadas).')
+        messages.success(
+            self.request,
+            f'Factura manual generada del período {invoice.period_label} '
+            '(con suscripciones creadas).',
+        )
         return redirect(self.success_url)
+
+    def _guardar_factura_manual(self, customer, periodo, items_formset, commercial_registry):
+        """Escribe la factura manual dentro de una transacción.
+
+        Las líneas se validan al guardarse, contra los meses facturados: si una
+        queda afuera, `transaction.atomic` deshace también la suscripción que se
+        había creado para ella, así que no queda una suscripción cobrada sin
+        factura que la respalde.
+        """
+        with transaction.atomic():
+            start, end = periodo
+            invoice = Invoice.objects.create(
+                subscription=None,
+                customer=customer,
+                amount=0,
+                number=self.generate_invoice_number(),
+                period_start=start,
+                period_end=end,
+            )
+
+            total = 0
+            items = []
+            created_subs = []
+
+            for item_form in items_formset:
+                if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE', False):
+                    cd = item_form.cleaned_data
+                    service = cd['service']
+                    cantidad = cd['cantidad']
+
+                    sub = ServiceSubscription.objects.create(
+                        customer=customer,
+                        service=service,
+                        start_date=timezone.make_aware(
+                            datetime.combine(cd['start_date'], datetime.min.time())
+                        ),
+                        payment_status='pending',
+                        record_active=True,
+                        quantity=cantidad,
+                    )
+
+                    created_subs.append(sub)
+
+                    item = InvoiceItem.objects.create(
+                        invoice=invoice,
+                        subscription=sub,
+                        codigo=cd.get('codigo', service.code or ''),
+                        descripcion=service.title,
+                        cantidad=cantidad,
+                        # Sin `unidad_medida`: la deja el `default='U'` del modelo, que es
+                        # lo que dicen las facturas reales del CMP. La unidad de la fila
+                        # la nombra el rótulo de `cantidad` —"Cantidad de meses" o
+                        # "Cantidad de días"—, y `descripcion` va sin sufijo porque el
+                        # "por meses" de la 279 es parte del título del catálogo y las
+                        # facturas de pronóstico no lo llevan.
+                        precio=cd['precio'],
+                        importe=cantidad * cd['precio'],
+                    )
+                    items.append(item)
+                    total += cantidad * cd['precio']
+
+                    log_action(
+                        user=self.request.user,
+                        obj=sub,
+                        action_flag=ADDITION,
+                        message=(
+                            f'Suscripción creada manualmente: {customer.company_name} - '
+                            f'{service.title}'
+                        ),
+                    )
+
+            invoice.amount = total
+            invoice.save()
+            self.anchor_invoice(invoice, created_subs)
+
+            log_action(
+                user=self.request.user,
+                obj=invoice,
+                action_flag=ADDITION,
+                message=(
+                    f'Factura manual {invoice.number} - Cliente: '
+                    f'{customer.company_name} - Monto: ${total:.2f}'
+                ),
+                request=self.request,
+            )
+        return invoice, total, created_subs
 
     def generate_invoice_number(self):
         year = timezone.now().year
@@ -510,17 +606,6 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         if last and last.number:
             try:
                 num = int(last.number.split('-')[-1])
-                return f'{year}-{num + 1:04d}'
-            except ValueError, IndexError:
-                pass
-        return f'{year}-0001'
-
-    def generate_contract_number(self):
-        year = timezone.now().year
-        last_contract = Contract.objects.filter(date__year=year).order_by('-date').first()
-        if last_contract and last_contract.number:
-            try:
-                num = int(last_contract.number.split('-')[-1])
                 return f'{year}-{num + 1:04d}'
             except ValueError, IndexError:
                 pass
