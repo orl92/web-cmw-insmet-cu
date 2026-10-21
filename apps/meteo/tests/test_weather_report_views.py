@@ -70,6 +70,7 @@ class WeatherReportEmailLinkTests(TestCase):
         cls.recipient_list = EmailRecipientList.objects.create(name='Lista del tiempo')
         EmailRecipient.objects.create(email='tiempo@example.com', recipient_list=cls.recipient_list)
 
+    @override_settings(SITE_URL='http://testserver/')
     def test_el_correo_enlaza_al_detalle_publico(self):
         self.client.force_login(self.admin)
         data = {

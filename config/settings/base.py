@@ -31,6 +31,32 @@ IS_PRODUCTION = 'PRODUCTION' in os.environ
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # ---------------------------------------------------------------------------
+# URL canónica del sitio
+# ---------------------------------------------------------------------------
+# Los enlaces que viajan en un correo salen de acá y NUNCA del `request`: el
+# destinatario no está en la red interna, y el host por el que el operador
+# entró (`http://10.0.0.5:8000/`) no es el público.
+#
+# CONVENCIÓN: `SITE_URL` se expone CON barra final y las rutas se concatenan
+# SIN barra inicial (`SITE_URL + reverse(...).lstrip('/')`). Así el host y la
+# ruta quedan unidos por una sola barra, nunca por dos.
+#
+# El valor por defecto es el de desarrollo. En producción la variable es
+# obligatoria y `config/settings/production.py` se niega a arrancar sin ella.
+DEFAULT_SITE_URL = 'http://localhost:8000/'
+
+
+def normalize_site_url(value, default=DEFAULT_SITE_URL):
+    """Normaliza `SITE_URL`: sin espacios y con una sola barra final."""
+    value = (value or '').strip()
+    if not value:
+        return default
+    return value.rstrip('/') + '/'
+
+
+SITE_URL = normalize_site_url(os.getenv('SITE_URL', ''))
+
+# ---------------------------------------------------------------------------
 # Cache backend
 # ---------------------------------------------------------------------------
 USE_REDIS_CACHE = os.getenv('USE_REDIS_CACHE', 'False') == 'True'
@@ -414,6 +440,10 @@ silent_email_backends = (
     'django.core.mail.backends.filebased.EmailBackend',
     'django.core.mail.backends.locmem.EmailBackend',
 )
+# Backends que aceptan el mensaje y lo entregan SIN verificar el certificado del
+# servidor SMTP. No fallan y no se quejan: el correo sale, pero viaja por un
+# intermediario en claro. En producción se rechazan (ver `production.py`).
+insecure_email_backends = ('config.mail_backends.InsecureDevEmailBackend',)
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST = os.getenv('EMAIL_HOST')

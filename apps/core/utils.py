@@ -132,11 +132,11 @@ def mail_send(request, alert_obj, subject, url, attachment_name=None):
     # y `current_year`; sin ellos el correo sale con `href=""`, título vacío y
     # sin año. Mismo criterio que los correos comerciales
     # (`apps/commercial/views/invoice_utils.py`).
-    base_url = (
-        request.build_absolute_uri('/')
-        if request
-        else getattr(settings, 'BASE_URL', 'http://localhost:8000/')
-    )
+    #
+    # La URL sale de `SITE_URL` y NO del `request`: el destinatario no está en la
+    # red interna, y el host por el que el operador entró no es el público. El
+    # parámetro `request` se sigue aceptando porque los llamadores lo pasan.
+    base_url = settings.SITE_URL
     context = {
         'company': company,
         'alert': alert_obj,

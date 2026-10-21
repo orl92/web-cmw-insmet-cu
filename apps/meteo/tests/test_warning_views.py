@@ -90,6 +90,7 @@ class WarningEmailLinkTests(TestCase):
             'email_recipient_list': self.recipient_list.pk,
         }
 
+    @override_settings(SITE_URL='http://testserver/')
     def test_el_correo_enlaza_al_listado_publico(self):
         response = self._post_create('meteo:alerta_temprana_create', self._warning_data())
         self.assertEqual(response.status_code, 302)

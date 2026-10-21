@@ -123,7 +123,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--base-url',
             default=None,
-            help='URL base del sitio para los links del correo. Por defecto settings.BASE_URL.',
+            help='URL base del sitio para los links del correo. Por defecto settings.SITE_URL.',
         )
 
     def handle(self, *args, **options):
@@ -161,7 +161,7 @@ class Command(BaseCommand):
             else [self._get_invoice(options['invoice_uuid'])]
         )
 
-        base_url = options['base_url'] or getattr(settings, 'BASE_URL', 'http://127.0.0.1:8000/')
+        base_url = options['base_url'] or settings.SITE_URL
 
         for invoice in invoices:
             self._preflight_customer(invoice)

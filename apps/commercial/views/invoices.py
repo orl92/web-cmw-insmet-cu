@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from uuid import UUID
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.contrib.auth.decorators import login_required, permission_required
@@ -488,7 +489,10 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 )
             )
 
-        site_url = self.request.build_absolute_uri('/')
+        # La URL del correo sale de `SITE_URL`, nunca del request: el cliente
+        # no está en la red interna, y el host por el que entró el operador
+        # no es el que el destinatario alcanza.
+        site_url = settings.SITE_URL
         for factura in facturas:
             generate_invoice_pdf_and_email_task(str(factura.uuid), site_url)
         return facturas
@@ -616,7 +620,10 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         # Fuera de la transacción: el worker del PDF no debe renderizar contra
         # filas sin confirmar.
         self._save_cost_allocations(invoice, cost_formset)
-        site_url = self.request.build_absolute_uri('/')
+        # La URL del correo sale de `SITE_URL`, nunca del request: el cliente
+        # no está en la red interna, y el host por el que entró el operador
+        # no es el que el destinatario alcanza.
+        site_url = settings.SITE_URL
         generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url)
         messages.success(
             self.request,
@@ -878,7 +885,8 @@ class RetryInvoicePdfView(LoginRequiredMixin, PermissionRequiredMixin, View):
             )
             return redirect('commercial:factura_list')
 
-        site_url = request.build_absolute_uri('/')
+        # La URL del correo sale de `SITE_URL`, nunca del request (ver arriba).
+        site_url = settings.SITE_URL
         generate_invoice_pdf_and_email_task(str(invoice.uuid), site_url, solo_paso='pdf')
         log_action(
             user=request.user,

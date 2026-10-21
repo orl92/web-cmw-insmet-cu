@@ -396,7 +396,9 @@ def enviar_correo_certificado(subscription, request=None):
         return False
 
     subject = f'Certificado de {subscription.service.title}'
-    base_url = request.build_absolute_uri('/') if request else settings.BASE_URL
+    # La URL sale de `SITE_URL` y NO del `request`: el cliente no está en la red
+    # interna, y el host por el que el operador entró no es el público.
+    base_url = settings.SITE_URL
     context = {
         'subscription': subscription,
         'index_url': base_url,

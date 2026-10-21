@@ -275,10 +275,9 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
     company = CompanySettings.get_instance()
 
     if base_url is None:
-        if request:
-            base_url = request.build_absolute_uri('/')
-        else:
-            base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000/')
+        # La URL sale de `SITE_URL` y NO del `request`: el cliente no está en la
+        # red interna, y el host por el que el operador entró no es el público.
+        base_url = settings.SITE_URL
 
     # El cliente no tiene `view_invoice` (facturación le queda en 403), así que
     # el enlace apunta a «Mis Suscripciones», cubierta por `view_subscription`
