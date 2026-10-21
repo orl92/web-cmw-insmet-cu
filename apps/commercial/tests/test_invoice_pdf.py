@@ -23,7 +23,7 @@ depender de la pila de Pango en el test; lo que se fija acá es el HTML, no la
 calidad del PDF.
 """
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -115,6 +115,24 @@ class GenerateInvoicePdfTests(TestCase):
 
         self.invoice.refresh_from_db()
         self.assertTrue(self.invoice.pdf)
+
+    def test_la_fecha_de_facturacion_imprime_el_mes_en_espanol(self):
+        """`%B` respeta el locale del proceso, no `LANGUAGE_CODE='es-mx'`.
+
+        Sin una tabla propia de meses, el PDF salía "11 de October del 2026".
+        """
+        factura = Invoice.objects.create(
+            customer=self.customer, number='PDF-MES', amount=Decimal('100.00')
+        )
+        Invoice.objects.filter(pk=factura.pk).update(
+            issue_date=timezone.make_aware(datetime(2026, 10, 11, 9, 0))
+        )
+        factura.refresh_from_db()
+
+        html = self._generar(invoice=factura)
+
+        self.assertIn('11 de octubre del 2026', html)
+        self.assertNotIn('October', html)
 
     def test_sin_motor_falla_antes_de_tocar_la_factura(self):
         """El preflight va antes del render: sin la pila de Pango el error tiene que

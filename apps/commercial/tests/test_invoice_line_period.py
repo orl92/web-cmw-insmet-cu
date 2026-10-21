@@ -1,4 +1,4 @@
-"""Dos períodos, dos lugares: el del contrato y el facturado.
+"""El período facturado sale de las líneas; el del contrato vive en la suscripción.
 
 El formulario de facturación metía en una sola tarjeta titulada "Período de
 Facturación" dos datos que no son el mismo dato:
@@ -6,7 +6,7 @@ Facturación" dos datos que no son el mismo dato:
 - el **período del contrato** (`ServiceSubscription.start_date` + `quantity`),
   que es un hecho persistente entre el proveedor y el cliente, y
 - el **período facturado** (`Invoice.period_start` + `Invoice.period_end`, el
-  rango que el PDF convierte en frase), que elige el operador y que la vista
+  rango que el PDF convierte en frase), que ya no se elige y que la vista
   agrupa en facturas separadas cuando las suscripciones de un lote no comparten
   meses.
 
@@ -16,12 +16,19 @@ una de las dos líneas si las dos tienen que compartir una sola fecha.
 
 `start_date` es un contrato: escribir una fecha que no es la real al crear la
 suscripción la deja mal para siempre, y ninguna facturación posterior la
-corrige. Por eso pasa a ser un campo de cada línea, con la fecha de la factura
+corrige. Por eso pasa a ser un campo de cada línea, con la fecha de hoy
 como valor por defecto: el caso común es no tocarlo y el raro queda expresado.
 
 La unidad de facturación no se guarda: se deriva de `service_category`, igual que
 ya lo hacía `InvoiceItemForm.clean()` y `get_quantity_period_display()`. Un
 selector de unidad duplicaría un dato que ya existe.
+
+El período facturado tampoco se declara: se deduce de las líneas, igual que en el
+lote se deduce de cada suscripción. Cada línea aporta los meses de su servicio
+—`agrometeo` cuenta meses desde el de inicio, `pronostico` cuenta días— y la
+factura cubre del mes más viejo al más nuevo. Así los dos caminos contestan lo
+mismo, y no queda forma de declarar un período que las líneas no respalden: era
+justo eso lo que hacía imposible facturar un servicio que empezó meses atrás.
 """
 
 import json
@@ -117,13 +124,10 @@ class _FacturacionBase(TestCase):
             'items-MIN_NUM_FORMS': '0',
             'items-MAX_NUM_FORMS': '1000',
         }
-        # Un período de doce meses que cubre todas las líneas del archivo: acá lo
-        # que se prueba es el período *del contrato*, línea por línea, y no la regla
-        # "toda línea cae dentro del período facturado", que vive en
-        # `test_invoice_period_label.LineaFueraDelPeriodoTests`.
-        datos.setdefault('year', '2026')
-        datos.setdefault('month_from', '1')
-        datos.setdefault('month_to', '12')
+        # El período no viaja en el POST: sale de las líneas de abajo. Lo que se
+        # prueba acá es el período *del contrato*, línea por línea, y la deducción
+        # del período facturado; la regla "toda línea cae dentro del período" dejó
+        # de poder violarse desde el formulario.
         for linea in lineas:
             datos.update(linea)
         datos.update(self._imputacion())
@@ -134,25 +138,23 @@ class _FacturacionBase(TestCase):
         return list(ServiceSubscription.objects.order_by('pk'))
 
 
-class DosPeriodosEnLugaresDistintosTests(_FacturacionBase):
-    """La tarjeta del período facturado elige meses y nada más."""
+class PeriodoDerivadoTests(_FacturacionBase):
+    """El período facturado se reporta a partir de las líneas: no se declara."""
 
-    def test_el_periodo_impreso_se_elige_por_meses(self):
-        """Lo que sí es de la factura se queda: qué meses se facturan."""
+    def test_el_formulario_no_declara_ningun_mes(self):
+        """Los tres selects se fueron: elegir el período ya no es una entrada."""
         campos = InvoiceForm().fields
 
-        self.assertEqual(
-            [nombre for nombre in campos if nombre in ('month_from', 'year', 'month_to')],
-            ['month_from', 'year', 'month_to'],
-        )
-        self.assertNotIn('period_label', campos)
-        self.assertNotIn('period_months', campos)
+        for nombre in ('month_from', 'year', 'month_to', 'period_label', 'period_months'):
+            self.assertNotIn(nombre, campos)
 
-    def test_el_selector_de_meses_se_ve_en_la_tarjeta(self):
+    def test_la_tarjeta_muestra_el_periodo_en_vez_de_pedirlo(self):
+        """En su lugar hay dónde leerlo; ningún control para escribirlo."""
         html = self.client.get(self.url_crear).content.decode()
 
+        self.assertIn('id="periodo-derivado"', html)
         for nombre in ('month_from', 'year', 'month_to'):
-            self.assertIn(f'name="{nombre}"', html)
+            self.assertNotIn(f'name="{nombre}"', html)
 
 
 class FechaDeInicioPorLineaTests(_FacturacionBase):
@@ -248,6 +250,37 @@ class FechaDeInicioPorLineaTests(_FacturacionBase):
         formset = response.context['items_formset']
         self.assertEqual(len(formset.forms), 1)
         self.assertEqual(formset.forms[0]['start_date'].value(), '2026-05-15')
+
+    def test_el_periodo_no_se_declara_por_url(self):
+        """Los meses en la query string no son una entrada del formulario.
+
+        Antes estos parámetros elegían el período y hasta movían la fecha de la
+        línea; ahora se ignoran, y la línea sigue arrancando hoy.
+        """
+        with patch('django.utils.timezone.localdate', return_value=date(2026, 5, 15)):
+            response = self.client.get(
+                self.url_crear, {'year': '2026', 'month_from': '1', 'month_to': '3'}
+            )
+
+        formset = response.context['items_formset']
+        self.assertEqual(formset.forms[0]['start_date'].value(), '2026-05-15')
+
+    def test_una_linea_de_un_mes_pasado_se_factura_ese_mes(self):
+        """El caso que el período declarado hacía imposible.
+
+        Facturar un servicio que empezó en enero: la línea trae su fecha, y la
+        factura cubre el mes de la línea y los que su cantidad alcance. Antes el
+        POST moría en "ese día está fuera del período facturado".
+        """
+        response = self.client.post(
+            self.url_crear,
+            self._manual([self._linea(0, self.agro, 3, '2026-01-05')]),
+        )
+
+        self.assertEqual(response.status_code, 302)
+        invoice = Invoice.objects.get(customer=self.customer)
+        self.assertEqual(invoice.period_start, date(2026, 1, 1))
+        self.assertEqual(invoice.period_end, date(2026, 3, 31))
 
 
 class ElCasoRealTests(_FacturacionBase):
@@ -632,11 +665,8 @@ class FlashDelPeriodoTests(_FacturacionBase):
             {
                 'customer': self.customer.pk,
                 'commercial_registry': 'REG-FLASH',
-                # El período que se marca acá es el que la suscripción ignora:
-                # el del lote sale de la fecha de inicio y la cantidad.
-                'year': '2026',
-                'month_from': '5',
-                'month_to': '7',
+                # El período del lote no viaja en el POST: sale de la fecha de
+                # inicio y la cantidad de cada suscripción.
                 'subscriptions': [str(self.sub.pk)],
                 **self._imputacion(),
                 **extra,
@@ -667,62 +697,34 @@ class FlashDelPeriodoTests(_FacturacionBase):
         invoice = Invoice.objects.get(customer=self.customer)
         self.assertEqual(invoice.period_label, 'De mayo a julio de 2025')
 
-    def test_los_meses_elegidos_en_lote_no_lo_ganan(self):
-        """El período del lote sale de la suscripción, no de lo que se marcó en pantalla."""
-        self.sub = ServiceSubscription.objects.create(
-            customer=self.customer,
-            service=self.agro,
-            start_date=timezone.make_aware(datetime(2025, 5, 15, 8, 0)),
-            quantity=1,
-            payment_status='requested',
-        )
+    def test_el_periodo_del_lote_sale_solo_de_la_suscripcion(self):
+        """Una sola cosa lo determina: el inicio y la cantidad de la suscripción."""
+        response = self._lote(cantidad=1)
 
-        self.client.post(
-            self.url_crear,
-            {
-                'customer': self.customer.pk,
-                'commercial_registry': 'REG-LOTE',
-                'year': '2024',
-                'month_from': '1',
-                'month_to': '2',
-                'subscriptions': [str(self.sub.pk)],
-                **self._imputacion(),
-            },
-        )
-
+        self.assertEqual(response.status_code, 302)
         invoice = Invoice.objects.get(customer=self.customer)
         self.assertEqual(invoice.period_label, 'Mes de mayo de 2025')
 
-    def test_el_periodo_elegido_tambien_se_guarda_en_una_factura_manual(self):
+    def test_el_periodo_de_una_factura_manual_sale_de_sus_lineas(self):
         """El PDF se arma desde el rango: sin esto saldría la fecha de emisión."""
         self.client.post(
             self.url_crear,
-            self._manual(
-                [self._linea(0, self.agro, 3, '2026-05-15')],
-                month_from='5',
-                month_to='7',
-            ),
+            self._manual([self._linea(0, self.agro, 3, '2026-05-15')]),
         )
 
         invoice = Invoice.objects.get(customer=self.customer)
         self.assertEqual(invoice.period_label, 'De mayo a julio de 2026')
 
-    def test_una_linea_manual_fuera_del_periodo_no_crea_nada(self):
-        """La regla es del modelo, y la transacción deshace también la suscripción."""
-        antes = ServiceSubscription.objects.count()
-
+    def test_una_linea_manual_de_un_mes_pasado_factura_ese_mes(self):
+        """Ya no existe "fuera del período": el período lo fija la propia línea."""
         response = self.client.post(
             self.url_crear,
-            self._manual(
-                [self._linea(0, self.agro, 3, '2026-08-15')],
-                month_from='5',
-                month_to='5',
-            ),
+            self._manual([self._linea(0, self.agro, 3, '2026-08-15')]),
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(Invoice.objects.count(), 0)
-        self.assertEqual(ServiceSubscription.objects.count(), antes)
+        self.assertEqual(response.status_code, 302)
+        invoice = Invoice.objects.get(customer=self.customer)
+        self.assertEqual(invoice.period_label, 'De agosto a octubre de 2026')
 
 
 class BatchSinFechasMuertasTests(_FacturacionBase):

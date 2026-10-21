@@ -9,10 +9,11 @@ los mismos partials que usan los listados.
 import uuid
 
 from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import Prefetch
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 
-from apps.commercial.models import Invoice
+from apps.commercial.models import Invoice, InvoiceItem
 from apps.commercial.views.subscriptions import queryset_de_suscripciones_con_estado
 
 MAX_UUIDS = 500
@@ -47,7 +48,15 @@ def ajax_invoice_status(request):
         Invoice.objects.select_related(
             'customer__user', 'subscription__customer__user', 'subscription__service'
         )
-        .prefetch_related('items')
+        .prefetch_related(
+            # El desglose de la celda Estado lee la suscripción y su servicio de
+            # cada línea: el `select_related` del prefetch evita una consulta por
+            # línea (mismo N+1 que el listado).
+            Prefetch(
+                'items',
+                queryset=InvoiceItem.objects.select_related('subscription__service'),
+            )
+        )
         .with_display_status()
         .filter(uuid__in=_uuids_consultados(request))
     )

@@ -54,6 +54,18 @@
       </button>
     </form>
   {% endif %}
+  {% with linea=invoice.linea_aprobable %}
+    {% if linea and perms.commercial.change_subscription and not invoice.is_cancelled and invoice.pdf_ready %}
+      <a href="{% url 'commercial:suscripcion_approve' linea.uuid %}"
+         class="btn btn-icon btn-outline-success btn-sm"
+         data-bs-toggle="tooltip"
+         data-bs-placement="bottom"
+         title="Aprobar Pago"
+         aria-label="Aprobar el pago de {{ linea.servicio }}">
+        <i class="icon ti ti-circle-check"></i>
+      </a>
+    {% endif %}
+  {% endwith %}
   {% if invoice.email_status != 'sent' and not invoice.is_cancelled %}
     <a href="{% url 'commercial:factura_resend_email' invoice.uuid %}"
        class="btn btn-icon btn-outline-warning btn-sm"

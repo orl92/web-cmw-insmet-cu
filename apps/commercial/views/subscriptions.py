@@ -35,6 +35,10 @@ def queryset_de_suscripciones_con_estado(user):
     Compartida por `SubscriptionListView` y `ajax_subscription_status`: el
     endpoint no puede filtrar distinto que la vista de listado, o el polling
     expondría filas ajenas al grupo `Clientes`.
+
+    Sin grupo `Clientes` también entra el titular de un Customer (los correos
+    de factura y certificado enlazan al listado), siempre acotado a sus propias
+    filas; sin Customer ni grupo es `PermissionDenied`.
     """
     qs = ServiceSubscription.objects.select_related('customer', 'service')
     # El vínculo por línea es el que siempre existe: la factura de un lote o
@@ -77,7 +81,17 @@ def queryset_de_suscripciones_con_estado(user):
             return qs.filter(customer=customer, record_active=True).order_by('-start_date')
         except Customer.DoesNotExist:
             return qs.none()
-    raise PermissionDenied
+    # Sin grupo `Clientes`: sólo el titular de un Customer puede entrar. Los
+    # correos de factura y certificado enlazan «Ver en línea» a este listado y
+    # el grupo no siempre existe con el permiso (los caminos del dashboard lo
+    # crean vacío), así que la titularidad —no el grupo— es el criterio. Sigue
+    # viendo sólo sus propias suscripciones: mismo filtro que la rama del
+    # grupo, con `record_active=True`.
+    try:
+        customer = user.commercial_customer
+    except Customer.DoesNotExist:
+        raise PermissionDenied from None
+    return qs.filter(customer=customer, record_active=True).order_by('-start_date')
 
 
 class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -85,6 +99,22 @@ class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView
     template_name = 'pages/commercial/subscription/list.html'
     context_object_name = 'objects'
     permission_required = 'commercial.view_subscription'
+
+    def has_permission(self):
+        """Staff con el permiso, o el cliente titular de un Customer.
+
+        Los correos de factura y certificado enlazan «Ver en línea» a este
+        listado, pero el cliente titular no siempre tiene
+        ``commercial.view_subscription``: el grupo ``Clientes`` sólo lo otorga
+        si el registro público lo creó primero, y los caminos del dashboard lo
+        crean vacío. El alcance no se amplía: `get_queryset` acota al titular
+        a sus propias suscripciones.
+        """
+        if super().has_permission():
+            return True
+        # `hasattr` es falso sin Customer: el OneToOne inverso lanza
+        # RelatedObjectDoesNotExist, que es subclase de AttributeError.
+        return hasattr(self.request.user, 'commercial_customer')
 
     def get_queryset(self):
         return queryset_de_suscripciones_con_estado(self.request.user)

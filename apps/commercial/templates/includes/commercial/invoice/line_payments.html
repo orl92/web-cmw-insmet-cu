@@ -1,0 +1,40 @@
+{% comment %}
+Desglose de cobro por línea de una factura que agrupa 2+ suscripciones.
+
+Sólo se incluye cuando la factura tiene más de una línea (la condición
+`invoice.items_total > 1` vive en `status_cell.html`): con una sola línea el
+desglose repetiría el servicio que ya lista la columna Servicio(s) y el link
+"Aprobar pago" va como botón de la celda Acciones. Por eso este partial repite
+el servicio: es la clave que mapea cada estado de cobro a su línea, y con 2+ no
+hay otra columna que lo haga.
+
+Sale de `invoice.line_payments` (modelo) y del resumen `items_paid`/`items_total`
+que anota `with_display_status()`. Se usa `<details>` nativo y no un modal ni un
+dropdown: la celda vive dentro del `.table-responsive` del layout, que recorta
+lo posicionado, y así el bloque crece en flujo sin JS que perder estado cuando
+el polling reemplaza la celda.
+{% endcomment %}
+<details class="mt-1">
+  <summary class="text-secondary small">{{ invoice.items_paid }}/{{ invoice.items_total }} cobradas</summary>
+  <ul class="list-unstyled small mb-0 mt-1">
+    {% for line in invoice.line_payments %}
+      <li class="d-flex align-items-center gap-2 py-1">
+        <span class="text-truncate">{{ line.servicio }}</span>
+        <span class="text-secondary ms-auto">${{ line.importe|floatformat:2 }}</span>
+        {% if line.estado == 'pagado' %}
+          <span class="badge bg-green-lt">cobrada</span>
+        {% elif line.estado == 'cancelada' %}
+          <span class="badge bg-red-lt">cancelada</span>
+        {% else %}
+          <span class="badge bg-orange-lt">por cobrar</span>
+          {% if line.aprobable and perms.commercial.change_subscription and not invoice.is_cancelled and invoice.pdf_ready %}
+            <a href="{% url 'commercial:suscripcion_approve' line.uuid %}"
+               class="btn btn-sm btn-outline-success"
+               title="Aprobar pago"
+               aria-label="Aprobar el pago de {{ line.servicio }}">Aprobar pago</a>
+          {% endif %}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</details>

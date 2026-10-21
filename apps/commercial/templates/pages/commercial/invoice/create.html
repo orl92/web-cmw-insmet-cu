@@ -64,32 +64,6 @@
   </div>
   </div>
   </div>
-  {% include 'includes/dashboard/form_card.html' with card_title='Período de Facturación' %}
-  <!-- Sólo el período facturado: el del contrato es de cada línea, no de la factura.
-       En lote el período sale de cada suscripción, así que esta tarjeta se oculta
-       y la vista agrupa las suscripciones que no comparten meses. -->
-  <div id="period-months-group" class="row g-3">
-    <div class="col-md-4">
-      <label class="form-label">Año</label>
-      {{ form.year }}
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Mes desde</label>
-      {{ form.month_from }}
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Mes hasta</label>
-      {{ form.month_to }}
-    </div>
-    {% if form.non_field_errors %}
-      <div class="col-12">
-        <div class="invalid-feedback d-block">{{ form.non_field_errors.0 }}</div>
-      </div>
-    {% endif %}
-  </div>
-  </div>
-  </div>
-  </div>
   <!-- Bloque dinámico -->
   <div id="dynamic-fields">
     <!-- Suscripciones pendientes -->
@@ -109,10 +83,12 @@
               <i class="icon ti ti-plus"></i>
             </button>
           </div>
-          <p class="text-muted">
-            La fecha de inicio de cada servicio ya viene con la fecha de la factura. Sólo
-            cambiala cuando el servicio empezó antes.
-          </p>
+          <div class="mb-3">
+            <label class="form-label" for="periodo-derivado">Período facturado</label>
+            <div class="form-control-plaintext fw-medium"
+                 id="periodo-derivado"
+                 aria-live="polite">—</div>
+          </div>
           {{ items_formset.management_form }}
           <div id="items-container">
             {% for item_form in items_formset %}
@@ -159,58 +135,79 @@
           </div>
         </div>
       </div>
-      <div class="card mt-3">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="subheader text-muted fw-medium mb-0">Imputación a centros de costo</h3>
-            <button type="button"
-                    class="btn btn-sm btn-icon btn-outline-primary add-cost-row"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="bottom"
-                    title="Añadir centro de costo">
-              <i class="icon ti ti-plus"></i>
-            </button>
-          </div>
-          <p class="text-muted">
-            El reparto entre centros de costo debe sumar 100 %. El centro se precarga desde el
-            código del servicio, pero el reparto lo confirma quien emite la factura.
-          </p>
-          {% if cost_allocations_formset.non_form_errors %}
-            <div class="alert alert-danger" role="alert">
-              {% for error in cost_allocations_formset.non_form_errors %}
-                <div>{{ error }}</div>
-              {% endfor %}
-            </div>
-          {% endif %}
-          {{ cost_allocations_formset.management_form }}
-          <div id="cost-container">
-            {% for cost_form in cost_allocations_formset %}
-              <div class="cost-row card mb-3">
-                <div class="card-body d-flex align-items-end">
-                  <div class="flex-grow-1 row g-3">
-                    <div class="col-md-6 mb-0">
-                      <label class="form-label">{{ cost_form.codigo.label }}</label>
-                      {{ cost_form.codigo }}
-                    </div>
-                    <div class="col-md-6 mb-0">
-                      <label class="form-label">{{ cost_form.porcentaje.label }}</label>
-                      {{ cost_form.porcentaje }}
-                    </div>
-                  </div>
-                  <div class="d-none">{{ cost_form.DELETE }}</div>
-                  <div class="ms-2">
-                    <button type="button"
-                            class="btn btn-sm btn-icon btn-outline-danger remove-cost-row"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="bottom"
-                            title="Eliminar centro de costo">
-                      <i class="icon ti ti-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
+    </div>
+    <div class="card mt-3" id="imputacion-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h3 class="subheader text-muted fw-medium mb-0">Imputación a centros de costo</h3>
+          <button type="button"
+                  class="btn btn-sm btn-icon btn-outline-primary add-cost-row"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  title="Añadir centro de costo">
+            <i class="icon ti ti-plus"></i>
+          </button>
+        </div>
+        <p class="text-muted mb-3">
+          Elige el centro de costo de la lista, o escribe uno que no esté: la lista
+          sugiere, no restringe. El reparto de cada fila es manual y el total
+          debe sumar 100 % entre todas las filas.
+        </p>
+        <div class="mb-3"
+             id="cost-total-indicador"
+             role="status"
+             aria-live="polite">
+          <span class="badge bg-danger" id="cost-total-badge">Suma actual: 0 % — debe ser 100 %</span>
+        </div>
+        <datalist id="centros-de-costo">
+          {% for centro in centros_de_costo %}<option value="{{ centro }}"></option>{% endfor %}
+        </datalist>
+        {% if cost_allocations_formset.non_form_errors %}
+          <div class="alert alert-danger" role="alert">
+            {% for error in cost_allocations_formset.non_form_errors %}
+              <div>{{ error }}</div>
             {% endfor %}
           </div>
+        {% endif %}
+        {{ cost_allocations_formset.management_form }}
+        <div id="cost-container">
+          {% for cost_form in cost_allocations_formset %}
+            <div class="cost-row card mb-3">
+              {% if cost_form.errors %}
+                <div class="alert alert-danger m-3 mb-0 py-2" role="alert">
+                  {% with fila=forloop.counter %}
+                    {% for campo, errores in cost_form.errors.items %}
+                      {% for mensaje in errores %}
+                        <div>Fila {{ fila }} · {{ campo }}: {{ mensaje }}</div>
+                      {% endfor %}
+                    {% endfor %}
+                  {% endwith %}
+                </div>
+              {% endif %}
+              <div class="card-body d-flex align-items-end">
+                <div class="flex-grow-1 row g-3">
+                  <div class="col-md-6 mb-0">
+                    <label class="form-label">{{ cost_form.codigo.label }}</label>
+                    {{ cost_form.codigo }}
+                  </div>
+                  <div class="col-md-6 mb-0">
+                    <label class="form-label">{{ cost_form.porcentaje.label }}</label>
+                    {{ cost_form.porcentaje }}
+                  </div>
+                </div>
+                <div class="d-none">{{ cost_form.DELETE }}</div>
+                <div class="ms-2">
+                  <button type="button"
+                          class="btn btn-sm btn-icon btn-outline-danger remove-cost-row"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="bottom"
+                          title="Eliminar centro de costo">
+                    <i class="icon ti ti-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -462,12 +459,18 @@
   // descuido: `U/M` vale siempre `U` —así en las facturas reales del CMP—, así que
   // no hay nada que proponer en esa columna y la unidad la nombra el rótulo de la
   // cantidad. Que el mismo período proponga 3 o 90 según la fila lo decide el
-  // rótulo (`period`), que el servidor ya manda resuelto.
+  // rótulo (`period`), que el servidor ya manda resuelto. La categoría viaja
+  // aparte porque el período facturado se calcula con ella, igual que en el modelo.
   servicesData.forEach(s => {
     servicesMap[s.id] = {
       code: s.code,
       price: s.price,
+      // El centro viene resuelto del servidor, con la misma regla que usa el
+      // resto del sistema: no hay una segunda implementación del prefijo que
+      // pueda separarse de la del backend.
+      centro_de_costo: s.centro_de_costo || '',
       period: s.service_category === 'agrometeo' ? 'meses' : 'días',
+      categoria: s.service_category,
     };
   });
 
@@ -522,15 +525,116 @@
 
   // ========== Helpers ==========
   //
-  // No queda ningún rango de fechas en la pantalla, así que no hay nada que
-  // medir: `cantidad` y `start_date` son de la línea y los pone el operador. Lo
-  // único que se propone es la fecha de la factura como inicio, que es el caso
-  // común (el servicio empieza a facturarse hoy) y se cambia sólo si el cliente
-  // empezó antes.
-  function fechaDeFactura() {
+  // `cantidad` y `start_date` son de la línea y los pone el operador. El período
+  // facturado se calcula con esos dos datos: no hay un rango declarado antes que
+  // los pueda dejar afuera, así que la fecha de la línea es la del servicio —hoy,
+  // o la de la suscripción que se regenera— y no la del formulario.
+  function padDia(n) {
+    return String(n).padStart(2, '0');
+  }
+
+  // `dd/mm/aaaa`, que es el formato que el form acepta (`input_formats`).
+  function fechaAObjeto(texto) {
+    const partes = (texto || '').trim().split('/');
+    if (partes.length !== 3) return null;
+    const dia = parseInt(partes[0], 10);
+    const mes = parseInt(partes[1], 10);
+    const anio = parseInt(partes[2], 10);
+    if (!dia || !mes || !anio) return null;
+    return { year: anio, month: mes, day: dia };
+  }
+
+  function fechaDeHoy() {
     const hoy = new Date();
-    const pad = n => String(n).padStart(2, '0');
-    return pad(hoy.getDate()) + '/' + pad(hoy.getMonth() + 1) + '/' + hoy.getFullYear();
+    return padDia(hoy.getDate()) + '/' + padDia(hoy.getMonth() + 1) + '/' + hoy.getFullYear();
+  }
+
+  // Avanza un mes sobre un par (año, mes): es la aritmética del servidor, que
+  // cuenta meses y no 30 días, así que ningún mes del rango se corre.
+  function mesSiguiente(par) {
+    return par[1] === 12 ? [par[0] + 1, 1] : [par[0], par[1] + 1];
+  }
+
+  // Misma regla que `meses_de_la_linea` en el modelo: `agrometeo` cuenta meses
+  // desde el de inicio, y `pronostico` cuenta días, así que su último mes es el
+  // del último día que cubre.
+  function mesesDeLaLinea(fecha, cantidad, categoria) {
+    if (!fecha || !cantidad || cantidad < 1) return [];
+    const meses = [];
+    let par = [fecha.year, fecha.month];
+    if (categoria === 'pronostico') {
+      const fin = new Date(fecha.year, fecha.month - 1, fecha.day);
+      fin.setDate(fin.getDate() + cantidad - 1);
+      const ultimo = [fin.getFullYear(), fin.getMonth() + 1];
+      while (par[0] < ultimo[0] || (par[0] === ultimo[0] && par[1] <= ultimo[1])) {
+        meses.push(par);
+        par = mesSiguiente(par);
+      }
+      return meses;
+    }
+    for (let i = 0; i < cantidad; i++) {
+      meses.push(par);
+      par = mesSiguiente(par);
+    }
+    return meses;
+  }
+
+  // Unión de los meses de todas las líneas: el período facturado es eso, ni más
+  // ancho ni más corto. Una línea sin servicio, sin fecha o sin cantidad todavía
+  // no aporta meses.
+  function rangoDeLasLineas() {
+    const meses = [];
+    document.querySelectorAll('#items-container .item-row').forEach(function(row) {
+      const select = row.querySelector('select[id$="-service"]');
+      const fechaInput = row.querySelector('input[id$="-start_date"]');
+      const cantidadInput = row.querySelector('input[id$="-cantidad"]');
+      const data = select ? servicesMap[select.value] : null;
+      const fecha = fechaAObjeto(fechaInput ? fechaInput.value : '');
+      const cantidad = cantidadInput ? parseInt(cantidadInput.value, 10) : 0;
+      if (!data || !fecha || !cantidad) return;
+      mesesDeLaLinea(fecha, cantidad, data.categoria).forEach(m => meses.push(m));
+    });
+    if (meses.length === 0) return null;
+    meses.sort((a, b) => (a[0] - b[0]) || (a[1] - b[1]));
+    return { desde: meses[0], hasta: meses[meses.length - 1] };
+  }
+
+  const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                    'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+  function nombreDelMes(par) {
+    return MESES_ES[par[1] - 1] + ' de ' + par[0];
+  }
+
+  // Muestra el período que el servidor va a guardar. Mientras falten líneas no
+  // hay período: se dice qué falta en vez de inventar un rango.
+  function actualizarPeriodoDerivado() {
+    const salida = document.getElementById('periodo-derivado');
+    if (!salida) return;
+    const rango = rangoDeLasLineas();
+    if (!rango) {
+      salida.textContent = 'Se completa con las líneas';
+      return;
+    }
+    const desde = nombreDelMes(rango.desde);
+    const hasta = nombreDelMes(rango.hasta);
+    salida.textContent = desde === hasta ? desde : 'de ' + desde + ' a ' + hasta;
+  }
+
+  // Servicio, inicio y cantidad son las tres entradas del cálculo, así que el
+  // período se mueve con cualquiera de las tres. Delegado en el contenedor: las
+  // filas se clonan y se borran, y un listener por fila se perdería con ellas.
+  const itemsContainer = document.getElementById('items-container');
+  if (itemsContainer) {
+    ['change', 'input'].forEach(function(evento) {
+      itemsContainer.addEventListener(evento, function(event) {
+        const target = event.target;
+        if (!target || !target.id) return;
+        if (/-service$|-cantidad$|-start_date$/.test(target.id)) {
+          actualizarPeriodoDerivado();
+        }
+      });
+    });
   }
 
   // Sólo el input: el picker de una fila clonada no existe (tempus-init inicializa
@@ -538,35 +642,20 @@
   // en dd/mm/aaaa, que es lo que el form acepta igual.
   function proposeLineStartDate(row) {
     const input = row.querySelector('input[id$="-start_date"]');
-    if (input) input.value = fechaDeFactura();
+    if (input) input.value = fechaDeHoy();
   }
 
   function switchToManualInvoice() {
     groupedContainer.style.display = 'none';
     manualContainer.style.display = 'block';
-    ocultarPeriodo(false);
-    // Las líneas ya nacieron con la fecha de la factura; sólo las que el operador
-    // vació o las que agrega después la necesitan de vuelta.
-    document.querySelectorAll('#items-container .item-row').forEach(proposeLineStartDate);
-  }
-
-  // En lote el período no se elige: lo deduce cada suscripción de su fecha de
-  // inicio, y las que no comparten meses se facturan por separado. Mostrar el
-  // selector ahí haría creer que esos meses se usan, cuando la vista los descarta.
-  function ocultarPeriodo(ocultar) {
-    const grupo = document.getElementById('period-months-group');
-    if (!grupo) return;
-    // Ocultamos la columna que abre `form_card.html`: si sólo escondiéramos la
-    // fila de selects quedaría el título "Período de Facturación" en el aire.
-    const columna = grupo.closest('.col-12') || grupo;
-    columna.style.display = ocultar ? 'none' : '';
-  }
-
-  function actualizarPeriodoSegunSeleccion() {
-    // En lote el período no se elige: sale de cada suscripción. Mientras la
-    // sección agrupada esté visible el selector no aplica, marque o no haya
-    // casillas: marcarlas no cambia a quién le corresponde el período.
-    ocultarPeriodo(groupedContainer.style.display !== 'none');
+    // Las fechas de las líneas ya vienen puestas (hoy, o la de la suscripción que
+    // se regenera): no se reescriben al abrir la facturación manual, porque eso
+    // pisaría la fecha del servicio con la de hoy. Sólo se muestra el período que
+    // esas líneas ya determinan.
+    actualizarPeriodoDerivado();
+    // Cambiar de modo cambia qué se está facturando, así que el reparto se vuelve
+    // a derivar: en el manual salen de los servicios ya elegidos en las líneas.
+    prefijarImputacion();
   }
 
   // Un cliente sin suscripciones pendientes factura igual a mano, así que el
@@ -590,7 +679,14 @@
       manualContainer.style.display = 'none';
       return;
     }
-    fetch(`${ajaxUrl}?customer=${customerId}`)
+    const params = new URLSearchParams({ customer: customerId });
+    // La suscripción a regenerar es `pending` y ya no entra por el filtro normal
+    // del endpoint: viaja explícita para que la lista la devuelva y la casilla
+    // exista antes de que `preseleccionarRegeneracion()` la busque.
+    if (regenerarInput && regenerarInput.value) {
+      params.set('regenerar', regenerarInput.value);
+    }
+    fetch(`${ajaxUrl}?${params.toString()}`)
       .then(response => response.text())
       .then(html => {
         const tempDiv = document.createElement('div');
@@ -603,7 +699,7 @@
 
         let htmlResult = `
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">Suscripciones Pendientes</h5>
+            <h5 class="mb-0">Solicitudes por facturar</h5>
             <button type="button" class="btn btn-outline-secondary" id="switch-to-manual-btn">
               <i class="icon me-1 ti ti-plus"></i>
               Facturación manual
@@ -632,6 +728,7 @@
                        data-quantity="${cb.dataset.quantity}"
                        data-periodo="${escapeHtml(cb.dataset.periodo || '')}"
                        data-code="${escapeHtml(cb.dataset.code || '')}"
+                       data-centro="${escapeHtml(cb.dataset.centro || '')}"
                        data-service="${escapeHtml(cb.dataset.service)}"
                        data-summary="${escapeHtml(summary)}">
                 <label class="form-check-label" for="sub_${cb.value}">
@@ -658,7 +755,10 @@
         }
 
         preseleccionarRegeneracion();
-        actualizarPeriodoSegunSeleccion();
+        // La lista del lote es el modo activo: el reparto se arma con los centros
+        // de las suscripciones marcadas (hoy sólo la preseleccionada, si vino de
+        // `?regenerar=`).
+        prefijarImputacion();
       })
       .catch(function(error) {
         console.error('Error al cargar suscripciones:', error);
@@ -670,23 +770,65 @@
   });
 
   /* ===== Imputación a centros de costo en vivo =====
-     Al elegir suscripciones, el reparto se arma con los centros de los códigos de
-     servicio elegidos. El operador confirma y ajusta: el reparto real NUNCA sale
-     de los ítems (la factura 276 tiene un único ítem repartido en tres centros).
+     En los dos caminos el reparto se arma con los centros de los servicios que se
+     están facturando: en el manual, de los servicios elegidos en cada línea; en el
+     lote, de las suscripciones marcadas. El operador confirma y ajusta: el reparto
+     real NUNCA sale de los ítems (la factura 276 tiene un único ítem repartido en
+     tres centros).
 
-     Por qué se reconstruye en cada cambio: el reparto deriva de lo que se está
-     facturando, así que si cambiás los servicios, los centros cambian. Un reparto
-     que ya ajustaste a mano se recalcula al volver a elegir; hay que volver a
-     ajustarlo después.
+     Los centros no se calculan en este archivo: viajan resueltos del servidor
+     (`data.centro_de_costo` en el manual, `cb.dataset.centro` en el lote), así que
+     la regla del prefijo existe en un solo lugar y las dos mitades no se pueden
+     separar.
 
-     Si la selección no deja ningún centro no se toca nada: se presume que lo que
-     hay en las filas es del operador y borrarlo le perdería un trabajo que puede
-     no tener sentido recuperar. */
-  function centroDeCostoDeCodigo(codigo) {
-    codigo = (codigo || '').trim();
-    if (codigo.length < 8 || !/^\d+$/.test(codigo.slice(0, 8))) return '';
-    return codigo.slice(0, 3) + '.' + codigo.slice(3, 8);
+     Dos guardas frenan la reconstrucción: si la selección no deja ningún centro,
+     no se toca nada —se presume que lo que hay en las filas es del operador y
+     borrarlo le perdería un trabajo que puede no tener sentido recuperar—; y si
+     los centros derivados ya están todos en pantalla y ninguno de los que se
+     derivaban antes quedó huérfano, tampoco se reconstruye, para no pisar el
+     reparto que el operador acaba de escribir.
+
+     Esa segunda guarda se decide contra el último conjunto DERIVADO —nunca
+     contra la pantalla—: una fila que el operador agregó a mano no está en lo
+     que se deriva, así que comparar los dos conjuntos la descartaría siempre y
+     el rebuild le perdería su porcentaje. Recordarlo aparte es lo que permite
+     distinguir una fila manual de una derivada y conservarla. */
+  function centrosDerivados() {
+    const centros = [];
+    const esManual = manualContainer && manualContainer.style.display !== 'none';
+    const fuentes = esManual
+      ? document.querySelectorAll('#items-container .item-row select[id$="-service"]')
+      : groupedContainer.querySelectorAll('.subscription-check:checked');
+    fuentes.forEach(function(origen) {
+      let centro = '';
+      if (esManual) {
+        const data = servicesMap[origen.value];
+        centro = data ? data.centro_de_costo : '';
+      } else {
+        centro = origen.dataset.centro || '';
+      }
+      if (centro && centros.indexOf(centro) === -1) centros.push(centro);
+    });
+    return centros;
   }
+
+  // Centros que ya están en el reparto que ve el operador, sin contar vacíos.
+  function centrosEnPantalla() {
+    const container = document.getElementById('cost-container');
+    if (!container) return [];
+    const centros = [];
+    container.querySelectorAll('input[id$="-codigo"]').forEach(function(input) {
+      const valor = (input.value || '').trim();
+      if (valor && centros.indexOf(valor) === -1) centros.push(valor);
+    });
+    return centros;
+  }
+
+  // Último conjunto DERIVADO —no lo que hay en pantalla—, para decidir si hay
+  // que reconstruir y para reconocer las filas que el operador agregó a mano.
+  // Arranca vacío y se actualiza en los dos caminos: sin reconstruir y tras
+  // reconstruir.
+  let ultimosDerivados = [];
 
   function repartoEnPartesIguales(centros) {
     // Todo en cents enteros y con ROUND_HALF_UP, igual que el servidor, y no con
@@ -706,22 +848,89 @@
     return filas;
   }
 
+  // Lee el porcentaje escrito como centavos enteros, sin floats: la parte entera
+  // se multiplica por 100 y los dos primeros decimales son los centavos. El input
+  // declara `step="0.01"`, así que el navegador no deja escribir una fracción de
+  // centavo. Vacío o ilegible devuelve `null`: esa fila no aporta al total, igual
+  // que un porcentaje ausente no aporta en el servidor.
+  function centavosDePorcentaje(texto) {
+    const limpio = String(texto == null ? '' : texto).trim().replace(',', '.');
+    const partes = limpio.match(/^(\d*)(?:\.(\d*))?$/);
+    if (!partes || (!partes[1] && !partes[2])) return null;
+    const decimales = (partes[2] || '').slice(0, 2).padEnd(2, '0');
+    return parseInt(partes[1] || '0', 10) * 100 + parseInt(decimales, 10);
+  }
+
+  // Suma viva de los porcentajes. La comparación es `totalCents === 10000` sobre
+  // centavos enteros, espejo de la regla del servidor: `if total != Decimal('100.00')`
+  // en apps/commercial/forms/invoice.py:169, la que hace fallar la validación de
+  // `form_valid` en apps/commercial/views/invoices.py:338. Con cero filas la suma
+  // es 0 y el indicador muestra el aviso, no un error de JS.
+  function actualizarSumaImputacion() {
+    const badge = document.getElementById('cost-total-badge');
+    if (!badge) return;
+    const container = document.getElementById('cost-container');
+    let totalCents = 0;
+    if (container) {
+      container.querySelectorAll('input[name$="-porcentaje"]').forEach(function(input) {
+        const centavos = centavosDePorcentaje(input.value);
+        if (centavos !== null) totalCents += centavos;
+      });
+    }
+    const completo = totalCents === 10000;
+    const monto = totalCents % 100 === 0
+      ? String(totalCents / 100)
+      : (totalCents / 100).toFixed(2);
+    badge.textContent = completo
+      ? 'Suma actual: ' + monto + ' %'
+      : 'Suma actual: ' + monto + ' % — debe ser 100 %';
+    badge.classList.toggle('bg-success', completo);
+    badge.classList.toggle('bg-danger', !completo);
+  }
+
   function prefijarImputacion() {
-    const marcados = groupedContainer.querySelectorAll('.subscription-check:checked');
-    const centros = [];
-    marcados.forEach(function(cb) {
-      const centro = centroDeCostoDeCodigo(cb.dataset.code);
-      if (centro && centros.indexOf(centro) === -1) centros.push(centro);
-    });
+    const derivados = centrosDerivados();
 
     const container = document.getElementById('cost-container');
     const totalForms = document.getElementById('id_cost_allocations-TOTAL_FORMS');
-    if (centros.length === 0 || !container || !totalForms) return;
+    if (derivados.length === 0 || !container || !totalForms) return;
+
+    const enPantalla = centrosEnPantalla();
+    // `faltan` son los derivados que todavía no están en pantalla; `sobran` los
+    // que se derivaban antes y ya no se derivan pero siguen en pantalla. Las dos
+    // se calculan contra `ultimosDerivados`, NUNCA contra la pantalla: una fila
+    // manual no está en el conjunto derivado, así que comparar los dos conjuntos
+    // la marcaría como sobrante y el rebuild la descartaría.
+    const faltan = derivados.filter(function(centro) {
+      return enPantalla.indexOf(centro) === -1;
+    });
+    const sobran = ultimosDerivados.filter(function(centro) {
+      return derivados.indexOf(centro) === -1 && enPantalla.indexOf(centro) !== -1;
+    });
+    // El reparto del operador manda: si los centros derivados ya están todos en
+    // pantalla y no quedó ninguno huérfano, se deja el reparto tal como está,
+    // aunque no sean las partes iguales con las que se reconstruyó.
+    if (faltan.length === 0 && sobran.length === 0) {
+      ultimosDerivados = derivados;
+      return;
+    }
 
     const template = container.querySelector('.cost-row');
     if (!template) return;
 
-    const filas = repartoEnPartesIguales(centros);
+    // Las filas del operador son las que están en pantalla y NO venían en el
+    // último conjunto derivado. Filtrarlas por el conjunto derivado ACTUAL las
+    // descartaría todas: un centro cargado a mano nunca se deriva.
+    const manuales = enPantalla.filter(function(centro) {
+      return ultimosDerivados.indexOf(centro) === -1;
+    });
+    // Los derivados primero y las filas manuales después, sin duplicar un centro
+    // que el operador haya escrito a mano y ahora también se derive.
+    const centrosFinales = derivados.concat(manuales.filter(function(centro) {
+      return derivados.indexOf(centro) === -1;
+    }));
+
+    const filas = repartoEnPartesIguales(centrosFinales);
     container.innerHTML = '';
     filas.forEach(function(fila, index) {
       const row = template.cloneNode(true);
@@ -733,7 +942,9 @@
         const name = input.name;
         if (name) {
           input.name = name.replace(/cost_allocations-\d+-/, 'cost_allocations-' + index + '-');
-          input.id = input.name;
+          // El id canónico de Django es `id_` + name: sin ese prefijo el campo no
+          // vuelve a ser el que el formulario espera al renumerar la fila.
+          if (input.id) input.id = 'id_' + input.name;
         }
       });
       row.querySelectorAll('input:not([type="hidden"])').forEach(function(input) {
@@ -747,6 +958,17 @@
       bindCostRowEvents(row);
     });
     totalForms.value = filas.length;
+    // Las filas se reconstruyen desde cero: ninguna existe todavía en la base, así
+    // que el management form no puede seguir declarando iniciales. Si el valor
+    // viejo (el `INITIAL_FORMS=1` que deja `?regenerar=`) sobrevive, Django exige
+    // el `id` de la fila 0 y el POST se rechaza sin que el operador pueda ver qué
+    // corregir: el `id` nunca se mostró.
+    const initialForms = document.getElementById('id_cost_allocations-INITIAL_FORMS');
+    if (initialForms) initialForms.value = '0';
+    ultimosDerivados = derivados;
+    // Las filas del formset se reemplazaron: el total que muestra el indicador
+    // tiene que ser el de las filas nuevas.
+    actualizarSumaImputacion();
   }
 
   // Delegado, no directo: `loadPendingSubscriptions` reemplaza el innerHTML del
@@ -754,7 +976,6 @@
   groupedContainer.addEventListener('change', function(event) {
     if (event.target && event.target.classList.contains('subscription-check')) {
       prefijarImputacion();
-      actualizarPeriodoSegunSeleccion();
     }
   });
 
@@ -787,6 +1008,13 @@
     // La cantidad no se propone: sin rango de fechas ya no hay nada que medir, y un
     // número inventado que el operador no revisa es peor que un campo vacío que
     // lo obliga a pensar cuánto se está cobrando. El campo exige `min=1`.
+    //
+    // El embudo de cada selección de servicio de una línea manual: cambio de
+    // servicio y alta de fila pasan por acá, así que acá se deriva el reparto.
+    // El render inicial de las filas que vienen del servidor NO pasa por acá: al
+    // cargar sólo corren `bindRowEvents` y `actualizarPeriodoDerivado`, y el
+    // servidor ya precargó la imputación por su lado.
+    prefijarImputacion();
   }
 
   function bindRowEvents(row) {
@@ -805,6 +1033,10 @@
           // que impide mandar el formulario.
           proposeLineStartDate(row);
           updateRowFromService(row);
+          actualizarPeriodoDerivado();
+          // Quitar el último servicio deja la selección vacía: la derivación no
+          // aporta ningún centro y sale sin tocar el reparto del operador.
+          prefijarImputacion();
           return;
         }
         row.remove();
@@ -820,11 +1052,18 @@
             }
           });
         });
+        actualizarPeriodoDerivado();
+        // Bajó una línea: los centros que quedan en pantalla pueden ser otros.
+        prefijarImputacion();
       });
     }
   }
 
   document.querySelectorAll('.item-row').forEach(row => bindRowEvents(row));
+  // Las líneas que ya vinieron cargadas —un POST que volvió con errores, o el GET
+  // de `?regenerar=`, que precarga la fila— muestran su período al abrir, sin
+  // esperar a que el operador toque un control.
+  actualizarPeriodoDerivado();
 
   document.getElementById('add-item').addEventListener('click', function() {
     const totalForms = document.getElementById('id_items-TOTAL_FORMS');
@@ -847,7 +1086,22 @@
     // La fila nueva arranca con la fecha de la factura; el servicio y la
     // cantidad los elige el operador.
     proposeLineStartDate(newRow);
+    // La fila clonada no trae picker: tempus-init sólo inicializa los
+    // [data-tempus] que existen en DOMContentLoaded. Se inicializa ACÁ, después
+    // de proposeLineStartDate, porque TD6 lee el valor del input al construir el
+    // widget y esa función es la que escribe la fecha. La guarda de tipo cubre el
+    // caso de que tempus-init.js todavía no haya corrido: el alta no debe romper.
+    if (typeof window.initPicker === 'function') {
+      newRow.querySelectorAll('[data-tempus]').forEach(function(input) {
+        window.initPicker(input);
+      });
+    }
     updateRowFromService(newRow);
+    actualizarPeriodoDerivado();
+    // El alta es una entrada propia de la derivación: la segunda llamada es
+    // inocua (si la primera ya reconstruyó, la guarda de idempotencia sale
+    // sin tocar nada) y deja el cableado explícito en cada entrada.
+    prefijarImputacion();
   });
 
   /* Imputación a centros de costo: mismo patrón que las líneas de servicio,
@@ -861,6 +1115,8 @@
       const rows = container.querySelectorAll('.cost-row');
       if (rows.length <= 1) {
         row.querySelectorAll('input:not([type="hidden"])').forEach(el => { el.value = ''; });
+        // La fila quedó en blanco: el total baja a cero y el indicador lo dice.
+        actualizarSumaImputacion();
         return;
       }
       row.remove();
@@ -875,10 +1131,27 @@
           }
         });
       });
+      // Se fue una fila: el total que muestra el indicador es otro.
+      actualizarSumaImputacion();
     });
   }
 
   document.querySelectorAll('.cost-row').forEach(row => bindCostRowEvents(row));
+
+  // El indicador se mueve con cualquier porcentaje del formset. Delegado, como en
+  // las líneas de servicio: las filas se clonan y se borran, así que un listener
+  // por fila se perdería con ellas.
+  const costContainer = document.getElementById('cost-container');
+  if (costContainer) {
+    ['input', 'change'].forEach(function(evento) {
+      costContainer.addEventListener(evento, function(event) {
+        const target = event.target;
+        if (target && target.name && /-porcentaje$/.test(target.name)) {
+          actualizarSumaImputacion();
+        }
+      });
+    });
+  }
 
   document.querySelector('.add-cost-row').addEventListener('click', function() {
     const totalForms = document.getElementById('id_cost_allocations-TOTAL_FORMS');
@@ -893,6 +1166,13 @@
     container.appendChild(newRow);
     totalForms.value = currentCount + 1;
     bindCostRowEvents(newRow);
+    // La fila nueva entra vacía: el total cambia aunque el operador no toque nada.
+    actualizarSumaImputacion();
   });
+
+  // El indicador arranca con las filas que sirvió el servidor —una factura con
+  // `?regenerar=` puede venir con el reparto ya cargado—, no recién cuando el
+  // operador toca un porcentaje.
+  actualizarSumaImputacion();
   </script>
 {% endblock %}

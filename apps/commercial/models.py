@@ -1,6 +1,6 @@
 import calendar
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -55,6 +55,56 @@ def ultimo_dia_del_mes(fecha):
 
 def mes_siguiente(fecha):
     return date(fecha.year + fecha.month // 12, fecha.month % 12 + 1, 1)
+
+
+def meses_de_la_linea(inicio, cantidad, categoria):
+    """Los meses que ocupa una línea facturada, según su inicio y su cantidad.
+
+    Es la única forma de saber el período: no se declara, se deduce de lo que se
+    está cobrando. La cantidad no se lee igual en las dos categorías que vende el
+    catálogo: `agrometeo` se cobra por meses, así que la cantidad es el largo del
+    período; `pronostico` se cobra por días, así que lo que define el período es
+    hasta qué día llega la cobertura.
+    """
+    cantidad = max(cantidad or 1, 1)
+    if categoria == 'pronostico':
+        # Días inclusivos: un pronóstico de un día cae en un solo mes, pero uno de
+        # 31 empieza en un mes y termina en el siguiente.
+        ultimo = inicio + timedelta(days=cantidad - 1)
+        meses = []
+        year, month = inicio.year, inicio.month
+        while (year, month) <= (ultimo.year, ultimo.month):
+            meses.append((year, month))
+            month += 1
+            if month == 13:
+                year, month = year + 1, 1
+        return tuple(meses)
+
+    # `agrometeo` y cualquier otra categoría se cuentan por meses, así que el
+    # período se arma mes a mes. La aritmética va sobre (año, mes) y no sobre
+    # días: sumar 31 días a un mes de 30 días se pasa al mes siguiente.
+    year, month = inicio.year, inicio.month
+    meses = []
+    for _ in range(cantidad):
+        meses.append((year, month))
+        month += 1
+        if month == 13:
+            year, month = year + 1, 1
+    return tuple(meses)
+
+
+def rango_desde_meses(meses):
+    """Primer día del primer mes y último del último; `(None, None)` si no hay.
+
+    Acepta cualquier iterable de `(año, mes)`: el período de una factura es la
+    unión de los meses de sus líneas, así que lo normal es que llegue un `set`.
+    """
+    if not meses:
+        return None, None
+    meses = sorted(meses)
+    y0, m0 = meses[0]
+    yn, mn = meses[-1]
+    return primer_dia_del_mes(date(y0, m0, 1)), ultimo_dia_del_mes(date(yn, mn, 1))
 
 
 class Customer(SoftDeleteModel):
@@ -493,6 +543,72 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
             states = list(subs)
             total, paid = len(states), states.count('paid')
         return 'pagada' if total and paid == total else 'pendiente'
+
+    @property
+    def line_payments(self):
+        """Líneas con suscripción y su estado de cobro, para el desglose del listado.
+
+        Vive en el modelo, no en la plantilla ni en la vista, por la misma razón
+        que `status_display`: el estado de una línea se deriva de su suscripción
+        (`payment_status` y la baja lógica `record_active`), y resolverlo en la
+        plantilla o en la vista es abrir una segunda fuente de verdad que puede
+        divergir de la real.
+
+        No dispara consultas propias: itera `self.items` tal como lo dejó el
+        `Prefetch('items', select_related('subscription__service'))` de las dos
+        querysets que renderizan la celda (listado y endpoint). Leer
+        `subscription.payment_status`/`record_active` y `service.title` sale de
+        ese prefetch; sin él, cada línea pagaría sus propias consultas.
+        """
+        lines = []
+        for item in self.items.all():
+            subscription = item.subscription
+            if subscription is None:
+                continue
+            if not subscription.record_active:
+                estado = 'cancelada'
+            elif subscription.payment_status == 'paid':
+                estado = 'pagado'
+            else:
+                estado = 'pendiente'
+            lines.append(
+                {
+                    'uuid': str(subscription.uuid),
+                    'descripcion': item.descripcion,
+                    'servicio': subscription.service.title,
+                    'importe': item.importe,
+                    'estado': estado,
+                    # Aprobable = activa y `pending`, el único estado que acepta
+                    # `ApproveSubscriptionView` (`views/subscriptions.py:190-193`).
+                    # Sin `record_active` una suscripción dada de baja con el pago
+                    # todavía en `pending` ofrecería el link, que el listado de
+                    # suscripciones nunca ofrece; sin el filtro de `pending` una
+                    # `requested` daría un enlace muerto (la vista la rechaza).
+                    'aprobable': (
+                        subscription.record_active and subscription.payment_status == 'pending'
+                    ),
+                }
+            )
+        return lines
+
+    @property
+    def linea_aprobable(self):
+        """La única línea por cobrar de la factura, o `None` si hay 0 o 2+.
+
+        Un botón de fila sólo es inequívoco cuando la factura tiene una sola
+        suscripción: con dos o más pendientes no hay acción de fila que las
+        abarque y el desglose por línea (`line_payments.html`) es el que lleva
+        cada link. Por eso devuelve `None` si hay más de una línea, aunque una
+        sola esté pendiente: ahí manda el desglose.
+
+        Reusa `line_payments` para no abrir una segunda fuente de verdad del
+        estado de cobro; no dispara consultas propias (las líneas vienen del
+        `Prefetch('items', ...)` del listado y del endpoint).
+        """
+        lineas = self.line_payments
+        if len(lineas) != 1:
+            return None
+        return lineas[0] if lineas[0]['aprobable'] else None
 
     def __str__(self):
         if self.subscription:

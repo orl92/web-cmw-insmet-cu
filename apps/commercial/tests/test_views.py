@@ -724,6 +724,120 @@ class SubscriptionListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class SubscriptionListOwnerAccessTests(TestCase):
+    """El titular de un Customer entra a "Mis Suscripciones" sin el permiso.
+
+    Los correos de factura y certificado enlazan «Ver en línea» a
+    ``commercial:suscripcion_list``, pero el cliente titular no siempre tiene
+    ``commercial.view_subscription``: el grupo ``Clientes`` sólo lo otorga si
+    el registro público lo creó primero, mientras que los caminos del dashboard
+    crean el grupo vacío. El titular debe entrar y ver sólo sus suscripciones.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.staff = _make_user('staffownerlist', is_staff=True)
+        cls.owner = _make_user('ownerlist')
+        cls.other = _make_user('otherlist')
+        cls.customer = natural_customer(cls.owner)
+        cls.other_customer = natural_customer(cls.other)
+        cls.service = Service.objects.create(
+            user=cls.staff,
+            title='Svc Titular Listado',
+            summary='S',
+            service_type='commercial',
+            code='OWN001',
+            price=Decimal('30.00'),
+        )
+        cls.other_service = Service.objects.create(
+            user=cls.staff,
+            title='Svc Ajeno Listado',
+            summary='S',
+            service_type='commercial',
+            code='OWN002',
+            price=Decimal('40.00'),
+        )
+        cls.sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=cls.service,
+            start_date=timezone.now(),
+            payment_status='pending',
+        )
+        cls.other_sub = ServiceSubscription.objects.create(
+            customer=cls.other_customer,
+            service=cls.other_service,
+            start_date=timezone.now(),
+            payment_status='paid',
+        )
+        cls.url = reverse('commercial:suscripcion_list')
+
+    def _assert_solo_lo_suyo(self, response):
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn(self.service.title, html)
+        self.assertIn(f'data-uuid="{self.sub.uuid}"', html)
+        self.assertNotIn(self.other_service.title, html)
+        self.assertNotIn(f'data-uuid="{self.other_sub.uuid}"', html)
+
+    def test_titular_without_permission_or_group_sees_only_his_subscriptions(self):
+        self.assertFalse(self.owner.groups.filter(name='Clientes').exists())
+        self.client.force_login(self.owner)
+        self._assert_solo_lo_suyo(self.client.get(self.url))
+
+    def test_titular_in_clientes_group_without_permission_sees_only_his(self):
+        # Camino del dashboard: el grupo `Clientes` existe pero quedó vacío
+        # (sin `view_subscription`), como lo crean CustomerCreateView y
+        # CustomerFromUserView.
+        from django.contrib.auth.models import Group
+
+        group, _ = Group.objects.get_or_create(name='Clientes')
+        self.owner.groups.add(group)
+        self.assertFalse(self.owner.has_perm('commercial.view_subscription'))
+        self.client.force_login(self.owner)
+        self._assert_solo_lo_suyo(self.client.get(self.url))
+
+    def test_user_without_customer_and_without_permission_gets_403(self):
+        self.client.force_login(_make_user('nocustomerlist'))
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_user_with_permission_but_without_customer_gets_403(self):
+        # No se amplía lo que ve un rol ajeno: con el permiso directo pero sin
+        # Customer el resultado sigue siendo 403, igual que antes.
+        user = _make_user('permnocustomer')
+        ct = ContentType.objects.get_for_model(ServiceSubscription)
+        user.user_permissions.add(ct.permission_set.get(codename='view_subscription'))
+        self.client.force_login(user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_clientes_group_without_customer_still_sees_empty_list(self):
+        # La rama del grupo `Clientes` sin Customer queda intacta: lista vacía
+        # con 200, no un 403 (comportamiento previo que este cambio no toca).
+        from django.contrib.auth.models import Group
+
+        ct = ContentType.objects.get_for_model(ServiceSubscription)
+        group, _ = Group.objects.get_or_create(name='Clientes')
+        group.permissions.add(ct.permission_set.get(codename='view_subscription'))
+        user = _make_user('groupnocustomer')
+        user.groups.add(group)
+        self.client.force_login(user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertNotIn(self.service.title, html)
+        self.assertNotIn(self.other_service.title, html)
+
+    def test_superuser_still_sees_every_subscription(self):
+        self.client.force_login(_make_superuser('ownerlistadmin'))
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn(self.service.title, html)
+        self.assertIn(self.other_service.title, html)
+
+
 class InvoiceListViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -1076,7 +1190,7 @@ class AjaxPendingSubscriptionsTests(TestCase):
             service=service,
             start_date=timezone.now(),
             quantity=2,
-            payment_status='pending',
+            payment_status='requested',
         )
         cls.url = reverse('commercial:ajax_pending_subscriptions')
 

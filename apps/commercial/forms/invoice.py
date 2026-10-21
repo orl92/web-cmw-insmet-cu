@@ -1,17 +1,13 @@
-import calendar
 import contextlib
-from datetime import date
 from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import formset_factory, modelformset_factory
 from django.forms.models import BaseModelFormSet
-from django.utils import timezone
 
 from apps.commercial.forms.subscription import _pluralize_period
 from apps.commercial.models import (
-    MESES,
     Customer,
     InvoiceCostAllocation,
     Service,
@@ -117,26 +113,24 @@ class InvoiceItemForm(forms.Form):
 InvoiceItemFormSet = formset_factory(InvoiceItemForm, extra=1, can_delete=True)
 
 
-def meses_del_periodo():
-    return [(str(numero), nombre.capitalize()) for numero, nombre in enumerate(MESES, start=1)]
-
-
-def anios_del_periodo(hoy):
-    """Años ofrecidos, de dos años antes de hoy hasta el año siguiente.
-
-    Hacia atrás porque el período va atrasado con frecuencia real: la
-    certificación agrometeorológica que el cliente no pudo cumplir a tiempo se
-    factura igual, y es el caso que justifica que el período pueda ser del pasado.
-    """
-    return [(str(anio), str(anio)) for anio in range(hoy.year - 2, hoy.year + 2)]
-
-
 class InvoiceCostAllocationForm(forms.ModelForm):
     class Meta:
         model = InvoiceCostAllocation
         fields = ['codigo', 'porcentaje']
         widgets = {
-            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            # El centro sigue siendo un `TextInput` a propósito: el `datalist`
+            # sugiere pero no restringe, así que un centro que no está en el
+            # catálogo se puede escribir igual. Un `Select` sí lo restringiría y
+            # cerraría la puerta a los centros de las facturas reales 276 y 279,
+            # que no salen de ningún código de servicio.
+            'codigo': forms.TextInput(
+                attrs={
+                    'class': 'form-control',
+                    'list': 'centros-de-costo',
+                    'autocomplete': 'off',
+                    'placeholder': '700.50107',
+                }
+            ),
             'porcentaje': forms.NumberInput(
                 attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}
             ),
@@ -186,6 +180,12 @@ InvoiceCostAllocationFormSet = modelformset_factory(
     extra=1,
     can_delete=True,
 )
+# Sin `queryset=` acá: `modelformset_factory` no lo acepta. El que el formset se
+# acote o no lo decide la vista al instanciarlo: un modelformset sin acotar cae
+# al manager del modelo y `initial_form_count()` pasa a ser `len(get_queryset())`,
+# así que la pantalla abría con TODAS las imputaciones de la base como filas
+# editables, más la fila en blanco de `extra=1`. Ver
+# `InvoiceCreateView.cost_allocations_formset`.
 
 
 class InvoiceForm(forms.Form):
@@ -200,21 +200,6 @@ class InvoiceForm(forms.Form):
         label='Registro Comercial',
         widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
-    month_from = forms.ChoiceField(
-        choices=(),
-        label='Mes desde',
-        required=False,
-    )
-    year = forms.ChoiceField(
-        choices=(),
-        label='Año',
-        required=False,
-    )
-    month_to = forms.ChoiceField(
-        choices=(),
-        label='Mes hasta',
-        required=False,
-    )
     subscriptions = forms.ModelMultipleChoiceField(
         queryset=ServiceSubscription.objects.none(),
         required=False,
@@ -226,15 +211,6 @@ class InvoiceForm(forms.Form):
         super().__init__(*args, **kwargs)
         company = CompanySettings.get_instance()
         self.fields['commercial_registry'].initial = company.registro_comercial
-        hoy = timezone.localdate()
-        meses = meses_del_periodo()
-        anios = anios_del_periodo(hoy)
-        for nombre in ('month_from', 'month_to'):
-            self.fields[nombre].choices = [('', '---------')] + meses
-            self.fields[nombre].widget.attrs.update({'class': 'form-select'})
-        self.fields['year'].choices = [('', '---------')] + anios
-        self.fields['year'].widget.attrs.update({'class': 'form-select'})
-        self.fields['year'].initial = str(hoy.year)
 
         customer_id = None
         if 'customer' in self.data:
@@ -252,25 +228,3 @@ class InvoiceForm(forms.Form):
             )
         else:
             self.fields['subscriptions'].queryset = ServiceSubscription.objects.none()
-
-    def clean(self):
-        cleaned_data = super().clean()
-        # En lote el período NO se pide: lo deduce cada suscripción de su fecha de
-        # inicio y la vista lo descarta. Sólo la facturación manual necesita el rango.
-        if cleaned_data.get('subscriptions'):
-            return cleaned_data
-
-        anio = cleaned_data.get('year')
-        mes_desde = cleaned_data.get('month_from')
-        mes_hasta = cleaned_data.get('month_to')
-        if not anio or not mes_desde or not mes_hasta:
-            raise ValidationError('Elegí el año, el mes desde y el mes hasta del período.')
-
-        start = date(int(anio), int(mes_desde), 1)
-        end = date(int(anio), int(mes_hasta), calendar.monthrange(int(anio), int(mes_hasta))[1])
-        if start > end:
-            raise ValidationError('El mes de inicio no puede ser posterior al mes de fin.')
-
-        cleaned_data['period_start'] = start
-        cleaned_data['period_end'] = end
-        return cleaned_data

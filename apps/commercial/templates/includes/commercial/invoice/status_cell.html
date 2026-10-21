@@ -5,3 +5,6 @@
 {% else %}
   <span class="badge bg-orange-lt">Pendiente</span>
 {% endif %}
+{% if invoice.items_total > 1 %}
+  {% include 'includes/commercial/invoice/line_payments.html' %}
+{% endif %}

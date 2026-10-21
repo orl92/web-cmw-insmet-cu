@@ -36,9 +36,6 @@ def generate_invoice_pdf_and_email_task(invoice_uuid, site_url, solo_paso=None):
     try:
         invoice = Invoice.objects.get(uuid=invoice_uuid)
     except Invoice.DoesNotExist:
-        # La factura se borró con la tarea todavía en la cola. Reintentar un
-        # `get()` que va a seguir fallando cada hora llena el log de ruido sin
-        # hope de éxito: se corta la cadena acá.
         logger.warning(
             'Tarea de factura %s abortada: la factura ya no existe. '
             'La cola la tenía pendiente cuando se borró.',
@@ -48,16 +45,9 @@ def generate_invoice_pdf_and_email_task(invoice_uuid, site_url, solo_paso=None):
 
     customer = invoice.customer
 
-    # `solo_paso` fuerza un paso. Sin él, cada paso se hace solo si su estado
-    # no está ya resuelto: así el reintento de Huey corrige lo que falta sin
-    # volver a renderizar un PDF que salió bien.
     if solo_paso != 'email' and (solo_paso == 'pdf' or not invoice.pdf_ready):
         items = list(invoice.items.all())
         try:
-            # El período del PDF es `invoice.period_label` (texto libre escrito
-            # por el operador), no un rango derivado de fechas: ver
-            # `_periodo_facturacion`. Antes se pasaba `issue_date` dos veces y
-            # salía "Desde X hasta X" en cada factura de una sola fecha.
             generate_invoice_pdf_standalone(invoice, customer, items)
         except Exception as e:
             marcar_pdf(invoice, error=e)
@@ -72,9 +62,6 @@ def generate_invoice_pdf_and_email_task(invoice_uuid, site_url, solo_paso=None):
         and invoice.email_status != Invoice.EmailStatus.SENT
         and not enviar_correo_factura(invoice, customer, base_url=site_url)
     ):
-        # El estado y el error ya quedaron escritos por
-        # `enviar_correo_factura`. Se propaga para que Huey reintente, y el
-        # reintento no vuelve a tocar el PDF porque ya está `ready`.
         raise RuntimeError(
             f'No se pudo enviar el correo de la factura {invoice.number}: '
             f'{invoice.email_error or "sin detalle"}'
