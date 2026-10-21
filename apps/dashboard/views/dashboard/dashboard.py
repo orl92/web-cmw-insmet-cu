@@ -10,6 +10,7 @@ from django.contrib.sessions.models import Session
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.db.models import Count, Exists, OuterRef, Sum
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
@@ -34,7 +35,10 @@ def _region_temp(f, region_key, period):
 
 def serialize_sub(sub):
     return {
-        'customer': html.escape(sub.customer.company_name or 'N/A') if sub.customer else 'N/A',
+        # `company_name` es NULL en una persona natural: el panel mostraba
+        # "N/A" en lugar del nombre. `display_name` resuelve el nombre visible
+        # de cualquier tipo de cliente; el escape lo aplica esta función.
+        'customer': html.escape(sub.customer.display_name) if sub.customer else 'N/A',
         'service': html.escape(sub.service.title or 'N/A') if sub.service else 'N/A',
         # Sin vencimiento: la suscripción queda vigente hasta que se anule, así
         # que lo único que hay que fechar es cuándo arranca el servicio.
@@ -330,22 +334,35 @@ class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             )
             context['month_income'] = float(month_income_paid)
 
+            # Ordenar por la misma clave que se muestra. `company_name` sólo
+            # existe para personas jurídicas: en una natural es NULL, así que
+            # ordenar por esa columna metía a todas las naturales al principio
+            # (SQLite) o al final (PostgreSQL) según el motor y dejaba el
+            # orden entre ellas al azar. El `Coalesce` cae al apellido, luego
+            # al nombre y por último al username, que nunca es NULL.
+            orden_cliente = Coalesce(
+                'customer__company_name',
+                'customer__user__last_name',
+                'customer__user__first_name',
+                'customer__user__username',
+            )
+
             active_subs_qs = (
                 ServiceSubscription.objects.filter(payment_status='paid', record_active=True)
                 .select_related('customer', 'service')
-                .order_by('customer__company_name')[:20]
+                .order_by(orden_cliente)[:20]
             )
 
             pending_subs_qs = (
                 ServiceSubscription.objects.filter(payment_status='pending', record_active=True)
                 .select_related('customer', 'service')
-                .order_by('customer__company_name')[:20]
+                .order_by(orden_cliente)[:20]
             )
 
             requested_subs_qs = (
                 ServiceSubscription.objects.filter(payment_status='requested', record_active=True)
                 .select_related('customer', 'service')
-                .order_by('customer__company_name')[:20]
+                .order_by(orden_cliente)[:20]
             )
 
             context['active_subs_list'] = json.dumps([serialize_sub(s) for s in active_subs_qs])

@@ -138,7 +138,7 @@ class CustomerDeleteView(LoginRequiredMixin, PermissionRequiredMixin, View):
             user=self.request.user,
             obj=customer,
             action_flag=DELETION,
-            message=f'Cliente desactivado: {customer.company_name}.',
+            message=f'Cliente desactivado: {customer.display_name}.',
         )
         messages.success(request, 'Cliente desactivado con éxito.')
         return redirect('commercial:cliente_list')
@@ -152,16 +152,17 @@ class CustomerHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def post(self, request, uuid):
         customer = get_object_or_404(Customer, uuid=uuid)
-        company_name = customer.company_name
         # `company_name` es NULL en una natural: el mensaje que ve el operador
         # decía literalmente "Cliente None eliminado permanentemente".
+        # `display_name` es el nombre que se muestra, para cualquier tipo de
+        # cliente, y es el único valor que se usa en el log y en el mensaje.
         customer_name = customer.display_name
         user = customer.user
         log_action(
             user=self.request.user,
             obj=customer,
             action_flag=DELETION,
-            message=f'Cliente eliminado físicamente: {company_name}.',
+            message=f'Cliente eliminado físicamente: {customer_name}.',
         )
         customer.hard_delete()
         if user and user.pk != self.request.user.pk:

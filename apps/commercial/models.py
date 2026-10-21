@@ -370,7 +370,7 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
         }.get(self.payment_status, 'solicitado')
 
     def __str__(self):
-        return f'{self.customer.company_name} - {self.service.title}'
+        return f'{self.customer.display_name} - {self.service.title}'
 
 
 class InvoiceQuerySet(models.QuerySet):
@@ -612,7 +612,7 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
 
     def __str__(self):
         if self.subscription:
-            return f'Factura {self.number} - {self.subscription.customer.company_name}'
+            return f'Factura {self.number} - {self.subscription.customer.display_name}'
         return f'Factura {self.number} (manual)'
 
 
@@ -774,7 +774,7 @@ class Contract(SoftDeleteModel):
         ordering = ('-start_date',)
 
     def __str__(self):
-        return f'Contrato {self.number} - {self.customer.company_name}'
+        return f'Contrato {self.number} - {self.customer.display_name}'
 
     @property
     def end_date(self):
@@ -839,4 +839,4 @@ class Certificate(SoftDeleteModel, FileHandlerMixin):
     def __str__(self):
         service = self.subscription.service
         customer = self.subscription.customer
-        return f'Certificado de {service.title} - {customer.company_name}'
+        return f'Certificado de {service.title} - {customer.display_name}'

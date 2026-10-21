@@ -163,6 +163,73 @@ class CustomerDisplayNameTests(TestCase):
         self.assertEqual(str(customer), customer.display_name)
 
 
+class ClienteNaturalSinNoneEnStrTests(FileHandlingTestCase):
+    """Ningún `__str__` imprime el literal `None` donde va el nombre del cliente.
+
+    `company_name` sólo existe para personas jurídicas: en una natural es NULL, y
+    los cuatro `__str__` que lo leían directo imprimían la palabra `None` en vez
+    del nombre de la persona, que vive en el User.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = make_user('natural.str', first_name='Ana', last_name='Norte')
+        cls.customer = natural_customer(cls.user)
+        cls.service = Service.objects.create(
+            user=cls.user,
+            title='Servicio Str',
+            summary='S',
+            service_type='commercial',
+            code='STR1',
+            price=Decimal('25.00'),
+        )
+        cls.subscription = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=cls.service,
+            start_date=timezone.now(),
+        )
+
+    def test_suscripcion_muestra_el_nombre_del_cliente(self):
+        texto = str(self.subscription)
+        self.assertNotIn('None', texto)
+        self.assertIn('Ana Norte', texto)
+
+    def test_factura_muestra_el_nombre_del_cliente(self):
+        invoice = Invoice.objects.create(
+            customer=self.customer,
+            subscription=self.subscription,
+            number='STR-001',
+            amount=Decimal('25.00'),
+        )
+        texto = str(invoice)
+        self.assertNotIn('None', texto)
+        self.assertIn('Ana Norte', texto)
+
+    def test_contrato_muestra_el_nombre_del_cliente(self):
+        contract = Contract.objects.create(
+            customer=self.customer,
+            number='STR-CONT-001',
+            start_date=date.today(),
+        )
+        texto = str(contract)
+        self.assertNotIn('None', texto)
+        self.assertIn('Ana Norte', texto)
+
+    def test_certificado_muestra_el_nombre_del_cliente(self):
+        pdf = SimpleUploadedFile(
+            'cert.pdf',
+            b'PDF content',
+            content_type='application/pdf',
+        )
+        cert = Certificate.objects.create(
+            subscription=self.subscription,
+            pdf=pdf,
+        )
+        texto = str(cert)
+        self.assertNotIn('None', texto)
+        self.assertIn('Ana Norte', texto)
+
+
 class ServiceModelTests(FileHandlingTestCase):
     @classmethod
     def setUpTestData(cls):

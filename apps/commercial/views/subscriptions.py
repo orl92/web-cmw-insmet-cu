@@ -159,7 +159,7 @@ class SubscriptionCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             obj=self.object,
             action_flag=ADDITION,
             message=(
-                f'Suscripción creada para: {self.object.customer.company_name} '
+                f'Suscripción creada para: {self.object.customer.display_name} '
                 f'- {self.object.service.title}'
             ),
         )
@@ -193,7 +193,7 @@ class SubscriptionUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Update
             obj=self.object,
             action_flag=CHANGE,
             message=(
-                f'Suscripción actualizada para: {self.object.customer.company_name} '
+                f'Suscripción actualizada para: {self.object.customer.display_name} '
                 f'- {self.object.service.title}'
             ),
         )
@@ -352,7 +352,7 @@ class SubscriptionCancelView(LoginRequiredMixin, PermissionRequiredMixin, View):
             obj=subscription,
             action_flag=DELETION,
             message=(
-                f'Suscripción desactivada: {subscription.customer.company_name} '
+                f'Suscripción desactivada: {subscription.customer.display_name} '
                 f'- {subscription.service.title}'
             ),
         )
@@ -368,7 +368,7 @@ class SubscriptionHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def post(self, request, uuid):
         subscription = get_object_or_404(ServiceSubscription, uuid=uuid)
-        customer_name = subscription.customer.company_name
+        customer_name = subscription.customer.display_name
         service_title = subscription.service.title
 
         subscription.hard_delete()

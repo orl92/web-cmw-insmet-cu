@@ -53,7 +53,7 @@ class CertificateCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateV
             action_flag=ADDITION,
             message=(
                 f'Certificado creado para '
-                f'{self.object.subscription.customer.company_name} - '
+                f'{self.object.subscription.customer.display_name} - '
                 f'{self.object.subscription.service.title}.'
             ),
         )

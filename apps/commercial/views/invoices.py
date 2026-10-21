@@ -557,7 +557,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     action_flag=CHANGE,
                     message=(
                         f'Suscripción facturada en lote: {sub.service.title} '
-                        f'para {sub.customer.company_name}'
+                        f'para {sub.customer.display_name}'
                     ),
                 )
 
@@ -571,7 +571,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 action_flag=ADDITION,
                 message=(
                     f'Factura por lote {invoice.number} - Cliente: '
-                    f'{customer.company_name} - Monto: ${total:.2f}'
+                    f'{customer.display_name} - Monto: ${total:.2f}'
                 ),
                 request=self.request,
             )
@@ -712,7 +712,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                     obj=sub,
                     action_flag=ADDITION,
                     message=(
-                        f'Suscripción creada manualmente: {customer.company_name} - {service.title}'
+                        f'Suscripción creada manualmente: {customer.display_name} - {service.title}'
                     ),
                 )
 
@@ -726,7 +726,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 action_flag=ADDITION,
                 message=(
                     f'Factura manual {invoice.number} - Cliente: '
-                    f'{customer.company_name} - Monto: ${total:.2f}'
+                    f'{customer.display_name} - Monto: ${total:.2f}'
                 ),
                 request=self.request,
             )

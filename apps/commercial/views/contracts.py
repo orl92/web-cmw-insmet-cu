@@ -50,7 +50,7 @@ class ContractCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView
             obj=self.object,
             action_flag=ADDITION,
             message=(
-                f'Contrato {self.object.number} creado para {self.object.customer.company_name}.'
+                f'Contrato {self.object.number} creado para {self.object.customer.display_name}.'
             ),
         )
         messages.success(self.request, 'Contrato creado con éxito.', extra_tags='success')
