@@ -31,7 +31,7 @@ WARNING_CONFIG = {
         'template_update': 'pages/meteo/warning/early_warning/update.html',
         'subject_create': 'Alerta Temprana',
         'subject_update': 'Alerta Temprana Actualizado',
-        'mail_url': 'alerta_temprana',
+        'mail_url': 'home:warnings_early',
     },
     'storm': {
         'segment': 'storm',
@@ -48,7 +48,7 @@ WARNING_CONFIG = {
         'template_update': 'pages/meteo/warning/storm/update.html',
         'subject_create': 'Aviso de Tormentas',
         'subject_update': 'Aviso de Tormentas Actualizado',
-        'mail_url': 'tormenta',
+        'mail_url': 'home:warnings_storm',
     },
     'tropical_cyclone': {
         'segment': 'cyclone',
@@ -65,7 +65,7 @@ WARNING_CONFIG = {
         'template_update': 'pages/meteo/warning/tropical_cyclone/update.html',
         'subject_create': 'Aviso de Ciclon Tropical',
         'subject_update': 'Aviso de Ciclon Tropical Actualizado',
-        'mail_url': 'ciclon_tropical',
+        'mail_url': 'home:warnings_tropical',
     },
 }
 
