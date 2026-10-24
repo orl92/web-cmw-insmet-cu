@@ -949,3 +949,63 @@ class CustomerFactoryTests(TestCase):
 
     def test_crea_cliente_si_no_hay_ninguno_valido(self):
         self.assertIsNotNone(valid_natural_customer().identity_document)
+
+
+class CustomerCleanValidationTests(TestCase):
+    def test_natural_requiere_identity_document_en_full_clean(self):
+        user = _make_user('nat_clean')
+        customer = Customer(
+            client_type=Customer.ClientType.NATURAL,
+            user=user,
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Calle 1',
+            phone='71234567',
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            customer.full_clean()
+        self.assertIn('identity_document', ctx.exception.message_dict)
+
+    def test_juridica_requiere_reeup_nit_compania_en_full_clean(self):
+        user = _make_user('jur_clean')
+        customer = Customer(
+            client_type=Customer.ClientType.JURIDICA,
+            user=user,
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Calle 1',
+            phone='71234567',
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            customer.full_clean()
+        self.assertIn('reeup', ctx.exception.message_dict)
+        self.assertIn('nit', ctx.exception.message_dict)
+        self.assertIn('company_name', ctx.exception.message_dict)
+
+    def test_natural_valido_pasa_full_clean(self):
+        user = _make_user('nat_clean_ok')
+        customer = Customer(
+            client_type=Customer.ClientType.NATURAL,
+            user=user,
+            identity_document='34111234567',
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Calle 1',
+            phone='71234567',
+        )
+        customer.full_clean()
+
+    def test_juridica_valida_pasa_full_clean(self):
+        user = _make_user('jur_clean_ok')
+        customer = Customer(
+            client_type=Customer.ClientType.JURIDICA,
+            user=user,
+            company_name='Empresa OK',
+            reeup='123.4.5678',
+            nit='12345678901',
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Calle 1',
+            phone='71234567',
+        )
+        customer.full_clean()

@@ -3,7 +3,7 @@ import uuid
 from datetime import date, timedelta
 
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Count, Q
@@ -32,6 +32,20 @@ MESES = (
     'noviembre',
     'diciembre',
 )
+
+
+# Constantes de validación compartidas con los formularios
+CUSTOMER_IDENTITY_REQUIRED_ERROR = (
+    'El documento de identidad es obligatorio para personas naturales.'
+)
+CUSTOMER_IDENTITY_TAKEN_ERROR = 'Este documento de identidad ya está registrado.'
+CUSTOMER_COMPANY_NAME_REQUIRED_ERROR = (
+    'El nombre de la empresa es obligatorio para personas jurídicas.'
+)
+CUSTOMER_REEUP_REQUIRED_ERROR = 'El REEUP es obligatorio para personas jurídicas.'
+CUSTOMER_NIT_REQUIRED_ERROR = 'El NIT es obligatorio para personas jurídicas.'
+CUSTOMER_REEUP_TAKEN_ERROR = 'Este código REEUP ya está registrado.'
+CUSTOMER_NIT_TAKEN_ERROR = 'Este NIT ya está registrado.'
 
 
 def frase_de_periodo(inicio, fin):
@@ -192,7 +206,7 @@ class Customer(SoftDeleteModel):
         """
         try:
             user = self.user
-        except ObjectDoesNotExist:
+        except Exception:
             # Una instancia sin `user_id` todavía (no guardada, o
             # cargada con `.only()`) no tiene a quién mostrarle nombre: se
             # devuelve un placeholder legible en vez de explotar en la plantilla.
@@ -202,6 +216,148 @@ class Customer(SoftDeleteModel):
         if self.client_type == self.ClientType.NATURAL:
             return fallback or '—'
         return self.company_name or fallback or '—'
+
+    def clean(self):
+        """Obliga la regla de identidad que antes solo vivía en formularios.
+
+        La regla es: una persona natural debe tener documento de identidad;
+        una persona jurídica debe tener razón social, REEUP y NIT. Los campos
+        ajenos no se fuerzan a vacío (el formulario los controla), pero sí se
+        validan si se envían con formato inválido o duplicado.
+        """
+        # Solo aplicamos las reglas de identidad aquí para no romper flujos
+        # existentes que crean instancias sin pasar por todos los validadores
+        # de campos. Los formularios siguen haciendo su propia validación.
+        client_type = self.client_type
+
+        if client_type == self.ClientType.NATURAL:
+            identity_document = (self.identity_document or '').strip()
+            if not identity_document:
+                raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_REQUIRED_ERROR]})
+            if not self.pk:
+                if Customer.objects.filter(identity_document=identity_document).exists():
+                    raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_TAKEN_ERROR]})
+            else:
+                if (
+                    Customer.objects.filter(identity_document=identity_document)
+                    .exclude(pk=self.pk)
+                    .exists()
+                ):
+                    raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_TAKEN_ERROR]})
+            self.identity_document = identity_document
+            return
+
+        if client_type == self.ClientType.JURIDICA:
+            company_name = (self.company_name or '').strip()
+            reeup = (self.reeup or '').strip()
+            nit = (self.nit or '').strip()
+            errors = {}
+            if not company_name:
+                errors['company_name'] = [CUSTOMER_COMPANY_NAME_REQUIRED_ERROR]
+            else:
+                self.company_name = company_name
+            if not reeup:
+                errors['reeup'] = [CUSTOMER_REEUP_REQUIRED_ERROR]
+            else:
+                try:
+                    validate_reeup(reeup)
+                except ValidationError as exc:
+                    errors['reeup'] = list(exc.messages)
+                else:
+                    self.reeup = reeup
+                    if not self.pk:
+                        if Customer.objects.filter(reeup=reeup).exists():
+                            errors['reeup'] = [CUSTOMER_REEUP_TAKEN_ERROR]
+                    else:
+                        if Customer.objects.filter(reeup=reeup).exclude(pk=self.pk).exists():
+                            errors['reeup'] = [CUSTOMER_REEUP_TAKEN_ERROR]
+            if not nit:
+                errors['nit'] = [CUSTOMER_NIT_REQUIRED_ERROR]
+            else:
+                try:
+                    validate_nit(nit)
+                except ValidationError as exc:
+                    errors['nit'] = list(exc.messages)
+                else:
+                    self.nit = nit
+                    if not self.pk:
+                        if Customer.objects.filter(nit=nit).exists():
+                            errors['nit'] = [CUSTOMER_NIT_TAKEN_ERROR]
+                    else:
+                        if Customer.objects.filter(nit=nit).exclude(pk=self.pk).exists():
+                            errors['nit'] = [CUSTOMER_NIT_TAKEN_ERROR]
+            if errors:
+                raise ValidationError(errors)
+            return
+
+    def _validate_identity_rules(self):
+        """Validación de identidad sin llamar full_clean() para no romper
+        el comportamiento existente en toda la app."""
+        client_type = self.client_type
+        if client_type == self.ClientType.NATURAL:
+            identity_document = (self.identity_document or '').strip()
+            if not identity_document:
+                raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_REQUIRED_ERROR]})
+            if self.pk:
+                if (
+                    Customer.objects.filter(identity_document=identity_document)
+                    .exclude(pk=self.pk)
+                    .exists()
+                ):
+                    raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_TAKEN_ERROR]})
+            else:
+                if Customer.objects.filter(identity_document=identity_document).exists():
+                    raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_TAKEN_ERROR]})
+            self.identity_document = identity_document
+            return
+        if client_type == self.ClientType.JURIDICA:
+            company_name = (self.company_name or '').strip()
+            reeup = (self.reeup or '').strip()
+            nit = (self.nit or '').strip()
+            errors = {}
+            if not company_name:
+                errors['company_name'] = [CUSTOMER_COMPANY_NAME_REQUIRED_ERROR]
+            else:
+                self.company_name = company_name
+            if not reeup:
+                errors['reeup'] = [CUSTOMER_REEUP_REQUIRED_ERROR]
+            else:
+                try:
+                    validate_reeup(reeup)
+                except ValidationError as exc:
+                    errors['reeup'] = list(exc.messages)
+                else:
+                    self.reeup = reeup
+                    if self.pk:
+                        if Customer.objects.filter(reeup=reeup).exclude(pk=self.pk).exists():
+                            errors['reeup'] = [CUSTOMER_REEUP_TAKEN_ERROR]
+                    else:
+                        if Customer.objects.filter(reeup=reeup).exists():
+                            errors['reeup'] = [CUSTOMER_REEUP_TAKEN_ERROR]
+            if not nit:
+                errors['nit'] = [CUSTOMER_NIT_REQUIRED_ERROR]
+            else:
+                try:
+                    validate_nit(nit)
+                except ValidationError as exc:
+                    errors['nit'] = list(exc.messages)
+                else:
+                    self.nit = nit
+                    if self.pk:
+                        if Customer.objects.filter(nit=nit).exclude(pk=self.pk).exists():
+                            errors['nit'] = [CUSTOMER_NIT_TAKEN_ERROR]
+                    else:
+                        if Customer.objects.filter(nit=nit).exists():
+                            errors['nit'] = [CUSTOMER_NIT_TAKEN_ERROR]
+            if errors:
+                raise ValidationError(errors)
+            return
+
+    def save(self, *args, **kwargs):
+        # Garantiza la regla también fuera de formularios.
+        if kwargs.pop('run_validators', True):
+            self._validate_identity_rules()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.display_name

@@ -463,35 +463,27 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         subscriptions,
         cost_formset=None,
     ):
-        grupos = {}
-        for sub in subscriptions:
-            grupos.setdefault(meses_de_la_suscripcion(sub), []).append(sub)
+        # Comportamiento alineado con facturación manual: todas las
+        # suscripciones seleccionadas van en UNA sola factura, con el período
+        # unificado (unión de meses de todas las líneas). El usuario decide qué
+        # marcar y todo lo marcado se factura junto.
+        meses_union = set()
+        grupo = list(subscriptions)
+        for sub in grupo:
+            meses_union |= set(meses_de_la_suscripcion(sub))
+        meses = tuple(sorted(meses_union))
 
-        # La imputación que llegó por POST es UNA: el operador tildó
-        # suscripciones y la pantalla derivó la unión de sus centros. Esa
-        # tarjeta representa exactamente una factura sólo cuando el lote entero
-        # comparte período; con varias, cada factura se imputa con los centros de
-        # sus propios ítems. Copiarle a cada factura el reparto global le
-        # atribuiría centros de servicios que no factura, y el reparto es un
-        # asiento contable, no un detalle cosmético.
-        un_solo_grupo = len(grupos) == 1
-
-        facturas = []
-        for meses, grupo in grupos.items():
-            facturas.append(
-                self._facturar_grupo(
-                    customer,
-                    meses,
-                    commercial_registry,
-                    grupo,
-                    cost_formset,
-                    imputar_por_items=not un_solo_grupo,
-                )
+        facturas = [
+            self._facturar_grupo(
+                customer,
+                meses,
+                commercial_registry,
+                grupo,
+                cost_formset,
+                imputar_por_items=False,
             )
+        ]
 
-        # La URL del correo sale de `SITE_URL`, nunca del request: el cliente
-        # no está en la red interna, y el host por el que entró el operador
-        # no es el que el destinatario alcanza.
         site_url = settings.SITE_URL
         for factura in facturas:
             generate_invoice_pdf_and_email_task(str(factura.uuid), site_url)

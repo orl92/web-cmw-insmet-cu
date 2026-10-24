@@ -9,6 +9,18 @@ from apps.core.validators import validate_account, validate_nit, validate_phones
 IDENTITY_REQUIRED_ERROR = 'El documento de identidad es obligatorio para personas naturales.'
 IDENTITY_TAKEN_ERROR = 'Este documento de identidad ya está registrado.'
 
+from apps.commercial.models import (  # noqa: E402
+    CUSTOMER_IDENTITY_REQUIRED_ERROR,
+    CUSTOMER_IDENTITY_TAKEN_ERROR,
+    CUSTOMER_NIT_REQUIRED_ERROR,
+    CUSTOMER_NIT_TAKEN_ERROR,
+    CUSTOMER_REEUP_REQUIRED_ERROR,
+    CUSTOMER_REEUP_TAKEN_ERROR,
+)
+
+IDENTITY_REQUIRED_ERROR = CUSTOMER_IDENTITY_REQUIRED_ERROR
+IDENTITY_TAKEN_ERROR = CUSTOMER_IDENTITY_TAKEN_ERROR
+
 
 class CustomerForm(forms.ModelForm):
     username = forms.CharField(max_length=150, required=True, label='Nombre de Usuario')
@@ -75,7 +87,12 @@ class CustomerForm(forms.ModelForm):
             raise ValidationError(IDENTITY_REQUIRED_ERROR)
         if not identity_document:
             return None
-        if Customer.objects.filter(identity_document=identity_document).exists():
+        # Verificar duplicado ignorando la instancia actual en modo update
+        instance_pk = getattr(self.instance, 'pk', None)
+        qs = Customer.objects.filter(identity_document=identity_document)
+        if instance_pk:
+            qs = qs.exclude(pk=instance_pk)
+        if qs.exists():
             raise ValidationError(IDENTITY_TAKEN_ERROR)
         return identity_document or None
 
@@ -84,10 +101,14 @@ class CustomerForm(forms.ModelForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not reeup:
-                raise ValidationError('El REEUP es obligatorio para personas jurídicas.')
+                raise ValidationError(CUSTOMER_REEUP_REQUIRED_ERROR)
             validate_reeup(reeup)
-            if Customer.objects.filter(reeup=reeup).exists():
-                raise ValidationError('Este código REEUP ya está registrado.')
+            instance_pk = getattr(self.instance, 'pk', None)
+            qs = Customer.objects.filter(reeup=reeup)
+            if instance_pk:
+                qs = qs.exclude(pk=instance_pk)
+            if qs.exists():
+                raise ValidationError(CUSTOMER_REEUP_TAKEN_ERROR)
         return reeup
 
     def clean_nit(self):
@@ -95,10 +116,14 @@ class CustomerForm(forms.ModelForm):
         client_type = self.cleaned_data.get('client_type')
         if client_type == Customer.ClientType.JURIDICA:
             if not nit:
-                raise ValidationError('El NIT es obligatorio para personas jurídicas.')
+                raise ValidationError(CUSTOMER_NIT_REQUIRED_ERROR)
             validate_nit(nit)
-            if Customer.objects.filter(nit=nit).exists():
-                raise ValidationError('Este NIT ya está registrado.')
+            instance_pk = getattr(self.instance, 'pk', None)
+            qs = Customer.objects.filter(nit=nit)
+            if instance_pk:
+                qs = qs.exclude(pk=instance_pk)
+            if qs.exists():
+                raise ValidationError(CUSTOMER_NIT_TAKEN_ERROR)
         return nit
 
     def clean_account(self):

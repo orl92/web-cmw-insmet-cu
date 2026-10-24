@@ -75,8 +75,7 @@ class CustomerListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_natural_muestra_nombre_y_documento_de_identidad(self):
-        # `company_name` es NULL en una natural: la columna Cliente terminaba
-        # imprimiendo la palabra `None`, y la de Identificación un guion.
+        # Columna unificada: para persona natural se muestra el carnet.
         customer = natural_customer(
             make_user('lista.natural', first_name='Ana', last_name='Norte'),
             identity_document='34111234567',
@@ -88,6 +87,8 @@ class CustomerListViewTests(TestCase):
         self.assertIn('Ana Norte', html)
         self.assertIn('34111234567', html)
         self.assertNotIn('>None<', html)
+        self.assertNotIn('REEUP', html)
+        self.assertNotIn('NIT', html)
         self.assertEqual(customer.client_type, Customer.ClientType.NATURAL)
 
     def test_juridica_muestra_razon_social_y_datos_fiscales(self):
@@ -107,8 +108,9 @@ class CustomerListViewTests(TestCase):
         self.client.force_login(self.staff_user)
         html = self.client.get(self.url).content.decode()
         self.assertIn('Empresa Listado S.A.', html)
-        # REEUP y NIT viven en su propia columna, no en Identificación.
+        self.assertIn('REEUP', html)
         self.assertIn('123.4.5678', html)
+        self.assertIn('NIT', html)
         self.assertIn('12345678901', html)
 
 
@@ -1366,26 +1368,19 @@ class BatchInvoiceQuantityTests(TestCase):
         view.request = _build_request(_make_superuser('batchgroupadmin'))
         facturas = view.process_batch_invoice(customer, 'REG-004', subs)
 
-        self.assertEqual(Invoice.objects.filter(customer=customer).count(), 3)
+        self.assertEqual(Invoice.objects.filter(customer=customer).count(), 1)
+        factura = facturas[0]
+        self.assertEqual(factura.period_label, 'De enero a marzo de 2025')
         self.assertEqual(
-            sorted(factura.period_label for factura in facturas),
-            [
-                'De enero a febrero de 2025',
-                'De enero a marzo de 2025',
-                'Mes de enero de 2025',
-            ],
-        )
-        self.assertEqual(
-            sum(factura.amount for factura in facturas),
+            factura.amount,
             Decimal('100.00') * 3 + Decimal('5.00') * 10 + Decimal('100.00') * 2,
         )
-        for factura in facturas:
-            for item in factura.items.all():
-                inicio = timezone.localtime(item.subscription.start_date).date()
-                self.assertTrue(
-                    factura.period_start <= inicio <= factura.period_end,
-                    f'{inicio} no cae en el período de {factura.period_label}',
-                )
+        for item in factura.items.all():
+            inicio = timezone.localtime(item.subscription.start_date).date()
+            self.assertTrue(
+                factura.period_start <= inicio <= factura.period_end,
+                f'{inicio} no cae en el período de {factura.period_label}',
+            )
         for sub in subs:
             sub.refresh_from_db()
             self.assertEqual(sub.payment_status, 'pending')

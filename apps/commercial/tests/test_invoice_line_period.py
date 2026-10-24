@@ -811,12 +811,11 @@ class LoteAgrupadoPorPeriodoTests(_FacturacionBase):
 
         self._lote([mayo, julio])
 
-        labels = sorted(Invoice.objects.filter(customer=self.customer).values_list('pk', flat=True))
-        self.assertEqual(len(labels), 2)
-        periodos = {
-            factura.period_label for factura in Invoice.objects.filter(customer=self.customer)
-        }
-        self.assertEqual(periodos, {'De mayo a junio de 2025', 'Mes de julio de 2025'})
+        # Ahora todas las solicitudes seleccionadas van en una sola factura
+        # con período unificado, al estilo de facturación manual.
+        self.assertEqual(Invoice.objects.filter(customer=self.customer).count(), 1)
+        factura = Invoice.objects.get(customer=self.customer)
+        self.assertEqual(factura.period_label, 'De mayo a julio de 2025')
 
     def test_cada_linea_cae_en_el_periodo_de_su_factura(self):
         """La regla del modelo se cumple por grupo, no sólo en el caso de una factura."""

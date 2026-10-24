@@ -167,20 +167,17 @@ class RepartoPorFacturaEnElLoteTests(TestCase):
             ],
         )
 
-        self.assertEqual(Invoice.objects.filter(customer=self.customer).count(), 3)
+        self.assertEqual(Invoice.objects.filter(customer=self.customer).count(), 1)
+        factura = Invoice.objects.get(customer=self.customer)
         por_codigo = self._facturas_por_codigo()
 
+        # Todas las líneas van en una sola factura con reparto unificado.
+        self.assertEqual(len(por_codigo), 3)
+        # Se respeta el reparto enviado por el operador (unión).
+        imputaciones = self._imputaciones(factura)
         self.assertEqual(
-            self._imputaciones(por_codigo['700501072507005']),
-            [('700.50107', Decimal('100.00'))],
-        )
-        self.assertEqual(
-            self._imputaciones(por_codigo['700502072307032']),
-            [('700.50207', Decimal('100.00'))],
-        )
-        self.assertEqual(
-            self._imputaciones(por_codigo['700502072507017']),
-            [('700.50207', Decimal('100.00'))],
+            sorted(imputaciones),
+            [('700.50107', Decimal('50.00')), ('700.50207', Decimal('50.00'))],
         )
 
     def test_un_lote_de_un_solo_periodo_respeta_el_reparto_del_operador(self):
@@ -216,14 +213,13 @@ class RepartoPorFacturaEnElLoteTests(TestCase):
         # navegador manda esa única fila al 100 %.
         self._post(subs, [{'codigo': '700.50107', 'porcentaje': '100.00'}])
 
-        self.assertEqual(Invoice.objects.filter(customer=self.customer).count(), 2)
+        self.assertEqual(Invoice.objects.filter(customer=self.customer).count(), 1)
+        factura = Invoice.objects.get(customer=self.customer)
         por_codigo = self._facturas_por_codigo()
 
-        self.assertEqual(
-            self._imputaciones(por_codigo['700501072507005']),
-            [('700.50107', Decimal('100.00'))],
-        )
-        self.assertEqual(self._imputaciones(por_codigo['123']), [])
+        # Todas las líneas van en la misma factura con el reparto unificado.
+        self.assertEqual(self._imputaciones(factura), [('700.50107', Decimal('100.00'))])
+        self.assertEqual(self._imputaciones(por_codigo['123']), [('700.50107', Decimal('100.00'))])
 
 
 class BorradoDuroLiberaLaSuscripcionTests(TestCase):
