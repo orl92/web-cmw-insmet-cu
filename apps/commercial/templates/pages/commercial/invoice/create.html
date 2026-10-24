@@ -888,12 +888,66 @@
     badge.classList.toggle('bg-danger', !completo);
   }
 
+  // Reindexa las filas del reparto desde 0 y sincroniza el management form.
+  // El servidor espera `cost_allocations-<i>-` sin huecos: si se quita una fila
+  // del medio y las demás conservan su índice, el POST llega desalineado.
+  function renumerarFilasCostos() {
+    const container = document.getElementById('cost-container');
+    const totalForms = document.getElementById('id_cost_allocations-TOTAL_FORMS');
+    if (!container || !totalForms) return;
+    const filas = container.querySelectorAll('.cost-row');
+    filas.forEach(function(row, index) {
+      row.querySelectorAll('input, textarea, select').forEach(function(input) {
+        if (!input.name) return;
+        input.name = input.name.replace(/cost_allocations-\d+-/, 'cost_allocations-' + index + '-');
+        if (input.id) input.id = 'id_' + input.name;
+      });
+      row.querySelectorAll('label[for]').forEach(function(label) {
+        const destino = label.getAttribute('for');
+        if (!destino) return;
+        label.setAttribute(
+          'for',
+          destino.replace(/id_cost_allocations-\d+-/, 'id_cost_allocations-' + index + '-')
+        );
+      });
+    });
+    totalForms.value = String(filas.length);
+    const initialForms = document.getElementById('id_cost_allocations-INITIAL_FORMS');
+    if (initialForms) initialForms.value = '0';
+  }
+
   function prefijarImputacion() {
     const derivados = centrosDerivados();
 
     const container = document.getElementById('cost-container');
     const totalForms = document.getElementById('id_cost_allocations-TOTAL_FORMS');
-    if (derivados.length === 0 || !container || !totalForms) return;
+    if (!container || !totalForms) return;
+
+    if (derivados.length === 0) {
+      // Sin suscripciones marcadas no hay nada que derivar, pero la tarjeta no se
+      // vacía: el operador puede haber escrito filas a mano. Se quitan sólo las
+      // que puso la derivación (`data-derived`) y, si no queda ninguna, se deja
+      // una fila en blanco. Así el badge vuelve a 0 % al desmarcar sin que el
+      // reparto desaparezca de la pantalla.
+      const plantilla = container.querySelector('.cost-row');
+      Array.from(container.querySelectorAll('.cost-row[data-derived="1"]')).forEach(
+        function(row) { row.remove(); }
+      );
+      if (container.querySelectorAll('.cost-row').length === 0) {
+        if (!plantilla) return;
+        const row = plantilla.cloneNode(true);
+        delete row.dataset.derived;
+        row.querySelectorAll('input:not([type="hidden"])').forEach(function(input) {
+          input.value = '';
+        });
+        container.appendChild(row);
+        bindCostRowEvents(row);
+      }
+      renumerarFilasCostos();
+      ultimosDerivados = [];
+      actualizarSumaImputacion();
+      return;
+    }
 
     const enPantalla = centrosEnPantalla();
     // `faltan` son los derivados que todavía no están en pantalla; `sobran` los
@@ -954,6 +1008,13 @@
       const campoPorcentaje = row.querySelector('[name$="-porcentaje"]');
       if (campoCodigo) campoCodigo.value = fila.codigo;
       if (campoPorcentaje) campoPorcentaje.value = fila.porcentaje;
+      // Marca la fila como puesta por la derivación: al desmarcar la suscripción
+      // sólo se retiran estas, las que escribió el operador se conservan.
+      if (derivados.indexOf(fila.codigo) !== -1) {
+        row.dataset.derived = '1';
+      } else {
+        delete row.dataset.derived;
+      }
       container.appendChild(row);
       bindCostRowEvents(row);
     });
@@ -1110,7 +1171,6 @@
     const removeBtn = row.querySelector('.remove-cost-row');
     if (!removeBtn) return;
     removeBtn.addEventListener('click', function() {
-      const totalForms = document.getElementById('id_cost_allocations-TOTAL_FORMS');
       const container = document.getElementById('cost-container');
       const rows = container.querySelectorAll('.cost-row');
       if (rows.length <= 1) {
@@ -1120,17 +1180,9 @@
         return;
       }
       row.remove();
-      const remaining = container.querySelectorAll('.cost-row');
-      totalForms.value = remaining.length;
-      remaining.forEach((r, index) => {
-        r.querySelectorAll('input, textarea, select').forEach(input => {
-          const name = input.name;
-          if (name) {
-            input.name = name.replace(/cost_allocations-\d+-/, `cost_allocations-${index}-`);
-            input.id = input.name;
-          }
-        });
-      });
+      // Quedan menos filas: se reindexan para que la primera siga siendo la 0 y
+      // el management form diga la verdad.
+      renumerarFilasCostos();
       // Se fue una fila: el total que muestra el indicador es otro.
       actualizarSumaImputacion();
     });

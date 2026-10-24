@@ -374,7 +374,8 @@ class DerivacionDeCentrosEnElNavegadorTests(TestCase):
                 )
 
     def test_la_derivacion_tiene_sus_dos_guardas(self):
-        """Sin selección no se toca nada, y con los centros derivados ya en
+        """Sin selección no se pisa el trabajo del operador —sólo se retiran las
+        filas derivadas y queda una en blanco—, y con los centros derivados ya en
         pantalla y ninguno huérfano tampoco se reconstruye: las dos frenan que
         la derivación pise al operador. La segunda se decide con `faltan` y
         `sobran` —contra el último conjunto derivado— y no comparando la
@@ -382,6 +383,26 @@ class DerivacionDeCentrosEnElNavegadorTests(TestCase):
         conjunto derivado y esa comparación la descartaría siempre."""
         self.assertIn('derivados.length === 0', self.js)
         self.assertIn('faltan.length === 0 && sobran.length === 0', self.js)
+
+    def test_al_desmarcar_todo_la_tarjeta_conserva_una_fila_en_blanco(self):
+        """Sin suscripciones marcadas el badge vuelve a 0 %, pero la tarjeta no
+        puede quedar sin filas: el operador vería desaparecer el reparto al
+        elegir el cliente. Se retiran sólo las filas derivadas y se deja una en
+        blanco para seguir escribiendo."""
+        bloque = self.bloque_desde(
+            'if (derivados.length === 0) {',
+            'const enPantalla = centrosEnPantalla();',
+        )
+        self.assertIn('.cost-row[data-derived="1"]', bloque)
+        self.assertIn('container.appendChild(row);', bloque)
+        self.assertNotIn("container.innerHTML = '';", bloque)
+        self.assertIn('actualizarSumaImputacion();', bloque)
+
+    def test_las_filas_derivadas_se_marcan_para_poder_retirarlas(self):
+        """La marca `data-derived` es lo que distingue una fila puesta por la
+        derivación de una escrita a mano: sin ella, desmarcar la suscripción
+        borraría también el reparto del operador."""
+        self.assertIn("row.dataset.derived = '1';", self.js)
 
     def test_el_ultimo_conjunto_derivado_se_recuerda_y_se_actualiza_al_decidir(self):
         """La guarda no puede comparar contra la pantalla: recuerda aparte el
