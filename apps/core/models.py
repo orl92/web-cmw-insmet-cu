@@ -182,10 +182,6 @@ class SiteConfiguration(FileHandlerMixin):
         default='1',
         verbose_name='Radio de esquina',
     )
-    # The validator lives on the model, not on SiteConfigurationForm, so the
-    # admin (whose ModelForm is built from the model) is covered too. Without
-    # it, branding files were the only ImageFields in the project that a corrupt
-    # upload could reach storage through unchecked.
     brand_logo = models.ImageField(
         upload_to='brand/',
         null=True,
@@ -269,13 +265,13 @@ class CompanySettings(models.Model):
         if not instance:
             instance = cls.objects.create(
                 nombre='Centro Meteorológico Provincial Camagüey',
-                direccion='Calle 1ra #120 entre 2da y 3ra, Reparto La Vigía, Camagüey, Cuba',
-                codigo_reeup='',
-                nit='',
-                cuenta_bancaria='',
-                agencia_bancaria='',
-                telefonos='',
-                registro_comercial='',
+                direccion='Avenida Finlay Km 7 1/2. Camagüey',
+                codigo_reeup='211.0.6749',
+                nit='11009444483',
+                cuenta_bancaria='0659641302450111',
+                agencia_bancaria='BANDEC- 5961',
+                telefonos='32261284',
+                registro_comercial='A09404',
             )
         return instance
 
@@ -343,13 +339,7 @@ class TaskExecutionLog(models.Model):
 
     task_id = models.CharField(max_length=255, db_index=True)
     task_name = models.CharField(max_length=255)
-    # Clave estable del trabajo lógico, no del intento. Un reintento genera un
-    # `task.id` nuevo, así que buscar por `task_id` abría una fila nueva en
-    # cada intento y el error original quedaba congelado. Con esta clave el
-    # reintento actualiza la misma fila y `task_id` se refresca al nuevo id.
     logical_key = models.CharField(max_length=255, blank=True, default='', db_index=True)
-    # Texto legible de a quién pertenece la tarea, para que la tabla no.obligue
-    # a abrir el log para saber de qué cliente habla.
     summary = models.CharField(max_length=255, blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_ENQUEUED)
     enqueued_at = models.DateTimeField(null=True, blank=True)
@@ -359,10 +349,6 @@ class TaskExecutionLog(models.Model):
     error_message = models.TextField(blank=True)
     traceback = models.TextField(blank=True)
     args_repr = models.CharField(max_length=512, blank=True)
-    # Referencia para reintentos: name completo de la función y sus argumentos
-    # serializados como JSON. func_args solo se persiste para tareas marcadas
-    # como retryable (ver RETRYABLE_TASKS en apps/core/apps.py) para no exponer
-    # datos sensibles (recipients, cuerpos de correo, adjuntos).
     func_name = models.CharField(max_length=255, blank=True)
     func_args = models.TextField(blank=True)
 
