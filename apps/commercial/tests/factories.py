@@ -63,7 +63,15 @@ def next_reeup():
 
 
 def next_nit():
-    return _seq_digits(11)
+    """NIT de 11 dígitos único en el proceso.
+
+    No usa `_seq_digits`: eso devuelve una corrida de dígitos consecutivos
+    ('12345678901', '23456789012'...) y puede coincidir con los NIT fijos que
+    los tests escriben a mano — el comando `send_test_invoice` usa
+    '12345678901' para su cliente demo. Con el contador directo el valor es
+    único y no colisiona con ningún literal de la suite.
+    """
+    return f'9{next(_seq):010d}'
 
 
 def next_identity_document():

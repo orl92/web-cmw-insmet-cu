@@ -39,7 +39,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
-from apps.commercial.tests.factories import natural_customer
+from apps.commercial.tests.factories import natural_customer, next_nit, next_reeup
 from apps.commercial.views.invoice_utils import generate_invoice_pdf_standalone
 from apps.core.models import CompanySettings
 
@@ -166,6 +166,8 @@ class BloqueProveedorTests(TestCase):
             client_type='juridica',
             user=cls.user,
             company_name='Empresa Proveedora',
+            reeup=next_reeup(),
+            nit=next_nit(),
             account='9001000000000003',
             address='Calle 1',
             phone='71234567',

@@ -46,6 +46,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import next_nit, next_reeup
 from apps.commercial.views.invoice_utils import (
     _prefill_cost_allocations_from_items,
     generate_invoice_pdf_standalone,
@@ -592,6 +593,8 @@ class FormsetDeCentrosAcotadoTests(TestCase):
                 last_name='Ajeno',
             ),
             company_name='Empresa Ajena',
+            reeup=next_reeup(),
+            nit=next_nit(),
             account='9001000000000010',
         )
         factura_ajena = Invoice.objects.create(

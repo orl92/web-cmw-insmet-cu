@@ -135,7 +135,10 @@ class CustomerDisplayNameTests(TestCase):
         self.assertEqual(customer.display_name, 'Empresa Test')
 
     def test_juridica_sin_razon_social_cae_al_nombre_del_usuario(self):
-        customer = Customer.objects.create(
+        # El caso que se prueba es justamente una jurídica sin razón social,
+        # que la validación de `save()` rechazaría; acá el objetivo es el
+        # fallback de `display_name`.
+        customer = Customer(
             client_type='juridica',
             user=make_user('jur.sin.razon', first_name='Ana', last_name='Norte'),
             company_name='',
@@ -145,6 +148,7 @@ class CustomerDisplayNameTests(TestCase):
             address='Calle 3 #789',
             phone='87654322',
         )
+        customer.save(run_validators=False)
         self.assertEqual(customer.display_name, 'Ana Norte')
 
     def test_natural_sin_usuario_devuelve_placeholder_y_no_none(self):

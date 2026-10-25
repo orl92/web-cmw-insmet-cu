@@ -28,6 +28,7 @@ from apps.commercial.models import (
     InvoiceCostAllocation,
     Service,
 )
+from apps.commercial.tests.factories import next_nit, next_reeup
 from apps.commercial.views.invoice_utils import centros_de_costo_conocidos
 from apps.core.models import CompanySettings, SiteConfiguration
 from config.huey import huey
@@ -291,6 +292,8 @@ class CentroFueraDelCatalogoTests(TestCase):
                 last_name='Fuera',
             ),
             company_name='Empresa Fuera S.A.',
+            reeup=next_reeup(),
+            nit=next_nit(),
             account='9001000000000020',
         )
         cls.service = Service.objects.create(

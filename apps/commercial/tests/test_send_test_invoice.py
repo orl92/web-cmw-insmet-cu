@@ -27,6 +27,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import next_nit, next_reeup
 from apps.commercial.views.invoice_utils import require_pdf_renderer
 
 # El comando importa `require_pdf_renderer` por nombre, así que para simular una
@@ -93,6 +94,8 @@ class SendTestInvoiceCommandTests(TestCase):
             client_type='juridica',
             user=cls.user,
             company_name='Empresa Test',
+            reeup=next_reeup(),
+            nit=next_nit(),
         )
         cls.invoice = Invoice.objects.create(
             customer=cls.customer,
@@ -248,6 +251,8 @@ class SendTestInvoiceCommandTests(TestCase):
             client_type='juridica',
             user=real_user,
             company_name='Empresa Real',
+            reeup=next_reeup(),
+            nit=next_nit(),
             account='9001000000000900',
             address='Dir',
             phone='71234567',

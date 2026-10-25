@@ -28,7 +28,12 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.commercial.models import Invoice, InvoiceItem, Service, ServiceSubscription
-from apps.commercial.tests.factories import juridica_customer, natural_customer
+from apps.commercial.tests.factories import (
+    juridica_customer,
+    natural_customer,
+    next_nit,
+    next_reeup,
+)
 from apps.core.models import SiteConfiguration, TaskExecutionLog
 from config.huey import huey
 
@@ -323,6 +328,8 @@ class ResumenDelClienteTests(FacturaBase):
     def test_una_juridica_se_identifica_con_la_razon_social(self):
         self.customer.client_type = 'juridica'
         self.customer.company_name = 'Empresa de Prueba SRL'
+        self.customer.reeup = next_reeup()
+        self.customer.nit = next_nit()
         self.customer.save()
 
         self.assertEqual(self._resumen(), 'Factura INV-ENTREGA · Empresa de Prueba SRL')
