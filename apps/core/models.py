@@ -265,13 +265,13 @@ class CompanySettings(models.Model):
         if not instance:
             instance = cls.objects.create(
                 nombre='Centro Meteorológico Provincial Camagüey',
-                direccion='Ave Finlay Km 7/2, Camagüey, Cuba',
-                codigo_reeup='111.0.13658',
-                nit='58954556954',
-                cuenta_bancaria='3254417565656245',
-                agencia_bancaria='BPA',
-                telefonos='32244856',
-                registro_comercial='A54877',
+                direccion='Avenida Finlay Km 7 1/2. Camagüey',
+                codigo_reeup='211.0.6749',
+                nit='11009444483',
+                cuenta_bancaria='0659641302450111',
+                agencia_bancaria='BANDEC- 5961',
+                telefonos='32261284',
+                registro_comercial='A09404',
             )
         return instance
 
