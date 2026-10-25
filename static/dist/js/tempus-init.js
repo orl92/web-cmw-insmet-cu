@@ -245,6 +245,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // Inicializador expuesto como global para nodos que aparecen DESPUÉS de la
+  // carga: los scripts de plantilla clonan filas (p.ej. "Añadir servicio" en la
+  // factura) y necesitan construir el picker de su [data-tempus]. La guarda
+  // anti-doble-init de arriba hace inocua una llamada repetida sobre un input
+  // que ya tiene su instancia.
+  window.initPicker = initPicker;
+
   document.querySelectorAll('[data-tempus]').forEach(initPicker);
 
   var observer = new MutationObserver(function () {

@@ -23,7 +23,7 @@ depender de la pila de Pango en el test; lo que se fija acá es el HTML, no la
 calidad del PDF.
 """
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -39,7 +39,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
-from apps.commercial.tests.factories import natural_customer
+from apps.commercial.tests.factories import natural_customer, next_nit, next_reeup
 from apps.commercial.views.invoice_utils import generate_invoice_pdf_standalone
 from apps.core.models import CompanySettings
 
@@ -116,6 +116,24 @@ class GenerateInvoicePdfTests(TestCase):
         self.invoice.refresh_from_db()
         self.assertTrue(self.invoice.pdf)
 
+    def test_la_fecha_de_facturacion_imprime_el_mes_en_espanol(self):
+        """`%B` respeta el locale del proceso, no `LANGUAGE_CODE='es-mx'`.
+
+        Sin una tabla propia de meses, el PDF salía "11 de October del 2026".
+        """
+        factura = Invoice.objects.create(
+            customer=self.customer, number='PDF-MES', amount=Decimal('100.00')
+        )
+        Invoice.objects.filter(pk=factura.pk).update(
+            issue_date=timezone.make_aware(datetime(2026, 10, 11, 9, 0))
+        )
+        factura.refresh_from_db()
+
+        html = self._generar(invoice=factura)
+
+        self.assertIn('11 de octubre del 2026', html)
+        self.assertNotIn('October', html)
+
     def test_sin_motor_falla_antes_de_tocar_la_factura(self):
         """El preflight va antes del render: sin la pila de Pango el error tiene que
         decir qué instalar, y la factura no debe quedar con un PDF a medio escribir."""
@@ -148,6 +166,8 @@ class BloqueProveedorTests(TestCase):
             client_type='juridica',
             user=cls.user,
             company_name='Empresa Proveedora',
+            reeup=next_reeup(),
+            nit=next_nit(),
             account='9001000000000003',
             address='Calle 1',
             phone='71234567',
@@ -166,10 +186,9 @@ class BloqueProveedorTests(TestCase):
             start_date=timezone.now(),
         )
         cls.contract = Contract.objects.create(
-            subscription=cls.subscription,
+            customer=cls.customer,
             number='CONT-2026-001',
-            date=date(2026, 2, 3),
-            commercial_registry='RC-ESPECIFICO',
+            start_date=date(2026, 2, 3),
         )
         cls.invoice = Invoice.objects.create(
             customer=cls.customer,
@@ -195,19 +214,23 @@ class BloqueProveedorTests(TestCase):
     def test_el_contrato_llena_registro_numero_y_fecha(self):
         html = self._generar()
 
-        self.assertIn('RC-ESPECIFICO', html)
+        self.assertIn(self.company.registro_comercial, html)
         self.assertIn('CONT-2026-001', html)
         # Formato dd/mm/yyyy, el mismo que usa el período de facturación.
         self.assertIn('03/02/2026', html)
 
-    def test_el_registro_del_contrato_gana_al_de_la_empresa(self):
-        """El del contrato es el más específico (es el de esa suscripción)."""
-        self.assertNotEqual(self.contract.commercial_registry, self.company.registro_comercial)
+    def test_el_contrato_no_lleva_registro_propio(self):
+        """El registro comercial dejó de ser un campo del contrato.
+
+        Era el más específico (el de esa suscripción) y ganaba al de la
+        empresa; ahora la empresa es la única fuente de ese dato.
+        """
+        self.assertFalse(hasattr(Contract, 'commercial_registry'))
 
         html = self._generar()
 
-        self.assertIn('RC-ESPECIFICO', html)
-        self.assertNotIn(self.company.registro_comercial, html)
+        self.assertIn(self.company.registro_comercial, html)
+        self.assertNotIn('RC-ESPECIFICO', html)
 
     def test_sin_contrato_cae_al_registro_de_la_empresa(self):
         """Una factura sin suscripción (o con suscripción sin contrato) no rompe:
@@ -223,13 +246,15 @@ class BloqueProveedorTests(TestCase):
         self.assertIn(self.company.registro_comercial, html)
         self.assertNotIn('RC-ESPECIFICO', html)
 
-    def test_registro_vacio_del_contrato_cae_al_de_la_empresa(self):
-        self.contract.commercial_registry = ''
-        self.contract.save(update_fields=['commercial_registry'])
+    def test_el_registro_de_la_empresa_se_lee_vivo_del_settings(self):
+        """El registro no se congela en el contrato: sale de `CompanySettings` en cada render."""
+        self.company.registro_comercial = 'B99999'
+        self.company.save(update_fields=['registro_comercial'])
 
         html = self._generar()
 
-        self.assertIn(self.company.registro_comercial, html)
+        self.assertIn('B99999', html)
+        self.assertNotIn('A54877', html)
 
     def test_suscripcion_sin_contrato_no_rompe(self):
         self.contract.hard_delete()
@@ -300,10 +325,9 @@ class BloqueClienteTests(TestCase):
             start_date=timezone.now(),
         )
         Contract.objects.create(
-            subscription=subscription,
+            customer=customer,
             number='CONT-BLOQ-001',
-            date=date(2026, 2, 3),
-            commercial_registry='RC-BLOQ',
+            start_date=date(2026, 2, 3),
         )
         invoice = Invoice.objects.create(
             customer=customer,
@@ -359,7 +383,7 @@ class BloqueClienteTests(TestCase):
             html = self._generar(customer, numero)
             self.assertIn('CONT-BLOQ-001', html)
             self.assertIn('03/02/2026', html)
-            self.assertIn('RC-BLOQ', html)
+            self.assertIn(self.company.registro_comercial, html)
 
     def test_la_juridica_imprime_la_razon_social_aunque_la_cuenta_tenga_nombre(self):
         """La cuenta de un cliente jurídico puede tener nombre propio (el de quien

@@ -12,6 +12,7 @@ from .base import *  # noqa: F403
 from .base import (  # noqa: F401  (alias sin guion bajo: `import *` no lo exporta)
     _CONTENT_SECURITY_POLICY_DIRECTIVES,
     apply_external_hostname,
+    insecure_email_backends,
     resolve_obs_local_only,
     silent_email_backends,
 )
@@ -25,6 +26,15 @@ if EMAIL_BACKEND.strip() in silent_email_backends:
         'acepta los mensajes y los descarta, así que se perderían en silencio. Defina '
         'un servidor SMTP real (EMAIL_BACKEND, EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, '
         'EMAIL_HOST_PASSWORD) y regenere el archivo con '
+        '`python scripts/generate_env.py --production`.'
+    )
+
+if EMAIL_BACKEND.strip() in insecure_email_backends:
+    raise ImproperlyConfigured(
+        f'Producción no puede enviar correo por {EMAIL_BACKEND.strip()}: ese backend no '
+        'verifica el certificado del servidor SMTP, así que el mensaje viaja por un '
+        'intermediario en claro. Defina un backend SMTP real (EMAIL_BACKEND, EMAIL_HOST, '
+        'EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD) y regenere el archivo con '
         '`python scripts/generate_env.py --production`.'
     )
 
@@ -52,6 +62,16 @@ if whitenoise_middleware not in MIDDLEWARE:
 
 
 DATABASES = get_database_config(is_production=True, prefer_sqlite=False)
+
+if not os.getenv('SITE_URL', '').strip():
+    raise ImproperlyConfigured(
+        'Falta SITE_URL: los enlaces de los correos (factura, aviso, reporte del tiempo '
+        'y restablecimiento de contraseña) necesitan la URL pública del sitio, y esa URL '
+        'no se puede adivinar: un enlace a un host interno no lo puede abrir el '
+        'destinatario. Defina SITE_URL en el archivo .env (por ejemplo '
+        'SITE_URL=https://cmw.insmet.cu/) y regenere el archivo con '
+        '`python scripts/generate_env.py --production`.'
+    )
 
 if external_hostname := os.getenv('EXTERNAL_HOSTNAME', ''):
     apply_external_hostname(external_hostname, ['http://', 'https://'])

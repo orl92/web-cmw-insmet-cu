@@ -116,11 +116,17 @@ devolvió un mensaje de éxito, así que el único rastro del fallo es
       `filebased` con el adjunto `application/pdf`
       (`factura_DEMO-0008_2026-09-30.pdf`). `email_sent=True`, `email_error=None`,
       cola vacía. Evidencia: `tmp/emails/20260930-095851-*.log`.
-- [ ] **Pendiente, bloqueado por el sistema:** lo mismo pero con el binario real. El
-      stub prueba el encadenamiento (encolado → registro → plantilla → binario →
-      adjunto → flags), no la calidad del render. Requiere `sudo apt install
-      wkhtmltopdf`; hasta entonces el HTML que recibe el conversor real no se
-      validó.
+- [x] **Motor real, flujo completo, verificado en un buzón real.** El bloqueo original
+      ya no aplica: el renderizador migró de `pdfkit`/`wkhtmltopdf` a `WeasyPrint`
+      (`apps/commercial/views/invoice_utils.py:12` importa `HTML` y `:192` hace
+      `HTML(string=html_string).write_pdf()`), que es Python puro + Pango/Harfbuzz y no
+      necesita binario del sistema. E2E con el motor real, sin stub: tarea encolada →
+      consumer Huey → `generate_invoice_pdf_standalone` (WeasyPrint real) → PDF guardado
+      en la factura → `enviar_correo_factura` por SMTP real → entrega en el buzón de
+      `jesus@test.com`. Evidencia: el mensaje en el Maildir del buzón contiene el adjunto
+      `factura_2026-0001_2026-10-11.pdf` de 28.091 bytes con cabecera `%PDF-` válida, más
+      el cuerpo HTML. Queda pendiente la *calidad/fidelidad* del render, que es alcance de
+      `fidelidad-facturacion-facturas-reales.md` e `integridad-clientes-facturas-pdf.md`.
 
 ## Lo que el E2E destapó y no era de esta feature
 
@@ -150,3 +156,27 @@ devolvió un mensaje de éxito, así que el único rastro del fallo es
 - **El comando encola, no ejecuta inline.** Si ejecutara inline, no probaría el worker,
   que es lo que hay que probar. Por eso lleva un flag para correr sin consumer cuando
   uno solo quiere ver el resultado rápido.
+
+## Cierre — SMTP real en dev (Poste.io)
+
+El objetivo pedía un artefacto real, no un `email_sent=True`. Se cumplió por dos vías:
+el backend `filebased` (T4) y, finalmente, **SMTP real** contra un Poste.io local, con
+entrega verificada en el buzón del destinatario.
+
+- **Config en `.env`:** `EMAIL_BACKEND=config.mail_backends.InsecureDevEmailBackend`,
+  `EMAIL_HOST=127.0.0.1`, `EMAIL_PORT=5587` (STARTTLS), `EMAIL_HOST_USER=admin@test.com`,
+  `DEFAULT_FROM_EMAIL=admin@test.com`.
+- **`config/mail_backends.py`:** `InsecureDevEmailBackend`, backend dev-only que envuelve
+  el `EmailBackend` de Django con un `ssl_context` sin verificación de host ni CA. Motivo:
+  el certificado de Poste.io es autofirmado **sin CN ni SAN**, así que verificar el nombre
+  del host es imposible aunque se confíe la CA. **Nunca usar en producción.**
+- **El `From` debe coincidir con la cuenta autenticada.** Poste.io rechaza el envío con
+  `550 You are not allowed to send emails as ... while logged as ...`. Por eso
+  `DEFAULT_FROM_EMAIL=admin@test.com`.
+- **Entrega verificada:** correo de la factura `2026-0001` presente en el Maildir de
+  `jesus@test.com` con el adjunto PDF válido (ver la casilla de motor real, arriba).
+- **Incidente de infra resuelto:** IMAP/POP3 estaban caídos porque Dovecot moría al
+  arrancar por un `/run/dovecot/master.pid` obsoleto (contenía un PID reutilizado por otro
+  proceso del contenedor). Los correos aceptados por SMTP quedaban retenidos en la cola de
+  Halon hasta que Dovecot volvió. Borrar el pidfile obsoleto restauró los puertos 993/995/
+  110/143 y las entregas retenidas fluyeron.

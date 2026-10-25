@@ -1,6 +1,7 @@
 import logging
 import os
 from decimal import ROUND_HALF_UP, Decimal
+from email.mime.image import MIMEImage
 from functools import lru_cache
 
 from django.conf import settings
@@ -11,7 +12,14 @@ from django.urls import reverse
 from django.utils import timezone
 from weasyprint import HTML
 
-from apps.commercial.models import Contract, Customer, Invoice
+from apps.commercial.models import (
+    MESES,
+    Contract,
+    Customer,
+    Invoice,
+    InvoiceCostAllocation,
+    Service,
+)
 from apps.core.models import CompanySettings
 
 logger = logging.getLogger(__name__)
@@ -61,6 +69,41 @@ def _centro_de_costo_de_codigo(codigo):
     return f'{codigo[:3]}.{codigo[3:8]}'
 
 
+def centros_de_costo_conocidos():
+    """Centros de costo que la pantalla de factura ofrece para elegir.
+
+    Es una **unión** de dos fuentes, no una lista cerrada:
+
+    1. los centros derivados de los códigos de los servicios comerciales
+       (`700501072507005` -> `700.50107`), que es lo único derivable, y
+    2. los `codigo` que ya aparecen en imputaciones guardadas, que es todo lo
+       que alguien escribió a mano alguna vez.
+
+    La segunda fuente no es redundante: los repartos reales de las facturas 276
+    (25/65/10) y 279 (90/10) usan centros que **no salen de ningún código de
+    servicio** (ver el docstring de `InvoiceCostAllocation`), así que no se
+    pueden derivar. Por eso esto alimenta un `<datalist>` y no un `<select>`: el
+    catálogo reconoce lo conocido sin cerrar la puerta a un centro nuevo, que
+    sigue siendo válido si se escribe.
+
+    Un código de servicio corto o no numérico no aporta centro: no se inventa
+    ninguno a partir de un prefijo que no lo contiene. La lista sale ordenada y
+    sin duplicados.
+    """
+    centros = set()
+    for codigo in Service.objects.filter(service_type=Service.COMMERCIAL).values_list(
+        'code', flat=True
+    ):
+        centro = _centro_de_costo_de_codigo(codigo)
+        if centro:
+            centros.add(centro)
+    for codigo in InvoiceCostAllocation.objects.values_list('codigo', flat=True).distinct():
+        centro = (codigo or '').strip()
+        if centro:
+            centros.add(centro)
+    return sorted(centros)
+
+
 def _prefill_cost_allocations_from_items(items):
     """Reparto inicial a partir de los centros de los ítems facturados.
 
@@ -96,29 +139,19 @@ def _prefill_cost_allocations_from_items(items):
 
 
 def _contrato_de_factura(invoice):
-    """El contrato de la suscripción facturada, o `None`.
-
-    `Contract.subscription` es un `OneToOneField`, así que `subscription.contract`
-    lanza `Contract.DoesNotExist` cuando la suscripción todavía no tiene
-    contrato: eso es un caso normal (la factura manual no tiene suscripción), no
-    un error, y por eso se devuelve `None` en vez de dejar subir la excepción.
-    """
-    subscription = invoice.subscription if invoice else None
-    if subscription is None:
+    """Devuelve el contrato vigente para el cliente y el período facturado."""
+    if invoice is None:
         return None
-    try:
-        return subscription.contract
-    except Contract.DoesNotExist:
+    if invoice.customer_id is None:
         return None
+    # `period_start` es `DateField` y `issue_date.date()` normaliza el
+    # `DateTimeField`, así que `fecha` ya es siempre una `date`.
+    fecha = invoice.period_start or invoice.issue_date.date()
+    return Contract.objects.vigente_para(invoice.customer, fecha)
 
 
 def _datos_proveedor(company, contract):
-    """Datos del ejecutor, con el bloque de contrato resuelto.
 
-    El registro comercial del contrato es el más específico (es el de esa
-    suscripción), así que gana; si el contrato no lo trae, se usa el de la
-    empresa. Sin contrato, los tres campos quedan vacíos en vez de romper.
-    """
     return {
         'nombre': company.nombre,
         'direccion': company.direccion,
@@ -127,26 +160,14 @@ def _datos_proveedor(company, contract):
         'cuenta_bancaria': company.cuenta_bancaria,
         'agencia_bancaria': company.agencia_bancaria,
         'telefonos': company.telefonos,
-        'registro_comercial': (
-            (contract.commercial_registry if contract else '') or company.registro_comercial
-        ),
+        'registro_comercial': company.registro_comercial,
         'no_contrato': contract.number if contract else '',
-        'fecha_contrato': contract.date.strftime('%d/%m/%Y') if contract else '',
+        'fecha_contrato': contract.start_date.strftime('%d/%m/%Y') if contract else '',
     }
 
 
 def _datos_cliente(customer):
-    """Datos del cliente, ya resueltos según su tipo.
 
-    La plantilla solo decide qué imprimir con `es_juridica`; qué valores van en
-    cada caso se calcula acá, que es donde se puede razonar sin HTML.
-
-    El nombre se resuelve por tipo y nunca queda en blanco: una jurídica
-    imprime su razón social (es lo que imprimía antes, y es lo que va en una
-    factura legal) y una persona natural su nombre, que vive en el `User`. Si
-    alguno de los dos falta, se degrada al otro y, en último caso, al nombre de
-    usuario. Es la misma prioridad que usa `Customer.__str__`.
-    """
     if customer is None:
         return {
             'es_juridica': False,
@@ -183,23 +204,14 @@ def _datos_cliente(customer):
     }
 
 
-def _periodo_facturacion(invoice):
-    """El período facturado, tal como lo escribió el operador.
+def _fecha_en_espanol(fecha):
+    """`dd de <mes> del aaaa`, con el mes en español y sin depender del locale.
 
-    Las facturas reales del CMP lo escriben como texto libre ("Mes de mayo y
-    junio de 2025", "octubre y noviembre del 2025"), y ninguno de esos textos se
-    puede derivar de un par de fechas. Por eso es un `CharField` y no un rango:
-    componer "Desde X hasta Y" rinde un rango imposible en el caso normal, que
-    es una factura emitida de una sola fecha.
-
-    Si el campo está vacío (facturas emitidas antes de que existiera), cae a la
-    fecha de emisión. No es una migración de datos a propósito: en este proyecto
-    las migraciones no se versionan, así que una migración de datos se perdería
-    en silencio y dejaría facturas viejas sin período.
+    `strftime('%B')` usa el locale del proceso (C en producción), no el
+    `LANGUAGE_CODE='es-mx'` de la app: el PDF salía "11 de October del 2026".
+    La tabla `MESES` es la misma que usa la frase del período.
     """
-    if invoice.period_label:
-        return invoice.period_label
-    return invoice.issue_date.strftime('%d/%m/%Y')
+    return f'{fecha.day:02d} de {MESES[fecha.month - 1]} del {fecha.year}'
 
 
 def generate_invoice_pdf_standalone(invoice, customer, items):
@@ -210,8 +222,8 @@ def generate_invoice_pdf_standalone(invoice, customer, items):
             for asignacion in invoice.cost_allocations.all()
         ],
         'numero_factura': invoice.number,
-        'fecha_facturacion': invoice.issue_date.strftime('%d de %B del %Y'),
-        'periodo_facturacion': _periodo_facturacion(invoice),
+        'fecha_facturacion': _fecha_en_espanol(invoice.issue_date),
+        'periodo_facturacion': invoice.period_label,
         'cliente': _datos_cliente(customer),
         'proveedor': _datos_proveedor(company, _contrato_de_factura(invoice)),
         'items': [
@@ -237,12 +249,7 @@ def generate_invoice_pdf_standalone(invoice, customer, items):
 
 
 def marcar_pdf(invoice, error=None):
-    """Deja el estado del PDF alineado con lo que pasó en el render.
 
-    Vive acá y no en la tarea porque hay dos caminos que generan el PDF (la
-    tarea Huey y el comando de pruebas) y el estado tiene que quedar escrito
-    igual en los dos.
-    """
     invoice.pdf_status = Invoice.PdfStatus.FAILED if error else Invoice.PdfStatus.READY
     invoice.pdf_error = str(error) if error else None
     invoice.save(update_fields=['pdf_status', 'pdf_error'])
@@ -250,15 +257,7 @@ def marcar_pdf(invoice, error=None):
 
 
 def enviar_correo_factura(invoice, customer, request=None, base_url=None):
-    """
-    Envía el correo con la factura en PDF y registra el resultado en
-    `email_status`/`email_error`.
 
-    Retorna True si salió, False si no. **No propaga la excepción**: quien
-    llama decide si eso es un error fatal o solo un estado que hay que
-    mostrar. Tragar el error acá es lo que hacía que la tarea Huey reportara
-    éxito con el correo sin enviar.
-    """
     if not customer.user or not customer.user.email:
         invoice.email_status = Invoice.EmailStatus.FAILED
         invoice.email_error = 'El cliente no tiene correo registrado.'
@@ -276,12 +275,15 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
     company = CompanySettings.get_instance()
 
     if base_url is None:
-        if request:
-            base_url = request.build_absolute_uri('/')
-        else:
-            base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000/')
+        # La URL sale de `SITE_URL` y NO del `request`: el cliente no está en la
+        # red interna, y el host por el que el operador entró no es el público.
+        base_url = settings.SITE_URL
 
-    listado_url = base_url + reverse('commercial:factura_list').lstrip('/')
+    # El cliente no tiene `view_invoice` (facturación le queda en 403), así que
+    # el enlace apunta a «Mis Suscripciones», cubierta por `view_subscription`
+    # —el permiso que sí tiene el grupo `Clientes`—. La clave del contexto se
+    # mantiene: las tres plantillas de correo la leen con ese nombre.
+    listado_url = base_url + reverse('commercial:suscripcion_list').lstrip('/')
 
     context = {
         'invoice': invoice,
@@ -295,7 +297,10 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
     }
 
     html_content = render_to_string(template, context)
-    subject = f'Factura {invoice.number} - {customer.company_name}'
+    # `company_name` es NULL en una persona natural y la f-string lo escribía
+    # literal como `None`. `display_name` es el mismo criterio que usan los
+    # cuerpos de las plantillas: cae al nombre del usuario y luego al username.
+    subject = f'Factura {invoice.number} - {customer.display_name}'
 
     email = EmailMessage(
         subject=subject,
@@ -321,7 +326,19 @@ def enviar_correo_factura(invoice, customer, request=None, base_url=None):
             qr_path = os.path.join(settings.STATIC_ROOT, 'dist/img/QR/QR.png')
         if os.path.exists(qr_path):
             with open(qr_path, 'rb') as f:
-                email.attach('qr_pago.png', f.read(), 'image/png')
+                qr_bytes = f.read()
+            # El PNG viaja una sola vez, como parte MIME inline con
+            # cabecera `Content-ID`: es la única forma de que el
+            # `cid:qr_pago.png` del cuerpo resuelva, porque
+            # `email.attach(nombre, bytes, mimetype)` crea un adjunto SIN
+            # `Content-ID`. No se añade además como adjunto descargable,
+            # para no duplicar el archivo en el correo. `_subtype`
+            # explícito porque Python 3.14 ya no incluye `imghdr` para
+            # adivinarlo del contenido.
+            parte_inline = MIMEImage(qr_bytes, _subtype='png')
+            parte_inline.add_header('Content-ID', '<qr_pago.png>')
+            parte_inline.add_header('Content-Disposition', 'inline', filename='qr_pago.png')
+            email.attach(parte_inline)
 
     try:
         email.send()

@@ -14,9 +14,10 @@ setup: env ## Create .venv, install dev+test deps, and activate the git hooks
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r requirements/dev.txt
 	$(PY) -m pip install -r requirements/test.txt
-	$(PY) -m pre-commit install --install-hooks
-	# core.hooksPath is set below, so `pre-commit install` above only
-	# populates the hook environments; it does not wire a second hook.
+	@if git config --get core.hooksPath >/dev/null 2>&1; then \
+		git config --unset-all core.hooksPath; \
+	fi
+	$(PY) -m pre_commit install --install-hooks
 	git config core.hooksPath .githooks
 
 env: ## Generate the .env if it is missing (never overwrites an existing one)

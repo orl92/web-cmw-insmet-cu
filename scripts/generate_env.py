@@ -162,10 +162,13 @@ def build_env(*, production: bool, encrypted_secret_key: str, encryption_key: st
     if production:
         parts.append(f'EXTERNAL_HOSTNAME={hostname}\n')
         parts.append(f'ALLOWED_HOSTS={hostname},www.{hostname}\n')
-        parts.append(f'CSRF_TRUSTED_ORIGINS=https://{hostname},https://www.{hostname}\n\n')
+        parts.append(f'CSRF_TRUSTED_ORIGINS=https://{hostname},https://www.{hostname}\n')
+        # La URL pública del sitio: es la que viajan los enlaces de los correos.
+        parts.append(f'SITE_URL=https://{hostname}/\n\n')
     else:
         parts.append('ALLOWED_HOSTS=localhost,127.0.0.1\n')
-        parts.append('CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000\n\n')
+        parts.append('CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000\n')
+        parts.append('SITE_URL=http://localhost:8000/\n\n')
 
     parts.append(section('CONFIGURACIÓN DE EMAIL'))
     if production:

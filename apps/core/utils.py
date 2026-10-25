@@ -116,6 +116,8 @@ def get_sun_img_path(sun_event):
 def mail_send(request, alert_obj, subject, url, attachment_name=None):
     from django.conf import settings
     from django.template.loader import render_to_string
+    from django.urls import reverse
+    from django.utils import timezone
 
     from apps.core.tasks import send_email_task
 
@@ -126,11 +128,25 @@ def mail_send(request, alert_obj, subject, url, attachment_name=None):
         return
 
     company = CompanySettings.get_instance()
+    # `emails/alert_notification.html` espera `index_url`, `listado_url`, `title`
+    # y `current_year`; sin ellos el correo sale con `href=""`, título vacío y
+    # sin año. Mismo criterio que los correos comerciales
+    # (`apps/commercial/views/invoice_utils.py`).
+    #
+    # La URL sale de `SITE_URL` y NO del `request`: el destinatario no está en la
+    # red interna, y el host por el que el operador entró no es el público. El
+    # parámetro `request` se sigue aceptando porque los llamadores lo pasan.
+    base_url = settings.SITE_URL
     context = {
         'company': company,
         'alert': alert_obj,
         'subject': subject,
         'url': url,
+        'index_url': base_url,
+        'listado_url': base_url + reverse(url).lstrip('/'),
+        # `Warning` tiene `title`; `WeatherReport` no, así que cae al asunto.
+        'title': getattr(alert_obj, 'title', None) or subject,
+        'current_year': timezone.now().year,
     }
     html_message = render_to_string('emails/alert_notification.html', context)
     recipient_emails = [r.email for r in recipient_list]

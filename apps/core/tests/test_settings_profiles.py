@@ -39,6 +39,10 @@ FILEBASED_EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 LOCMEM_EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 DJANGO_SMTP_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 CUSTOM_EMAIL_BACKEND = 'config.custom_email_backend.CustomSTARTTLSBackend'
+# El backend de desarrollo del proyecto: acepta el mensaje y lo entrega sin
+# verificar el certificado del servidor SMTP. Literal, por la misma razón que
+# los de arriba: el test tiene que fijar la cadena exacta que se rechaza.
+INSECURE_DEV_EMAIL_BACKEND = 'config.mail_backends.InsecureDevEmailBackend'
 
 # El bloque de cookies seguras, setting por setting.
 SECURE_COOKIE_VALUES = {
@@ -236,6 +240,7 @@ class ProductionProfileTests(
         'DB_USER': 'u',
         'DB_HOST': 'h',
         'DB_PASS': 'p',
+        'SITE_URL': 'https://cmw.insmet.cu/',
         **secret_env(),
     }
 
@@ -326,8 +331,79 @@ class ProductionProfileTests(
                 )
                 self.assertEqual(module.EMAIL_BACKEND, backend)
 
+    def test_insecure_dev_email_backend_is_rejected(self):
+        """El backend de desarrollo del proyecto no verifica el certificado del
+        servidor SMTP: en producción el correo sale sin cifrar contra un
+        intermediario, y nadie se entera porque el envío "funciona"."""
+        with self.assertRaises(ImproperlyConfigured) as ctx:
+            load_profile(
+                'config.settings.production',
+                {**self.DB_ENV, 'EMAIL_BACKEND': INSECURE_DEV_EMAIL_BACKEND},
+            )
+        message = str(ctx.exception)
+        self.assertIn(INSECURE_DEV_EMAIL_BACKEND, message)
+        self.assertIn('certificado', message)
+        self.assertIn('generate_env.py --production', message)
+
+    def test_fail_closed_without_site_url(self):
+        """Sin `SITE_URL`, producción no arranca.
+
+        Los enlaces de los correos (factura, aviso, reporte del tiempo y
+        restablecimiento de contraseña) necesitan la URL pública del sitio. Sin
+        ella no se puede inventar una: un enlace a un host interno no lo puede
+        abrir el destinatario, y el fallo se descubre cuando el cliente recibe
+        el correo.
+        """
+        env = {key: value for key, value in self.DB_ENV.items() if key != 'SITE_URL'}
+        with self.assertRaises(ImproperlyConfigured) as ctx:
+            load_profile('config.settings.production', env)
+        message = str(ctx.exception)
+        self.assertIn('SITE_URL', message)
+        self.assertIn('generate_env.py --production', message)
+
+    def test_site_url_comes_from_the_environment(self):
+        """Producción usa la URL pública que declara el entorno, tal cual."""
+        module = load_profile(
+            'config.settings.production', {**self.DB_ENV, 'SITE_URL': 'https://otro.cu/'}
+        )
+        self.assertEqual(module.SITE_URL, 'https://otro.cu/')
+
     def test_ftp_simulations_off(self):
         self.assertIs(self.module.OBS_LOCAL_ONLY_DEFAULT, False)
+
+
+class SiteUrlNormalizationTests(SimpleTestCase):
+    """`SITE_URL` se expone con barra final: el host y la ruta se unen con una
+    sola barra, nunca con dos.
+
+    La convención es del módulo, no del gusto: los enlaces se arman con
+    `SITE_URL + reverse(...).lstrip('/')`, y `lstrip` quita la barra de la ruta
+    para que la del host sea la única que queda.
+    """
+
+    def _site_url(self, value=None):
+        env = {'DEBUG': 'True'}
+        if value is not None:
+            env['SITE_URL'] = value
+        return load_profile('config.settings.base', env).SITE_URL
+
+    def test_default_de_desarrollo(self):
+        self.assertEqual(self._site_url(), 'http://localhost:8000/')
+
+    def test_con_barra_final_no_se_toca(self):
+        self.assertEqual(self._site_url('https://cmw.insmet.cu/'), 'https://cmw.insmet.cu/')
+
+    def test_sin_barra_final_se_agrega(self):
+        self.assertEqual(self._site_url('https://cmw.insmet.cu'), 'https://cmw.insmet.cu/')
+
+    def test_con_ruta_base(self):
+        self.assertEqual(
+            self._site_url('https://ejemplo.cu/meteorologia'),
+            'https://ejemplo.cu/meteorologia/',
+        )
+
+    def test_los_espacios_al_rededor_no_quedan(self):
+        self.assertEqual(self._site_url('  https://cmw.insmet.cu  '), 'https://cmw.insmet.cu/')
 
 
 class SecretKeyFailClosedTests(SimpleTestCase):

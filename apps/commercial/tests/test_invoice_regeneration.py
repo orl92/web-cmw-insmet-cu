@@ -52,6 +52,7 @@ def _make_superuser(username):
 
 
 def _periodo(offset_days=1):
+    """Fecha inicial de una línea de facturación manual."""
     inicio = timezone.now().date()
     return inicio.isoformat(), (inicio + timedelta(days=offset_days)).isoformat()
 
@@ -94,7 +95,7 @@ class RegenerarCasoBase(TestCase):
             codigo='RGN01',
             descripcion='Pronóstico diario',
             cantidad=Decimal('10'),
-            unidad_medida='DÍA',
+            unidad_medida='U',
             precio=Decimal('45.00'),
             importe=Decimal('450.00'),
         )
@@ -113,11 +114,14 @@ class RegenerarCasoBase(TestCase):
         self.client.force_login(self.admin)
 
     def _formulario(self):
-        inicio, fin = _periodo()
+        # El período del lote se deduce de cada suscripción: el formulario lo
+        # ignora, pero el año y los meses elegidos viajan igual.
+        hoy = timezone.localdate()
         return {
             'customer': self.customer.pk,
-            'start_date': inicio,
-            'end_date': fin,
+            'year': str(hoy.year),
+            'month_from': str(hoy.month),
+            'month_to': str(hoy.month),
             'commercial_registry': 'REG-RGN-01',
             'subscriptions': [str(self.sub.pk)],
             'regenerar': str(self.sub.uuid),
@@ -345,11 +349,13 @@ class RegenerarEnFacturacionManualTests(RegenerarCasoBase):
     """Facturación manual: la suscripción regenerada no está en la factura."""
 
     def _formulario_manual(self):
-        inicio, fin = _periodo()
+        inicio, _fin = _periodo()
+        hoy = timezone.localdate()
         return {
             'customer': self.customer.pk,
-            'start_date': inicio,
-            'end_date': fin,
+            'year': str(hoy.year),
+            'month_from': str(hoy.month),
+            'month_to': str(hoy.month),
             'commercial_registry': 'REG-RGN-02',
             'regenerar': str(self.sub.uuid),
             'items-TOTAL_FORMS': '1',
@@ -357,9 +363,9 @@ class RegenerarEnFacturacionManualTests(RegenerarCasoBase):
             'items-MIN_NUM_FORMS': '0',
             'items-MAX_NUM_FORMS': '1000',
             'items-0-service': str(self.service.pk),
+            'items-0-start_date': inicio,
             'items-0-cantidad': '5',
             'items-0-precio': '45.00',
-            'items-0-unidad_medida': 'DÍA',
             'items-0-codigo': 'RGN01',
             # La imputación a centros de costo es obligatoria: una factura
             # comercial sin centro es justo el defecto que este formset impide.

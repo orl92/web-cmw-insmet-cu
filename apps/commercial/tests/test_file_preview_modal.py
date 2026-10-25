@@ -78,6 +78,7 @@ class CommercialFilePreviewModalTests(TestCase):
         self.customer = Customer.objects.create(
             user=self.customer_user,
             client_type='juridica',
+            company_name='Empresa de Prueba S.A.',
             account='1234567890123456',
             nit='12345678901',
             reeup='123.4.56789',

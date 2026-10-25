@@ -135,7 +135,10 @@ class CustomerDisplayNameTests(TestCase):
         self.assertEqual(customer.display_name, 'Empresa Test')
 
     def test_juridica_sin_razon_social_cae_al_nombre_del_usuario(self):
-        customer = Customer.objects.create(
+        # El caso que se prueba es justamente una jurídica sin razón social,
+        # que la validación de `save()` rechazaría; acá el objetivo es el
+        # fallback de `display_name`.
+        customer = Customer(
             client_type='juridica',
             user=make_user('jur.sin.razon', first_name='Ana', last_name='Norte'),
             company_name='',
@@ -145,6 +148,7 @@ class CustomerDisplayNameTests(TestCase):
             address='Calle 3 #789',
             phone='87654322',
         )
+        customer.save(run_validators=False)
         self.assertEqual(customer.display_name, 'Ana Norte')
 
     def test_natural_sin_usuario_devuelve_placeholder_y_no_none(self):
@@ -161,6 +165,73 @@ class CustomerDisplayNameTests(TestCase):
     def test_str_usa_display_name(self):
         customer = natural_customer(make_user('strcheck', first_name='Ana', last_name='Norte'))
         self.assertEqual(str(customer), customer.display_name)
+
+
+class ClienteNaturalSinNoneEnStrTests(FileHandlingTestCase):
+    """Ningún `__str__` imprime el literal `None` donde va el nombre del cliente.
+
+    `company_name` sólo existe para personas jurídicas: en una natural es NULL, y
+    los cuatro `__str__` que lo leían directo imprimían la palabra `None` en vez
+    del nombre de la persona, que vive en el User.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = make_user('natural.str', first_name='Ana', last_name='Norte')
+        cls.customer = natural_customer(cls.user)
+        cls.service = Service.objects.create(
+            user=cls.user,
+            title='Servicio Str',
+            summary='S',
+            service_type='commercial',
+            code='STR1',
+            price=Decimal('25.00'),
+        )
+        cls.subscription = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=cls.service,
+            start_date=timezone.now(),
+        )
+
+    def test_suscripcion_muestra_el_nombre_del_cliente(self):
+        texto = str(self.subscription)
+        self.assertNotIn('None', texto)
+        self.assertIn('Ana Norte', texto)
+
+    def test_factura_muestra_el_nombre_del_cliente(self):
+        invoice = Invoice.objects.create(
+            customer=self.customer,
+            subscription=self.subscription,
+            number='STR-001',
+            amount=Decimal('25.00'),
+        )
+        texto = str(invoice)
+        self.assertNotIn('None', texto)
+        self.assertIn('Ana Norte', texto)
+
+    def test_contrato_muestra_el_nombre_del_cliente(self):
+        contract = Contract.objects.create(
+            customer=self.customer,
+            number='STR-CONT-001',
+            start_date=date.today(),
+        )
+        texto = str(contract)
+        self.assertNotIn('None', texto)
+        self.assertIn('Ana Norte', texto)
+
+    def test_certificado_muestra_el_nombre_del_cliente(self):
+        pdf = SimpleUploadedFile(
+            'cert.pdf',
+            b'PDF content',
+            content_type='application/pdf',
+        )
+        cert = Certificate.objects.create(
+            subscription=self.subscription,
+            pdf=pdf,
+        )
+        texto = str(cert)
+        self.assertNotIn('None', texto)
+        self.assertIn('Ana Norte', texto)
 
 
 class ServiceModelTests(FileHandlingTestCase):
@@ -668,10 +739,9 @@ class ContractModelTests(TestCase):
 
     def test_create_contract(self):
         contract = Contract.objects.create(
-            subscription=self.subscription,
+            customer=self.customer,
             number='CONT-001',
-            date=date.today(),
-            commercial_registry='REG-001',
+            start_date=date.today(),
         )
         self.assertIn('CONT-001', str(contract))
         self.assertIsNotNone(contract.uuid)
@@ -690,10 +760,9 @@ class ContractModelTests(TestCase):
 
     def test_soft_delete(self):
         contract = Contract.objects.create(
-            subscription=self.subscription,
+            customer=self.customer,
             number='CONT-002',
-            date=date.today(),
-            commercial_registry='REG-002',
+            start_date=date.today(),
         )
         contract.delete()
         contract.refresh_from_db()
@@ -884,3 +953,63 @@ class CustomerFactoryTests(TestCase):
 
     def test_crea_cliente_si_no_hay_ninguno_valido(self):
         self.assertIsNotNone(valid_natural_customer().identity_document)
+
+
+class CustomerCleanValidationTests(TestCase):
+    def test_natural_requiere_identity_document_en_full_clean(self):
+        user = _make_user('nat_clean')
+        customer = Customer(
+            client_type=Customer.ClientType.NATURAL,
+            user=user,
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Calle 1',
+            phone='71234567',
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            customer.full_clean()
+        self.assertIn('identity_document', ctx.exception.message_dict)
+
+    def test_juridica_requiere_reeup_nit_compania_en_full_clean(self):
+        user = _make_user('jur_clean')
+        customer = Customer(
+            client_type=Customer.ClientType.JURIDICA,
+            user=user,
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Calle 1',
+            phone='71234567',
+        )
+        with self.assertRaises(ValidationError) as ctx:
+            customer.full_clean()
+        self.assertIn('reeup', ctx.exception.message_dict)
+        self.assertIn('nit', ctx.exception.message_dict)
+        self.assertIn('company_name', ctx.exception.message_dict)
+
+    def test_natural_valido_pasa_full_clean(self):
+        user = _make_user('nat_clean_ok')
+        customer = Customer(
+            client_type=Customer.ClientType.NATURAL,
+            user=user,
+            identity_document='34111234567',
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Calle 1',
+            phone='71234567',
+        )
+        customer.full_clean()
+
+    def test_juridica_valida_pasa_full_clean(self):
+        user = _make_user('jur_clean_ok')
+        customer = Customer(
+            client_type=Customer.ClientType.JURIDICA,
+            user=user,
+            company_name='Empresa OK',
+            reeup='123.4.5678',
+            nit='12345678901',
+            account='1234567890123456',
+            agency_bank='BANDEC',
+            address='Calle 1',
+            phone='71234567',
+        )
+        customer.full_clean()

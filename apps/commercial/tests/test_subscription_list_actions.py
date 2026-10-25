@@ -75,7 +75,7 @@ class SubscriptionListActionsTests(TestCase):
             codigo='SRV-ACC',
             descripcion='Servicio de prueba',
             cantidad=1,
-            unidad_medida='MES',
+            unidad_medida='U',
             precio=100,
             importe=100,
         )
@@ -242,7 +242,7 @@ class LatestInvoicePdfReadyAnnotationTests(TestCase):
                     codigo='SRV-PDF',
                     descripcion='Servicio pdf',
                     cantidad=1,
-                    unidad_medida='MES',
+                    unidad_medida='U',
                     precio=100,
                     importe=100,
                 )
@@ -284,7 +284,7 @@ class LatestInvoicePdfReadyAnnotationTests(TestCase):
             codigo='SRV-PDF',
             descripcion='Servicio pdf',
             cantidad=1,
-            unidad_medida='MES',
+            unidad_medida='U',
             precio=100,
             importe=100,
         )

@@ -27,11 +27,11 @@ Por eso `InvoiceCostAllocation` existe como dato, y el prefill se marca
 explícitamente como punto de partida.
 """
 
-from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
@@ -46,6 +46,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import next_nit, next_reeup
 from apps.commercial.views.invoice_utils import (
     _prefill_cost_allocations_from_items,
     generate_invoice_pdf_standalone,
@@ -410,10 +411,14 @@ class InvoiceCostAllocationVistaTests(TestCase):
         self.client.force_login(self.admin)
 
     def _formulario(self, **cost):
+        hoy = timezone.localdate()
         datos = {
             'customer': self.customer.pk,
-            'start_date': date(2026, 1, 1).isoformat(),
-            'end_date': date(2026, 1, 31).isoformat(),
+            # En lote el período se deduce de cada suscripción; el formulario lo
+            # ignora, pero el año y los meses elegidos se mandan igual.
+            'year': str(hoy.year),
+            'month_from': str(hoy.month),
+            'month_to': str(hoy.month),
             'commercial_registry': 'REG-COST',
             'subscriptions': [str(self.subscription.pk)],
             'cost_allocations-TOTAL_FORMS': '1',
@@ -487,6 +492,56 @@ class InvoiceCostAllocationVistaTests(TestCase):
 
         self.assertFalse(Invoice.objects.filter(customer=self.customer).exists())
 
+    def test_el_rechazo_nombra_el_motivo_real_y_no_html(self):
+        """El aviso tiene que decir qué corregir, y en texto plano.
+
+        El mensaje genérico dejaba al operador adivinando: el error real es de una
+        fila o del total, y la plantilla sólo dibuja los `non_form_errors`. Y como
+        `str(errors)` de Django renderiza `<ul class="errorlist">`, el aviso
+        tampoco puede llevar ese markup.
+        """
+        response = self.client.post(
+            self.url,
+            self._formulario(
+                **{
+                    'cost_allocations-0-codigo': '700.50107',
+                    'cost_allocations-0-porcentaje': '90.00',
+                }
+            ),
+        )
+
+        avisos = [str(m) for m in get_messages(response.wsgi_request)]
+        self.assertTrue(avisos)
+        self.assertIn('Corrige el reparto entre centros de costo', avisos[0])
+        self.assertIn('100', avisos[0])
+        self.assertNotIn('<', avisos[0])
+
+    def test_un_lote_con_initial_forms_uno_crea_la_factura(self):
+        """El navegador manda `INITIAL_FORMS=1` cuando la pantalla se abrió con
+        `?regenerar=`: un modelformset cuenta la fila precargada como existente.
+
+        Esas imputaciones son filas nuevas de una factura que todavía no existe,
+        así que su `id` viaja vacío y el formset no puede exigirlo. Sin normalizar
+        el management form en el POST, la vista rechaza la factura entera con el
+        mensaje genérico y nunca se crea nada.
+        """
+        self.client.post(
+            self.url,
+            self._formulario(
+                **{
+                    'cost_allocations-INITIAL_FORMS': '1',
+                    'cost_allocations-0-codigo': '700.50107',
+                    'cost_allocations-0-porcentaje': '100.00',
+                }
+            ),
+        )
+
+        invoice = self._factura_creada()
+        self.assertEqual(
+            [(a.codigo, a.porcentaje) for a in invoice.cost_allocations.all()],
+            [('700.50107', Decimal('100.00'))],
+        )
+
     def test_el_formulario_abre_con_el_centro_precargado(self):
         """Al regenerar, el centro del servicio viene solo: el operador confirma."""
         response = self.client.get(self.url, {'regenerar': str(self.subscription.uuid)})
@@ -504,6 +559,59 @@ class InvoiceCostAllocationVistaTests(TestCase):
 
         formset = response.context['cost_allocations_formset']
         self.assertEqual([f.initial.get('codigo') for f in formset.forms], [None])
+
+
+class FormsetDeCentrosAcotadoTests(TestCase):
+    """El formset no arrastra las imputaciones de otras facturas.
+
+    Un `modelformset_factory` sin `queryset=` cae al manager por defecto y
+    `BaseModelFormSet.get_queryset()` devuelve TODAS las filas de la tabla, así
+    que `initial_form_count()` pasa a ser la cantidad de imputaciones de la base.
+    La pantalla abría con esas filas como editables —más la fila en blanco de
+    `extra=1`—: con filas ajenas que suman 100, la factura nueva se imputaba al
+    centro de otro cliente sin que nadie lo notara.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        CompanySettings.get_instance()
+        cls.admin = User.objects.create_superuser(
+            username='acotadoadmin',
+            email='acotado@example.com',
+            password='pass',  # pragma: allowlist secret
+            first_name='Admin',
+            last_name='Acotado',
+        )
+        ajeno = Customer.objects.create(
+            client_type='juridica',
+            user=User.objects.create_user(
+                'ajeno',
+                'ajeno@example.com',
+                'pass',  # pragma: allowlist secret
+                first_name='Cli',
+                last_name='Ajeno',
+            ),
+            company_name='Empresa Ajena',
+            reeup=next_reeup(),
+            nit=next_nit(),
+            account='9001000000000010',
+        )
+        factura_ajena = Invoice.objects.create(
+            customer=ajeno, number='AJENA-0001', amount=Decimal('100.00')
+        )
+        InvoiceCostAllocation.objects.create(
+            invoice=factura_ajena, codigo='700.50107', porcentaje=Decimal('100.00')
+        )
+
+    def test_el_formulario_abre_con_una_sola_fila_vacia(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('commercial:factura_create'))
+
+        formset = response.context['cost_allocations_formset']
+        self.assertEqual(len(formset.forms), 1)
+        self.assertIsNone(formset.forms[0].instance.pk)
 
 
 class AjaxPendingSubscriptionsTests(TestCase):
@@ -553,7 +661,7 @@ class AjaxPendingSubscriptionsTests(TestCase):
             customer=customer,
             service=service,
             quantity=10,
-            payment_status='pending',
+            payment_status='requested',
             start_date=timezone.now(),
         )
         self.url = reverse('commercial:factura_create').replace(
@@ -591,3 +699,46 @@ class AjaxPendingSubscriptionsTests(TestCase):
 
         self.assertContains(response, 'data-code="700501072507005"')
         self.assertContains(response, 'data-code="700502072507015"')
+
+    def _suscripcion_pending(self):
+        servicio = Service.objects.create(
+            user=self.admin,
+            title='Servicio ya facturado',
+            summary='Tiene factura vigente',
+            service_type='commercial',
+            service_category='pronostico',
+            code='700503072507099',
+            price=Decimal('20.00'),
+        )
+        return ServiceSubscription.objects.create(
+            customer=self.subscription.customer,
+            service=servicio,
+            quantity=1,
+            payment_status='pending',
+            start_date=timezone.now(),
+        )
+
+    def test_una_suscripcion_ya_facturada_no_se_ofrece(self):
+        """`pending` ya tiene factura vigente: ofrecerla en el lote invita a
+        facturarla dos veces."""
+        pendiente = self._suscripcion_pending()
+
+        response = self.client.get(self.url, {'customer': self.subscription.customer_id})
+
+        self.assertContains(response, f'value="{self.subscription.pk}"')
+        self.assertNotContains(response, f'value="{pendiente.pk}"')
+
+    def test_la_suscripcion_a_regenerar_si_se_ofrece(self):
+        """`regenerar` sólo aplica a una `pending` (su factura existe): si el
+        filtro nuevo la dejara afuera, no habría casilla que marcar y el POST
+        caería en facturación manual avisando que la factura anterior no se
+        anuló."""
+        pendiente = self._suscripcion_pending()
+
+        response = self.client.get(
+            self.url,
+            {'customer': self.subscription.customer_id, 'regenerar': str(pendiente.uuid)},
+        )
+
+        self.assertContains(response, f'value="{pendiente.pk}"')
+        self.assertContains(response, f'value="{self.subscription.pk}"')

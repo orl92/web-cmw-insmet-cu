@@ -1,10 +1,13 @@
+import calendar
 import uuid
+from datetime import date, timedelta
 
 from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Count, Q
+from django.utils import timezone
 
 from apps.core.models import FileHandlerMixin, SoftDeleteModel, image_upload_path, pdf_upload_path
 from apps.core.validators import (
@@ -14,6 +17,108 @@ from apps.core.validators import (
     validate_phones,
     validate_reeup,
 )
+
+MESES = (
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+)
+
+
+# Constantes de validación compartidas con los formularios
+CUSTOMER_IDENTITY_REQUIRED_ERROR = (
+    'El documento de identidad es obligatorio para personas naturales.'
+)
+CUSTOMER_IDENTITY_TAKEN_ERROR = 'Este documento de identidad ya está registrado.'
+CUSTOMER_COMPANY_NAME_REQUIRED_ERROR = (
+    'El nombre de la empresa es obligatorio para personas jurídicas.'
+)
+CUSTOMER_REEUP_REQUIRED_ERROR = 'El REEUP es obligatorio para personas jurídicas.'
+CUSTOMER_NIT_REQUIRED_ERROR = 'El NIT es obligatorio para personas jurídicas.'
+CUSTOMER_REEUP_TAKEN_ERROR = 'Este código REEUP ya está registrado.'
+CUSTOMER_NIT_TAKEN_ERROR = 'Este NIT ya está registrado.'
+
+
+def frase_de_periodo(inicio, fin):
+    """`Mes de mayo de 2025` para un mes, `De mayo a junio de 2025` para varios."""
+    primero = MESES[inicio.month - 1]
+    ultimo = MESES[fin.month - 1]
+    if (inicio.year, inicio.month) == (fin.year, fin.month):
+        return f'Mes de {primero} de {inicio.year}'
+    if inicio.year == fin.year:
+        return f'De {primero} a {ultimo} de {fin.year}'
+    return f'De {primero} de {inicio.year} a {ultimo} de {fin.year}'
+
+
+def primer_dia_del_mes(fecha):
+    return date(fecha.year, fecha.month, 1)
+
+
+def ultimo_dia_del_mes(fecha):
+    return date(fecha.year, fecha.month, calendar.monthrange(fecha.year, fecha.month)[1])
+
+
+def mes_siguiente(fecha):
+    return date(fecha.year + fecha.month // 12, fecha.month % 12 + 1, 1)
+
+
+def meses_de_la_linea(inicio, cantidad, categoria):
+    """Los meses que ocupa una línea facturada, según su inicio y su cantidad.
+
+    Es la única forma de saber el período: no se declara, se deduce de lo que se
+    está cobrando. La cantidad no se lee igual en las dos categorías que vende el
+    catálogo: `agrometeo` se cobra por meses, así que la cantidad es el largo del
+    período; `pronostico` se cobra por días, así que lo que define el período es
+    hasta qué día llega la cobertura.
+    """
+    cantidad = max(cantidad or 1, 1)
+    if categoria == 'pronostico':
+        # Días inclusivos: un pronóstico de un día cae en un solo mes, pero uno de
+        # 31 empieza en un mes y termina en el siguiente.
+        ultimo = inicio + timedelta(days=cantidad - 1)
+        meses = []
+        year, month = inicio.year, inicio.month
+        while (year, month) <= (ultimo.year, ultimo.month):
+            meses.append((year, month))
+            month += 1
+            if month == 13:
+                year, month = year + 1, 1
+        return tuple(meses)
+
+    # `agrometeo` y cualquier otra categoría se cuentan por meses, así que el
+    # período se arma mes a mes. La aritmética va sobre (año, mes) y no sobre
+    # días: sumar 31 días a un mes de 30 días se pasa al mes siguiente.
+    year, month = inicio.year, inicio.month
+    meses = []
+    for _ in range(cantidad):
+        meses.append((year, month))
+        month += 1
+        if month == 13:
+            year, month = year + 1, 1
+    return tuple(meses)
+
+
+def rango_desde_meses(meses):
+    """Primer día del primer mes y último del último; `(None, None)` si no hay.
+
+    Acepta cualquier iterable de `(año, mes)`: el período de una factura es la
+    unión de los meses de sus líneas, así que lo normal es que llegue un `set`.
+    """
+    if not meses:
+        return None, None
+    meses = sorted(meses)
+    y0, m0 = meses[0]
+    yn, mn = meses[-1]
+    return primer_dia_del_mes(date(y0, m0, 1)), ultimo_dia_del_mes(date(yn, mn, 1))
 
 
 class Customer(SoftDeleteModel):
@@ -101,7 +206,7 @@ class Customer(SoftDeleteModel):
         """
         try:
             user = self.user
-        except ObjectDoesNotExist:
+        except Exception:
             # Una instancia sin `user_id` todavía (no guardada, o
             # cargada con `.only()`) no tiene a quién mostrarle nombre: se
             # devuelve un placeholder legible en vez de explotar en la plantilla.
@@ -111,6 +216,148 @@ class Customer(SoftDeleteModel):
         if self.client_type == self.ClientType.NATURAL:
             return fallback or '—'
         return self.company_name or fallback or '—'
+
+    def clean(self):
+        """Obliga la regla de identidad que antes solo vivía en formularios.
+
+        La regla es: una persona natural debe tener documento de identidad;
+        una persona jurídica debe tener razón social, REEUP y NIT. Los campos
+        ajenos no se fuerzan a vacío (el formulario los controla), pero sí se
+        validan si se envían con formato inválido o duplicado.
+        """
+        # Solo aplicamos las reglas de identidad aquí para no romper flujos
+        # existentes que crean instancias sin pasar por todos los validadores
+        # de campos. Los formularios siguen haciendo su propia validación.
+        client_type = self.client_type
+
+        if client_type == self.ClientType.NATURAL:
+            identity_document = (self.identity_document or '').strip()
+            if not identity_document:
+                raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_REQUIRED_ERROR]})
+            if not self.pk:
+                if Customer.objects.filter(identity_document=identity_document).exists():
+                    raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_TAKEN_ERROR]})
+            else:
+                if (
+                    Customer.objects.filter(identity_document=identity_document)
+                    .exclude(pk=self.pk)
+                    .exists()
+                ):
+                    raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_TAKEN_ERROR]})
+            self.identity_document = identity_document
+            return
+
+        if client_type == self.ClientType.JURIDICA:
+            company_name = (self.company_name or '').strip()
+            reeup = (self.reeup or '').strip()
+            nit = (self.nit or '').strip()
+            errors = {}
+            if not company_name:
+                errors['company_name'] = [CUSTOMER_COMPANY_NAME_REQUIRED_ERROR]
+            else:
+                self.company_name = company_name
+            if not reeup:
+                errors['reeup'] = [CUSTOMER_REEUP_REQUIRED_ERROR]
+            else:
+                try:
+                    validate_reeup(reeup)
+                except ValidationError as exc:
+                    errors['reeup'] = list(exc.messages)
+                else:
+                    self.reeup = reeup
+                    if not self.pk:
+                        if Customer.objects.filter(reeup=reeup).exists():
+                            errors['reeup'] = [CUSTOMER_REEUP_TAKEN_ERROR]
+                    else:
+                        if Customer.objects.filter(reeup=reeup).exclude(pk=self.pk).exists():
+                            errors['reeup'] = [CUSTOMER_REEUP_TAKEN_ERROR]
+            if not nit:
+                errors['nit'] = [CUSTOMER_NIT_REQUIRED_ERROR]
+            else:
+                try:
+                    validate_nit(nit)
+                except ValidationError as exc:
+                    errors['nit'] = list(exc.messages)
+                else:
+                    self.nit = nit
+                    if not self.pk:
+                        if Customer.objects.filter(nit=nit).exists():
+                            errors['nit'] = [CUSTOMER_NIT_TAKEN_ERROR]
+                    else:
+                        if Customer.objects.filter(nit=nit).exclude(pk=self.pk).exists():
+                            errors['nit'] = [CUSTOMER_NIT_TAKEN_ERROR]
+            if errors:
+                raise ValidationError(errors)
+            return
+
+    def _validate_identity_rules(self):
+        """Validación de identidad sin llamar full_clean() para no romper
+        el comportamiento existente en toda la app."""
+        client_type = self.client_type
+        if client_type == self.ClientType.NATURAL:
+            identity_document = (self.identity_document or '').strip()
+            if not identity_document:
+                raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_REQUIRED_ERROR]})
+            if self.pk:
+                if (
+                    Customer.objects.filter(identity_document=identity_document)
+                    .exclude(pk=self.pk)
+                    .exists()
+                ):
+                    raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_TAKEN_ERROR]})
+            else:
+                if Customer.objects.filter(identity_document=identity_document).exists():
+                    raise ValidationError({'identity_document': [CUSTOMER_IDENTITY_TAKEN_ERROR]})
+            self.identity_document = identity_document
+            return
+        if client_type == self.ClientType.JURIDICA:
+            company_name = (self.company_name or '').strip()
+            reeup = (self.reeup or '').strip()
+            nit = (self.nit or '').strip()
+            errors = {}
+            if not company_name:
+                errors['company_name'] = [CUSTOMER_COMPANY_NAME_REQUIRED_ERROR]
+            else:
+                self.company_name = company_name
+            if not reeup:
+                errors['reeup'] = [CUSTOMER_REEUP_REQUIRED_ERROR]
+            else:
+                try:
+                    validate_reeup(reeup)
+                except ValidationError as exc:
+                    errors['reeup'] = list(exc.messages)
+                else:
+                    self.reeup = reeup
+                    if self.pk:
+                        if Customer.objects.filter(reeup=reeup).exclude(pk=self.pk).exists():
+                            errors['reeup'] = [CUSTOMER_REEUP_TAKEN_ERROR]
+                    else:
+                        if Customer.objects.filter(reeup=reeup).exists():
+                            errors['reeup'] = [CUSTOMER_REEUP_TAKEN_ERROR]
+            if not nit:
+                errors['nit'] = [CUSTOMER_NIT_REQUIRED_ERROR]
+            else:
+                try:
+                    validate_nit(nit)
+                except ValidationError as exc:
+                    errors['nit'] = list(exc.messages)
+                else:
+                    self.nit = nit
+                    if self.pk:
+                        if Customer.objects.filter(nit=nit).exclude(pk=self.pk).exists():
+                            errors['nit'] = [CUSTOMER_NIT_TAKEN_ERROR]
+                    else:
+                        if Customer.objects.filter(nit=nit).exists():
+                            errors['nit'] = [CUSTOMER_NIT_TAKEN_ERROR]
+            if errors:
+                raise ValidationError(errors)
+            return
+
+    def save(self, *args, **kwargs):
+        # Garantiza la regla también fuera de formularios.
+        if kwargs.pop('run_validators', True):
+            self._validate_identity_rules()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return self.display_name
@@ -279,7 +526,7 @@ class ServiceSubscription(SoftDeleteModel, FileHandlerMixin, models.Model):
         }.get(self.payment_status, 'solicitado')
 
     def __str__(self):
-        return f'{self.customer.company_name} - {self.service.title}'
+        return f'{self.customer.display_name} - {self.service.title}'
 
 
 class InvoiceQuerySet(models.QuerySet):
@@ -337,16 +584,8 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
     )
     number = models.CharField(max_length=50, unique=True, verbose_name='Número de factura')
     issue_date = models.DateTimeField(auto_now_add=True, verbose_name='Fecha de emisión')
-    period_label = models.CharField(
-        max_length=255,
-        blank=True,
-        verbose_name='Período facturado',
-        help_text=(
-            'Texto libre tal como se imprime en la factura. Ej.: '
-            '"Mes de mayo y junio de 2025", "octubre y noviembre del 2025". '
-            'Si se deja vacío se usa la fecha de emisión.'
-        ),
-    )
+    period_start = models.DateField(null=True, blank=True, verbose_name='Período facturado desde')
+    period_end = models.DateField(null=True, blank=True, verbose_name='Período facturado hasta')
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Monto')
     pdf = models.FileField(
         upload_to=pdf_upload_path, verbose_name='Archivo PDF', blank=True, null=True
@@ -390,6 +629,17 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
         """
         return self.pdf_status == self.PdfStatus.READY and bool(self.pdf)
 
+    @property
+    def period_label(self):
+        """La frase del período facturado que imprime el PDF.
+
+        Sin período cae a la fecha de emisión: es un respaldo de lectura, no una
+        migración de datos, porque en este repo las migraciones no se versionan.
+        """
+        if self.period_start and self.period_end:
+            return frase_de_periodo(self.period_start, self.period_end)
+        return self.issue_date.strftime('%d/%m/%Y')
+
     class Meta:
         verbose_name = 'Factura'
         verbose_name_plural = 'Facturas'
@@ -405,6 +655,25 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
     def clean(self):
         if self.amount is not None and self.amount <= 0:
             raise ValidationError('El monto de la factura debe ser mayor que cero.')
+        self._validar_contrato()
+
+    def _validar_contrato(self):
+        """Una jurídica no se factura fuera de la vigencia de sus contratos.
+
+        Las personas naturales no llevan contrato y se facturan igual: es una
+        medida del centro, no un descuido. La regla mira el mes facturado, no la
+        vigencia de hoy, porque los meses pasados también se facturan.
+        """
+        if self.customer_id is None or self.customer.client_type != Customer.ClientType.JURIDICA:
+            return
+        if not self.period_start or not self.period_end:
+            return
+        if Contract.cubre_rango(self.customer, self.period_start, self.period_end):
+            return
+        raise ValidationError(
+            f'No se puede facturar a {self.customer.display_name}: ninguno de sus contratos '
+            f'cubre el período facturado ({self.period_label}).'
+        )
 
     @property
     def status_display(self):
@@ -431,9 +700,75 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
             total, paid = len(states), states.count('paid')
         return 'pagada' if total and paid == total else 'pendiente'
 
+    @property
+    def line_payments(self):
+        """Líneas con suscripción y su estado de cobro, para el desglose del listado.
+
+        Vive en el modelo, no en la plantilla ni en la vista, por la misma razón
+        que `status_display`: el estado de una línea se deriva de su suscripción
+        (`payment_status` y la baja lógica `record_active`), y resolverlo en la
+        plantilla o en la vista es abrir una segunda fuente de verdad que puede
+        divergir de la real.
+
+        No dispara consultas propias: itera `self.items` tal como lo dejó el
+        `Prefetch('items', select_related('subscription__service'))` de las dos
+        querysets que renderizan la celda (listado y endpoint). Leer
+        `subscription.payment_status`/`record_active` y `service.title` sale de
+        ese prefetch; sin él, cada línea pagaría sus propias consultas.
+        """
+        lines = []
+        for item in self.items.all():
+            subscription = item.subscription
+            if subscription is None:
+                continue
+            if not subscription.record_active:
+                estado = 'cancelada'
+            elif subscription.payment_status == 'paid':
+                estado = 'pagado'
+            else:
+                estado = 'pendiente'
+            lines.append(
+                {
+                    'uuid': str(subscription.uuid),
+                    'descripcion': item.descripcion,
+                    'servicio': subscription.service.title,
+                    'importe': item.importe,
+                    'estado': estado,
+                    # Aprobable = activa y `pending`, el único estado que acepta
+                    # `ApproveSubscriptionView` (`views/subscriptions.py:190-193`).
+                    # Sin `record_active` una suscripción dada de baja con el pago
+                    # todavía en `pending` ofrecería el link, que el listado de
+                    # suscripciones nunca ofrece; sin el filtro de `pending` una
+                    # `requested` daría un enlace muerto (la vista la rechaza).
+                    'aprobable': (
+                        subscription.record_active and subscription.payment_status == 'pending'
+                    ),
+                }
+            )
+        return lines
+
+    @property
+    def linea_aprobable(self):
+        """La única línea por cobrar de la factura, o `None` si hay 0 o 2+.
+
+        Un botón de fila sólo es inequívoco cuando la factura tiene una sola
+        suscripción: con dos o más pendientes no hay acción de fila que las
+        abarque y el desglose por línea (`line_payments.html`) es el que lleva
+        cada link. Por eso devuelve `None` si hay más de una línea, aunque una
+        sola esté pendiente: ahí manda el desglose.
+
+        Reusa `line_payments` para no abrir una segunda fuente de verdad del
+        estado de cobro; no dispara consultas propias (las líneas vienen del
+        `Prefetch('items', ...)` del listado y del endpoint).
+        """
+        lineas = self.line_payments
+        if len(lineas) != 1:
+            return None
+        return lineas[0] if lineas[0]['aprobable'] else None
+
     def __str__(self):
         if self.subscription:
-            return f'Factura {self.number} - {self.subscription.customer.company_name}'
+            return f'Factura {self.number} - {self.subscription.customer.display_name}'
         return f'Factura {self.number} (manual)'
 
 
@@ -471,6 +806,33 @@ class InvoiceItem(models.Model):
             raise ValidationError('La cantidad debe ser mayor que cero.')
         if self.precio is not None and self.precio <= 0:
             raise ValidationError('El precio debe ser mayor que cero.')
+        self._validar_periodo()
+
+    def _validar_periodo(self):
+        """La línea tiene que caer dentro del período facturado.
+
+        Vive en el modelo y no en la vista porque es una regla de integridad: si
+        dependiera del formulario, cualquier otro camino que guarde una línea
+        podría esquivarla. La fecha de la línea es la de su suscripción, que es el
+        único lugar donde vive; copiarla a la línea sería una segunda fuente de
+        verdad. Sin período no hay contra qué comparar.
+        """
+        if not self.invoice_id or not self.subscription_id:
+            return
+        periodo = self.invoice
+        if not periodo.period_start or not periodo.period_end:
+            return
+        inicio = self.subscription.start_date
+        if inicio is None:
+            return
+        if timezone.is_naive(inicio):
+            inicio = timezone.make_aware(inicio)
+        inicio = timezone.localtime(inicio).date()
+        if not periodo.period_start <= inicio <= periodo.period_end:
+            raise ValidationError(
+                f'La línea no puede empezar el {inicio:%d/%m/%Y}: ese día está fuera '
+                f'del período facturado ({periodo.period_label}).'
+            )
 
     def save(self, *args, **kwargs):
         self.importe = self.cantidad * self.precio
@@ -521,17 +883,39 @@ class InvoiceCostAllocation(models.Model):
             raise ValidationError('El porcentaje debe ser mayor que cero.')
 
 
+class ContractQuerySet(models.QuerySet):
+    def vigente_para(self, customer, fecha):
+        """El contrato que cubre `fecha`, el más reciente si hay renovaciones.
+
+        El vencimiento se filtra en Python: `end_date` es una propiedad derivada
+        de `start_date` + `validity_years`, así que la base no puede compararla.
+        Con renovaciones cada contrato tiene su propio rango y gana el más
+        reciente (mayor `start_date`) que todavía cubre `fecha`.
+        """
+        candidatos = self.filter(customer=customer, start_date__lte=fecha).order_by('-start_date')
+        for contrato in candidatos:
+            if contrato.end_date >= fecha:
+                return contrato
+        return None
+
+
 class Contract(SoftDeleteModel):
+    objects = ContractQuerySet.as_manager()
+
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    subscription = models.OneToOneField(
-        ServiceSubscription,
+    customer = models.ForeignKey(
+        Customer,
         on_delete=models.CASCADE,
-        related_name='contract',
-        verbose_name='Contrato',
+        related_name='contracts',
+        verbose_name='Cliente',
     )
     number = models.CharField(max_length=50, verbose_name='Número de contrato')
-    date = models.DateField(verbose_name='Fecha del contrato')
-    commercial_registry = models.CharField(max_length=50, verbose_name='Registro Comercial')
+    start_date = models.DateField(verbose_name='Fecha')
+    validity_years = models.PositiveSmallIntegerField(
+        default=2,
+        validators=[MinValueValidator(1)],
+        verbose_name='Vigencia (años)',
+    )
 
     class Meta:
         verbose_name = 'Contrato'
@@ -543,10 +927,44 @@ class Contract(SoftDeleteModel):
             ('change_contract', 'Editar'),
             ('delete_contract', 'Eliminar'),
         )
-        ordering = ('-date',)
+        ordering = ('-start_date',)
 
     def __str__(self):
-        return f'Contrato {self.number} - {self.subscription.customer.company_name}'
+        return f'Contrato {self.number} - {self.customer.display_name}'
+
+    @property
+    def end_date(self):
+        """Fin de vigencia derivado: `start_date` + `validity_years` años.
+
+        No se edita ni se guarda: `start_date` y `validity_years` son las dos
+        únicas fuentes de verdad, así que no pueden divergir. Con 29/02 como
+        inicio y un número de años que no cae en bisiesto, el vencimiento es
+        28/02 (no 01/03): es la convención de fechas del CMP.
+        """
+        anio = self.start_date.year + self.validity_years
+        mes = self.start_date.month
+        dia = min(self.start_date.day, calendar.monthrange(anio, mes)[1])
+        return date(anio, mes, dia)
+
+    def cubre(self, fecha):
+        """Este contrato cubre `fecha`."""
+        return self.start_date <= fecha <= self.end_date
+
+    @staticmethod
+    def cubre_rango(customer, inicio, fin):
+        """Si cada mes de `inicio`..`fin` cae en algún contrato del cliente.
+
+        Con varios contratos encadenados por renovación el rango puede estar
+        repartido entre ellos, así que alcanza con que la vigencia se solape
+        completa, no con que un solo contrato lo abarque.
+        """
+        contratos = list(customer.contracts.order_by('start_date'))
+        mes = primer_dia_del_mes(inicio)
+        while mes <= fin:
+            if not any(contrato.cubre(mes) for contrato in contratos):
+                return False
+            mes = mes_siguiente(mes)
+        return True
 
 
 class Certificate(SoftDeleteModel, FileHandlerMixin):
@@ -577,4 +995,4 @@ class Certificate(SoftDeleteModel, FileHandlerMixin):
     def __str__(self):
         service = self.subscription.service
         customer = self.subscription.customer
-        return f'Certificado de {service.title} - {customer.company_name}'
+        return f'Certificado de {service.title} - {customer.display_name}'

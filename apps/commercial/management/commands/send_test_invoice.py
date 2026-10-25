@@ -15,6 +15,7 @@ cliente, así que el demo crea uno de cada tipo con su contrato.
 """
 
 import contextlib
+from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -122,7 +123,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--base-url',
             default=None,
-            help='URL base del sitio para los links del correo. Por defecto settings.BASE_URL.',
+            help='URL base del sitio para los links del correo. Por defecto settings.SITE_URL.',
         )
 
     def handle(self, *args, **options):
@@ -160,7 +161,7 @@ class Command(BaseCommand):
             else [self._get_invoice(options['invoice_uuid'])]
         )
 
-        base_url = options['base_url'] or getattr(settings, 'BASE_URL', 'http://127.0.0.1:8000/')
+        base_url = options['base_url'] or settings.SITE_URL
 
         for invoice in invoices:
             self._preflight_customer(invoice)
@@ -281,13 +282,18 @@ class Command(BaseCommand):
                 payment_status='paid',
                 payment_method='transfer',
             )
-            # Sin contrato el bloque del ejecutor sale con los tres campos vacíos:
-            # el demo lo crea justamente para que salgan llenos.
+            # Sin contrato el bloque del ejecutor sale con número y fecha vacíos:
+            # el demo lo crea justamente para que salgan llenos. El registro
+            # comercial NO sale del contrato: es siempre el de la empresa. El
+            # contrato es del cliente y su vigencia tiene que cubrir hoy, que es
+            # la fecha con la que el PDF resuelve el contrato de la factura (la
+            # factura demo no tiene período).
+            hoy = timezone.localdate()
             Contract.objects.create(
-                subscription=subscription,
+                customer=customer,
                 number=f'{DEMO_PREFIX}CONT-{len(invoices) + 1:04d}',
-                date=timezone.localdate(),
-                commercial_registry=f'RC-DEMO-{len(invoices) + 1:04d}',
+                start_date=hoy - timedelta(days=365),
+                validity_years=2,
             )
 
             invoice = Invoice.objects.create(

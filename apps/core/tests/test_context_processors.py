@@ -11,6 +11,7 @@ from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
 from apps.commercial.models import Customer, Service, ServiceSubscription
+from apps.commercial.tests.factories import next_identity_document
 from apps.core.context_processors import menu_notifications
 
 
@@ -26,6 +27,7 @@ class MenuNotificationsClientCountsTests(TestCase):
         self.customer = Customer.objects.create(
             user=self.client_user,
             client_type=Customer.ClientType.NATURAL,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',

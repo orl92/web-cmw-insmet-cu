@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.forms import formset_factory, modelformset_factory
 from django.forms.models import BaseModelFormSet
 
+from apps.commercial.forms.subscription import _pluralize_period
 from apps.commercial.models import (
     Customer,
     InvoiceCostAllocation,
@@ -16,55 +17,95 @@ from apps.core.models import CompanySettings
 
 
 class InvoiceItemForm(forms.Form):
+    """Una línea de facturación manual.
+
+    El rótulo de `cantidad` nombra la unidad porque es el único lugar donde el
+    operador puede leerla: la columna `U/M` de las facturas del CMP dice `U` o
+    nada. Se resuelve en el servidor para que una fila que vuelve a renderizarse
+    por un error llegue rotulada sin JavaScript.
+
+    `cantidad` no trae valor por defecto: las cantidades reales son 30, 31, 2 y
+    4, y un número inventado acá subfactura en silencio.
+    """
+
     service = forms.ModelChoiceField(
         queryset=Service.objects.filter(service_type=Service.COMMERCIAL, record_active=True),
         required=True,
         label='Servicio',
         widget=forms.Select(attrs={'class': 'form-control'}),
     )
+    start_date = forms.DateField(
+        label='Inicio',
+        # Sin `help_text` a propósito: la regla ("viene con la fecha de la
+        # factura; cambiala sólo si el servicio empezó antes") se explica una
+        # sola vez en el encabezado de la card de servicios. Repetida en cada
+        # línea ocupaba medio campo por servicio y partía el card en dos filas
+        # de controles.
+        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+    )
     codigo = forms.CharField(
         max_length=50,
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
     )
+    # Sin `initial` y sin `default` a propósito: la cantidad la cuenta quien
+    # factura, y un valor propuesto que no revisa cobra de menos.
     cantidad = forms.IntegerField(
         min_value=1,
         required=True,
         label='Cantidad',
-        help_text='Cantidad de meses o días según el tipo de servicio.',
-        widget=forms.NumberInput(attrs={'class': 'form-control quantity-days', 'min': '1'}),
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
     )
-    unidad_medida = forms.CharField(
-        max_length=5,
-        initial='U',
-        label='UM',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
-    )
+    # `unidad_medida` no es un campo, y es deliberado. Las tres facturas reales
+    # del CMP la impresión casi siempre vacía y a veces como `U`, con cantidades
+    # de 30, 31, 2 y 4: ninguna dice `MES` ni `DÍA`. La unidad de la fila la
+    # nombra el rótulo de `cantidad`, así que `U/M` no aporta nada que leer y su
+    # valor tiene un solo dueño, el `default='U'` de `InvoiceItem`. Un campo
+    # `readonly` acá sólo repetiría esa constante en la pantalla y obligaría a
+    # mantener el código que lo reescribía —el que inventaba `MES`/`DÍA`—, que
+    # es justo lo que esta tarea vino a borrar. Sin campo, el POST tampoco tiene
+    # el nombre para intentar fijarlo.
     precio = forms.DecimalField(
         min_value=0.01,
         decimal_places=2,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
     )
 
-    def clean(self):
-        """Rebuild the readonly fields from the service, never from the POST body.
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        unidad = self._selected_billing_period()
+        if unidad:
+            self.fields['cantidad'].label = f'Cantidad de {_pluralize_period(unidad)}'
 
-        `codigo`, `precio` and `unidad_medida` exist so the operator can see what
-        is being charged, not so a stale page or a hand-crafted request can set
-        them. `unidad_medida` follows the service category: agrometeo bills months,
-        every other category bills days, so the same period means 3 for agrometeo
-        and 90 for pronostico. `cantidad` is the opposite — the operator owns it,
-        and the browser only proposes a value for it.
+    def _selected_billing_period(self):
+        """Unidad de facturación del servicio ya elegido, o `''` si no hay ninguno.
+
+        Va acá y no en `clean()` porque el rótulo se imprime antes de validar:
+        una fila que vuelve por un error tiene que llegar rotulada. `add_prefix`
+        porque la misma clase se usa suelta y dentro del formset.
         """
+        if not self.is_bound:
+            return ''
+        elegido = self.data.get(self.add_prefix('service'))
+        if not elegido:
+            return ''
+        try:
+            servicio = self.fields['service'].clean(elegido)
+        except ValidationError:
+            return ''
+        return servicio.get_billing_period_display() if servicio else ''
+
+    def clean(self):
+        # `codigo` y `precio` se reconstruyen desde el servicio y nunca desde el
+        # POST: existen para que el operador vea qué se está cobrando, no para que
+        # una página vieja o un POST a mano los fijen.
         cleaned_data = super().clean()
         service = cleaned_data.get('service')
 
         if service:
             cleaned_data['codigo'] = service.code or ''
             cleaned_data['precio'] = service.price
-            cleaned_data['unidad_medida'] = (
-                'MES' if service.service_category == 'agrometeo' else 'DÍA'
-            )
 
         return cleaned_data
 
@@ -77,7 +118,19 @@ class InvoiceCostAllocationForm(forms.ModelForm):
         model = InvoiceCostAllocation
         fields = ['codigo', 'porcentaje']
         widgets = {
-            'codigo': forms.TextInput(attrs={'class': 'form-control'}),
+            # El centro sigue siendo un `TextInput` a propósito: el `datalist`
+            # sugiere pero no restringe, así que un centro que no está en el
+            # catálogo se puede escribir igual. Un `Select` sí lo restringiría y
+            # cerraría la puerta a los centros de las facturas reales 276 y 279,
+            # que no salen de ningún código de servicio.
+            'codigo': forms.TextInput(
+                attrs={
+                    'class': 'form-control',
+                    'list': 'centros-de-costo',
+                    'autocomplete': 'off',
+                    'placeholder': '700.50107',
+                }
+            ),
             'porcentaje': forms.NumberInput(
                 attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}
             ),
@@ -87,14 +140,10 @@ class InvoiceCostAllocationForm(forms.ModelForm):
 class InvoiceCostAllocationFormSet(BaseModelFormSet):
     """Formset de centros de costo, con la regla de que sumen 100 %.
 
-    La suma se valida acá y no en `InvoiceCostAllocation.clean()` a propósito: en
-    el modelo no se podría borrar una fila y corregir el reparto, porque al
-    guardar la primera vez ya se exigiría el total. Sólo se cuentan las formas
-    vivas, así que `can_delete` recalcula bien.
-
-    Exige además al menos una fila viva: las tres facturas reales del CMP
-    imputan a algún centro, y una factura comercial sin imputación es
-    exactamente el defecto que este modelo viene a cerrar.
+    La suma se valida acá y no en el modelo: en `clean()` no se podría borrar
+    una fila y corregir el reparto, porque al guardar la primera vez ya se
+    exigiría el total. Sólo se cuentan las formas vivas, así que `can_delete`
+    recalcula bien.
     """
 
     def clean(self):
@@ -131,6 +180,12 @@ InvoiceCostAllocationFormSet = modelformset_factory(
     extra=1,
     can_delete=True,
 )
+# Sin `queryset=` acá: `modelformset_factory` no lo acepta. El que el formset se
+# acote o no lo decide la vista al instanciarlo: un modelformset sin acotar cae
+# al manager del modelo y `initial_form_count()` pasa a ser `len(get_queryset())`,
+# así que la pantalla abría con TODAS las imputaciones de la base como filas
+# editables, más la fila en blanco de `extra=1`. Ver
+# `InvoiceCreateView.cost_allocations_formset`.
 
 
 class InvoiceForm(forms.Form):
@@ -139,33 +194,11 @@ class InvoiceForm(forms.Form):
         label='Cliente',
         widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_customer'}),
     )
-    start_date = forms.DateField(
-        label='Fecha de inicio',
-        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
-    )
-    end_date = forms.DateField(
-        label='Fecha de fin',
-        input_formats=['%d/%m/%Y', '%Y-%m-%d'],
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
-    )
     commercial_registry = forms.CharField(
         max_length=50,
         required=True,
         label='Registro Comercial',
         widget=forms.TextInput(attrs={'class': 'form-control'}),
-    )
-    period_label = forms.CharField(
-        max_length=255,
-        required=False,
-        label='Período facturado',
-        help_text=(
-            'Texto libre, tal como se imprime en la factura. Ej.: '
-            '"Mes de mayo y junio de 2025". Si se deja vacío se usa la fecha de emisión.'
-        ),
-        widget=forms.TextInput(
-            attrs={'class': 'form-control', 'placeholder': 'Mes de mayo y junio de 2025'}
-        ),
     )
     subscriptions = forms.ModelMultipleChoiceField(
         queryset=ServiceSubscription.objects.none(),

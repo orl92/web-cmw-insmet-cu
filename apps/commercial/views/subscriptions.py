@@ -29,58 +29,95 @@ from apps.core.utils import log_action
 logger = logging.getLogger(__name__)
 
 
+def queryset_de_suscripciones_con_estado(user):
+    """Suscripciones con el estado de su última factura, filtradas por rol.
+
+    Compartida por `SubscriptionListView` y `ajax_subscription_status`: el
+    endpoint no puede filtrar distinto que la vista de listado, o el polling
+    expondría filas ajenas al grupo `Clientes`.
+
+    Sin grupo `Clientes` también entra el titular de un Customer (los correos
+    de factura y certificado enlazan al listado), siempre acotado a sus propias
+    filas; sin Customer ni grupo es `PermissionDenied`.
+    """
+    qs = ServiceSubscription.objects.select_related('customer', 'service')
+    # El vínculo por línea es el que siempre existe: la factura de un lote o
+    # de varios servicios no cuelga de `Invoice.subscription`. Sin esto el
+    # cliente ve la suscripción pendiente sin ningún botón de factura.
+    latest_invoice = (
+        Invoice.objects.for_subscription(OuterRef('pk'))
+        .filter(is_cancelled=False)
+        .order_by('-issue_date')
+    )
+    qs = qs.annotate(
+        latest_invoice_uuid=Subquery(latest_invoice.values('uuid')[:1]),
+        latest_invoice_number=Subquery(latest_invoice.values('number')[:1]),
+        # `latest_invoice_pdf_ready` replica `Invoice.pdf_ready` en SQL, y
+        # hace falta: la propiedad no se puede usar en el template sin una
+        # consulta por fila, y anotar sólo el UUID no alcanza porque una
+        # factura con `pdf_status='failed'` igual dejaba botón de descarga
+        # apuntando a un archivo que no existe.
+        # La condición (`ready` Y pdf no vacío) es la misma de `pdf_ready`;
+        # `test_annotation_pdf_ready_coincide_con_la_propiedad` ata las dos
+        # versiones para que no diverjan sin que nadie lo note.
+        latest_invoice_pdf_ready=Subquery(
+            latest_invoice.annotate(
+                ready=Case(
+                    When(
+                        Q(pdf_status=Invoice.PdfStatus.READY) & Q(pdf__isnull=False) & ~Q(pdf=''),
+                        then=Value(True),
+                    ),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                )
+            ).values('ready')[:1]
+        ),
+    )
+    if user.is_superuser or user.is_staff:
+        return qs.order_by('-start_date')
+    elif user.groups.filter(name='Clientes').exists():
+        try:
+            customer = user.commercial_customer
+            return qs.filter(customer=customer, record_active=True).order_by('-start_date')
+        except Customer.DoesNotExist:
+            return qs.none()
+    # Sin grupo `Clientes`: sólo el titular de un Customer puede entrar. Los
+    # correos de factura y certificado enlazan «Ver en línea» a este listado y
+    # el grupo no siempre existe con el permiso (los caminos del dashboard lo
+    # crean vacío), así que la titularidad —no el grupo— es el criterio. Sigue
+    # viendo sólo sus propias suscripciones: mismo filtro que la rama del
+    # grupo, con `record_active=True`.
+    try:
+        customer = user.commercial_customer
+    except Customer.DoesNotExist:
+        raise PermissionDenied from None
+    return qs.filter(customer=customer, record_active=True).order_by('-start_date')
+
+
 class SubscriptionListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ServiceSubscription
     template_name = 'pages/commercial/subscription/list.html'
     context_object_name = 'objects'
     permission_required = 'commercial.view_subscription'
 
+    def has_permission(self):
+        """Staff con el permiso, o el cliente titular de un Customer.
+
+        Los correos de factura y certificado enlazan «Ver en línea» a este
+        listado, pero el cliente titular no siempre tiene
+        ``commercial.view_subscription``: el grupo ``Clientes`` sólo lo otorga
+        si el registro público lo creó primero, y los caminos del dashboard lo
+        crean vacío. El alcance no se amplía: `get_queryset` acota al titular
+        a sus propias suscripciones.
+        """
+        if super().has_permission():
+            return True
+        # `hasattr` es falso sin Customer: el OneToOne inverso lanza
+        # RelatedObjectDoesNotExist, que es subclase de AttributeError.
+        return hasattr(self.request.user, 'commercial_customer')
+
     def get_queryset(self):
-        user = self.request.user
-        qs = super().get_queryset().select_related('customer', 'service')
-        # El vínculo por línea es el que siempre existe: la factura de un lote o
-        # de varios servicios no cuelga de `Invoice.subscription`. Sin esto el
-        # cliente ve la suscripción pendiente sin ningún botón de factura.
-        latest_invoice = (
-            Invoice.objects.for_subscription(OuterRef('pk'))
-            .filter(is_cancelled=False)
-            .order_by('-issue_date')
-        )
-        qs = qs.annotate(
-            latest_invoice_uuid=Subquery(latest_invoice.values('uuid')[:1]),
-            latest_invoice_number=Subquery(latest_invoice.values('number')[:1]),
-            # `latest_invoice_pdf_ready` replica `Invoice.pdf_ready` en SQL, y
-            # hace falta: la propiedad no se puede usar en el template sin una
-            # consulta por fila, y anotar sólo el UUID no alcanza porque una
-            # factura con `pdf_status='failed'` igual dejaba botón de descarga
-            # apuntando a un archivo que no existe.
-            # La condición (`ready` Y pdf no vacío) es la misma de `pdf_ready`;
-            # `test_annotation_pdf_ready_coincide_con_la_propiedad` ata las dos
-            # versiones para que no diverjan sin que nadie lo note.
-            latest_invoice_pdf_ready=Subquery(
-                latest_invoice.annotate(
-                    ready=Case(
-                        When(
-                            Q(pdf_status=Invoice.PdfStatus.READY)
-                            & Q(pdf__isnull=False)
-                            & ~Q(pdf=''),
-                            then=Value(True),
-                        ),
-                        default=Value(False),
-                        output_field=BooleanField(),
-                    )
-                ).values('ready')[:1]
-            ),
-        )
-        if user.is_superuser or user.is_staff:
-            return qs.order_by('-start_date')
-        elif user.groups.filter(name='Clientes').exists():
-            try:
-                customer = user.commercial_customer
-                return qs.filter(customer=customer, record_active=True).order_by('-start_date')
-            except Customer.DoesNotExist:
-                return qs.none()
-        raise PermissionDenied
+        return queryset_de_suscripciones_con_estado(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -122,7 +159,7 @@ class SubscriptionCreateView(LoginRequiredMixin, PermissionRequiredMixin, Create
             obj=self.object,
             action_flag=ADDITION,
             message=(
-                f'Suscripción creada para: {self.object.customer.company_name} '
+                f'Suscripción creada para: {self.object.customer.display_name} '
                 f'- {self.object.service.title}'
             ),
         )
@@ -156,7 +193,7 @@ class SubscriptionUpdateView(LoginRequiredMixin, PermissionRequiredMixin, Update
             obj=self.object,
             action_flag=CHANGE,
             message=(
-                f'Suscripción actualizada para: {self.object.customer.company_name} '
+                f'Suscripción actualizada para: {self.object.customer.display_name} '
                 f'- {self.object.service.title}'
             ),
         )
@@ -315,7 +352,7 @@ class SubscriptionCancelView(LoginRequiredMixin, PermissionRequiredMixin, View):
             obj=subscription,
             action_flag=DELETION,
             message=(
-                f'Suscripción desactivada: {subscription.customer.company_name} '
+                f'Suscripción desactivada: {subscription.customer.display_name} '
                 f'- {subscription.service.title}'
             ),
         )
@@ -331,7 +368,7 @@ class SubscriptionHardDeleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def post(self, request, uuid):
         subscription = get_object_or_404(ServiceSubscription, uuid=uuid)
-        customer_name = subscription.customer.company_name
+        customer_name = subscription.customer.display_name
         service_title = subscription.service.title
 
         subscription.hard_delete()
@@ -359,7 +396,9 @@ def enviar_correo_certificado(subscription, request=None):
         return False
 
     subject = f'Certificado de {subscription.service.title}'
-    base_url = request.build_absolute_uri('/') if request else settings.BASE_URL
+    # La URL sale de `SITE_URL` y NO del `request`: el cliente no está en la red
+    # interna, y el host por el que el operador entró no es el público.
+    base_url = settings.SITE_URL
     context = {
         'subscription': subscription,
         'index_url': base_url,

@@ -165,22 +165,26 @@
         .centro-costo {
             font-weight: normal;
         }
-        /* ===== FIRMAS Y PIE (flex: se pegan al final) ===== */
+        /* ===== FIRMAS Y PIE ===== */
         .signatures-footer {
             margin-top: 20px;
             padding-top: 10px;
             border-top: 1px solid #ccc;
         }
-        .firmas-container {
-            display: flex;
-            justify-content: space-between;
+        .firmas-tabla {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
             font-size: 10px;
         }
-        .firma-col {
+        .firmas-celda {
             width: 45%;
+            vertical-align: top;
+            padding: 0 0 14px 0;
         }
-        .firma-item {
-            margin-bottom: 14px;
+        .firmas-separador {
+            width: 10%;
+            padding: 0;
         }
         .firma-label {
             font-weight: bold;
@@ -357,47 +361,57 @@
       <!-- fin .main-content -->
       <!-- SECCIÓN DE FIRMAS Y PIE -->
       <div class="signatures-footer">
-        <div class="firmas-container">
-          <div class="firma-col">
-            <div class="firma-item">
-              <div class="firma-label">Confeccionado Por Lic. Dania Guerra Nordelo</div>
-              <div>Especialista B en Gestión Comercial</div>
-              <div class="firma-line"></div>
-            </div>
-            <div class="firma-item">
-              <div class="firma-label">Revisado Por: Yanet Alvarez Hurtado</div>
-              <div>Téc en Gestión Económica (EP)</div>
-              <div class="firma-line"></div>
-            </div>
-            <div class="firma-item">
-              <div class="firma-label">Entregado por: Lic. Dania Guerra Nordelo</div>
-              <div>Especialista B en Gestión Comercial</div>
-              <div class="firma-line"></div>
-            </div>
-            <div class="firma-item">
-              <div class="firma-label">Fecha:</div>
-              <div class="firma-line"></div>
-            </div>
-          </div>
-          <div class="firma-col">
-            <div class="firma-item">
-              <div class="firma-label">Recibido por:</div>
-              <div class="firma-line"></div>
-            </div>
-            <div class="firma-item">
-              <div class="firma-label">Cargo:</div>
-              <div class="firma-line"></div>
-            </div>
-            <div class="firma-item">
-              <div class="firma-label">CI:</div>
-              <div class="firma-line"></div>
-            </div>
-            <div class="firma-item">
-              <div class="firma-label">Firma:</div>
-              <div class="firma-line"></div>
-            </div>
-          </div>
-        </div>
+        <table class="firmas-tabla">
+          <tbody>
+            <tr>
+              <td class="firmas-celda">
+                <div class="firma-label">Confeccionado Por Lic. Dania Guerra Nordelo</div>
+                <div>Especialista B en Gestión Comercial</div>
+                <div class="firma-line"></div>
+              </td>
+              <td class="firmas-separador"></td>
+              <td class="firmas-celda">
+                <div class="firma-label">Recibido por:</div>
+                <div class="firma-line"></div>
+              </td>
+            </tr>
+            <tr>
+              <td class="firmas-celda">
+                <div class="firma-label">Revisado Por: Yanet Alvarez Hurtado</div>
+                <div>Téc en Gestión Económica (EP)</div>
+                <div class="firma-line"></div>
+              </td>
+              <td class="firmas-separador"></td>
+              <td class="firmas-celda">
+                <div class="firma-label">Cargo:</div>
+                <div class="firma-line"></div>
+              </td>
+            </tr>
+            <tr>
+              <td class="firmas-celda">
+                <div class="firma-label">Entregado por: Lic. Dania Guerra Nordelo</div>
+                <div>Especialista B en Gestión Comercial</div>
+                <div class="firma-line"></div>
+              </td>
+              <td class="firmas-separador"></td>
+              <td class="firmas-celda">
+                <div class="firma-label">CI:</div>
+                <div class="firma-line"></div>
+              </td>
+            </tr>
+            <tr>
+              <td class="firmas-celda">
+                <div class="firma-label">Fecha:</div>
+                <div class="firma-line"></div>
+              </td>
+              <td class="firmas-separador"></td>
+              <td class="firmas-celda">
+                <div class="firma-label">Firma:</div>
+                <div class="firma-line"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
         <div class="footer">
           <div class="fecha-generacion">Factura generada el: {% now 'd/m/Y h:i:s A' %}</div>
           <div class="notas">

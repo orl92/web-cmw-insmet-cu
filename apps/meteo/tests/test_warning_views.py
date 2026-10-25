@@ -1,10 +1,14 @@
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.core.models import SiteConfiguration
+from apps.core.models import EmailRecipient, EmailRecipientList, SiteConfiguration
 from apps.meteo.models import Warning
+from config.huey import huey
+
+LOCMEM = 'django.core.mail.backends.locmem.EmailBackend'
 
 
 def _disable_maintenance_mode():
@@ -50,3 +54,55 @@ class WarningFormDateTests(TestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'value="05/08/2026 02:30 PM"')
+
+
+class WarningEmailLinkTests(TestCase):
+    """Regresión: el correo del aviso enlaza la página pública y sin href vacíos."""
+
+    @classmethod
+    def setUpTestData(cls):
+        _disable_maintenance_mode()
+        cls.admin = User.objects.create_superuser(
+            'warnmailadmin',
+            'warnmailadmin@example.com',
+            'pass',
+            first_name='Admin',
+            last_name='Correo',
+        )
+        cls.recipient_list = EmailRecipientList.objects.create(name='Lista de avisos')
+        EmailRecipient.objects.create(email='aviso@example.com', recipient_list=cls.recipient_list)
+
+    def _post_create(self, url_name, data):
+        self.client.force_login(self.admin)
+        old_immediate = huey.immediate
+        huey.immediate = True
+        try:
+            with override_settings(EMAIL_BACKEND=LOCMEM):
+                return self.client.post(reverse(url_name), data)
+        finally:
+            huey.immediate = old_immediate
+
+    def _warning_data(self):
+        return {
+            'title': 'Aviso de prueba',
+            'summary': 'Resumen del aviso',
+            'valid_until': '2027-01-01T10:00',
+            'email_recipient_list': self.recipient_list.pk,
+        }
+
+    @override_settings(SITE_URL='http://testserver/')
+    def test_el_correo_enlaza_al_listado_publico(self):
+        response = self._post_create('meteo:alerta_temprana_create', self._warning_data())
+        self.assertEqual(response.status_code, 302)
+
+        self.assertEqual(len(mail.outbox), 1)
+        body = mail.outbox[0].body
+        self.assertIn('http://testserver/aviso/alerta_temprana/', body)
+        self.assertNotIn('href=""', body)
+
+    def test_el_correo_rellena_titulo_y_anio(self):
+        self._post_create('meteo:alerta_temprana_create', self._warning_data())
+
+        body = mail.outbox[0].body
+        self.assertIn('Aviso de prueba', body)
+        self.assertIn(f'Copyright &copy; {timezone.now().year}', body)

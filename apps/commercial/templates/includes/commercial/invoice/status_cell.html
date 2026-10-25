@@ -1,0 +1,10 @@
+{% if invoice.status_display == 'pagada' %}
+  <span class="badge bg-green-lt">Pagada</span>
+{% elif invoice.status_display == 'cancelada' %}
+  <span class="badge bg-red-lt">Cancelada</span>
+{% else %}
+  <span class="badge bg-orange-lt">Pendiente</span>
+{% endif %}
+{% if invoice.items_total > 1 %}
+  {% include 'includes/commercial/invoice/line_payments.html' %}
+{% endif %}

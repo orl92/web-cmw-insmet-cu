@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.commercial.models import Customer
+from apps.commercial.tests.factories import next_identity_document
 from apps.core.models import SiteConfiguration
 
 
@@ -48,14 +49,17 @@ class CheckUserProfileMiddlewareTests(TestCase):
 
     def test_natural_customer_missing_fields_redirects(self):
         user = _make_user('natmissing', is_staff=True)
-        Customer.objects.create(
+        # El test necesita un cliente incompleto a propósito: la validación de
+        # `save()` exige identidad y acá el objeto es justamente el caso roto
+        # que el middleware tiene que detectar.
+        Customer(
             client_type='natural',
             user=user,
             account='',
             agency_bank='',
             address='',
             phone='',
-        )
+        ).save(run_validators=False)
         self.client.force_login(user)
         response = self.client.get(self.dashboard_url)
         self.assertEqual(response.status_code, 302)
@@ -66,6 +70,7 @@ class CheckUserProfileMiddlewareTests(TestCase):
         Customer.objects.create(
             client_type='natural',
             user=user,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='Banco Test',
             address='Calle 1',
@@ -77,7 +82,7 @@ class CheckUserProfileMiddlewareTests(TestCase):
 
     def test_juridica_customer_missing_company_fields_redirects(self):
         user = _make_user('jurmissing', is_staff=True)
-        Customer.objects.create(
+        Customer(
             client_type='juridica',
             user=user,
             account='1234567890123456',
@@ -87,7 +92,7 @@ class CheckUserProfileMiddlewareTests(TestCase):
             company_name='',
             reeup='',
             nit='',
-        )
+        ).save(run_validators=False)
         self.client.force_login(user)
         response = self.client.get(self.dashboard_url)
         self.assertEqual(response.status_code, 302)

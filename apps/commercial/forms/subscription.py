@@ -43,14 +43,6 @@ class ServicePeriodUnitSelect(forms.Select):
 
 
 class SubscriptionForm(forms.ModelForm):
-    """Alta y edición de suscripciones: sólo se declara lo que el operador elige.
-
-    La unidad (días o meses) la decide la categoría del servicio, no quien crea
-    la suscripción. La suscripción no vence por tiempo, así que no hay ningún
-    campo de expiración: `quantity` es la cantidad a facturar y multiplica al
-    precio, y `payment_method` se elige al solicitar.
-    """
-
     start_date = forms.DateField(
         label='Fecha de inicio del servicio',
         input_formats=['%d/%m/%Y', '%Y-%m-%d'],
@@ -107,13 +99,9 @@ class SubscriptionForm(forms.ModelForm):
             self.fields['quantity'].label = f'Cantidad de {_pluralize_period(unidad)}'
 
     def _selected_billing_period(self):
-        """Unidad de facturación del servicio ya elegido, o `''` si no hay ninguno.
-
-        El rótulo se imprime en el servidor para que sin JavaScript la cantidad
-        siga diciendo qué se está contando. Sólo un servicio del queryset cuenta:
-        uno inexistente, uno público o un POST mal formado dejan el rótulo neutro
-        en vez de romper el render.
-        """
+        # Se imprime en el servidor para que sin JavaScript la cantidad siga
+        # diciendo qué se está contando. Un POST mal formado deja el rótulo neutro
+        # en vez de romper el render.
         elegido = self.data.get('service') if self.is_bound else self.instance.service_id
         if not elegido:
             return ''

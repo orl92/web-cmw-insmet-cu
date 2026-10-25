@@ -75,8 +75,7 @@ class CustomerListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_natural_muestra_nombre_y_documento_de_identidad(self):
-        # `company_name` es NULL en una natural: la columna Cliente terminaba
-        # imprimiendo la palabra `None`, y la de Identificación un guion.
+        # Columna unificada: para persona natural se muestra el carnet.
         customer = natural_customer(
             make_user('lista.natural', first_name='Ana', last_name='Norte'),
             identity_document='34111234567',
@@ -88,6 +87,8 @@ class CustomerListViewTests(TestCase):
         self.assertIn('Ana Norte', html)
         self.assertIn('34111234567', html)
         self.assertNotIn('>None<', html)
+        self.assertNotIn('REEUP', html)
+        self.assertNotIn('NIT', html)
         self.assertEqual(customer.client_type, Customer.ClientType.NATURAL)
 
     def test_juridica_muestra_razon_social_y_datos_fiscales(self):
@@ -107,8 +108,9 @@ class CustomerListViewTests(TestCase):
         self.client.force_login(self.staff_user)
         html = self.client.get(self.url).content.decode()
         self.assertIn('Empresa Listado S.A.', html)
-        # REEUP y NIT viven en su propia columna, no en Identificación.
+        self.assertIn('REEUP', html)
         self.assertIn('123.4.5678', html)
+        self.assertIn('NIT', html)
         self.assertIn('12345678901', html)
 
 
@@ -724,6 +726,120 @@ class SubscriptionListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class SubscriptionListOwnerAccessTests(TestCase):
+    """El titular de un Customer entra a "Mis Suscripciones" sin el permiso.
+
+    Los correos de factura y certificado enlazan «Ver en línea» a
+    ``commercial:suscripcion_list``, pero el cliente titular no siempre tiene
+    ``commercial.view_subscription``: el grupo ``Clientes`` sólo lo otorga si
+    el registro público lo creó primero, mientras que los caminos del dashboard
+    crean el grupo vacío. El titular debe entrar y ver sólo sus suscripciones.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        disable_maintenance_mode()
+        cls.staff = _make_user('staffownerlist', is_staff=True)
+        cls.owner = _make_user('ownerlist')
+        cls.other = _make_user('otherlist')
+        cls.customer = natural_customer(cls.owner)
+        cls.other_customer = natural_customer(cls.other)
+        cls.service = Service.objects.create(
+            user=cls.staff,
+            title='Svc Titular Listado',
+            summary='S',
+            service_type='commercial',
+            code='OWN001',
+            price=Decimal('30.00'),
+        )
+        cls.other_service = Service.objects.create(
+            user=cls.staff,
+            title='Svc Ajeno Listado',
+            summary='S',
+            service_type='commercial',
+            code='OWN002',
+            price=Decimal('40.00'),
+        )
+        cls.sub = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=cls.service,
+            start_date=timezone.now(),
+            payment_status='pending',
+        )
+        cls.other_sub = ServiceSubscription.objects.create(
+            customer=cls.other_customer,
+            service=cls.other_service,
+            start_date=timezone.now(),
+            payment_status='paid',
+        )
+        cls.url = reverse('commercial:suscripcion_list')
+
+    def _assert_solo_lo_suyo(self, response):
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn(self.service.title, html)
+        self.assertIn(f'data-uuid="{self.sub.uuid}"', html)
+        self.assertNotIn(self.other_service.title, html)
+        self.assertNotIn(f'data-uuid="{self.other_sub.uuid}"', html)
+
+    def test_titular_without_permission_or_group_sees_only_his_subscriptions(self):
+        self.assertFalse(self.owner.groups.filter(name='Clientes').exists())
+        self.client.force_login(self.owner)
+        self._assert_solo_lo_suyo(self.client.get(self.url))
+
+    def test_titular_in_clientes_group_without_permission_sees_only_his(self):
+        # Camino del dashboard: el grupo `Clientes` existe pero quedó vacío
+        # (sin `view_subscription`), como lo crean CustomerCreateView y
+        # CustomerFromUserView.
+        from django.contrib.auth.models import Group
+
+        group, _ = Group.objects.get_or_create(name='Clientes')
+        self.owner.groups.add(group)
+        self.assertFalse(self.owner.has_perm('commercial.view_subscription'))
+        self.client.force_login(self.owner)
+        self._assert_solo_lo_suyo(self.client.get(self.url))
+
+    def test_user_without_customer_and_without_permission_gets_403(self):
+        self.client.force_login(_make_user('nocustomerlist'))
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_user_with_permission_but_without_customer_gets_403(self):
+        # No se amplía lo que ve un rol ajeno: con el permiso directo pero sin
+        # Customer el resultado sigue siendo 403, igual que antes.
+        user = _make_user('permnocustomer')
+        ct = ContentType.objects.get_for_model(ServiceSubscription)
+        user.user_permissions.add(ct.permission_set.get(codename='view_subscription'))
+        self.client.force_login(user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_clientes_group_without_customer_still_sees_empty_list(self):
+        # La rama del grupo `Clientes` sin Customer queda intacta: lista vacía
+        # con 200, no un 403 (comportamiento previo que este cambio no toca).
+        from django.contrib.auth.models import Group
+
+        ct = ContentType.objects.get_for_model(ServiceSubscription)
+        group, _ = Group.objects.get_or_create(name='Clientes')
+        group.permissions.add(ct.permission_set.get(codename='view_subscription'))
+        user = _make_user('groupnocustomer')
+        user.groups.add(group)
+        self.client.force_login(user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertNotIn(self.service.title, html)
+        self.assertNotIn(self.other_service.title, html)
+
+    def test_superuser_still_sees_every_subscription(self):
+        self.client.force_login(_make_superuser('ownerlistadmin'))
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn(self.service.title, html)
+        self.assertIn(self.other_service.title, html)
+
+
 class InvoiceListViewTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -903,7 +1019,7 @@ class ContractCreateViewTests(TestCase):
     def setUpTestData(cls):
         disable_maintenance_mode()
         cls.admin = _make_superuser('admin7')
-        customer = natural_customer(
+        cls.customer = natural_customer(
             _make_user('conccust'),
             address='Addr',
             phone='12345678',
@@ -918,7 +1034,7 @@ class ContractCreateViewTests(TestCase):
             price=Decimal('50.00'),
         )
         cls.sub = ServiceSubscription.objects.create(
-            customer=customer,
+            customer=cls.customer,
             service=service,
             start_date=timezone.now(),
         )
@@ -927,10 +1043,10 @@ class ContractCreateViewTests(TestCase):
     def test_post_creates_contract(self):
         self.client.force_login(self.admin)
         data = {
-            'subscription': self.sub.pk,
+            'customer': self.customer.pk,
             'number': 'CONT-001',
-            'date': date.today().isoformat(),
-            'commercial_registry': 'REG-001',
+            'start_date': date.today().isoformat(),
+            'validity_years': '2',
         }
         self.client.post(self.url, data, follow=True)
         self.assertTrue(Contract.objects.filter(number='CONT-001').exists())
@@ -939,14 +1055,13 @@ class ContractCreateViewTests(TestCase):
         self.client.force_login(self.admin)
         data = {
             'number': 'CONT-002',
-            'date': date.today().isoformat(),
-            'commercial_registry': 'REG-002',
+            'start_date': date.today().isoformat(),
+            'validity_years': '2',
         }
         response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'value="CONT-002"')
         self.assertContains(response, f'value="{date.today().strftime("%d/%m/%Y")}"')
-        self.assertContains(response, 'value="REG-002"')
 
 
 class ContractDeleteViewTests(TestCase):
@@ -960,24 +1075,10 @@ class ContractDeleteViewTests(TestCase):
             phone='12345678',
             account='1234567890123456',
         )
-        service = Service.objects.create(
-            user=cls.admin,
-            title='Svc2',
-            summary='Svc2',
-            service_type='commercial',
-            code='C101',
-            price=Decimal('60.00'),
-        )
-        sub = ServiceSubscription.objects.create(
-            customer=customer,
-            service=service,
-            start_date=timezone.now(),
-        )
         cls.contract = Contract.objects.create(
-            subscription=sub,
+            customer=customer,
             number='CONT-DEL',
-            date=date.today(),
-            commercial_registry='REG-DEL',
+            start_date=date.today(),
         )
 
     def test_post_soft_deletes(self):
@@ -1091,7 +1192,7 @@ class AjaxPendingSubscriptionsTests(TestCase):
             service=service,
             start_date=timezone.now(),
             quantity=2,
-            payment_status='pending',
+            payment_status='requested',
         )
         cls.url = reverse('commercial:ajax_pending_subscriptions')
 
@@ -1112,7 +1213,13 @@ class AjaxPendingSubscriptionsTests(TestCase):
 
 
 class BatchInvoiceQuantityTests(TestCase):
-    """process_batch_invoice uses quantity × price and period unit."""
+    """process_batch_invoice uses quantity × price, and `U/M` stays `U`.
+
+    La columna `U/M` de las facturas reales del CMP nunca dice `MES` ni `DÍA`: dice
+    `U` o nada, con cantidades de 30, 31, 2 y 4. La unidad de la fila vive en el
+    rótulo de `cantidad`, no en `unidad_medida`, así que el lote deja que el
+    `default='U'` del modelo sea el dueño del valor.
+    """
 
     def test_agrometeo_batch_uses_monthly_quantity(self):
         from apps.commercial.views.invoices import InvoiceCreateView
@@ -1131,18 +1238,18 @@ class BatchInvoiceQuantityTests(TestCase):
         sub = ServiceSubscription.objects.create(
             customer=customer,
             service=service,
+            start_date=timezone.make_aware(datetime(2025, 5, 15)),
             quantity=3,
         )
         view = InvoiceCreateView()
         admin = _make_superuser('batchadmin')
         view.request = _build_request(admin)
-        start = timezone.now().date()
-        view.process_batch_invoice(customer, start, start, 'REG-001', [sub])
+        view.process_batch_invoice(customer, 'REG-001', [sub])
         item = InvoiceItem.objects.get(subscription=sub)
         invoice = item.invoice
         self.assertEqual(item.cantidad, 3)
         self.assertEqual(item.importe, Decimal('300.00'))
-        self.assertEqual(item.unidad_medida, 'MES')
+        self.assertEqual(item.unidad_medida, 'U')
         self.assertEqual(invoice.amount, Decimal('300.00'))
 
     def test_pronostico_batch_uses_daily_quantity(self):
@@ -1162,18 +1269,18 @@ class BatchInvoiceQuantityTests(TestCase):
         sub = ServiceSubscription.objects.create(
             customer=customer,
             service=service,
+            start_date=timezone.make_aware(datetime(2025, 5, 20)),
             quantity=10,
         )
         view = InvoiceCreateView()
         admin = _make_superuser('batchadmin2')
         view.request = _build_request(admin)
-        start = timezone.now().date()
-        view.process_batch_invoice(customer, start, start, 'REG-002', [sub])
+        view.process_batch_invoice(customer, 'REG-002', [sub])
         item = InvoiceItem.objects.get(subscription=sub)
         invoice = item.invoice
         self.assertEqual(item.cantidad, 10)
         self.assertEqual(item.importe, Decimal('50.00'))
-        self.assertEqual(item.unidad_medida, 'DÍA')
+        self.assertEqual(item.unidad_medida, 'U')
         self.assertEqual(invoice.amount, Decimal('50.00'))
 
     def test_facturar_no_sobreescribe_el_inicio_de_la_suscripcion(self):
@@ -1207,20 +1314,21 @@ class BatchInvoiceQuantityTests(TestCase):
         view = InvoiceCreateView()
         view.request = _build_request(_make_superuser('batchstartadmin'))
 
-        # El período facturado es deliberadamente otro.
-        view.process_batch_invoice(customer, date(2026, 5, 1), date(2026, 5, 31), 'REG-003', [sub])
+        # El período facturado no es el del contrato: se deduce del inicio y la cantidad.
+        facturas = view.process_batch_invoice(customer, 'REG-003', [sub])
 
         sub.refresh_from_db()
         self.assertEqual(sub.start_date, elegido)
         self.assertEqual(sub.payment_status, 'pending')
+        self.assertEqual(facturas[0].period_label, 'De septiembre a noviembre de 2025')
 
-    def test_varias_suscripciones_pendientes_generan_una_sola_factura(self):
-        """Sin agrupamiento por período, las pendientes se facturan juntas.
+    def test_las_suscripciones_que_no_comparten_meses_van_a_facturas_distintas(self):
+        """El agrupamiento vuelve, pero por el período *facturado*, no por vencimiento.
 
-        La vista ya no separa las suscripciones por su fecha de expiración (ya no
-        existe), así que marcar varias produce una única factura con una línea por
-        suscripción. Antes se grouping por período y podía salir más de una
-        factura para un mismo cliente.
+        La vista ya no separa por fecha de expiración porque no existe. Ahora separa
+        por los meses que ocupa cada suscripción, que es el dato contra el que se
+        valida cada línea: meterlas en una factura obligaría a un período que
+        ninguna de las dos ocupa.
         """
         from apps.commercial.views.invoices import InvoiceCreateView
 
@@ -1244,8 +1352,8 @@ class BatchInvoiceQuantityTests(TestCase):
             code='B005',
             price=Decimal('5.00'),
         )
-        # Inicios muy distintos: es justo la condición que antes los separaba en
-        # grupos distintos y producía una factura por grupo.
+        # Enero con 3 meses ocupa enero-marzo; el pronóstico de 10 días sólo enero; y
+        # agro starting el 28 con 2 meses, enero-febrero. Tres períodos distintos.
         subs = [
             ServiceSubscription.objects.create(
                 customer=customer,
@@ -1258,15 +1366,21 @@ class BatchInvoiceQuantityTests(TestCase):
 
         view = InvoiceCreateView()
         view.request = _build_request(_make_superuser('batchgroupadmin'))
-        invoice = view.process_batch_invoice(
-            customer, date(2026, 5, 1), date(2026, 5, 31), 'REG-004', subs
-        )
+        facturas = view.process_batch_invoice(customer, 'REG-004', subs)
 
         self.assertEqual(Invoice.objects.filter(customer=customer).count(), 1)
-        self.assertEqual(invoice.items.count(), 3)
+        factura = facturas[0]
+        self.assertEqual(factura.period_label, 'De enero a marzo de 2025')
         self.assertEqual(
-            invoice.amount, Decimal('100.00') * 3 + Decimal('5.00') * 10 + Decimal('100.00') * 2
+            factura.amount,
+            Decimal('100.00') * 3 + Decimal('5.00') * 10 + Decimal('100.00') * 2,
         )
+        for item in factura.items.all():
+            inicio = timezone.localtime(item.subscription.start_date).date()
+            self.assertTrue(
+                factura.period_start <= inicio <= factura.period_end,
+                f'{inicio} no cae en el período de {factura.period_label}',
+            )
         for sub in subs:
             sub.refresh_from_db()
             self.assertEqual(sub.payment_status, 'pending')
@@ -1309,6 +1423,26 @@ class SubscriptionListStateAndActionsTests(TestCase):
             start_date=timezone.now(),
             payment_status=status,
         )
+
+    def _invoice_with_pdf(self, subscription):
+        # Factura con PDF real (`pdf_status` + archivo) y su item: es la única
+        # combinación con la que las anotaciones `latest_invoice_*` del listado
+        # resuelven `latest_invoice_pdf_ready=True`.
+        invoice = Invoice.objects.create(
+            subscription=subscription,
+            number=f'F-{subscription.uuid.hex[:8].upper()}',
+            amount=Decimal('50.00'),
+            pdf='factura/invoice/live-status.pdf',
+            pdf_status=Invoice.PdfStatus.READY,
+        )
+        InvoiceItem.objects.create(
+            invoice=invoice,
+            subscription=subscription,
+            descripcion='Svc estado sub',
+            cantidad=Decimal('1'),
+            precio=Decimal('50.00'),
+        )
+        return invoice
 
     def _render(self):
         self.client.force_login(self.admin)
@@ -1370,7 +1504,10 @@ class SubscriptionListStateAndActionsTests(TestCase):
         self.assertNotIn('aria-label="Ver PDF"', html)
 
     def test_edit_precedes_destructive_action_in_the_row(self):
-        self._subscription('pending')
+        sub = self._subscription('pending')
+        # "Aprobar Pago" sólo se muestra con PDF listo (gate T3), así que la
+        # suscripción pendiente necesita su factura con PDF real e item.
+        self._invoice_with_pdf(sub)
         html = self._render()
         edit_pos = html.index('title="Editar"')
         delete_pos = html.index('title="Anular suscripción"')
@@ -1438,7 +1575,7 @@ class SubscriptionCancelViewTests(TestCase):
             codigo='CANCEL',
             descripcion='Svc anulable',
             cantidad=1,
-            unidad_medida='DÍA',
+            unidad_medida='U',
             precio=Decimal('50.00'),
         )
         return invoice
@@ -1923,6 +2060,7 @@ class InvoiceSubscriptionLinkTests(TestCase):
         return ServiceSubscription.objects.create(
             customer=customer,
             service=service,
+            start_date=timezone.now(),
             quantity=2,
             payment_status='pending',
         )
@@ -1935,8 +2073,7 @@ class InvoiceSubscriptionLinkTests(TestCase):
         view.request = _build_request(
             _make_superuser(f'batchadmin-link-{seq if seq is not None else id(subs)}')
         )
-        day = timezone.now().date()
-        view.process_batch_invoice(customer, day, day, 'REG-LINK', subs)
+        view.process_batch_invoice(customer, 'REG-LINK', subs)
         return InvoiceItem.objects.filter(subscription__in=subs).first().invoice
 
     def test_for_subscription_finds_invoice_linked_only_by_item(self):
@@ -2064,7 +2201,7 @@ class ClientPendingInvoiceButtonsTests(TestCase):
                 codigo=sub.service.code,
                 descripcion=sub.service.title,
                 cantidad=cantidad,
-                unidad_medida='DÍA',
+                unidad_medida='U',
                 precio=sub.service.price,
                 importe=sub.service.price * cantidad,
             )

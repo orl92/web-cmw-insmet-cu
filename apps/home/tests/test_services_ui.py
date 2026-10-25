@@ -31,6 +31,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import next_identity_document
 from apps.core.models import SiteConfiguration
 from apps.home.views.servicios.comerciales.views import CommercialServicesListView
 
@@ -179,6 +180,7 @@ class ServicesCommercialUiTests(TestCase):
         customer = Customer.objects.create(
             user=self.user,
             client_type=Customer.ClientType.NATURAL,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Calle 10 e/ 11 y 13',
@@ -260,6 +262,7 @@ class CommercialServicesListViewStateScopeTests(TestCase):
         cls.customer = Customer.objects.create(
             user=cls.client_user,
             client_type=Customer.ClientType.NATURAL,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',
@@ -299,7 +302,7 @@ class CommercialServicesListViewStateScopeTests(TestCase):
             codigo=sub.service.code or '',
             descripcion=sub.service.title,
             cantidad=1,
-            unidad_medida='DÍA',
+            unidad_medida='U',
             precio=10,
             importe=10,
         )
@@ -569,6 +572,7 @@ class CommercialServicesListContextualActionsTests(TestCase):
         cls.customer = Customer.objects.create(
             user=cls.client_user,
             client_type=Customer.ClientType.NATURAL,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',
@@ -807,6 +811,7 @@ class ServicesCommercialStaffButtonTests(TestCase):
         customer = Customer.objects.create(
             user=client_user,
             client_type=Customer.ClientType.NATURAL,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',
@@ -1049,6 +1054,7 @@ class ServiceReRequestUiTests(TestCase):
         cls.customer = Customer.objects.create(
             user=cls.client_user,
             client_type=Customer.ClientType.NATURAL,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',
@@ -1314,6 +1320,7 @@ class MisServiciosMenuItemTests(TestCase):
         cls.customer = Customer.objects.create(
             user=cls.client_user,
             client_type=Customer.ClientType.NATURAL,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='BANDEC',
             address='Addr',

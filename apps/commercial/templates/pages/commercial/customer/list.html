@@ -4,7 +4,6 @@
   <th>Cliente</th>
   <th>Tipo de Cliente</th>
   <th>Identificación</th>
-  <th>Datos Fiscales</th>
   <th>Correo Electrónico</th>
   <th>Número de Teléfono</th>
   <th>Registro</th>
@@ -30,17 +29,10 @@
     {% if object.client_type == 'natural' %}
       <div class="fw-medium font-monospace">{{ object.identity_document|default:'—' }}</div>
     {% else %}
-      <span class="text-secondary">—</span>
-    {% endif %}
-  </td>
-  <td>
-    {% if object.client_type == 'juridica' %}
       <div class="text-secondary small">REEUP</div>
-      <div class="fw-medium font-monospace">{{ object.reeup }}</div>
+      <div class="fw-medium font-monospace">{{ object.reeup|default:'—' }}</div>
       <div class="text-secondary small mt-1">NIT</div>
-      <div class="fw-medium font-monospace">{{ object.nit }}</div>
-    {% else %}
-      <span class="text-secondary">—</span>
+      <div class="fw-medium font-monospace">{{ object.nit|default:'—' }}</div>
     {% endif %}
   </td>
   <td>{{ object.user.email }}</td>

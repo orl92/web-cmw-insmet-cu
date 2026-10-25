@@ -12,6 +12,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import next_identity_document
 from apps.core.models import SiteConfiguration
 from apps.meteo.models import ForecastRegions, Forecasts, Warning
 
@@ -112,6 +113,7 @@ class DashboardContextTests(TestCase):
         Customer.objects.create(
             client_type='natural',
             user=client,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='Banco Test',
             address='Calle 1',
@@ -133,6 +135,7 @@ class DashboardContextTests(TestCase):
         customer = Customer.objects.create(
             client_type='natural',
             user=client,
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='Banco Test',
             address='Calle 1',
@@ -184,6 +187,7 @@ class DashboardCommercialDataTests(TestCase):
         customer = Customer.objects.create(
             client_type='natural',
             user=_make_user('comcust'),
+            identity_document=next_identity_document(),
             account='1234567890123456',
             agency_bank='Banco Test',
             address='Calle 1',

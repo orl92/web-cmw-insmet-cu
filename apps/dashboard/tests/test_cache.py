@@ -12,6 +12,7 @@ from apps.commercial.models import (
     Service,
     ServiceSubscription,
 )
+from apps.commercial.tests.factories import next_identity_document
 from apps.core.models import SiteConfiguration
 from apps.dashboard.views.dashboard.dashboard import build_shared_kpis
 from apps.meteo.models import Forecasts
@@ -46,6 +47,12 @@ class DashboardKpiCacheTests(TestCase):
         )
 
     def setUp(self):
+        cache.clear()
+
+    def tearDown(self):
+        # El caché vive en el proceso, no en la transacción del test. Sin esta
+        # limpieza, la serie cacheada acá (un pronóstico sin regiones) se filtra
+        # al siguiente test que pide `/dashboard/` y el gráfico sale en 0.0.
         cache.clear()
 
     def test_kpi_series_cached_within_ttl(self):
@@ -91,6 +98,7 @@ class DashboardNoClientLeakTests(TestCase):
         cls.customer_a = Customer.objects.create(
             client_type='natural',
             user=cls.client_a,
+            identity_document=next_identity_document(),
             account='1111111111111111',
             agency_bank='Banco A',
             address='Calle A',
@@ -101,6 +109,7 @@ class DashboardNoClientLeakTests(TestCase):
         cls.customer_b = Customer.objects.create(
             client_type='natural',
             user=cls.client_b,
+            identity_document=next_identity_document(),
             account='2222222222222222',
             agency_bank='Banco B',
             address='Calle B',

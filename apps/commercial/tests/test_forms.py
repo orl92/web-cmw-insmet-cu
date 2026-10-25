@@ -949,7 +949,7 @@ class ContractFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = _make_user('conform')
-        customer = natural_customer(
+        cls.customer = natural_customer(
             cls.user, address='Addr', phone='12345678', account='1234567890123456'
         )
         service = Service.objects.create(
@@ -961,7 +961,7 @@ class ContractFormTests(TestCase):
             price=Decimal('70.00'),
         )
         cls.sub = ServiceSubscription.objects.create(
-            customer=customer,
+            customer=cls.customer,
             service=service,
             start_date=timezone.now(),
         )
@@ -969,10 +969,10 @@ class ContractFormTests(TestCase):
     def test_valid_contract_form(self):
         form = ContractForm(
             data={
-                'subscription': self.sub.pk,
+                'customer': self.customer.pk,
                 'number': 'CONT-001',
-                'date': date.today().isoformat(),
-                'commercial_registry': 'REG-001',
+                'start_date': date.today().isoformat(),
+                'validity_years': '2',
             }
         )
         self.assertTrue(form.is_valid(), form.errors)
@@ -980,10 +980,10 @@ class ContractFormTests(TestCase):
     def test_contract_saves(self):
         form = ContractForm(
             data={
-                'subscription': self.sub.pk,
+                'customer': self.customer.pk,
                 'number': 'CONT-002',
-                'date': date.today().isoformat(),
-                'commercial_registry': 'REG-002',
+                'start_date': date.today().isoformat(),
+                'validity_years': '2',
             }
         )
         self.assertTrue(form.is_valid(), form.errors)
@@ -1096,7 +1096,10 @@ class InvoiceFormTests(TestCase):
 
 
 class InvoiceItemFormTests(TestCase):
-    """B4: la línea manual deriva unidad y precio del servicio, no del POST."""
+    """B4: la línea manual deriva precio del servicio, no del POST.
+
+    Y no expone `unidad_medida`: ver `LaColumnaUMNoEsUnCampoDelFormularioTests`.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -1121,9 +1124,16 @@ class InvoiceItemFormTests(TestCase):
         )
 
     def _data(self, service, **overrides):
-        # El navegador manda el precio del servicio; clean() lo vuelve a derivar igual.
+        # El navegador manda el precio del servicio; clean() lo vuelve a derivar
+        # igual. El inicio viaja por línea: es el acuerdo con el cliente y no el
+        # período de la factura.
+        #
+        # `unidad_medida` viaja en todos los datos de esta clase a propósito: es el
+        # valor que el formulario solía derivar de la categoría, y mandarlo en
+        # cada prueba deja demostrado que hoy es un nombre sin campo, inerte.
         data = {
             'service': service.pk,
+            'start_date': '15/01/2026',
             'codigo': service.code or '',
             'cantidad': 3,
             'unidad_medida': 'U',
@@ -1133,7 +1143,7 @@ class InvoiceItemFormTests(TestCase):
         return data
 
     def test_clean_overrides_posted_derived_fields(self):
-        """Invariante de seguridad: el POST no puede fijar código, precio ni UM."""
+        """Invariante de seguridad: el POST no puede fijar código ni precio."""
         form = InvoiceItemForm(
             data=self._data(
                 self.pronostico,
@@ -1145,17 +1155,6 @@ class InvoiceItemFormTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data['codigo'], 'PRO-01')
         self.assertEqual(form.cleaned_data['precio'], Decimal('5.00'))
-        self.assertEqual(form.cleaned_data['unidad_medida'], 'DÍA')
-
-    def test_agrometeo_unit_is_mes(self):
-        form = InvoiceItemForm(data=self._data(self.agro))
-        self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.cleaned_data['unidad_medida'], 'MES')
-
-    def test_pronostico_unit_is_dia(self):
-        form = InvoiceItemForm(data=self._data(self.pronostico))
-        self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.cleaned_data['unidad_medida'], 'DÍA')
 
     def test_cantidad_comes_from_the_operator(self):
         """La cantidad es del operador: clean() no la toca, la plantilla sólo propone."""
@@ -1192,3 +1191,92 @@ class InvoiceItemFormTests(TestCase):
         form = InvoiceItemForm(data=self._data(service, codigo='HACKED'))
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data['codigo'], '')
+
+
+class LaColumnaUMNoEsUnCampoDelFormularioTests(TestCase):
+    """La columna `U/M` no es un dato: no tiene campo, y vale siempre `U`.
+
+    Las tres facturas reales del CMP lo dicen con sus propios números. La 182
+    deja `U/M` vacía en sus cuatro líneas —cantidades 30 y 31, los días de mayo y
+    de junio— y las 279 y 276 escriben `U` —cantidades 2 y 4, los meses de un
+    agrometeo—. Ninguna dice `MES` ni `DÍA` en ninguna parte. La unidad de la
+    fila no es un valor: vive en el rótulo de `cantidad`, que desde T3 dice
+    "Cantidad de meses" o "Cantidad de días".
+
+    Por eso `unidad_medida` no es un campo de `InvoiceItemForm`. Un campo
+    `readonly` que siempre dice `U` ocuparía una columna de la pantalla para
+    repetir la constante del modelo, y obligaría a mantener el código que lo
+    reescribe —que es exactamente el código que inventaba `MES`/`DÍA`—. Sin el
+    campo, el valor tiene un solo dueño: `InvoiceItem.unidad_medida`, cuyo
+    `default='U'` ya es el correcto. Y sin el campo el POST no tiene ni el nombre
+    para intentar fijarlo, así que la garantía no depende de que `clean()` se
+    acuerde de sobrescribirlo.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = _make_user('umcolumn')
+        cls.agro = Service.objects.create(
+            user=cls.user,
+            title='Certificación Agrometeorológica Especializada  por meses',
+            summary='S',
+            service_type=Service.COMMERCIAL,
+            service_category='agrometeo',
+            code='700502072507017',
+            price=Decimal('1270.78'),
+        )
+        cls.pronostico = Service.objects.create(
+            user=cls.user,
+            title='Pronóstico especializado para la Apicultura',
+            summary='S',
+            service_type=Service.COMMERCIAL,
+            service_category='pronostico',
+            code='700502072307032',
+            price=Decimal('320.35'),
+        )
+
+    def _data(self, service, **overrides):
+        data = {
+            'service': service.pk,
+            'start_date': '01/10/2025',
+            'codigo': service.code,
+            'cantidad': 2,
+            'precio': f'{service.price:.2f}',
+        }
+        data.update(overrides)
+        return data
+
+    def test_el_formulario_no_expone_la_unidad_de_medida(self):
+        """La razón de que el POST no pueda fijarla: no hay dónde escribirla."""
+        self.assertNotIn('unidad_medida', InvoiceItemForm().fields)
+
+    def test_el_resto_de_los_campos_de_la_linea_no_cambia(self):
+        """Se quita `unidad_medida` y sólo eso: ni entra un campo nuevo ni se cae otro."""
+        self.assertEqual(
+            set(InvoiceItemForm().fields),
+            {'service', 'codigo', 'cantidad', 'precio', 'start_date'},
+        )
+
+    def test_el_post_no_puede_fijar_la_unidad_de_medida(self):
+        """Un `unidad_medida` en el cuerpo no aparece en `cleaned_data`: no existe."""
+        form = InvoiceItemForm(data=self._data(self.agro, unidad_medida='MES'))
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertNotIn('unidad_medida', form.cleaned_data)
+
+    def test_la_linea_no_lleva_descripcion_para_que_ningun_camino_la_adicione(self):
+        """Ninguna ruta del formulario puede escribir `descripcion`.
+
+        En la factura 279 el texto "por meses" es parte del nombre del servicio en
+        el catálogo, no un sufijo que agrega el sistema: las dos facturas de
+        pronóstico (182 y 276) no lo tienen y su descripción es el título tal
+        cual. Si `clean()` se lo pegara, esas dos facturas-factura saldrían con
+        una palabra de más. Que la línea no tenga el campo es lo que vuelve
+        imposible que un sufijo se cuelgue por acá; que la descripción sea el
+        título exacto se comprueba en la vista.
+        """
+        self.assertNotIn('descripcion', InvoiceItemForm().fields)
+
+    def test_el_titulo_del_agrometeo_conserva_su_propio_por_meses(self):
+        """Lo que hay que no romper es el título del catálogo que ya lo dice."""
+        self.assertIn('por meses', self.agro.title)

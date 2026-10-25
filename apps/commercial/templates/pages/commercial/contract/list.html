@@ -3,18 +3,22 @@
 {% block columns %}
   <th>Número</th>
   <th>Cliente</th>
-  <th>Servicio</th>
-  <th>Fecha</th>
-  <th>Registro Comercial</th>
+  <th>Vigencia</th>
+  <th>Tipo de Cliente</th>
   <th>Estado</th>
   <th class="text-end">Acciones</th>
 {% endblock %}
 {% block row %}
   <td>{{ object.number }}</td>
-  <td>{{ object.subscription.customer.display_name }}</td>
-  <td>{{ object.subscription.service.title }}</td>
-  <td>{{ object.date }}</td>
-  <td>{{ object.commercial_registry }}</td>
+  <td>{{ object.customer.display_name }}</td>
+  <td>{{ object.start_date|date:"d/m/Y" }} — {{ object.end_date|date:"d/m/Y" }}</td>
+  <td>
+    {% if object.customer.client_type == 'natural' %}
+      <span class="badge bg-green-lt">Persona Natural</span>
+    {% else %}
+      <span class="badge bg-azure-lt">Persona Jurídica</span>
+    {% endif %}
+  </td>
   <td>
     {% if object.record_active %}
       <span class="badge badge-outline text-green">Activo</span>

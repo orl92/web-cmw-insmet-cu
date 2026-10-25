@@ -8,19 +8,36 @@ Estos tests fijan el comportamiento que reportaba el operador:
 - reintentar una tarea actualiza su fila en el log, no abre una nueva;
 - la tabla de tareas dice de qué cliente es cada una;
 - una factura borrada con la tarea en la cola no genera reintentos para siempre.
+
+Y lo que el cliente ve al abrir ese correo:
+
+- el asunto lleva el nombre visible del cliente (no la palabra `None`);
+- el QR de pago se muestra en el cuerpo además de viajar adjunto;
+- «Ver en línea» apunta a una página que el cliente sí puede abrir.
 """
 
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.staticfiles import finders
+from django.core import mail
 from django.template.loader import render_to_string
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.urls import reverse
 
 from apps.commercial.models import Invoice, InvoiceItem, Service, ServiceSubscription
-from apps.commercial.tests.factories import natural_customer
-from apps.core.models import TaskExecutionLog
+from apps.commercial.tests.factories import (
+    juridica_customer,
+    natural_customer,
+    next_nit,
+    next_reeup,
+)
+from apps.core.models import SiteConfiguration, TaskExecutionLog
 from config.huey import huey
+
+LOCMEM = 'django.core.mail.backends.locmem.EmailBackend'
 
 
 class FacturaBase(TestCase):
@@ -311,6 +328,8 @@ class ResumenDelClienteTests(FacturaBase):
     def test_una_juridica_se_identifica_con_la_razon_social(self):
         self.customer.client_type = 'juridica'
         self.customer.company_name = 'Empresa de Prueba SRL'
+        self.customer.reeup = next_reeup()
+        self.customer.nit = next_nit()
         self.customer.save()
 
         self.assertEqual(self._resumen(), 'Factura INV-ENTREGA · Empresa de Prueba SRL')
@@ -384,3 +403,215 @@ class ClaveLogicaTests(FacturaBase):
         log = TaskExecutionLog.objects.filter(logical_key=f'invoice:{self.invoice.uuid}').first()
         self.assertIsNotNone(log)
         self.assertEqual(log.summary, 'Factura (eliminado)')
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM)
+class CorreoVisibleAlClienteTests(TestCase):
+    """El correo de la factura, visto desde el cliente que lo recibe.
+
+    Tres defectos con el mismo patrón: lo que el correo imprimía divergía de
+    lo que el cliente podía ver o abrir.
+
+    - El asunto se armaba con `company_name`, que en una persona natural es
+      NULL: la f-string lo escribía literal como la palabra `None`.
+    - El cuerpo citaba `cid:qr_pago.png`, pero el QR se adjuntaba con
+      `attach(nombre, bytes, mimetype)`, que no pone cabecera `Content-ID`:
+      el `cid:` no resolvía y el cliente veía el texto del `alt`.
+    - «Ver en línea» apuntaba a facturación, que exige `view_invoice`, un
+      permiso que el cliente no tiene; la página que sí puede abrir es
+      «Mis Suscripciones» (`view_subscription`, el permiso del grupo
+      `Clientes`).
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        SiteConfiguration.objects.get_or_create(defaults={'maintenance_mode': False})
+        cls.user = User.objects.create_user(
+            'clientecorreo',
+            'cliente@ejemplo.cu',
+            'pass',
+            first_name='Ana',
+            last_name='Norte',
+        )
+        cls.customer = natural_customer(cls.user)
+        cls.subscription = ServiceSubscription.objects.create(
+            customer=cls.customer,
+            service=Service.objects.create(
+                user=cls.user,
+                title='Servicio con QR',
+                code='SRV-CORREO-QR',
+                price=Decimal('100.00'),
+            ),
+            payment_method='qr',
+        )
+        cls.invoice_qr = Invoice.objects.create(
+            customer=cls.customer, number='INV-CORREO-QR', amount=Decimal('100.00')
+        )
+        InvoiceItem.objects.create(
+            invoice=cls.invoice_qr,
+            subscription=cls.subscription,
+            descripcion='Item con QR',
+            cantidad=1,
+            precio=Decimal('100.00'),
+        )
+        cls.invoice_plana = Invoice.objects.create(
+            customer=cls.customer, number='INV-CORREO-PLANA', amount=Decimal('100.00')
+        )
+        InvoiceItem.objects.create(
+            invoice=cls.invoice_plana,
+            descripcion='Item',
+            cantidad=1,
+            precio=Decimal('100.00'),
+        )
+        cls.base_url = 'http://testserver/'
+
+    def setUp(self):
+        # El outbox del backend locmem es a nivel de módulo: sin resetearlo,
+        # un test leería los mensajes que dejó el anterior.
+        mail.outbox = []
+
+    def _enviar(self, invoice, customer=None):
+        """Envía la factura de verdad (sin mocks) y devuelve el mensaje del outbox.
+
+        Hace falta el mensaje MIME real: los defectos viven en las partes y
+        cabeceras del correo, no en el objeto `EmailMessage`.
+        """
+        from apps.commercial.views.invoice_utils import enviar_correo_factura
+
+        customer = customer or self.customer
+        enviado = enviar_correo_factura(invoice, customer, base_url=self.base_url)
+        self.assertTrue(enviado, 'el correo debe enviarse para poder inspeccionarlo')
+        return mail.outbox[-1]
+
+    def _dar_permiso_clientes(self):
+        """`view_subscription` por el grupo `Clientes`, el camino no-staff."""
+        grupo, _ = Group.objects.get_or_create(name='Clientes')
+        permiso = ContentType.objects.get_for_model(ServiceSubscription).permission_set.get(
+            codename='view_subscription'
+        )
+        grupo.permissions.add(permiso)
+        self.user.groups.add(grupo)
+
+    def test_el_asunto_de_una_persona_natural_lleva_su_nombre_y_no_none(self):
+        mensaje = self._enviar(self.invoice_plana)
+
+        self.assertIn('Ana Norte', mensaje.subject)
+        self.assertNotIn('None', mensaje.subject)
+
+    def test_el_asunto_de_una_juridica_usa_la_razon_social(self):
+        """Mismo criterio que `display_name` en los cuerpos: la jurídica se
+        identifica por su razón social. Triangula el criterio del asunto."""
+        juridica = juridica_customer(username='corporreo')
+        factura = Invoice.objects.create(
+            customer=juridica, number='INV-CORREO-CORP', amount=Decimal('100.00')
+        )
+        InvoiceItem.objects.create(
+            invoice=factura, descripcion='Item', cantidad=1, precio=Decimal('100.00')
+        )
+
+        mensaje = self._enviar(factura, customer=juridica)
+
+        self.assertIn('Empresa de Prueba S.A.', mensaje.subject)
+        self.assertNotIn('None', mensaje.subject)
+
+    def test_el_qr_se_muestra_en_el_cuerpo_como_parte_inline(self):
+        """El `cid:qr_pago.png` del cuerpo solo resuelve contra una parte con
+        cabecera `Content-ID`; el adjunto por nombre no la trae."""
+        mensaje = self._enviar(self.invoice_qr)
+
+        self.assertIn('cid:qr_pago.png', mensaje.body)
+        partes = [
+            parte
+            for parte in mensaje.message().walk()
+            if parte.get('Content-ID') == '<qr_pago.png>'
+        ]
+        self.assertEqual(
+            len(partes),
+            1,
+            'el cuerpo referencia cid:qr_pago.png: hace falta una parte con ese Content-ID',
+        )
+        payload = partes[0].get_payload(decode=True)
+        self.assertTrue(
+            payload.startswith(b'\x89PNG'),
+            'la parte inline debe llevar los bytes del PNG, no un placeholder',
+        )
+        self.assertEqual(partes[0].get_content_disposition(), 'inline')
+
+    def test_el_qr_no_viaja_duplicado_como_adjunto(self):
+        """El PNG del QR debe viajar una sola vez: la parte inline con
+        `Content-ID` es la única copia, para que el archivo no pese dos veces
+        en el correo."""
+        mensaje = self._enviar(self.invoice_qr)
+        ruta = finders.find('dist/img/QR/QR.png')
+        self.assertIsNotNone(ruta, 'el QR de pago debe existir en los estáticos del proyecto')
+        with open(ruta, 'rb') as f:
+            qr_bytes = f.read()
+
+        nombres_adjuntos = [
+            adjunto[0] for adjunto in mensaje.attachments if isinstance(adjunto, tuple)
+        ]
+        self.assertNotIn(
+            'qr_pago.png',
+            nombres_adjuntos,
+            'el QR no debe adjuntarse por nombre: sería una segunda copia del PNG',
+        )
+        adjuntos_con_qr = [
+            parte
+            for parte in mensaje.message().walk()
+            if parte.get_content_disposition() == 'attachment'
+            and parte.get_payload(decode=True) == qr_bytes
+        ]
+        self.assertEqual(
+            adjuntos_con_qr,
+            [],
+            'ninguna parte con Content-Disposition: attachment debe llevar los bytes del QR',
+        )
+
+        partes = [
+            parte
+            for parte in mensaje.message().walk()
+            if parte.get('Content-ID') == '<qr_pago.png>'
+        ]
+        self.assertEqual(
+            len(partes),
+            1,
+            'hace falta exactamente una parte con Content-ID <qr_pago.png>',
+        )
+        self.assertEqual(partes[0].get_content_type(), 'image/png')
+        self.assertEqual(
+            partes[0].get_payload(decode=True),
+            qr_bytes,
+            'la parte inline única debe llevar los bytes del QR, no un placeholder',
+        )
+
+    def test_ver_en_linea_apunta_a_suscripciones_y_no_a_facturacion(self):
+        """Las dos plantillas leen la misma clave `listado_url`: si apunta a
+        facturación, el cliente cae en una página que no puede abrir."""
+        suscripciones = reverse('commercial:suscripcion_list')
+        facturacion = reverse('commercial:factura_list')
+
+        for invoice in (self.invoice_plana, self.invoice_qr):
+            with self.subTest(invoice=invoice.number):
+                mensaje = self._enviar(invoice)
+                self.assertIn(self.base_url + suscripciones.lstrip('/'), mensaje.body)
+                self.assertNotIn(facturacion, mensaje.body)
+
+    def test_el_cliente_puede_abrir_el_listado_que_el_correo_enlaza(self):
+        """`view_subscription` sí lo tiene el grupo `Clientes`; `view_invoice`,
+        no. El enlace del correo tiene que caer del lado alcanzable."""
+        self.client.force_login(self.user)
+        facturacion = reverse('commercial:factura_list')
+        self.assertIn(
+            self.client.get(facturacion).status_code,
+            (302, 403),
+            'sin view_invoice el cliente no puede abrir facturación',
+        )
+
+        self._dar_permiso_clientes()
+        suscripciones = reverse('commercial:suscripcion_list')
+        respuesta = self.client.get(suscripciones)
+        self.assertEqual(
+            respuesta.status_code,
+            200,
+            'el enlace del correo debe llevar a una página que el cliente sí puede abrir',
+        )

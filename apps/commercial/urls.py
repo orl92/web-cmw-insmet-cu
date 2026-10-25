@@ -31,6 +31,10 @@ from apps.commercial.views.invoices import (
     RetryInvoicePdfView,
     ajax_pending_subscriptions,
 )
+from apps.commercial.views.list_status import (
+    ajax_invoice_status,
+    ajax_subscription_status,
+)
 from apps.commercial.views.services import (
     ServiceCreateView,
     ServiceDeleteView,
@@ -151,6 +155,12 @@ urlpatterns = [
         'ajax/suscripciones-pendientes/',
         ajax_pending_subscriptions,
         name='ajax_pending_subscriptions',
+    ),
+    path('ajax/estado/facturas/', ajax_invoice_status, name='ajax_invoice_status'),
+    path(
+        'ajax/estado/suscripciones/',
+        ajax_subscription_status,
+        name='ajax_subscription_status',
     ),
     # Contratos
     path('contratos/', ContractListView.as_view(), name='contrato_list'),
