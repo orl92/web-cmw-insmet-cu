@@ -2,6 +2,18 @@ name: Deploy production
 
 # Despliegue a https://web.cmw.insmet.cu.
 #
+# HISTORIA DEL BUG (2026-10): este archivo nunca fue valido para GitHub porque
+# `environment:` estaba en la raiz del workflow, y esa clave solo existe a nivel
+# de job. Con un YAML invalido GitHub no lee `name:` ni los disparadores: lo
+# registra con la ruta como nombre, deja un run de 0 jobs en CADA push de
+# cualquier rama y nunca dispara el `workflow_run` real. Por eso el deploy
+# automatico no corrio ni una vez (0 eventos workflow_run en el historial).
+#
+# El archivo se llamo `deploy.yml` hasta que se renombro a
+# `deploy-production.yml`; el rename no era la cura (no habia registro viejo
+# que refrescar), pero sirvio para forzar un registro nuevo y ver el error en
+# limpio. La cura es `environment:` dentro del job.
+#
 # La logica esta en deploy/deploy.sh, que corre EN el servidor. Este workflow
 # solo se conecta por SSH y lo invoca. Una sola fuente de verdad: si el
 # procedimiento cambia, cambia en el script y el workflow no se entera.
@@ -43,14 +55,31 @@ concurrency:
 permissions:
   contents: read
 
-# Si el environment "production" tiene required reviewers, el deploy queda
-# esperando aprobacion humana. Configurarlo en Settings > Environments.
-environment: production
-
 jobs:
   deploy:
     name: Deploy to web.cmw.insmet.cu
     runs-on: ubuntu-latest
+
+    # Opt-in, porque todavia no hay servidor de produccion: mientras la variable
+    # `DEPLOY_ENABLED` no exista o no valga 'true', el job se SALTA (gris), no
+    # falla. Sin esta guarda, cada merge verde en `main` dejaria un check rojo
+    # por unos secrets que no se pueden cargar todavia, y un rojo permanente que
+    # nadie puede arreglar se aprende a ignorar.
+    #
+    # Cuando haya servidor: Settings > Secrets and variables > Actions >
+    # Variables > New repository variable -> DEPLOY_ENABLED=true, y cargar los
+    # 4 secrets del environment `production`.
+    if: vars.DEPLOY_ENABLED == 'true'
+
+    # `environment` va en el job, NO en la raiz del workflow. En la raiz es una
+    # clave invalida: GitHub rechaza el archivo entero, lo registra sin `name:`
+    # (la UI lo muestra como la ruta), no lee ningun disparador y deja un run de
+    # 0 jobs en cada push de cualquier rama. Eso es lo que tenia el archivo
+    # anterior: por eso el deploy automatico nunca corrio.
+    #
+    # Si el environment "production" tiene required reviewers, el deploy queda
+    # esperando aprobacion humana. Configurarlo en Settings > Environments.
+    environment: production
 
     # El deploy dura alrededor de 5 minutos, de los cuales ~3 son de
     # `collectstatic` (hashear y comprimir en gzip+brotli los ~900 estaticos,

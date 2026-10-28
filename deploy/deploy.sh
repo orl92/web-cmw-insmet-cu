@@ -2,7 +2,8 @@
 # Despliegue de web-cmw-insmet-cu en el servidor de produccion.
 #
 # Se ejecuta EN el servidor, como root, y es la fuente unica de verdad del
-# procedimiento. El workflow .github/workflows/deploy.yml lo invoca por SSH; el
+# procedimiento. El workflow .github/workflows/deploy-production.yml lo invoca
+# por SSH; el
 # operador tambien puede correrlo a mano cuando Actions no llega o cuando hay que
 # volver atras sin pasar por un PR.
 #

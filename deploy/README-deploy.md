@@ -4,7 +4,8 @@ Como pasar de `sudo systemctl restart webcmp` a un deploy que se dispara solo
 cuando el CI de `main` esta en verde, con gates y rollback.
 
 La logica vive en [`deploy.sh`](deploy.sh), que corre **en el servidor**. El
-workflow `.github/workflows/deploy.yml` solo se conecta por SSH y lo invoca.
+workflow `.github/workflows/deploy-production.yml` solo se conecta por SSH y lo
+invoca.
 Una sola fuente de verdad: si el procedimiento esta en los dos lados, el dia que
 uno cambie el deploy hace cosas distintas segun por donde entro.
 
@@ -271,6 +272,13 @@ trivial: alcanza con editar el archivo para ejecutar root.
 > que apuntar a `unix:/run/webcmp/gunicorn.sock`, no a `/tmp/gunicorn-webcmp.sock`.
 
 ## Secrets de GitHub
+
+Mientras no exista un servidor real, el deploy esta **apagado a proposito**: el
+job tiene `if: vars.DEPLOY_ENABLED == 'true'`, asi que sin esa variable de repo
+el workflow se salta (gris) en vez de fallar por secrets que todavia no existen.
+Cuando el servidor exista, cargar primero los cuatro secrets y **despues** crear
+la variable `DEPLOY_ENABLED=true`: al reves, el primer merge verde intentaria
+desplegar contra un host vacio.
 
 En **Settings > Environments > production** (no en el repo: asi el environment
 puede pedir aprobacion humana y las credenciales de produccion no se ven desde
