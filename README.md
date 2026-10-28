@@ -751,7 +751,7 @@ le entrega la clave de despliegue a cualquiera que responda ese puerto.
 
 #### 8.3 Qué dispara el deploy
 
-`.github/workflows/deploy.yml` corre en dos casos:
+`.github/workflows/deploy-production.yml` corre en dos casos:
 
 | Disparador | Qué hace |
 | --- | --- |
@@ -760,6 +760,11 @@ le entrega la clave de despliegue a cualquiera que responda ese puerto.
 
 `workflow_dispatch` es el que se usa para los dos casos raros: un rollback
 apegado a un SHA viejo, y un primer deploy antes de fiarse del automático.
+
+Hoy los dos están **apagados a propósito**: no existe servidor de producción, así
+que el job tiene `if: vars.DEPLOY_ENABLED == 'true'` y se salta en vez de fallar
+por secrets que todavía no se pueden cargar. Se enciende creando esa variable de
+repositorio, después de cargar los cuatro secrets.
 
 El concurrency group es `deploy-production` con `cancel-in-progress: false`: dos
 deploys se ejecutan **uno después del otro**, nunca superpuestos. Cancelar el que
