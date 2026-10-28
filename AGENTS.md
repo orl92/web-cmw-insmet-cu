@@ -77,6 +77,35 @@ make hooks                          # solo activar el hook (git config core.hook
 - Si `detect-secrets` reporta un falso positivo nuevo, actualizar el baseline con `detect-secrets scan --exclude-files "static/|staticfiles/|.*\.min\.js$|.*\.map$|\.venv/" > .secrets.baseline` y commitear el `.secrets.baseline`.
 - El mismo job `pre-commit` corre en CI (`.github/workflows/ci.yml`).
 
+## Flujo de ramas (`dev` → `main`)
+
+Dos ramas de larga vida y nada más:
+
+| Rama | Rol | Reglas |
+|---|---|---|
+| `main` | Producción. Sólo recibe promociones desde `dev` y hotfixes. | Ruleset `Protect main` activo. Cada merge dispara CI y, si queda verde, `deploy.yml` despliega a producción. |
+| `dev` | Integración. Aquí aterrizan todas las features. | Ruleset `Protect dev` activo: sin force push, sin borrado, y merge sólo con los required status checks en verde. **Sin aprobación obligatoria.** |
+
+Ciclo normal:
+
+1. Rama corta desde `dev`: `feat/nnn-descripcion`, `fix/nnn-descripcion`, `chore/descripcion`.
+2. PR **a `dev`**. No necesita aprobación: el gate son los required status checks de `ci.yml` + `security.yml`. Cada uno mergea lo suyo sin esperar al otro.
+3. Al fusionarse, `cleanup` borra la rama corta.
+4. **Promoción por lote**: PR `dev` → `main` cuando `dev` está verde. No se promociona feature por feature; `dev` acumula y `main` recibe un bloque cerrado.
+5. **La promoción sí necesita una persona.** `.github/CODEOWNERS` + `require_code_owner_review` en `Protect main` exigen la aprobación de `@orl92` o `@yoelvismr`; la de un bot no cuenta, porque un bot no puede ser code owner. Es **una** aprobación por release, no por PR.
+6. Al fusionarse la promoción, CI corre en `main` y `deploy.yml` despliega. Etiquetar: `git tag vYYYY.MM.DD && git push origin vYYYY.MM.DD`.
+
+Hotfix (el único caso que entra directo a `main`):
+
+1. Rama desde `main`, PR a `main`, CI verde, merge, deploy.
+2. **Inmediatamente** mergear `main` de vuelta a `dev` (PR `main` → `dev`). Si se omite, `dev` deja de representar lo que corre en producción y la siguiente promoción arrastra conflictos. `cleanup` no borra `main` ni `dev`, así que ese PR de vuelta es seguro.
+
+Secuencia de activación (el orden importa):
+
+- `require_code_owner_review` en `Protect main` **sólo protege cuando `.github/CODEOWNERS` ya está en `main`**, porque GitHub lee ese archivo de la rama base del PR. Activarlo antes no rompe nada (sin archivo no hay code owners que exigir), pero tampoco protege. Orden: mergear a `dev` → promover a `main` con una aprobación humana → activar la regla.
+- Los `required_status_checks` ya están activos en `Protect main` (8 contextos: `Detect affected apps`, `Tests (Django)`, `Lint (Ruff)`, `Templates (djlint)`, `Pre-commit hooks`, `Bandit SAST`, `Security (pip-audit + migrations)`, `Deploy check (check --deploy)`) y son el gate real de ambas ramas. Si un PR renombra o borra un job, el check requerido nunca reporta y el merge queda bloqueado: **fail-closed**.
+- `strict_required_status_checks_policy: true`: el PR tiene que estar al día con su rama base antes de mergear.
+
 ## CI — tests selectivos
 
 El job `test` de CI NO corre la suite completa en cada PR (tarda demasiado):
@@ -85,6 +114,38 @@ El job `test` de CI NO corre la suite completa en cada PR (tarda demasiado):
 - **Push a main / merge**: siempre corre la suite completa (`python manage.py test`) como red de seguridad.
 - Cambios globales (`config/**`, `manage.py`, `requirements/**`, `pyproject.toml`, `.github/**`, `templates/**`, `static/**`) fuerzan la suite completa.
 - Los labels de app deben ir como ruta completa (`apps.meteo`, no `meteo`): en Django 5.2 el label corto ya no resuelve el paquete de tests.
+
+## Aprobación de PRs y limpieza de ramas
+
+Resumen: **`dev` no exige aprobación, `main` sí.** No hay bot aprobando PRs, y es deliberado.
+
+| Rama | Aprobación obligatoria | Quién |
+|---|---|---|
+| `dev` | No | — (sólo required status checks) |
+| `main` | Sí, 1 | `@orl92` o `@yoelvismr`, vía `CODEOWNERS` + `require_code_owner_review` |
+
+### Por qué no un bot que apruebe
+
+Hubo un workflow (`auto-approve.yml`) que aprobaba los PR de una lista blanca con la identidad `github-actions[bot]`. Se descartó por un problema de fondo, no de implementación:
+
+**el CI que da el verde lo define el propio PR.** Un run disparado por `pull_request` ejecuta el `ci.yml` de la rama del PR, así que una cuenta habilitada podía vaciar un job, conservar su nombre, obtener verde y recibir la aprobación del bot. Los `required_status_checks` cierran la mitad fácil —borrar o renombrar un job deja el check sin reportar y bloquea el merge— pero no la difícil: dejar el nombre y vaciar el cuerpo.
+
+Y hay un límite que ninguna automatización cruza: **nada detecta que el autor borró el test que lo habría atrapado.** Un gate que vive dentro del repo lo puede desarmar quien puede mergear. Por eso la exigencia de persona se coloca donde el radio de daño es real —la frontera de producción— y no repartida por rutas ni simulada por un bot.
+
+### CODEOWNERS
+
+`.github/CODEOWNERS` asigna `*` a `@orl92` y `@yoelvismr`, y se asigna a sí mismo un dueño explícito para que un PR no pueda vaciarlo y desarmar el control en el release siguiente. GitHub lee el archivo de la **rama base** del PR, así que la copia que cuenta es la de `main`. Basta la aprobación de **uno** de los dos.
+
+Consecuencia útil: un colaborador futuro con `write` puede mergear en `dev`, pero **no puede aprobar nada hacia producción**, porque la code-owner review exige una de esas dos cuentas. No hay lista blanca en código que mantener; el control es declarativo y lo aplica la plataforma.
+
+### Limpieza de ramas (`.github/workflows/cleanup-branch.yml`)
+
+Único job que sobrevive. Al fusionarse un PR en `main` o `dev`, borra la rama de cabeza con `DELETE /git/refs/heads/<rama>` sólo si: el PR viene del mismo repo (no un fork), `main`/`dev` no es la rama de cabeza (son de larga vida), el último run de `ci.yml` para ese `head.sha` terminó en `success`, la rama no está protegida, y el borrado realmente ocurrió. Un `404` (rama ya inexistente) se distingue de cualquier otro error de API, que falla en rojo en vez de fingir éxito.
+
+- `pull_request: closed` usa el workflow de la rama **base** del PR, así que la limpieza de PRs hacia `dev` rige en cuanto el archivo esté en `dev`. A diferencia de `workflow_run`, no depende de la rama por defecto.
+- `delete_branch_on_merge` sigue en `false` a propósito: la limpieza la hace el workflow, no GitHub. Si algún día se activa el setting, el job termina sin error cuando la rama ya no existe (y si el borrado falla pero la rama sigue ahí, el job sí falla en rojo).
+- Ningún workflow aprueba ya PRs, así que *Allow GitHub Actions to create and approve pull requests* **no se necesita** y conviene tenerlo **desactivado** en `cmp-camaguey` → Settings → Actions → General: es una capacidad que ningún flujo usa y amplía lo que un workflow comprometido podría hacer. `dependabot-auto-merge.yml` sólo hace `gh pr merge --auto`, nunca `gh pr review`.
+- **Dependabot apunta a `dev`**, no a la rama por defecto. `.github/dependabot.yml` fija `target-branch: dev` en los tres ecosistemas: si apuntara a `main`, un bump de dependencia entraría directo a producción saltándose la rama de integración, y con `require_code_owner_review` el `gh pr merge --auto` se quedaría esperando una aprobación humana por cada bump minor. Los bumps viajan dentro de la promoción por lote, donde ya hay una persona mirando.
 
 ## Apps + Modelos
 

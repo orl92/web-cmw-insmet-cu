@@ -1,0 +1,21 @@
+# Quién puede aprobar lo que llega a producción.
+#
+# GitHub lee este archivo de la rama BASE del PR, no de la rama del PR. Eso es
+# lo que lo hace útil como control: un PR no puede borrar a sus propios
+# revisores, porque la copia que cuenta es la de `main`.
+#
+# Con `require_code_owner_review` activo en el ruleset `Protect main`, un PR
+# hacia producción necesita la aprobación de una de estas dos personas. La
+# aprobación de `github-actions[bot]` NO satisface la regla: un bot no puede ser
+# code owner, por eso producción siempre espera a un humano.
+#
+# `dev` no lleva esta regla a propósito. Ahí el gate son los required status
+# checks; exigir además un code owner en cada PR recrearía el bloqueo que este
+# esquema viene a eliminar.
+
+* @orl92 @yoelvismr
+
+# El propio CODEOWNERS tiene dueño explícito. Sin esta línea, un PR que vaciara
+# el archivo se aprobaría a sí mismo y desarmaría el control en el release
+# siguiente.
+/.github/CODEOWNERS @orl92 @yoelvismr

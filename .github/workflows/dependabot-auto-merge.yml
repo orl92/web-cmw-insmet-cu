@@ -1,16 +1,33 @@
 name: Dependabot auto-merge
 
+# Auto-merge de actualizaciones minor/patch que abre Dependabot.
+#
+# No aprueba nada, y es deliberado. `.github/dependabot.yml` fija
+# `target-branch: dev`, y `dev` no exige aprobación: el único requisito para
+# mergear son los required status checks del ruleset `Protect dev`. Así que un
+# `gh pr review --approve` aquí no aportaba nada y sí obligaba a mantener activo
+# *Allow GitHub Actions to create and approve pull requests* en la organización,
+# que es una capacidad que ningún flujo necesita.
+#
+# Antes este workflow hacía `gh pr review --approve` y fallaba siempre con
+# "GitHub Actions is not permitted to approve pull requests", así que el
+# `--auto` de la línea siguiente nunca se alcanzaba a ejecutar.
+#
+# Los bumps llegan a `main` dentro de la promoción por lote, con su aprobación
+# humana. Este workflow nunca corre sobre `main`: los PRs de Dependabot no
+# apuntan ahí.
+
 on: pull_request
 
 permissions:
-  pull-requests: write
   contents: write
+  pull-requests: write
 
 jobs:
   auto-merge:
     name: Auto-merge minor/patch
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
       - name: Dependabot metadata
         id: metadata
@@ -19,11 +36,9 @@ jobs:
           alert-lookup: true
           compat-lookup: true
 
-      - name: Approve and merge non-major updates
+      - name: Enable auto-merge for non-major updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch'
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh pr review "$PR_URL" --approve
-          gh pr merge "$PR_URL" --squash --auto
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge "$PR_URL" --squash --auto
