@@ -162,6 +162,8 @@ class CustomerForm(forms.ModelForm):
 
 class CustomerUpdateForm(forms.ModelForm):
     email = forms.EmailField(required=True, label='Correo Electrónico')
+    first_name = forms.CharField(max_length=150, required=True, label='Nombre')
+    last_name = forms.CharField(max_length=150, required=True, label='Apellidos')
 
     class Meta:
         model = Customer
@@ -181,9 +183,11 @@ class CustomerUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.user:
             self.fields['email'].initial = self.instance.user.email
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
         self.fields['client_type'].widget = forms.RadioSelect(attrs={'class': 'form-check-input'})
         for field_name, field in self.fields.items():
-            if field_name not in ['email', 'client_type']:
+            if field_name not in ['email', 'client_type', 'first_name', 'last_name']:
                 field.widget.attrs.update({'class': 'form-control'})
         self.fields['agency_bank'].required = True
         self._set_juridica_required()
@@ -255,8 +259,13 @@ class CustomerUpdateForm(forms.ModelForm):
         customer = super().save(commit=False)
         if commit:
             customer.save()
-            if customer.user and 'email' in self.cleaned_data:
-                customer.user.email = self.cleaned_data['email']
+            if customer.user:
+                if 'email' in self.cleaned_data:
+                    customer.user.email = self.cleaned_data['email']
+                if 'first_name' in self.cleaned_data:
+                    customer.user.first_name = self.cleaned_data['first_name']
+                if 'last_name' in self.cleaned_data:
+                    customer.user.last_name = self.cleaned_data['last_name']
                 customer.user.save()
         return customer
 
