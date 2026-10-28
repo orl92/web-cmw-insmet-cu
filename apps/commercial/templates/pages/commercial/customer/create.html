@@ -69,7 +69,7 @@
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Datos Personales' %}
   <div class="row">
-    <div class="col-md-6 mb-3">
+    <div class="col-md-4 mb-3" id="first-name-col">
       <label class="form-label required">{{ form.first_name.label }}</label>
       <input type="text"
              class="form-control
@@ -84,7 +84,7 @@
         <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
       {% endif %}
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-md-4 mb-3" id="last-name-col">
       <label class="form-label required">{{ form.last_name.label }}</label>
       <input type="text"
              class="form-control
@@ -99,84 +99,74 @@
         <div class="invalid-feedback d-block">{{ form.last_name.errors.0 }}</div>
       {% endif %}
     </div>
-  </div>
-  </div>
-  </div>
-  </div>
-  <div id="juridica-fields">
-    {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Empresa' %}
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label required">{{ form.company_name.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.company_name.errors %}is-invalid{% endif %}"
-               id="{{ form.company_name.id_for_label }}"
-               name="{{ form.company_name.name }}"
-               value="{{ form.company_name.value|default:'' }}"
-               placeholder="Mi Empresa S.A.C.">
-        {% if form.company_name.errors %}
-          <div class="invalid-feedback d-block">{{ form.company_name.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="col-md-3 mb-3">
-        <label class="form-label required">{{ form.reeup.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.reeup.errors %}is-invalid{% endif %}"
-               id="{{ form.reeup.id_for_label }}"
-               name="{{ form.reeup.name }}"
-               value="{{ form.reeup.value|default:'' }}"
-               placeholder="XXX.X.XXXXX"
-               maxlength="12"
-               pattern="\d{3}\.\d{1,2}\.\d{4,5}"
-               data-sanitize="reeup"
-               autocomplete="off"
-               title="Formato: 3 dígitos, punto, 1 ó 2 dígitos, punto, 4 ó 5 dígitos">
-        {% if form.reeup.errors %}
-          <div class="invalid-feedback d-block">{{ form.reeup.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="col-md-3 mb-3">
-        <label class="form-label required">{{ form.nit.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.nit.errors %}is-invalid{% endif %}"
-               id="{{ form.nit.id_for_label }}"
-               name="{{ form.nit.name }}"
-               value="{{ form.nit.value|default:'' }}"
-               placeholder="12345678901"
-               maxlength="11"
-               inputmode="numeric"
-               data-sanitize="nit"
-               pattern="[0-9]{11}">
-        {% if form.nit.errors %}
-          <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
-        {% endif %}
-      </div>
+    <div class="col-md-4 mb-3" id="natural-identity-field">
+      <label class="form-label required">{{ form.identity_document.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.identity_document.errors %}is-invalid{% endif %}"
+             id="{{ form.identity_document.id_for_label }}"
+             name="{{ form.identity_document.name }}"
+             value="{{ form.identity_document.value|default:'' }}"
+             placeholder="34111234567"
+             maxlength="20"
+             autocomplete="off">
+      {% if form.identity_document.errors %}
+        <div class="invalid-feedback d-block">{{ form.identity_document.errors.0 }}</div>
+      {% endif %}
     </div>
   </div>
   </div>
   </div>
   </div>
-  <div id="natural-fields">
-    {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Persona Natural' %}
-    <div class="row">
-      <div class="col-md-12 mb-3">
-        <label class="form-label required">{{ form.identity_document.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.identity_document.errors %}is-invalid{% endif %}"
-               id="{{ form.identity_document.id_for_label }}"
-               name="{{ form.identity_document.name }}"
-               value="{{ form.identity_document.value|default:'' }}"
-               placeholder="34111234567"
-               maxlength="20"
-               autocomplete="off">
-        {% if form.identity_document.errors %}
-          <div class="invalid-feedback d-block">{{ form.identity_document.errors.0 }}</div>
-        {% endif %}
-      </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Empresa' card_col_id='juridica-fields' %}
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.company_name.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.company_name.errors %}is-invalid{% endif %}"
+             id="{{ form.company_name.id_for_label }}"
+             name="{{ form.company_name.name }}"
+             value="{{ form.company_name.value|default:'' }}"
+             placeholder="Mi Empresa S.A.C.">
+      {% if form.company_name.errors %}
+        <div class="invalid-feedback d-block">{{ form.company_name.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label required">{{ form.reeup.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.reeup.errors %}is-invalid{% endif %}"
+             id="{{ form.reeup.id_for_label }}"
+             name="{{ form.reeup.name }}"
+             value="{{ form.reeup.value|default:'' }}"
+             placeholder="XXX.X.XXXXX"
+             maxlength="12"
+             pattern="\d{3}\.\d{1,2}\.\d{4,5}"
+             data-sanitize="reeup"
+             autocomplete="off"
+             title="Formato: 3 dígitos, punto, 1 ó 2 dígitos, punto, 4 ó 5 dígitos">
+      {% if form.reeup.errors %}
+        <div class="invalid-feedback d-block">{{ form.reeup.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label required">{{ form.nit.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.nit.errors %}is-invalid{% endif %}"
+             id="{{ form.nit.id_for_label }}"
+             name="{{ form.nit.name }}"
+             value="{{ form.nit.value|default:'' }}"
+             placeholder="12345678901"
+             maxlength="11"
+             inputmode="numeric"
+             data-sanitize="nit"
+             pattern="[0-9]{11}">
+      {% if form.nit.errors %}
+        <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
+      {% endif %}
     </div>
   </div>
   </div>
@@ -270,11 +260,13 @@
 function toggleClientType(value) {
   var container = document.getElementById('juridica-fields');
   var inputs = container.querySelectorAll('input');
-  // El documento de identidad es de la persona natural: es el bloque espejo del
-  // de la empresa, y se oculta para las jurídicas.
-  var natural = document.getElementById('natural-fields');
-  if (natural) natural.style.display = value === 'natural' ? 'block' : 'none';
+  var naturalId = document.getElementById('natural-identity-field');
+  var firstCol = document.getElementById('first-name-col');
+  var lastCol = document.getElementById('last-name-col');
+  if (naturalId) naturalId.style.display = value === 'natural' ? 'block' : 'none';
   if (value === 'natural') {
+    if (firstCol) { firstCol.classList.remove('col-md-6'); firstCol.classList.add('col-md-4'); }
+    if (lastCol) { lastCol.classList.remove('col-md-6'); lastCol.classList.add('col-md-4'); }
     container.style.display = 'none';
     inputs.forEach(function(inp) {
       inp.removeAttribute('required');
@@ -282,6 +274,8 @@ function toggleClientType(value) {
       inp.value = '';
     });
   } else {
+    if (firstCol) { firstCol.classList.remove('col-md-4'); firstCol.classList.add('col-md-6'); }
+    if (lastCol) { lastCol.classList.remove('col-md-4'); lastCol.classList.add('col-md-6'); }
     container.style.display = 'block';
     var companyInput = container.querySelector('[name="company_name"]');
     if (companyInput) companyInput.setAttribute('required', '');

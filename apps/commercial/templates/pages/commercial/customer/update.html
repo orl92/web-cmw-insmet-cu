@@ -74,62 +74,57 @@
   </div>
   </div>
   </div>
-  <div id="juridica-fields">
-    {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Empresa' %}
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label class="form-label required">{{ form.company_name.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.company_name.errors %}is-invalid{% endif %}"
-               id="{{ form.company_name.id_for_label }}"
-               name="{{ form.company_name.name }}"
-               value="{{ form.company_name.value|default:'' }}"
-               placeholder="Mi Empresa S.A.C.">
-        {% if form.company_name.errors %}
-          <div class="invalid-feedback d-block">{{ form.company_name.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="col-md-3 mb-3">
-        <label class="form-label required">{{ form.reeup.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.reeup.errors %}is-invalid{% endif %}"
-               id="{{ form.reeup.id_for_label }}"
-               name="{{ form.reeup.name }}"
-               value="{{ form.reeup.value|default:'' }}"
-               placeholder="XXX.X.XXXXX"
-               maxlength="12"
-               pattern="\d{3}\.\d{1,2}\.\d{4,5}"
-               data-sanitize="reeup"
-               autocomplete="off"
-               title="Formato: 3 dígitos, punto, 1 ó 2 dígitos, punto, 4 ó 5 dígitos">
-        {% if form.reeup.errors %}
-          <div class="invalid-feedback d-block">{{ form.reeup.errors.0 }}</div>
-        {% endif %}
-      </div>
-      <div class="col-md-3 mb-3">
-        <label class="form-label required">{{ form.nit.label }}</label>
-        <input type="text"
-               class="form-control
-                      {% if form.nit.errors %}is-invalid{% endif %}"
-               id="{{ form.nit.id_for_label }}"
-               name="{{ form.nit.name }}"
-               value="{{ form.nit.value|default:'' }}"
-               placeholder="12345678901"
-               maxlength="11"
-               inputmode="numeric"
-               data-sanitize="nit"
-               pattern="[0-9]{11}">
-        {% if form.nit.errors %}
-          <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
-        {% endif %}
-      </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Empresa' card_col_id='juridica-fields' %}
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label required">{{ form.company_name.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.company_name.errors %}is-invalid{% endif %}"
+             id="{{ form.company_name.id_for_label }}"
+             name="{{ form.company_name.name }}"
+             value="{{ form.company_name.value|default:'' }}"
+             placeholder="Mi Empresa S.A.C.">
+      {% if form.company_name.errors %}
+        <div class="invalid-feedback d-block">{{ form.company_name.errors.0 }}</div>
+      {% endif %}
     </div>
-  </div>
-  </div>
-  </div>
-  </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label required">{{ form.reeup.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.reeup.errors %}is-invalid{% endif %}"
+             id="{{ form.reeup.id_for_label }}"
+             name="{{ form.reeup.name }}"
+             value="{{ form.reeup.value|default:'' }}"
+             placeholder="XXX.X.XXXXX"
+             maxlength="12"
+             pattern="\d{3}\.\d{1,2}\.\d{4,5}"
+             data-sanitize="reeup"
+             autocomplete="off"
+             title="Formato: 3 dígitos, punto, 1 ó 2 dígitos, punto, 4 ó 5 dígitos">
+      {% if form.reeup.errors %}
+        <div class="invalid-feedback d-block">{{ form.reeup.errors.0 }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label required">{{ form.nit.label }}</label>
+      <input type="text"
+             class="form-control
+                    {% if form.nit.errors %}is-invalid{% endif %}"
+             id="{{ form.nit.id_for_label }}"
+             name="{{ form.nit.name }}"
+             value="{{ form.nit.value|default:'' }}"
+             placeholder="12345678901"
+             maxlength="11"
+             inputmode="numeric"
+             data-sanitize="nit"
+             pattern="[0-9]{11}">
+      {% if form.nit.errors %}
+        <div class="invalid-feedback d-block">{{ form.nit.errors.0 }}</div>
+      {% endif %}
+    </div>
   </div>
   </div>
   </div>
