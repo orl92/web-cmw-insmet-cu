@@ -327,6 +327,8 @@ class CustomerUpdateFormTests(TestCase):
                 'address': 'New address',
                 'phone': '11111111',
                 'email': 'updated@example.com',
+                'first_name': 'Ana',
+                'last_name': 'Norte',
             },
         )
         self.assertTrue(form.is_valid(), form.errors)
@@ -345,6 +347,8 @@ class CustomerUpdateFormTests(TestCase):
             'address': 'New address',
             'phone': '11111111',
             'email': 'updated@example.com',
+            'first_name': 'Ana',
+            'last_name': 'Norte',
         }
         data.update(kwargs)
         return data

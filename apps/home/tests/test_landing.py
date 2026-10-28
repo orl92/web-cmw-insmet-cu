@@ -239,7 +239,7 @@ class LandingRenderTests(TestCase):
             'Atención especializada al cliente',
             'Información oficial del INSMET',
             'Vigilancia permanente del tiempo',
-            'dist/img/GOES16_abi_conus_band02.jpg',
+            'dist/img/webp/cloud.webp',
         ):
             self.assertIn(marker, self.html, msg=marker)
         for marker in (

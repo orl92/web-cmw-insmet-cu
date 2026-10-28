@@ -265,3 +265,6 @@ tmp/
 .codegraph/
 squashfs-root/
 .gentle-ai-instance
+# gentle-ai local state: records the previous OpenCode default agent so
+# `gentle-ai uninstall` can restore it. Per-installation, never shared.
+.gentle-ai-default-agent.json

@@ -107,6 +107,12 @@ class AdminPasswordChangeView(LoginRequiredMixin, PermissionRequiredMixin, FormV
 
 class UserPasswordResetView(PasswordResetView):
     success_url = reverse_lazy('user_auth:password_reset_done')
+    # Los dos cuerpos del correo son del proyecto. El de texto NO puede ser el
+    # de `registration/` (el que pone el admin): arma el enlace con
+    # `{% url 'password_reset_confirm' %}`, que en este proyecto está bajo
+    # `user_auth:`, y el envío revienta con NoReverseMatch.
+    email_template_name = 'pages/user_auth/emails/password_reset_email.txt'
+    html_email_template_name = 'pages/user_auth/emails/password_reset_email.html'
 
     def dispatch(self, request, *args, **kwargs):
         if (

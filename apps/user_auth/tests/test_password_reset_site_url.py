@@ -12,6 +12,7 @@ from unittest import mock
 
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.models import User
+from django.core import mail
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
@@ -68,3 +69,30 @@ class EnlaceDeRestablecimientoTests(TestCase):
         self.assertEqual(ctx['reset_url'], f'{PUBLIC_SITE_URL}{ruta.lstrip("/")}')
         self.assertNotIn(INTERNAL_HOST, ctx['index_url'])
         self.assertNotIn(INTERNAL_HOST, ctx['reset_url'])
+
+    @override_settings(SITE_URL=PUBLIC_SITE_URL, ALLOWED_HOSTS=ALLOWED_HOSTS)
+    def test_el_correo_se_envia_con_cuerpo_de_texto_y_html(self):
+        """El POST no puede romper armando el enlace del correo.
+
+        El cuerpo de texto salía del template del admin
+        (`registration/password_reset_email.html`), que arma el enlace con
+        `{% url 'password_reset_confirm' %}` sin namespace: en este proyecto la
+        vista vive en `user_auth:`, así que el envío lanzaba NoReverseMatch y el
+        usuario recibía un 500 en vez del correo.
+        """
+        response = self.client.post(reverse('user_auth:password_reset'), {'email': self.user.email})
+        self.assertRedirects(
+            response,
+            reverse('user_auth:password_reset_done'),
+            fetch_redirect_response=False,
+        )
+
+        self.assertEqual(len(mail.outbox), 1)
+        mensaje = mail.outbox[0]
+        self.assertIn(f'{PUBLIC_SITE_URL}accounts/reset/', mensaje.body)
+        self.assertIn('Si no solicitaste esta acción', mensaje.body)
+        # El HTML viaja como alternativa del mismo correo, no en otro envío.
+        self.assertEqual(len(mensaje.alternatives), 1)
+        html, mimetype = mensaje.alternatives[0]
+        self.assertEqual(mimetype, 'text/html')
+        self.assertIn('Restablecimiento de Contraseña', html)

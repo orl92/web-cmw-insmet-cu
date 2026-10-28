@@ -351,12 +351,20 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
             # facturan en facturas separadas: un lote puede abarcar mayo y junio y
             # también un pronóstico de marzo, y meterlos en una sola factura
             # obligaría a un período que ninguno de los dos ocupa.
-            nuevas = self.process_batch_invoice(
-                customer,
-                commercial_registry,
-                subscriptions,
-                cost_formset,
-            )
+            try:
+                nuevas = self.process_batch_invoice(
+                    customer,
+                    commercial_registry,
+                    subscriptions,
+                    cost_formset,
+                )
+            except ValidationError as error:
+                # La regla del contrato vive en el modelo; el lote la dispara y
+                # tiene que volver al formulario, no convertirse en un 500.
+                messages.error(self.request, ' '.join(error.messages))
+                return self.render_to_response(
+                    self.get_context_data(form=form, cost_allocations_formset=cost_formset)
+                )
             # El aviso nombra cada factura con su propio período, que es lo que va
             # a imprimir el PDF: con varias facturas por lote un único período
             # sería falso para las que no lo comparten.
@@ -508,7 +516,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         """
         with transaction.atomic():
             start, end = rango_desde_meses(meses)
-            invoice = Invoice.objects.create(
+            invoice = Invoice(
                 subscription=None,
                 customer=customer,
                 amount=0,
@@ -516,6 +524,10 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 period_start=start,
                 period_end=end,
             )
+            # Antes de crear la fila: si la jurídica no tiene contrato que cubra
+            # el período, la transacción se deshace sin dejar factura ni ítems.
+            invoice.validar_contrato()
+            invoice.save()
 
             total = 0
             items = []
@@ -658,7 +670,7 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
         start, end = rango_desde_meses(meses)
 
         with transaction.atomic():
-            invoice = Invoice.objects.create(
+            invoice = Invoice(
                 subscription=None,
                 customer=customer,
                 amount=0,
@@ -666,6 +678,11 @@ class InvoiceCreateView(LoginRequiredMixin, PermissionRequiredMixin, FormView):
                 period_start=start,
                 period_end=end,
             )
+            # El período ya está resuelto: si el contrato de la jurídica no lo
+            # cubre se rechaza acá, y `transaction.atomic` deshace también las
+            # suscripciones que se hubieran creado para las líneas.
+            invoice.validar_contrato()
+            invoice.save()
 
             total = 0
             items = []

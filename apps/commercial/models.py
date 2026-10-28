@@ -655,14 +655,22 @@ class Invoice(SoftDeleteModel, FileHandlerMixin):
     def clean(self):
         if self.amount is not None and self.amount <= 0:
             raise ValidationError('El monto de la factura debe ser mayor que cero.')
-        self._validar_contrato()
+        self.validar_contrato()
 
-    def _validar_contrato(self):
+    def validar_contrato(self):
         """Una jurídica no se factura fuera de la vigencia de sus contratos.
 
         Las personas naturales no llevan contrato y se facturan igual: es una
         medida del centro, no un descuido. La regla mira el mes facturado, no la
         vigencia de hoy, porque los meses pasados también se facturan.
+
+        Es pública y se llama explícitamente desde los dos flujos que crean
+        facturas (`_facturar_grupo` y `_guardar_factura_manual`) por dos razones:
+        `Model.save()` no ejecuta `clean()`, así que `objects.create()` la
+        sortearía; y `full_clean()` en ese punto rechazaría la factura por el
+        `amount=0` con el que nace, antes de que se sumen sus líneas. Validar en
+        `save()` tampoco sirve: anular una factura histórica no puede depender de
+        que el contrato siga vigente hoy.
         """
         if self.customer_id is None or self.customer.client_type != Customer.ClientType.JURIDICA:
             return
@@ -957,8 +965,11 @@ class Contract(SoftDeleteModel):
         Con varios contratos encadenados por renovación el rango puede estar
         repartido entre ellos, así que alcanza con que la vigencia se solape
         completa, no con que un solo contrato lo abarque.
+
+        Sólo cuentan los contratos activos: el borrado es lógico y sin el filtro
+        un contrato desactivado seguiría autorizando facturas.
         """
-        contratos = list(customer.contracts.order_by('start_date'))
+        contratos = list(customer.contracts.filter(record_active=True).order_by('start_date'))
         mes = primer_dia_del_mes(inicio)
         while mes <= fin:
             if not any(contrato.cubre(mes) for contrato in contratos):
