@@ -10,6 +10,18 @@
 set -e
 root=$(git rev-parse --show-toplevel)
 if [ -x "$root/.venv/bin/pre-commit" ]; then
-  exec "$root/.venv/bin/pre-commit" run --show-diff-on-failure --color=always "$@"
+  "$root/.venv/bin/pre-commit" run --show-diff-on-failure --color=always "$@"
+else
+  pre-commit run --show-diff-on-failure --color=always "$@"
 fi
-exec pre-commit run --show-diff-on-failure --color=always "$@"
+
+# ======== GGA START ========
+# Gentleman Guardian Angel - Code Review
+# NOTE: never `exec` above this line. `exec` replaces the shell process, so any
+# step after it is dead code and gga would never run.
+# Optional dependency: a machine or CI job without gga must still be able to
+# commit, so skip silently instead of failing with "command not found".
+if command -v gga >/dev/null 2>&1; then
+  gga run || exit 1
+fi
+# ======== GGA END ========
