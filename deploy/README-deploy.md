@@ -4,7 +4,8 @@ Como pasar de `sudo systemctl restart webcmp` a un deploy que se dispara solo
 cuando el CI de `main` esta en verde, con gates y rollback.
 
 La logica vive en [`deploy.sh`](deploy.sh), que corre **en el servidor**. El
-workflow `.github/workflows/deploy.yml` solo se conecta por SSH y lo invoca.
+workflow `.github/workflows/deploy-production.yml` solo se conecta por SSH y lo
+invoca.
 Una sola fuente de verdad: si el procedimiento esta en los dos lados, el dia que
 uno cambie el deploy hace cosas distintas segun por donde entro.
 

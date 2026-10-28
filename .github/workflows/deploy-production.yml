@@ -1,5 +1,11 @@
 name: Deploy production
 
+# El nombre del archivo es `deploy-production.yml` a proposito: GitHub habia
+# quedado con un registro viejo de `deploy.yml` (sin `name:`, con `on: push`)
+# que seguia disparandose en cada push de cualquier rama y moria con 0 jobs.
+# Editar el archivo no refresco ese registro; renombrarlo si, porque obliga a
+# registrar el workflow de nuevo.
+#
 # Despliegue a https://web.cmw.insmet.cu.
 #
 # La logica esta en deploy/deploy.sh, que corre EN el servidor. Este workflow
