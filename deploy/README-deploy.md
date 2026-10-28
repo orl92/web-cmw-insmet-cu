@@ -273,6 +273,13 @@ trivial: alcanza con editar el archivo para ejecutar root.
 
 ## Secrets de GitHub
 
+Mientras no exista un servidor real, el deploy esta **apagado a proposito**: el
+job tiene `if: vars.DEPLOY_ENABLED == 'true'`, asi que sin esa variable de repo
+el workflow se salta (gris) en vez de fallar por secrets que todavia no existen.
+Cuando el servidor exista, cargar primero los cuatro secrets y **despues** crear
+la variable `DEPLOY_ENABLED=true`: al reves, el primer merge verde intentaria
+desplegar contra un host vacio.
+
 En **Settings > Environments > production** (no en el repo: asi el environment
 puede pedir aprobacion humana y las credenciales de produccion no se ven desde
 cualquier workflow):

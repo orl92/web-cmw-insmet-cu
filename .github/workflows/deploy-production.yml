@@ -60,6 +60,17 @@ jobs:
     name: Deploy to web.cmw.insmet.cu
     runs-on: ubuntu-latest
 
+    # Opt-in, porque todavia no hay servidor de produccion: mientras la variable
+    # `DEPLOY_ENABLED` no exista o no valga 'true', el job se SALTA (gris), no
+    # falla. Sin esta guarda, cada merge verde en `main` dejaria un check rojo
+    # por unos secrets que no se pueden cargar todavia, y un rojo permanente que
+    # nadie puede arreglar se aprende a ignorar.
+    #
+    # Cuando haya servidor: Settings > Secrets and variables > Actions >
+    # Variables > New repository variable -> DEPLOY_ENABLED=true, y cargar los
+    # 4 secrets del environment `production`.
+    if: vars.DEPLOY_ENABLED == 'true'
+
     # `environment` va en el job, NO en la raiz del workflow. En la raiz es una
     # clave invalida: GitHub rechaza el archivo entero, lo registra sin `name:`
     # (la UI lo muestra como la ruta), no lee ningun disparador y deja un run de
