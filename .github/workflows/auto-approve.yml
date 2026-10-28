@@ -1,0 +1,237 @@
+name: Auto-approve
+
+# GitHub no permite aprobar el propio PR (regla de plataforma, no configurable).
+# Este workflow lo resuelve revisando con la identidad `github-actions[bot]`, que
+# sí cuenta para el ruleset "Protect main", pero SOLO cuando el workflow "CI"
+# terminó en verde para el commit cabeza del PR. Si el CI falla, deja un
+# REQUEST_CHANGES con la misma identidad para que el PR no sea mergeable.
+#
+# Tercera unidad: al fusionarse un PR en `main` o en `dev`, borra la rama de
+# cabeza si su CI quedó en verde y la rama no está protegida. Las ramas de larga
+# vida (`main`, `dev`) nunca se borran: `dev` es la rama de integración y borrarla
+# tras un PR dev -> main destruiría el flujo completo.
+#
+# Ojo: el único gate de merge que da el ruleset hoy es la aprobación
+# (`required_status_checks` está vacío), así que este workflow ES el gate.
+#
+# Requisito de ORGANIZACION, no de repo: Settings > Actions > General >
+# "Allow GitHub Actions to create and approve pull requests". En una org la
+# politica de Actions es un techo: si la org lo desactiva, el PUT a nivel de
+# repo devuelve 409 y el workflow queda inerte aunque aqui todo este bien.
+#
+# `workflow_run` solo dispara desde la versión del workflow presente en la rama
+# por defecto, así que esto empieza a funcionar una vez mergeado en main.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  pull_request:
+    types: [closed]
+    branches: [main, dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  ALLOWED_AUTHORS: "orl92 yoelvismr"
+
+jobs:
+  approve:
+    name: Approve PR after green CI
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          pr=$(gh api "repos/$REPO/commits/$SHA/pulls" \
+            --jq 'map(select(.state == "open")) | .[0].number // empty')
+          if [ -z "$pr" ]; then
+            echo "Sin PR abierto para $SHA; nada que aprobar."
+            exit 0
+          fi
+
+          author=$(gh api "repos/$REPO/pulls/$pr" --jq '.user.login')
+          case " $ALLOWED_AUTHORS " in
+            *" $author "*)
+              echo "Autor $author habilitado para revisión automática."
+              ;;
+            *)
+              echo "Autor $author fuera de ALLOWED_AUTHORS; no se toca el PR."
+              exit 0
+              ;;
+          esac
+
+          info=$(gh pr view "$pr" --repo "$REPO" \
+            --json headRefOid,isDraft,reviewDecision \
+            --jq '[.headRefOid, (.isDraft | tostring), (.reviewDecision // "NONE")] | @tsv')
+          head=$(printf '%s' "$info" | cut -f1)
+          draft=$(printf '%s' "$info" | cut -f2)
+          decision=$(printf '%s' "$info" | cut -f3)
+
+          if [ "$head" != "$SHA" ]; then
+            echo "El head de #$pr es $head, no $SHA: el CI verde no aplica a lo que se va a mergear. Se omite."
+            exit 0
+          fi
+          if [ "$draft" = "true" ]; then
+            echo "PR #$pr en borrador; se aprobará cuando deje de serlo y el CI vuelva a pasar."
+            exit 0
+          fi
+          if [ "$decision" = "APPROVED" ]; then
+            echo "PR #$pr ya aprobado; nada que hacer."
+            exit 0
+          fi
+
+          gh pr review "$pr" --repo "$REPO" --approve \
+            --body "Aprobación automática: CI en verde para \`$SHA\`. GitHub no permite aprobar el propio PR, así que la aprueba \`github-actions[bot]\`."
+
+  block:
+    name: Request changes after red CI
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request changes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          pr=$(gh api "repos/$REPO/commits/$SHA/pulls" \
+            --jq 'map(select(.state == "open")) | .[0].number // empty')
+          if [ -z "$pr" ]; then
+            echo "Sin PR abierto para $SHA; nada que bloquear."
+            exit 0
+          fi
+
+          author=$(gh api "repos/$REPO/pulls/$pr" --jq '.user.login')
+          case " $ALLOWED_AUTHORS " in
+            *" $author "*)
+              echo "Autor $author habilitado para revisión automática."
+              ;;
+            *)
+              echo "Autor $author fuera de ALLOWED_AUTHORS; no se toca el PR."
+              exit 0
+              ;;
+          esac
+
+          info=$(gh pr view "$pr" --repo "$REPO" \
+            --json headRefOid,isDraft,reviewDecision \
+            --jq '[.headRefOid, (.isDraft | tostring), (.reviewDecision // "NONE")] | @tsv')
+          head=$(printf '%s' "$info" | cut -f1)
+          draft=$(printf '%s' "$info" | cut -f2)
+          decision=$(printf '%s' "$info" | cut -f3)
+
+          if [ "$head" != "$SHA" ]; then
+            echo "El head de #$pr ya avanzó a $head; el CI de $SHA es historia. Se omite."
+            exit 0
+          fi
+          if [ "$draft" = "true" ]; then
+            echo "PR #$pr en borrador; un borrador no es mergeable, no hace falta bloquearlo."
+            exit 0
+          fi
+          if [ "$decision" = "CHANGES_REQUESTED" ]; then
+            echo "PR #$pr ya tiene cambios solicitados; nada que hacer."
+            exit 0
+          fi
+
+          gh pr review "$pr" --repo "$REPO" --request-changes \
+            --body "CI falló para \`$SHA\`: merge bloqueado hasta que el CI vuelva a verde."
+
+  cleanup:
+    name: Delete merged branch after green CI
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: read
+    steps:
+      - name: Delete head branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          case " $ALLOWED_AUTHORS " in
+            *" $AUTHOR "*)
+              echo "Autor $AUTHOR habilitado para limpieza de rama."
+              ;;
+            *)
+              echo "Autor $AUTHOR fuera de ALLOWED_AUTHORS; no se toca la rama."
+              exit 0
+              ;;
+          esac
+
+          # Ramas de larga vida: nunca se borran, ni como cabeza del PR.
+          case " main dev " in
+            *" $BRANCH "*)
+              echo "$BRANCH es una rama de larga vida; no se borra."
+              exit 0
+              ;;
+          esac
+
+          # Sólo se poda lo que entró a una rama de integración conocida.
+          case " main dev " in
+            *" $BASE "*)
+              ;;
+            *)
+              echo "El PR entró a $BASE, que no es rama de integración; no se toca $BRANCH."
+              exit 0
+              ;;
+          esac
+
+          conclusion=$(gh api \
+            "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&per_page=1" \
+            --jq '.workflow_runs[0].conclusion // empty')
+          if [ "$conclusion" != "success" ]; then
+            echo "El CI de $SHA no quedó en verde (${conclusion:-sin registro}); se conserva la rama $BRANCH."
+            exit 0
+          fi
+
+          if ! lookup=$(gh api "repos/$REPO/branches/$BRANCH" --jq '.protected' 2>&1); then
+            case "$lookup" in
+              *"HTTP 404"* | *"Not Found"*)
+                echo "La rama $BRANCH ya no existe; nada que borrar."
+                exit 0
+                ;;
+              *)
+                echo "No se pudo consultar la rama $BRANCH: $lookup" >&2
+                exit 1
+                ;;
+            esac
+          fi
+          if [ "$lookup" = "true" ]; then
+            echo "La rama $BRANCH está protegida; no se borra."
+            exit 0
+          fi
+
+          if ! err=$(gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH" 2>&1); then
+            if gh api "repos/$REPO/branches/$BRANCH" >/dev/null 2>&1; then
+              echo "No se pudo borrar la rama $BRANCH: $err" >&2
+              exit 1
+            fi
+            echo "La rama $BRANCH desapareció durante la limpieza; nada que hacer."
+            exit 0
+          fi
+          echo "Rama $BRANCH eliminada tras merge con CI en verde."
