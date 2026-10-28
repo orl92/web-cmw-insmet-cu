@@ -16,6 +16,7 @@ toca: lo único que cambia es cómo se entra el centro.
 """
 
 import re
+from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth.models import User
@@ -23,6 +24,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.commercial.models import (
+    Contract,
     Customer,
     Invoice,
     InvoiceCostAllocation,
@@ -295,6 +297,15 @@ class CentroFueraDelCatalogoTests(TestCase):
             reeup=next_reeup(),
             nit=next_nit(),
             account='9001000000000020',
+        )
+        # Una jurídica sólo se factura dentro de la vigencia de un contrato. Los
+        # ítems manuales de esta clase arrancan el 15/05/2026, así que el contrato
+        # cubre todo 2026.
+        Contract.objects.create(
+            customer=cls.customer,
+            number='C-CENTRO',
+            start_date=date(2026, 1, 1),
+            validity_years=2,
         )
         cls.service = Service.objects.create(
             user=cls.admin,

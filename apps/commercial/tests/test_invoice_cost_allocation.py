@@ -39,6 +39,7 @@ from django.utils import timezone
 
 from apps.commercial.forms.invoice import InvoiceCostAllocationFormSet
 from apps.commercial.models import (
+    Contract,
     Customer,
     Invoice,
     InvoiceCostAllocation,
@@ -383,6 +384,16 @@ class InvoiceCostAllocationVistaTests(TestCase):
             nit='12345678901',
             account='9001000000000001',
             agency_bank='Banco Costos',
+        )
+        # La facturación de una jurídica exige un contrato que cubra el período.
+        # Se ancla al 1 de enero del año en curso: el inicio de la suscripción es
+        # `now()`, así que un contrato que empiece hoy no cubriría el día 1 del
+        # mes que `cubre_rango` evalúa.
+        Contract.objects.create(
+            customer=cls.customer,
+            number='C-COSTOS',
+            start_date=timezone.localdate().replace(month=1, day=1),
+            validity_years=2,
         )
         cls.service = Service.objects.create(
             user=cls.admin,
