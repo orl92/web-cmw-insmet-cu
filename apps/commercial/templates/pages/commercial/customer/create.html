@@ -162,7 +162,7 @@
   <div id="natural-fields">
     {% include 'includes/dashboard/form_card.html' with card_title='Datos de la Persona Natural' %}
     <div class="row">
-      <div class="col-md-6 mb-3">
+      <div class="col-md-12 mb-3">
         <label class="form-label required">{{ form.identity_document.label }}</label>
         <input type="text"
                class="form-control
@@ -177,7 +177,6 @@
           <div class="invalid-feedback d-block">{{ form.identity_document.errors.0 }}</div>
         {% endif %}
       </div>
-      <div class="col-md-6 mb-3"></div>
     </div>
   </div>
   </div>
