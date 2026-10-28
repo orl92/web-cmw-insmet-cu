@@ -1,0 +1,118 @@
+name: Cleanup branch
+
+# Al fusionarse un PR en `main` o en `dev`, borra la rama de cabeza si su CI
+# quedó en verde y la rama no está protegida.
+#
+# Este workflow NO aprueba nada, y es a propósito. GitHub prohíbe aprobar el
+# propio PR, pero la respuesta correcta no es un bot que apruebe por ti: es
+# mover la exigencia de aprobación a donde de verdad protege.
+#
+#   - `dev`  -> sin aprobación obligatoria. El gate son los required status
+#               checks del ruleset `Protect dev`, que fallan cerrado: si un PR
+#               renombra o borra un job, el check requerido nunca reporta y el
+#               merge queda bloqueado.
+#   - `main` -> aprobación obligatoria de `@orl92` o `@yoelvismr` vía
+#               `.github/CODEOWNERS` + `require_code_owner_review`. Un bot no
+#               puede ser code owner, así que producción siempre espera a una
+#               persona. Ver AGENTS.md.
+#
+# `pull_request: closed` sí funciona desde la rama base del PR (a diferencia de
+# `workflow_run`, que sólo dispara desde la rama por defecto), así que la
+# limpieza de PRs hacia `dev` rige en cuanto esto esté en `dev`.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+env:
+  ALLOWED_AUTHORS: "orl92 yoelvismr"
+
+jobs:
+  cleanup:
+    name: Delete merged branch after green CI
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Delete head branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          case " $ALLOWED_AUTHORS " in
+            *" $AUTHOR "*)
+              echo "Autor $AUTHOR habilitado para limpieza de rama."
+              ;;
+            *)
+              echo "Autor $AUTHOR fuera de ALLOWED_AUTHORS; no se toca la rama."
+              exit 0
+              ;;
+          esac
+
+          # Ramas de larga vida: nunca se borran, ni como cabeza del PR.
+          case " main dev " in
+            *" $BRANCH "*)
+              echo "$BRANCH es una rama de larga vida; no se borra."
+              exit 0
+              ;;
+          esac
+
+          # Sólo se poda lo que entró a una rama de integración conocida.
+          case " main dev " in
+            *" $BASE "*)
+              ;;
+            *)
+              echo "El PR entró a $BASE, que no es rama de integración; no se toca $BRANCH."
+              exit 0
+              ;;
+          esac
+
+          conclusion=$(gh api \
+            "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$SHA&per_page=1" \
+            --jq '.workflow_runs[0].conclusion // empty')
+          if [ "$conclusion" != "success" ]; then
+            echo "El CI de $SHA no quedó en verde (${conclusion:-sin registro}); se conserva la rama $BRANCH."
+            exit 0
+          fi
+
+          if ! lookup=$(gh api "repos/$REPO/branches/$BRANCH" --jq '.protected' 2>&1); then
+            case "$lookup" in
+              *"HTTP 404"* | *"Not Found"*)
+                echo "La rama $BRANCH ya no existe; nada que borrar."
+                exit 0
+                ;;
+              *)
+                echo "No se pudo consultar la rama $BRANCH: $lookup" >&2
+                exit 1
+                ;;
+            esac
+          fi
+          if [ "$lookup" = "true" ]; then
+            echo "La rama $BRANCH está protegida; no se borra."
+            exit 0
+          fi
+
+          if ! err=$(gh api -X DELETE "repos/$REPO/git/refs/heads/$BRANCH" 2>&1); then
+            if gh api "repos/$REPO/branches/$BRANCH" >/dev/null 2>&1; then
+              echo "No se pudo borrar la rama $BRANCH: $err" >&2
+              exit 1
+            fi
+            echo "La rama $BRANCH desapareció durante la limpieza; nada que hacer."
+            exit 0
+          fi
+          echo "Rama $BRANCH eliminada tras merge con CI en verde."
