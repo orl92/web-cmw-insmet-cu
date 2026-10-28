@@ -86,7 +86,8 @@ class UserPasswordResetForm(PasswordResetForm):
 
         context['current_year'] = datetime.now().year
 
-        html_email_template_name = 'pages/user_auth/emails/password_reset_email.html'
+        # `html_email_template_name` lo aporta la vista: aquí sólo se reenvía,
+        # para que los dos cuerpos del correo salgan del mismo sitio.
         super().send_mail(
             subject_template_name,
             email_template_name,
