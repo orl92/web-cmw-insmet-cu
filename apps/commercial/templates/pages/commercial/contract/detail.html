@@ -1,73 +1,67 @@
 {% extends 'layouts/dashboard.html' %}
 {% load static %}
 {% block content %}
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Detalle del Contrato</h3>
-          <div class="card-actions">
-            <a href="{% url 'commercial:contrato_list' %}"
-               class="btn btn-secondary btn-icon">Volver al Listado</a>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-              <h4>Información del Contrato</h4>
-              <table class="table table-bordered">
-                <tr>
-                  <th>Número:</th>
-                  <td>{{ object.number }}</td>
-                </tr>
-                <tr>
-                  <th>Vigencia desde:</th>
-                  <td>{{ object.start_date|date:"d/m/Y" }}</td>
-                </tr>
-                <tr>
-                  <th>Vigencia hasta:</th>
-                  <td>{{ object.end_date|date:"d/m/Y" }}</td>
-                </tr>
-                <tr>
-                  <th>Registro Comercial:</th>
-                  <td>{{ object.commercial_registry }}</td>
-                </tr>
-                <tr>
-                  <th>Estado:</th>
-                  <td>
-                    {% if object.record_active %}
-                      <span class="badge badge-outline text-green">Activo</span>
-                    {% else %}
-                      <span class="badge badge-outline text-secondary">Desactivado</span>
-                    {% endif %}
-                  </td>
-                </tr>
-              </table>
-            </div>
-            <div class="col-md-6">
-              <h4>Cliente</h4>
-              <table class="table table-bordered">
-                <tr>
-                  <th>Cliente:</th>
-                  <td>{{ object.customer.display_name }}</td>
-                </tr>
-                <tr>
-                  <th>Tipo:</th>
-                  <td>{{ object.customer.get_client_type_display }}</td>
-                </tr>
-                <tr>
-                  <th>Dirección:</th>
-                  <td>{{ object.customer.address }}</td>
-                </tr>
-                <tr>
-                  <th>Teléfonos:</th>
-                  <td>{{ object.customer.phone }}</td>
-                </tr>
-              </table>
-            </div>
-          </div>
+  <div class="row row-cards">
+    {% include 'includes/dashboard/form_card.html' with card_title='Datos del Contrato' %}
+    <div class="row">
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Número</label>
+        <div class="form-control-plaintext">{{ object.number }}</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Vigencia desde</label>
+        <div class="form-control-plaintext">{{ object.start_date|date:"d/m/Y" }}</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Vigencia hasta</label>
+        <div class="form-control-plaintext">{{ object.end_date|date:"d/m/Y" }}</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Vigencia</label>
+        <div class="form-control-plaintext">{{ object.validity_years }} año{{ object.validity_years|pluralize }}</div>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label class="form-label">Estado</label>
+        <div class="form-control-plaintext">
+          {% if object.record_active %}
+            <span class="badge badge-outline text-green">Activo</span>
+          {% else %}
+            <span class="badge badge-outline text-secondary">Desactivado</span>
+          {% endif %}
         </div>
       </div>
     </div>
+  </div>
+  </div>
+  </div>
+  {% include 'includes/dashboard/form_card.html' with card_title='Cliente' %}
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Cliente</label>
+      <div class="form-control-plaintext">{{ object.customer.display_name }}</div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Tipo</label>
+      <div class="form-control-plaintext">{{ object.customer.get_client_type_display }}</div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Dirección</label>
+      <div class="form-control-plaintext">{{ object.customer.address|default:"—" }}</div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Teléfonos</label>
+      <div class="form-control-plaintext">{{ object.customer.phone|default:"—" }}</div>
+    </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  <div class="col-12">
+    <div class="d-flex justify-content-end gap-2 pt-3 mt-3 border-top">
+      <a href="{{ url_list }}" class="btn btn-secondary">
+        <i class="icon ti ti-arrow-left"></i> Volver
+      </a>
+    </div>
+  </div>
   </div>
 {% endblock %}
