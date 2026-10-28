@@ -751,7 +751,7 @@ le entrega la clave de despliegue a cualquiera que responda ese puerto.
 
 #### 8.3 Qué dispara el deploy
 
-`.github/workflows/deploy.yml` corre en dos casos:
+`.github/workflows/deploy-production.yml` corre en dos casos:
 
 | Disparador | Qué hace |
 | --- | --- |
