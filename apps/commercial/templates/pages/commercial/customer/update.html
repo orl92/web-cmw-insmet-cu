@@ -25,8 +25,8 @@
   </div>
   </div>
   {% include 'includes/dashboard/form_card.html' with card_title='Datos Personales' %}
-  <div class="row">
-    <div class="col-md-4 mb-3">
+  <div class="row" id="personal-data-row">
+    <div class="col-md-4 mb-3" id="first-name-col">
       <label class="form-label required">{{ form.first_name.label }}</label>
       <input type="text"
              class="form-control
@@ -41,7 +41,7 @@
         <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>
       {% endif %}
     </div>
-    <div class="col-md-4 mb-3">
+    <div class="col-md-4 mb-3" id="last-name-col">
       <label class="form-label required">{{ form.last_name.label }}</label>
       <input type="text"
              class="form-control
@@ -223,8 +223,12 @@ function toggleClientType(value) {
   var container = document.getElementById('juridica-fields');
   var inputs = container.querySelectorAll('input');
   var naturalId = document.getElementById('natural-identity-field');
+  var firstCol = document.getElementById('first-name-col');
+  var lastCol = document.getElementById('last-name-col');
   if (naturalId) naturalId.style.display = value === 'natural' ? 'block' : 'none';
   if (value === 'natural') {
+    if (firstCol) { firstCol.classList.remove('col-md-6'); firstCol.classList.add('col-md-4'); }
+    if (lastCol) { lastCol.classList.remove('col-md-6'); lastCol.classList.add('col-md-4'); }
     container.style.display = 'none';
     inputs.forEach(function(inp) {
       inp.removeAttribute('required');
@@ -232,6 +236,8 @@ function toggleClientType(value) {
       inp.value = '';
     });
   } else {
+    if (firstCol) { firstCol.classList.remove('col-md-4'); firstCol.classList.add('col-md-6'); }
+    if (lastCol) { lastCol.classList.remove('col-md-4'); lastCol.classList.add('col-md-6'); }
     container.style.display = 'block';
     var companyInput = container.querySelector('[name="company_name"]');
     if (companyInput) companyInput.setAttribute('required', '');
